@@ -41,8 +41,7 @@ _  /_/ /_  /   / /_/ /_  /_/ // /_/ /  / / /  __/ _  / _  /_/ /
                       /____/                           /____/   
 ` + "\n"
 
-// StartService begins the server and allows the player to connect to it
-// The player connects and once that player connects game data is sent to the server
+// StartService begins the server and allows the player to connect to the server
 func StartService(){
 	var config ServerConfig
 	// this will open our config file name is config.toml
