@@ -1,4 +1,8 @@
-  server_name = "Dragonfly v1.0"
-  world_name = "ohhhhhhhhhhhhhhhhhh yyyyyyeeeeeeeaaaaaaaaaaaaaaaahhhhhhhhhhhhhhhhhhhh"
-  max_players = 10
-  address = "0.0.0.0:19132"
+
+[Network]
+  Address = ":19132"
+
+[Server]
+  MaximumPlayers = 0
+  Name = "Dragonfly Server"
+  WorldName = "World"

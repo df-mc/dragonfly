@@ -1,95 +1,82 @@
 package dragonfly
 
 import (
-	"bytes"
-	"dragonfly/dragonfly/logger"
 	"fmt"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/naoina/toml"
 	"github.com/sandertv/gophertunnel/minecraft"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"os"
-	"os/exec"
-	"runtime"
+	"github.com/sirupsen/logrus"
+	"log"
 )
 
-type ServerConfig struct {
-	ServerName string
-	WorldName string
-	MaxPlayers int
-	Address string
-}
-// loopbackExempted checks if the user has has loopback enabled
-// The user will need this in order to connect to their server locally.
-func loopbackExempted() bool {
-	if runtime.GOOS != "windows" {
-		return true
-	}
-	data, _ := exec.Command("CheckNetIsolation", "LoopbackExempt", "-s", `-n="microsoft.minecraftuwp_8wekyb3d8bbwe"`).CombinedOutput()
-	if bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe")) {
-		return true
-	}
-	return false
+// Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
+// trying to join the server.
+type Server struct {
+	c   Config
+	log *logrus.Logger
+
+	listener *minecraft.Listener
 }
 
-const ascii = `
-________                                   _____________        
-___  __ \____________ _______ ________________  __/__  /____  __
-__  / / /_  ___/  __ /_  __  /  __ \_  __ \_  /_ __  /__  / / /
-_  /_/ /_  /   / /_/ /_  /_/ // /_/ /  / / /  __/ _  / _  /_/ / 
-/_____/ /_/    \__,_/ _\__, / \____//_/ /_//_/    /_/  _\__, /  
-                      /____/                           /____/   
-` + "\n"
+// New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
+// (A call to dragonfly.DefaultConfig().)
+// The Logger passed will be used to log errors and information to. If nil is passed, a default Logger is
+// used by calling logrus.New().
+func New(c *Config, log *logrus.Logger) *Server {
+	if log == nil {
+		log = logrus.New()
+	}
+	if c == nil {
+		return &Server{c: DefaultConfig(), log: log}
+	}
+	return &Server{c: *c, log: log}
+}
 
-// StartService starts the server and allows the player to connect 
-func StartService(){
-	var config ServerConfig
-	// this will open our config file name is config.toml
-	f, err := os.Open("config.toml")
-	if err != nil {
-		panic(err)
+// Run runs the server and blocks until it is closed using a call to Close(). When called, the server will
+// accept incoming connections.
+func (server *Server) Run() error {
+	server.log.Info("Starting server...")
+
+	w := server.log.Writer()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	server.listener = &minecraft.Listener{
+		// We wrap a log.Logger around our Logrus logger so that it will print in the same format as the
+		// normal Logrus logger would.
+		ErrorLog:       log.New(w, "", 0),
+		ServerName:     server.c.Server.Name,
+		MaximumPlayers: server.c.Server.MaximumPlayers,
 	}
-	if err := toml.NewDecoder(f).Decode(&config); err != nil {
-		panic(err)
+	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
+		return fmt.Errorf("listening on address failed: %v", err)
 	}
-	fmt.Println(ascii)
-	listener, err := minecraft.Listen("raknet", config.Address)
-	listener.ServerName = config.ServerName
-	listener.MaximumPlayers = config.MaxPlayers
-	logger.LogInfo("Starting server...")
-	logger.LogInfo("Server has started!")
-	if err != nil {
-		panic(err)
-	}
+
+	server.log.Infof("Server started on %v\n", server.c.Network.Address)
 
 	for {
-		c, err := listener.Accept()
+		c, err := server.listener.Accept()
 		if err != nil {
-			return
+			// Accept will only return an error if the Listener was closed, meaning trying to continue
+			// listening is futile.
+			return nil
 		}
-		conn := c.(*minecraft.Conn)
-
-		go func() {
-			defer conn.Close()
-			// Sends game data
-			data := minecraft.GameData{
-				WorldName:       config.WorldName,
-				EntityUniqueID:  0,
-				EntityRuntimeID: 0,
-				PlayerGameMode:  0,
-				PlayerPosition:  mgl32.Vec3{},
-				Pitch:           0,
-				Yaw:             0,
-				Dimension:       0,
-				WorldSpawn:      protocol.BlockPos{},
-				GameRules:       nil,
-				Time:            0,
-				Blocks:          nil,
-				Items:           nil,
-			}
-			if err := conn.StartGame(data); err != nil {
-				return
-			}
-		}()
+		go server.handleConn(c.(*minecraft.Conn))
 	}
+}
+
+// handleConn handles an incoming connection accepted from the Listener.
+func (server *Server) handleConn(conn *minecraft.Conn) {
+	defer func() {
+		_ = conn.Close()
+	}()
+	data := minecraft.GameData{WorldName: server.c.Server.WorldName}
+	if err := conn.StartGame(data); err != nil {
+		return
+	}
+	// TODO: Handle the connection.
+}
+
+// Close closes the server, making any call to Run cancel immediately.
+func (server *Server) Close() error {
+	return server.listener.Close()
 }
