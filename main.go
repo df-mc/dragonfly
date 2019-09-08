@@ -64,5 +64,5 @@ func readConfig() (dragonfly.Config, error) {
 	if err := toml.Unmarshal(data, &c); err != nil {
 		return c, fmt.Errorf("error decoding config: %v", err)
 	}
-	return c
+	return c, nil
 }
