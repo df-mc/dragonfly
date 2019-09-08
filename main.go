@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -33,16 +32,13 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	c := chat.New()
 	for {
 		player, err := server.Accept()
 		if err != nil {
 			// The server was stopped, so we stop accepting players and end the program.
 			return
 		}
-		//c.Subscribe(player)
 		_ = player
-		_ = c
 	}
 }
 
