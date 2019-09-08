@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -15,6 +16,8 @@ import (
 func main() {
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
+	log.Level = logrus.DebugLevel
+
 	if !loopbackExempted() {
 		const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
 		log.Printf("You are currently unable to join the server on this machine. Run %v in an admin PowerShell session to be able to.\n", loopbackExemptCmd)
@@ -26,8 +29,20 @@ func main() {
 	}
 
 	server := dragonfly.New(&config, log)
-	if err := server.Run(); err != nil {
+	if err := server.Start(); err != nil {
 		log.Fatalln(err)
+	}
+
+	c := chat.New()
+	for {
+		player, err := server.Accept()
+		if err != nil {
+			// The server was stopped, so we stop accepting players and end the program.
+			return
+		}
+		//c.Subscribe(player)
+		_ = player
+		_ = c
 	}
 }
 

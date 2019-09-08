@@ -1,8 +1,10 @@
 package dragonfly
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 	"log"
@@ -32,9 +34,40 @@ func New(c *Config, log *logrus.Logger) *Server {
 	return &Server{c: *c, log: log, players: players}
 }
 
+// Accept accepts an incoming player into the server. It blocks until a player connects to the server.
+// Accept returns an error if the Server is closed using a call to Close.
+func (server *Server) Accept() (*player.Player, error) {
+	p, ok := <-server.players
+	if !ok {
+		return nil, errors.New("server closed")
+	}
+	return p, nil
+}
+
 // Run runs the server and blocks until it is closed using a call to Close(). When called, the server will
 // accept incoming connections.
+// After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
+	if err := server.startListening(); err != nil {
+		return err
+	}
+	server.run()
+	return nil
+}
+
+// Start runs the server but does not block, unlike Run, but instead accepts connections on a different
+// goroutine. Connections will be accepted until the listener is closed using a call to Close.
+// One started, players may be accepted using Server.Accept().
+func (server *Server) Start() error {
+	if err := server.startListening(); err != nil {
+		return err
+	}
+	go server.run()
+	return nil
+}
+
+// startListening starts making the Minecraft listener listen, accepting new connections from players.
+func (server *Server) startListening() error {
 	server.log.Info("Starting server...")
 
 	w := server.log.Writer()
@@ -54,13 +87,18 @@ func (server *Server) Run() error {
 	}
 
 	server.log.Infof("Server running on %v.\n", server.c.Network.Address)
+	return nil
+}
 
+// run runs the server, continuously accepting new connections from players. It returns when the server is
+// closed by a call to Close.
+func (server *Server) run() {
 	for {
 		c, err := server.listener.Accept()
 		if err != nil {
 			// Accept will only return an error if the Listener was closed, meaning trying to continue
 			// listening is futile.
-			return nil
+			return
 		}
 		go server.handleConn(c.(*minecraft.Conn))
 	}
@@ -68,18 +106,18 @@ func (server *Server) Run() error {
 
 // handleConn handles an incoming connection accepted from the Listener.
 func (server *Server) handleConn(conn *minecraft.Conn) {
-	defer func() {
-		_ = conn.Close()
-	}()
 	data := minecraft.GameData{WorldName: server.c.Server.WorldName}
 	if err := conn.StartGame(data); err != nil {
 		return
 	}
-	// TODO: Handle the connection.
-	server.players <- &player.Player{}
+	p := &player.Player{}
+	s := session.New(p, conn, server.log)
+	*p = *player.NewWithSession(s)
+
+	server.players <- p
 }
 
-// Close closes the server, making any call to Run cancel immediately.
+// Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	close(server.players)
 	return server.listener.Close()
