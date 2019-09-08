@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"dragonfly/dragonfly"
+	"fmt"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -19,7 +20,10 @@ func main() {
 		log.Printf("You are currently unable to join the server on this machine. Run %v in an admin PowerShell session to be able to.\n", loopbackExemptCmd)
 	}
 
-	config := readConfig(log)
+	config, err := readConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	server := dragonfly.New(&config, log)
 	if err := server.Run(); err != nil {
@@ -41,24 +45,24 @@ func loopbackExempted() bool {
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
-func readConfig(log *logrus.Logger) dragonfly.Config {
+func readConfig() (dragonfly.Config, error) {
 	c := dragonfly.DefaultConfig()
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
 		data, err := toml.Marshal(c)
 		if err != nil {
-			log.Fatalf("Error encoding default config: %v\n", err)
+			return c, fmt.Errorf("failed encoding default config: %v\n", err)
 		}
 		if err := ioutil.WriteFile("config.toml", data, 0644); err != nil {
-			log.Fatalf("Error creating config: %v\n", err)
+			return c, fmt.Errorf("failed creating config: %v\n", err)
 		}
-		return c
+		return c, nil
 	}
 	data, err := ioutil.ReadFile("config.toml")
 	if err != nil {
-		log.Fatalf("error reading config: %v", err)
+		return c, fmt.Errorf("error reading config: %v", err)
 	}
 	if err := toml.Unmarshal(data, &c); err != nil {
-		log.Fatalf("error decoding config: %v", err)
+		return c, fmt.Errorf("error decoding config: %v", err)
 	}
 	return c
 }
