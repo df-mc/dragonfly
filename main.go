@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"dragonfly/dragonfly"
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"

@@ -1,4 +1,4 @@
-module dragonfly
+module github.com/dragonfly-tech/dragonfly
 
 go 1.12
 
