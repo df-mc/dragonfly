@@ -2,6 +2,7 @@ package dragonfly
 
 import (
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 	"log"
@@ -10,10 +11,10 @@ import (
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
 // trying to join the server.
 type Server struct {
-	c   Config
-	log *logrus.Logger
-
+	c        Config
+	log      *logrus.Logger
 	listener *minecraft.Listener
+	players  chan *player.Player
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -24,10 +25,11 @@ func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
+	players := make(chan *player.Player)
 	if c == nil {
-		return &Server{c: DefaultConfig(), log: log}
+		return &Server{c: DefaultConfig(), log: log, players: players}
 	}
-	return &Server{c: *c, log: log}
+	return &Server{c: *c, log: log, players: players}
 }
 
 // Run runs the server and blocks until it is closed using a call to Close(). When called, the server will
@@ -74,9 +76,11 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		return
 	}
 	// TODO: Handle the connection.
+	server.players <- &player.Player{}
 }
 
 // Close closes the server, making any call to Run cancel immediately.
 func (server *Server) Close() error {
+	close(server.players)
 	return server.listener.Close()
 }
