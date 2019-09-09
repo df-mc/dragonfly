@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
+	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"strings"
 	"sync"
 )
@@ -37,6 +38,11 @@ func (p *Player) Message(a ...interface{}) {
 	// Remove at most two trailing newlines from the string.
 	s := strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 	p.session().SendMessage(s)
+}
+
+// SendCommandOutput sends the output of a command to the player.
+func (p *Player) SendCommandOutput(output *cmd.Output) {
+	p.session().SendCommandOutput(output)
 }
 
 // Close closes the player, removing any references that would otherwise keep the player from being garbage
