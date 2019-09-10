@@ -133,6 +133,22 @@ func (s *Session) SendMessage(message string) {
 	})
 }
 
+// SendTip ...
+func (s *Session) SendTip(message string){
+	_ = s.conn.WritePacket(&packet.Text{
+		TextType: packet.TextTypePopup,
+		Message: message,
+	})
+}
+
+// SendAnnouncement ...
+func (s *Session) SendAnnouncement(message string){
+	_ = s.conn.WritePacket(&packet.Text{
+		TextType: packet.TextTypeAnnouncement,
+		Message: message,
+	})
+}
+
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
 // command, which might be the player or a websocket server.
 func (s *Session) SendCommandOutput(output *cmd.Output) {
