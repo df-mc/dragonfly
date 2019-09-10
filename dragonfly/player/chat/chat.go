@@ -86,6 +86,8 @@ func (chat *Chat) WriteString(s string) (n int, err error) {
 
 // Close closes the chat, removing all subscribers from it.
 func (chat *Chat) Close() error {
+	chat.m.Lock()
 	chat.subscribers = nil
+	chat.m.Unlock()
 	return nil
 }

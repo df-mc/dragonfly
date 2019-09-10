@@ -86,7 +86,7 @@ func (server *Server) startListening() error {
 		return fmt.Errorf("listening on address failed: %v", err)
 	}
 
-	server.log.Infof("Server running on %v.\n", server.c.Network.Address)
+	server.log.Infof("Server running on %v.\n", server.listener.Addr())
 	return nil
 }
 
