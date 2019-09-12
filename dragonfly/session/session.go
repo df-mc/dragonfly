@@ -165,6 +165,14 @@ func (s *Session) SendAnnouncement(message string) {
 	})
 }
 
+// SendPopup ...
+func (s *Session) SendPopup(message string) {
+	_ = s.conn.WritePacket(&packet.Text{
+		TextType: packet.TextTypePopup,
+		Message:  message,
+	})
+}
+
 // SendJukeBoxPopup ...
 func (s *Session) SendJukeBoxPopup(message string) {
 	_ = s.conn.WritePacket(&packet.Text{

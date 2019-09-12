@@ -43,9 +43,20 @@ func (p *Player) Name() string {
 // Message sends a formatted message to the player. The message is formatted following the rules of
 // fmt.Sprintln, however the newline at the end is not written.
 func (p *Player) Message(a ...interface{}) {
-	// Remove at most two trailing newlines from the string.
-	s := strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
-	p.session().SendMessage(s)
+	p.session().SendMessage(format(a))
+}
+
+// SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
+// overwrites/is overwritten by the name of the item equipped.
+// The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
+func (p *Player) SendPopup(a ...interface{}) {
+	p.session().SendPopup(format(a))
+}
+
+// SendTip sends a tip to the player. The tip is shown in the middle of the screen of the player.
+// The tip is formatted following the rules of fmt.Sprintln without a newline at the end.
+func (p *Player) SendTip(a ...interface{}) {
+	p.session().SendTip(format(a))
 }
 
 // SendCommandOutput sends the output of a command to the player.
@@ -75,4 +86,10 @@ func (p *Player) session() *session.Session {
 		return p.s
 	}
 	return session.Nop
+}
+
+// format is a utility function to format a list of values to have spaces between them, but no newline at the
+// end, which is typically used for sending messages, popups and tips.
+func format(a []interface{}) string {
+	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }
