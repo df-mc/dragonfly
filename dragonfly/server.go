@@ -112,7 +112,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	}
 	p := &player.Player{}
 	s := session.New(p, conn, server.log)
-	*p = *player.NewWithSession(s)
+	*p = *player.NewWithSession(conn.IdentityData().DisplayName, s)
 	s.Handle()
 
 	server.players <- p

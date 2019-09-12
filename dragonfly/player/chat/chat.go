@@ -24,7 +24,7 @@ func New() *Chat {
 
 // Println prints a formatted message to the chat. The message is formatted according to the fmt.Sprintln
 // formatting rules.
-func (chat *Chat) Println(a ...interface{}) (n int, err error) {
+func (chat *Chat) Println(a ...interface{}) {
 	msg := fmt.Sprintln(a...)
 
 	chat.m.Lock()
@@ -33,15 +33,13 @@ func (chat *Chat) Println(a ...interface{}) (n int, err error) {
 	for _, subscriber := range chat.subscribers {
 		subscriber.Message(msg)
 	}
-	return len(msg), nil
 }
 
 // Printf prints a formatted message using a specific format to the chat. The message is formatted according
 // to the fmt.Sprintf formatting rules.
-func (chat *Chat) Printf(format string, a ...interface{}) (n int, err error) {
+func (chat *Chat) Printf(format string, a ...interface{}) {
 	msg := fmt.Sprintf(format, a...)
-	_, err = chat.WriteString(msg)
-	return len(msg), err
+	_, _ = chat.WriteString(msg)
 }
 
 // Write writes the byte slice p as a string to the chat. It is equivalent to calling

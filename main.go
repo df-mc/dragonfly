@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -16,6 +17,8 @@ func main() {
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
+
+	chat.Global.Subscribe(chat.StdoutSubscriber{})
 
 	if !loopbackExempted() {
 		const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`

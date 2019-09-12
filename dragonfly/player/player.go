@@ -12,6 +12,8 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
+	name string
+
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
 	s            *session.Session
@@ -19,17 +21,23 @@ type Player struct {
 }
 
 // New returns a new initialised player.
-func New() *Player {
-	return &Player{}
+func New(name string) *Player {
+	return &Player{name: name}
 }
 
 // NewWithSession returns a new player for a network session, so that the network session can control the
 // player.
-func NewWithSession(s *session.Session) *Player {
-	p := New()
+func NewWithSession(name string, s *session.Session) *Player {
+	p := New(name)
 	p.s = s
 	chat.Global.Subscribe(p)
 	return p
+}
+
+// Name returns the username of the player. If the player is controlled by a client, it is the username of
+// the client. (Typically the XBOX Live name)
+func (p *Player) Name() string {
+	return p.name
 }
 
 // Message sends a formatted message to the player. The message is formatted following the rules of

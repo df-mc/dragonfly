@@ -8,6 +8,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"strings"
 )
@@ -36,6 +37,10 @@ type Session struct {
 // Session.Handle().
 func New(c Controllable, conn *minecraft.Conn, log *logrus.Logger) *Session {
 	s := &Session{c: c, conn: conn, log: log}
+
+	yellow := text.Yellow()
+	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has joined the game"))
+
 	return s
 }
 
@@ -45,13 +50,24 @@ func (s *Session) Handle() {
 	s.SendAvailableCommands()
 }
 
+// Close closes the session, which in turn closes the controllable and the connection that the session
+// manages.
+func (s *Session) Close() error {
+	_ = s.c.Close()
+	_ = s.conn.Close()
+	s.c = nil
+	s.conn = nil
+
+	yellow := text.Yellow()
+	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
+	return nil
+}
+
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
 	defer func() {
-		_ = s.c.Close()
-		_ = s.conn.Close()
-		s.c = nil
+		_ = s.Close()
 	}()
 	for {
 		pk, err := s.conn.ReadPacket()
@@ -97,7 +113,7 @@ func (s *Session) handleText(pk *packet.Text) error {
 	if pk.SourceName != s.conn.IdentityData().DisplayName {
 		return fmt.Errorf("text packet source name must be equal to display name")
 	}
-	_, _ = chat.Global.Printf("<%v> %v\n", s.conn.IdentityData().DisplayName, pk.Message)
+	chat.Global.Printf("<%v> %v\n", s.conn.IdentityData().DisplayName, pk.Message)
 	return nil
 }
 
@@ -113,7 +129,7 @@ func (s *Session) handleCommandRequest(pk *packet.CommandRequest) error {
 	command, ok := cmd.CommandByAlias(commandName)
 	if !ok {
 		output := &cmd.Output{}
-		output.Errorf("unknown command '%v'", commandName)
+		output.Errorf("Unknown command '%v'", commandName)
 		s.SendCommandOutput(output)
 		return nil
 	}
@@ -134,26 +150,26 @@ func (s *Session) SendMessage(message string) {
 }
 
 // SendTip ...
-func (s *Session) SendTip(message string){
+func (s *Session) SendTip(message string) {
 	_ = s.conn.WritePacket(&packet.Text{
 		TextType: packet.TextTypePopup,
-		Message: message,
+		Message:  message,
 	})
 }
 
 // SendAnnouncement ...
-func (s *Session) SendAnnouncement(message string){
+func (s *Session) SendAnnouncement(message string) {
 	_ = s.conn.WritePacket(&packet.Text{
 		TextType: packet.TextTypeAnnouncement,
-		Message: message,
+		Message:  message,
 	})
 }
 
 // SendJukeBoxPopup ...
-func (s *Session) SendJukeBoxPopup(message string){
+func (s *Session) SendJukeBoxPopup(message string) {
 	_ = s.conn.WritePacket(&packet.Text{
-		TextType:         packet.TextTypeJukeboxPopup,
-		Message: message,
+		TextType: packet.TextTypeJukeboxPopup,
+		Message:  message,
 	})
 }
 
