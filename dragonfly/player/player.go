@@ -59,33 +59,38 @@ func (p *Player) SendTip(a ...interface{}) {
 	p.session().SendTip(format(a))
 }
 
+// Disconnect closes the player and removes it from the world.
+// Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
+// disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
+func (p *Player) Disconnect(a ...interface{}) {
+	p.close()
+	p.session().Disconnect(format(a))
+}
+
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
-// Close closes the player, removing any references that would otherwise keep the player from being garbage
-// collected, and removes the player from the world.
+// Close closes the player and removes it from the world.
+// Close disconnects the player with a 'Player closed.' message. Disconnect should be used to disconnect a
+// player with a custom message.
 func (p *Player) Close() error {
-	chat.Global.Unsubscribe(p)
-
-	p.sessionMutex.Lock()
-	p.s = nil
-	p.sessionMutex.Unlock()
-
+	p.close()
+	p.session().Disconnect("Player closed.")
 	return nil
+}
+
+// close closed the player without disconnecting it. It executes code shared by both the closing and the
+// disconnecting of players.
+func (p *Player) close() {
+	chat.Global.Unsubscribe(p)
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
 // is returned.
 func (p *Player) session() *session.Session {
-	p.sessionMutex.RLock()
-	defer p.sessionMutex.RUnlock()
-
-	if p.s != nil {
-		return p.s
-	}
-	return session.Nop
+	return p.s
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the

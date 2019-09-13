@@ -11,22 +11,17 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"sync/atomic"
 )
-
-// Nop holds a Session that does not do anything when attempting to send packets to it. The connection is not
-// initialised.
-var Nop = &Session{
-	log:  logrus.New(),
-	conn: &minecraft.Conn{},
-}
 
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
 	log *logrus.Logger
 
-	c    Controllable
-	conn *minecraft.Conn
+	c                  Controllable
+	controllableClosed atomic.Value
+	conn               *minecraft.Conn
 
 	cmdOrigin protocol.CommandOrigin
 }
@@ -37,6 +32,7 @@ type Session struct {
 // Session.Handle().
 func New(c Controllable, conn *minecraft.Conn, log *logrus.Logger) *Session {
 	s := &Session{c: c, conn: conn, log: log}
+	s.controllableClosed.Store(false)
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has joined the game"))
@@ -55,8 +51,6 @@ func (s *Session) Handle() {
 func (s *Session) Close() error {
 	_ = s.c.Close()
 	_ = s.conn.Close()
-	s.c = nil
-	s.conn = nil
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
@@ -72,6 +66,10 @@ func (s *Session) handlePackets() {
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
+			return
+		}
+		if s.controllableClosed.Load().(bool) {
+			// The controllable closed itself, so we need to stop handling packets and close the session.
 			return
 		}
 		if err := s.handlePacket(pk); err != nil {
@@ -95,14 +93,6 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())
 	}
 	return nil
-}
-
-// writePacket writes a packet to the connection.
-func (s *Session) writePacket(pk packet.Packet) error {
-	if s == Nop {
-		return nil
-	}
-	return s.conn.WritePacket(pk)
 }
 
 // handleText ...
@@ -179,6 +169,16 @@ func (s *Session) SendJukeBoxPopup(message string) {
 		TextType: packet.TextTypeJukeboxPopup,
 		Message:  message,
 	})
+}
+
+// Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
+// it will be shown to the client.
+func (s *Session) Disconnect(message string) {
+	_ = s.conn.WritePacket(&packet.Disconnect{
+		HideDisconnectionScreen: message == "",
+		Message:                 message,
+	})
+	s.controllableClosed.Store(true)
 }
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the

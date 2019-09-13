@@ -27,7 +27,7 @@ func main() {
 
 	config, err := readConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	server := dragonfly.New(&config, log)
