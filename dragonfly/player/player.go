@@ -76,7 +76,7 @@ func (p *Player) Transfer(address string) error {
 		return err
 	}
 	p.session().Transfer(addr.IP, addr.Port)
-	return p.session().Close()
+	return p.Close()
 }
 
 // SendCommandOutput sends the output of a command to the player.
