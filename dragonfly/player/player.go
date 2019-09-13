@@ -5,6 +5,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
+	"net"
 	"strings"
 	"sync"
 )
@@ -65,6 +66,17 @@ func (p *Player) SendTip(a ...interface{}) {
 func (p *Player) Disconnect(a ...interface{}) {
 	p.close()
 	p.session().Disconnect(format(a))
+}
+
+// Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
+// error is returned. If it is returned, the player is closed and transferred to the server.
+func (p *Player) Transfer(address string) error {
+	addr, err := net.ResolveUDPAddr("udp", address)
+	if err != nil {
+		return err
+	}
+	p.session().Transfer(addr.IP, addr.Port)
+	return p.session().Close()
 }
 
 // SendCommandOutput sends the output of a command to the player.

@@ -10,6 +10,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"net"
 	"strings"
 	"sync/atomic"
 )
@@ -179,6 +180,14 @@ func (s *Session) Disconnect(message string) {
 		Message:                 message,
 	})
 	s.controllableClosed.Store(true)
+}
+
+// Transfer transfers the player to a server with the IP and port passed.
+func (s *Session) Transfer(ip net.IP, port int) {
+	_ = s.conn.WritePacket(&packet.Transfer{
+		Address: ip.String(),
+		Port:    uint16(port),
+	})
 }
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
