@@ -1,7 +1,6 @@
 package session
 
 import (
-	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"io"
 )
 
@@ -10,5 +9,6 @@ import (
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
 	io.Closer
-	cmd.Source
+	Chat(message string)
+	ExecuteCommand(commandLine string)
 }

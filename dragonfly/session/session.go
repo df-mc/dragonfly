@@ -11,7 +11,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"net"
-	"strings"
 	"sync/atomic"
 )
 
@@ -104,7 +103,7 @@ func (s *Session) handleText(pk *packet.Text) error {
 	if pk.SourceName != s.conn.IdentityData().DisplayName {
 		return fmt.Errorf("text packet source name must be equal to display name")
 	}
-	chat.Global.Printf("<%v> %v\n", s.conn.IdentityData().DisplayName, pk.Message)
+	s.c.Chat(pk.Message)
 	return nil
 }
 
@@ -114,21 +113,7 @@ func (s *Session) handleCommandRequest(pk *packet.CommandRequest) error {
 		return fmt.Errorf("command request packet must never have the internal field set to true")
 	}
 	s.cmdOrigin = pk.CommandOrigin
-	args := strings.Split(pk.CommandLine, " ")
-	commandName := strings.TrimPrefix(args[0], "/")
-
-	command, ok := cmd.CommandByAlias(commandName)
-	if !ok {
-		output := &cmd.Output{}
-		output.Errorf("Unknown command '%v'", commandName)
-		s.SendCommandOutput(output)
-		return nil
-	}
-	newArgs := ""
-	if len(args) > 1 {
-		newArgs = strings.Join(args[1:], " ")
-	}
-	command.Execute(newArgs, s.c)
+	s.c.ExecuteCommand(pk.CommandLine)
 	return nil
 }
 

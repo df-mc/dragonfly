@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
@@ -17,13 +18,16 @@ type Player struct {
 
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
-	s            *session.Session
-	sessionMutex sync.RWMutex
+	s *session.Session
+
+	// h holds the current h of the player. It may be changed at any time by calling the Handle method.
+	hMutex sync.RWMutex
+	h      Handler
 }
 
 // New returns a new initialised player.
 func New(name string) *Player {
-	return &Player{name: name}
+	return &Player{name: name, h: NopHandler{}}
 }
 
 // NewWithSession returns a new player for a network session, so that the network session can control the
@@ -39,6 +43,19 @@ func NewWithSession(name string, s *session.Session) *Player {
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
 	return p.name
+}
+
+// Handle changes the current handler of the player. As a result, events called by the player will call
+// handlers of the Handle passed.
+// Handle sets the player's handler to NopHandler if nil is passed.
+func (p *Player) Handle(h Handler) {
+	p.hMutex.Lock()
+	defer p.hMutex.Unlock()
+
+	if h == nil {
+		h = NopHandler{}
+	}
+	p.h = h
 }
 
 // Message sends a formatted message to the player. The message is formatted following the rules of
@@ -60,6 +77,41 @@ func (p *Player) SendTip(a ...interface{}) {
 	p.session().SendTip(format(a))
 }
 
+// Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
+// player.
+func (p *Player) Chat(message string) {
+	ctx := event.C()
+	p.handler().HandleChat(ctx, message)
+
+	ctx.Continue(func() {
+		chat.Global.Printf("<%v> %v\n", p.name, message)
+	})
+}
+
+// ExecuteCommand executes a command passed as the player. If the command could not be found, or if the usage
+// was incorrect, an error message is sent to the player.
+func (p *Player) ExecuteCommand(commandLine string) {
+	args := strings.Split(commandLine, " ")
+	commandName := strings.TrimPrefix(args[0], "/")
+
+	command, ok := cmd.CommandByAlias(commandName)
+	if !ok {
+		output := &cmd.Output{}
+		output.Errorf("Unknown command '%v'", commandName)
+		p.SendCommandOutput(output)
+		return
+	}
+	newArgs := ""
+	if len(args) > 1 {
+		newArgs = strings.Join(args[1:], " ")
+	}
+	ctx := event.C()
+	p.handler().HandleCommandExecution(ctx, command, args[1:])
+	ctx.Continue(func() {
+		command.Execute(newArgs, p)
+	})
+}
+
 // Disconnect closes the player and removes it from the world.
 // Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
 // disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
@@ -70,13 +122,19 @@ func (p *Player) Disconnect(a ...interface{}) {
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
 // error is returned. If it is returned, the player is closed and transferred to the server.
-func (p *Player) Transfer(address string) error {
+func (p *Player) Transfer(address string) (err error) {
 	addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		return err
 	}
-	p.session().Transfer(addr.IP, addr.Port)
-	return p.Close()
+	ctx := event.C()
+	p.handler().HandleTransfer(ctx, addr)
+
+	ctx.Continue(func() {
+		p.session().Transfer(addr.IP, addr.Port)
+		err = p.Close()
+	})
+	return
 }
 
 // SendCommandOutput sends the output of a command to the player.
@@ -103,6 +161,14 @@ func (p *Player) close() {
 // is returned.
 func (p *Player) session() *session.Session {
 	return p.s
+}
+
+// handler returns the handler of the player.
+func (p *Player) handler() Handler {
+	p.hMutex.RLock()
+	handler := p.h
+	p.hMutex.RUnlock()
+	return handler
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
