@@ -190,6 +190,33 @@ func (s *Session) SendActionBarMessage(text string, fadeInDuration int32, remain
 	})
 }
 
+// SendNetherDimension sends the player to the nether dimension
+func (s *Session) SendNetherDimension(){
+	_ = s.conn.WritePacket(&packet.ChangeDimension{
+		Dimension: packet.DimensionNether,
+		Position:  mgl32.Vec3{},
+		Respawn:   false,
+	})
+}
+
+// SendEndDimension sends the player to the end dimension
+func (s *Session) SendEndDimension(){
+	_ = s.conn.WritePacket(&packet.ChangeDimension{
+		Dimension: packet.DimensionEnd,
+		Position:  mgl32.Vec3{},
+		Respawn:   false,
+	})
+}
+
+// SendNetherDimension sends the player to the overworld dimension
+func (s *Session) SendOverworldDimension(){
+	_ = s.conn.WritePacket(&packet.ChangeDimension{
+		Dimension: packet.DimensionOverworld,
+		Position:  mgl32.Vec3{},
+		Respawn:   false,
+	})
+}
+
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
 // it will be shown to the client.
 func (s *Session) Disconnect(message string) {
