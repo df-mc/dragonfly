@@ -157,6 +157,39 @@ func (s *Session) SendJukeBoxPopup(message string) {
 	})
 }
 
+// SendTitle ...
+func (s *Session) SendTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32){
+	_ = s.conn.WritePacket(&packet.SetTitle{
+		ActionType:      packet.TitleActionSetTitle,
+		Text:            text,
+		FadeInDuration:  fadeInDuration,
+		RemainDuration:  remainDuration,
+		FadeOutDuration: fadeOutDuration,
+	})
+}
+
+// SendSubTitle ...
+func (s *Session) SendSubTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
+	_ = s.conn.WritePacket(&packet.SetTitle{
+		ActionType:      packet.TitleActionSetSubtitle,
+		Text:            text,
+		FadeInDuration:  fadeInDuration,
+		RemainDuration:  remainDuration,
+		FadeOutDuration: fadeOutDuration,
+	})
+}
+
+// SendActionbarMessage ...
+func (s *Session) SendActionBarMessage(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
+	_ = s.conn.WritePacket(&packet.SetTitle{
+		ActionType:      packet.TitleActionSetActionBar,
+		Text:            text,
+		FadeInDuration:  fadeInDuration,
+		RemainDuration:  remainDuration,
+		FadeOutDuration: fadeOutDuration,
+	})
+}
+
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
 // it will be shown to the client.
 func (s *Session) Disconnect(message string) {
