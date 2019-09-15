@@ -101,14 +101,11 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		p.SendCommandOutput(output)
 		return
 	}
-	newArgs := ""
-	if len(args) > 1 {
-		newArgs = strings.Join(args[1:], " ")
-	}
+
 	ctx := event.C()
 	p.handler().HandleCommandExecution(ctx, command, args[1:])
 	ctx.Continue(func() {
-		command.Execute(newArgs, p)
+		command.Execute(strings.TrimPrefix(commandLine, "/"+commandName+" "), p)
 	})
 }
 
