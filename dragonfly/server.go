@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 	"log"
@@ -110,9 +111,14 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	if err := conn.StartGame(data); err != nil {
 		return
 	}
+	id, err := uuid.Parse(conn.IdentityData().Identity)
+	if err != nil {
+		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
+		return
+	}
 	p := &player.Player{}
 	s := session.New(p, conn, server.log)
-	*p = *player.NewWithSession(conn.IdentityData().DisplayName, s)
+	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, s)
 	s.Handle()
 
 	server.players <- p

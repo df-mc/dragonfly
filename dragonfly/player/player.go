@@ -6,6 +6,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/title"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
 	"strings"
@@ -16,6 +17,8 @@ import (
 // need to play in the world.
 type Player struct {
 	name string
+	uuid uuid.UUID
+	xuid string
 
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
@@ -26,16 +29,20 @@ type Player struct {
 	h      Handler
 }
 
-// New returns a new initialised player.
+// New returns a new initialised player. A random UUID is generated for the player, so that it may be
+// identified over network.
 func New(name string) *Player {
-	return &Player{name: name, h: NopHandler{}}
+	return &Player{name: name, h: NopHandler{}, uuid: uuid.New()}
 }
 
 // NewWithSession returns a new player for a network session, so that the network session can control the
 // player.
-func NewWithSession(name string, s *session.Session) *Player {
+func NewWithSession(name, xuid string, uuid uuid.UUID, s *session.Session) *Player {
 	p := New(name)
 	p.s = s
+	p.uuid = uuid
+	p.xuid = xuid
+
 	chat.Global.Subscribe(p)
 	return p
 }
@@ -44,6 +51,23 @@ func NewWithSession(name string, s *session.Session) *Player {
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
 	return p.name
+}
+
+// UUID returns the UUID of the player. This UUID will remain consistent with an XBOX Live account, and will,
+// unlike the name of the player, never change.
+// It is therefore recommended to use the UUID over the name of the player. Additionally, it is recommended to
+// use the UUID over the XUID because of its standard format.
+func (p *Player) UUID() uuid.UUID {
+	return p.uuid
+}
+
+// XUID returns the XBOX Live user ID of the player. It will remain consistent with the XBOX Live account,
+// and will not change in the lifetime of an account.
+// The XUID is a number that can be parsed as an int64. No more information on what it represents is
+// available, and the UUID should be preferred.
+// The XUID returned is empty if the Player is not connected to a network session.
+func (p *Player) XUID() string {
+	return p.xuid
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call
