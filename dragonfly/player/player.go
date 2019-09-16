@@ -157,6 +157,9 @@ func (p *Player) close() {
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
 // is returned.
 func (p *Player) session() *session.Session {
+	if p.s == nil {
+		return session.Nop
+	}
 	return p.s
 }
 

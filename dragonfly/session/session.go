@@ -26,6 +26,9 @@ type Session struct {
 	cmdOrigin protocol.CommandOrigin
 }
 
+// Nop represents a no-operation session. It does not do anything when sending a packet to it.
+var Nop = &Session{}
+
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
@@ -119,7 +122,7 @@ func (s *Session) handleCommandRequest(pk *packet.CommandRequest) error {
 
 // SendMessage ...
 func (s *Session) SendMessage(message string) {
-	_ = s.conn.WritePacket(&packet.Text{
+	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeRaw,
 		Message:  message,
 	})
@@ -127,7 +130,7 @@ func (s *Session) SendMessage(message string) {
 
 // SendTip ...
 func (s *Session) SendTip(message string) {
-	_ = s.conn.WritePacket(&packet.Text{
+	s.writePacket(&packet.Text{
 		TextType: packet.TextTypePopup,
 		Message:  message,
 	})
@@ -135,7 +138,7 @@ func (s *Session) SendTip(message string) {
 
 // SendAnnouncement ...
 func (s *Session) SendAnnouncement(message string) {
-	_ = s.conn.WritePacket(&packet.Text{
+	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeAnnouncement,
 		Message:  message,
 	})
@@ -143,7 +146,7 @@ func (s *Session) SendAnnouncement(message string) {
 
 // SendPopup ...
 func (s *Session) SendPopup(message string) {
-	_ = s.conn.WritePacket(&packet.Text{
+	s.writePacket(&packet.Text{
 		TextType: packet.TextTypePopup,
 		Message:  message,
 	})
@@ -151,15 +154,15 @@ func (s *Session) SendPopup(message string) {
 
 // SendJukeBoxPopup ...
 func (s *Session) SendJukeBoxPopup(message string) {
-	_ = s.conn.WritePacket(&packet.Text{
+	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeJukeboxPopup,
 		Message:  message,
 	})
 }
 
 // SendTitle ...
-func (s *Session) SendTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32){
-	_ = s.conn.WritePacket(&packet.SetTitle{
+func (s *Session) SendTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
+	s.writePacket(&packet.SetTitle{
 		ActionType:      packet.TitleActionSetTitle,
 		Text:            text,
 		FadeInDuration:  fadeInDuration,
@@ -170,7 +173,7 @@ func (s *Session) SendTitle(text string, fadeInDuration int32, remainDuration in
 
 // SendSubTitle ...
 func (s *Session) SendSubTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
-	_ = s.conn.WritePacket(&packet.SetTitle{
+	s.writePacket(&packet.SetTitle{
 		ActionType:      packet.TitleActionSetSubtitle,
 		Text:            text,
 		FadeInDuration:  fadeInDuration,
@@ -181,7 +184,7 @@ func (s *Session) SendSubTitle(text string, fadeInDuration int32, remainDuration
 
 // SendActionbarMessage ...
 func (s *Session) SendActionBarMessage(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
-	_ = s.conn.WritePacket(&packet.SetTitle{
+	s.writePacket(&packet.SetTitle{
 		ActionType:      packet.TitleActionSetActionBar,
 		Text:            text,
 		FadeInDuration:  fadeInDuration,
@@ -191,8 +194,8 @@ func (s *Session) SendActionBarMessage(text string, fadeInDuration int32, remain
 }
 
 // SendNetherDimension sends the player to the nether dimension
-func (s *Session) SendNetherDimension(){
-	_ = s.conn.WritePacket(&packet.ChangeDimension{
+func (s *Session) SendNetherDimension() {
+	s.writePacket(&packet.ChangeDimension{
 		Dimension: packet.DimensionNether,
 		Position:  mgl32.Vec3{},
 		Respawn:   false,
@@ -200,8 +203,8 @@ func (s *Session) SendNetherDimension(){
 }
 
 // SendEndDimension sends the player to the end dimension
-func (s *Session) SendEndDimension(){
-	_ = s.conn.WritePacket(&packet.ChangeDimension{
+func (s *Session) SendEndDimension() {
+	s.writePacket(&packet.ChangeDimension{
 		Dimension: packet.DimensionEnd,
 		Position:  mgl32.Vec3{},
 		Respawn:   false,
@@ -209,8 +212,8 @@ func (s *Session) SendEndDimension(){
 }
 
 // SendNetherDimension sends the player to the overworld dimension
-func (s *Session) SendOverworldDimension(){
-	_ = s.conn.WritePacket(&packet.ChangeDimension{
+func (s *Session) SendOverworldDimension() {
+	s.writePacket(&packet.ChangeDimension{
 		Dimension: packet.DimensionOverworld,
 		Position:  mgl32.Vec3{},
 		Respawn:   false,
@@ -220,7 +223,7 @@ func (s *Session) SendOverworldDimension(){
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
 // it will be shown to the client.
 func (s *Session) Disconnect(message string) {
-	_ = s.conn.WritePacket(&packet.Disconnect{
+	s.writePacket(&packet.Disconnect{
 		HideDisconnectionScreen: message == "",
 		Message:                 message,
 	})
@@ -229,7 +232,7 @@ func (s *Session) Disconnect(message string) {
 
 // Transfer transfers the player to a server with the IP and port passed.
 func (s *Session) Transfer(ip net.IP, port int) {
-	_ = s.conn.WritePacket(&packet.Transfer{
+	s.writePacket(&packet.Transfer{
 		Address: ip.String(),
 		Port:    uint16(port),
 	})
@@ -252,7 +255,7 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 		})
 	}
 
-	_ = s.conn.WritePacket(&packet.CommandOutput{
+	s.writePacket(&packet.CommandOutput{
 		CommandOrigin:  s.cmdOrigin,
 		OutputType:     3,
 		SuccessCount:   uint32(output.MessageCount()),
@@ -292,6 +295,14 @@ func (s *Session) SendAvailableCommands() {
 			Aliases:     c.Aliases(),
 			Overloads:   overloads,
 		})
+	}
+	s.writePacket(pk)
+}
+
+// writePacket writes a packet to the session's connection if it is not Nop.
+func (s *Session) writePacket(pk packet.Packet) {
+	if s == Nop {
+		return
 	}
 	_ = s.conn.WritePacket(pk)
 }
