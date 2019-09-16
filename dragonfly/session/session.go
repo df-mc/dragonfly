@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net"
 	"sync/atomic"
+	"time"
 )
 
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
@@ -160,37 +161,31 @@ func (s *Session) SendJukeBoxPopup(message string) {
 	})
 }
 
-// SendTitle ...
-func (s *Session) SendTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
+const tickLength = time.Second / 20
+
+// SetTitleDurations ...
+func (s *Session) SetTitleDurations(fadeInDuration, remainDuration, fadeOutDuration time.Duration) {
 	s.writePacket(&packet.SetTitle{
-		ActionType:      packet.TitleActionSetTitle,
-		Text:            text,
-		FadeInDuration:  fadeInDuration,
-		RemainDuration:  remainDuration,
-		FadeOutDuration: fadeOutDuration,
+		ActionType:      packet.TitleActionSetDurations,
+		FadeInDuration:  int32(fadeInDuration / tickLength),
+		RemainDuration:  int32(remainDuration / tickLength),
+		FadeOutDuration: int32(fadeOutDuration / tickLength),
 	})
 }
 
-// SendSubTitle ...
-func (s *Session) SendSubTitle(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
-	s.writePacket(&packet.SetTitle{
-		ActionType:      packet.TitleActionSetSubtitle,
-		Text:            text,
-		FadeInDuration:  fadeInDuration,
-		RemainDuration:  remainDuration,
-		FadeOutDuration: fadeOutDuration,
-	})
+// SendTitle ...
+func (s *Session) SendTitle(text string) {
+	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetTitle, Text: text})
+}
+
+// SendSubtitle ...
+func (s *Session) SendSubtitle(text string) {
+	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetSubtitle, Text: text})
 }
 
 // SendActionbarMessage ...
-func (s *Session) SendActionBarMessage(text string, fadeInDuration int32, remainDuration int32, fadeOutDuration int32) {
-	s.writePacket(&packet.SetTitle{
-		ActionType:      packet.TitleActionSetActionBar,
-		Text:            text,
-		FadeInDuration:  fadeInDuration,
-		RemainDuration:  remainDuration,
-		FadeOutDuration: fadeOutDuration,
-	})
+func (s *Session) SendActionBarMessage(text string) {
+	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetActionBar, Text: text})
 }
 
 // SendNetherDimension sends the player to the nether dimension

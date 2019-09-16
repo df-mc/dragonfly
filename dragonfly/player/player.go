@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/title"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
@@ -75,6 +76,21 @@ func (p *Player) SendPopup(a ...interface{}) {
 // The tip is formatted following the rules of fmt.Sprintln without a newline at the end.
 func (p *Player) SendTip(a ...interface{}) {
 	p.session().SendTip(format(a))
+}
+
+// SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
+// and the text it shows.
+// If non-empty, the subtitle is shown in a smaller font below the title. The same counts for the action text
+// of the title, which is shown in a font similar to that of a tip/popup.
+func (p *Player) SendTitle(t *title.Title) {
+	p.session().SetTitleDurations(t.FadeInDuration(), t.Duration(), t.FadeOutDuration())
+	p.session().SendTitle(t.Text())
+	if t.Subtitle() != "" {
+		p.session().SendSubtitle(t.Subtitle())
+	}
+	if t.ActionText() != "" {
+		p.session().SendActionBarMessage(t.ActionText())
+	}
 }
 
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
