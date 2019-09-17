@@ -1,12 +1,15 @@
 package dragonfly
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sirupsen/logrus"
 	"log"
 )
@@ -116,12 +119,30 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
+	server.createPlayer(id, conn)
+}
+
+// createPlayer creates a new player instance using the UUID and connection passed.
+func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) {
 	p := &player.Player{}
 	s := session.New(p, conn, server.log)
-	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, s)
+	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s)
 	s.Handle()
 
 	server.players <- p
+}
+
+// createSkin creates a new skin using the skin data found in the client data in the login, and returns it.
+func (server *Server) createSkin(data login.ClientData) skin.Skin {
+	// gophertunnel guarantees the following values are valid base64 data and are of the correct size.
+	skinData, _ := base64.StdEncoding.DecodeString(data.SkinData)
+	modelData, _ := base64.StdEncoding.DecodeString(data.SkinGeometry)
+	playerSkin, _ := skin.NewFromBytes(skinData)
+	playerSkin.ID = data.SkinID
+	playerSkin.ModelName = data.SkinGeometryName
+	playerSkin.Model = modelData
+
+	return playerSkin
 }
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
