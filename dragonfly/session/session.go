@@ -171,6 +171,7 @@ func (s *Session) SendScoreboard(displayName string, objName string){
 		SortOrder:     0,
 	})
 }
+
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard(objName string){
 	s.writePacket(&packet.RemoveObjective{
