@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-// Handle handles events that are called by a player. Implementations of Handle may be used to listen to
+// Handle handles events that are called by a player. Implementations of Handler may be used to listen to
 // specific events such as when a player chats or moves.
 type Handler interface {
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
@@ -20,8 +20,8 @@ type Handler interface {
 	HandleCommandExecution(ctx *event.Context, command cmd.Command, args []string)
 }
 
-// NopHandler implements the Handle interface but does not execute any code when an event is called. The
-// default h of players is set to NopHandler.
+// NopHandler implements the Handler interface but does not execute any code when an event is called. The
+// default handler of players is set to NopHandler.
 // Users may use type aliases to overwrite methods of NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
