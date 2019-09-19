@@ -7,6 +7,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
@@ -21,6 +22,7 @@ type Server struct {
 	log      *logrus.Logger
 	listener *minecraft.Listener
 	players  chan *player.Player
+	world    *world.World
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -31,11 +33,11 @@ func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
-	players := make(chan *player.Player)
-	if c == nil {
-		return &Server{c: DefaultConfig(), log: log, players: players}
+	s := &Server{c: DefaultConfig(), log: log, players: make(chan *player.Player), world: world.New()}
+	if c != nil {
+		s.c = *c
 	}
-	return &Server{c: *c, log: log, players: players}
+	return s
 }
 
 // Accept accepts an incoming player into the server. It blocks until a player connects to the server.
@@ -46,6 +48,12 @@ func (server *Server) Accept() (*player.Player, error) {
 		return nil, errors.New("server closed")
 	}
 	return p, nil
+}
+
+// World returns the world of the server. Players will be spawned in this world and this world will be read
+// from and written to when the world is edited.
+func (server *Server) World() *world.World {
+	return server.world
 }
 
 // Run runs the server and blocks until it is closed using a call to Close(). When called, the server will

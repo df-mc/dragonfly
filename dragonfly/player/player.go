@@ -85,7 +85,7 @@ func (p *Player) Skin() skin.Skin {
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call
-// handlers of the Handle passed.
+// handlers of the Handler passed.
 // Handle sets the player's handler to NopHandler if nil is passed.
 func (p *Player) Handle(h Handler) {
 	p.hMutex.Lock()
