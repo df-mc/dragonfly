@@ -168,7 +168,6 @@ func (s *Session) SendScoreboard(displayName string, objName string){
 		ObjectiveName: objName,
 		DisplayName:   displayName,
 		CriteriaName:  "dummy",
-		SortOrder:     0,
 	})
 }
 
