@@ -161,6 +161,23 @@ func (s *Session) SendJukeBoxPopup(message string) {
 	})
 }
 
+// SendScoreboard ...
+func (s *Session) SendScoreboard(displayName string, objName string){
+	s.writePacket(&packet.SetDisplayObjective{
+		DisplaySlot:   "sidebar",
+		ObjectiveName: objName,
+		DisplayName:   displayName,
+		CriteriaName:  "dummy",
+		SortOrder:     0,
+	})
+}
+// RemoveScoreboard ...
+func (s *Session) RemoveScoreboard(objName string){
+	s.writePacket(&packet.RemoveObjective{
+		ObjectiveName: objName,
+	})
+}
+
 const tickLength = time.Second / 20
 
 // SetTitleDurations ...
