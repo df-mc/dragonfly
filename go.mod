@@ -7,9 +7,9 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pelletier/go-toml v1.4.0
-	github.com/sandertv/gophertunnel v1.2.5
+	github.com/sandertv/gophertunnel v1.2.7
 	github.com/sirupsen/logrus v1.4.2
-	golang.org/x/image v0.0.0-20190902063713-cb417be4ba39 // indirect
-	golang.org/x/sys v0.0.0-20190909082730-f460065e899a // indirect
+	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
+	golang.org/x/sys v0.0.0-20190919044723-0c1ff786ef13 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
