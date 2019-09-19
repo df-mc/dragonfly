@@ -1,0 +1,6 @@
+* text=auto
+
+*.go text
+
+go.mod text eol=crlf
+go.sum text eol=crlf
