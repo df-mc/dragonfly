@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/title"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/google/uuid"
@@ -20,6 +21,8 @@ type Player struct {
 	uuid uuid.UUID
 	xuid string
 
+	skin skin.Skin
+
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
 	s *session.Session
@@ -32,16 +35,20 @@ type Player struct {
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
 func New(name string) *Player {
-	return &Player{name: name, h: NopHandler{}, uuid: uuid.New()}
+	s, _ := skin.New(64, 32)
+	return &Player{name: name, h: NopHandler{}, uuid: uuid.New(), skin: s}
 }
 
 // NewWithSession returns a new player for a network session, so that the network session can control the
 // player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, s *session.Session) *Player {
+// A set of additional fields must be provided to initialise the player with the client's data, such as the
+// name and the skin of the player.
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session) *Player {
 	p := New(name)
 	p.s = s
 	p.uuid = uuid
 	p.xuid = xuid
+	p.skin = skin
 
 	chat.Global.Subscribe(p)
 	return p
@@ -70,8 +77,15 @@ func (p *Player) XUID() string {
 	return p.xuid
 }
 
+// Skin returns the skin that a player joined with. This skin will be visible to other players that the player
+// is shown to.
+// If the player was not connected to a network session, a default skin will be set.
+func (p *Player) Skin() skin.Skin {
+	return p.skin
+}
+
 // Handle changes the current handler of the player. As a result, events called by the player will call
-// handlers of the Handle passed.
+// handlers of the Handler passed.
 // Handle sets the player's handler to NopHandler if nil is passed.
 func (p *Player) Handle(h Handler) {
 	p.hMutex.Lock()
