@@ -118,7 +118,7 @@ func (server *Server) run() {
 
 // handleConn handles an incoming connection accepted from the Listener.
 func (server *Server) handleConn(conn *minecraft.Conn) {
-	data := minecraft.GameData{WorldName: server.c.Server.WorldName}
+	data := minecraft.GameData{WorldName: server.c.Server.WorldName, Blocks: session.Blocks}
 	if err := conn.StartGame(data); err != nil {
 		return
 	}

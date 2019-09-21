@@ -27,9 +27,9 @@ type Player struct {
 	// Player.session() should be called.
 	s *session.Session
 
-	// h holds the current h of the player. It may be changed at any time by calling the Handle method.
 	hMutex sync.RWMutex
-	h      Handler
+	// h holds the current handler of the player. It may be changed at any time by calling the Handle method.
+	h Handler
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
