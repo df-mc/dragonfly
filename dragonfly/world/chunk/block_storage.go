@@ -150,14 +150,15 @@ func (storage *BlockStorage) compact() {
 	storage.palette.blockRuntimeIDs = newRuntimeIDs
 }
 
-// extractUint16 extracts a uint16 from a uint32 at offset, with a bit length per block of bpb.
-func extractUint16(word uint32, offset uint16, bpb uint16) uint16 {
-	return uint16((word >> offset) & (1<<bpb - 1))
+// extractUint16 extracts a uint16 from a uint32 at offset, extracting as many as bitsToExtract bits from the
+// uint32.
+func extractUint16(x uint32, offset uint16, bitsToExtract uint16) uint16 {
+	return uint16((x >> offset) & (1<<bitsToExtract - 1))
 }
 
-// setUint16 sets a uint16 in a uint32 at offset, with a bit length per block of bpb.
-func setUint16(x *uint32, offset, bpb, block uint16) {
-	for i := uint16(0); i < bpb; i++ {
+// setUint16 sets a uint16 in a uint32 at offset, writing as many as bitsToWrite bits to the uint32.
+func setUint16(x *uint32, offset, bitsToWrite, block uint16) {
+	for i := uint16(0); i < bitsToWrite; i++ {
 		if (block & (1 << i)) != 0 {
 			*x |= uint32(1 << (i + offset))
 		} else {
