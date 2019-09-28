@@ -1,8 +1,10 @@
 package session
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
@@ -25,6 +27,8 @@ type Session struct {
 	conn               *minecraft.Conn
 
 	cmdOrigin protocol.CommandOrigin
+
+	chunkBuf *bytes.Buffer
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -35,7 +39,7 @@ var Nop = &Session{}
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Handle().
 func New(c Controllable, conn *minecraft.Conn, log *logrus.Logger) *Session {
-	s := &Session{c: c, conn: conn, log: log}
+	s := &Session{c: c, conn: conn, log: log, chunkBuf: bytes.NewBuffer(make([]byte, 0, 4096))}
 	s.controllableClosed.Store(false)
 
 	yellow := text.Yellow()
@@ -162,7 +166,7 @@ func (s *Session) SendJukeBoxPopup(message string) {
 }
 
 // SendScoreboard ...
-func (s *Session) SendScoreboard(displayName string, objName string){
+func (s *Session) SendScoreboard(displayName string, objName string) {
 	s.writePacket(&packet.SetDisplayObjective{
 		DisplaySlot:   "sidebar",
 		ObjectiveName: objName,
@@ -172,7 +176,7 @@ func (s *Session) SendScoreboard(displayName string, objName string){
 }
 
 // RemoveScoreboard ...
-func (s *Session) RemoveScoreboard(objName string){
+func (s *Session) RemoveScoreboard(objName string) {
 	s.writePacket(&packet.RemoveObjective{
 		ObjectiveName: objName,
 	})
@@ -230,6 +234,40 @@ func (s *Session) SendOverworldDimension() {
 		Position:  mgl32.Vec3{},
 		Respawn:   false,
 	})
+}
+
+// SendChunk sends a chunk to the player at the chunk X and Y passed.
+func (s *Session) SendChunk(pos chunk.Position, c *chunk.Chunk) {
+	data := chunk.NetworkEncode(c)
+
+	count := 16
+	for y := 15; y >= 0; y-- {
+		if data.SubChunks[y] == nil {
+			count--
+			continue
+		}
+		break
+	}
+	for y := 0; y < count; y++ {
+		if data.SubChunks[y] == nil {
+			_ = s.chunkBuf.WriteByte(chunk.SubChunkVersion)
+			// We write zero here, meaning the sub chunk has no block storages: The sub chunk is completely
+			// empty.
+			_ = s.chunkBuf.WriteByte(0)
+			continue
+		}
+		_, _ = s.chunkBuf.Write(data.SubChunks[y])
+	}
+	_, _ = s.chunkBuf.Write(data.Data2D)
+	_, _ = s.chunkBuf.Write(data.BlockNBT)
+
+	s.writePacket(&packet.LevelChunk{
+		ChunkX:        pos.X,
+		ChunkZ:        pos.Z,
+		SubChunkCount: uint32(count),
+		RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
+	})
+	s.chunkBuf.Reset()
 }
 
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
