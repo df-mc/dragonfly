@@ -41,7 +41,7 @@ func (l *Loader) Move(pos mgl32.Vec3) {
 	l.pos = chunkPos
 	l.mutex.Unlock()
 
-	l.evictLoaded()
+	l.evictUnusedLoaded()
 	l.populateLoadQueue()
 }
 
@@ -74,9 +74,9 @@ func (l *Loader) Load(n int, f func(pos ChunkPos, c *chunk.Chunk)) error {
 	return nil
 }
 
-// evictLoaded gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
-// and should therefore be removed.
-func (l *Loader) evictLoaded() {
+// evictUnusedLoaded gets rid of chunks in the loaded map which are no longer within the chunk radius of the
+// loader, and should therefore be removed.
+func (l *Loader) evictUnusedLoaded() {
 	l.mutex.Lock()
 	for pos := range l.loaded {
 		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
