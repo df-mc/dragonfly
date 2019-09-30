@@ -1,4 +1,4 @@
-package session
+package encoder
 
 import (
 	"encoding/json"
@@ -11,8 +11,16 @@ const blockRuntimeIDs = `[{"Name":"minecraft:air","Data":0,"LegacyID":0},{"Name"
 // blocks in the world without crashing.
 var Blocks []protocol.BlockEntry
 
+// RuntimeIDs holds all runtime IDs of the block entries in the Blocks slice. The runtime IDs are indexed
+// with their block entry.
+var RuntimeIDs = map[protocol.BlockEntry]uint32{}
+
 func init() {
 	if err := json.Unmarshal([]byte(blockRuntimeIDs), &Blocks); err != nil {
 		panic(err)
+	}
+	for runtimeID, entry := range Blocks {
+		entry.LegacyID = 0
+		RuntimeIDs[entry] = uint32(runtimeID)
 	}
 }

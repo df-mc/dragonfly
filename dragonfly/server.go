@@ -4,10 +4,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
@@ -33,7 +35,7 @@ func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
-	s := &Server{c: DefaultConfig(), log: log, players: make(chan *player.Player), world: world.New()}
+	s := &Server{c: DefaultConfig(), log: log, players: make(chan *player.Player), world: world.New(log)}
 	if c != nil {
 		s.c = *c
 	}
@@ -118,7 +120,12 @@ func (server *Server) run() {
 
 // handleConn handles an incoming connection accepted from the Listener.
 func (server *Server) handleConn(conn *minecraft.Conn) {
-	data := minecraft.GameData{WorldName: server.c.Server.WorldName, Blocks: session.Blocks}
+	data := minecraft.GameData{
+		WorldName:      server.c.World.Name,
+		Blocks:         encoder.Blocks,
+		PlayerPosition: mgl32.Vec3{0, 10, 0},
+		PlayerGameMode: 1,
+	}
 	if err := conn.StartGame(data); err != nil {
 		return
 	}
@@ -133,7 +140,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) {
 	p := &player.Player{}
-	s := session.New(p, conn, server.log)
+	s := session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
 	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s)
 	s.Handle()
 
@@ -156,5 +163,6 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	close(server.players)
+	_ = server.world.Close()
 	return server.listener.Close()
 }

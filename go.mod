@@ -6,9 +6,11 @@ require (
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/google/uuid v1.1.1
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.4.0
 	github.com/sandertv/gophertunnel v1.2.7
 	github.com/sirupsen/logrus v1.4.2
+	github.com/yuin/gopher-lua v0.0.0-20190514113301-1cd887cd7036
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
 	golang.org/x/sys v0.0.0-20190919044723-0c1ff786ef13 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect

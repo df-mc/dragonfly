@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -23,12 +24,16 @@ type Session struct {
 	log *logrus.Logger
 
 	c                  Controllable
+	world              *world.World
 	controllableClosed atomic.Value
 	conn               *minecraft.Conn
 
 	cmdOrigin protocol.CommandOrigin
 
-	chunkBuf *bytes.Buffer
+	chunkBuf       *bytes.Buffer
+	chunkLoader    atomic.Value
+	chunkRadius    int32
+	maxChunkRadius int32
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -38,8 +43,17 @@ var Nop = &Session{}
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Handle().
-func New(c Controllable, conn *minecraft.Conn, log *logrus.Logger) *Session {
-	s := &Session{c: c, conn: conn, log: log, chunkBuf: bytes.NewBuffer(make([]byte, 0, 4096))}
+func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius int, log *logrus.Logger) *Session {
+	s := &Session{
+		c:              c,
+		conn:           conn,
+		log:            log,
+		chunkBuf:       bytes.NewBuffer(make([]byte, 0, 4096)),
+		world:          w,
+		chunkRadius:    int32(maxChunkRadius / 2),
+		maxChunkRadius: int32(maxChunkRadius),
+	}
+	s.chunkLoader.Store(world.NewLoader(maxChunkRadius/2, w))
 	s.controllableClosed.Store(false)
 
 	yellow := text.Yellow()
@@ -68,9 +82,12 @@ func (s *Session) Close() error {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
+	c := make(chan struct{})
 	defer func() {
+		c <- struct{}{}
 		_ = s.Close()
 	}()
+	go s.sendChunks(c)
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
@@ -89,6 +106,23 @@ func (s *Session) handlePackets() {
 	}
 }
 
+// sendChunks continuously sends chunks to the player, until a value is sent to the closeChan passed.
+func (s *Session) sendChunks(closeChan <-chan struct{}) {
+	t := time.NewTicker(time.Second / 20)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			if err := s.chunkLoader.Load().(*world.Loader).Load(4, s.SendChunk); err != nil {
+				s.log.Errorf("error loading chunk: %v", err)
+				continue
+			}
+		case <-closeChan:
+			return
+		}
+	}
+}
+
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet) error {
@@ -97,6 +131,10 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handleText(pk)
 	case *packet.CommandRequest:
 		return s.handleCommandRequest(pk)
+	case *packet.MovePlayer:
+		return s.handleMovePlayer(pk)
+	case *packet.RequestChunkRadius:
+		return s.handleRequestChunkRadius(pk)
 	default:
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())
 	}
@@ -122,6 +160,32 @@ func (s *Session) handleCommandRequest(pk *packet.CommandRequest) error {
 	}
 	s.cmdOrigin = pk.CommandOrigin
 	s.c.ExecuteCommand(pk.CommandLine)
+	return nil
+}
+
+// handleMovePlayer ...
+func (s *Session) handleMovePlayer(pk *packet.MovePlayer) error {
+	if pk.EntityRuntimeID != s.conn.GameData().EntityRuntimeID {
+		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be equal to %v", pk.EntityRuntimeID, s.conn.GameData().EntityRuntimeID)
+	}
+	// TODO: Make players move.
+	s.chunkLoader.Load().(*world.Loader).Move(pk.Position)
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pk.Position[0]), int32(pk.Position[1]), int32(pk.Position[2])},
+		Radius:   uint32(s.chunkRadius * 16),
+	})
+	return nil
+}
+
+// handleRequestChunkRadius ...
+func (s *Session) handleRequestChunkRadius(pk *packet.RequestChunkRadius) error {
+	if pk.ChunkRadius > s.maxChunkRadius {
+		pk.ChunkRadius = s.maxChunkRadius
+	}
+	s.chunkRadius = pk.ChunkRadius
+	s.chunkLoader.Store(world.NewLoader(int(s.chunkRadius), s.world))
+
+	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: s.chunkRadius})
 	return nil
 }
 
@@ -237,7 +301,7 @@ func (s *Session) SendOverworldDimension() {
 }
 
 // SendChunk sends a chunk to the player at the chunk X and Y passed.
-func (s *Session) SendChunk(pos chunk.Position, c *chunk.Chunk) {
+func (s *Session) SendChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	data := chunk.NetworkEncode(c)
 
 	count := 16
@@ -262,8 +326,8 @@ func (s *Session) SendChunk(pos chunk.Position, c *chunk.Chunk) {
 	_, _ = s.chunkBuf.Write(data.BlockNBT)
 
 	s.writePacket(&packet.LevelChunk{
-		ChunkX:        pos.X,
-		ChunkZ:        pos.Z,
+		ChunkX:        pos[0],
+		ChunkZ:        pos[1],
 		SubChunkCount: uint32(count),
 		RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
 	})
