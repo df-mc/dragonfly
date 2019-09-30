@@ -10,37 +10,30 @@ type (
 	PolishedAndesite struct{}
 )
 
-// Name ...
-func (l Stone) Name() string {
+func (Stone) Name() string {
 	return "Stone"
 }
 
-// Name ...
-func (l Granite) Name() string {
+func (Granite) Name() string {
 	return "Granite"
 }
 
-// Name ...
-func (l PolishedGranite) Name() string {
+func (PolishedGranite) Name() string {
 	return "Polished Granite"
 }
 
-// Name ...
-func (l Diorite) Name() string {
+func (Diorite) Name() string {
 	return "Diorite"
 }
 
-// Name ...
-func (l PolishedDiorite) Name() string {
+func (PolishedDiorite) Name() string {
 	return "Polished Diorite"
 }
 
-// Name ...
-func (l Andesite) Name() string {
+func (Andesite) Name() string {
 	return "Andesite"
 }
 
-// Name ...
-func (l PolishedAndesite) Name() string {
+func (PolishedAndesite) Name() string {
 	return "Polished Andesite"
 }
