@@ -11,8 +11,9 @@ import (
 // different parts of the world. An example usage is the player, which uses a loader to load chunks around it
 // so that it can view them.
 type Loader struct {
-	r int
-	w *World
+	r       int
+	w       *World
+	started bool
 
 	mutex     sync.RWMutex
 	pos       ChunkPos
@@ -29,9 +30,18 @@ func NewLoader(chunkRadius int, world *World) *Loader {
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
 func (l *Loader) Move(pos mgl32.Vec3) {
 	floorX, floorZ := math.Floor(float64(pos[0])), math.Floor(float64(pos[2]))
+	chunkPos := ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
+
+	if chunkPos == l.pos && l.started {
+		return
+	}
+	l.started = true
+
 	l.mutex.Lock()
-	l.pos = ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
+	l.pos = chunkPos
 	l.mutex.Unlock()
+
+	l.evictLoaded()
 	l.populateLoadQueue()
 }
 
@@ -62,6 +72,20 @@ func (l *Loader) Load(n int, f func(pos ChunkPos, c *chunk.Chunk)) error {
 	}
 	l.mutex.Unlock()
 	return nil
+}
+
+// evictLoaded gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
+// and should therefore be removed.
+func (l *Loader) evictLoaded() {
+	l.mutex.Lock()
+	for pos := range l.loaded {
+		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
+		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
+		if int(dist) > l.r {
+			delete(l.loaded, pos)
+		}
+	}
+	l.mutex.Unlock()
 }
 
 // populateLoadQueue populates the load queue of the loader. This method is called once to create the order in
