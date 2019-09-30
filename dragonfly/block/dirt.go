@@ -1,15 +1,14 @@
 package block
 
-// Dirt ...
-type Dirt struct{}
+type (
+	Dirt       struct{}
+	CoarseDirt struct{}
+)
 
 // Name ...
 func (Dirt) Name() string {
 	return "Dirt"
 }
-
-// CoarseDirt ...
-type CoarseDirt struct{}
 
 // Name ...
 func (CoarseDirt) Name() string {
