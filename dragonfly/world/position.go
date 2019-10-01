@@ -45,10 +45,9 @@ func ChunkPosFromHash(hash string) ChunkPos {
 	if len(hash) != 8 {
 		panic("length of hash must be exactly 8 bytes long")
 	}
-	b := *(*[]byte)(unsafe.Pointer(&hash))
 	return ChunkPos{
-		int32(b[3]) | int32(b[2])<<8 | int32(b[1])<<16 | int32(b[0])<<24,
-		int32(b[7]) | int32(b[6])<<8 | int32(b[5])<<16 | int32(b[4])<<24,
+		int32(hash[3]) | int32(hash[2])<<8 | int32(hash[1])<<16 | int32(hash[0])<<24,
+		int32(hash[7]) | int32(hash[6])<<8 | int32(hash[5])<<16 | int32(hash[4])<<24,
 	}
 }
 
