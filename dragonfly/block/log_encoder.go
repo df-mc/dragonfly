@@ -1,8 +1,8 @@
-package encoder
+package block
 
 import (
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
 )
 
 // logEncoder implements the encoding and decoding of log type blocks.
@@ -18,71 +18,71 @@ func (logEncoder) BlocksHandled() []string {
 }
 
 // DecodeBlock ...
-func (logEncoder) DecodeBlock(id string, meta int16, nbt []byte) Block {
+func (logEncoder) DecodeBlock(id string, meta int16, nbt []byte) encoder.Block {
 	switch id {
 	default:
 		switch meta & 0x2 {
 		default:
-			return block.OakLog{Axis: axisFromInt16(meta >> 2)}
+			return OakLog{Axis: axisFromInt16(meta >> 2)}
 		case 1:
-			return block.SpruceLog{Axis: axisFromInt16(meta >> 2)}
+			return SpruceLog{Axis: axisFromInt16(meta >> 2)}
 		case 2:
-			return block.BirchLog{Axis: axisFromInt16(meta >> 2)}
+			return BirchLog{Axis: axisFromInt16(meta >> 2)}
 		case 3:
-			return block.JungleLog{Axis: axisFromInt16(meta >> 2)}
+			return JungleLog{Axis: axisFromInt16(meta >> 2)}
 		}
 	case "minecraft:log2":
 		switch meta & 0x2 {
 		default:
-			return block.AcaciaLog{Axis: axisFromInt16(meta >> 2)}
+			return AcaciaLog{Axis: axisFromInt16(meta >> 2)}
 		case 1:
-			return block.DarkOakLog{Axis: axisFromInt16(meta >> 2)}
+			return DarkOakLog{Axis: axisFromInt16(meta >> 2)}
 		}
 	case "minecraft:stripped_oak_log":
-		return block.OakLog{Stripped: true, Axis: axisFromInt16(meta)}
+		return OakLog{Stripped: true, Axis: axisFromInt16(meta)}
 	case "minecraft:stripped_spruce_log":
-		return block.SpruceLog{Stripped: true, Axis: axisFromInt16(meta)}
+		return SpruceLog{Stripped: true, Axis: axisFromInt16(meta)}
 	case "minecraft:stripped_birch_log":
-		return block.BirchLog{Stripped: true, Axis: axisFromInt16(meta)}
+		return BirchLog{Stripped: true, Axis: axisFromInt16(meta)}
 	case "minecraft:stripped_jungle_log":
-		return block.JungleLog{Stripped: true, Axis: axisFromInt16(meta)}
+		return JungleLog{Stripped: true, Axis: axisFromInt16(meta)}
 	case "minecraft:stripped_acacia_log":
-		return block.AcaciaLog{Stripped: true, Axis: axisFromInt16(meta)}
+		return AcaciaLog{Stripped: true, Axis: axisFromInt16(meta)}
 	case "minecraft:stripped_dark_oak_log":
-		return block.DarkOakLog{Stripped: true, Axis: axisFromInt16(meta)}
+		return DarkOakLog{Stripped: true, Axis: axisFromInt16(meta)}
 	}
 }
 
 // EncodeBlock ...
-func (logEncoder) EncodeBlock(b Block) (id string, meta int16, nbt []byte) {
+func (logEncoder) EncodeBlock(b encoder.Block) (id string, meta int16, nbt []byte) {
 	switch log := b.(type) {
-	case block.OakLog:
+	case OakLog:
 		if log.Stripped {
 			return "minecraft:stripped_oak_log", axisToInt16(log.Axis), nil
 		}
 		return "minecraft:log", axisToInt16(log.Axis) << 2, nil
-	case block.SpruceLog:
+	case SpruceLog:
 		if log.Stripped {
 			return "minecraft:stripped_spruce_log", axisToInt16(log.Axis), nil
 		}
 		return "minecraft:log", 1 | axisToInt16(log.Axis)<<2, nil
-	case block.BirchLog:
+	case BirchLog:
 		if log.Stripped {
 			return "minecraft:stripped_birch_log", axisToInt16(log.Axis), nil
 		}
 		return "minecraft:log", 2 | axisToInt16(log.Axis)<<2, nil
-	case block.JungleLog:
+	case JungleLog:
 		if log.Stripped {
 			return "minecraft:stripped_jungle_log", axisToInt16(log.Axis), nil
 		}
 		return "minecraft:log", 3 | axisToInt16(log.Axis)<<2, nil
-	case block.AcaciaLog:
+	case AcaciaLog:
 		if log.Stripped {
 			fmt.Println(log.Axis, axisToInt16(log.Axis))
 			return "minecraft:stripped_acacia_log", axisToInt16(log.Axis), nil
 		}
 		return "minecraft:log2", axisToInt16(log.Axis) << 2, nil
-	case block.DarkOakLog:
+	case DarkOakLog:
 		if log.Stripped {
 			return "minecraft:stripped_dark_oak_log", axisToInt16(log.Axis), nil
 		}

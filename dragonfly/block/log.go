@@ -4,6 +4,9 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 )
 
+// Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six
+// species: oak, spruce, birch, jungle, acacia, and dark oak.
+// Stripped log is a variant obtained by using an axe on a log.
 type (
 	OakLog     log
 	SpruceLog  log
@@ -19,50 +22,58 @@ type (
 	}
 )
 
-func (OakLog) Name() string {
-	return "Oak Log"
+func (l OakLog) Name() string {
+	return stripped(log(l)) + "Oak Log"
 }
 
 func (l OakLog) Drops() []inventory.Item {
 	return []inventory.Item{OakLog{Stripped: l.Stripped}}
 }
 
-func (SpruceLog) Name() string {
-	return "Spruce Log"
+func (l SpruceLog) Name() string {
+	return stripped(log(l)) + "Spruce Log"
 }
 
 func (l SpruceLog) Drops() []inventory.Item {
 	return []inventory.Item{SpruceLog{Stripped: l.Stripped}}
 }
 
-func (BirchLog) Name() string {
-	return "Birch Log"
+func (l BirchLog) Name() string {
+	return stripped(log(l)) + "Birch Log"
 }
 
 func (l BirchLog) Drops() []inventory.Item {
 	return []inventory.Item{BirchLog{Stripped: l.Stripped}}
 }
 
-func (JungleLog) Name() string {
-	return "Jungle Log"
+func (l JungleLog) Name() string {
+	return stripped(log(l)) + "Jungle Log"
 }
 
 func (l JungleLog) Drops() []inventory.Item {
 	return []inventory.Item{JungleLog{Stripped: l.Stripped}}
 }
 
-func (AcaciaLog) Name() string {
-	return "Acacia Log"
+func (l AcaciaLog) Name() string {
+	return stripped(log(l)) + "Acacia Log"
 }
 
 func (l AcaciaLog) Drops() []inventory.Item {
 	return []inventory.Item{AcaciaLog{Stripped: l.Stripped}}
 }
 
-func (DarkOakLog) Name() string {
-	return "Dark Oak Log"
+func (l DarkOakLog) Name() string {
+	return stripped(log(l)) + "Dark Oak Log"
 }
 
 func (l DarkOakLog) Drops() []inventory.Item {
 	return []inventory.Item{DarkOakLog{Stripped: l.Stripped}}
+}
+
+// stripped returns the name prefix 'Stripped ' for a log if it is stripped, otherwise an empty string.
+func stripped(l log) string {
+	if l.Stripped {
+		return "Stripped "
+	}
+	return ""
 }

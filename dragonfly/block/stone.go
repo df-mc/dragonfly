@@ -1,39 +1,42 @@
 package block
 
 type (
-	Stone            struct{}
-	Granite          struct{}
-	PolishedGranite  struct{}
-	Diorite          struct{}
-	PolishedDiorite  struct{}
-	Andesite         struct{}
-	PolishedAndesite struct{}
+	// Stone is a block found underground in the Overworld or on mountains.
+	Stone struct{}
+	// Granite is a type of igneous rock.
+	Granite polishable
+	// Diorite is a type of igneous rock.
+	Diorite polishable
+	// Andesite is a type of igneous rock.
+	Andesite polishable
+
+	// polishable forms the base of blocks that may be polished.
+	polishable struct {
+		Polished bool
+	}
 )
 
 func (Stone) Name() string {
 	return "Stone"
 }
 
-func (Granite) Name() string {
+func (g Granite) Name() string {
+	if g.Polished {
+		return "Polished Granite"
+	}
 	return "Granite"
 }
 
-func (PolishedGranite) Name() string {
-	return "Polished Granite"
-}
-
-func (Diorite) Name() string {
+func (d Diorite) Name() string {
+	if d.Polished {
+		return "Polished Diorite"
+	}
 	return "Diorite"
 }
 
-func (PolishedDiorite) Name() string {
-	return "Polished Diorite"
-}
-
-func (Andesite) Name() string {
+func (a Andesite) Name() string {
+	if a.Polished {
+		return "Polished Andesite"
+	}
 	return "Andesite"
-}
-
-func (PolishedAndesite) Name() string {
-	return "Polished Andesite"
 }

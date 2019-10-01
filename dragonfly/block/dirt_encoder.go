@@ -1,26 +1,26 @@
-package encoder
+package block
 
-import "github.com/dragonfly-tech/dragonfly/dragonfly/block"
+import "github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
 
 // dirtEncoder implements the encoding of dirt and coarse dirt blocks.
 type dirtEncoder struct{}
 
 // DecodeBlock ...
-func (dirtEncoder) DecodeBlock(id string, meta int16, nbt []byte) Block {
+func (dirtEncoder) DecodeBlock(id string, meta int16, nbt []byte) encoder.Block {
 	switch meta {
 	default:
-		return block.Dirt{}
+		return Dirt{}
 	case 1:
-		return block.CoarseDirt{}
+		return CoarseDirt{}
 	}
 }
 
 // EncodeBlock ...
-func (dirtEncoder) EncodeBlock(b Block) (id string, meta int16, nbt []byte) {
+func (dirtEncoder) EncodeBlock(b encoder.Block) (id string, meta int16, nbt []byte) {
 	switch b.(type) {
 	default:
 		return "minecraft:dirt", 0, nil
-	case block.CoarseDirt:
+	case CoarseDirt:
 		return "minecraft:dirt", 1, nil
 	}
 }

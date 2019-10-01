@@ -2,19 +2,9 @@ package encoder
 
 import (
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"reflect"
 )
-
-// init registers all blocks implemented by Dragonfly.
-func init() {
-	Register(stoneEncoder{}, block.Stone{}, block.Granite{}, block.PolishedGranite{}, block.Diorite{}, block.PolishedDiorite{}, block.Andesite{}, block.PolishedAndesite{})
-	Register(BasicEncoder{ID: "minecraft:grass", Block: func() Block { return block.Grass{} }}, block.Grass{})
-	Register(dirtEncoder{}, block.Dirt{}, block.CoarseDirt{})
-	Register(logEncoder{}, block.OakLog{}, block.SpruceLog{}, block.BirchLog{}, block.JungleLog{}, block.AcaciaLog{}, block.DarkOakLog{})
-	Register(BasicEncoder{ID: "minecraft:bedrock", Block: func() Block { return block.Bedrock{} }}, block.Bedrock{})
-}
 
 // BlockEncoder represents an object that can encode and decode specific blocks. It essentially forms the
 // bridge between the raw ID, meta and NBT of a block to a friendly Go implementation of a block.
@@ -74,16 +64,6 @@ func RuntimeID(b Block) uint32 {
 		Name: id,
 		Data: meta,
 	}]
-}
-
-// axisFromInt16 decodes an int16 to an Axis instance.
-func axisFromInt16(x int16) block.Axis {
-	return block.Axis(x & 0x03)
-}
-
-// axisToInt16 encodes an Axis to an int16.
-func axisToInt16(x block.Axis) int16 {
-	return int16(x & 0x03)
 }
 
 // BasicEncoder implements a basic encoder, which is useful for blocks that do not have metadata or NBT, such
