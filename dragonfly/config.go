@@ -12,12 +12,17 @@ type Config struct {
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
 		Name string
-		// WorldName is the name of the world that the server holds. A world with this name will be loaded and
-		// the name will be displayed at the top of the player list in the in-game pause menu.
-		WorldName string
 		// MaximumPlayers is the maximum amount of players allowed to join the server at the same time. If set
 		// to 0, the amount of maximum players will grow every time a player joins.
 		MaximumPlayers int
+	}
+	World struct {
+		// Name is the name of the world that the server holds. A world with this name will be loaded and
+		// the name will be displayed at the top of the player list in the in-game pause menu.
+		Name string
+		// MaximumChunkRadius is the maximum chunk radius that players may set in their settings. If they try
+		// to set it above this number, it will be capped and set to the max.
+		MaximumChunkRadius int
 	}
 }
 
@@ -26,6 +31,7 @@ func DefaultConfig() Config {
 	c := Config{}
 	c.Network.Address = ":19132"
 	c.Server.Name = "Dragonfly Server"
-	c.Server.WorldName = "World"
+	c.World.Name = "World"
+	c.World.MaximumChunkRadius = 32
 	return c
 }

@@ -1,9 +1,12 @@
 package chunk
 
-// Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
+import "sync"
+
+// chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
+	sync.Mutex
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub [16]*SubChunk

@@ -8,10 +8,15 @@
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the
   # name of the server.
   Name = "Dragonfly Server"
-  # The name of the world of the server. A world with this name will be loaded, and the name will show up at
-  # the top of the player list in the in-game pause menu.
-  WorldName = "World"
   # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
   # player count will increase as more players join.
   MaximumPlayers = 0
+
+[World]
+  # The name of the world of the server. A world with this name will be loaded, and the name will show up at
+  # the top of the player list in the in-game pause menu.
+  Name = "World"
+  # The  maximum chunk radius that players may set in their settings. If they try to set it above this number,
+  # it will be capped and set to the max.
+  MaximumChunkRadius = 32
 
