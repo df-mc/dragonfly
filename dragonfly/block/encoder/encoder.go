@@ -70,12 +70,12 @@ func RuntimeID(b Block) uint32 {
 // as bedrock.
 type BasicEncoder struct {
 	ID    string
-	Block func() Block
+	Block Block
 }
 
 // DecodeBlock ...
 func (e BasicEncoder) DecodeBlock(id string, meta int16, nbt []byte) Block {
-	return e.Block()
+	return e.Block
 }
 
 // EncodeBlock ...

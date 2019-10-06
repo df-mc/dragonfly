@@ -8,10 +8,10 @@ import (
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
-	Register(BasicEncoder{ID: "minecraft:air", Block: func() Block { return Air{} }}, Air{})
+	Register(BasicEncoder{ID: "minecraft:air", Block: Air{}}, Air{})
 	Register(stoneEncoder{}, Stone{}, Granite{}, Diorite{}, Andesite{})
-	Register(BasicEncoder{ID: "minecraft:grass", Block: func() Block { return Grass{} }}, Grass{})
+	Register(BasicEncoder{ID: "minecraft:grass", Block: Grass{}}, Grass{})
 	Register(dirtEncoder{}, Dirt{}, CoarseDirt{})
 	Register(logEncoder{}, OakLog{}, SpruceLog{}, BirchLog{}, JungleLog{}, AcaciaLog{}, DarkOakLog{})
-	Register(BasicEncoder{ID: "minecraft:bedrock", Block: func() Block { return Bedrock{} }}, Bedrock{})
+	Register(BasicEncoder{ID: "minecraft:bedrock", Block: Bedrock{}}, Bedrock{})
 }
