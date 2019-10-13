@@ -7,6 +7,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/title"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
@@ -17,9 +18,12 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
+	world.Pos
 	name string
 	uuid uuid.UUID
 	xuid string
+
+	world *world.World
 
 	skin skin.Skin
 
@@ -28,7 +32,7 @@ type Player struct {
 	s *session.Session
 
 	hMutex sync.RWMutex
-	// h holds the current handler of the player. It may be changed at any time by calling the Handle method.
+	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
 	h Handler
 }
 
@@ -36,6 +40,7 @@ type Player struct {
 // identified over network.
 func New(name string) *Player {
 	s, _ := skin.New(64, 32)
+	// TODO: Add a way to change the world of a player once created without session. Might need a function like entity.Move for re-usability.
 	return &Player{name: name, h: NopHandler{}, uuid: uuid.New(), skin: s}
 }
 
@@ -43,12 +48,13 @@ func New(name string) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session) *Player {
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, w *world.World) *Player {
 	p := New(name)
 	p.s = s
 	p.uuid = uuid
 	p.xuid = xuid
 	p.skin = skin
+	p.world = w
 
 	chat.Global.Subscribe(p)
 	return p
@@ -82,6 +88,11 @@ func (p *Player) XUID() string {
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
 	return p.skin
+}
+
+// World returns the world that the player is currently in.
+func (p *Player) World() *world.World {
+	return p.world
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call
@@ -198,7 +209,7 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 // player with a custom message.
 func (p *Player) Close() error {
 	p.close()
-	p.session().Disconnect("Player closed.")
+	p.session().Disconnect("Connection closed.")
 	return nil
 }
 
@@ -206,6 +217,7 @@ func (p *Player) Close() error {
 // disconnecting of players.
 func (p *Player) close() {
 	chat.Global.Unsubscribe(p)
+	p.Handle(NopHandler{})
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session

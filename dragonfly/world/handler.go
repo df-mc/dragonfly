@@ -1,6 +1,6 @@
 package world
 
-// Handle handles events that are called by a world. Implementations of Handler may be used to listen to
+// Handler handles events that are called by a world. Implementations of Handler may be used to listen to
 // specific events such as when an entity is added to the world.
 type Handler interface {
 }

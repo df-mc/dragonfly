@@ -11,9 +11,9 @@ import (
 // different parts of the world. An example usage is the player, which uses a loader to load chunks around it
 // so that it can view them.
 type Loader struct {
-	r       int
-	w       *World
-	started bool
+	r      int
+	w      *World
+	viewer Viewer
 
 	mutex     sync.RWMutex
 	pos       ChunkPos
@@ -23,8 +23,12 @@ type Loader struct {
 
 // NewLoader creates a new loader using the chunk radius passed. Chunks beyond this radius from the position
 // of the loader will never be loaded.
-func NewLoader(chunkRadius int, world *World) *Loader {
-	return &Loader{r: chunkRadius, w: world, loaded: make(map[ChunkPos]*chunk.Chunk)}
+// The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
+// those chunks.
+func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
+	l := &Loader{r: chunkRadius, w: world, loaded: make(map[ChunkPos]*chunk.Chunk), viewer: v}
+	l.populateLoadQueue()
+	return l
 }
 
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
@@ -32,16 +36,15 @@ func (l *Loader) Move(pos mgl32.Vec3) {
 	floorX, floorZ := math.Floor(float64(pos[0])), math.Floor(float64(pos[2]))
 	chunkPos := ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
 
-	if chunkPos == l.pos && l.started {
+	if chunkPos == l.pos {
 		return
 	}
-	l.started = true
 
 	l.mutex.Lock()
 	l.pos = chunkPos
 	l.mutex.Unlock()
 
-	l.evictUnusedLoaded()
+	l.evictUnused()
 	l.populateLoadQueue()
 }
 
@@ -49,22 +52,25 @@ func (l *Loader) Move(pos mgl32.Vec3) {
 // every chunk loaded, the function f is called.
 // The function f must not hold the chunk beyond the function scope.
 // An error is returned if one of the chunks could not be loaded.
-func (l *Loader) Load(n int, f func(pos ChunkPos, c *chunk.Chunk)) error {
+func (l *Loader) Load(n int) error {
 	l.mutex.Lock()
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
 			l.mutex.Unlock()
 			return nil
 		}
-		c, err := l.w.chunk(l.loadQueue[0])
+		pos := l.loadQueue[0]
+		c, err := l.w.chunk(pos)
 		if err != nil {
 			l.mutex.Unlock()
 			return err
 		}
-		f(l.loadQueue[0], c)
+		l.viewer.ViewChunk(pos, c)
 		c.Unlock()
 
-		l.loaded[l.loadQueue[0]] = c
+		l.w.addViewer(pos, l.viewer)
+
+		l.loaded[pos] = c
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
@@ -74,15 +80,28 @@ func (l *Loader) Load(n int, f func(pos ChunkPos, c *chunk.Chunk)) error {
 	return nil
 }
 
-// evictUnusedLoaded gets rid of chunks in the loaded map which are no longer within the chunk radius of the
-// loader, and should therefore be removed.
-func (l *Loader) evictUnusedLoaded() {
+// Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
+// are currently shown to it.
+func (l *Loader) Close() error {
+	l.mutex.Lock()
+	for pos := range l.loaded {
+		l.w.removeViewer(pos, l.viewer)
+	}
+	l.loaded = map[ChunkPos]*chunk.Chunk{}
+	l.mutex.Unlock()
+	return nil
+}
+
+// evictUnused gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
+// and should therefore be removed.
+func (l *Loader) evictUnused() {
 	l.mutex.Lock()
 	for pos := range l.loaded {
 		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
 		if int(dist) > l.r {
 			delete(l.loaded, pos)
+			l.w.removeViewer(pos, l.viewer)
 		}
 	}
 	l.mutex.Unlock()

@@ -31,6 +31,8 @@ type Server struct {
 // (A call to dragonfly.DefaultConfig().)
 // The Logger passed will be used to log errors and information to. If nil is passed, a default Logger is
 // used by calling logrus.New().
+// Note that no two servers should be active at the same time. Doing so anyway will result in unexpected
+// behaviour.
 func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
@@ -125,12 +127,18 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		Blocks:         encoder.Blocks,
 		PlayerPosition: mgl32.Vec3{0, 10, 0},
 		PlayerGameMode: 1,
+		// We set these IDs to 1, because that's how the session will treat them.
+		EntityUniqueID:  1,
+		EntityRuntimeID: 1,
 	}
 	if err := conn.StartGame(data); err != nil {
+		_ = server.listener.Disconnect(conn, "Connection timeout.")
+		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
 	id, err := uuid.Parse(conn.IdentityData().Identity)
 	if err != nil {
+		_ = conn.Close()
 		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
@@ -141,8 +149,8 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) {
 	p := &player.Player{}
 	s := session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
-	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s)
-	s.Handle()
+	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world)
+	s.Start()
 
 	server.players <- p
 }
