@@ -1,6 +1,9 @@
 package world
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
+	"math"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -51,6 +54,15 @@ func ChunkPosFromHash(hash string) ChunkPos {
 	}
 }
 
+// ChunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
+// those of the Vec3 divided by 16, then rounded down.
+func ChunkPosFromVec3(vec3 mgl32.Vec3) ChunkPos {
+	return ChunkPos{
+		int32(math.Floor(float64(vec3[0]) / 16)),
+		int32(math.Floor(float64(vec3[2]) / 16)),
+	}
+}
+
 // BlockPos holds the position of a block. The position is represented of an array with an x, y and z value,
 // where the y value is positive.
 type BlockPos [3]int
@@ -73,4 +85,78 @@ func (p BlockPos) Z() int {
 // ChunkPos returns a chunk position of the chunk that a block at this position would be in.
 func (p BlockPos) ChunkPos() ChunkPos {
 	return ChunkPos{int32(p[0] >> 4), int32(p[2] >> 4)}
+}
+
+// BlockPosFromVec3 returns a block position from the Vec3 passed. The coordinates are all rounded down to the
+// nearest full number.
+func BlockPosFromVec3(vec3 mgl32.Vec3) BlockPos {
+	return BlockPos{
+		int(math.Floor(float64(vec3[0]))),
+		int(math.Floor(float64(vec3[1]))),
+		int(math.Floor(float64(vec3[2]))),
+	}
+}
+
+// Distance returns the distance between two vectors.
+func Distance(a, b mgl32.Vec3) float32 {
+	return float32(math.Sqrt(
+		math.Pow(float64(b[0]-a[0]), 2) +
+			math.Pow(float64(b[1]-a[1]), 2) +
+			math.Pow(float64(b[2]-a[2]), 2),
+	))
+}
+
+// Pos holds the position base of the entity. It implements the entity.Entity interface and creates the base
+// of the entity that implements position management.
+// Entities must embed this struct to be able to use functions in the entity package.
+type Pos struct {
+	pos, yaw, pitch atomic.Value
+}
+
+// Position returns the current position of the entity. It may be changed as the entity moves or is moved
+// around the world.
+func (pos *Pos) Position() mgl32.Vec3 {
+	v := pos.pos.Load()
+	if v == nil {
+		return mgl32.Vec3{}
+	}
+	return v.(mgl32.Vec3)
+}
+
+// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
+// is 0 when the entity faces forward.
+func (pos *Pos) Yaw() float32 {
+	v := pos.yaw.Load()
+	if v == nil {
+		return 0
+	}
+	return v.(float32)
+}
+
+// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
+// and is 0 when the entity faces forward.
+func (pos *Pos) Pitch() float32 {
+	v := pos.pitch.Load()
+	if v == nil {
+		return 0
+	}
+	return v.(float32)
+}
+
+// setYaw sets the yaw of the entity to the new yaw passed. It merely sets the field of the struct and does
+// not take care of sending it to viewers.
+func (pos *Pos) setYaw(new float32) {
+	pos.yaw.Store(new)
+}
+
+// setPitch sets the pitch of the entity to the new pitch passed. It merely sets the field of the struct and
+// does not take care of sending it to viewers.
+func (pos *Pos) setPitch(new float32) {
+	pos.pitch.Store(new)
+}
+
+// setPosition sets the position of the entity to a new position passed. It merely sets the field of the
+// struct and does not take care sending it to viewers.
+func (pos *Pos) setPosition(new mgl32.Vec3) {
+	pos.pos.Store(new)
 }

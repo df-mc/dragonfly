@@ -17,11 +17,27 @@ type Provider interface {
 	// SaveChunk saves a chunk at a specific position in the provider. If writing was not successful, an error
 	// is returned.
 	SaveChunk(position ChunkPos, c *chunk.Chunk) error
+	// LoadEntities loads all entities stored at a particular chunk position. If the entities cannot be read,
+	// LoadEntities returns a non-nil error.
+	LoadEntities(position ChunkPos) ([]Entity, error)
+	// SaveEntities saves a list of entities in a chunk position. If writing is not successful, an error is
+	// returned.
+	SaveEntities(position ChunkPos, entities []Entity) error
 }
 
 // NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
-// dynamically, instead of reading and writing data.
+// dynamically, instead of reading and writing data, and returns otherwise empty values.
 type NoIOProvider struct{}
+
+// LoadEntities ...
+func (p NoIOProvider) LoadEntities(position ChunkPos) ([]Entity, error) {
+	return nil, nil
+}
+
+// SaveEntities ...
+func (p NoIOProvider) SaveEntities(position ChunkPos, entities []Entity) error {
+	return nil
+}
 
 // SaveChunk ...
 func (p NoIOProvider) SaveChunk(position ChunkPos, c *chunk.Chunk) error {
