@@ -15,6 +15,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sirupsen/logrus"
 	"log"
+	"sync"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -25,6 +26,11 @@ type Server struct {
 	listener *minecraft.Listener
 	players  chan *player.Player
 	world    *world.World
+
+	playerMutex sync.RWMutex
+	// p holds a map of all players currently connected to the server. When they leave, they are removed from
+	// the map.
+	p map[uuid.UUID]*player.Player
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -37,7 +43,13 @@ func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
-	s := &Server{c: DefaultConfig(), log: log, players: make(chan *player.Player), world: world.New(log)}
+	s := &Server{
+		c:       DefaultConfig(),
+		log:     log,
+		players: make(chan *player.Player),
+		world:   world.New(log),
+		p:       make(map[uuid.UUID]*player.Player),
+	}
 	if c != nil {
 		s.c = *c
 	}
@@ -51,6 +63,10 @@ func (server *Server) Accept() (*player.Player, error) {
 	if !ok {
 		return nil, errors.New("server closed")
 	}
+	server.playerMutex.Lock()
+	server.p[p.UUID()] = p
+	server.playerMutex.Unlock()
+
 	return p, nil
 }
 
@@ -80,6 +96,48 @@ func (server *Server) Start() error {
 	}
 	go server.run()
 	return nil
+}
+
+// PlayerCount returns the current player count of the server. It is equivalent to calling
+// len(server.Players()).
+func (server *Server) PlayerCount() int {
+	server.playerMutex.RLock()
+	defer server.playerMutex.RUnlock()
+
+	return len(server.p)
+}
+
+// Players returns a list of all players currently connected to the server. Note that the slice returned is
+// not updated when new players join or leave, so it is only valid for as long as no new players join or
+// players leave.
+func (server *Server) Players() []*player.Player {
+	server.playerMutex.RLock()
+	defer server.playerMutex.RUnlock()
+
+	players := make([]*player.Player, 0, len(server.p))
+	for _, p := range server.p {
+		players = append(players, p)
+	}
+	return players
+}
+
+// Player looks for a player on the server with the UUID passed. If found, the player is returned and the bool
+// returns holds a true value. If not, the bool returned is false and the player is nil.
+func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
+	server.playerMutex.RLock()
+	defer server.playerMutex.RUnlock()
+
+	if p, ok := server.p[uuid]; ok {
+		return p, true
+	}
+	return nil, false
+}
+
+// Close closes the server, making any call to Run/Accept cancel immediately.
+func (server *Server) Close() error {
+	close(server.players)
+	_ = server.world.Close()
+	return server.listener.Close()
 }
 
 // startListening starts making the Minecraft listener listen, accepting new connections from players.
@@ -145,12 +203,20 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	server.createPlayer(id, conn)
 }
 
+// handleSessionClose handles the closing of a session. It removes the player of the session from the server.
+func (server *Server) handleSessionClose(controllable session.Controllable) {
+	server.playerMutex.Lock()
+	defer server.playerMutex.Unlock()
+
+	delete(server.p, controllable.UUID())
+}
+
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) {
 	p := &player.Player{}
 	s := session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
 	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world)
-	s.Start()
+	s.Start(server.handleSessionClose)
 
 	server.players <- p
 }
@@ -166,11 +232,4 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	playerSkin.Model = modelData
 
 	return playerSkin
-}
-
-// Close closes the server, making any call to Run/Accept cancel immediately.
-func (server *Server) Close() error {
-	close(server.players)
-	_ = server.world.Close()
-	return server.listener.Close()
 }

@@ -38,6 +38,10 @@ type Session struct {
 	entityMutex            sync.RWMutex
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
+
+	// onStop is called when the session is stopped. The controllable passed is the controllable that the
+	// session controls.
+	onStop func(controllable Controllable)
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -75,7 +79,10 @@ func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius in
 
 // Start makes the session start handling incoming packets from the client and initialises the controllable of
 // the session in the world.
-func (s *Session) Start() {
+// The function passed will be called when the session stops running.
+func (s *Session) Start(onStop func(controllable Controllable)) {
+	s.onStop = onStop
+
 	go s.handlePackets()
 	s.SendAvailableCommands()
 
@@ -99,6 +106,10 @@ func (s *Session) Close() error {
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
+
+	if s.onStop != nil {
+		s.onStop(s.c)
+	}
 	return nil
 }
 
