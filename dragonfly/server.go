@@ -107,6 +107,16 @@ func (server *Server) PlayerCount() int {
 	return len(server.p)
 }
 
+// MaxPlayerCount returns the maximum amount of players that are allowed to play on the server at the same
+// time. Players trying to join when the server is full will be refused to enter.
+// If the config has a maximum player count set to 0, MaxPlayerCount will return Server.PlayerCount + 1.
+func (server *Server) MaxPlayerCount() int {
+	if server.c.Server.MaximumPlayers == 0 {
+		return server.PlayerCount() + 1
+	}
+	return server.c.Server.MaximumPlayers
+}
+
 // Players returns a list of all players currently connected to the server. Note that the slice returned is
 // not updated when new players join or leave, so it is only valid for as long as no new players join or
 // players leave.

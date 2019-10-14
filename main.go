@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/endpoints"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -33,6 +34,12 @@ func main() {
 	server := dragonfly.New(&config, log)
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
+	}
+
+	if config.Network.EnableEndpoints {
+		go func() {
+			panic(endpoints.Serve(config.Network.Address, server))
+		}()
 	}
 
 	for {

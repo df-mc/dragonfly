@@ -8,6 +8,9 @@ type Config struct {
 		// Address is the address on which the server should listen. Players may connect to this address in
 		// order to join.
 		Address string
+		// EnableEndpoints enables HTTP endpoints which may be hit to obtain information about the server.
+		// When set to true, the endpoints will be served on the Address above.
+		EnableEndpoints bool
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -30,6 +33,7 @@ type Config struct {
 func DefaultConfig() Config {
 	c := Config{}
 	c.Network.Address = ":19132"
+	c.Network.EnableEndpoints = true
 	c.Server.Name = "Dragonfly Server"
 	c.World.Name = "World"
 	c.World.MaximumChunkRadius = 32
