@@ -14,6 +14,7 @@ func Serve(addr string, s *dragonfly.Server) error {
 	http.HandleFunc("/player_count", server.playerCount)
 	http.HandleFunc("/max_player_count", server.maxPlayerCount)
 	http.HandleFunc("/players", server.players)
+	http.HandleFunc("/kick", server.kick)
 
 	return http.ListenAndServe(addr, nil)
 }
@@ -31,4 +32,14 @@ func writeJSON(w http.ResponseWriter, data interface{}) {
 		panic(err)
 	}
 	_, _ = w.Write(b)
+}
+
+// err writes an error to the response writer. It adds a message to the content and a code that identifies
+// the error that occurred.
+func badRequest(w http.ResponseWriter, message string, code int) {
+	w.WriteHeader(http.StatusBadRequest)
+	writeJSON(w, map[string]interface{}{
+		"message": message,
+		"code":    code,
+	})
 }
