@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"sync"
+	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -26,6 +27,8 @@ type Server struct {
 	listener *minecraft.Listener
 	players  chan *player.Player
 	world    *world.World
+
+	startTime time.Time
 
 	playerMutex sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
@@ -98,6 +101,12 @@ func (server *Server) Start() error {
 	return nil
 }
 
+// Uptime returns the duration that the server has been running for. Measurement starts the moment a call to
+// Server.Start or Server.Run is made.
+func (server *Server) Uptime() time.Duration {
+	return time.Now().Sub(server.startTime)
+}
+
 // PlayerCount returns the current player count of the server. It is equivalent to calling
 // len(server.Players()).
 func (server *Server) PlayerCount() int {
@@ -153,6 +162,7 @@ func (server *Server) Close() error {
 // startListening starts making the Minecraft listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
 	server.log.Info("Starting server...")
+	server.startTime = time.Now()
 
 	w := server.log.Writer()
 	defer func() {

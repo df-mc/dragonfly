@@ -17,6 +17,7 @@ func Serve(addr string, s *dragonfly.Server) error {
 	http.HandleFunc("/kick", server.kick)
 
 	http.HandleFunc("/mem", server.mem)
+	http.HandleFunc("/uptime", server.uptime)
 
 	return http.ListenAndServe(addr, nil)
 }

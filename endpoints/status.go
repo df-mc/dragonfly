@@ -25,3 +25,21 @@ func (s server) mem(w http.ResponseWriter, r *http.Request) {
 		"sys_mem_mb":    strconv.Itoa(int(m.Sys/1024/1024)) + "MB",
 	})
 }
+
+// uptime (/uptime) returns the time passed since the server started.
+func (s server) uptime(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	uptime := s.s.Uptime()
+	writeJSON(w, map[string]interface{}{
+		"nanoseconds":  uptime.Nanoseconds(),
+		"microseconds": uptime.Microseconds(),
+		"milliseconds": uptime.Milliseconds(),
+		"seconds":      uptime.Seconds(),
+		"minutes":      uptime.Minutes(),
+		"hours":        uptime.Hours(),
+		"string":       uptime.String(),
+	})
+}
