@@ -5,6 +5,7 @@
 // * GET http://address/player_count -> Returns a JSON object containing the player count of the server.
 // * GET http://address/max_player_count -> Returns a JSON object containing the maximum amount of players.
 // * GET http://address/players -> Returns a JSON object containing a list of all online players of the server and information identifying them.
+// * GET http://address/mem -> Returns a JSON object containing memory usage information about the server.
 // * POST http://address/kick -> Kicks a player from the server.
 //   - Form values:
 //     * uuid -> The UUID of the player to kick.
