@@ -34,12 +34,10 @@ func (s server) uptime(w http.ResponseWriter, r *http.Request) {
 	}
 	uptime := s.s.Uptime()
 	writeJSON(w, map[string]interface{}{
-		"nanoseconds":  uptime.Nanoseconds(),
-		"microseconds": uptime.Microseconds(),
-		"milliseconds": uptime.Milliseconds(),
-		"seconds":      uptime.Seconds(),
-		"minutes":      uptime.Minutes(),
-		"hours":        uptime.Hours(),
-		"string":       uptime.String(),
+		"nanoseconds": uptime.Nanoseconds(),
+		"seconds":     uptime.Seconds(),
+		"minutes":     uptime.Minutes(),
+		"hours":       uptime.Hours(),
+		"string":      uptime.String(),
 	})
 }
