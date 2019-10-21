@@ -25,7 +25,8 @@ type Session struct {
 	controllableClosed atomic.Value
 	conn               *minecraft.Conn
 
-	cmdOrigin protocol.CommandOrigin
+	cmdOrigin     protocol.CommandOrigin
+	scoreboardObj atomic.Value
 
 	chunkBuf       *bytes.Buffer
 	chunkLoader    atomic.Value
@@ -73,6 +74,7 @@ func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius in
 		currentEntityRuntimeID: 1,
 	}
 	s.chunkLoader.Store(world.NewLoader(maxChunkRadius/2, w, s))
+	s.scoreboardObj.Store("")
 	s.controllableClosed.Store(false)
 	return s
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/scoreboard"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/title"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
@@ -142,6 +143,20 @@ func (p *Player) SendTitle(t *title.Title) {
 	}
 }
 
+// SendScoreboard sends a scoreboard to the player. The scoreboard will be present indefinitely until removed
+// by the caller.
+// SendScoreboard may be called at any time to change the scoreboard of the player.
+func (p *Player) SendScoreboard(scoreboard *scoreboard.Scoreboard) {
+	p.session().SendScoreboard(scoreboard.Name())
+	p.session().SendScoreboardLines(scoreboard.Lines())
+}
+
+// RemoveScoreboard removes any scoreboard currently present on the screen of the player. Nothing happens if
+// the player has no scoreboard currently active.
+func (p *Player) RemoveScoreboard() {
+	p.session().RemoveScoreboard()
+}
+
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player.
 func (p *Player) Chat(message string) {
@@ -216,8 +231,9 @@ func (p *Player) Close() error {
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
-	chat.Global.Unsubscribe(p)
+	p.handler().HandleClose()
 	p.Handle(NopHandler{})
+	chat.Global.Unsubscribe(p)
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
