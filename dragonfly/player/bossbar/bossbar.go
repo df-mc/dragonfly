@@ -1,0 +1,47 @@
+package bossbar
+
+import (
+	"fmt"
+	"strings"
+)
+
+// BossBar represents a boss bar that may be sent to a player. It is shown as a purple bar with text above
+// it. The health shown by the bar may be changed.
+type BossBar struct {
+	text   string
+	health float32
+}
+
+// New creates a new boss bar with the text passed. The text is formatted according to the rules of
+// fmt.Sprintln.
+// By default, the boss bar will have a full health bar. To change this, use BossBar.SetHealthPercentage().
+func New(text ...interface{}) *BossBar {
+	return &BossBar{text: format(text), health: 1}
+}
+
+// Text returns the text of the boss bar: The text passed when creating the bar using New().
+func (bar *BossBar) Text() string {
+	return bar.text
+}
+
+// SetHealthPercentage sets the health percentage of the boss bar. The value passed must be between 0 and 1.
+// If a value out of that range is passed, SetHealthPercentage panics.
+func (bar *BossBar) SetHealthPercentage(v float32) *BossBar {
+	if v < 0 || v > 1 {
+		panic("boss bar: value out of range: health percentage must be between 0.0 and 1.0")
+	}
+	bar.health = v
+	return bar
+}
+
+// HealthPercentage returns the health percentage of the boss bar. The number returned is a value between 0
+// and 1, with 0 being an empty boss bar and 1 being a full one.
+func (bar *BossBar) HealthPercentage() float32 {
+	return bar.health
+}
+
+// format is a utility function to format a list of values to have spaces between them, but no newline at the
+// end, which is typically used for sending messages, popups and tips.
+func format(a []interface{}) string {
+	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
+}
