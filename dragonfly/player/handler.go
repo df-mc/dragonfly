@@ -18,6 +18,9 @@ type Handler interface {
 	// HandleCommandExecution handles the command execution of a player, who wrote a command in the chat.
 	// ctx.Cancel() may be called to cancel the command execution.
 	HandleCommandExecution(ctx *event.Context, command cmd.Command, args []string)
+	// HandleClose handles the closing of a player. It is always closed when the player is disconnected,
+	// regardless of the reason.
+	HandleClose()
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -33,3 +36,6 @@ func (n NopHandler) HandleTransfer(ctx *event.Context, addr *net.UDPAddr) {}
 
 // HandleChat ...
 func (n NopHandler) HandleChat(ctx *event.Context, message string) {}
+
+// HandleClose ...
+func (n NopHandler) HandleClose() {}

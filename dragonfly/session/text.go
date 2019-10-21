@@ -2,6 +2,8 @@ package session
 
 import (
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"time"
 )
@@ -59,20 +61,44 @@ func (s *Session) SendJukeBoxPopup(message string) {
 }
 
 // SendScoreboard ...
-func (s *Session) SendScoreboard(displayName string, objName string) {
+func (s *Session) SendScoreboard(displayName string) {
+	if s.scoreboardObj.Load().(string) != "" {
+		s.RemoveScoreboard()
+	}
+	obj := uuid.New().String()
+	s.scoreboardObj.Store(obj)
+
 	s.writePacket(&packet.SetDisplayObjective{
 		DisplaySlot:   "sidebar",
-		ObjectiveName: objName,
+		ObjectiveName: obj,
 		DisplayName:   displayName,
 		CriteriaName:  "dummy",
 	})
 }
 
 // RemoveScoreboard ...
-func (s *Session) RemoveScoreboard(objName string) {
+func (s *Session) RemoveScoreboard() {
 	s.writePacket(&packet.RemoveObjective{
-		ObjectiveName: objName,
+		ObjectiveName: s.scoreboardObj.Load().(string),
 	})
+}
+
+// SendScoreboardLines sends a list of scoreboard lines for the scoreboard currently active on the player's
+// screen.
+func (s *Session) SendScoreboardLines(v []string) {
+	pk := &packet.SetScore{
+		ActionType: packet.ScoreboardActionModify,
+	}
+	for k, line := range v {
+		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
+			EntryID:       int64(k),
+			ObjectiveName: s.scoreboardObj.Load().(string),
+			Score:         int32(k),
+			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
+			DisplayName:   line,
+		})
+	}
+	s.writePacket(pk)
 }
 
 const tickLength = time.Second / 20
