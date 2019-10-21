@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/bossbar"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/scoreboard"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
@@ -155,6 +156,19 @@ func (p *Player) SendScoreboard(scoreboard *scoreboard.Scoreboard) {
 // the player has no scoreboard currently active.
 func (p *Player) RemoveScoreboard() {
 	p.session().RemoveScoreboard()
+}
+
+// SendBossBar sends a boss bar to the player, so that it will be shown indefinitely at the top of the
+// player's screen.
+// The boss bar may be removed by calling Player.RemoveBossBar().
+func (p *Player) SendBossBar(bar *bossbar.BossBar) {
+	p.session().SendBossBar(bar.Text(), bar.HealthPercentage())
+}
+
+// RemoveBossBar removes any boss bar currently active on the player's screen. If no boss bar is currently
+// present, nothing happens.
+func (p *Player) RemoveBossBar() {
+	p.session().RemoveBossBar()
 }
 
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the

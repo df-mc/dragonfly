@@ -53,6 +53,9 @@ var Nop = &Session{}
 var sessions []*Session
 var sessionMutex sync.Mutex
 
+// selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
+const selfEntityRuntimeID = 1
+
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
@@ -69,7 +72,7 @@ func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius in
 		entityRuntimeIDs: map[world.Entity]uint64{
 			// We initialise the runtime ID of the controllable of the session. It will always have runtime ID
 			// 1, because we treat entity runtime IDs as session-local.
-			c: 1,
+			c: selfEntityRuntimeID,
 		},
 		currentEntityRuntimeID: 1,
 	}
@@ -171,6 +174,7 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handleMovePlayer(pk)
 	case *packet.RequestChunkRadius:
 		return s.handleRequestChunkRadius(pk)
+	case *packet.BossEvent: // No need to do anything here. We don't care about these when they're incoming.
 	default:
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())
 	}
