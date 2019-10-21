@@ -34,6 +34,7 @@ func writeJSON(w http.ResponseWriter, data interface{}) {
 	if err != nil {
 		panic(err)
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, _ = w.Write(b)
 }
 
