@@ -19,9 +19,13 @@ jobs:
     - name: Get dependencies
       run: |
         go get -v -t -d ./...
+        go get https://github.com/mgechev/revive
         
     - name: Vet
       run: go vet ./...
+    
+    - name: Lint
+      run: revive -config=lint.toml ./...
 
     - name: Build
       run: go build -o dragonfly_exec -v .
