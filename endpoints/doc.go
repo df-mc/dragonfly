@@ -1,4 +1,4 @@
-// package endpoints implements a number of HTTP endpoints that may be called to get information about the
+// Package endpoints implements a number of HTTP endpoints that may be called to get information about the
 // server or to trigger an action, such as kicking a player.
 //
 // Available endpoints

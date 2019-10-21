@@ -1,0 +1,30 @@
+# This is a configuration file for the Revive linter (https://github.com/mgechev/revive)
+# Some inspections have been left out, most notably the comments over exported symbols and unused parameters.
+ignoreGeneratedHeader = false
+severity = "warning"
+confidence = 0.8
+errorCode = 0
+warningCode = 0
+
+[rule.blank-imports]
+[rule.context-as-argument]
+[rule.context-keys-type]
+[rule.dot-imports]
+[rule.error-return]
+[rule.error-strings]
+[rule.error-naming]
+[rule.if-return]
+[rule.increment-decrement]
+[rule.var-naming]
+[rule.var-declaration]
+[rule.package-comments]
+[rule.range]
+[rule.receiver-naming]
+[rule.time-naming]
+[rule.unexported-return]
+[rule.indent-error-flow]
+[rule.errorf]
+[rule.empty-block]
+[rule.superfluous-else]
+[rule.unreachable-code]
+[rule.redefines-builtin-id]

@@ -71,10 +71,10 @@ func readConfig() (dragonfly.Config, error) {
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
 		data, err := toml.Marshal(c)
 		if err != nil {
-			return c, fmt.Errorf("failed encoding default config: %v\n", err)
+			return c, fmt.Errorf("failed encoding default config: %v", err)
 		}
 		if err := ioutil.WriteFile("config.toml", data, 0644); err != nil {
-			return c, fmt.Errorf("failed creating config: %v\n", err)
+			return c, fmt.Errorf("failed creating config: %v", err)
 		}
 		return c, nil
 	}
