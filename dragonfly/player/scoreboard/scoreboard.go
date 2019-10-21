@@ -43,7 +43,7 @@ func (board *Scoreboard) Addf(format string, a ...interface{}) *Scoreboard {
 // fmt.Sprintln. Set panics if the index passed is out of range: New lines must be added using Scoreboard.Add.
 func (board *Scoreboard) Set(index int, a ...interface{}) *Scoreboard {
 	if index >= len(board.lines) || index < 0 {
-		panic(fmt.Sprintf("scoreboard: index out of range: index %v is not valid for scoreboard of size %v", len(board.lines)))
+		panic(fmt.Sprintf("scoreboard: index out of range: index %v is not valid for scoreboard of size %v", index, len(board.lines)))
 	}
 	board.lines[index] = board.pad(format(a))
 	return board
