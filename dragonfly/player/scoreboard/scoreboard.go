@@ -13,11 +13,11 @@ type Scoreboard struct {
 }
 
 // New returns a new scoreboard with the display name passed. Once returned, lines may be added to the
-// scoreboard to add text to it.
+// scoreboard to add text to it. The name is formatted according to the rules of fmt.Sprintln.
 // Changing the scoreboard after sending it to a player will not update the scoreboard of the player
 // automatically: Player.SendScoreboard() must be called again to update it.
-func New(name string) *Scoreboard {
-	return &Scoreboard{name: name}
+func New(name ...interface{}) *Scoreboard {
+	return &Scoreboard{name: format(name)}
 }
 
 // Name returns the display name of the scoreboard, as passed during the construction of the scoreboard.
