@@ -19,6 +19,8 @@ type Loader struct {
 	pos       ChunkPos
 	loadQueue []ChunkPos
 	loaded    map[ChunkPos]*chunk.Chunk
+
+	closed bool
 }
 
 // NewLoader creates a new loader using the chunk radius passed. Chunks beyond this radius from the position
@@ -33,19 +35,20 @@ func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
 
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
 func (l *Loader) Move(pos mgl32.Vec3) {
+	l.mutex.Lock()
+
 	floorX, floorZ := math.Floor(float64(pos[0])), math.Floor(float64(pos[2]))
 	chunkPos := ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
 
 	if chunkPos == l.pos {
+		l.mutex.Unlock()
 		return
 	}
-
-	l.mutex.Lock()
 	l.pos = chunkPos
-	l.mutex.Unlock()
-
 	l.evictUnused()
 	l.populateLoadQueue()
+
+	l.mutex.Unlock()
 }
 
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
@@ -54,6 +57,10 @@ func (l *Loader) Move(pos mgl32.Vec3) {
 // An error is returned if one of the chunks could not be loaded.
 func (l *Loader) Load(n int) error {
 	l.mutex.Lock()
+	if l.closed {
+		l.mutex.Unlock()
+		return nil
+	}
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
 			l.mutex.Unlock()
@@ -88,6 +95,8 @@ func (l *Loader) Close() error {
 		l.w.removeViewer(pos, l.viewer)
 	}
 	l.loaded = map[ChunkPos]*chunk.Chunk{}
+	l.closed = true
+	l.viewer = nil
 	l.mutex.Unlock()
 	return nil
 }
@@ -95,7 +104,6 @@ func (l *Loader) Close() error {
 // evictUnused gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
 // and should therefore be removed.
 func (l *Loader) evictUnused() {
-	l.mutex.Lock()
 	for pos := range l.loaded {
 		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
@@ -104,14 +112,12 @@ func (l *Loader) evictUnused() {
 			l.w.removeViewer(pos, l.viewer)
 		}
 	}
-	l.mutex.Unlock()
 }
 
 // populateLoadQueue populates the load queue of the loader. This method is called once to create the order in
 // which chunks around the position the loader is now in should be loaded. Chunks are ordered to be loaded
 // from the middle outwards.
 func (l *Loader) populateLoadQueue() {
-	l.mutex.Lock()
 	l.loadQueue = nil
 	// We'll first load the chunk positions to load in a map indexed by the distance to the center (basically,
 	// what precedence it should have), and put them in the loadQueue in that order.
@@ -143,5 +149,4 @@ func (l *Loader) populateLoadQueue() {
 	for i := int32(0); i < r; i++ {
 		l.loadQueue = append(l.loadQueue, toLoad[i]...)
 	}
-	l.mutex.Unlock()
 }

@@ -9,13 +9,17 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/mcdb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
+	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -42,7 +46,7 @@ type Server struct {
 // used by calling logrus.New().
 // Note that no two servers should be active at the same time. Doing so anyway will result in unexpected
 // behaviour.
-func New(c *Config, log *logrus.Logger) *Server {
+func New(c *Config, log *logrus.Logger) (*Server, error) {
 	if log == nil {
 		log = logrus.New()
 	}
@@ -56,7 +60,12 @@ func New(c *Config, log *logrus.Logger) *Server {
 	if c != nil {
 		s.c = *c
 	}
-	return s
+	p, err := mcdb.New(s.c.World.Folder)
+	if err != nil {
+		return nil, fmt.Errorf("error loading world: %v", err)
+	}
+	s.world.Provider(p)
+	return s, nil
 }
 
 // Accept accepts an incoming player into the server. It blocks until a player connects to the server.
@@ -154,9 +163,38 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
-	close(server.players)
-	_ = server.world.Close()
+	server.log.Info("Server shutting down...")
+	defer server.log.Info("Server stopped.")
+
+	server.log.Debug("Disconnecting players...")
+	server.playerMutex.RLock()
+	for _, p := range server.p {
+		p.Disconnect(text.Yellow()(server.c.Server.ShutdownMessage))
+	}
+	server.playerMutex.RUnlock()
+
+	server.log.Debug("Closing world...")
+	if err := server.world.Close(); err != nil {
+		return err
+	}
+
+	server.log.Debug("Closing listener...")
 	return server.listener.Close()
+}
+
+// CloseOnProgramEnd closes the server right before the program ends, so that all data of the server are
+// saved properly.
+func (server *Server) CloseOnProgramEnd() {
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-c
+		if err := server.Close(); err != nil {
+			server.log.Errorf("error shutting down server: %v", err)
+		}
+		// Sleep for half a second so that all messages are logged before the program ends.
+		time.Sleep(time.Second / 2)
+	}()
 }
 
 // startListening starts making the Minecraft listener listen, accepting new connections from players.
@@ -176,6 +214,7 @@ func (server *Server) startListening() error {
 		ServerName:     server.c.Server.Name,
 		MaximumPlayers: server.c.Server.MaximumPlayers,
 	}
+
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
 		return fmt.Errorf("listening on address failed: %v", err)
 	}
@@ -192,6 +231,7 @@ func (server *Server) run() {
 		if err != nil {
 			// Accept will only return an error if the Listener was closed, meaning trying to continue
 			// listening is futile.
+			close(server.players)
 			return
 		}
 		go server.handleConn(c.(*minecraft.Conn))
@@ -203,7 +243,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
 		Blocks:         encoder.Blocks,
-		PlayerPosition: mgl32.Vec3{0, 10, 0},
+		PlayerPosition: server.world.Spawn(),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:  1,
@@ -220,25 +260,24 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
-	server.createPlayer(id, conn)
+	server.players <- server.createPlayer(id, conn)
 }
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(controllable session.Controllable) {
 	server.playerMutex.Lock()
-	defer server.playerMutex.Unlock()
-
 	delete(server.p, controllable.UUID())
+	server.playerMutex.Unlock()
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) {
-	p := &player.Player{}
-	s := session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
-	*p = *player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world)
+func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
+	s := &session.Session{}
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world)
+	*s = *session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
 	s.Start(server.handleSessionClose)
 
-	server.players <- p
+	return p
 }
 
 // createSkin creates a new skin using the skin data found in the client data in the login, and returns it.

@@ -31,7 +31,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	server := dragonfly.New(&config, log)
+	server, err := dragonfly.New(&config, log)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
 	}
@@ -43,12 +47,9 @@ func main() {
 	}
 
 	for {
-		player, err := server.Accept()
-		if err != nil {
-			// The server was stopped, so we stop accepting players and end the program.
+		if _, err := server.Accept(); err != nil {
 			return
 		}
-		_ = player
 	}
 }
 

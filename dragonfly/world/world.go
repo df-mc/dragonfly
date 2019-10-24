@@ -22,14 +22,14 @@ type World struct {
 	log  *logrus.Logger
 
 	hMutex sync.RWMutex
-	h      Handler
+	hand   Handler
 
 	pMutex sync.RWMutex
-	p      Provider
+	prov   Provider
 	cCache *cache.Cache
 
 	gMutex sync.RWMutex
-	g      Generator
+	gen    Generator
 
 	entityMutex sync.RWMutex
 	entities    map[ChunkPos][]Entity
@@ -44,14 +44,13 @@ type World struct {
 func New(log *logrus.Logger) *World {
 	w := &World{
 		name:     "World",
-		p:        NoIOProvider{},
-		g:        FlatGenerator{},
-		cCache:   cache.New(3*time.Minute, 5*time.Minute),
+		prov:     NoIOProvider{},
+		gen:      FlatGenerator{},
 		log:      log,
 		viewers:  make(map[ChunkPos][]Viewer),
 		entities: make(map[ChunkPos][]Entity),
 	}
-	w.cCache.OnEvicted(w.saveChunk)
+	w.initChunkCache()
 	return w
 }
 
@@ -74,7 +73,7 @@ func (w *World) Block(pos BlockPos) (Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]&15), uint8(pos[2]&15), 0)
+	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
 	c.Unlock()
 
 	state := encoder.Blocks[id]
@@ -101,7 +100,7 @@ func (w *World) SetBlock(pos BlockPos, block Block) error {
 	if err != nil {
 		return err
 	}
-	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]&15), uint8(pos[2]&15), 0, encoder.RuntimeIDs[protocol.BlockEntry{
+	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0, encoder.RuntimeIDs[protocol.BlockEntry{
 		Name: id,
 		Data: meta,
 	}])
@@ -114,8 +113,14 @@ func (w *World) SetBlock(pos BlockPos, block Block) error {
 
 // AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to
 // all viewers of the world that have the chunk of the entity loaded.
+// If the chunk that the entity is in is not yet loaded, it will first be loaded.
 func (w *World) AddEntity(e Entity) {
 	chunkPos := ChunkPosFromVec3(e.Position())
+	c, err := w.chunk(chunkPos)
+	if err != nil {
+		w.log.Errorf("error loading chunk to add entity: %v", err)
+	}
+	c.Unlock()
 
 	w.entityMutex.Lock()
 	w.entities[chunkPos] = append(w.entities[chunkPos], e)
@@ -202,6 +207,12 @@ func (w *World) Entities() []Entity {
 	return m
 }
 
+// Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
+// when joining.
+func (w *World) Spawn() mgl32.Vec3 {
+	return w.provider().WorldSpawn().Vec3()
+}
+
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
 // will be set, which does not read or write any data.
 func (w *World) Provider(p Provider) {
@@ -211,9 +222,9 @@ func (w *World) Provider(p Provider) {
 	if p == nil {
 		p = NoIOProvider{}
 	}
-	w.p = p
+	w.prov = p
 	w.name = p.WorldName()
-	w.cCache = cache.New(time.Second*6, time.Second*6)
+	w.initChunkCache()
 }
 
 // Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
@@ -225,7 +236,7 @@ func (w *World) Generator(g Generator) {
 	if g == nil {
 		g = FlatGenerator{}
 	}
-	w.g = g
+	w.gen = g
 }
 
 // Start changes the current handler of the world. As a result, events called by the world will call
@@ -238,7 +249,7 @@ func (w *World) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
 	}
-	w.h = h
+	w.hand = h
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -251,29 +262,36 @@ func (w *World) Close() error {
 		// We delete all chunks from the cache so that they are saved to the provider.
 		w.cCache.Delete(key)
 	}
+	if err := w.provider().Close(); err != nil {
+		w.log.Errorf("error closing world provider: %v", err)
+	}
 	w.Handle(NopHandler{})
 	return nil
 }
 
 // removeEntity attempts to remove an entity located in a chunk at the chunk position passed. If found, it
 // removes the entity and returns true. If it can't be found, removeEntity returns false.
-func (w *World) removeEntity(chunkPos ChunkPos, e Entity) bool {
-	for i, entity := range w.entities[chunkPos] {
-		if entity == e {
-			w.entities[chunkPos] = append(w.entities[chunkPos][:i], w.entities[chunkPos][i+1:]...)
-			if len(w.entities[chunkPos]) == 0 {
-				// The entity is the last in the chunk, so we can delete the value from the map.
-				delete(w.entities, chunkPos)
-			}
-			w.viewerMutex.RLock()
-			for _, viewer := range w.viewers[chunkPos] {
-				viewer.HideEntity(e)
-			}
-			w.viewerMutex.RUnlock()
-			return true
+func (w *World) removeEntity(chunkPos ChunkPos, e Entity) (found bool) {
+	n := make([]Entity, 0, len(w.entities[chunkPos]))
+	for _, entity := range w.entities[chunkPos] {
+		if entity != e {
+			n = append(n, entity)
+			continue
 		}
+		w.viewerMutex.RLock()
+		for _, viewer := range w.viewers[chunkPos] {
+			viewer.HideEntity(e)
+		}
+		w.viewerMutex.RUnlock()
+		found = true
 	}
-	return false
+	if len(n) == 0 {
+		// The entity is the last in the chunk, so we can delete the value from the map.
+		delete(w.entities, chunkPos)
+		return
+	}
+	w.entities[chunkPos] = n
+	return
 }
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
@@ -296,17 +314,17 @@ func (w *World) addViewer(pos ChunkPos, viewer Viewer) {
 // viewer and no more calls will be made when events in the chunk happen.
 func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 	w.viewerMutex.Lock()
-	for i, v := range w.viewers[pos] {
-		if v == viewer {
-			if len(w.viewers[pos]) == 1 {
-				// There is only one viewer left, so we just delete the value all together.
-				delete(w.viewers, pos)
-				break
-			}
-			// We remove the viewer from the viewer slice first.
-			w.viewers[pos] = append(w.viewers[pos][:i], w.viewers[pos][i+1:]...)
-			break
+	n := make([]Viewer, 0, len(w.viewers[pos]))
+	for _, v := range w.viewers[pos] {
+		if v != viewer {
+			// Add all viewers but the one to remove to the new viewers slice.
+			n = append(n, v)
 		}
+	}
+	if len(n) == 0 {
+		delete(w.viewers, pos)
+	} else {
+		w.viewers[pos] = n
 	}
 	w.viewerMutex.Unlock()
 
@@ -332,7 +350,7 @@ func (w *World) hasViewer(pos ChunkPos, viewer Viewer) bool {
 // order to provide synchronisation safety.
 func (w *World) provider() Provider {
 	w.pMutex.RLock()
-	provider := w.p
+	provider := w.prov
 	w.pMutex.RUnlock()
 	return provider
 }
@@ -341,7 +359,7 @@ func (w *World) provider() Provider {
 // order to provide synchronisation safety.
 func (w *World) handler() Handler {
 	w.hMutex.RLock()
-	handler := w.h
+	handler := w.hand
 	w.hMutex.RUnlock()
 	return handler
 }
@@ -350,7 +368,7 @@ func (w *World) handler() Handler {
 // order to provide synchronisation safety.
 func (w *World) generator() Generator {
 	w.gMutex.RLock()
-	generator := w.g
+	generator := w.gen
 	w.gMutex.RUnlock()
 	return generator
 }
@@ -369,16 +387,19 @@ func (w *World) chunkCache() *cache.Cache {
 // viewing the old chunk are shown the entity.
 func (w *World) moveChunkEntity(e Entity, chunkPos, newChunkPos ChunkPos) {
 	w.entityMutex.Lock()
-	for i, entity := range w.entities[chunkPos] {
-		if entity == e {
-			w.entities[chunkPos] = append(w.entities[chunkPos][:i], w.entities[chunkPos][i+1:]...)
-			if len(w.entities[chunkPos]) == 0 {
-				// The entity is the last in the chunk, so we can delete the value from the map.
-				delete(w.entities, chunkPos)
-			}
-			break
+	n := make([]Entity, 0, len(w.entities[chunkPos]))
+	for _, entity := range w.entities[chunkPos] {
+		if entity != e {
+			n = append(n, entity)
 		}
 	}
+	if len(n) == 0 {
+		// The entity is the last in the chunk, so we can delete the value from the map.
+		delete(w.entities, chunkPos)
+	} else {
+		w.entities[chunkPos] = n
+	}
+
 	w.entities[newChunkPos] = append(w.entities[newChunkPos], e)
 	w.entityMutex.Unlock()
 
@@ -422,9 +443,11 @@ func (w *World) chunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 			if err != nil {
 				return nil, fmt.Errorf("error loading entities of chunk %v: %v", pos, err)
 			}
-			w.entityMutex.Lock()
-			w.entities[pos] = entities
-			w.entityMutex.Unlock()
+			if len(entities) != 0 {
+				w.entityMutex.Lock()
+				w.entities[pos] = entities
+				w.entityMutex.Unlock()
+			}
 		}
 	} else {
 		c = s.(*chunk.Chunk)
@@ -451,14 +474,15 @@ func (w *World) saveChunk(hash string, i interface{}) {
 	w.viewerMutex.RUnlock()
 
 	c := i.(*chunk.Chunk)
+	c.Lock()
 	c.Compact()
+	c.Unlock()
 
 	if err := w.provider().SaveChunk(pos, c); err != nil {
 		w.log.Errorf("error saving chunk %v to provider: %v", pos, err)
 	}
 	w.entityMutex.Lock()
 	for _, entity := range w.entities[pos] {
-		fmt.Println("Chunk saving: Closing entity", entity)
 		_ = entity.Close()
 	}
 	if err := w.provider().SaveEntities(pos, w.entities[pos]); err != nil {
@@ -466,4 +490,10 @@ func (w *World) saveChunk(hash string, i interface{}) {
 	}
 	delete(w.entities, pos)
 	w.entityMutex.Unlock()
+}
+
+// initChunkCache initialises the chunk cache of the world to its default values.
+func (w *World) initChunkCache() {
+	w.cCache = cache.New(3*time.Minute, 5*time.Minute)
+	w.cCache.OnEvicted(w.saveChunk)
 }

@@ -14,11 +14,17 @@
   # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
   # player count will increase as more players join.
   MaximumPlayers = 0
+  # The message shown to players when the server is shutting down. The message may be left empty to direct
+  # players to the server list directly.
+  ShutdownMessage = "Server closed."
 
 [World]
-  # The name of the world of the server. A world with this name will be loaded, and the name will show up at
-  # the top of the player list in the in-game pause menu.
+  # The name of the world of the server. The name will show up at the top of the player list in the in-game
+  # pause menu. It has no functionality beyond that.
   Name = "World"
+  # The folder that the world files (will) reside in, relative to the working directory. If not currently
+  # present, the folder will be made.
+  Folder = "world"
   # The  maximum chunk radius that players may set in their settings. If they try to set it above this number,
   # it will be capped and set to the max.
   MaximumChunkRadius = 32

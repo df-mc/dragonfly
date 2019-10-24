@@ -1,13 +1,22 @@
 package world
 
-import "github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
+import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
+	"io"
+)
 
 // Provider represents a value that may provide world data to a World value. It usually does the reading and
 // writing of the world data so that the World may use it.
 type Provider interface {
+	io.Closer
 	// WorldName returns the name of the world that the provider provides for. When setting the provider of a
 	// World, the World will replace its current name with this one.
 	WorldName() string
+	// SetWorldName sets the name of the world to a new name.
+	SetWorldName(name string)
+	// WorldSpawn returns the spawn position of the world. Although players may spawn at different positions,
+	// every new player spawns at this position.
+	WorldSpawn() BlockPos
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -51,5 +60,18 @@ func (p NoIOProvider) LoadChunk(position ChunkPos) (*chunk.Chunk, bool, error) {
 
 // WorldName ...
 func (p NoIOProvider) WorldName() string {
-	return "World"
+	return ""
+}
+
+// SetWorldName ...
+func (p NoIOProvider) SetWorldName(name string) {}
+
+// WorldSpawn ...
+func (p NoIOProvider) WorldSpawn() BlockPos {
+	return BlockPos{0, 30, 0}
+}
+
+// Close ...
+func (p NoIOProvider) Close() error {
+	return nil
 }
