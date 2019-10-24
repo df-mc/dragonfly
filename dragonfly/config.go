@@ -40,6 +40,7 @@ func DefaultConfig() Config {
 	c.Network.Address = ":19132"
 	c.Network.EnableEndpoints = true
 	c.Server.Name = "Dragonfly Server"
+	c.Server.ShutdownMessage = "Server closed."
 	c.World.Name = "World"
 	c.World.Folder = "world"
 	c.World.MaximumChunkRadius = 32
