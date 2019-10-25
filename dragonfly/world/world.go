@@ -10,6 +10,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sirupsen/logrus"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -20,6 +21,11 @@ import (
 type World struct {
 	name string
 	log  *logrus.Logger
+
+	stopTick chan struct{}
+
+	time        int64
+	timeStopped uint32
 
 	hMutex sync.RWMutex
 	hand   Handler
@@ -49,8 +55,10 @@ func New(log *logrus.Logger) *World {
 		log:      log,
 		viewers:  make(map[ChunkPos][]Viewer),
 		entities: make(map[ChunkPos][]Entity),
+		stopTick: make(chan struct{}, 1),
 	}
 	w.initChunkCache()
+	go w.startTicking()
 	return w
 }
 
@@ -111,6 +119,35 @@ func (w *World) SetBlock(pos BlockPos, block Block) error {
 	return nil
 }
 
+// Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
+// World.StopTime() is called.
+func (w *World) Time() int {
+	return int(atomic.LoadInt64(&w.time))
+}
+
+// SetTime sets the new time of the world. SetTime will always work, regardless of whether the time is stopped
+// or not.
+func (w *World) SetTime(new int) {
+	atomic.StoreInt64(&w.time, int64(new))
+	for _, viewer := range w.allViewers() {
+		viewer.ViewTime(int(atomic.LoadInt64(&w.time)))
+	}
+}
+
+// StopTime stops the time in the world. When called, the time will no longer cycle and the world will remain
+// at the time when StopTime is called. The time may be restarted by calling World.StartTime().
+// StopTime will not do anything if the time is already stopped.
+func (w *World) StopTime() {
+	atomic.StoreUint32(&w.timeStopped, 1)
+}
+
+// StartTime restarts the time in the world. When called, the time will start cycling again and the day/night
+// cycle will continue. The time may be stopped again by calling World.StopTime().
+// StartTime will not do anything if the time is already started.
+func (w *World) StartTime() {
+	atomic.StoreUint32(&w.timeStopped, 0)
+}
+
 // AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to
 // all viewers of the world that have the chunk of the entity loaded.
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
@@ -138,10 +175,17 @@ func (w *World) AddEntity(e Entity) {
 // will no longer be able to see it.
 // RemoveEntity operates assuming the position of the entity is the same as where it is currently in the
 // world. If it can not find it there, it will loop through all entities and try to find it.
+// RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
+// anything.
 func (w *World) RemoveEntity(e Entity) {
 	chunkPos := ChunkPosFromVec3(e.Position())
 
 	w.entityMutex.Lock()
+	if _, ok := w.cCache.Get(chunkPos.Hash()); !ok {
+		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
+		w.entityMutex.Unlock()
+		return
+	}
 	if !w.removeEntity(chunkPos, e) {
 		w.log.Debugf("entity %T cannot be found at chunk position %v: looking for other chunks", e, chunkPos)
 		for c := range w.entities {
@@ -224,6 +268,10 @@ func (w *World) Provider(p Provider) {
 	}
 	w.prov = p
 	w.name = p.WorldName()
+	w.time = p.LoadTime()
+	if timeRunning := p.LoadTimeCycle(); !timeRunning {
+		atomic.StoreUint32(&w.timeStopped, 1)
+	}
 	w.initChunkCache()
 }
 
@@ -254,6 +302,8 @@ func (w *World) Handle(h Handler) {
 
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
+	w.stopTick <- struct{}{}
+
 	w.viewerMutex.Lock()
 	w.viewers = map[ChunkPos][]Viewer{}
 	w.viewerMutex.Unlock()
@@ -262,11 +312,46 @@ func (w *World) Close() error {
 		// We delete all chunks from the cache so that they are saved to the provider.
 		w.cCache.Delete(key)
 	}
+	w.provider().SaveTime(atomic.LoadInt64(&w.time))
+	w.provider().SaveTimeCycle(atomic.LoadUint32(&w.timeStopped) == 0)
+
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
 	w.Handle(NopHandler{})
 	return nil
+}
+
+// startTicking starts ticking the world, updating all entities, blocks and other features such as the time of
+// the world, as required.
+func (w *World) startTicking() {
+	ticker := time.NewTicker(time.Second / 20)
+	defer ticker.Stop()
+
+	tick := 0
+	for {
+		select {
+		case <-ticker.C:
+			w.tick(tick)
+			tick++
+		case <-w.stopTick:
+			// The world was closed, so we should stop ticking.
+			return
+		}
+	}
+}
+
+// tick ticks the world and updates the time, blocks and entities that require updates.
+func (w *World) tick(tick int) {
+	if atomic.LoadUint32(&w.timeStopped) == 0 {
+		// Only if the time is not stopped, we add one to the current time.
+		atomic.AddInt64(&w.time, 1)
+	}
+	if tick%20 == 0 {
+		for _, viewer := range w.allViewers() {
+			viewer.ViewTime(int(atomic.LoadInt64(&w.time)))
+		}
+	}
 }
 
 // removeEntity attempts to remove an entity located in a chunk at the chunk position passed. If found, it
@@ -308,6 +393,8 @@ func (w *World) addViewer(pos ChunkPos, viewer Viewer) {
 		viewer.ViewEntity(entity)
 	}
 	w.entityMutex.RUnlock()
+
+	viewer.ViewTime(w.Time())
 }
 
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
@@ -344,6 +431,25 @@ func (w *World) hasViewer(pos ChunkPos, viewer Viewer) bool {
 		}
 	}
 	return false
+}
+
+// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
+func (w *World) allViewers() []Viewer {
+	var v []Viewer
+	found := make(map[Viewer]struct{})
+	w.viewerMutex.RLock()
+	for _, c := range w.viewers {
+		for _, viewer := range c {
+			if _, ok := found[viewer]; ok {
+				// We've already found this viewer in another chunk. Don't add it again.
+				continue
+			}
+			found[viewer] = struct{}{}
+			v = append(v, viewer)
+		}
+	}
+	w.viewerMutex.RUnlock()
+	return v
 }
 
 // provider returns the provider of the world. It should always be used, rather than direct field access, in

@@ -32,11 +32,37 @@ type Provider interface {
 	// SaveEntities saves a list of entities in a chunk position. If writing is not successful, an error is
 	// returned.
 	SaveEntities(position ChunkPos, entities []Entity) error
+	// LoadTime loads the time of the world.
+	LoadTime() int64
+	// SaveTime saves the time of the world.
+	SaveTime(time int64)
+	// SaveTimeCycle saves the state of the time cycle: Either stopped or started. If true is passed, the time
+	// is running. If false, the time is stopped.
+	SaveTimeCycle(running bool)
+	// LoadTimeCycle loads the state of the time cycle: If time is running, true is returned. If the time
+	// cycle is stopped, false is returned.
+	LoadTimeCycle() bool
 }
 
 // NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
 // dynamically, instead of reading and writing data, and returns otherwise empty values.
 type NoIOProvider struct{}
+
+// SaveTimeCycle ...
+func (p NoIOProvider) SaveTimeCycle(running bool) {}
+
+// LoadTimeCycle ...
+func (p NoIOProvider) LoadTimeCycle() bool {
+	return true
+}
+
+// LoadTime ...
+func (p NoIOProvider) LoadTime() int64 {
+	return 0
+}
+
+// SaveTime ...
+func (p NoIOProvider) SaveTime(time int64) {}
 
 // LoadEntities ...
 func (p NoIOProvider) LoadEntities(position ChunkPos) ([]Entity, error) {

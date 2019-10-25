@@ -20,4 +20,7 @@ type Viewer interface {
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk)
+	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
+	// second.
+	ViewTime(time int)
 }

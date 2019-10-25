@@ -165,6 +165,11 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 	}
 }
 
+// ViewTime ...
+func (s *Session) ViewTime(time int) {
+	s.writePacket(&packet.SetTime{Time: int32(time)})
+}
+
 // entityRuntimeID returns the runtime ID of the entity passed.
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	s.entityMutex.RLock()
