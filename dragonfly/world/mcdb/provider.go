@@ -62,6 +62,30 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.GameType = 2
 }
 
+// LoadTime returns the time as it was stored in the level.dat of the world loaded.
+func (p *Provider) LoadTime() int64 {
+	return p.d.Time
+}
+
+// SaveTime saves the time to the level.dat of the world.
+func (p *Provider) SaveTime(time int64) {
+	p.d.Time = time
+}
+
+// LoadTimeCycle returns whether the time is cycling or not.
+func (p *Provider) LoadTimeCycle() bool {
+	return p.d.DoDayLightCycle == 1
+}
+
+// SaveTimeCycle saves the state of the time cycle, either running or stopped, to the level.dat.
+func (p *Provider) SaveTimeCycle(running bool) {
+	if running {
+		p.d.DoDayLightCycle = 1
+		return
+	}
+	p.d.DoDayLightCycle = 0
+}
+
 // WorldName returns the name of the world that the provider provides data for.
 func (p *Provider) WorldName() string {
 	return p.d.LevelName

@@ -60,6 +60,8 @@ func New(c *Config, log *logrus.Logger) (*Server, error) {
 	if c != nil {
 		s.c = *c
 	}
+
+	log.Debug("Loading world...")
 	p, err := mcdb.New(s.c.World.Folder)
 	if err != nil {
 		return nil, fmt.Errorf("error loading world: %v", err)
@@ -248,6 +250,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:  1,
 		EntityRuntimeID: 1,
+		Time:            int64(server.world.Time()),
 	}
 	if err := conn.StartGame(data); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")
