@@ -32,7 +32,10 @@ func (s *Session) Disconnect(message string) {
 		HideDisconnectionScreen: message == "",
 		Message:                 message,
 	})
-	s.controllableClosed.Store(true)
+	if s != Nop {
+		_ = s.conn.Flush()
+		_ = s.conn.Close()
+	}
 }
 
 // Transfer transfers the player to a server with the IP and port passed.

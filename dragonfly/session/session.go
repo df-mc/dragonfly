@@ -20,10 +20,9 @@ import (
 type Session struct {
 	log *logrus.Logger
 
-	c                  Controllable
-	world              *world.World
-	controllableClosed atomic.Value
-	conn               *minecraft.Conn
+	c     Controllable
+	world *world.World
+	conn  *minecraft.Conn
 
 	cmdOrigin     protocol.CommandOrigin
 	scoreboardObj atomic.Value
@@ -78,7 +77,6 @@ func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius in
 	}
 	s.chunkLoader.Store(world.NewLoader(maxChunkRadius/2, w, s))
 	s.scoreboardObj.Store("")
-	s.controllableClosed.Store(false)
 	return s
 }
 
@@ -112,10 +110,20 @@ func (s *Session) Close() error {
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
 
+	s.entityMutex.Lock()
+	s.entityRuntimeIDs = map[world.Entity]uint64{}
+	s.entityMutex.Unlock()
+
 	if s.onStop != nil {
 		s.onStop(s.c)
+		s.onStop = nil
 	}
 	return nil
+}
+
+// RequestClose requests the session to close. It will close as soon as the next call to read is made.
+func (s *Session) RequestClose() {
+	_ = s.conn.Close()
 }
 
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
@@ -130,10 +138,6 @@ func (s *Session) handlePackets() {
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
-			return
-		}
-		if s.controllableClosed.Load().(bool) {
-			// The controllable closed itself, so we need to stop handling packets and close the session.
 			return
 		}
 		if err := s.handlePacket(pk); err != nil {
@@ -153,6 +157,8 @@ func (s *Session) sendChunks(closeChan <-chan struct{}) {
 		select {
 		case <-t.C:
 			if err := s.chunkLoader.Load().(*world.Loader).Load(4); err != nil {
+				// The world was closed. We need to close the session as soon as possible.
+
 				s.log.Errorf("error loading chunk: %v", err)
 				continue
 			}
@@ -207,15 +213,15 @@ func (s *Session) initPlayerList() {
 // other sessions.
 func (s *Session) closePlayerList() {
 	sessionMutex.Lock()
-	for i, session := range sessions {
-		if session == s {
-			// Remove the session from the slice.
-			sessions = append(sessions[:i], sessions[i+1:]...)
-			continue
+	n := make([]*Session, 0, len(sessions)-1)
+	for _, session := range sessions {
+		if session != s {
+			n = append(n, session)
 		}
 		// Remove the player of the session from the player list of all other sessions.
 		session.removeFromPlayerList(s)
 	}
+	sessions = n
 	sessionMutex.Unlock()
 }
 

@@ -62,13 +62,13 @@ func (chat *Chat) Unsubscribe(s Subscriber) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
 
-	newSubscribers := make([]Subscriber, 0, len(chat.subscribers)-1)
+	n := make([]Subscriber, 0, len(chat.subscribers)-1)
 	for _, subscriber := range chat.subscribers {
 		if subscriber != s {
-			newSubscribers = append(newSubscribers, subscriber)
+			n = append(n, subscriber)
 		}
 	}
-	chat.subscribers = newSubscribers
+	chat.subscribers = n
 }
 
 // WriteString writes a string s to the chat.

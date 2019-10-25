@@ -87,6 +87,11 @@ func (p BlockPos) ChunkPos() ChunkPos {
 	return ChunkPos{int32(p[0] >> 4), int32(p[2] >> 4)}
 }
 
+// Vec3 returns a vec3 holding the same coordinates as the block position.
+func (p BlockPos) Vec3() mgl32.Vec3 {
+	return mgl32.Vec3{float32(p[0]), float32(p[1]), float32(p[2])}
+}
+
 // BlockPosFromVec3 returns a block position from the Vec3 passed. The coordinates are all rounded down to the
 // nearest full number.
 func BlockPosFromVec3(vec3 mgl32.Vec3) BlockPos {

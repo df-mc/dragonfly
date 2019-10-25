@@ -29,6 +29,7 @@ type Player struct {
 
 	skin skin.Skin
 
+	sMutex sync.RWMutex
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
 	s *session.Session
@@ -207,8 +208,8 @@ func (p *Player) ExecuteCommand(commandLine string) {
 // Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
 // disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
 func (p *Player) Disconnect(a ...interface{}) {
-	p.close()
 	p.session().Disconnect(format(a))
+	p.close()
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
@@ -237,8 +238,8 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 // Close disconnects the player with a 'Player closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.
 func (p *Player) Close() error {
-	p.close()
 	p.session().Disconnect("Connection closed.")
+	p.close()
 	return nil
 }
 
@@ -248,15 +249,23 @@ func (p *Player) close() {
 	p.handler().HandleClose()
 	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
+
+	p.sMutex.Lock()
+	p.s = nil
+	p.sMutex.Unlock()
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
 // is returned.
 func (p *Player) session() *session.Session {
-	if p.s == nil {
+	p.sMutex.RLock()
+	s := p.s
+	p.sMutex.RUnlock()
+
+	if s == nil {
 		return session.Nop
 	}
-	return p.s
+	return s
 }
 
 // handler returns the handler of the player.

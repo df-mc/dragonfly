@@ -14,6 +14,8 @@ func (s *Session) handleRequestChunkRadius(pk *packet.RequestChunkRadius) error 
 		pk.ChunkRadius = s.maxChunkRadius
 	}
 	s.chunkRadius = pk.ChunkRadius
+
+	_ = s.chunkLoader.Load().(*world.Loader).Close()
 	s.chunkLoader.Store(world.NewLoader(int(s.chunkRadius), s.world, s))
 
 	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: s.chunkRadius})

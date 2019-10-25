@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
 )
 
@@ -78,7 +77,6 @@ func (logEncoder) EncodeBlock(b encoder.Block) (id string, meta int16, nbt []byt
 		return "minecraft:log", 3 | axisToInt16(log.Axis)<<2, nil
 	case AcaciaLog:
 		if log.Stripped {
-			fmt.Println(log.Axis, axisToInt16(log.Axis))
 			return "minecraft:stripped_acacia_log", axisToInt16(log.Axis), nil
 		}
 		return "minecraft:log2", axisToInt16(log.Axis) << 2, nil
