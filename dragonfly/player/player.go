@@ -40,7 +40,6 @@ type Player struct {
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
 func New(name string, skin skin.Skin) *Player {
-	// TODO: Add a way to change the world of a player once created without session. Might need a function like entity.Move for re-usability.
 	return &Player{name: name, h: NopHandler{}, uuid: uuid.New(), skin: skin}
 }
 
