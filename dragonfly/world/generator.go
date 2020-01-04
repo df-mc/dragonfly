@@ -2,7 +2,6 @@ package world
 
 import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 )
 
@@ -19,9 +18,9 @@ type Generator interface {
 type FlatGenerator struct{}
 
 var (
-	grass   = encoder.RuntimeID(block.Grass{})
-	dirt    = encoder.RuntimeID(block.Dirt{})
-	bedrock = encoder.RuntimeID(block.Bedrock{})
+	grass, _   = block.RuntimeID(block.Grass{})
+	dirt, _    = block.RuntimeID(block.Dirt{})
+	bedrock, _ = block.RuntimeID(block.Bedrock{})
 )
 
 // GenerateChunk ...

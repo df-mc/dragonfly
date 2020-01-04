@@ -115,37 +115,43 @@ func Distance(a, b mgl32.Vec3) float32 {
 // of the entity that implements position management.
 // Entities must embed this struct to be able to use functions in the entity package.
 type Pos struct {
-	pos, yaw, pitch atomic.Value
+	world, pos, yaw, pitch atomic.Value
 }
 
 // Position returns the current position of the entity. It may be changed as the entity moves or is moved
 // around the world.
 func (pos *Pos) Position() mgl32.Vec3 {
-	v := pos.pos.Load()
-	if v == nil {
-		return mgl32.Vec3{}
+	if v := pos.pos.Load(); v != nil {
+		return v.(mgl32.Vec3)
 	}
-	return v.(mgl32.Vec3)
+	return mgl32.Vec3{}
+}
+
+// World returns the world of the entity. If the world has not been placed in a world yet, World will return
+// nil.
+func (pos *Pos) World() *World {
+	if v := pos.world.Load(); v != nil {
+		return v.(*World)
+	}
+	return nil
 }
 
 // Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 // is 0 when the entity faces forward.
 func (pos *Pos) Yaw() float32 {
-	v := pos.yaw.Load()
-	if v == nil {
-		return 0
+	if v := pos.yaw.Load(); v != nil {
+		return v.(float32)
 	}
-	return v.(float32)
+	return 0
 }
 
 // Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 // and is 0 when the entity faces forward.
 func (pos *Pos) Pitch() float32 {
-	v := pos.pitch.Load()
-	if v == nil {
-		return 0
+	if v := pos.pitch.Load(); v != nil {
+		return v.(float32)
 	}
-	return v.(float32)
+	return 0
 }
 
 // setYaw sets the yaw of the entity to the new yaw passed. It merely sets the field of the struct and does
@@ -161,7 +167,13 @@ func (pos *Pos) setPitch(new float32) {
 }
 
 // setPosition sets the position of the entity to a new position passed. It merely sets the field of the
-// struct and does not take care sending it to viewers.
+// struct and does not take care of sending it to viewers.
 func (pos *Pos) setPosition(new mgl32.Vec3) {
 	pos.pos.Store(new)
+}
+
+// setWorld sets the world of the entity to a new world passed. It merely sets the field of the struct and
+// does not take care of sending it to viewers.
+func (pos *Pos) setWorld(new *World) {
+	pos.world.Store(new)
 }

@@ -22,12 +22,12 @@ func ZAxis() Axis {
 	return Axis(0x02)
 }
 
-// axisFromInt16 decodes an int16 to an Axis instance.
-func axisFromInt16(x int16) Axis {
-	return Axis(x & 0x03)
-}
-
-// axisToInt16 encodes an Axis to an int16.
-func axisToInt16(x Axis) int16 {
-	return int16(x & 0x03)
+// Minecraft converts an Axis into either x, y or z, depending on which axis it is.
+func (a Axis) String() string {
+	if a == 1 {
+		return "x"
+	} else if a == 0 {
+		return "y"
+	}
+	return "z"
 }

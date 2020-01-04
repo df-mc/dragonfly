@@ -4,16 +4,20 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"sync"
 )
 
 const (
-	// SubChunkVersion is the current version of the written sub chunks, specifying the format they are
-	// written as over network and on disk.
-	SubChunkVersion = 8
+	// DiskSubChunkVersion is the current version of the written sub chunks, specifying the format they are
+	// written as on disk.
+	// We write blocks differently in Dragonfly, which is why the version is prefixed with a `20`.
+	DiskSubChunkVersion = 208
+	// DiskSubChunkVersion is the current version of the written sub chunks, specifying the format they are
+	// written as over network in particular.
+	NetworkSubChunkVersion = 8
 )
 
 // SerialisedData holds the serialised data of a chunk. It consists of the chunk's block data itself, a height
@@ -47,13 +51,12 @@ func NetworkEncode(c *Chunk) (d SerialisedData) {
 			// No need to put empty sub chunks in the SerialisedData.
 			continue
 		}
-		_ = buf.WriteByte(SubChunkVersion)
+		_ = buf.WriteByte(NetworkSubChunkVersion)
 		_ = buf.WriteByte(byte(len(sub.storages)))
 		for _, storage := range sub.storages {
 			_ = buf.WriteByte(byte(storage.bitsPerBlock<<1) | 1)
-			for _, word := range storage.blocks {
-				_ = binary.Write(buf, binary.LittleEndian, word)
-			}
+			_ = binary.Write(buf, binary.LittleEndian, storage.blocks)
+
 			_ = protocol.WriteVarint32(buf, int32(storage.palette.Len()))
 			for _, runtimeID := range storage.palette.blockRuntimeIDs {
 				_ = protocol.WriteVarint32(buf, int32(runtimeID))
@@ -81,7 +84,7 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 			// The sub chunk at this Y value is empty, so don't write it.
 			continue
 		}
-		_ = buf.WriteByte(SubChunkVersion)
+		_ = buf.WriteByte(DiskSubChunkVersion)
 		_ = buf.WriteByte(byte(len(sub.storages)))
 		for _, storage := range sub.storages {
 			diskEncodeBlockStorage(buf, storage)
@@ -125,15 +128,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		switch ver {
 		default:
 			return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
-		case 1:
-			// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-			storage, err := diskDecodeBlockStorage(buf)
-			if err != nil {
-				return nil, err
-			}
-			c.sub[y].storages = append(c.sub[y].storages, storage)
-		case 8:
-			// Version 8 allows up to 256 layers for one sub chunk.
+		case DiskSubChunkVersion:
 			storageCount, err := buf.ReadByte()
 			if err != nil {
 				return nil, fmt.Errorf("error reading storage count: %v", err)
@@ -151,35 +146,50 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 	return c, nil
 }
 
-// block represents a block as found in a disk save of a world.
-type block struct {
-	Name string `nbt:"name"`
-	Data int16  `nbt:"val"`
+// blockEntry represents a block as found in a disk save of a world.
+type blockEntry struct {
+	Name  string                 `nbt:"name"`
+	State map[string]interface{} `nbt:"states"`
 }
 
 // diskEncodeBlockStorage encodes a block storage to its disk representation into the buffer passed.
 func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
 	_ = buf.WriteByte(byte(storage.bitsPerBlock<<1) | 0)
-	for _, block := range storage.blocks {
-		_ = binary.Write(buf, binary.LittleEndian, block)
+	for _, b := range storage.blocks {
+		_ = binary.Write(buf, binary.LittleEndian, b)
 	}
 	_ = binary.Write(buf, binary.LittleEndian, int32(storage.palette.Len()))
 
-	blocks := make([]block, storage.palette.Len())
+	blocks := make([]blockEntry, storage.palette.Len())
 	for index, runtimeID := range storage.palette.blockRuntimeIDs {
 		// Get the block state registered with the runtime IDs we have in the palette of the block storage
 		// as we need the name and data value to store.
-		b := encoder.Blocks[runtimeID]
-		blocks[index] = block{
-			Name: b.Name,
-			Data: b.Data,
+
+		b, ok := block.ByRuntimeID(runtimeID)
+		if !ok {
+			// Should never happen, but we panic with a reasonable error anyway.
+			panic(fmt.Sprintf("cannot find block by runtime ID %v", runtimeID))
+		}
+		saveName, ok := block.SaveName(b)
+		if !ok {
+			// Should also never happen.
+			panic(fmt.Sprintf("cannot find save name for block state %+v", b))
+		}
+
+		// We first encode and decode the block so that we get its properties in a map.
+		var properties map[string]interface{}
+		raw, _ := nbt.Marshal(b)
+		_ = nbt.Unmarshal(raw, &properties)
+
+		blocks[index] = blockEntry{
+			Name:  saveName,
+			State: properties,
 		}
 	}
 	// Marshal the slice of block states into NBT and add it to the byte slice.
-	enc := nbt.NewEncoder(buf)
-	enc.Variant = nbt.LittleEndian
-	for _, block := range blocks {
-		_ = enc.Encode(block)
+	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+	for _, b := range blocks {
+		_ = enc.Encode(b)
 	}
 }
 
@@ -225,10 +235,9 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	}
 	paletteCount := uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
 
-	blocks := make([]block, paletteCount)
+	blocks := make([]blockEntry, paletteCount)
 
-	dec := nbt.NewDecoder(buf)
-	dec.Variant = nbt.LittleEndian
+	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 
 	// There are paletteCount NBT tags that represent unique blocks.
 	for i := uint32(0); i < paletteCount; i++ {
@@ -239,11 +248,19 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 
 	palette := &palette{blockRuntimeIDs: make([]uint32, paletteCount)}
 	for i, b := range blocks {
+		blockInstance, ok := block.Get(b.Name)
+		if !ok {
+			return nil, fmt.Errorf("cannot decode unknown block '%v'", b.Name)
+		}
+		// Re-encode the decoded state data and decode it back into the block instance.
+		raw, _ := nbt.Marshal(b.State)
+		_ = nbt.Unmarshal(raw, &blockInstance)
+
 		// Finally we add the runtime ID of the block to the palette we create.
-		palette.blockRuntimeIDs[i] = encoder.RuntimeIDs[protocol.BlockEntry{
-			Name: b.Name,
-			Data: b.Data,
-		}]
+		palette.blockRuntimeIDs[i], ok = block.RuntimeID(blockInstance)
+		if !ok {
+			return nil, fmt.Errorf("cannot get runtime ID of unregistered block state %+v", blockInstance)
+		}
 	}
 	return newBlockStorage(uint32s, palette), nil
 }

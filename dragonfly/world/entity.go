@@ -21,7 +21,9 @@ type Entity interface {
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
 	Pitch() float32
+
 	setPosition(new mgl32.Vec3)
 	setYaw(new float32)
 	setPitch(new float32)
+	setWorld(new *World)
 }

@@ -1,4 +1,4 @@
-package world
+package block
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
 // inventory: It is also an item.

@@ -59,13 +59,18 @@ func (s *Session) SendAvailableCommands() {
 			for _, paramInfo := range params {
 				t, enum := valueToParamType(paramInfo.Value)
 				t |= protocol.CommandArgValid
+
+				opt := byte(0)
+				if paramInfo.Value == false || paramInfo.Value == true {
+					opt |= protocol.ParamOptionCollapseEnum
+				}
 				overloads[i].Parameters = append(overloads[i].Parameters, protocol.CommandParameter{
-					Name:                paramInfo.Name,
-					Type:                t,
-					Optional:            paramInfo.Optional,
-					CollapseEnumOptions: paramInfo.Value == false || paramInfo.Value == true,
-					Enum:                enum,
-					Suffix:              paramInfo.Suffix,
+					Name:     paramInfo.Name,
+					Type:     t,
+					Optional: paramInfo.Optional,
+					Options:  opt,
+					Enum:     enum,
+					Suffix:   paramInfo.Suffix,
 				})
 			}
 		}

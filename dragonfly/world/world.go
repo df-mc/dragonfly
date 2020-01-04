@@ -1,13 +1,11 @@
 package world
 
 import (
-	"errors"
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/patrickmn/go-cache"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"sync/atomic"
@@ -84,36 +82,31 @@ func (w *World) Block(pos BlockPos) (Block, error) {
 	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
 	c.Unlock()
 
-	state := encoder.Blocks[id]
-	e, ok := encoder.ByID(state.Name)
+	state, ok := block.ByRuntimeID(id)
 	if !ok {
-		return nil, errors.New("no decoder for " + state.Name)
+		// This should never happen.
+		return nil, fmt.Errorf("could not find block state by runtime ID %v", id)
 	}
 	// TODO: Implement block NBT reading.
-	return e.DecodeBlock(state.Name, state.Data, nil).(Block), nil
+	return state, nil
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
 // An error is returned if the chunk that the block should be written to could not be loaded successfully.
-// SetBlock panics if the block passed does not have an encoder registered for it in the encoder package.
-func (w *World) SetBlock(pos BlockPos, block Block) error {
-	e, ok := encoder.ByBlock(block)
+// SetBlock panics if the block passed has not yet been registered using block.Register().
+func (w *World) SetBlock(pos BlockPos, b Block) error {
+	runtimeID, ok := block.RuntimeID(b)
 	if !ok {
-		panic("no encoder for block " + block.Name())
+		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
-	id, meta, nbt := e.EncodeBlock(block)
 
 	c, err := w.chunk(pos.ChunkPos())
 	if err != nil {
 		return err
 	}
-	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0, encoder.RuntimeIDs[protocol.BlockEntry{
-		Name: id,
-		Data: meta,
-	}])
+	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0, runtimeID)
 	// TODO: Implement block NBT writing.
-	_ = nbt
 	c.Unlock()
 
 	return nil
@@ -162,6 +155,8 @@ func (w *World) AddEntity(e Entity) {
 	w.entityMutex.Lock()
 	w.entities[chunkPos] = append(w.entities[chunkPos], e)
 	w.entityMutex.Unlock()
+
+	e.setWorld(w)
 
 	w.viewerMutex.RLock()
 	for _, viewer := range w.viewers[chunkPos] {

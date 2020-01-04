@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -85,12 +87,11 @@ func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius in
 // The function passed will be called when the session stops running.
 func (s *Session) Start(onStop func(controllable Controllable)) {
 	s.onStop = onStop
-
-	go s.handlePackets()
+	s.world.AddEntity(s.c)
+	s.initPlayerList()
 	s.SendAvailableCommands()
 
-	s.initPlayerList()
-	s.world.AddEntity(s.c)
+	go s.handlePackets()
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has joined the game"))
@@ -235,18 +236,49 @@ func (s *Session) addToPlayerList(session *Session) {
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entityMutex.Unlock()
 
+	var animations []protocol.SkinAnimation
+	for _, animation := range c.Skin().Animations {
+		protocolAnim := protocol.SkinAnimation{
+			ImageWidth:    uint32(animation.Bounds().Max.X),
+			ImageHeight:   uint32(animation.Bounds().Max.Y),
+			ImageData:     animation.Pix,
+			AnimationType: 0,
+			FrameCount:    float32(animation.FrameCount),
+		}
+		switch animation.Type() {
+		case skin.AnimationHead:
+			protocolAnim.AnimationType = protocol.SkinAnimationHead
+		case skin.AnimationBody32x32:
+			protocolAnim.AnimationType = protocol.SkinAnimationBody32x32
+		case skin.AnimationBody128x128:
+			protocolAnim.AnimationType = protocol.SkinAnimationBody128x128
+		}
+		animations = append(animations, protocolAnim)
+	}
+
+	playerSkin := c.Skin()
 	s.writePacket(&packet.PlayerList{
 		ActionType: packet.PlayerListActionAdd,
 		Entries: []protocol.PlayerListEntry{{
-			UUID:             c.UUID(),
-			EntityUniqueID:   int64(runtimeID),
-			Username:         c.Name(),
-			SkinID:           c.Skin().ID,
-			SkinData:         c.Skin().Pix,
-			CapeData:         c.Skin().Cape.Pix,
-			SkinGeometryName: c.Skin().ModelName,
-			SkinGeometry:     c.Skin().Model,
-			XUID:             c.XUID(),
+			UUID:           c.UUID(),
+			EntityUniqueID: int64(runtimeID),
+			Username:       c.Name(),
+			XUID:           c.XUID(),
+			Skin: protocol.Skin{
+				SkinID:            uuid.New().String(),
+				SkinResourcePatch: playerSkin.ModelConfig.Encode(),
+				SkinImageWidth:    uint32(playerSkin.Bounds().Max.X),
+				SkinImageHeight:   uint32(playerSkin.Bounds().Max.Y),
+				SkinData:          playerSkin.Pix,
+				CapeImageWidth:    uint32(playerSkin.Cape.Bounds().Max.X),
+				CapeImageHeight:   uint32(playerSkin.Cape.Bounds().Max.Y),
+				CapeData:          playerSkin.Cape.Pix,
+				SkinGeometry:      playerSkin.Model,
+				PersonaSkin:       session.conn.ClientData().PersonaSkin,
+				CapeID:            uuid.New().String(),
+				FullSkinID:        uuid.New().String(),
+				Animations:        animations,
+			},
 		}},
 	})
 }

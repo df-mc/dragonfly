@@ -1,8 +1,6 @@
 package skin
 
 import (
-	"errors"
-	"github.com/google/uuid"
 	"image"
 	"image/color"
 )
@@ -12,62 +10,37 @@ import (
 // Skin implements the image.Image interface to ease working with the value as an image.
 type Skin struct {
 	w, h int
+
 	// Pix holds the raw pixel data of the skin. This is an RGBA byte slice, meaning that every first byte is
 	// a Red value, the second a Green value, the third a Blue value and the fourth an Alpha value.
 	Pix []uint8
-	// ID holds the ID of the skin. Typically, this ID carries some UUID in it to ensure a unique ID is picked
-	// for the skin.
-	ID string
-	// ModelName holds the name of the model of the skin. This name is used to identify the model, and the
-	// model is cached client-side by this name.
-	ModelName string
+
+	// ModelConfig specifies how the Model field below should be used to form the total skin.
+	ModelConfig ModelConfig
 	// Model holds the raw JSON data that represents the model of the skin. If empty, it means the skin holds
 	// the standard skin data (geometry.humanoid).
+	// TODO: Write a full API for this. The model should be able to be easily modified or created runtime.
 	Model []byte
+
 	// Cape holds the cape of the skin. By default, an empty cape is set in the skin. Cape.Exists() may be
 	// called to check if the cape actually has any data.
 	Cape Cape
+
+	// Animations holds a list of all animations that the skin has. These animations must be pointed to in the
+	// ModelConfig, in order to display them on the skin.
+	Animations []Animation
 }
 
 // New creates a new skin using the width and height passed. The dimensions passed must be either 64x32,
 // 64x64 or 128x128. An error is returned if other dimensions are used.
 // The skin pixels are initialised for the skin, and a random skin ID is picked. The model name and model is
 // left empty.
-func New(width, height int) (Skin, error) {
-	switch {
-	case width == 64 && height == 32:
-	case width == 64 && height == 64:
-	case width == 128 && height == 128:
-	default:
-		return Skin{}, errors.New("skin dimensions must be either 64x32, 64x64 or 128x128")
-	}
+func New(width, height int) Skin {
 	return Skin{
 		w:   width,
 		h:   height,
 		Pix: make([]uint8, width*height*4),
-		ID:  uuid.New().String(),
-	}, nil
-}
-
-// NewFromBytes creates a new skin from the raw skin data passed.
-func NewFromBytes(p []uint8) (Skin, error) {
-	var width, height int
-	switch len(p) {
-	case 64 * 32 * 4:
-		width, height = 64, 32
-	case 64 * 64 * 4:
-		width, height = 64, 64
-	case 128 * 128 * 4:
-		width, height = 128, 128
-	default:
-		return Skin{}, errors.New("skin dimensions must be either 64x32, 64x64 or 128x128")
 	}
-	return Skin{
-		w:   width,
-		h:   height,
-		Pix: p,
-		ID:  uuid.New().String(),
-	}, nil
 }
 
 // Bounds returns the bounds of the skin. These are either 64x32, 64x64 or 128, depending on the bounds of the

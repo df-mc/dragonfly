@@ -25,8 +25,6 @@ type Player struct {
 	uuid uuid.UUID
 	xuid string
 
-	world *world.World
-
 	skin skin.Skin
 
 	sMutex sync.RWMutex
@@ -50,13 +48,12 @@ func New(name string, skin skin.Skin) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, w *world.World) *Player {
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session) *Player {
 	p := New(name, skin)
 	p.s = s
 	p.uuid = uuid
 	p.xuid = xuid
 	p.skin = skin
-	p.world = w
 
 	chat.Global.Subscribe(p)
 	return p
@@ -90,11 +87,6 @@ func (p *Player) XUID() string {
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
 	return p.skin
-}
-
-// World returns the world that the player is currently in.
-func (p *Player) World() *world.World {
-	return p.world
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call
@@ -188,7 +180,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	args := strings.Split(commandLine, " ")
 	commandName := strings.TrimPrefix(args[0], "/")
 
-	command, ok := cmd.CommandByAlias(commandName)
+	command, ok := cmd.ByAlias(commandName)
 	if !ok {
 		output := &cmd.Output{}
 		output.Errorf("Unknown command '%v'", commandName)

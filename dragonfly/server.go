@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block/encoder"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
@@ -12,6 +12,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/mcdb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
@@ -29,8 +30,8 @@ type Server struct {
 	c        Config
 	log      *logrus.Logger
 	listener *minecraft.Listener
-	players  chan *player.Player
 	world    *world.World
+	players  chan *player.Player
 
 	startTime time.Time
 
@@ -244,7 +245,7 @@ func (server *Server) run() {
 func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
-		Blocks:         encoder.Blocks,
+		Blocks:         server.blockEntries(),
 		PlayerPosition: server.world.Spawn(),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
@@ -276,7 +277,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
 	s := &session.Session{}
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s)
 	*s = *session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
 	s.Start(server.handleSessionClose)
 
@@ -285,13 +286,52 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 
 // createSkin creates a new skin using the skin data found in the client data in the login, and returns it.
 func (server *Server) createSkin(data login.ClientData) skin.Skin {
-	// gophertunnel guarantees the following values are valid base64 data and are of the correct size.
+	// gophertunnel guarantees the following values are valid data and are of the correct size.
 	skinData, _ := base64.StdEncoding.DecodeString(data.SkinData)
 	modelData, _ := base64.StdEncoding.DecodeString(data.SkinGeometry)
-	playerSkin, _ := skin.NewFromBytes(skinData)
-	playerSkin.ID = data.SkinID
-	playerSkin.ModelName = data.SkinGeometryName
+	skinResourcePatch, _ := base64.StdEncoding.DecodeString(data.SkinResourcePatch)
+	modelConfig, _ := skin.DecodeModelConfig(skinResourcePatch)
+
+	playerSkin := skin.New(data.SkinImageWidth, data.SkinImageHeight)
+	playerSkin.Pix = skinData
 	playerSkin.Model = modelData
+	playerSkin.ModelConfig = modelConfig
+
+	for _, animation := range data.AnimatedImageData {
+		var t skin.AnimationType
+		switch animation.Type {
+		case protocol.SkinAnimationHead:
+			t = skin.AnimationHead
+		case protocol.SkinAnimationBody32x32:
+			t = skin.AnimationBody32x32
+		case protocol.SkinAnimationBody128x128:
+			t = skin.AnimationBody128x128
+		}
+
+		anim := skin.NewAnimation(animation.ImageWidth, animation.ImageHeight, t)
+		anim.FrameCount = int(animation.Frames)
+		anim.Pix, _ = base64.StdEncoding.DecodeString(animation.Image)
+
+		playerSkin.Animations = append(playerSkin.Animations, anim)
+	}
 
 	return playerSkin
+}
+
+// blockEntries loads a list of all block state entries of the server, ready to be sent in the StartGame
+// packet.
+func (server *Server) blockEntries() (entries []interface{}) {
+	// The current version of block states.
+	const version int32 = 17760256
+	for _, b := range block.All() {
+		name, properties := b.Minecraft()
+		entries = append(entries, map[string]interface{}{
+			"block": map[string]interface{}{
+				"version": version,
+				"name":    name,
+				"states":  properties,
+			},
+		})
+	}
+	return
 }

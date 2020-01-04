@@ -43,7 +43,7 @@ func New(dir string) (*Provider, error) {
 			// The file did not have enough content, meaning it is corrupted. We return an error.
 			return nil, fmt.Errorf("level.dat exists but has no data")
 		}
-		if err := nbt.UnmarshalVariant(f[8:], &p.d, nbt.LittleEndian); err != nil {
+		if err := nbt.UnmarshalEncoding(f[8:], &p.d, nbt.LittleEndian); err != nil {
 			return nil, fmt.Errorf("error decoding level.dat NBT: %v", err)
 		}
 	}
@@ -191,7 +191,7 @@ func (p *Provider) Close() error {
 
 	buf := bytes.NewBuffer(nil)
 	_ = binary.Write(buf, binary.LittleEndian, int32(3))
-	nbtData, err := nbt.MarshalVariant(p.d, nbt.LittleEndian)
+	nbtData, err := nbt.MarshalEncoding(p.d, nbt.LittleEndian)
 	if err != nil {
 		return fmt.Errorf("error encoding level.dat to NBT: %v", err)
 	}

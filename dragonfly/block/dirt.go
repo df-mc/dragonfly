@@ -1,17 +1,23 @@
 package block
 
-type (
-	// Dirt is a block found abundantly in most biomes under a layer of grass blocks at the top of the
-	// Overworld.
-	Dirt struct{}
-	// CoarseDirt is a variation of Dirt that grass blocks won't spread on.
-	CoarseDirt struct{}
-)
-
-func (Dirt) Name() string {
-	return "Dirt"
+// Dirt is a block found abundantly in most biomes under a layer of grass blocks at the top of the
+// Overworld.
+type Dirt struct {
+	// Coarse specifies if the dirt should be off the coarse dirt variant. Grass blocks won't spread on
+	// the block if set to true.
+	Coarse bool
 }
 
-func (CoarseDirt) Name() string {
-	return "Coarse Dirt"
+func (d Dirt) Minecraft() (name string, properties map[string]interface{}) {
+	if d.Coarse {
+		return "minecraft:dirt", map[string]interface{}{"dirt_type": "coarse"}
+	}
+	return "minecraft:dirt", map[string]interface{}{"dirt_type": "normal"}
+}
+
+func (d Dirt) Name() string {
+	if d.Coarse {
+		return "Coarse Dirt"
+	}
+	return "Dirt"
 }
