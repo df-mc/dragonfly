@@ -16,3 +16,8 @@ func Move(e world.Entity, deltaPosition mgl32.Vec3) {
 func Rotate(e world.Entity, deltaYaw, deltaPitch float32) {
 	e.World().RotateEntity(e, deltaYaw, deltaPitch)
 }
+
+// Teleport teleports an entity to a target position. The entity is immediately moved to the new position.
+func Teleport(e world.Entity, position mgl32.Vec3) {
+	e.World().TeleportEntity(e, position)
+}

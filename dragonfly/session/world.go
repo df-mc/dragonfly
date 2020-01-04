@@ -85,13 +85,14 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 
 // ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
-	if controllable, ok := e.(Controllable); ok && controllable.UUID() == s.c.UUID() {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID {
 		return
 	}
 	var runtimeID uint64
 
 	s.entityMutex.Lock()
 	_, controllable := e.(Controllable)
+
 	if id, ok := s.entityRuntimeIDs[e]; ok && controllable {
 		runtimeID = id
 	} else {
@@ -143,9 +144,11 @@ func (s *Session) HideEntity(e world.Entity) {
 
 // ViewEntityMovement ...
 func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaYaw, deltaPitch float32) {
-	s.entityMutex.RLock()
-	id := s.entityRuntimeIDs[e]
-	s.entityMutex.RUnlock()
+	id := s.entityRuntimeID(e)
+
+	if id == selfEntityRuntimeID {
+		return
+	}
 
 	switch e.(type) {
 	case Controllable:
@@ -168,6 +171,34 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 // ViewTime ...
 func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
+}
+
+// ViewEntityTeleport ...
+func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
+	id := s.entityRuntimeID(e)
+
+	if id == selfEntityRuntimeID {
+		s.chunkLoader.Load().(*world.Loader).Move(position)
+	}
+
+	switch e.(type) {
+	case Controllable:
+		s.writePacket(&packet.MovePlayer{
+			EntityRuntimeID: id,
+			Position:        position,
+			Pitch:           e.Pitch(),
+			Yaw:             e.Yaw(),
+			HeadYaw:         e.Yaw(),
+			Mode:            packet.MoveModeTeleport,
+		})
+	default:
+		s.writePacket(&packet.MoveActorAbsolute{
+			EntityRuntimeID: id,
+			Position:        position,
+			Rotation:        mgl32.Vec3{e.Pitch(), e.Yaw()},
+			Flags:           packet.MoveFlagTeleport,
+		})
+	}
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

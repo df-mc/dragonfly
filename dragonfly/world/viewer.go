@@ -17,6 +17,9 @@ type Viewer interface {
 	// ViewEntityMovement views the movement of an entity. The entity is moved with a delta position, yaw and
 	// pitch, which, when applied to values of the entity, will result in the final values.
 	ViewEntityMovement(e Entity, deltaPos mgl32.Vec3, deltaYaw, deltaPitch float32)
+	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
+	// target position.
+	ViewEntityTeleport(e Entity, position mgl32.Vec3)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk)

@@ -55,7 +55,12 @@ func (s *Session) addToPlayerList(session *Session) {
 	c := session.c
 
 	s.entityMutex.Lock()
-	runtimeID := atomic.AddUint64(&s.currentEntityRuntimeID, 1)
+	var runtimeID uint64
+	if session != s {
+		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
+	} else {
+		runtimeID = 1
+	}
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entityMutex.Unlock()
 

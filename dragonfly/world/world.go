@@ -144,7 +144,11 @@ func (w *World) StartTime() {
 // AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to
 // all viewers of the world that have the chunk of the entity loaded.
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
+// If the entity passed to AddEntity is currently in a world, it is first removed from that world.
 func (w *World) AddEntity(e Entity) {
+	if e.World() != nil {
+		e.World().RemoveEntity(e)
+	}
 	chunkPos := ChunkPosFromVec3(e.Position())
 	c, err := w.chunk(chunkPos)
 	if err != nil {
@@ -205,17 +209,35 @@ func (w *World) MoveEntity(e Entity, delta mgl32.Vec3) {
 		// Old viewers also need to stop viewing this entity.
 		w.moveChunkEntity(e, chunkPos, newChunkPos)
 	}
-
-	w.viewerMutex.RLock()
-	for _, viewer := range w.viewers[newChunkPos] {
+	for _, viewer := range w.chunkViewers(newChunkPos) {
 		// Finally we show the movement to all viewers of the entity.
 		viewer.ViewEntityMovement(e, delta, 0, 0)
 	}
-	w.viewerMutex.RUnlock()
 
 	// Make sure to set the final position of the entity: It should not yet be applied when making the viewers
 	// view the movement.
 	e.setPosition(e.Position().Add(delta))
+}
+
+// TeleportEntity teleports an entity to a target position in the world. Unlike MoveEntity, it immediately
+// changes the position of the entity.
+func (w *World) TeleportEntity(e Entity, position mgl32.Vec3) {
+	chunkPos := ChunkPosFromVec3(e.Position())
+	newChunkPos := ChunkPosFromVec3(position)
+
+	if chunkPos != newChunkPos {
+		// The entity moved from one chunk into another, so we need to move it and show it to the new viewers.
+		// Old viewers also need to stop viewing this entity.
+		w.moveChunkEntity(e, chunkPos, newChunkPos)
+	}
+	for _, viewer := range w.chunkViewers(newChunkPos) {
+		// Finally we show the movement to all viewers of the entity.
+		viewer.ViewEntityTeleport(e, position)
+	}
+
+	// Make sure to set the final position of the entity: It should not yet be applied when making the viewers
+	// view the movement.
+	e.setPosition(position)
 }
 
 // RotateEntity rotates an entity in the position, adding deltaYaw and deltaPitch to the respective values. It
@@ -223,11 +245,9 @@ func (w *World) MoveEntity(e Entity, delta mgl32.Vec3) {
 func (w *World) RotateEntity(e Entity, deltaYaw, deltaPitch float32) {
 	chunkPos := ChunkPosFromVec3(e.Position())
 
-	w.viewerMutex.RLock()
-	for _, viewer := range w.viewers[chunkPos] {
+	for _, viewer := range w.chunkViewers(chunkPos) {
 		viewer.ViewEntityMovement(e, mgl32.Vec3{}, deltaYaw, deltaPitch)
 	}
-	w.viewerMutex.RUnlock()
 
 	e.setYaw(e.Yaw() + deltaYaw)
 	e.setPitch(e.Pitch() + deltaPitch)
@@ -487,6 +507,15 @@ func (w *World) chunkCache() *cache.Cache {
 	c := w.cCache
 	w.pMutex.RUnlock()
 	return c
+}
+
+// chunkViewers returns a list of all viewers of a chunk at a given position.
+func (w *World) chunkViewers(pos ChunkPos) []Viewer {
+	w.viewerMutex.RLock()
+	viewers := make([]Viewer, len(w.viewers[pos]))
+	copy(viewers, w.viewers[pos])
+	w.viewerMutex.RUnlock()
+	return viewers
 }
 
 // moveChunkEntity moves an entity from one chunk to another. It makes sure viewers of the old chunk that are
