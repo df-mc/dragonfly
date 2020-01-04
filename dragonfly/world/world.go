@@ -289,7 +289,7 @@ func (w *World) Provider(p Provider) {
 	}
 	w.prov = p
 	w.name = p.WorldName()
-	w.time = p.LoadTime()
+	atomic.StoreInt64(&w.time, p.LoadTime())
 	if timeRunning := p.LoadTimeCycle(); !timeRunning {
 		atomic.StoreUint32(&w.timeStopped, 1)
 	}
