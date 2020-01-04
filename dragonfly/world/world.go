@@ -248,8 +248,14 @@ func (w *World) Entities() []Entity {
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
 // when joining.
-func (w *World) Spawn() mgl32.Vec3 {
-	return w.provider().WorldSpawn().Vec3()
+func (w *World) Spawn() BlockPos {
+	return w.provider().WorldSpawn()
+}
+
+// SetSpawn sets the spawn of the world to a different position. The player will be spawned in the center of
+// this position when newly joining.
+func (w *World) SetSpawn(pos BlockPos) {
+	w.provider().SetWorldSpawn(pos)
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider

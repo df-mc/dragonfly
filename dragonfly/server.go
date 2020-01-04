@@ -10,6 +10,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/mcdb"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -246,7 +247,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
-		PlayerPosition: server.world.Spawn(),
+		PlayerPosition: server.world.Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5}),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:  1,

@@ -17,6 +17,8 @@ type Provider interface {
 	// WorldSpawn returns the spawn position of the world. Although players may spawn at different positions,
 	// every new player spawns at this position.
 	WorldSpawn() BlockPos
+	// SetWorldSpawn sets the spawn of a world to a new position.
+	SetWorldSpawn(pos BlockPos)
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -47,6 +49,9 @@ type Provider interface {
 // NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
 // dynamically, instead of reading and writing data, and returns otherwise empty values.
 type NoIOProvider struct{}
+
+// SetWorldSpawn ...
+func (p NoIOProvider) SetWorldSpawn(pos BlockPos) {}
 
 // SaveTimeCycle ...
 func (p NoIOProvider) SaveTimeCycle(running bool) {}

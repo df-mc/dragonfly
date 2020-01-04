@@ -106,6 +106,11 @@ func (p *Provider) WorldSpawn() world.BlockPos {
 	return world.BlockPos{int(p.d.SpawnX), int(y), int(p.d.SpawnZ)}
 }
 
+// SetWorldSpawn sets the spawn of the world to a new one.
+func (p *Provider) SetWorldSpawn(pos world.BlockPos) {
+	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
+}
+
 // LoadChunk loads a chunk at the position passed from the leveldb database. If it doesn't exist, exists is
 // false. If an error is returned, exists is always assumed to be true.
 func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bool, err error) {
