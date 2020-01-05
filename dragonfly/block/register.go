@@ -1,75 +1,67 @@
 package block
 
 import (
-	"encoding/json"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
-	"github.com/mitchellh/hashstructure"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"sort"
+	"unsafe"
 )
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
-	Register("air", Air{})
-	Register("stone", Stone{})
-	Register("granite", Granite{}, Granite{Polished: true})
-	Register("diorite", Diorite{}, Diorite{Polished: true})
-	Register("andesite", Andesite{}, Andesite{Polished: true})
-	Register("grass", Grass{})
-	Register("dirt", Dirt{}, Dirt{Coarse: true})
-	Register("log", allLogs()...)
-	Register("bedrock", Bedrock{}, Bedrock{InfiniteBurning: true})
+	Register(Air{})
+	Register(Stone{})
+	Register(Granite{}, Granite{Polished: true})
+	Register(Diorite{}, Diorite{Polished: true})
+	Register(Andesite{}, Andesite{Polished: true})
+	Register(Grass{})
+	Register(Dirt{}, Dirt{Coarse: true})
+	Register(allLogs()...)
+	Register(Bedrock{}, Bedrock{InfiniteBurning: true})
 
 	registerAllStates()
 }
 
-var blocks = map[string]Block{}
-var saveNames = map[Block]string{}
-
 var registeredStates []Block
-var runtimeIDs = map[Block]uint32{}
-
-var existingStates = map[string]struct{}{}
+var runtimeIDs = map[string]uint32{}
+var blocksHash = map[string]Block{}
 
 // Register registers a block with the save name passed. The save name is used to save the block to the
 // world's database and must not conflict with existing blocks.
 // If a saveName is passed which already has a block registered for it, Register panics.
-func Register(saveName string, states ...Block) {
+func Register(states ...Block) {
 	if len(states) == 0 {
 		panic("at least one block state must be registered")
 	}
-	if _, ok := blocks[saveName]; ok {
-		panic("cannot overwrite an existing block with the save name " + saveName)
-	}
-	blocks[saveName] = states[0]
-
 	for _, state := range states {
-		runtimeIDs[state] = uint32(len(registeredStates))
-		saveNames[state] = saveName
+		name, props := state.Minecraft()
+		key := name + HashProperties(props)
+
+		if _, ok := blocksHash[key]; ok {
+			panic(fmt.Sprintf("cannot overwrite an existing block with the same name '%v' and properties %+v", name, props))
+		}
+
+		runtimeIDs[key] = uint32(len(registeredStates))
 		registeredStates = append(registeredStates, state)
 
-		name, props := state.Minecraft()
-		h, _ := hashstructure.Hash(props, nil)
-		existingStates[fmt.Sprint(name, h)] = struct{}{}
+		blocksHash[key] = state
 	}
 }
 
-// Get attempts to return a block by a save name registered using Register. If found, the block is returned
-// and the bool is true. If not found, false is returned and the block is nil.
-func Get(saveName string) (Block, bool) {
-	b, ok := blocks[saveName]
+// Get attempts to return a block by its Minecraft save name combined with the hash of its block properties.
+// If found, the Block returned is non-nil and the bool true.
+func Get(key string) (Block, bool) {
+	b, ok := blocksHash[key]
 	return b, ok
-}
-
-// SaveName attempts to return the save name of a particular block state. If found, the string is non-empty
-// and the bool returned true. The bool is false if the state was not registered.
-func SaveName(state Block) (string, bool) {
-	saveName, ok := saveNames[state]
-	return saveName, ok
 }
 
 // RuntimeID attempts to return a runtime ID of a block state previously registered using Register(). If the
 // runtime ID is found, the bool returned is true. It is otherwise false.
 func RuntimeID(state Block) (uint32, bool) {
-	runtimeID, ok := runtimeIDs[state]
+	name, props := state.Minecraft()
+	runtimeID, ok := runtimeIDs[name+HashProperties(props)]
 	return runtimeID, ok
 }
 
@@ -92,26 +84,54 @@ func All() []Block {
 // registered before this is called.
 func registerAllStates() {
 	var m []unimplementedBlock
-	_ = json.Unmarshal([]byte(allStates), &m)
+	b, _ := base64.StdEncoding.DecodeString(allStates)
+	_ = nbt.Unmarshal(b, &m)
 
 	for _, b := range m {
-		h, _ := hashstructure.Hash(b.Block.Properties, nil)
-		key := fmt.Sprint(b.Block.Name, h)
-		if _, ok := existingStates[key]; ok {
+		key := b.Block.Name + HashProperties(b.Block.Properties)
+		if _, ok := blocksHash[key]; ok {
 			// Duplicate state, don't add it.
 			continue
 		}
-		registeredStates = append(registeredStates, b)
+		Register(b)
 	}
+}
+
+// HashProperties produces a hash for the block properties map passed.
+// Passing the same map into HashProperties will always result in the same hash.
+func HashProperties(properties map[string]interface{}) string {
+	l := len(properties)
+
+	keys := make([]string, 0, l)
+	for k := range properties {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	values := make([]interface{}, 0, l)
+	for _, k := range keys {
+		values = append(values, properties[k])
+	}
+
+	a, _ := nbt.Marshal(keys)
+	b, _ := nbt.Marshal(values)
+
+	h := sha256.New()
+	h.Write(a)
+	v := h.Sum(b)
+
+	return *(*string)(unsafe.Pointer(&v))
 }
 
 // unimplementedBlock represents a block that has not yet been implemented. It is used for registering block
 // states that haven't yet been added.
 type unimplementedBlock struct {
 	Block struct {
-		Name       string                 `json:"name"`
-		Properties map[string]interface{} `json:"states"`
-	} `json:"block"`
+		Name       string                 `nbt:"name"`
+		Properties map[string]interface{} `nbt:"states"`
+		Version    int32                  `nbt:"version"`
+	} `nbt:"block"`
+	ID int16 `nbt:"id"`
 }
 
 func (u unimplementedBlock) Name() string {

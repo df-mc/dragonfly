@@ -63,7 +63,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 	for y := 0; y < count; y++ {
 		if data.SubChunks[y] == nil {
-			_ = s.chunkBuf.WriteByte(chunk.NetworkSubChunkVersion)
+			_ = s.chunkBuf.WriteByte(chunk.SubChunkVersion)
 			// We write zero here, meaning the sub chunk has no block storages: The sub chunk is completely
 			// empty.
 			_ = s.chunkBuf.WriteByte(0)

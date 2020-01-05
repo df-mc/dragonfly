@@ -74,16 +74,12 @@ func (p *Provider) SaveTime(time int64) {
 
 // LoadTimeCycle returns whether the time is cycling or not.
 func (p *Provider) LoadTimeCycle() bool {
-	return p.d.DoDayLightCycle == 1
+	return p.d.DoDayLightCycle
 }
 
 // SaveTimeCycle saves the state of the time cycle, either running or stopped, to the level.dat.
 func (p *Provider) SaveTimeCycle(running bool) {
-	if running {
-		p.d.DoDayLightCycle = 1
-		return
-	}
-	p.d.DoDayLightCycle = 0
+	p.d.DoDayLightCycle = running
 }
 
 // WorldName returns the name of the world that the provider provides data for.

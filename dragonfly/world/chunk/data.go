@@ -11,13 +11,9 @@ import (
 )
 
 const (
-	// DiskSubChunkVersion is the current version of the written sub chunks, specifying the format they are
-	// written as on disk.
-	// We write blocks differently in Dragonfly, which is why the version is prefixed with a `20`.
-	DiskSubChunkVersion = 208
-	// DiskSubChunkVersion is the current version of the written sub chunks, specifying the format they are
-	// written as over network in particular.
-	NetworkSubChunkVersion = 8
+	// SubChunkVersion is the current version of the written sub chunks, specifying the format they are
+	// written on disk and over network.
+	SubChunkVersion = 8
 )
 
 // SerialisedData holds the serialised data of a chunk. It consists of the chunk's block data itself, a height
@@ -51,7 +47,7 @@ func NetworkEncode(c *Chunk) (d SerialisedData) {
 			// No need to put empty sub chunks in the SerialisedData.
 			continue
 		}
-		_ = buf.WriteByte(NetworkSubChunkVersion)
+		_ = buf.WriteByte(SubChunkVersion)
 		_ = buf.WriteByte(byte(len(sub.storages)))
 		for _, storage := range sub.storages {
 			_ = buf.WriteByte(byte(storage.bitsPerBlock<<1) | 1)
@@ -84,7 +80,7 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 			// The sub chunk at this Y value is empty, so don't write it.
 			continue
 		}
-		_ = buf.WriteByte(DiskSubChunkVersion)
+		_ = buf.WriteByte(SubChunkVersion)
 		_ = buf.WriteByte(byte(len(sub.storages)))
 		for _, storage := range sub.storages {
 			diskEncodeBlockStorage(buf, storage)
@@ -128,7 +124,15 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		switch ver {
 		default:
 			return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
-		case DiskSubChunkVersion:
+		case 1:
+			// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
+			storage, err := diskDecodeBlockStorage(buf)
+			if err != nil {
+				return nil, err
+			}
+			c.sub[y].storages = append(c.sub[y].storages, storage)
+		case 8:
+			// Version 8 allows up to 256 layers for one sub chunk.
 			storageCount, err := buf.ReadByte()
 			if err != nil {
 				return nil, fmt.Errorf("error reading storage count: %v", err)
@@ -148,8 +152,9 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 
 // blockEntry represents a block as found in a disk save of a world.
 type blockEntry struct {
-	Name  string                 `nbt:"name"`
-	State map[string]interface{} `nbt:"states"`
+	Name    string                 `nbt:"name"`
+	State   map[string]interface{} `nbt:"states"`
+	Version int32                  `nbt:"version"`
 }
 
 // diskEncodeBlockStorage encodes a block storage to its disk representation into the buffer passed.
@@ -170,20 +175,11 @@ func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
 			// Should never happen, but we panic with a reasonable error anyway.
 			panic(fmt.Sprintf("cannot find block by runtime ID %v", runtimeID))
 		}
-		saveName, ok := block.SaveName(b)
-		if !ok {
-			// Should also never happen.
-			panic(fmt.Sprintf("cannot find save name for block state %+v", b))
-		}
-
-		// We first encode and decode the block so that we get its properties in a map.
-		var properties map[string]interface{}
-		raw, _ := nbt.Marshal(b)
-		_ = nbt.Unmarshal(raw, &properties)
-
+		name, props := b.Minecraft()
 		blocks[index] = blockEntry{
-			Name:  saveName,
-			State: properties,
+			Name:    name,
+			State:   props,
+			Version: protocol.CurrentBlockVersion,
 		}
 	}
 	// Marshal the slice of block states into NBT and add it to the byte slice.
@@ -248,14 +244,10 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 
 	palette := &palette{blockRuntimeIDs: make([]uint32, paletteCount)}
 	for i, b := range blocks {
-		blockInstance, ok := block.Get(b.Name)
+		blockInstance, ok := block.Get(b.Name + block.HashProperties(b.State))
 		if !ok {
-			return nil, fmt.Errorf("cannot decode unknown block '%v'", b.Name)
+			return nil, fmt.Errorf("cannot decode unknown block %v (%+v)", b.Name, b.State)
 		}
-		// Re-encode the decoded state data and decode it back into the block instance.
-		raw, _ := nbt.Marshal(b.State)
-		_ = nbt.Unmarshal(raw, &blockInstance)
-
 		// Finally we add the runtime ID of the block to the palette we create.
 		palette.blockRuntimeIDs[i], ok = block.RuntimeID(blockInstance)
 		if !ok {

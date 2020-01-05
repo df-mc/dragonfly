@@ -39,13 +39,33 @@ func (l Log) Drops() []inventory.Item {
 }
 
 func (l Log) Minecraft() (name string, properties map[string]interface{}) {
+	if !l.Stripped {
+		switch l.Wood {
+		case nil:
+			panic("log has no wood type")
+		case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
+			return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.Minecraft()}
+		case material.AcaciaWood(), material.DarkOakWood():
+			return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.Minecraft()}
+		default:
+			panic("invalid wood type")
+		}
+	}
 	switch l.Wood {
 	case nil:
 		panic("log has no wood type")
-	case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
-		return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.Minecraft()}
-	case material.AcaciaWood(), material.DarkOakWood():
-		return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.Minecraft()}
+	case material.OakWood():
+		return "minecraft:stripped_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
+	case material.SpruceWood():
+		return "minecraft:stripped_spruce_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
+	case material.BirchWood():
+		return "minecraft:stripped_birch_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
+	case material.JungleWood():
+		return "minecraft:stripped_jungle_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
+	case material.AcaciaWood():
+		return "minecraft:stripped_acacia_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
+	case material.DarkOakWood():
+		return "minecraft:stripped_dark_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
 	default:
 		panic("invalid wood type")
 	}

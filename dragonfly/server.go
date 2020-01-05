@@ -322,13 +322,11 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 // blockEntries loads a list of all block state entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) blockEntries() (entries []interface{}) {
-	// The current version of block states.
-	const version int32 = 17760256
 	for _, b := range block.All() {
 		name, properties := b.Minecraft()
 		entries = append(entries, map[string]interface{}{
 			"block": map[string]interface{}{
-				"version": version,
+				"version": protocol.CurrentBlockVersion,
 				"name":    name,
 				"states":  properties,
 			},
