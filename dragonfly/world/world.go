@@ -74,7 +74,7 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 // An error is returned if the chunk that the block is located in could not be loaded successfully.
-func (w *World) Block(pos BlockPos) (Block, error) {
+func (w *World) Block(pos BlockPos) (block.Block, error) {
 	c, err := w.chunk(pos.ChunkPos())
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (w *World) Block(pos BlockPos) (Block, error) {
 // first loaded or generated if it could not be found in the world save.
 // An error is returned if the chunk that the block should be written to could not be loaded successfully.
 // SetBlock panics if the block passed has not yet been registered using block.Register().
-func (w *World) SetBlock(pos BlockPos, b Block) error {
+func (w *World) SetBlock(pos BlockPos, b block.Block) error {
 	runtimeID, ok := block.RuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)

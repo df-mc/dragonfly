@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block/material"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 )
 
 // Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six
@@ -19,6 +18,40 @@ type Log struct {
 	Axis Axis
 }
 
+func (l Log) EncodeItem() (id int32, meta int16) {
+	if !l.Stripped {
+		switch l.Wood {
+		case material.OakWood():
+			return 17, 0
+		case material.SpruceWood():
+			return 17, 1
+		case material.BirchWood():
+			return 17, 2
+		case material.JungleWood():
+			return 17, 3
+		case material.AcaciaWood():
+			return 162, 0
+		case material.DarkOakWood():
+			return 162, 1
+		}
+	}
+	switch l.Wood {
+	case material.OakWood():
+		return 255 - 265, 0
+	case material.SpruceWood():
+		return 255 - 260, 0
+	case material.BirchWood():
+		return 255 - 261, 0
+	case material.JungleWood():
+		return 255 - 262, 0
+	case material.AcaciaWood():
+		return 255 - 263, 0
+	case material.DarkOakWood():
+		return 255 - 264, 0
+	}
+	panic("invalid wood type")
+}
+
 // Name returns the name of the log, including the wood type and whether it is stripped or not.
 func (l Log) Name() (name string) {
 	if l.Wood == nil {
@@ -30,30 +63,16 @@ func (l Log) Name() (name string) {
 	return l.Wood.Name() + " Log"
 }
 
-// Drops returns the drops of the log, which is always the block itself excluding the rotation.
-func (l Log) Drops() []inventory.Item {
-	return []inventory.Item{Log{
-		Wood:     l.Wood,
-		Stripped: l.Stripped,
-	}}
-}
-
 func (l Log) Minecraft() (name string, properties map[string]interface{}) {
 	if !l.Stripped {
 		switch l.Wood {
-		case nil:
-			panic("log has no wood type")
 		case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
 			return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.Minecraft()}
 		case material.AcaciaWood(), material.DarkOakWood():
 			return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.Minecraft()}
-		default:
-			panic("invalid wood type")
 		}
 	}
 	switch l.Wood {
-	case nil:
-		panic("log has no wood type")
 	case material.OakWood():
 		return "minecraft:stripped_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
 	case material.SpruceWood():
@@ -66,9 +85,8 @@ func (l Log) Minecraft() (name string, properties map[string]interface{}) {
 		return "minecraft:stripped_acacia_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
 	case material.DarkOakWood():
 		return "minecraft:stripped_dark_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
-	default:
-		panic("invalid wood type")
 	}
+	panic("invalid wood type")
 }
 
 // allLogs returns a list of all possible log states.

@@ -39,6 +39,9 @@ type Session struct {
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 
+	// heldSlot is the slot in the inventory that the controllable is holding.
+	heldSlot *uint32
+
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
 	// session controls.
 	onStop func(controllable Controllable)
@@ -119,11 +122,6 @@ func (s *Session) Close() error {
 		s.onStop = nil
 	}
 	return nil
-}
-
-// RequestClose requests the session to close. It will close as soon as the next call to read is made.
-func (s *Session) RequestClose() {
-	_ = s.conn.Close()
 }
 
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.

@@ -15,7 +15,7 @@ type Loader struct {
 	w      *World
 	viewer Viewer
 
-	mutex     sync.RWMutex
+	mu        sync.RWMutex
 	pos       ChunkPos
 	loadQueue []ChunkPos
 	loaded    map[ChunkPos]*chunk.Chunk
@@ -33,22 +33,29 @@ func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
 	return l
 }
 
+// ChangeRadius changes the maximum chunk radius of the Loader.
+func (l *Loader) ChangeRadius(new int) {
+	l.mu.Lock()
+	l.r = new
+	l.mu.Unlock()
+}
+
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
 func (l *Loader) Move(pos mgl32.Vec3) {
-	l.mutex.Lock()
+	l.mu.Lock()
 
 	floorX, floorZ := math.Floor(float64(pos[0])), math.Floor(float64(pos[2]))
 	chunkPos := ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
 
 	if chunkPos == l.pos {
-		l.mutex.Unlock()
+		l.mu.Unlock()
 		return
 	}
 	l.pos = chunkPos
 	l.evictUnused()
 	l.populateLoadQueue()
 
-	l.mutex.Unlock()
+	l.mu.Unlock()
 }
 
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
@@ -56,20 +63,20 @@ func (l *Loader) Move(pos mgl32.Vec3) {
 // The function f must not hold the chunk beyond the function scope.
 // An error is returned if one of the chunks could not be loaded.
 func (l *Loader) Load(n int) error {
-	l.mutex.Lock()
+	l.mu.Lock()
 	if l.closed {
-		l.mutex.Unlock()
+		l.mu.Unlock()
 		return nil
 	}
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
-			l.mutex.Unlock()
+			l.mu.Unlock()
 			return nil
 		}
 		pos := l.loadQueue[0]
 		c, err := l.w.chunk(pos)
 		if err != nil {
-			l.mutex.Unlock()
+			l.mu.Unlock()
 			return err
 		}
 		l.viewer.ViewChunk(pos, c)
@@ -83,21 +90,21 @@ func (l *Loader) Load(n int) error {
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
-	l.mutex.Unlock()
+	l.mu.Unlock()
 	return nil
 }
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
 // are currently shown to it.
 func (l *Loader) Close() error {
-	l.mutex.Lock()
+	l.mu.Lock()
 	for pos := range l.loaded {
 		l.w.removeViewer(pos, l.viewer)
 	}
 	l.loaded = map[ChunkPos]*chunk.Chunk{}
 	l.closed = true
 	l.viewer = nil
-	l.mutex.Unlock()
+	l.mu.Unlock()
 	return nil
 }
 

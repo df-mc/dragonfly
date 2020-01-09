@@ -39,8 +39,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sandertv/go-raknet v1.6.6 h1:+cEuKRfSIqO9/OICPEwRAUUElR8+vpMx6TdBSQtW3As=
 github.com/sandertv/go-raknet v1.6.6/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
-github.com/sandertv/gophertunnel v1.3.11 h1:hHgSQPuRIS4ZSff6HhmdgJ/rLv4/kWvOU984Qmidhhk=
-github.com/sandertv/gophertunnel v1.3.11/go.mod h1:TMRak5gjWj/pYlGdBpudSUTVAU7mqGX+xjiVwM/1R38=
+github.com/sandertv/gophertunnel v1.3.12 h1:GE/zobqumbd1TlvxcAok7n5TIvNgG2gwbhTgECpOlyc=
+github.com/sandertv/gophertunnel v1.3.12/go.mod h1:TMRak5gjWj/pYlGdBpudSUTVAU7mqGX+xjiVwM/1R38=
 github.com/sirupsen/logrus v1.4.2 h1:SPIRibHv4MatM3XXNO2BJeFLZwZ2LvZgfQ5+UNI2im4=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

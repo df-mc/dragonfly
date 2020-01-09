@@ -3,6 +3,8 @@ package player
 import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/bossbar"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/scoreboard"
@@ -15,6 +17,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -35,12 +38,26 @@ type Player struct {
 	hMutex sync.RWMutex
 	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
 	h Handler
+
+	invMu    sync.RWMutex
+	inv      *inventory.Inventory
+	offHand  *inventory.Inventory
+	heldSlot *uint32
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
 func New(name string, skin skin.Skin) *Player {
-	return &Player{name: name, h: NopHandler{}, uuid: uuid.New(), skin: skin}
+	p := &Player{
+		name:     name,
+		h:        NopHandler{},
+		uuid:     uuid.New(),
+		skin:     skin,
+		inv:      inventory.New(36, nil),
+		offHand:  inventory.New(1, nil),
+		heldSlot: new(uint32),
+	}
+	return p
 }
 
 // NewWithSession returns a new player for a network session, so that the network session can control the
@@ -53,6 +70,8 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.uuid = uuid
 	p.xuid = xuid
 	p.skin = skin
+
+	p.inv, p.offHand, p.heldSlot = s.HandleInventories()
 
 	chat.Global.Subscribe(p)
 	return p
@@ -224,8 +243,39 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
+// Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
+// the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
+func (p *Player) Inventory() *inventory.Inventory {
+	p.invMu.RLock()
+	inv := p.inv
+	p.invMu.RUnlock()
+	return inv
+}
+
+// HeldItems returns the items currently held in the hands of the player. The first item stack returned is the
+// one held in the main hand, the second is held in the off-hand.
+// If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
+// the hand held anything.
+func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
+	p.invMu.RLock()
+	offHand, _ = p.offHand.Item(0)
+	mainHand, _ = p.inv.Item(int(atomic.LoadUint32(p.heldSlot)))
+	p.invMu.RUnlock()
+	return mainHand, offHand
+}
+
+// SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
+// (Stack.Empty()) to clear the held item.
+func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
+	p.invMu.RLock()
+	inv := p.inv
+	p.invMu.RUnlock()
+	_ = inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
+	_ = inv.SetItem(0, offHand)
+}
+
 // Close closes the player and removes it from the world.
-// Close disconnects the player with a 'Player closed.' message. Disconnect should be used to disconnect a
+// Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.
 func (p *Player) Close() error {
 	p.session().Disconnect("Connection closed.")
@@ -242,6 +292,9 @@ func (p *Player) close() {
 
 	p.sMutex.Lock()
 	p.s = nil
+	// Clear the inventories so that they no longer hold references to the connection.
+	p.inv = inventory.New(36, nil)
+	p.offHand = inventory.New(1, nil)
 	p.sMutex.Unlock()
 }
 

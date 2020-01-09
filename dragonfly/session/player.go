@@ -3,6 +3,8 @@ package session
 import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/entity"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/google/uuid"
@@ -126,4 +128,38 @@ func (s *Session) removeFromPlayerList(session *Session) {
 			UUID: c.UUID(),
 		}},
 	})
+}
+
+// handleInventories starts handling the inventories of the Controllable of the session. It sends packets when
+// slots in the inventory are changed.
+func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSlot *uint32) {
+	inv = inventory.New(36, func(slot int, item item.Stack) {
+		s.writePacket(&packet.InventorySlot{
+			WindowID: protocol.WindowIDInventory,
+			Slot:     uint32(slot),
+			NewItem:  stackFromItem(item),
+		})
+	})
+	offHand = inventory.New(1, func(slot int, item item.Stack) {
+		s.writePacket(&packet.InventorySlot{
+			WindowID: protocol.WindowIDOffHand,
+			Slot:     uint32(slot),
+			NewItem:  stackFromItem(item),
+		})
+	})
+	s.heldSlot = heldSlot
+
+	return
+}
+
+// stackFromItem converts an item.Stack to its network ItemStack representation.
+func stackFromItem(item item.Stack) protocol.ItemStack {
+	id, meta := item.Item().EncodeItem()
+	return protocol.ItemStack{
+		ItemType: protocol.ItemType{
+			NetworkID:     id,
+			MetadataValue: meta,
+		},
+		Count: int16(item.Count()),
+	}
 }

@@ -18,6 +18,31 @@ type (
 	}
 )
 
+func (a Andesite) EncodeItem() (id int32, meta int16) {
+	if a.Polished {
+		return 1, 6
+	}
+	return 1, 5
+}
+
+func (d Diorite) EncodeItem() (id int32, meta int16) {
+	if d.Polished {
+		return 1, 4
+	}
+	return 1, 3
+}
+
+func (g Granite) EncodeItem() (id int32, meta int16) {
+	if g.Polished {
+		return 1, 2
+	}
+	return 1, 1
+}
+
+func (Stone) EncodeItem() (id int32, meta int16) {
+	return 1, 0
+}
+
 func (a Andesite) Minecraft() (name string, properties map[string]interface{}) {
 	if a.Polished {
 		return "minecraft:stone", map[string]interface{}{"stone_type": "andesite_smooth"}
