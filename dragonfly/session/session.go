@@ -91,6 +91,7 @@ func (s *Session) Start(onStop func(controllable Controllable)) {
 	s.initPlayerList()
 
 	s.world.AddEntity(s.c)
+	s.c.SetGameMode(s.world.DefaultGameMode())
 	s.SendAvailableCommands()
 
 	go s.handlePackets()

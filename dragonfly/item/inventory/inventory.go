@@ -19,7 +19,7 @@ type Inventory struct {
 
 // ErrSlotOutOfRange is returned by any methods on Inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
-var ErrSlotOutOfRange = errors.New("slot is out of range: 0 <= slot < Inventory.Size()")
+var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < Inventory.Size()")
 
 // New creates a new inventory with the size passed. The inventory size cannot be changed after it has been
 // constructed.
@@ -80,6 +80,15 @@ func (inv *Inventory) Size() int {
 	l := len(inv.slots)
 	inv.mu.RUnlock()
 	return l
+}
+
+// Close closes the inventory, freeing the function called for every slot change.
+// The returned error is always nil.
+func (inv *Inventory) Close() error {
+	inv.mu.Lock()
+	inv.f = func(int, item.Stack) {}
+	inv.mu.Unlock()
+	return nil
 }
 
 // validSlot checks if the slot passed is valid for the inventory. It returns false if the slot is either

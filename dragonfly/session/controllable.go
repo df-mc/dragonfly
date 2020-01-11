@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
 	"github.com/google/uuid"
 )
 
@@ -14,6 +15,7 @@ type Controllable interface {
 
 	Chat(message string)
 	ExecuteCommand(commandLine string)
+	SetGameMode(mode gamemode.GameMode)
 	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
 	// world.
 	Name() string

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
@@ -169,6 +170,34 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 		_ = p.db.Put(append(key, keySubChunkData, byte(y)), sub, nil)
 	}
 	return nil
+}
+
+// DefaultGameMode returns the default game mode stored in the level.dat.
+func (p *Provider) DefaultGameMode() gamemode.GameMode {
+	switch p.d.GameType {
+	case 0:
+		return gamemode.Survival{}
+	case 1:
+		return gamemode.Creative{}
+	default:
+		return gamemode.Adventure{}
+	case 3:
+		return gamemode.Spectator{}
+	}
+}
+
+// SetDefaultGameMode changes the default game mode in the level.dat.
+func (p *Provider) SetDefaultGameMode(mode gamemode.GameMode) {
+	switch mode.(type) {
+	case gamemode.Survival:
+		p.d.GameType = 0
+	case gamemode.Creative:
+		p.d.GameType = 1
+	case gamemode.Adventure:
+		p.d.GameType = 2
+	case gamemode.Spectator:
+		p.d.GameType = 3
+	}
 }
 
 // LoadEntities loads all entities from the chunk position passed.

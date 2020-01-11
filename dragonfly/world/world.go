@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
@@ -276,6 +277,19 @@ func (w *World) Spawn() BlockPos {
 // this position when newly joining.
 func (w *World) SetSpawn(pos BlockPos) {
 	w.provider().SetWorldSpawn(pos)
+}
+
+// DefaultGameMode returns the default game mode of the world. When players join, they are given this game
+// mode.
+// The default game mode may be changed using SetDefaultGameMode().
+func (w *World) DefaultGameMode() gamemode.GameMode {
+	return w.provider().DefaultGameMode()
+}
+
+// SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
+// game mode.
+func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
+	w.provider().SetDefaultGameMode(mode)
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider

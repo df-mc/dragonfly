@@ -12,6 +12,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/title"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
@@ -27,6 +28,9 @@ type Player struct {
 	name string
 	uuid uuid.UUID
 	xuid string
+
+	gameModeMu sync.RWMutex
+	gameMode   gamemode.GameMode
 
 	skin skin.Skin
 
@@ -56,6 +60,7 @@ func New(name string, skin skin.Skin) *Player {
 		inv:      inventory.New(36, nil),
 		offHand:  inventory.New(1, nil),
 		heldSlot: new(uint32),
+		gameMode: gamemode.Adventure{},
 	}
 	return p
 }
@@ -274,6 +279,25 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = inv.SetItem(0, offHand)
 }
 
+// SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
+// with the world that it is in.
+func (p *Player) SetGameMode(mode gamemode.GameMode) {
+	p.gameModeMu.Lock()
+	p.gameMode = mode
+	p.gameModeMu.Unlock()
+	p.session().SendGameMode(mode)
+}
+
+// GameMode returns the current game mode assigned to the player. If not changed, the game mode returned will
+// be the same as that of the world that the player spawns in.
+// The game mode may be changed using Player.SetGameMode().
+func (p *Player) GameMode() gamemode.GameMode {
+	p.gameModeMu.RLock()
+	mode := p.gameMode
+	p.gameModeMu.RUnlock()
+	return mode
+}
+
 // Close closes the player and removes it from the world.
 // Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.
@@ -293,8 +317,8 @@ func (p *Player) close() {
 	p.sMutex.Lock()
 	p.s = nil
 	// Clear the inventories so that they no longer hold references to the connection.
-	p.inv = inventory.New(36, nil)
-	p.offHand = inventory.New(1, nil)
+	_ = p.inv.Close()
+	_ = p.offHand.Close()
 	p.sMutex.Unlock()
 }
 

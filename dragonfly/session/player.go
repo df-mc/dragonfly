@@ -7,6 +7,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -49,6 +50,29 @@ func (s *Session) Transfer(ip net.IP, port int) {
 		Address: ip.String(),
 		Port:    uint16(port),
 	})
+}
+
+// SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
+// flags are set to create the full game mode.
+func (s *Session) SendGameMode(mode gamemode.GameMode) {
+	flags, id := uint32(0), int32(packet.GameTypeSurvival)
+	switch mode.(type) {
+	case gamemode.Creative:
+		flags = packet.AdventureFlagAllowFlight
+		id = packet.GameTypeCreative
+	case gamemode.Adventure:
+		flags |= packet.AdventureFlagWorldImmutable
+		id = packet.GameTypeAdventure
+	case gamemode.Spectator:
+		flags, id = packet.AdventureFlagWorldImmutable|packet.AdventureFlagAllowFlight|packet.AdventureFlagMuted|packet.AdventureFlagNoClip|packet.AdventureFlagNoPVP, packet.GameTypeCreativeSpectator
+	}
+	s.writePacket(&packet.AdventureSettings{
+		Flags:             flags,
+		PermissionLevel:   packet.PermissionLevelMember,
+		PlayerUniqueID:    1,
+		ActionPermissions: uint32(packet.ActionPermissionBuildAndMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
+	})
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the

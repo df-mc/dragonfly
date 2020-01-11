@@ -13,7 +13,7 @@ func (s *Session) handleRequestChunkRadius(pk *packet.RequestChunkRadius) error 
 	if pk.ChunkRadius > s.maxChunkRadius {
 		pk.ChunkRadius = s.maxChunkRadius
 	}
-	s.chunkRadius = pk.ChunkRadius
+	atomic.StoreInt32(&s.chunkRadius, pk.ChunkRadius)
 
 	s.chunkLoader.Load().(*world.Loader).ChangeRadius(int(pk.ChunkRadius))
 
