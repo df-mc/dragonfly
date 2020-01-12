@@ -17,8 +17,8 @@ import (
 
 // handleMovePlayer ...
 func (s *Session) handleMovePlayer(pk *packet.MovePlayer) error {
-	if pk.EntityRuntimeID != s.conn.GameData().EntityRuntimeID {
-		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be equal to %v", pk.EntityRuntimeID, s.conn.GameData().EntityRuntimeID)
+	if pk.EntityRuntimeID != selfEntityRuntimeID {
+		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be 1", pk.EntityRuntimeID)
 	}
 	entity.Move(s.c, pk.Position.Sub(s.c.Position()))
 	entity.Rotate(s.c, pk.Yaw-s.c.Yaw(), pk.Pitch-s.c.Pitch())
@@ -28,6 +28,29 @@ func (s *Session) handleMovePlayer(pk *packet.MovePlayer) error {
 		Position: protocol.BlockPos{int32(pk.Position[0]), int32(pk.Position[1]), int32(pk.Position[2])},
 		Radius:   uint32(s.chunkRadius * 16),
 	})
+	return nil
+}
+
+// handleMobEquipment ...
+func (s *Session) handleMobEquipment(pk *packet.MobEquipment) error {
+	if pk.EntityRuntimeID != selfEntityRuntimeID {
+		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be 1", pk.EntityRuntimeID)
+	}
+	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
+	// different place in the inventory.
+	if pk.InventorySlot > 8 {
+		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", pk.InventorySlot)
+	}
+	if pk.WindowID != protocol.WindowIDInventory {
+		return fmt.Errorf("MobEquipmentPacket should only involve main inventory, got window ID %v", pk.WindowID)
+	}
+
+	// We first change the held slot.
+	atomic.StoreUint32(s.heldSlot, uint32(pk.InventorySlot))
+
+	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+		viewer.ViewEntityItems(s.c)
+	}
 	return nil
 }
 
@@ -171,7 +194,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSl
 			NewItem:  stackFromItem(item),
 		})
 	})
-	s.heldSlot = heldSlot
+	heldSlot = s.heldSlot
 
 	return
 }

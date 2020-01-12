@@ -20,9 +20,8 @@ import (
 type Session struct {
 	log *logrus.Logger
 
-	c     Controllable
-	world *world.World
-	conn  *minecraft.Conn
+	c    Controllable
+	conn *minecraft.Conn
 
 	cmdOrigin     protocol.CommandOrigin
 	scoreboardObj atomic.Value
@@ -62,23 +61,17 @@ const selfEntityRuntimeID = 1
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius int, log *logrus.Logger) *Session {
+func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session {
 	s := &Session{
-		c:              c,
-		conn:           conn,
-		log:            log,
-		chunkBuf:       bytes.NewBuffer(make([]byte, 0, 4096)),
-		world:          w,
-		chunkRadius:    int32(maxChunkRadius / 2),
-		maxChunkRadius: int32(maxChunkRadius),
-		entityRuntimeIDs: map[world.Entity]uint64{
-			// We initialise the runtime ID of the controllable of the session. It will always have runtime ID
-			// 1, because we treat entity runtime IDs as session-local.
-			c: selfEntityRuntimeID,
-		},
+		conn:                   conn,
+		log:                    log,
+		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
+		chunkRadius:            int32(maxChunkRadius / 2),
+		maxChunkRadius:         int32(maxChunkRadius),
+		entityRuntimeIDs:       map[world.Entity]uint64{},
 		currentEntityRuntimeID: 1,
+		heldSlot:               new(uint32),
 	}
-	s.chunkLoader.Store(world.NewLoader(maxChunkRadius/2, w, s))
 	s.scoreboardObj.Store("")
 	return s
 }
@@ -86,12 +79,15 @@ func New(c Controllable, conn *minecraft.Conn, w *world.World, maxChunkRadius in
 // Start makes the session start handling incoming packets from the client and initialises the controllable of
 // the session in the world.
 // The function passed will be called when the session stops running.
-func (s *Session) Start(onStop func(controllable Controllable)) {
+func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable Controllable)) {
 	s.onStop = onStop
+	s.c = c
+	s.entityRuntimeIDs[c] = selfEntityRuntimeID
+	s.chunkLoader.Store(world.NewLoader(int(s.chunkRadius), w, s))
 	s.initPlayerList()
 
-	s.world.AddEntity(s.c)
-	s.c.SetGameMode(s.world.DefaultGameMode())
+	w.AddEntity(s.c)
+	s.c.SetGameMode(w.DefaultGameMode())
 	s.SendAvailableCommands()
 
 	go s.handlePackets()
@@ -106,7 +102,7 @@ func (s *Session) Close() error {
 	_ = s.c.Close()
 	_ = s.conn.Close()
 	_ = s.chunkLoader.Load().(*world.Loader).Close()
-	s.world.RemoveEntity(s.c)
+	s.c.World().RemoveEntity(s.c)
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
@@ -179,6 +175,8 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handleMovePlayer(pk)
 	case *packet.RequestChunkRadius:
 		return s.handleRequestChunkRadius(pk)
+	case *packet.MobEquipment:
+		return s.handleMobEquipment(pk)
 	case *packet.BossEvent: // No need to do anything here. We don't care about these when they're incoming.
 	default:
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())

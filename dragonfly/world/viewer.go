@@ -26,4 +26,6 @@ type Viewer interface {
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
 	ViewTime(time int)
+	// ViewEntityItems views the items currently held by an entity that is able to equip items.
+	ViewEntityItems(e CarryingEntity)
 }

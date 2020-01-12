@@ -277,10 +277,9 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
-	s := &session.Session{}
+	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s)
-	*s = *session.New(p, conn, server.world, server.c.World.MaximumChunkRadius, server.log)
-	s.Start(server.handleSessionClose)
+	s.Start(p, server.world, server.handleSessionClose)
 
 	return p
 }

@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
 	"github.com/go-gl/mathgl/mgl32"
 	"io"
 )
@@ -26,4 +27,12 @@ type Entity interface {
 	setYaw(new float32)
 	setPitch(new float32)
 	setWorld(new *World)
+}
+
+// CarryingEntity represents an entity that is able to carry items with it.
+type CarryingEntity interface {
+	Entity
+	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
+	// these items.
+	HeldItems() (mainHand, offHand item.Stack)
 }

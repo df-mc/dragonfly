@@ -167,6 +167,9 @@ func (w *World) AddEntity(e Entity) {
 	for _, viewer := range w.viewers[chunkPos] {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		viewer.ViewEntity(e)
+		if carrying, ok := e.(CarryingEntity); ok {
+			viewer.ViewEntityItems(carrying)
+		}
 	}
 	w.viewerMutex.RUnlock()
 }
@@ -335,6 +338,12 @@ func (w *World) Handle(h Handler) {
 	w.hand = h
 }
 
+// Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
+// if the position is within one of the chunks that the viewer is watching.
+func (w *World) Viewers(pos mgl32.Vec3) []Viewer {
+	return w.chunkViewers(ChunkPosFromVec3(pos))
+}
+
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
 	w.stopTick <- struct{}{}
@@ -426,6 +435,9 @@ func (w *World) addViewer(pos ChunkPos, viewer Viewer) {
 	w.entityMutex.RLock()
 	for _, entity := range w.entities[pos] {
 		viewer.ViewEntity(entity)
+		if carrying, ok := entity.(CarryingEntity); ok {
+			viewer.ViewEntityItems(carrying)
+		}
 	}
 	w.entityMutex.RUnlock()
 
@@ -564,6 +576,9 @@ func (w *World) moveChunkEntity(e Entity, chunkPos, newChunkPos ChunkPos) {
 		if !w.hasViewer(chunkPos, viewer) {
 			// Then we show the entity to all viewers that are now viewing the entity in the new chunk.
 			viewer.ViewEntity(e)
+			if carrying, ok := e.(CarryingEntity); ok {
+				viewer.ViewEntityItems(carrying)
+			}
 		}
 	}
 	w.viewerMutex.RUnlock()

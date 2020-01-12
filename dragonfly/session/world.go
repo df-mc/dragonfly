@@ -4,6 +4,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync/atomic"
 )
@@ -198,6 +199,28 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 			Flags:           packet.MoveFlagTeleport,
 		})
 	}
+}
+
+// ViewEntityItems ...
+func (s *Session) ViewEntityItems(e world.CarryingEntity) {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+		// Don't view the items of the entity if the entity is the Controllable of the session.
+		return
+	}
+	mainHand, offHand := e.HeldItems()
+	runtimeID := s.entityRuntimeID(e)
+
+	// Show the main hand item.
+	s.writePacket(&packet.MobEquipment{
+		EntityRuntimeID: runtimeID,
+		NewItem:         stackFromItem(mainHand),
+	})
+	// Show the off-hand item.
+	s.writePacket(&packet.MobEquipment{
+		EntityRuntimeID: runtimeID,
+		NewItem:         stackFromItem(offHand),
+		WindowID:        protocol.WindowIDOffHand,
+	})
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

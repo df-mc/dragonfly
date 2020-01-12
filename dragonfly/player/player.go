@@ -43,7 +43,6 @@ type Player struct {
 	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
 	h Handler
 
-	invMu    sync.RWMutex
 	inv      *inventory.Inventory
 	offHand  *inventory.Inventory
 	heldSlot *uint32
@@ -251,10 +250,7 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
 // the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
 func (p *Player) Inventory() *inventory.Inventory {
-	p.invMu.RLock()
-	inv := p.inv
-	p.invMu.RUnlock()
-	return inv
+	return p.inv
 }
 
 // HeldItems returns the items currently held in the hands of the player. The first item stack returned is the
@@ -262,21 +258,20 @@ func (p *Player) Inventory() *inventory.Inventory {
 // If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
 // the hand held anything.
 func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
-	p.invMu.RLock()
 	offHand, _ = p.offHand.Item(0)
 	mainHand, _ = p.inv.Item(int(atomic.LoadUint32(p.heldSlot)))
-	p.invMu.RUnlock()
 	return mainHand, offHand
 }
 
 // SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
 // (Stack.Empty()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
-	p.invMu.RLock()
-	inv := p.inv
-	p.invMu.RUnlock()
-	_ = inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
-	_ = inv.SetItem(0, offHand)
+	_ = p.inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
+	_ = p.inv.SetItem(0, offHand)
+
+	for _, viewer := range p.World().Viewers(p.Position()) {
+		viewer.ViewEntityItems(p)
+	}
 }
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
