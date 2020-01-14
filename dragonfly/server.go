@@ -89,6 +89,7 @@ func (server *Server) World() *world.World {
 // accept incoming connections.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
+	server.log.Info("Starting server...")
 	server.loadWorld()
 	if err := server.startListening(); err != nil {
 		return err
@@ -101,6 +102,7 @@ func (server *Server) Run() error {
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // One started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
+	server.log.Info("Starting server...")
 	server.loadWorld()
 	if err := server.startListening(); err != nil {
 		return err
@@ -163,12 +165,7 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	server.log.Info("Server shutting down...")
-	defer func() {
-		server.log.Info("Server stopped.")
-
-		// Sleep for a very short time to make sure our last log messages are written.
-		time.Sleep(time.Microsecond)
-	}()
+	defer server.log.Info("Server stopped.")
 
 	server.log.Debug("Disconnecting players...")
 	server.playerMutex.RLock()
@@ -196,14 +193,11 @@ func (server *Server) CloseOnProgramEnd() {
 		if err := server.Close(); err != nil {
 			server.log.Errorf("error shutting down server: %v", err)
 		}
-		// Sleep for half a second so that all messages are logged before the program ends.
-		time.Sleep(time.Second / 2)
 	}()
 }
 
 // startListening starts making the Minecraft listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
-	server.log.Info("Starting server...")
 	server.startTime = time.Now()
 
 	w := server.log.Writer()
