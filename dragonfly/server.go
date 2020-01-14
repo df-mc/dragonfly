@@ -48,7 +48,7 @@ type Server struct {
 // used by calling logrus.New().
 // Note that no two servers should be active at the same time. Doing so anyway will result in unexpected
 // behaviour.
-func New(c *Config, log *logrus.Logger) (*Server, error) {
+func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
@@ -62,14 +62,7 @@ func New(c *Config, log *logrus.Logger) (*Server, error) {
 	if c != nil {
 		s.c = *c
 	}
-
-	log.Debug("Loading world...")
-	p, err := mcdb.New(s.c.World.Folder)
-	if err != nil {
-		return nil, fmt.Errorf("error loading world: %v", err)
-	}
-	s.world.Provider(p)
-	return s, nil
+	return s
 }
 
 // Accept accepts an incoming player into the server. It blocks until a player connects to the server.
@@ -96,6 +89,7 @@ func (server *Server) World() *world.World {
 // accept incoming connections.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
+	server.loadWorld()
 	if err := server.startListening(); err != nil {
 		return err
 	}
@@ -107,6 +101,7 @@ func (server *Server) Run() error {
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // One started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
+	server.loadWorld()
 	if err := server.startListening(); err != nil {
 		return err
 	}
@@ -168,7 +163,12 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	server.log.Info("Server shutting down...")
-	defer server.log.Info("Server stopped.")
+	defer func() {
+		server.log.Info("Server stopped.")
+
+		// Sleep for a very short time to make sure our last log messages are written.
+		time.Sleep(time.Microsecond)
+	}()
 
 	server.log.Debug("Disconnecting players...")
 	server.playerMutex.RLock()
@@ -282,6 +282,17 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 	s.Start(p, server.world, server.handleSessionClose)
 
 	return p
+}
+
+// loadWorld loads the world of the server, ending the program if the world could not be loaded.
+func (server *Server) loadWorld() {
+	server.log.Debug("Loading world...")
+	p, err := mcdb.New(server.c.World.Folder)
+	if err != nil {
+		server.log.Fatalf("error loading world: %v", err)
+	}
+	server.world.Provider(p)
+	server.log.Debugf("Loaded world '%v'.", server.world.Name())
 }
 
 // createSkin creates a new skin using the skin data found in the client data in the login, and returns it.

@@ -31,10 +31,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	server, err := dragonfly.New(&config, log)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	server := dragonfly.New(&config, log)
 	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)

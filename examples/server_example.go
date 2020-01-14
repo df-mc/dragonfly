@@ -5,10 +5,7 @@ import (
 )
 
 func main() {
-	server, err := dragonfly.New(nil, nil)
-	if err != nil {
-		panic(err)
-	}
+	server := dragonfly.New(nil, nil)
 	server.CloseOnProgramEnd()
 	if err := server.Run(); err != nil {
 		panic(err)
