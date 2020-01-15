@@ -7,5 +7,5 @@ type Handler interface {
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
 // default handler of worlds is set to NopHandler.
-// Users may use type aliases to overwrite methods of NopHandler to avoid having to implement each method.
+// Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
