@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -28,6 +29,8 @@ import (
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
 // trying to join the server.
 type Server struct {
+	started *uint32
+
 	c        Config
 	log      *logrus.Logger
 	listener *minecraft.Listener
@@ -53,6 +56,7 @@ func New(c *Config, log *logrus.Logger) *Server {
 		log = logrus.New()
 	}
 	s := &Server{
+		started: new(uint32),
 		c:       DefaultConfig(),
 		log:     log,
 		players: make(chan *player.Player),
@@ -89,6 +93,11 @@ func (server *Server) World() *world.World {
 // accept incoming connections.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
+	if server.running() {
+		panic("server already running")
+	}
+	atomic.StoreUint32(server.started, 1)
+
 	server.log.Info("Starting server...")
 	server.loadWorld()
 	if err := server.startListening(); err != nil {
@@ -102,6 +111,11 @@ func (server *Server) Run() error {
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // One started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
+	if server.running() {
+		panic("server already running")
+	}
+	atomic.StoreUint32(server.started, 1)
+
 	server.log.Info("Starting server...")
 	server.loadWorld()
 	if err := server.startListening(); err != nil {
@@ -114,6 +128,9 @@ func (server *Server) Start() error {
 // Uptime returns the duration that the server has been running for. Measurement starts the moment a call to
 // Server.Start or Server.Run is made.
 func (server *Server) Uptime() time.Duration {
+	if !server.running() {
+		return 0
+	}
 	return time.Now().Sub(server.startTime)
 }
 
@@ -164,6 +181,10 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
+	if !server.running() {
+		panic("server not yet running")
+	}
+
 	server.log.Info("Server shutting down...")
 	defer server.log.Info("Server stopped.")
 
@@ -194,6 +215,11 @@ func (server *Server) CloseOnProgramEnd() {
 			server.log.Errorf("error shutting down server: %v", err)
 		}
 	}()
+}
+
+// running checks if the server is currently running.
+func (server *Server) running() bool {
+	return atomic.LoadUint32(server.started) == 1
 }
 
 // startListening starts making the Minecraft listener listen, accepting new connections from players.
