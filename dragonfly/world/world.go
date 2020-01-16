@@ -1,6 +1,7 @@
 package world
 
 import (
+	"context"
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
@@ -21,7 +22,8 @@ type World struct {
 	name string
 	log  *logrus.Logger
 
-	stopTick chan struct{}
+	stopTick   context.Context
+	cancelTick context.CancelFunc
 
 	time        int64
 	timeStopped uint32
@@ -47,14 +49,16 @@ type World struct {
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
 func New(log *logrus.Logger) *World {
+	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		name:     "World",
-		prov:     NoIOProvider{},
-		gen:      FlatGenerator{},
-		log:      log,
-		viewers:  make(map[ChunkPos][]Viewer),
-		entities: make(map[ChunkPos][]Entity),
-		stopTick: make(chan struct{}, 1),
+		name:       "World",
+		prov:       NoIOProvider{},
+		gen:        FlatGenerator{},
+		log:        log,
+		viewers:    make(map[ChunkPos][]Viewer),
+		entities:   make(map[ChunkPos][]Entity),
+		stopTick:   ctx,
+		cancelTick: cancel,
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -257,19 +261,6 @@ func (w *World) RotateEntity(e Entity, deltaYaw, deltaPitch float32) {
 	e.setPitch(e.Pitch() + deltaPitch)
 }
 
-// Entities returns a list of all entities in the world. Note that this includes only entities of loaded
-// chunks: Entities in chunks that have not been loaded will not be returned.
-func (w *World) Entities() []Entity {
-	w.entityMutex.RLock()
-	// Make an estimate of about 10 entities per loaded chunk.
-	m := make([]Entity, 0, len(w.entities)*10)
-	for _, e := range w.entities {
-		m = append(m, e...)
-	}
-	w.entityMutex.RUnlock()
-	return m
-}
-
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
 // when joining.
 func (w *World) Spawn() BlockPos {
@@ -346,7 +337,7 @@ func (w *World) Viewers(pos mgl32.Vec3) []Viewer {
 
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
-	w.stopTick <- struct{}{}
+	w.cancelTick()
 
 	w.viewerMutex.Lock()
 	w.viewers = map[ChunkPos][]Viewer{}
@@ -378,7 +369,7 @@ func (w *World) startTicking() {
 		case <-ticker.C:
 			w.tick(tick)
 			tick++
-		case <-w.stopTick:
+		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
 			return
 		}
