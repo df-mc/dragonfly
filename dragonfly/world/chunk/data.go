@@ -242,7 +242,7 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 		}
 	}
 
-	palette := &palette{blockRuntimeIDs: make([]uint32, paletteCount)}
+	palette := &palette{blockRuntimeIDs: make([]uint32, paletteCount), size: paletteSize(blockSize)}
 	for i, b := range blocks {
 		blockInstance, ok := block.Get(b.Name + block.HashProperties(b.State))
 		if !ok {

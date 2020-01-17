@@ -1,5 +1,7 @@
 package chunk
 
+import "github.com/dragonfly-tech/dragonfly/dragonfly/block"
+
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
@@ -12,7 +14,8 @@ func (subChunk *SubChunk) Layer(layer uint8) *BlockStorage {
 	for uint8(len(subChunk.storages)) <= layer {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		subChunk.storages = append(subChunk.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{0})))
+		id, _ := block.RuntimeID(block.Air{})
+		subChunk.storages = append(subChunk.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{id})))
 	}
 	return subChunk.storages[layer]
 }
