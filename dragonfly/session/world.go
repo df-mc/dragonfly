@@ -1,8 +1,11 @@
 package session
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/particle"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -136,7 +139,7 @@ func (s *Session) HideEntity(e world.Entity) {
 	}
 	s.entityMutex.Unlock()
 	if !ok {
-		s.log.Debugf("cannot hide entity %T with runtime ID %v: entity is not shown", e, id)
+		// The entity was already removed some other way. We don't need to send a packet.
 		return
 	}
 	s.writePacket(&packet.RemoveActor{EntityUniqueID: int64(id)})
@@ -221,6 +224,50 @@ func (s *Session) ViewEntityItems(e world.CarryingEntity) {
 		NewItem:         stackFromItem(offHand),
 		WindowID:        protocol.WindowIDOffHand,
 	})
+}
+
+// ViewParticle ...
+func (s *Session) ViewParticle(pos mgl32.Vec3, p particle.Particle) {
+	switch pa := p.(type) {
+	case particle.BlockBreak:
+		id, ok := block.RuntimeID(pa.Block)
+		if !ok {
+			return
+		}
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleDestroy,
+			Position:  pos,
+			EventData: int32(id),
+		})
+	}
+}
+
+// ViewBlockUpdate ...
+func (s *Session) ViewBlockUpdate(pos world.BlockPos, b block.Block) {
+	runtimeID, _ := block.RuntimeID(b)
+	s.writePacket(&packet.UpdateBlock{
+		Position:          protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		NewBlockRuntimeID: runtimeID,
+		Flags:             packet.BlockUpdateNetwork,
+	})
+}
+
+// ViewEntityAction ...
+func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
+	switch a.(type) {
+	case action.SwingArm:
+		if _, ok := e.(Controllable); ok {
+			s.writePacket(&packet.Animate{
+				ActionType:      packet.AnimateActionSwingArm,
+				EntityRuntimeID: s.entityRuntimeID(e),
+			})
+			return
+		}
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventArmSwing,
+		})
+	}
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

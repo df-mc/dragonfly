@@ -177,6 +177,8 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handleRequestChunkRadius(pk)
 	case *packet.MobEquipment:
 		return s.handleMobEquipment(pk)
+	case *packet.InventoryTransaction:
+		return s.handleInventoryTransaction(pk)
 	case *packet.BossEvent: // No need to do anything here. We don't care about these when they're incoming.
 	default:
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())

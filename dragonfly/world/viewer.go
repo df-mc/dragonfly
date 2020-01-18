@@ -1,7 +1,10 @@
 package world
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/particle"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -28,4 +31,13 @@ type Viewer interface {
 	ViewTime(time int)
 	// ViewEntityItems views the items currently held by an entity that is able to equip items.
 	ViewEntityItems(e CarryingEntity)
+	// ViewEntityAction views an action performed by an entity. Available actions may be found in the `action`
+	// package, and include things such as swinging an arm.
+	ViewEntityAction(e Entity, a action.Action)
+	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
+	// for example a block breaking particle, is spawned near the player.
+	ViewParticle(pos mgl32.Vec3, p particle.Particle)
+	// ViewBlockUpdate views the updating of a block. It is called when a block is set at the position passed
+	// to the method.
+	ViewBlockUpdate(pos BlockPos, b block.Block)
 }

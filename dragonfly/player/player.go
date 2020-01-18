@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
@@ -13,6 +14,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
@@ -293,6 +295,23 @@ func (p *Player) GameMode() gamemode.GameMode {
 	return mode
 }
 
+// BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
+// reach the block passed, an error is returned and the block is not broken.
+func (p *Player) BreakBlock(pos world.BlockPos) error {
+	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
+		return fmt.Errorf("player cannot reach block at %v", pos)
+	}
+	p.swingArm()
+	return p.World().BreakBlock(pos)
+}
+
+// swingArm makes the player swing its arm.
+func (p *Player) swingArm() {
+	for _, v := range p.World().Viewers(p.Position()) {
+		v.ViewEntityAction(p, action.SwingArm{})
+	}
+}
+
 // Close closes the player and removes it from the world.
 // Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.
@@ -300,6 +319,22 @@ func (p *Player) Close() error {
 	p.session().Disconnect("Connection closed.")
 	p.close()
 	return nil
+}
+
+// canReach checks if a player can reach a position with its current range. The range depends on if the player
+// is either survival or creative mode.
+func (p *Player) canReach(pos mgl32.Vec3) bool {
+	const (
+		eyeHeight     = 1.62
+		creativeRange = 7.0
+		survivalRange = 13.0
+	)
+	eyes := p.Position().Add(mgl32.Vec3{0, eyeHeight})
+
+	if _, ok := p.GameMode().(gamemode.Creative); ok {
+		return world.Distance(eyes, pos) <= creativeRange
+	}
+	return world.Distance(eyes, pos) <= survivalRange
 }
 
 // close closed the player without disconnecting it. It executes code shared by both the closing and the

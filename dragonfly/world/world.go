@@ -6,6 +6,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/particle"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
@@ -114,6 +115,21 @@ func (w *World) SetBlock(pos BlockPos, b block.Block) error {
 	// TODO: Implement block NBT writing.
 	c.Unlock()
 
+	for _, viewer := range w.Viewers(pos.Vec3()) {
+		viewer.ViewBlockUpdate(pos, b)
+	}
+	return nil
+}
+
+// BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
+// BreakBlock will also show particles.
+func (w *World) BreakBlock(pos BlockPos) error {
+	old, err := w.Block(pos)
+	if err != nil {
+		return fmt.Errorf("cannot get block at position broken: %v", err)
+	}
+	_ = w.SetBlock(pos, block.Air{})
+	w.AddParticle(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), particle.BlockBreak{Block: old})
 	return nil
 }
 
@@ -128,7 +144,7 @@ func (w *World) Time() int {
 func (w *World) SetTime(new int) {
 	atomic.StoreInt64(&w.time, int64(new))
 	for _, viewer := range w.allViewers() {
-		viewer.ViewTime(int(atomic.LoadInt64(&w.time)))
+		viewer.ViewTime(new)
 	}
 }
 
@@ -144,6 +160,14 @@ func (w *World) StopTime() {
 // StartTime will not do anything if the time is already started.
 func (w *World) StartTime() {
 	atomic.StoreUint32(&w.timeStopped, 0)
+}
+
+// AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
+// shown the particle.
+func (w *World) AddParticle(pos mgl32.Vec3, p particle.Particle) {
+	for _, viewer := range w.Viewers(pos) {
+		viewer.ViewParticle(pos, p)
+	}
 }
 
 // AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to

@@ -16,6 +16,8 @@ type Controllable interface {
 	Chat(message string)
 	ExecuteCommand(commandLine string)
 	SetGameMode(mode gamemode.GameMode)
+	BreakBlock(pos world.BlockPos) error
+
 	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
 	// world.
 	Name() string

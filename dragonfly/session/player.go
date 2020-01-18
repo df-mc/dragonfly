@@ -54,6 +54,18 @@ func (s *Session) handleMobEquipment(pk *packet.MobEquipment) error {
 	return nil
 }
 
+// handleInventoryTransaction ...
+func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) error {
+	switch data := pk.TransactionData.(type) {
+	case *protocol.UseItemTransactionData:
+		switch data.ActionType {
+		case protocol.UseItemActionBreakBlock:
+			_ = s.c.BreakBlock(world.BlockPos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])})
+		}
+	}
+	return nil
+}
+
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
 // it will be shown to the client.
 func (s *Session) Disconnect(message string) {
@@ -104,11 +116,9 @@ func (s *Session) addToPlayerList(session *Session) {
 	c := session.c
 
 	s.entityMutex.Lock()
-	var runtimeID uint64
+	runtimeID := uint64(1)
 	if session != s {
 		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
-	} else {
-		runtimeID = 1
 	}
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entityMutex.Unlock()
