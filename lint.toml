@@ -16,6 +16,7 @@ warningCode = 1
 [rule.if-return]
 [rule.increment-decrement]
 [rule.var-naming]
+  arguments = [["__"], []]
 [rule.var-declaration]
 [rule.package-comments]
 [rule.range]
