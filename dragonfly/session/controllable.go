@@ -1,9 +1,11 @@
 package session
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 )
 
@@ -12,11 +14,14 @@ import (
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
 	world.CarryingEntity
+	Move(deltaPos mgl32.Vec3)
+	Rotate(deltaYaw, deltaPitch float32)
 
 	Chat(message string)
 	ExecuteCommand(commandLine string)
 	SetGameMode(mode gamemode.GameMode)
-	BreakBlock(pos world.BlockPos) error
+	BreakBlock(pos block.Position) error
+	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) error
 
 	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
 	// world.

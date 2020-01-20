@@ -6,6 +6,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/particle"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -230,20 +231,29 @@ func (s *Session) ViewEntityItems(e world.CarryingEntity) {
 func (s *Session) ViewParticle(pos mgl32.Vec3, p particle.Particle) {
 	switch pa := p.(type) {
 	case particle.BlockBreak:
-		id, ok := block.RuntimeID(pa.Block)
-		if !ok {
-			return
-		}
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleDestroy,
 			Position:  pos,
-			EventData: int32(id),
+			EventData: int32(s.blockRuntimeID(pa.Block)),
+		})
+	}
+}
+
+// ViewSound ...
+func (s *Session) ViewSound(pos mgl32.Vec3, soundType sound.Sound) {
+	switch so := soundType.(type) {
+	case sound.BlockPlace:
+		s.writePacket(&packet.LevelSoundEvent{
+			SoundType:  packet.SoundEventPlace,
+			Position:   pos,
+			ExtraData:  int32(s.blockRuntimeID(so.Block)),
+			EntityType: ":",
 		})
 	}
 }
 
 // ViewBlockUpdate ...
-func (s *Session) ViewBlockUpdate(pos world.BlockPos, b block.Block) {
+func (s *Session) ViewBlockUpdate(pos block.Position, b block.Block) {
 	runtimeID, _ := block.RuntimeID(b)
 	s.writePacket(&packet.UpdateBlock{
 		Position:          protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
@@ -268,6 +278,12 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			EventType:       packet.ActorEventArmSwing,
 		})
 	}
+}
+
+// blockRuntimeID returns the runtime ID of the block passed.
+func (s *Session) blockRuntimeID(b block.Block) uint32 {
+	id, _ := block.RuntimeID(b)
+	return id
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

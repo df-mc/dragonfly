@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/entity"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
@@ -20,8 +20,8 @@ func (s *Session) handleMovePlayer(pk *packet.MovePlayer) error {
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
 		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be 1", pk.EntityRuntimeID)
 	}
-	entity.Move(s.c, pk.Position.Sub(s.c.Position()))
-	entity.Rotate(s.c, pk.Yaw-s.c.Yaw(), pk.Pitch-s.c.Pitch())
+	s.c.Move(pk.Position.Sub(s.c.Position()))
+	s.c.Rotate(pk.Yaw-s.c.Yaw(), pk.Pitch-s.c.Pitch())
 
 	s.chunkLoader.Load().(*world.Loader).Move(pk.Position)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
@@ -60,7 +60,9 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 	case *protocol.UseItemTransactionData:
 		switch data.ActionType {
 		case protocol.UseItemActionBreakBlock:
-			_ = s.c.BreakBlock(world.BlockPos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])})
+			_ = s.c.BreakBlock(block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])})
+		case protocol.UseItemActionClickBlock:
+			_ = s.c.UseItemOnBlock(block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}, block.Face(data.BlockFace), data.ClickedPosition)
 		}
 	}
 	return nil

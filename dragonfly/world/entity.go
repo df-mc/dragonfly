@@ -11,7 +11,7 @@ import (
 // Viewers of a world may view an entity when near it.
 type Entity interface {
 	io.Closer
-	// Pos returns the current position of the entity in the world.
+	// Position returns the current position of the entity in the world.
 	Position() mgl32.Vec3
 	// World returns the current world of the entity. This is always the world that the entity can actually be
 	// found in.
@@ -22,11 +22,6 @@ type Entity interface {
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
 	Pitch() float32
-
-	setPosition(new mgl32.Vec3)
-	setYaw(new float32)
-	setPitch(new float32)
-	setWorld(new *World)
 }
 
 // CarryingEntity represents an entity that is able to carry items with it.

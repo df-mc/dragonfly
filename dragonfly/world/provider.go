@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
 	"io"
@@ -17,9 +18,9 @@ type Provider interface {
 	SetWorldName(name string)
 	// WorldSpawn returns the spawn position of the world. Although players may spawn at different positions,
 	// every new player spawns at this position.
-	WorldSpawn() BlockPos
+	WorldSpawn() block.Position
 	// SetWorldSpawn sets the spawn of a world to a new position.
-	SetWorldSpawn(pos BlockPos)
+	SetWorldSpawn(pos block.Position)
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -62,7 +63,7 @@ func (p NoIOProvider) DefaultGameMode() gamemode.GameMode { return gamemode.Adve
 func (p NoIOProvider) SetDefaultGameMode(mode gamemode.GameMode) {}
 
 // SetWorldSpawn ...
-func (p NoIOProvider) SetWorldSpawn(pos BlockPos) {}
+func (p NoIOProvider) SetWorldSpawn(pos block.Position) {}
 
 // SaveTimeCycle ...
 func (p NoIOProvider) SaveTimeCycle(running bool) {}
@@ -109,8 +110,8 @@ func (p NoIOProvider) WorldName() string {
 func (p NoIOProvider) SetWorldName(name string) {}
 
 // WorldSpawn ...
-func (p NoIOProvider) WorldSpawn() BlockPos {
-	return BlockPos{0, 30, 0}
+func (p NoIOProvider) WorldSpawn() block.Position {
+	return block.Position{0, 30, 0}
 }
 
 // Close ...

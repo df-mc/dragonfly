@@ -80,8 +80,8 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 // An error is returned if the chunk that the block is located in could not be loaded successfully.
-func (w *World) Block(pos BlockPos) (block.Block, error) {
-	c, err := w.chunk(pos.ChunkPos())
+func (w *World) Block(pos block.Position) (block.Block, error) {
+	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +101,13 @@ func (w *World) Block(pos BlockPos) (block.Block, error) {
 // first loaded or generated if it could not be found in the world save.
 // An error is returned if the chunk that the block should be written to could not be loaded successfully.
 // SetBlock panics if the block passed has not yet been registered using block.Register().
-func (w *World) SetBlock(pos BlockPos, b block.Block) error {
+func (w *World) SetBlock(pos block.Position, b block.Block) error {
 	runtimeID, ok := block.RuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
 
-	c, err := w.chunk(pos.ChunkPos())
+	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (w *World) SetBlock(pos BlockPos, b block.Block) error {
 
 // BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlock will also show particles.
-func (w *World) BreakBlock(pos BlockPos) error {
+func (w *World) BreakBlock(pos block.Position) error {
 	old, err := w.Block(pos)
 	if err != nil {
 		return fmt.Errorf("cannot get block at position broken: %v", err)
@@ -170,6 +170,11 @@ func (w *World) AddParticle(pos mgl32.Vec3, p particle.Particle) {
 	}
 }
 
+// entityWorlds holds a list of all entities added to a world. It may be used to lookup the world that an
+// entity is currently in.
+var entityWorlds = map[Entity]*World{}
+var worldsMu sync.RWMutex
+
 // AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to
 // all viewers of the world that have the chunk of the entity loaded.
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
@@ -178,18 +183,20 @@ func (w *World) AddEntity(e Entity) {
 	if e.World() != nil {
 		e.World().RemoveEntity(e)
 	}
-	chunkPos := ChunkPosFromVec3(e.Position())
+	chunkPos := chunkPosFromVec3(e.Position())
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error loading chunk to add entity: %v", err)
 	}
 	c.Unlock()
 
+	worldsMu.Lock()
+	entityWorlds[e] = w
+	worldsMu.Unlock()
+
 	w.entityMutex.Lock()
 	w.entities[chunkPos] = append(w.entities[chunkPos], e)
 	w.entityMutex.Unlock()
-
-	e.setWorld(w)
 
 	w.viewerMutex.RLock()
 	for _, viewer := range w.viewers[chunkPos] {
@@ -209,7 +216,11 @@ func (w *World) AddEntity(e Entity) {
 // RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
 func (w *World) RemoveEntity(e Entity) {
-	chunkPos := ChunkPosFromVec3(e.Position())
+	chunkPos := chunkPosFromVec3(e.Position())
+
+	worldsMu.Lock()
+	delete(entityWorlds, e)
+	worldsMu.Unlock()
 
 	w.entityMutex.Lock()
 	if _, ok := w.cCache.Get(chunkPos.Hash()); !ok {
@@ -230,70 +241,24 @@ func (w *World) RemoveEntity(e Entity) {
 	w.entityMutex.Unlock()
 }
 
-// MoveEntity moves an entity from one position to another in the world, by adding the delta passed to the
-// current position of the entity. It is equivalent to calling entity.Move().
-func (w *World) MoveEntity(e Entity, delta mgl32.Vec3) {
-	chunkPos := ChunkPosFromVec3(e.Position())
-	newChunkPos := ChunkPosFromVec3(e.Position().Add(delta))
-
-	if chunkPos != newChunkPos {
-		// The entity moved from one chunk into another, so we need to move it and show it to the new viewers.
-		// Old viewers also need to stop viewing this entity.
-		w.moveChunkEntity(e, chunkPos, newChunkPos)
-	}
-	for _, viewer := range w.chunkViewers(newChunkPos) {
-		// Finally we show the movement to all viewers of the entity.
-		viewer.ViewEntityMovement(e, delta, 0, 0)
-	}
-
-	// Make sure to set the final position of the entity: It should not yet be applied when making the viewers
-	// view the movement.
-	e.setPosition(e.Position().Add(delta))
-}
-
-// TeleportEntity teleports an entity to a target position in the world. Unlike MoveEntity, it immediately
-// changes the position of the entity.
-func (w *World) TeleportEntity(e Entity, position mgl32.Vec3) {
-	chunkPos := ChunkPosFromVec3(e.Position())
-	newChunkPos := ChunkPosFromVec3(position)
-
-	if chunkPos != newChunkPos {
-		// The entity moved from one chunk into another, so we need to move it and show it to the new viewers.
-		// Old viewers also need to stop viewing this entity.
-		w.moveChunkEntity(e, chunkPos, newChunkPos)
-	}
-	for _, viewer := range w.chunkViewers(newChunkPos) {
-		// Finally we show the movement to all viewers of the entity.
-		viewer.ViewEntityTeleport(e, position)
-	}
-
-	// Make sure to set the final position of the entity: It should not yet be applied when making the viewers
-	// view the movement.
-	e.setPosition(position)
-}
-
-// RotateEntity rotates an entity in the position, adding deltaYaw and deltaPitch to the respective values. It
-// is equivalent to calling entity.Rotate().
-func (w *World) RotateEntity(e Entity, deltaYaw, deltaPitch float32) {
-	chunkPos := ChunkPosFromVec3(e.Position())
-
-	for _, viewer := range w.chunkViewers(chunkPos) {
-		viewer.ViewEntityMovement(e, mgl32.Vec3{}, deltaYaw, deltaPitch)
-	}
-
-	e.setYaw(e.Yaw() + deltaYaw)
-	e.setPitch(e.Pitch() + deltaPitch)
+// OfEntity attempts to return a world that an entity is currently in. If the entity was not currently added
+// to a world, the world returned is nil and the bool returned is false.
+func OfEntity(e Entity) (*World, bool) {
+	worldsMu.RLock()
+	w, ok := entityWorlds[e]
+	worldsMu.RUnlock()
+	return w, ok
 }
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
 // when joining.
-func (w *World) Spawn() BlockPos {
+func (w *World) Spawn() block.Position {
 	return w.provider().WorldSpawn()
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player will be spawned in the center of
 // this position when newly joining.
-func (w *World) SetSpawn(pos BlockPos) {
+func (w *World) SetSpawn(pos block.Position) {
 	w.provider().SetWorldSpawn(pos)
 }
 
@@ -356,7 +321,7 @@ func (w *World) Handle(h Handler) {
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
 func (w *World) Viewers(pos mgl32.Vec3) []Viewer {
-	return w.chunkViewers(ChunkPosFromVec3(pos))
+	return w.chunkViewers(chunkPosFromVec3(pos))
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -411,6 +376,53 @@ func (w *World) tick(tick int) {
 			viewer.ViewTime(int(atomic.LoadInt64(&w.time)))
 		}
 	}
+	w.tickEntities()
+}
+
+// tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
+// updating where necessary.
+func (w *World) tickEntities() {
+	w.entityMutex.Lock()
+	for chunkPos, entities := range w.entities {
+		chunkEntities := make([]Entity, 0, len(entities))
+		for _, entity := range entities {
+			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
+			// for viewers to view it.
+			newChunkPos := chunkPosFromVec3(entity.Position())
+			if newChunkPos != chunkPos {
+				w.entities[newChunkPos] = append(w.entities[newChunkPos], entity)
+
+				w.viewerMutex.RLock()
+				for _, viewer := range w.viewers[chunkPos] {
+					if !w.hasViewer(newChunkPos, viewer) {
+						// First we hide the entity from all viewers that were previously viewing it, but no
+						// longer are.
+						viewer.HideEntity(entity)
+					}
+				}
+				for _, viewer := range w.viewers[newChunkPos] {
+					if !w.hasViewer(chunkPos, viewer) {
+						// Then we show the entity to all viewers that are now viewing the entity in the new
+						// chunk.
+						viewer.ViewEntity(entity)
+						if carrying, ok := entity.(CarryingEntity); ok {
+							viewer.ViewEntityItems(carrying)
+						}
+					}
+				}
+				w.viewerMutex.RUnlock()
+				continue
+			}
+			chunkEntities = append(chunkEntities, entity)
+		}
+		if len(chunkEntities) == 0 {
+			// There are no more entities stored in this chunk: We delete the entry from the map.
+			delete(w.entities, chunkPos)
+			continue
+		}
+		w.entities[chunkPos] = chunkEntities
+	}
+	w.entityMutex.Unlock()
 }
 
 // removeEntity attempts to remove an entity located in a chunk at the chunk position passed. If found, it
@@ -642,7 +654,7 @@ func (w *World) chunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
 func (w *World) saveChunk(hash string, i interface{}) {
-	pos := ChunkPosFromHash(hash)
+	pos := chunkPosFromHash(hash)
 
 	w.viewerMutex.RLock()
 	if len(w.viewers[pos]) != 0 {

@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
@@ -14,6 +15,7 @@ import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/session"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
@@ -26,10 +28,10 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	world.Pos
-	name string
-	uuid uuid.UUID
-	xuid string
+	name            string
+	uuid            uuid.UUID
+	xuid            string
+	pos, yaw, pitch atomic.Value
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -52,7 +54,7 @@ type Player struct {
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
-func New(name string, skin skin.Skin) *Player {
+func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 	p := &Player{
 		name:     name,
 		h:        NopHandler{},
@@ -63,6 +65,9 @@ func New(name string, skin skin.Skin) *Player {
 		heldSlot: new(uint32),
 		gameMode: gamemode.Adventure{},
 	}
+	p.pos.Store(pos)
+	p.yaw.Store(float32(0.0))
+	p.pitch.Store(float32(0.0))
 	return p
 }
 
@@ -70,8 +75,8 @@ func New(name string, skin skin.Skin) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session) *Player {
-	p := New(name, skin)
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl32.Vec3) *Player {
+	p := New(name, skin, pos)
 	p.s = s
 	p.uuid = uuid
 	p.xuid = xuid
@@ -269,7 +274,7 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 // (Stack.Empty()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
-	_ = p.inv.SetItem(0, offHand)
+	_ = p.offHand.SetItem(0, offHand)
 
 	for _, viewer := range p.World().Viewers(p.Position()) {
 		viewer.ViewEntityItems(p)
@@ -297,12 +302,138 @@ func (p *Player) GameMode() gamemode.GameMode {
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, an error is returned and the block is not broken.
-func (p *Player) BreakBlock(pos world.BlockPos) error {
+func (p *Player) BreakBlock(pos block.Position) (err error) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
 		return fmt.Errorf("player cannot reach block at %v", pos)
 	}
-	p.swingArm()
-	return p.World().BreakBlock(pos)
+	ctx := event.C()
+	p.handler().HandleBlockBreak(ctx, pos)
+
+	ctx.Continue(func() {
+		p.swingArm()
+		err = p.World().BreakBlock(pos)
+	})
+	return
+}
+
+// UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
+// player is assumed to have clicked the face passed with the relative click position clickPos.
+// If the item could not be used successfully, for example when the position is out of range, an error is
+// returned.
+func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) (err error) {
+	i, _ := p.HeldItems()
+	if _, air := i.Item().(block.Air); air {
+		// No need to do anything if the player wasn't holding any item.
+		return
+	}
+	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
+		return fmt.Errorf("player cannot reach block at %v", pos)
+	}
+
+	ctx := event.C()
+	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
+	ctx.Continue(func() {
+		p.swingArm()
+		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
+			usableOnBlock.UseOnBlock(p.World(), p, pos, face, clickPos)
+		} else if b, ok := i.Item().(block.Block); ok {
+			placedPos := pos.Side(face)
+			existing, err := p.World().Block(placedPos)
+			if err != nil {
+				err = fmt.Errorf("cannot get block at placed position %v", placedPos)
+				return
+			}
+			if _, ok := existing.(block.Air); !ok {
+				err = fmt.Errorf("cannot place block at position where block %T is already found", existing)
+			}
+			_ = p.World().SetBlock(placedPos, b)
+			for _, v := range p.World().Viewers(placedPos.Vec3()) {
+				v.ViewSound(placedPos.Vec3(), sound.BlockPlace{Block: b})
+			}
+		}
+	})
+	return nil
+}
+
+// Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
+// position of the player, rather than showing an animation.
+func (p *Player) Teleport(pos mgl32.Vec3) {
+	ctx := event.C()
+	p.handler().HandleTeleport(ctx, pos)
+	ctx.Continue(func() {
+		p.teleport(pos)
+	})
+}
+
+// teleport teleports the player to a target position in the world. It does not call the handler of the
+// player.
+func (p *Player) teleport(pos mgl32.Vec3) {
+	for _, v := range p.World().Viewers(p.Position()) {
+		v.ViewEntityTeleport(p, pos)
+	}
+	p.pos.Store(pos)
+}
+
+// Move moves the player from one position to another in the world, by adding the delta passed to the current
+// position of the player.
+func (p *Player) Move(deltaPos mgl32.Vec3) {
+	if deltaPos.ApproxEqual(mgl32.Vec3{}) {
+		// The delta was too small: We don't actually handle this.
+		return
+	}
+
+	ctx := event.C()
+	p.handler().HandleMove(ctx, p.Position().Add(deltaPos), p.Yaw(), p.Pitch())
+	ctx.Continue(func() {
+		for _, v := range p.World().Viewers(p.Position()) {
+			v.ViewEntityMovement(p, deltaPos, 0, 0)
+		}
+		p.pos.Store(p.Position().Add(deltaPos))
+	})
+	ctx.Stop(func() {
+		p.teleport(p.Position())
+	})
+}
+
+// Rotate rotates the player, adding deltaYaw and deltaPitch to the respective values.
+func (p *Player) Rotate(deltaYaw, deltaPitch float32) {
+	if mgl32.FloatEqual(deltaYaw, 0) && mgl32.FloatEqual(deltaPitch, 0) {
+		// The yaw and pitch deltas were so small we can ignore them.
+		return
+	}
+
+	p.handler().HandleMove(event.C(), p.Position(), p.Yaw()+deltaYaw, p.Pitch()+deltaPitch)
+
+	// Cancelling player rotation is rather scuffed, so we don't do that.
+	for _, v := range p.World().Viewers(p.Position()) {
+		v.ViewEntityMovement(p, mgl32.Vec3{}, deltaYaw, deltaPitch)
+	}
+	p.yaw.Store(p.Yaw() + deltaYaw)
+	p.pitch.Store(p.Pitch() + deltaPitch)
+}
+
+// World returns the world that the player is currently in.
+func (p *Player) World() *world.World {
+	w, _ := world.OfEntity(p)
+	return w
+}
+
+// Position returns the current position of the player. It may be changed as the player moves or is moved
+// around the world.
+func (p *Player) Position() mgl32.Vec3 {
+	return p.pos.Load().(mgl32.Vec3)
+}
+
+// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
+// is 0 when the entity faces forward.
+func (p *Player) Yaw() float32 {
+	return p.yaw.Load().(float32)
+}
+
+// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
+// and is 0 when the entity faces forward.
+func (p *Player) Pitch() float32 {
+	return p.pitch.Load().(float32)
 }
 
 // swingArm makes the player swing its arm.
@@ -326,8 +457,8 @@ func (p *Player) Close() error {
 func (p *Player) canReach(pos mgl32.Vec3) bool {
 	const (
 		eyeHeight     = 1.62
-		creativeRange = 7.0
-		survivalRange = 13.0
+		creativeRange = 13.0
+		survivalRange = 7.0
 	)
 	eyes := p.Position().Add(mgl32.Vec3{0, eyeHeight})
 
@@ -340,7 +471,7 @@ func (p *Player) canReach(pos mgl32.Vec3) bool {
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
-	p.handler().HandleClose()
+	p.handler().HandleQuit()
 	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
 

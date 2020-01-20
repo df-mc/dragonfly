@@ -11,3 +11,10 @@ type Block interface {
 	// block holds.
 	Minecraft() (name string, properties map[string]interface{})
 }
+
+// IO represents an IO source that blocks may be set to and read from. It is used by blocks and items to edit
+// any IO source that implements this interface.
+type IO interface {
+	Block(pos Position) (Block, error)
+	SetBlock(pos Position, b Block) error
+}

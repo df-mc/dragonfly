@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
@@ -94,17 +95,17 @@ func (p *Provider) SetWorldName(name string) {
 }
 
 // WorldSpawn returns the spawn of the world as present in the level.dat.
-func (p *Provider) WorldSpawn() world.BlockPos {
+func (p *Provider) WorldSpawn() block.Position {
 	y := p.d.SpawnY
 	if p.d.SpawnY > 256 {
 		// TODO: Spawn at the highest block of the world. We're currently doing a guess.
 		y = 90
 	}
-	return world.BlockPos{int(p.d.SpawnX), int(y), int(p.d.SpawnZ)}
+	return block.Position{int(p.d.SpawnX), int(y), int(p.d.SpawnZ)}
 }
 
 // SetWorldSpawn sets the spawn of the world to a new one.
-func (p *Provider) SetWorldSpawn(pos world.BlockPos) {
+func (p *Provider) SetWorldSpawn(pos block.Position) {
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 }
 

@@ -1,9 +1,9 @@
 package world
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/go-gl/mathgl/mgl32"
 	"math"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -23,10 +23,10 @@ func (p ChunkPos) Z() int32 {
 	return p[1]
 }
 
-// BlockPos returns a block position that represents the corner of the chunk, where the X and Z of the chunk
+// Position returns a block position that represents the corner of the chunk, where the X and Z of the chunk
 // position are multiplied by 16. The y value of the block position returned is always 0.
-func (p ChunkPos) BlockPos() BlockPos {
-	return BlockPos{int(p[0] << 4), 0, int(p[1] << 4)}
+func (p ChunkPos) BlockPos() block.Position {
+	return block.Position{int(p[0] << 4), 0, int(p[1] << 4)}
 }
 
 // Hash returns the hash of the chunk position. It is essentially the bytes of the X and Z values of the
@@ -42,9 +42,9 @@ func (p ChunkPos) Hash() string {
 	return *(*string)(unsafe.Pointer(&v))
 }
 
-// ChunkPosFromHash returns a chunk position from the hash produced using ChunkPos.Hash. It panics if the
+// chunkPosFromHash returns a chunk position from the hash produced using ChunkPos.Hash. It panics if the
 // length of the hash is not 8.
-func ChunkPosFromHash(hash string) ChunkPos {
+func chunkPosFromHash(hash string) ChunkPos {
 	if len(hash) != 8 {
 		panic("length of hash must be exactly 8 bytes long")
 	}
@@ -54,52 +54,18 @@ func ChunkPosFromHash(hash string) ChunkPos {
 	}
 }
 
-// ChunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
+// chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
 // those of the Vec3 divided by 16, then rounded down.
-func ChunkPosFromVec3(vec3 mgl32.Vec3) ChunkPos {
+func chunkPosFromVec3(vec3 mgl32.Vec3) ChunkPos {
 	return ChunkPos{
 		int32(math.Floor(float64(vec3[0]) / 16)),
 		int32(math.Floor(float64(vec3[2]) / 16)),
 	}
 }
 
-// BlockPos holds the position of a block. The position is represented of an array with an x, y and z value,
-// where the y value is positive.
-type BlockPos [3]int
-
-// X returns the X coordinate of the block position.
-func (p BlockPos) X() int {
-	return p[0]
-}
-
-// Y returns the Y coordinate of the block position.
-func (p BlockPos) Y() int {
-	return p[1]
-}
-
-// Z returns the Z coordinate of the block position.
-func (p BlockPos) Z() int {
-	return p[2]
-}
-
-// ChunkPos returns a chunk position of the chunk that a block at this position would be in.
-func (p BlockPos) ChunkPos() ChunkPos {
+// chunkPosFromBlockPos returns a chunk position of the chunk that a block at this position would be in.
+func chunkPosFromBlockPos(p block.Position) ChunkPos {
 	return ChunkPos{int32(p[0] >> 4), int32(p[2] >> 4)}
-}
-
-// Vec3 returns a vec3 holding the same coordinates as the block position.
-func (p BlockPos) Vec3() mgl32.Vec3 {
-	return mgl32.Vec3{float32(p[0]), float32(p[1]), float32(p[2])}
-}
-
-// BlockPosFromVec3 returns a block position from the Vec3 passed. The coordinates are all rounded down to the
-// nearest full number.
-func BlockPosFromVec3(vec3 mgl32.Vec3) BlockPos {
-	return BlockPos{
-		int(math.Floor(float64(vec3[0]))),
-		int(math.Floor(float64(vec3[1]))),
-		int(math.Floor(float64(vec3[2]))),
-	}
 }
 
 // Distance returns the distance between two vectors.
@@ -109,71 +75,4 @@ func Distance(a, b mgl32.Vec3) float32 {
 			math.Pow(float64(b[1]-a[1]), 2) +
 			math.Pow(float64(b[2]-a[2]), 2),
 	))
-}
-
-// Pos holds the position base of the entity. It implements the entity.Entity interface and creates the base
-// of the entity that implements position management.
-// Entities must embed this struct to be able to use functions in the entity package.
-type Pos struct {
-	world, pos, yaw, pitch atomic.Value
-}
-
-// Position returns the current position of the entity. It may be changed as the entity moves or is moved
-// around the world.
-func (pos *Pos) Position() mgl32.Vec3 {
-	if v := pos.pos.Load(); v != nil {
-		return v.(mgl32.Vec3)
-	}
-	return mgl32.Vec3{}
-}
-
-// World returns the world of the entity. If the world has not been placed in a world yet, World will return
-// nil.
-func (pos *Pos) World() *World {
-	if v := pos.world.Load(); v != nil {
-		return v.(*World)
-	}
-	return nil
-}
-
-// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
-// is 0 when the entity faces forward.
-func (pos *Pos) Yaw() float32 {
-	if v := pos.yaw.Load(); v != nil {
-		return v.(float32)
-	}
-	return 0
-}
-
-// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
-// and is 0 when the entity faces forward.
-func (pos *Pos) Pitch() float32 {
-	if v := pos.pitch.Load(); v != nil {
-		return v.(float32)
-	}
-	return 0
-}
-
-// setYaw sets the yaw of the entity to the new yaw passed. It merely sets the field of the struct and does
-// not take care of sending it to viewers.
-func (pos *Pos) setYaw(new float32) {
-	pos.yaw.Store(new)
-}
-
-// setPitch sets the pitch of the entity to the new pitch passed. It merely sets the field of the struct and
-// does not take care of sending it to viewers.
-func (pos *Pos) setPitch(new float32) {
-	pos.pitch.Store(new)
-}
-
-// setPosition sets the position of the entity to a new position passed. It merely sets the field of the
-// struct and does not take care of sending it to viewers.
-func (pos *Pos) setPosition(new mgl32.Vec3) {
-	pos.pos.Store(new)
-}
-
-// setWorld sets the world of the entity to a new world passed. It merely sets the field of the struct and
-// does not take care of sending it to viewers.
-func (pos *Pos) setWorld(new *World) {
-	pos.world.Store(new)
 }
