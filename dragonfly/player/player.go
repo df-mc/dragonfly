@@ -332,6 +332,7 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
+
 	ctx.Continue(func() {
 		p.swingArm()
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
@@ -345,6 +346,7 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 			}
 			if _, ok := existing.(block.Air); !ok {
 				err = fmt.Errorf("cannot place block at position where block %T is already found", existing)
+				return
 			}
 			_ = p.World().SetBlock(placedPos, b)
 			for _, v := range p.World().Viewers(placedPos.Vec3()) {
@@ -352,12 +354,15 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 			}
 		}
 	})
-	return nil
+	return
 }
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl32.Vec3) {
+	// Generally it is expected you are teleported to the middle of the block.
+	pos = pos.Add(mgl32.Vec3{0.5, 0, 0.5})
+
 	ctx := event.C()
 	p.handler().HandleTeleport(ctx, pos)
 	ctx.Continue(func() {
