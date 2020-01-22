@@ -133,6 +133,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 // HideEntity ...
 func (s *Session) HideEntity(e world.Entity) {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+		return
+	}
+
 	s.entityMutex.Lock()
 	id, ok := s.entityRuntimeIDs[e]
 	if _, controllable := e.(Controllable); !controllable {
