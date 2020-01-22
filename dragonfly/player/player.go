@@ -254,6 +254,11 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
+// SendGameRules sends the provided game rules to the player.
+func (p *Player) SendGameRules(gamerules map[string]interface{}) {
+	p.session().SendGameRules(gamerules)
+}
+
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
 // the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
 func (p *Player) Inventory() *inventory.Inventory {

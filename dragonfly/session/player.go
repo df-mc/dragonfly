@@ -112,6 +112,14 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
+// SendGameRules sends all the provided game rules to the player. Once sent, they
+// will be immediately updated on the client if they are valid.
+func (s *Session) SendGameRules(gamerules map[string]interface{}) {
+	s.writePacket(&packet.GameRulesChanged{
+		GameRules: gamerules,
+	})
+}
+
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
 // in-game pause menu screen.
 func (s *Session) addToPlayerList(session *Session) {
