@@ -18,7 +18,7 @@ type Handler interface {
 	HandleTeleport(ctx *event.Context, pos mgl32.Vec3)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
-	HandleChat(ctx *event.Context, message string)
+	HandleChat(ctx *event.Context, message *string)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos block.Position)
@@ -55,7 +55,7 @@ func (n NopHandler) HandleCommandExecution(ctx *event.Context, command cmd.Comma
 func (n NopHandler) HandleTransfer(ctx *event.Context, addr *net.UDPAddr) {}
 
 // HandleChat ...
-func (n NopHandler) HandleChat(ctx *event.Context, message string) {}
+func (n NopHandler) HandleChat(ctx *event.Context, message *string) {}
 
 // HandleBlockBreak ...
 func (n NopHandler) HandleBlockBreak(ctx *event.Context, pos block.Position) {}

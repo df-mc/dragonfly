@@ -196,7 +196,7 @@ func (p *Player) RemoveBossBar() {
 // player.
 func (p *Player) Chat(message string) {
 	ctx := event.C()
-	p.handler().HandleChat(ctx, message)
+	p.handler().HandleChat(ctx, &message)
 
 	ctx.Continue(func() {
 		chat.Global.Printf("<%v> %v\n", p.name, message)
