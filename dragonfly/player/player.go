@@ -254,6 +254,16 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
+// ShowCoordinates enables the vanilla coordinates for the player.
+func (p *Player) ShowCoordinates() {
+	p.session().EnableCoordinates(true)
+}
+
+// ShowCoordinates disables the vanilla coordinates for the player.
+func (p *Player) HideCoordinates() {
+	p.session().EnableCoordinates(false)
+}
+
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
 // the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
 func (p *Player) Inventory() *inventory.Inventory {
