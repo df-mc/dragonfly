@@ -121,7 +121,7 @@ func (s *Session) sendGameRules(gamerules map[string]interface{}) {
 }
 
 // EnableCoordinates will either enable or disable coordinates for the
-// player depending on the value given
+// player depending on the value given.
 func (s *Session) EnableCoordinates(enable bool) {
 	gamerules := make(map[string]interface{})
 	gamerules["showCoordinates"] = enable

@@ -254,12 +254,12 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
-// ShowCoordinates enables the vanilla coordinates for the player
+// ShowCoordinates enables the vanilla coordinates for the player.
 func (p *Player) ShowCoordinates() {
 	p.session().EnableCoordinates(true)
 }
 
-// ShowCoordinates disables the vanilla coordinates for the player
+// ShowCoordinates disables the vanilla coordinates for the player.
 func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
 }
