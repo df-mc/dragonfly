@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/state"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
 	"github.com/go-gl/mathgl/mgl32"
 	"io"
@@ -22,6 +23,9 @@ type Entity interface {
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
 	Pitch() float32
+	// State returns a list of entity states which the entity is currently subject to. Generally, these states
+	// alter the way the entity looks.
+	State() []state.State
 }
 
 // CarryingEntity represents an entity that is able to carry items with it.

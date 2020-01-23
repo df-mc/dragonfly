@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/state"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
@@ -50,6 +51,8 @@ type Player struct {
 	inv      *inventory.Inventory
 	offHand  *inventory.Inventory
 	heldSlot *uint32
+
+	sneaking uint32
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -322,7 +325,7 @@ func (p *Player) BreakBlock(pos block.Position) (err error) {
 // returned.
 func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) (err error) {
 	i, _ := p.HeldItems()
-	if _, air := i.Item().(block.Air); air {
+	if i.Empty() {
 		// No need to do anything if the player wasn't holding any item.
 		return
 	}
@@ -439,6 +442,38 @@ func (p *Player) Yaw() float32 {
 // and is 0 when the entity faces forward.
 func (p *Player) Pitch() float32 {
 	return p.pitch.Load().(float32)
+}
+
+// StartSneaking makes a player start sneaking. If the player is already sneaking, StartSneaking will not do
+// anything.
+func (p *Player) StartSneaking() {
+	atomic.StoreUint32(&p.sneaking, 1)
+	p.updateState()
+}
+
+// StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
+// will not do anything.
+func (p *Player) StopSneaking() {
+	atomic.StoreUint32(&p.sneaking, 0)
+	p.updateState()
+}
+
+// State returns the current state of the player. Types from the `entity/state` package are returned
+// depending on what the player is currently doing.
+func (p *Player) State() (s []state.State) {
+	if atomic.LoadUint32(&p.sneaking) == 1 {
+		s = append(s, state.Sneaking{})
+	}
+	// TODO: Only set the player as breathing when it is above water.
+	s = append(s, state.Breathing{})
+	return
+}
+
+// updateState updates the state of the player to all viewers of the player.
+func (p *Player) updateState() {
+	for _, v := range p.World().Viewers(p.Position()) {
+		v.ViewEntityState(p, p.State())
+	}
 }
 
 // swingArm makes the player swing its arm.

@@ -3,6 +3,7 @@ package world
 import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/state"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/particle"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/sound"
@@ -35,6 +36,9 @@ type Viewer interface {
 	// ViewEntityAction views an action performed by an entity. Available actions may be found in the `action`
 	// package, and include things such as swinging an arm.
 	ViewEntityAction(e Entity, a action.Action)
+	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
+	// physical appearance, for example when sprinting.
+	ViewEntityState(e Entity, s []state.State)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl32.Vec3, p particle.Particle)
