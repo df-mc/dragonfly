@@ -114,10 +114,19 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 
 // SendGameRules sends all the provided game rules to the player. Once sent, they
 // will be immediately updated on the client if they are valid.
-func (s *Session) SendGameRules(gamerules map[string]interface{}) {
+func (s *Session) sendGameRules(gamerules map[string]interface{}) {
 	s.writePacket(&packet.GameRulesChanged{
 		GameRules: gamerules,
 	})
+}
+
+// EnableCoordinates will either enable or disable coordinates for the
+// player depending on the value given
+func (s *Session) EnableCoordinates(enable bool) {
+	gamerules := make(map[string]interface{})
+	gamerules["showCoordinates"] = enable
+
+	s.sendGameRules(gamerules)
 }
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the

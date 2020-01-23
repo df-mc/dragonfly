@@ -254,9 +254,14 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
-// SendGameRules sends the provided game rules to the player.
-func (p *Player) SendGameRules(gamerules map[string]interface{}) {
-	p.session().SendGameRules(gamerules)
+// ShowCoordinates enables the vanilla coordinates for the player
+func (p *Player) ShowCoordinates() {
+	p.session().EnableCoordinates(true)
+}
+
+// ShowCoordinates disables the vanilla coordinates for the player
+func (p *Player) HideCoordinates() {
+	p.session().EnableCoordinates(false)
 }
 
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
