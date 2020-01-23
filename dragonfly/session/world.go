@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/action"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/state"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world/particle"
@@ -282,6 +283,23 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			EventType:       packet.ActorEventArmSwing,
 		})
 	}
+}
+
+// ViewEntityState ...
+func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
+	m := defaultEntityMetadata()
+	for _, eState := range states {
+		switch eState.(type) {
+		case state.Sneaking:
+			m.setFlag(dataKeyFlags, dataFlagSneaking)
+		case state.Breathing:
+			m.setFlag(dataKeyFlags, dataFlagBreathing)
+		}
+	}
+	s.writePacket(&packet.SetActorData{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		EntityMetadata:  m,
+	})
 }
 
 // blockRuntimeID returns the runtime ID of the block passed.

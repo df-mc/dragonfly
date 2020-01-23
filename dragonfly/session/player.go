@@ -54,6 +54,20 @@ func (s *Session) handleMobEquipment(pk *packet.MobEquipment) error {
 	return nil
 }
 
+// handlePlayerAction ...
+func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
+	if pk.EntityRuntimeID != selfEntityRuntimeID {
+		return fmt.Errorf("PlayerAction packet must only have runtime ID of the own entity")
+	}
+	switch pk.ActionType {
+	case packet.PlayerActionStartSneak:
+		s.c.StartSneaking()
+	case packet.PlayerActionStopSneak:
+		s.c.StopSneaking()
+	}
+	return nil
+}
+
 // handleInventoryTransaction ...
 func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) error {
 	switch data := pk.TransactionData.(type) {
@@ -230,6 +244,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSl
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(item item.Stack) protocol.ItemStack {
+	if item.Empty() {
+		return protocol.ItemStack{}
+	}
 	id, meta := item.Item().EncodeItem()
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{

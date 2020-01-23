@@ -201,10 +201,7 @@ func (w *World) AddEntity(e Entity) {
 	w.viewerMutex.RLock()
 	for _, viewer := range w.viewers[chunkPos] {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
-		viewer.ViewEntity(e)
-		if carrying, ok := e.(CarryingEntity); ok {
-			viewer.ViewEntityItems(carrying)
-		}
+		showEntity(e, viewer)
 	}
 	w.viewerMutex.RUnlock()
 }
@@ -404,10 +401,7 @@ func (w *World) tickEntities() {
 					if !w.hasViewer(chunkPos, viewer) {
 						// Then we show the entity to all viewers that are now viewing the entity in the new
 						// chunk.
-						viewer.ViewEntity(entity)
-						if carrying, ok := entity.(CarryingEntity); ok {
-							viewer.ViewEntityItems(carrying)
-						}
+						showEntity(entity, viewer)
 					}
 				}
 				w.viewerMutex.RUnlock()
@@ -461,10 +455,7 @@ func (w *World) addViewer(pos ChunkPos, viewer Viewer) {
 	// viewer is added to.
 	w.entityMutex.RLock()
 	for _, entity := range w.entities[pos] {
-		viewer.ViewEntity(entity)
-		if carrying, ok := entity.(CarryingEntity); ok {
-			viewer.ViewEntityItems(carrying)
-		}
+		showEntity(entity, viewer)
 	}
 	w.entityMutex.RUnlock()
 
@@ -602,13 +593,20 @@ func (w *World) moveChunkEntity(e Entity, chunkPos, newChunkPos ChunkPos) {
 	for _, viewer := range w.viewers[newChunkPos] {
 		if !w.hasViewer(chunkPos, viewer) {
 			// Then we show the entity to all viewers that are now viewing the entity in the new chunk.
-			viewer.ViewEntity(e)
-			if carrying, ok := e.(CarryingEntity); ok {
-				viewer.ViewEntityItems(carrying)
-			}
+			showEntity(e, viewer)
 		}
 	}
 	w.viewerMutex.RUnlock()
+}
+
+// showEntity shows an entity to a viewer of the world. It makes sure everything of the entity, including the
+// items held, is shown.
+func showEntity(e Entity, viewer Viewer) {
+	viewer.ViewEntity(e)
+	viewer.ViewEntityState(e, e.State())
+	if carrying, ok := e.(CarryingEntity); ok {
+		viewer.ViewEntityItems(carrying)
+	}
 }
 
 // chunk reads a chunk from the position passed. If a chunk at that position is not yet loaded, the chunk is

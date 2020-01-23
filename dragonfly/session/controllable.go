@@ -23,6 +23,9 @@ type Controllable interface {
 	BreakBlock(pos block.Position) error
 	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) error
 
+	StartSneaking()
+	StopSneaking()
+
 	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
 	// world.
 	Name() string
