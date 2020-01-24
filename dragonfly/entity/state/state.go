@@ -9,8 +9,13 @@ type State interface {
 // Sneaking makes the entity show up as if it is sneaking.
 type Sneaking struct{}
 
+// Sprinting makes an entity show up as if it is sprinting: Particles will show up when the entity moves
+// around the world.
+type Sprinting struct{}
+
 // Breathing makes an entity breath: This state will not show up for entities other than players.
 type Breathing struct{}
 
 func (Sneaking) __()  {}
 func (Breathing) __() {}
+func (Sprinting) __() {}

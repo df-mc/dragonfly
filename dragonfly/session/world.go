@@ -292,6 +292,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 		switch eState.(type) {
 		case state.Sneaking:
 			m.setFlag(dataKeyFlags, dataFlagSneaking)
+		case state.Sprinting:
+			m.setFlag(dataKeyFlags, dataFlagSprinting)
 		case state.Breathing:
 			m.setFlag(dataKeyFlags, dataFlagBreathing)
 		}

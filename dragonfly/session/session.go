@@ -89,6 +89,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 	w.AddEntity(s.c)
 	s.c.SetGameMode(w.DefaultGameMode())
 	s.SendAvailableCommands()
+	s.SendSpeed(0.1)
 
 	go s.handlePackets()
 

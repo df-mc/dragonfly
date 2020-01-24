@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"math"
 	"net"
 	"sync/atomic"
 )
@@ -60,6 +61,10 @@ func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
 		return fmt.Errorf("PlayerAction packet must only have runtime ID of the own entity")
 	}
 	switch pk.ActionType {
+	case packet.PlayerActionStartSprint:
+		s.c.StartSprinting()
+	case packet.PlayerActionStopSprint:
+		s.c.StopSprinting()
 	case packet.PlayerActionStartSneak:
 		s.c.StartSneaking()
 	case packet.PlayerActionStopSneak:
@@ -93,6 +98,20 @@ func (s *Session) Disconnect(message string) {
 		_ = s.conn.Flush()
 		_ = s.conn.Close()
 	}
+}
+
+// SendSpeed sends the speed of the player in an UpdateAttributes packet, so that it is updated client-side.
+func (s *Session) SendSpeed(speed float32) {
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{{
+			Name:    "minecraft:movement",
+			Value:   speed,
+			Max:     math.MaxFloat32,
+			Min:     0,
+			Default: 0.1,
+		}},
+	})
 }
 
 // Transfer transfers the player to a server with the IP and port passed.

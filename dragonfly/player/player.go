@@ -52,7 +52,9 @@ type Player struct {
 	offHand  *inventory.Inventory
 	heldSlot *uint32
 
-	sneaking uint32
+	sneaking, sprinting uint32
+
+	speed atomic.Value
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -71,6 +73,7 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 	p.pos.Store(pos)
 	p.yaw.Store(float32(0.0))
 	p.pitch.Store(float32(0.0))
+	p.speed.Store(float32(0.1))
 	return p
 }
 
@@ -267,6 +270,60 @@ func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
 }
 
+// SetSpeed sets the speed of the player. The value passed is the blocks/tick speed that the player will then
+// obtain.
+func (p *Player) SetSpeed(speed float32) {
+	p.speed.Store(speed)
+}
+
+// Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
+// speed of a player is 0.1.
+func (p *Player) Speed() float32 {
+	return p.speed.Load().(float32)
+}
+
+// StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
+// particles show up under the feet.
+// If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
+func (p *Player) StartSprinting() {
+	if atomic.LoadUint32(&p.sprinting) == 1 {
+		return
+	}
+	p.StopSneaking()
+
+	atomic.StoreUint32(&p.sprinting, 1)
+	p.SetSpeed(p.Speed() * 1.3)
+
+	p.updateState()
+}
+
+// StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
+func (p *Player) StopSprinting() {
+	if atomic.LoadUint32(&p.sprinting) == 0 {
+		return
+	}
+	atomic.StoreUint32(&p.sprinting, 0)
+	p.SetSpeed(p.Speed() / 1.3)
+
+	p.updateState()
+}
+
+// StartSneaking makes a player start sneaking. If the player is already sneaking, StartSneaking will not do
+// anything.
+// If the player is sprinting while StartSneaking is called, the sprinting is stopped.
+func (p *Player) StartSneaking() {
+	p.StopSprinting()
+	atomic.StoreUint32(&p.sneaking, 1)
+	p.updateState()
+}
+
+// StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
+// will not do anything.
+func (p *Player) StopSneaking() {
+	atomic.StoreUint32(&p.sneaking, 0)
+	p.updateState()
+}
+
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
 // the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
 func (p *Player) Inventory() *inventory.Inventory {
@@ -454,25 +511,14 @@ func (p *Player) Pitch() float32 {
 	return p.pitch.Load().(float32)
 }
 
-// StartSneaking makes a player start sneaking. If the player is already sneaking, StartSneaking will not do
-// anything.
-func (p *Player) StartSneaking() {
-	atomic.StoreUint32(&p.sneaking, 1)
-	p.updateState()
-}
-
-// StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
-// will not do anything.
-func (p *Player) StopSneaking() {
-	atomic.StoreUint32(&p.sneaking, 0)
-	p.updateState()
-}
-
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {
 	if atomic.LoadUint32(&p.sneaking) == 1 {
 		s = append(s, state.Sneaking{})
+	}
+	if atomic.LoadUint32(&p.sprinting) == 1 {
+		s = append(s, state.Sprinting{})
 	}
 	// TODO: Only set the player as breathing when it is above water.
 	s = append(s, state.Breathing{})

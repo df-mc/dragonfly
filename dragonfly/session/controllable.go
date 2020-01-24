@@ -25,6 +25,8 @@ type Controllable interface {
 
 	StartSneaking()
 	StopSneaking()
+	StartSprinting()
+	StopSprinting()
 
 	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
 	// world.
