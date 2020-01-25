@@ -77,10 +77,15 @@ func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
 func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) error {
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
+		if len(pk.Actions) == 0 {
+			return nil
+		}
 		if err := s.verifyTransaction(pk.Actions); err != nil {
 			return fmt.Errorf("invalid inventory transaction: %v", err)
 		}
+		atomic.StoreUint32(&s.inTransaction, 1)
 		s.executeTransaction(pk.Actions)
+		atomic.StoreUint32(&s.inTransaction, 0)
 	case *protocol.UseItemTransactionData:
 		switch data.ActionType {
 		case protocol.UseItemActionBreakBlock:
@@ -129,19 +134,11 @@ func (s *Session) verifyTransaction(actions []protocol.InventoryAction) error {
 			// mismatched.
 			return fmt.Errorf("slot %v holds a different item than the client expects: %v is actually %v", action.InventorySlot, old, actualOld)
 		}
-		if action.OldItem.NetworkID == 0 {
-			// Don't do anything if the old item is air.
-			continue
-		}
 		if err := temp.AddItem(old); err != nil {
 			return fmt.Errorf("inventory was full: %v", err)
 		}
 	}
 	for _, action := range actions {
-		if action.NewItem.NetworkID == 0 {
-			// Don't do anything if the new item is air.
-			continue
-		}
 		if err := temp.RemoveItem(stackToItem(action.NewItem)); err != nil {
 			return fmt.Errorf("item removed was not present in old items: %v", err)
 		}
@@ -325,6 +322,9 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSlot *uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+		if atomic.LoadUint32(&s.inTransaction) == 1 {
+			return
+		}
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDInventory,
 			Slot:     uint32(slot),
@@ -332,6 +332,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSl
 		})
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
+		if atomic.LoadUint32(&s.inTransaction) == 1 {
+			return
+		}
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDOffHand,
 			Slot:     uint32(slot),

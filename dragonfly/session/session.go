@@ -46,6 +46,8 @@ type Session struct {
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
 	// session controls.
 	onStop func(controllable Controllable)
+
+	inTransaction uint32
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
