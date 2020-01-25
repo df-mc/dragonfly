@@ -18,40 +18,6 @@ type Log struct {
 	Axis Axis
 }
 
-func (l Log) EncodeItem() (id int32, meta int16) {
-	if !l.Stripped {
-		switch l.Wood {
-		case material.OakWood():
-			return 17, 0
-		case material.SpruceWood():
-			return 17, 1
-		case material.BirchWood():
-			return 17, 2
-		case material.JungleWood():
-			return 17, 3
-		case material.AcaciaWood():
-			return 162, 0
-		case material.DarkOakWood():
-			return 162, 1
-		}
-	}
-	switch l.Wood {
-	case material.OakWood():
-		return 255 - 265, 0
-	case material.SpruceWood():
-		return 255 - 260, 0
-	case material.BirchWood():
-		return 255 - 261, 0
-	case material.JungleWood():
-		return 255 - 262, 0
-	case material.AcaciaWood():
-		return 255 - 263, 0
-	case material.DarkOakWood():
-		return 255 - 264, 0
-	}
-	panic("invalid wood type")
-}
-
 // Name returns the name of the log, including the wood type and whether it is stripped or not.
 func (l Log) Name() (name string) {
 	if l.Wood == nil {

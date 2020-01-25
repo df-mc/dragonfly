@@ -6,10 +6,14 @@ import (
 )
 
 // Item represents an item that may be added to an inventory.
-type Item interface {
-	// EncodeItem encodes an item to its Minecraft representation - A numerical ID with a numerical meta
-	// value.
-	EncodeItem() (id int32, meta int16)
+type Item interface{}
+
+// MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
+// a maximum count of 64. MaxCounter may be implemented to change this behaviour.
+type MaxCounter interface {
+	// MaxCount returns the maximum number of items that a stack may be composed of. The number returned must
+	// be positive.
+	MaxCount() int
 }
 
 // UsableOnBlock represents an item that may be used on a block. If an item implements this interface, the

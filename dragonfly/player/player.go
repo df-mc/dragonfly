@@ -48,9 +48,8 @@ type Player struct {
 	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
 	h Handler
 
-	inv      *inventory.Inventory
-	offHand  *inventory.Inventory
-	heldSlot *uint32
+	inv, offHand *inventory.Inventory
+	heldSlot     *uint32
 
 	sneaking, sprinting uint32
 

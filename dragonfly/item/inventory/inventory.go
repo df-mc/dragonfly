@@ -2,7 +2,9 @@ package inventory
 
 import (
 	"errors"
+	"fmt"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
+	"strings"
 	"sync"
 )
 
@@ -66,6 +68,91 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	return nil
 }
 
+// AddItem attempts to add an item to the inventory. It does so in a couple of steps: It first iterates over
+// the inventory to make sure no existing stacks of the same type exist. If these stacks do exist, the item
+// added is first added on top of those stacks to make sure they are fully filled.
+// If no existing stacks with leftover space are left, empty slots will be filled up with the remainder of the
+// item added.
+// If the item could not be fully added to the inventory, an error is returned.
+func (inv *Inventory) AddItem(it item.Stack) error {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+
+	for slot, invIt := range inv.slots {
+		if invIt.Empty() {
+			// This slot was empty, and we should first try to add the item stack to existing stacks.
+			continue
+		}
+
+		a, b := invIt.AddStack(it)
+		inv.setItem(slot, a)
+		it = b
+		if it.Empty() {
+			// We were able to add the entire stack to existing stacks in the inventory.
+			return nil
+		}
+	}
+	for slot, invIt := range inv.slots {
+		if !invIt.Empty() {
+			// We can only use empty slots now: All existing stacks have already been filled up.
+			continue
+		}
+		invIt = item.NewStack(it.Item(), 0)
+		a, b := invIt.AddStack(it)
+
+		inv.setItem(slot, a)
+		it = b
+		if it.Empty() {
+			// We were able to add the entire stack to empty slots.
+			return nil
+		}
+	}
+	// We were unable to clear out the entire stack to be added to the inventory: There wasn't enough space.
+	return fmt.Errorf("could not add full item stack to inventory")
+}
+
+// RemoveItem attempts to remove an item from the inventory. It will visit all slots in the inventory and
+// empties them until it.Count() items have been removed from the inventory.
+// If less than it.Count() items could be found in the inventory, an error is returned.
+func (inv *Inventory) RemoveItem(it item.Stack) error {
+	toRemove := it.Count()
+
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+
+	for slot, slotIt := range inv.slots {
+		if slotIt.Empty() {
+			continue
+		}
+		if !slotIt.Comparable(it) {
+			// The items were not comparable: Continue with the next slot.
+			continue
+		}
+		inv.setItem(slot, slotIt.Grow(-toRemove))
+		toRemove -= slotIt.Count()
+
+		if toRemove <= 0 {
+			// No more items left to remove: We can exit the loop.
+			return nil
+		}
+	}
+	return fmt.Errorf("could not remove all items from the inventory")
+}
+
+// Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
+// it is empty.
+func (inv *Inventory) Empty() bool {
+	inv.mu.RLock()
+	defer inv.mu.RUnlock()
+
+	for _, it := range inv.slots {
+		if !it.Empty() {
+			return false
+		}
+	}
+	return true
+}
+
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
 func (inv *Inventory) setItem(slot int, item item.Stack) {
@@ -89,6 +176,15 @@ func (inv *Inventory) Close() error {
 	inv.f = func(int, item.Stack) {}
 	inv.mu.Unlock()
 	return nil
+}
+
+// String implements the fmt.Stringer interface.
+func (inv *Inventory) String() string {
+	s := make([]string, 0, inv.Size())
+	for _, it := range inv.slots {
+		s = append(s, it.String())
+	}
+	return strings.Join(s, ", ")
 }
 
 // validSlot checks if the slot passed is valid for the inventory. It returns false if the slot is either

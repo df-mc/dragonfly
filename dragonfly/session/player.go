@@ -76,6 +76,11 @@ func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
 // handleInventoryTransaction ...
 func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) error {
 	switch data := pk.TransactionData.(type) {
+	case *protocol.NormalTransactionData:
+		if err := s.verifyTransaction(pk.Actions); err != nil {
+			return fmt.Errorf("invalid inventory transaction: %v", err)
+		}
+		s.executeTransaction(pk.Actions)
 	case *protocol.UseItemTransactionData:
 		switch data.ActionType {
 		case protocol.UseItemActionBreakBlock:
@@ -85,6 +90,81 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 		}
 	}
 	return nil
+}
+
+// executeTransaction executes all actions of a transaction passed. It assumes the actions are all valid,
+// which would otherwise be checked by calling verifyTransaction.
+func (s *Session) executeTransaction(actions []protocol.InventoryAction) {
+	for _, action := range actions {
+		// The window IDs are already checked when using verifyTransaction, so we don't need to check again.
+		inv, _ := s.invByID(action.WindowID)
+		_ = inv.SetItem(int(action.InventorySlot), stackToItem(action.NewItem))
+	}
+}
+
+// verifyTransaction verifies a transaction composed of the actions passed. The method makes sure the old
+// items are precisely equal to the new items: No new items must be added or removed.
+// verifyTransaction also checks if all window IDs sent match some inventory, and if the old items match the
+// items found in that inventory.
+func (s *Session) verifyTransaction(actions []protocol.InventoryAction) error {
+	// Allocate a big inventory and add all new items to it.
+	temp := inventory.New(128, nil)
+	for _, action := range actions {
+		inv, ok := s.invByID(action.WindowID)
+		if !ok {
+			// The inventory with that window ID did not exist.
+			return fmt.Errorf("unknown inventory ID %v", action.WindowID)
+		}
+		actualOld, err := inv.Item(int(action.InventorySlot))
+		if err != nil {
+			// The slot passed actually exceeds the inventory size, meaning we can't actually get an item at
+			// that slot.
+			return fmt.Errorf("slot %v out of range for inventory %v", action.InventorySlot, action.WindowID)
+		}
+		old := stackToItem(action.OldItem)
+		if !actualOld.Comparable(old) || actualOld.Count() != old.Count() {
+			// Either the type or the count of the old item as registered by the server and the client are
+			// mismatched.
+			return fmt.Errorf("slot %v holds a different item than the client expects: %v is actually %v", action.InventorySlot, old, actualOld)
+		}
+		if action.OldItem.NetworkID == 0 {
+			// Don't do anything if the old item is air.
+			continue
+		}
+		if err := temp.AddItem(old); err != nil {
+			return fmt.Errorf("inventory was full: %v", err)
+		}
+	}
+	for _, action := range actions {
+		if action.NewItem.NetworkID == 0 {
+			// Don't do anything if the new item is air.
+			continue
+		}
+		if err := temp.RemoveItem(stackToItem(action.NewItem)); err != nil {
+			return fmt.Errorf("item removed was not present in old items: %v", err)
+		}
+	}
+	// Now that we made sure every new item was also present in the old items, we must also check if every old
+	// item is present as a new item. We can do that by simply checking if the inventory has any items left in
+	// it.
+	if !temp.Empty() {
+		return fmt.Errorf("new items and old items must be balanced")
+	}
+	return nil
+}
+
+// invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
+// returned is true.
+func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
+	switch id {
+	case protocol.WindowIDInventory:
+		return s.inv, true
+	case protocol.WindowIDOffHand:
+		return s.offHand, true
+	case protocol.WindowIDUI:
+		return s.ui, true
+	}
+	return nil, false
 }
 
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
@@ -242,36 +322,44 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // handleInventories starts handling the inventories of the Controllable of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSlot *uint32) {
-	inv = inventory.New(36, func(slot int, item item.Stack) {
+	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDInventory,
 			Slot:     uint32(slot),
 			NewItem:  stackFromItem(item),
 		})
 	})
-	offHand = inventory.New(1, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDOffHand,
 			Slot:     uint32(slot),
 			NewItem:  stackFromItem(item),
 		})
 	})
-	heldSlot = s.heldSlot
-
-	return
+	return s.inv, s.offHand, s.heldSlot
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
-func stackFromItem(item item.Stack) protocol.ItemStack {
-	if item.Empty() {
+func stackFromItem(it item.Stack) protocol.ItemStack {
+	if it.Empty() {
 		return protocol.ItemStack{}
 	}
-	id, meta := item.Item().EncodeItem()
+	id, meta := item.ToID(it.Item())
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
 			NetworkID:     id,
 			MetadataValue: meta,
 		},
-		Count: int16(item.Count()),
+		Count: int16(it.Count()),
 	}
+}
+
+// stackToItem converts a network ItemStack representation back to an item.Stack.
+func stackToItem(it protocol.ItemStack) item.Stack {
+	// TODO: Handle item NBT.
+	t, ok := item.ByID(it.NetworkID, it.MetadataValue)
+	if !ok {
+		t = block.Air{}
+	}
+	return item.NewStack(t, int(it.Count))
 }

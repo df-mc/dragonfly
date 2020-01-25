@@ -3,6 +3,7 @@ package session
 import (
 	"bytes"
 	"fmt"
+	"github.com/dragonfly-tech/dragonfly/dragonfly/item/inventory"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
 	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -39,7 +40,8 @@ type Session struct {
 	entityRuntimeIDs map[world.Entity]uint64
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot *uint32
+	heldSlot         *uint32
+	inv, offHand, ui *inventory.Inventory
 
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
 	// session controls.
@@ -71,6 +73,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
+		ui:                     inventory.New(128, nil),
 	}
 	s.scoreboardObj.Store("")
 	return s
@@ -203,7 +206,7 @@ func (s *Session) initPlayerList() {
 	sessionMutex.Lock()
 	sessions = append(sessions, s)
 	for _, session := range sessions {
-		// Add the player of the session to all sessions currently open, and add the players of all sessions
+		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
 		// currently open to the player list of the new session.
 		session.addToPlayerList(s)
 		s.addToPlayerList(session)
