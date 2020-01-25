@@ -87,6 +87,8 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 			_ = s.c.BreakBlock(block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])})
 		case protocol.UseItemActionClickBlock:
 			_ = s.c.UseItemOnBlock(block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}, block.Face(data.BlockFace), data.ClickedPosition)
+		case protocol.UseItemActionClickAir:
+			_ = s.c.UseItem()
 		}
 	}
 	return nil

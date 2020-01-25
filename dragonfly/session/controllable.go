@@ -21,6 +21,8 @@ type Controllable interface {
 	ExecuteCommand(commandLine string)
 	SetGameMode(mode gamemode.GameMode)
 	BreakBlock(pos block.Position) error
+
+	UseItem() error
 	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) error
 
 	StartSneaking()

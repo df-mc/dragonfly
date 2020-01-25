@@ -22,6 +22,10 @@ type Handler interface {
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos block.Position)
+	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
+	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
+	// the context using ctx.Cancel().
+	HandleItemUse(ctx *event.Context)
 	// HandleItemUseOnBlock handles the player using the item held in its main hand on a block at the block
 	// position passed. The face of the block clicked is also passed, along with the relative click position.
 	// The click position has X, Y and Z values which are all in the range 0.0-1.0.
@@ -59,6 +63,9 @@ func (n NopHandler) HandleChat(ctx *event.Context, message *string) {}
 
 // HandleBlockBreak ...
 func (n NopHandler) HandleBlockBreak(ctx *event.Context, pos block.Position) {}
+
+// HandleItemUse ...
+func (n NopHandler) HandleItemUse(ctx *event.Context) {}
 
 // HandleItemUseOnBlock ...
 func (n NopHandler) HandleItemUseOnBlock(ctx *event.Context, pos block.Position, face block.Face, clickPos mgl32.Vec3) {

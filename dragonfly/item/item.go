@@ -26,6 +26,13 @@ type UsableOnBlock interface {
 	UseOnBlock(io IO, user User, pos block.Position, clickedFace block.Face, clickPos mgl32.Vec3)
 }
 
+// Usable represents an item that may be used 'in the air'. If an item implements this interface, the Use
+// method is called whenever the item is used while pointing at the air. (For example, when throwing an egg.)
+type Usable interface {
+	// Use is called when the item is used in the air. The user that used the item is passed to the method.
+	Use(user User)
+}
+
 // IO represents an IO source that items may be used on to edit the world or to obtain data from the world,
 // such as setting a block or adding an entity.
 type IO interface {

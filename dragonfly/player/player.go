@@ -385,6 +385,33 @@ func (p *Player) BreakBlock(pos block.Position) (err error) {
 	return
 }
 
+// UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
+// unless the held item implements the item.Usable interface, in which case it will be activated.
+// This generally happens for items such as throwable items like snowballs.
+func (p *Player) UseItem() error {
+	i, _ := p.HeldItems()
+	if i.Empty() {
+		// No need to do anything if the player wasn't holding any item.
+		return nil
+	}
+	ctx := event.C()
+	p.handler().HandleItemUse(ctx)
+
+	ctx.Continue(func() {
+		usable, ok := i.Item().(item.Usable)
+		if !ok {
+			// The item wasn't usable, so we can stop doing anything right away.
+			return
+		}
+		usable.Use(p)
+
+		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
+		// reason to swing the arm.
+		p.swingArm()
+	})
+	return nil
+}
+
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, an error is
