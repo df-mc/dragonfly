@@ -34,10 +34,11 @@ func (subChunk *SubChunk) SetRuntimeID(x, y, z byte, layer uint8, runtimeID uint
 // Compact cleans the garbage from all block storages that sub chunk contains, so that they may be
 // cleanly written to a database.
 func (subChunk *SubChunk) compact() {
+	id, _ := block.RuntimeID(block.Air{})
 	newStorages := make([]*BlockStorage, 0, len(subChunk.storages))
 	for _, storage := range subChunk.storages {
 		storage.compact()
-		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == 0 {
+		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == id {
 			// If the palette has only air in it, it means the storage is empty, so we can ignore it.
 			continue
 		}

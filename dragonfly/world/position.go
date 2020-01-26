@@ -42,12 +42,23 @@ func (p ChunkPos) Hash() string {
 	return *(*string)(unsafe.Pointer(&v))
 }
 
+// timeHash returns a hash of the chunk position with another byte at the end, indicating that a timestamp is
+// stored in the key.
+func (p ChunkPos) timeHash() string {
+	x, z := p[0], p[1]
+	v := []byte{
+		uint8(x >> 24), uint8(x >> 16), uint8(x >> 8), uint8(x),
+		uint8(z >> 24), uint8(z >> 16), uint8(z >> 8), uint8(z),
+		uint8(0),
+	}
+	// We can 'safely' unsafely turn the byte slice into a string here, as the byte slice will never be
+	// changed. (It never leaves the method.)
+	return *(*string)(unsafe.Pointer(&v))
+}
+
 // chunkPosFromHash returns a chunk position from the hash produced using ChunkPos.Hash. It panics if the
 // length of the hash is not 8.
 func chunkPosFromHash(hash string) ChunkPos {
-	if len(hash) != 8 {
-		panic("length of hash must be exactly 8 bytes long")
-	}
 	return ChunkPos{
 		int32(hash[3]) | int32(hash[2])<<8 | int32(hash[1])<<16 | int32(hash[0])<<24,
 		int32(hash[7]) | int32(hash[6])<<8 | int32(hash[5])<<16 | int32(hash[4])<<24,

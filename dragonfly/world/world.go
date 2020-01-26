@@ -220,7 +220,7 @@ func (w *World) RemoveEntity(e Entity) {
 	worldsMu.Unlock()
 
 	w.entityMutex.Lock()
-	if _, ok := w.cCache.Get(chunkPos.Hash()); !ok {
+	if _, ok := w.chunkCache().Get(chunkPos.Hash()); !ok {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		w.entityMutex.Unlock()
 		return
@@ -329,9 +329,9 @@ func (w *World) Close() error {
 	w.viewers = map[ChunkPos][]Viewer{}
 	w.viewerMutex.Unlock()
 
-	for key := range w.cCache.Items() {
+	for key := range w.chunkCache().Items() {
 		// We delete all chunks from the cache so that they are saved to the provider.
-		w.cCache.Delete(key)
+		w.chunkCache().Delete(key)
 	}
 	w.provider().SaveTime(atomic.LoadInt64(&w.time))
 	w.provider().SaveTimeCycle(atomic.LoadUint32(&w.timeStopped) == 0)
@@ -644,6 +644,7 @@ func (w *World) chunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 	}
 	// We set the chunk back to the cache right away, so that the expiration time is reset.
 	w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
+	w.chunkCache().Set(pos.timeHash(), time.Now().Add(time.Minute*5), cache.DefaultExpiration)
 
 	c.Lock()
 	return c, nil
@@ -652,16 +653,10 @@ func (w *World) chunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
 func (w *World) saveChunk(hash string, i interface{}) {
-	pos := chunkPosFromHash(hash)
-
-	w.viewerMutex.RLock()
-	if len(w.viewers[pos]) != 0 {
-		// There are still viewers watching the chunk, so we don't save it and put it back.
-		w.chunkCache().Set(hash, i, cache.DefaultExpiration)
-		w.viewerMutex.RUnlock()
+	if _, ok := i.(*chunk.Chunk); !ok {
 		return
 	}
-	w.viewerMutex.RUnlock()
+	pos := chunkPosFromHash(hash)
 
 	c := i.(*chunk.Chunk)
 	c.Lock()
@@ -684,6 +679,33 @@ func (w *World) saveChunk(hash string, i interface{}) {
 
 // initChunkCache initialises the chunk cache of the world to its default values.
 func (w *World) initChunkCache() {
-	w.cCache = cache.New(3*time.Minute, 5*time.Minute)
+	w.cCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 	w.cCache.OnEvicted(w.saveChunk)
+	go func() {
+		t := time.NewTicker(time.Minute * 5)
+		for {
+			select {
+			case <-t.C:
+				for k, i := range w.cCache.Items() {
+					if len(k) == 8 {
+						// A chunk was stored at this hash, but we're looking for times.
+						continue
+					}
+					pos := chunkPosFromHash(k)
+					if len(w.chunkViewers(pos)) != 0 {
+						// There are still viewers viewing the chunk: Don't evict it.
+						w.chunkCache().Set(k, time.Now().Add(time.Minute*5), cache.DefaultExpiration)
+						continue
+					}
+					if i.Object.(time.Time).Sub(time.Now()) <= 0 {
+						// The time set is below the current time: We should evict the chunk.
+						w.cCache.Delete(k)
+						w.cCache.Delete(k[:8])
+					}
+				}
+			case <-w.stopTick.Done():
+				return
+			}
+		}
+	}()
 }

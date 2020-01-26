@@ -165,7 +165,8 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 	}
 	for y, sub := range data.SubChunks {
 		if len(sub) == 0 {
-			// No sub chunk here, move to the next.
+			// No sub chunk here: Delete it from the database and continue.
+			_ = p.db.Delete(append(key, keySubChunkData, byte(y)), nil)
 			continue
 		}
 		_ = p.db.Put(append(key, keySubChunkData, byte(y)), sub, nil)
