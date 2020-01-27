@@ -1,10 +1,10 @@
 package session
 
 import (
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/player/skin"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/world"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/player/skin"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 )

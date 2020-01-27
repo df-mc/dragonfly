@@ -1,7 +1,7 @@
 package world
 
 import (
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
 	"github.com/go-gl/mathgl/mgl32"
 	"math"
 	"unsafe"

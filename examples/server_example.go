@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/dragonfly-tech/dragonfly/dragonfly"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly"
 )
 
 func main() {
@@ -11,6 +11,6 @@ func main() {
 		panic(err)
 	}
 	for {
-		server.Accept()
+		_, _ = server.Accept()
 	}
 }

@@ -1,8 +1,8 @@
 package player
 
 import (
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/event"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/event"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"

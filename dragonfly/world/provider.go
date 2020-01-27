@@ -1,9 +1,9 @@
 package world
 
 import (
-	"github.com/dragonfly-tech/dragonfly/dragonfly/block"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/world/chunk"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/world/gamemode"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/chunk"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/gamemode"
 	"io"
 )
 

@@ -1,8 +1,8 @@
 package world
 
 import (
-	"github.com/dragonfly-tech/dragonfly/dragonfly/entity/state"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/item"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/entity/state"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/item"
 	"github.com/go-gl/mathgl/mgl32"
 	"io"
 )

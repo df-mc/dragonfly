@@ -1,6 +1,6 @@
 package sound
 
-import "github.com/dragonfly-tech/dragonfly/dragonfly/block"
+import "git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
 
 // BlockPlace is a sound sent when a block is placed.
 type BlockPlace struct {

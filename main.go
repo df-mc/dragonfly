@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/dragonfly-tech/dragonfly/dragonfly"
-	"github.com/dragonfly-tech/dragonfly/dragonfly/player/chat"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly"
+	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"

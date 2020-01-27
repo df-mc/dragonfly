@@ -1,4 +1,4 @@
-module github.com/dragonfly-tech/dragonfly
+module git.jetbrains.space/dragonfly/dragonfly
 
 go 1.12
 
