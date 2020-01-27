@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
 )
 
 // Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six

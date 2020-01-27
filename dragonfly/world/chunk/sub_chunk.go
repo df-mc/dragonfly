@@ -1,6 +1,6 @@
 package chunk
 
-import "git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.

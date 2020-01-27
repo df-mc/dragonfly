@@ -1,4 +1,4 @@
-module git.jetbrains.space/dragonfly/dragonfly
+module git.jetbrains.space/dragonfly/dragonfly.git
 
 go 1.12
 

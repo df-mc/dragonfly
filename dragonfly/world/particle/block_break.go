@@ -1,6 +1,6 @@
 package particle
 
-import "git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 
 // BlockBreak is a particle sent when a block is broken. It represents a bunch of particles that are textured
 // like the block that the particle holds.

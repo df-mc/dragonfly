@@ -2,7 +2,7 @@ package item
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"reflect"
 )
 

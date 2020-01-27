@@ -1,12 +1,12 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/entity/action"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/entity/state"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/chunk"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/particle"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/sound"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 )
 

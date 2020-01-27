@@ -3,9 +3,9 @@ package session
 import (
 	"bytes"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/item/inventory"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/player/chat"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/chat"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"

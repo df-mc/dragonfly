@@ -2,12 +2,12 @@ package session
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/item/inventory"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/player/skin"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/gamemode"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"

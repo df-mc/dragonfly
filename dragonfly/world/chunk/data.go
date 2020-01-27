@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"sync"

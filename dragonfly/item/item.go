@@ -1,7 +1,7 @@
 package item
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"github.com/go-gl/mathgl/mgl32"
 )
 

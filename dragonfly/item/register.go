@@ -2,8 +2,8 @@ package item
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block"
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
 )
 
 func init() {

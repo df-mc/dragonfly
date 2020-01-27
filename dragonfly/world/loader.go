@@ -1,7 +1,7 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly/dragonfly/world/chunk"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl32"
 	"math"
 	"sync"
