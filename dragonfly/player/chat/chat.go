@@ -62,6 +62,10 @@ func (chat *Chat) Unsubscribe(s Subscriber) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
 
+	if len(chat.subscribers) == 0 {
+		chat.subscribers = nil
+		return
+	}
 	n := make([]Subscriber, 0, len(chat.subscribers)-1)
 	for _, subscriber := range chat.subscribers {
 		if subscriber != s {
