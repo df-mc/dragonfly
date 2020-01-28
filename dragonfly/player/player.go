@@ -382,6 +382,15 @@ func (p *Player) BreakBlock(pos block.Position) (err error) {
 		p.swingArm()
 		err = p.World().BreakBlock(pos)
 	})
+	ctx.Stop(func() {
+		b, e := p.World().Block(pos)
+		if e != nil {
+			err = e
+			return
+		}
+		// Set back the block to make sure the client sees it like that again.
+		e = p.World().SetBlock(pos, b)
+	})
 	return
 }
 
@@ -448,6 +457,18 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 			for _, v := range p.World().Viewers(placedPos.Vec3()) {
 				v.ViewSound(placedPos.Vec3(), sound.BlockPlace{Block: b})
 			}
+		}
+	})
+	ctx.Stop(func() {
+		if _, ok := i.Item().(block.Block); ok {
+			placedPos := pos.Side(face)
+			existing, err := p.World().Block(placedPos)
+			if err != nil {
+				err = fmt.Errorf("cannot get block at placed position %v", placedPos)
+				return
+			}
+			// Always put back the block so that the client sees it there again.
+			_ = p.World().SetBlock(placedPos, existing)
 		}
 	})
 	return
