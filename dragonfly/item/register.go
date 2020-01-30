@@ -37,7 +37,7 @@ var items = map[int32]Item{}
 var ids = map[Item]int32{}
 
 // Register registers an item with the ID and meta passed. Once registered, items may be obtained from an ID
-// and metadata value using item.ByID().
+// and metadata value using item.byID().
 // If an item with the ID and meta passed already exists, Register panics.
 func Register(id int32, meta int16, item Item) {
 	k := (id << 4) | int32(meta)
@@ -48,15 +48,15 @@ func Register(id int32, meta int16, item Item) {
 	ids[item] = k
 }
 
-// ByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
+// byID attempts to return an item by the ID and meta it was registered with. If found, the item found is
 // returned and the bool true.
-func ByID(id int32, meta int16) (Item, bool) {
+func byID(id int32, meta int16) (Item, bool) {
 	it, ok := items[(id<<4)|int32(meta)]
 	return it, ok
 }
 
-// ToID encodes an item to its numerical ID and metadata value.
-func ToID(it Item) (id int32, meta int16) {
+// toID encodes an item to its numerical ID and metadata value.
+func toID(it Item) (id int32, meta int16) {
 	v, ok := ids[it]
 	if !ok {
 		return 0, 0

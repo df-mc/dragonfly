@@ -23,14 +23,23 @@ type UsableOnBlock interface {
 	// in. The user passed is the entity that used the item. Usually this entity is a player.
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
-	UseOnBlock(io IO, user User, pos block.Position, clickedFace block.Face, clickPos mgl32.Vec3)
+	UseOnBlock(pos block.Position, clickedFace block.Face, clickPos mgl32.Vec3, io IO, user User)
+}
+
+// UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
+// UseOnEntity method is called whenever the item is used on an entity.
+type UsableOnEntity interface {
+	// UseOnEntity is called when an item is used on an entity. The IO passed is the world that the item is
+	// used in, and the entity clicked and the user of the item are also passed.
+	UseOnEntity(e Entity, io IO, user User)
 }
 
 // Usable represents an item that may be used 'in the air'. If an item implements this interface, the Use
 // method is called whenever the item is used while pointing at the air. (For example, when throwing an egg.)
 type Usable interface {
-	// Use is called when the item is used in the air. The user that used the item is passed to the method.
-	Use(user User)
+	// Use is called when the item is used in the air. The user that used the item and the IO that the item
+	// was used in are passed to the method.
+	Use(io IO, user User)
 }
 
 // IO represents an IO source that items may be used on to edit the world or to obtain data from the world,
@@ -42,7 +51,7 @@ type IO interface {
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
-	// Position returns the current position of the entity in the world.
+	// Position returns the current position of the user in the world.
 	Position() mgl32.Vec3
 	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 	// is 0 when the entity faces forward.
@@ -50,4 +59,11 @@ type User interface {
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
 	Pitch() float32
+}
+
+// Entity represents an entity that an item may be used on. These entities represent objects in the world with
+// a specific position.
+type Entity interface {
+	// Position returns the current position of the entity in the world.
+	Position() mgl32.Vec3
 }

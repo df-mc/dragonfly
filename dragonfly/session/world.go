@@ -103,6 +103,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	} else {
 		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
 		s.entityRuntimeIDs[e] = runtimeID
+		s.entities[runtimeID] = e
 	}
 	s.entityMutex.Unlock()
 
@@ -142,6 +143,7 @@ func (s *Session) HideEntity(e world.Entity) {
 	id, ok := s.entityRuntimeIDs[e]
 	if _, controllable := e.(Controllable); !controllable {
 		delete(s.entityRuntimeIDs, e)
+		delete(s.entities, s.entityRuntimeIDs[e])
 	}
 	s.entityMutex.Unlock()
 	if !ok {
@@ -316,4 +318,13 @@ func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	id, _ := s.entityRuntimeIDs[e]
 	s.entityMutex.RUnlock()
 	return id
+}
+
+// entityFromRuntimeID attempts to return an entity by its runtime ID. False is returned if no entity with the
+// ID could be found.
+func (s *Session) entityFromRuntimeID(id uint64) (world.Entity, bool) {
+	s.entityMutex.RLock()
+	e, ok := s.entities[id]
+	s.entityMutex.RUnlock()
+	return e, ok
 }

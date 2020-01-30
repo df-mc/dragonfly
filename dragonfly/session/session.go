@@ -38,6 +38,7 @@ type Session struct {
 	entityMutex            sync.RWMutex
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
+	entities         map[uint64]world.Entity
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot         *uint32
@@ -73,6 +74,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		chunkRadius:            int32(maxChunkRadius / 2),
 		maxChunkRadius:         int32(maxChunkRadius),
 		entityRuntimeIDs:       map[world.Entity]uint64{},
+		entities:               map[uint64]world.Entity{},
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
 		ui:                     inventory.New(128, nil),
@@ -88,6 +90,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 	s.onStop = onStop
 	s.c = c
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
+	s.entities[selfEntityRuntimeID] = c
 	s.chunkLoader.Store(world.NewLoader(int(s.chunkRadius), w, s))
 	s.initPlayerList()
 
@@ -118,6 +121,7 @@ func (s *Session) Close() error {
 
 	s.entityMutex.Lock()
 	s.entityRuntimeIDs = map[world.Entity]uint64{}
+	s.entities = map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
 
 	if s.onStop != nil {

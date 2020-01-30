@@ -24,6 +24,7 @@ type Controllable interface {
 
 	UseItem() error
 	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) error
+	UseItemOnEntity(e world.Entity) error
 
 	StartSneaking()
 	StopSneaking()

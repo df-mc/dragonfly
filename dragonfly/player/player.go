@@ -399,10 +399,6 @@ func (p *Player) BreakBlock(pos block.Position) (err error) {
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() error {
 	i, _ := p.HeldItems()
-	if i.Empty() {
-		// No need to do anything if the player wasn't holding any item.
-		return nil
-	}
 	ctx := event.C()
 	p.handler().HandleItemUse(ctx)
 
@@ -412,7 +408,7 @@ func (p *Player) UseItem() error {
 			// The item wasn't usable, so we can stop doing anything right away.
 			return
 		}
-		usable.Use(p)
+		usable.Use(p.World(), p)
 
 		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 		// reason to swing the arm.
@@ -427,10 +423,6 @@ func (p *Player) UseItem() error {
 // returned.
 func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) (err error) {
 	i, _ := p.HeldItems()
-	if i.Empty() {
-		// No need to do anything if the player wasn't holding any item.
-		return
-	}
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
 		return fmt.Errorf("player cannot reach block at %v", pos)
 	}
@@ -439,9 +431,12 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
 
 	ctx.Continue(func() {
+		if i.Empty() {
+			return
+		}
 		p.swingArm()
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
-			usableOnBlock.UseOnBlock(p.World(), p, pos, face, clickPos)
+			usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p)
 		} else if b, ok := i.Item().(block.Block); ok {
 			placedPos := pos.Side(face)
 			existing, err := p.World().Block(placedPos)
@@ -472,6 +467,27 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 		}
 	})
 	return
+}
+
+// UseItemOnEntity uses the item held in the main hand of the player on the entity passed, provided it is
+// within range of the player.
+// If the item held in the main hand of the player does nothing when used on an entity, nothing will happen.
+func (p *Player) UseItemOnEntity(e world.Entity) error {
+	i, _ := p.HeldItems()
+	if !p.canReach(e.Position()) {
+		return fmt.Errorf("player cannot reach entity at %v", e.Position())
+	}
+
+	ctx := event.C()
+	p.handler().HandleItemUseOnEntity(ctx, e)
+
+	ctx.Continue(func() {
+		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
+			usableOnEntity.UseOnEntity(e, e.World(), p)
+			p.swingArm()
+		}
+	})
+	return nil
 }
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the

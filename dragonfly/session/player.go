@@ -14,6 +14,7 @@ import (
 	"math"
 	"net"
 	"sync/atomic"
+	_ "unsafe"
 )
 
 // handleMovePlayer ...
@@ -86,12 +87,22 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 		atomic.StoreUint32(&s.inTransaction, 1)
 		s.executeTransaction(pk.Actions)
 		atomic.StoreUint32(&s.inTransaction, 0)
+	case *protocol.UseItemOnEntityTransactionData:
+		e, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
+		if !ok {
+			return fmt.Errorf("invalid entity interaction: no entity found with runtime ID %v", data.TargetEntityRuntimeID)
+		}
+		switch data.ActionType {
+		case protocol.UseItemOnEntityActionInteract:
+			_ = s.c.UseItemOnEntity(e)
+		}
 	case *protocol.UseItemTransactionData:
+		pos := block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
 		switch data.ActionType {
 		case protocol.UseItemActionBreakBlock:
-			_ = s.c.BreakBlock(block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])})
+			_ = s.c.BreakBlock(pos)
 		case protocol.UseItemActionClickBlock:
-			_ = s.c.UseItemOnBlock(block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}, block.Face(data.BlockFace), data.ClickedPosition)
+			_ = s.c.UseItemOnBlock(pos, block.Face(data.BlockFace), data.ClickedPosition)
 		case protocol.UseItemActionClickAir:
 			_ = s.c.UseItem()
 		}
@@ -252,6 +263,7 @@ func (s *Session) addToPlayerList(session *Session) {
 		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
 	}
 	s.entityRuntimeIDs[c] = runtimeID
+	s.entities[runtimeID] = c
 	s.entityMutex.Unlock()
 
 	var animations []protocol.SkinAnimation
@@ -308,6 +320,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 	s.entityMutex.Lock()
 	delete(s.entityRuntimeIDs, c)
+	delete(s.entities, s.entityRuntimeIDs[c])
 	s.entityMutex.Unlock()
 
 	s.writePacket(&packet.PlayerList{
@@ -349,7 +362,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
-	id, meta := item.ToID(it.Item())
+	id, meta := item_toID(it.Item())
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
 			NetworkID:     id,
@@ -362,9 +375,18 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
 	// TODO: Handle item NBT.
-	t, ok := item.ByID(it.NetworkID, it.MetadataValue)
+	t, ok := item_byID(it.NetworkID, it.MetadataValue)
 	if !ok {
 		t = block.Air{}
 	}
 	return item.NewStack(t, int(it.Count))
 }
+
+// The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
+// functions do not need to be exported.
+
+//go:linkname item_byID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.byID
+func item_byID(id int32, meta int16) (item.Item, bool)
+
+//go:linkname item_toID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.toID
+func item_toID(it item.Item) (id int32, meta int16)

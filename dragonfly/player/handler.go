@@ -3,6 +3,7 @@ package player
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
@@ -24,12 +25,19 @@ type Handler interface {
 	HandleBlockBreak(ctx *event.Context, pos block.Position)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
-	// the context using ctx.Cancel().
+	// the context using ctx.Cancel(). It is also called if the player is holding no item.
 	HandleItemUse(ctx *event.Context)
 	// HandleItemUseOnBlock handles the player using the item held in its main hand on a block at the block
 	// position passed. The face of the block clicked is also passed, along with the relative click position.
-	// The click position has X, Y and Z values which are all in the range 0.0-1.0.
+	// The click position has X, Y and Z values which are all in the range 0.0-1.0. It is also called if the
+	// player is holding no item.
 	HandleItemUseOnBlock(ctx *event.Context, pos block.Position, face block.Face, clickPos mgl32.Vec3)
+	// HandleItemUseOnEntity handles the player using the item held in its main hand on an entity passed to
+	// the method.
+	// HandleItemUseOnEntity is always called when a player uses an item on an entity, regardless of whether
+	// the item actually does anything when used on an entity. It is also called if the player is holding no
+	// item.
+	HandleItemUseOnEntity(ctx *event.Context, e world.Entity)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -47,29 +55,32 @@ type Handler interface {
 type NopHandler struct{}
 
 // HandleMove ...
-func (n NopHandler) HandleMove(ctx *event.Context, newPos mgl32.Vec3, newYaw, newPitch float32) {}
+func (NopHandler) HandleMove(ctx *event.Context, newPos mgl32.Vec3, newYaw, newPitch float32) {}
 
 // HandleTeleport ...
-func (n NopHandler) HandleTeleport(ctx *event.Context, pos mgl32.Vec3) {}
+func (NopHandler) HandleTeleport(ctx *event.Context, pos mgl32.Vec3) {}
 
 // HandleCommandExecution ...
-func (n NopHandler) HandleCommandExecution(ctx *event.Context, command cmd.Command, args []string) {}
+func (NopHandler) HandleCommandExecution(ctx *event.Context, command cmd.Command, args []string) {}
 
 // HandleTransfer ...
-func (n NopHandler) HandleTransfer(ctx *event.Context, addr *net.UDPAddr) {}
+func (NopHandler) HandleTransfer(ctx *event.Context, addr *net.UDPAddr) {}
 
 // HandleChat ...
-func (n NopHandler) HandleChat(ctx *event.Context, message *string) {}
+func (NopHandler) HandleChat(ctx *event.Context, message *string) {}
 
 // HandleBlockBreak ...
-func (n NopHandler) HandleBlockBreak(ctx *event.Context, pos block.Position) {}
+func (NopHandler) HandleBlockBreak(ctx *event.Context, pos block.Position) {}
 
 // HandleItemUse ...
-func (n NopHandler) HandleItemUse(ctx *event.Context) {}
+func (NopHandler) HandleItemUse(ctx *event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (n NopHandler) HandleItemUseOnBlock(ctx *event.Context, pos block.Position, face block.Face, clickPos mgl32.Vec3) {
+func (NopHandler) HandleItemUseOnBlock(ctx *event.Context, pos block.Position, face block.Face, clickPos mgl32.Vec3) {
 }
 
+// HandleItemUseOnEntity ...
+func (NopHandler) HandleItemUseOnEntity(ctx *event.Context, e world.Entity) {}
+
 // HandleQuit ...
-func (n NopHandler) HandleQuit() {}
+func (NopHandler) HandleQuit() {}
