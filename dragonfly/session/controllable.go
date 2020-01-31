@@ -2,6 +2,7 @@ package session
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
@@ -13,7 +14,9 @@ import (
 // implemented in the form of a Player.
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
-	world.CarryingEntity
+	world.Entity
+	item.Carrier
+
 	Move(deltaPos mgl32.Vec3)
 	Rotate(deltaYaw, deltaPitch float32)
 

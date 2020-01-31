@@ -4,6 +4,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
@@ -213,12 +214,17 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 }
 
 // ViewEntityItems ...
-func (s *Session) ViewEntityItems(e world.CarryingEntity) {
+func (s *Session) ViewEntityItems(e world.Entity) {
+	c, ok := e.(item.Carrier)
+	if !ok {
+		return
+	}
+
 	if s.entityRuntimeID(e) == selfEntityRuntimeID {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
-	mainHand, offHand := e.HeldItems()
+	mainHand, offHand := c.HeldItems()
 	runtimeID := s.entityRuntimeID(e)
 
 	// Show the main hand item.

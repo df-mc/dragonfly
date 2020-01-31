@@ -604,9 +604,7 @@ func (w *World) moveChunkEntity(e Entity, chunkPos, newChunkPos ChunkPos) {
 func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntity(e)
 	viewer.ViewEntityState(e, e.State())
-	if carrying, ok := e.(CarryingEntity); ok {
-		viewer.ViewEntityItems(carrying)
-	}
+	viewer.ViewEntityItems(e)
 }
 
 // chunk reads a chunk from the position passed. If a chunk at that position is not yet loaded, the chunk is

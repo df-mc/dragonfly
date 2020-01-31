@@ -2,7 +2,6 @@ package world
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"github.com/go-gl/mathgl/mgl32"
 	"io"
 )
@@ -26,12 +25,4 @@ type Entity interface {
 	// State returns a list of entity states which the entity is currently subject to. Generally, these states
 	// alter the way the entity looks.
 	State() []state.State
-}
-
-// CarryingEntity represents an entity that is able to carry items with it.
-type CarryingEntity interface {
-	Entity
-	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
-	// these items.
-	HeldItems() (mainHand, offHand item.Stack)
 }
