@@ -1,10 +1,13 @@
 package session
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
@@ -13,6 +16,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
+	"strings"
 	"sync/atomic"
 	_ "unsafe"
 )
@@ -70,6 +74,26 @@ func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
 		s.c.StartSneaking()
 	case packet.PlayerActionStopSneak:
 		s.c.StopSneaking()
+	}
+	return nil
+}
+
+// handleModalFormResponse ...
+func (s *Session) handleModalFormResponse(pk *packet.ModalFormResponse) error {
+	s.formMu.Lock()
+	f, ok := s.forms[pk.FormID]
+	delete(s.forms, pk.FormID)
+	s.formMu.Unlock()
+
+	if !ok {
+		return fmt.Errorf("form with ID %v not currently open", pk.FormID)
+	}
+	if bytes.Equal(pk.ResponseData, []byte("null")) {
+		// The form was cancelled: The cross in the top right corner was clicked.
+		return nil
+	}
+	if err := f.SubmitJSON(pk.ResponseData, s.c); err != nil {
+		return fmt.Errorf("error parsing form data: %v", err)
 	}
 	return nil
 }
@@ -202,6 +226,107 @@ func (s *Session) SendSpeed(speed float32) {
 			Default: 0.1,
 		}},
 	})
+}
+
+// SendForm sends a form to the client of the connection. The Submit method of the form is called when the
+// client submits the form.
+func (s *Session) SendForm(f form.Form) {
+	var n []map[string]interface{}
+	m := map[string]interface{}{}
+
+	switch frm := f.(type) {
+	case form.Custom:
+		m["type"], m["title"] = "custom_form", frm.Title()
+		for _, e := range frm.Elements() {
+			n = append(n, elemToMap(e))
+		}
+		m["content"] = n
+	case form.Menu:
+		m["type"], m["title"], m["content"] = "form", frm.Title(), frm.Body()
+		for _, button := range frm.Buttons() {
+			v := map[string]interface{}{"text": button.Text}
+			if button.Image != "" {
+				buttonType := "path"
+				if strings.HasPrefix(button.Image, "http:") || strings.HasPrefix(button.Image, "https:") {
+					buttonType = "url"
+				}
+				v["image"] = map[string]interface{}{"type": buttonType, "data": button.Image}
+			}
+			n = append(n, v)
+		}
+		m["buttons"] = n
+	case form.Modal:
+		m["type"], m["title"], m["content"] = "modal", frm.Title(), frm.Body()
+		buttons := frm.Buttons()
+		m["button1"], m["button2"] = buttons[0].Text, buttons[1].Text
+	}
+	b, _ := json.Marshal(m)
+
+	s.formMu.Lock()
+	if len(s.forms) > 10 {
+		s.log.Debug("more than 10 active forms: dropping an existing one.")
+		for k := range s.forms {
+			delete(s.forms, k)
+			break
+		}
+	}
+	id := s.formID
+	s.forms[id] = f
+	s.formID++
+	s.formMu.Unlock()
+
+	s.writePacket(&packet.ModalFormRequest{
+		FormID:   id,
+		FormData: b,
+	})
+}
+
+// elemToMap encodes a form element to its representation as a map to be encoded to JSON for the client.
+func elemToMap(e form.Element) map[string]interface{} {
+	switch element := e.(type) {
+	case form.Toggle:
+		return map[string]interface{}{
+			"type":    "toggle",
+			"text":    element.Text,
+			"default": element.Default,
+		}
+	case form.Input:
+		return map[string]interface{}{
+			"type":        "input",
+			"text":        element.Text,
+			"default":     element.Default,
+			"placeholder": element.Placeholder,
+		}
+	case form.Label:
+		return map[string]interface{}{
+			"type": "label",
+			"text": element.Text,
+		}
+	case form.Slider:
+		return map[string]interface{}{
+			"type":    "slider",
+			"text":    element.Text,
+			"min":     element.Min,
+			"max":     element.Max,
+			"step":    element.StepSize,
+			"default": element.Default,
+		}
+	case form.Dropdown:
+		return map[string]interface{}{
+			"type":    "dropdown",
+			"text":    element.Text,
+			"default": element.DefaultIndex,
+			"options": element.Options,
+		}
+	case form.StepSlider:
+		return map[string]interface{}{
+			"type":    "step_slider",
+			"text":    element.Text,
+			"default": element.DefaultIndex,
+			"steps":   element.Options,
+		}
+	}
+	panic("should never happen")
 }
 
 // Transfer transfers the player to a server with the IP and port passed.
@@ -386,7 +511,9 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 // functions do not need to be exported.
 
 //go:linkname item_byID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.byID
+//noinspection ALL
 func item_byID(id int32, meta int16) (item.Item, bool)
 
 //go:linkname item_toID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.toID
+//noinspection ALL
 func item_toID(it item.Item) (id int32, meta int16)

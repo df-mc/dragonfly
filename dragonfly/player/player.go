@@ -10,6 +10,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/bossbar"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/chat"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/scoreboard"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/title"
@@ -257,6 +258,15 @@ func (p *Player) Transfer(address string) (err error) {
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
+}
+
+// SendForm sends a form to the player for the client to fill out. Once the client fills it out, the Submit
+// method of the form will be called.
+// Note that the client may also close the form instead of filling it out, which will result in the form not
+// having its Submit method called at all. Forms should never depend on the player actually filling out the
+// form.
+func (p *Player) SendForm(f form.Form) {
+	p.session().SendForm(f)
 }
 
 // ShowCoordinates enables the vanilla coordinates for the player.

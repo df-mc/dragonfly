@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/chat"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -48,6 +49,11 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
+	formMu sync.Mutex
+	// forms holds a list of open forms of the player.
+	forms  map[uint32]form.Form
+	formID uint32
+
 	inTransaction uint32
 }
 
@@ -75,6 +81,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		maxChunkRadius:         int32(maxChunkRadius),
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
+		forms:                  map[uint32]form.Form{},
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
 		ui:                     inventory.New(128, nil),
@@ -148,7 +155,7 @@ func (s *Session) handlePackets() {
 		if err := s.handlePacket(pk); err != nil {
 			// An error occurred during the handling of a packet. Print the error and stop handling any more
 			// packets.
-			s.log.Errorf("error processing packet from %v: %v\n", s.conn.RemoteAddr(), err)
+			s.log.Debugf("failed processing packet from %v: %v\n", s.conn.RemoteAddr(), err)
 			return
 		}
 	}
@@ -191,6 +198,8 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handleInventoryTransaction(pk)
 	case *packet.PlayerAction:
 		return s.handlePlayerAction(pk)
+	case *packet.ModalFormResponse:
+		return s.handleModalFormResponse(pk)
 	case *packet.BossEvent, *packet.Animate:
 		// No need to do anything here. We don't care about these when they're incoming.
 	default:
