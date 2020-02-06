@@ -160,7 +160,7 @@ func (p *Player) SendTip(a ...interface{}) {
 // and the text it shows.
 // If non-empty, the subtitle is shown in a smaller font below the title. The same counts for the action text
 // of the title, which is shown in a font similar to that of a tip/popup.
-func (p *Player) SendTitle(t *title.Title) {
+func (p *Player) SendTitle(t title.Title) {
 	p.session().SetTitleDurations(t.FadeInDuration(), t.Duration(), t.FadeOutDuration())
 	p.session().SendTitle(t.Text())
 	if t.Subtitle() != "" {
@@ -188,7 +188,7 @@ func (p *Player) RemoveScoreboard() {
 // SendBossBar sends a boss bar to the player, so that it will be shown indefinitely at the top of the
 // player's screen.
 // The boss bar may be removed by calling Player.RemoveBossBar().
-func (p *Player) SendBossBar(bar *bossbar.BossBar) {
+func (p *Player) SendBossBar(bar bossbar.BossBar) {
 	p.session().SendBossBar(bar.Text(), bar.HealthPercentage())
 }
 
