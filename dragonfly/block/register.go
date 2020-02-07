@@ -38,7 +38,6 @@ func Register(states ...Block) {
 	}
 	for _, state := range states {
 		name, props := state.Minecraft()
-		fmt.Println(name, props)
 		key := name + HashProperties(props)
 
 		if _, ok := blocksHash[key]; ok {
