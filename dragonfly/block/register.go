@@ -19,6 +19,7 @@ func init() {
 	Register(Grass{})
 	Register(Dirt{}, Dirt{Coarse: true})
 	Register(allLogs()...)
+	Register(allLeaves()...)
 	Register(Bedrock{}, Bedrock{InfiniteBurning: true})
 
 	registerAllStates()
@@ -37,6 +38,7 @@ func Register(states ...Block) {
 	}
 	for _, state := range states {
 		name, props := state.Minecraft()
+		fmt.Println(name, props)
 		key := name + HashProperties(props)
 
 		if _, ok := blocksHash[key]; ok {
