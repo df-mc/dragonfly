@@ -26,6 +26,11 @@ type Handler interface {
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
 	HandleHurt(ctx *event.Context, damage *float32, src damage.Source)
+	// HandleDeath handles the player dying to a particular damage cause.
+	HandleDeath(src damage.Source)
+	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
+	// changed by assigning to *pos.
+	HandleRespawn(pos *mgl32.Vec3)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos block.Position)
@@ -69,38 +74,44 @@ type Handler interface {
 type NopHandler struct{}
 
 // HandleMove ...
-func (NopHandler) HandleMove(ctx *event.Context, newPos mgl32.Vec3, newYaw, newPitch float32) {}
+func (NopHandler) HandleMove(*event.Context, mgl32.Vec3, float32, float32) {}
 
 // HandleTeleport ...
-func (NopHandler) HandleTeleport(ctx *event.Context, pos mgl32.Vec3) {}
+func (NopHandler) HandleTeleport(*event.Context, mgl32.Vec3) {}
 
 // HandleCommandExecution ...
-func (NopHandler) HandleCommandExecution(ctx *event.Context, command cmd.Command, args []string) {}
+func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) {}
 
 // HandleTransfer ...
-func (NopHandler) HandleTransfer(ctx *event.Context, addr *net.UDPAddr) {}
+func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 
 // HandleChat ...
-func (NopHandler) HandleChat(ctx *event.Context, message *string) {}
+func (NopHandler) HandleChat(*event.Context, *string) {}
 
 // HandleBlockBreak ...
-func (NopHandler) HandleBlockBreak(ctx *event.Context, pos block.Position) {}
+func (NopHandler) HandleBlockBreak(*event.Context, block.Position) {}
 
 // HandleItemUse ...
-func (NopHandler) HandleItemUse(ctx *event.Context) {}
+func (NopHandler) HandleItemUse(*event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(ctx *event.Context, pos block.Position, face block.Face, clickPos mgl32.Vec3) {
+func (NopHandler) HandleItemUseOnBlock(*event.Context, block.Position, block.Face, mgl32.Vec3) {
 }
 
 // HandleItemUseOnEntity ...
-func (NopHandler) HandleItemUseOnEntity(ctx *event.Context, e world.Entity) {}
-
-// HandleHurt ...
-func (NopHandler) HandleHurt(ctx *event.Context, damage *float32, src damage.Source) {}
+func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
 
 // HandleAttackEntity ...
-func (NopHandler) HandleAttackEntity(ctx *event.Context, e world.Entity) {}
+func (NopHandler) HandleAttackEntity(*event.Context, world.Entity) {}
+
+// HandleHurt ...
+func (NopHandler) HandleHurt(*event.Context, *float32, damage.Source) {}
+
+// HandleDeath ...
+func (NopHandler) HandleDeath(damage.Source) {}
+
+// HandleRespawn ...
+func (NopHandler) HandleRespawn(*mgl32.Vec3) {}
 
 // HandleQuit ...
 func (NopHandler) HandleQuit() {}

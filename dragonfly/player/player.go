@@ -360,6 +360,7 @@ func (p *Player) Hurt(dmg float32, source damage.Source) {
 		}
 		p.immunity.Store(time.Now().Add(time.Second / 2))
 		if p.Dead() {
+			p.handler().HandleDeath(source)
 			p.kill()
 		}
 	})
@@ -433,9 +434,13 @@ func (p *Player) Respawn() {
 	if !p.Dead() || p.World() == nil {
 		return
 	}
-	p.World().AddEntity(p)
+	pos := p.World().Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5})
+	p.handler().HandleRespawn(&pos)
+	p.Teleport(pos)
+
 	p.setHealth(p.MaxHealth())
 
+	p.World().AddEntity(p)
 	p.SetVisible()
 }
 
