@@ -49,6 +49,8 @@ type Handler interface {
 	// entity from being knocked back.
 	// The entity attacked may not be alive (implements entity.Living), in which case no damage will be dealt
 	// and the target won't be knocked back.
+	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
+	// back will be dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
