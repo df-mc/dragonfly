@@ -11,6 +11,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -98,6 +99,23 @@ func (s *Session) handleModalFormResponse(pk *packet.ModalFormResponse) error {
 	return nil
 }
 
+// handleRespawn ...
+func (s *Session) handleRespawn(pk *packet.Respawn) error {
+	if pk.EntityRuntimeID != selfEntityRuntimeID {
+		return fmt.Errorf("entity runtime ID in Respawn packet must always be the player's (%v), but got %v", selfEntityRuntimeID, pk.EntityRuntimeID)
+	}
+	if pk.State != packet.RespawnStateClientReadyToSpawn {
+		return fmt.Errorf("respawn state in Respawn packet must always be %v, but got %v", packet.RespawnStateClientReadyToSpawn, pk.State)
+	}
+	s.c.Respawn()
+	s.writePacket(&packet.Respawn{
+		Position:        s.c.Position(),
+		State:           packet.RespawnStateReadyToSpawn,
+		EntityRuntimeID: selfEntityRuntimeID,
+	})
+	return nil
+}
+
 // handleInventoryTransaction ...
 func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) error {
 	switch data := pk.TransactionData.(type) {
@@ -118,17 +136,19 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 		}
 		switch data.ActionType {
 		case protocol.UseItemOnEntityActionInteract:
-			_ = s.c.UseItemOnEntity(e)
+			s.c.UseItemOnEntity(e)
+		case protocol.UseItemOnEntityActionAttack:
+			s.c.AttackEntity(e)
 		}
 	case *protocol.UseItemTransactionData:
 		pos := block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
 		switch data.ActionType {
 		case protocol.UseItemActionBreakBlock:
-			_ = s.c.BreakBlock(pos)
+			s.c.BreakBlock(pos)
 		case protocol.UseItemActionClickBlock:
-			_ = s.c.UseItemOnBlock(pos, block.Face(data.BlockFace), data.ClickedPosition)
+			s.c.UseItemOnBlock(pos, block.Face(data.BlockFace), data.ClickedPosition)
 		case protocol.UseItemActionClickAir:
-			_ = s.c.UseItem()
+			s.c.UseItem()
 		}
 	}
 	return nil
@@ -225,6 +245,14 @@ func (s *Session) SendSpeed(speed float32) {
 			Min:     0,
 			Default: 0.1,
 		}},
+	})
+}
+
+// SendVelocity sends the velocity of the player to the client.
+func (s *Session) SendVelocity(velocity mgl32.Vec3) {
+	s.writePacket(&packet.SetActorMotion{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Velocity:        velocity,
 	})
 }
 
@@ -360,8 +388,21 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
-// SendGameRules sends all the provided game rules to the player. Once sent, they
-// will be immediately updated on the client if they are valid.
+// SendHealth sends the health and max health to the player.
+func (s *Session) SendHealth(health, max float32) {
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{{
+			Name:    "minecraft:health",
+			Value:   health,
+			Max:     max,
+			Default: 20,
+		}},
+	})
+}
+
+// SendGameRules sends all the provided game rules to the player. Once sent, they will be immediately updated
+// on the client if they are valid.
 func (s *Session) sendGameRules(gamerules map[string]interface{}) {
 	s.writePacket(&packet.GameRulesChanged{
 		GameRules: gamerules,
@@ -391,8 +432,22 @@ func (s *Session) addToPlayerList(session *Session) {
 	s.entities[runtimeID] = c
 	s.entityMutex.Unlock()
 
+	s.writePacket(&packet.PlayerList{
+		ActionType: packet.PlayerListActionAdd,
+		Entries: []protocol.PlayerListEntry{{
+			UUID:           c.UUID(),
+			EntityUniqueID: int64(runtimeID),
+			Username:       c.Name(),
+			XUID:           c.XUID(),
+			Skin:           skinToProtocol(c.Skin()),
+		}},
+	})
+}
+
+// skinToProtocol converts a skin to its protocol representation.
+func skinToProtocol(s skin.Skin) protocol.Skin {
 	var animations []protocol.SkinAnimation
-	for _, animation := range c.Skin().Animations {
+	for _, animation := range s.Animations {
 		protocolAnim := protocol.SkinAnimation{
 			ImageWidth:    uint32(animation.Bounds().Max.X),
 			ImageHeight:   uint32(animation.Bounds().Max.Y),
@@ -411,31 +466,21 @@ func (s *Session) addToPlayerList(session *Session) {
 		animations = append(animations, protocolAnim)
 	}
 
-	playerSkin := c.Skin()
-	s.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionAdd,
-		Entries: []protocol.PlayerListEntry{{
-			UUID:           c.UUID(),
-			EntityUniqueID: int64(runtimeID),
-			Username:       c.Name(),
-			XUID:           c.XUID(),
-			Skin: protocol.Skin{
-				SkinID:            uuid.New().String(),
-				SkinResourcePatch: playerSkin.ModelConfig.Encode(),
-				SkinImageWidth:    uint32(playerSkin.Bounds().Max.X),
-				SkinImageHeight:   uint32(playerSkin.Bounds().Max.Y),
-				SkinData:          playerSkin.Pix,
-				CapeImageWidth:    uint32(playerSkin.Cape.Bounds().Max.X),
-				CapeImageHeight:   uint32(playerSkin.Cape.Bounds().Max.Y),
-				CapeData:          playerSkin.Cape.Pix,
-				SkinGeometry:      playerSkin.Model,
-				PersonaSkin:       session.conn.ClientData().PersonaSkin,
-				CapeID:            uuid.New().String(),
-				FullSkinID:        uuid.New().String(),
-				Animations:        animations,
-			},
-		}},
-	})
+	return protocol.Skin{
+		SkinID:            uuid.New().String(),
+		SkinResourcePatch: s.ModelConfig.Encode(),
+		SkinImageWidth:    uint32(s.Bounds().Max.X),
+		SkinImageHeight:   uint32(s.Bounds().Max.Y),
+		SkinData:          s.Pix,
+		CapeImageWidth:    uint32(s.Cape.Bounds().Max.X),
+		CapeImageHeight:   uint32(s.Cape.Bounds().Max.Y),
+		CapeData:          s.Cape.Pix,
+		SkinGeometry:      s.Model,
+		PersonaSkin:       s.Persona,
+		CapeID:            uuid.New().String(),
+		FullSkinID:        uuid.New().String(),
+		Animations:        animations,
+	}
 }
 
 // removeFromPlayerList removes the player of a session from the player list of this session. It will no

@@ -16,6 +16,10 @@ type Sprinting struct{}
 // Breathing makes an entity breath: This state will not show up for entities other than players.
 type Breathing struct{}
 
+// Invisible makes an entity invisible, so that other players won't be able to see it.
+type Invisible struct{}
+
 func (Sneaking) __()  {}
 func (Breathing) __() {}
 func (Sprinting) __() {}
+func (Invisible) __() {}

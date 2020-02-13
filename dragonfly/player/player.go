@@ -3,7 +3,9 @@ package player
 import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
@@ -25,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -52,9 +55,11 @@ type Player struct {
 	inv, offHand *inventory.Inventory
 	heldSlot     *uint32
 
-	sneaking, sprinting uint32
+	sneaking, sprinting, invisible uint32
 
-	speed atomic.Value
+	speed             atomic.Value
+	health, maxHealth atomic.Value
+	immunity          atomic.Value
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -74,6 +79,9 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 	p.yaw.Store(float32(0.0))
 	p.pitch.Store(float32(0.0))
 	p.speed.Store(float32(0.1))
+	p.health.Store(float32(20))
+	p.maxHealth.Store(float32(20))
+	p.immunity.Store(time.Now())
 	return p
 }
 
@@ -199,8 +207,12 @@ func (p *Player) RemoveBossBar() {
 }
 
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
-// player.
-func (p *Player) Chat(message string) {
+// player and is formatted following the rules of fmt.Sprintln.
+func (p *Player) Chat(msg ...interface{}) {
+	if p.Dead() {
+		return
+	}
+	message := format(msg)
 	ctx := event.C()
 	p.handler().HandleChat(ctx, &message)
 
@@ -212,6 +224,9 @@ func (p *Player) Chat(message string) {
 // ExecuteCommand executes a command passed as the player. If the command could not be found, or if the usage
 // was incorrect, an error message is sent to the player.
 func (p *Player) ExecuteCommand(commandLine string) {
+	if p.Dead() {
+		return
+	}
 	args := strings.Split(commandLine, " ")
 	commandName := strings.TrimPrefix(args[0], "/")
 
@@ -233,8 +248,8 @@ func (p *Player) ExecuteCommand(commandLine string) {
 // Disconnect closes the player and removes it from the world.
 // Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
 // disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) Disconnect(a ...interface{}) {
-	p.session().Disconnect(format(a))
+func (p *Player) Disconnect(msg ...interface{}) {
+	p.session().Disconnect(format(msg))
 	p.close()
 }
 
@@ -291,6 +306,139 @@ func (p *Player) Speed() float32 {
 	return p.speed.Load().(float32)
 }
 
+// Health returns the current health of the player. It will always be lower than Player.MaxHealth().
+func (p *Player) Health() float32 {
+	return p.health.Load().(float32)
+}
+
+// MaxHealth returns the maximum amount of health that a player may have. The MaxHealth will always be higher
+// than Player.Health().
+func (p *Player) MaxHealth() float32 {
+	return p.maxHealth.Load().(float32)
+}
+
+// SetMaxHealth sets the maximum health of the player. If the current health of the player is higher than the
+// new maximum health, the health is set to the new maximum.
+// SetMaxHealth panics if the max health passed is 0 or lower.
+func (p *Player) SetMaxHealth(health float32) {
+	if health <= 0 {
+		panic("max health must not be lower than 0")
+	}
+	p.maxHealth.Store(health)
+	if p.Health() > p.MaxHealth() {
+		p.health.Store(health)
+	}
+	p.session().SendHealth(p.Health(), health)
+}
+
+// setHealth sets the current health of the player to the health passed.
+func (p *Player) setHealth(health float32) {
+	p.health.Store(health)
+	p.session().SendHealth(health, p.MaxHealth())
+}
+
+// Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
+// for example damage.SourceEntityAttack if the player is attacked by another entity.
+// If the final damage exceeds the health that the player currently has, the player is killed and will have to
+// respawn.
+// If the damage passed is negative, Hurt will not do anything.
+func (p *Player) Hurt(dmg float32, source damage.Source) {
+	if p.Dead() || dmg < 0 || !p.survival() {
+		return
+	}
+	if p.Health()-dmg < 0 {
+		dmg = p.Health()
+	}
+
+	ctx := event.C()
+	p.handler().HandleHurt(ctx, &dmg, source)
+	ctx.Continue(func() {
+		p.setHealth(p.Health() - dmg)
+
+		for _, viewer := range p.World().Viewers(p.Position()) {
+			viewer.ViewEntityAction(p, action.Hurt{})
+		}
+		p.immunity.Store(time.Now().Add(time.Second / 2))
+		if p.Dead() {
+			p.kill()
+		}
+	})
+}
+
+// KnockBack knocks the player back with a given force and height. A source is passed which indicates the
+// source of the knockback, typically the position of an attacking entity. The source is used to calculate the
+// direction which the entity should be knocked back in.
+func (p *Player) KnockBack(src mgl32.Vec3, force, height float32) {
+	if p.Dead() || !p.survival() {
+		return
+	}
+	if p.session() == session.Nop {
+		// TODO: Implement server-side movement and knock-back.
+		return
+	}
+	velocity := p.Position().Sub(src).Normalize().Mul(force)
+	velocity[1] = height
+
+	p.session().SendVelocity(velocity)
+}
+
+// Immune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
+func (p *Player) AttackImmune() bool {
+	return p.immunity.Load().(time.Time).After(time.Now())
+}
+
+// survival checks if the player is considered to be survival, meaning either adventure or survival gamemode.
+func (p *Player) survival() bool {
+	switch p.GameMode().(type) {
+	case gamemode.Survival, gamemode.Adventure:
+		return true
+	}
+	return false
+}
+
+// Dead checks if the player is considered dead. True is returned if the health of the player is equal to or
+// lower than 0.
+func (p *Player) Dead() bool {
+	return p.Health() <= 0
+}
+
+// kill kills the player, clearing its inventories and resetting it to its base state.
+func (p *Player) kill() {
+	for _, viewer := range p.World().Viewers(p.Position()) {
+		viewer.ViewEntityAction(p, action.Death{})
+	}
+
+	p.setHealth(0)
+	p.StopSneaking()
+	p.StopSprinting()
+	p.Inventory().Clear()
+	p.offHand.Clear()
+
+	time.AfterFunc(time.Millisecond*1100, func() {
+		if p.session() == session.Nop {
+			_ = p.Close()
+			return
+		}
+		p.SetInvisible()
+
+		// We have an actual client connected to this player: We change its position server side so that in
+		// the future, the client won't respawn on the death location when disconnecting. The client should
+		// not see the movement itself yet, though.
+		p.pos.Store(p.World().Spawn().Vec3())
+	})
+}
+
+// Respawn respawns the player, so that its health is replenished and it is spawned in the world again.
+func (p *Player) Respawn() {
+	if !p.Dead() || p.World() == nil {
+		return
+	}
+	p.World().AddEntity(p)
+	p.setHealth(p.MaxHealth())
+
+	p.SetVisible()
+}
+
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
 // particles show up under the feet.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
@@ -330,6 +478,19 @@ func (p *Player) StartSneaking() {
 // will not do anything.
 func (p *Player) StopSneaking() {
 	atomic.StoreUint32(&p.sneaking, 0)
+	p.updateState()
+}
+
+// SetInvisible sets the player invisible, so that other players will not be able to see it.
+func (p *Player) SetInvisible() {
+	atomic.StoreUint32(&p.invisible, 1)
+	p.updateState()
+}
+
+// SetVisible sets the player visible again, so that other players can see it again. If the player was already
+// visible, nothing happens.
+func (p *Player) SetVisible() {
+	atomic.StoreUint32(&p.invisible, 0)
 	p.updateState()
 }
 
@@ -380,34 +541,32 @@ func (p *Player) GameMode() gamemode.GameMode {
 }
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
-// reach the block passed, an error is returned and the block is not broken.
-func (p *Player) BreakBlock(pos block.Position) (err error) {
+// reach the block passed, the method returns immediately.
+func (p *Player) BreakBlock(pos block.Position) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
-		return fmt.Errorf("player cannot reach block at %v", pos)
+		return
 	}
 	ctx := event.C()
 	p.handler().HandleBlockBreak(ctx, pos)
 
 	ctx.Continue(func() {
 		p.swingArm()
-		err = p.World().BreakBlock(pos)
+		_ = p.World().BreakBlock(pos)
 	})
 	ctx.Stop(func() {
-		b, e := p.World().Block(pos)
-		if e != nil {
-			err = e
-			return
-		}
+		b, _ := p.World().Block(pos)
 		// Set back the block to make sure the client sees it like that again.
-		e = p.World().SetBlock(pos, b)
+		_ = p.World().SetBlock(pos, b)
 	})
-	return
 }
 
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
-func (p *Player) UseItem() error {
+func (p *Player) UseItem() {
+	if !p.canReach(p.Position()) {
+		return
+	}
 	i, _ := p.HeldItems()
 	ctx := event.C()
 	p.handler().HandleItemUse(ctx)
@@ -424,18 +583,17 @@ func (p *Player) UseItem() error {
 		// reason to swing the arm.
 		p.swingArm()
 	})
-	return nil
 }
 
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
-// If the item could not be used successfully, for example when the position is out of range, an error is
-// returned.
-func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) (err error) {
-	i, _ := p.HeldItems()
+// If the item could not be used successfully, for example when the position is out of range, the method
+// returns immediately.
+func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
-		return fmt.Errorf("player cannot reach block at %v", pos)
+		return
 	}
+	i, _ := p.HeldItems()
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
@@ -449,13 +607,8 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 			usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p)
 		} else if b, ok := i.Item().(block.Block); ok {
 			placedPos := pos.Side(face)
-			existing, err := p.World().Block(placedPos)
-			if err != nil {
-				err = fmt.Errorf("cannot get block at placed position %v", placedPos)
-				return
-			}
+			existing, _ := p.World().Block(placedPos)
 			if _, ok := existing.(block.Air); !ok {
-				err = fmt.Errorf("cannot place block at position where block %T is already found", existing)
 				return
 			}
 			_ = p.World().SetBlock(placedPos, b)
@@ -467,26 +620,21 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 	ctx.Stop(func() {
 		if _, ok := i.Item().(block.Block); ok {
 			placedPos := pos.Side(face)
-			existing, err := p.World().Block(placedPos)
-			if err != nil {
-				err = fmt.Errorf("cannot get block at placed position %v", placedPos)
-				return
-			}
+			existing, _ := p.World().Block(placedPos)
 			// Always put back the block so that the client sees it there again.
 			_ = p.World().SetBlock(placedPos, existing)
 		}
 	})
-	return
 }
 
 // UseItemOnEntity uses the item held in the main hand of the player on the entity passed, provided it is
 // within range of the player.
 // If the item held in the main hand of the player does nothing when used on an entity, nothing will happen.
-func (p *Player) UseItemOnEntity(e world.Entity) error {
-	i, _ := p.HeldItems()
+func (p *Player) UseItemOnEntity(e world.Entity) {
 	if !p.canReach(e.Position()) {
-		return fmt.Errorf("player cannot reach entity at %v", e.Position())
+		return
 	}
+	i, _ := p.HeldItems()
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnEntity(ctx, e)
@@ -497,7 +645,33 @@ func (p *Player) UseItemOnEntity(e world.Entity) error {
 			p.swingArm()
 		}
 	})
-	return nil
+}
+
+// AttackEntity uses the item held in the main hand of the player to attack the entity passed, provided it is
+// within range of the player.
+// The damage dealt to the entity will depend on the item held by the player and any effects the player may
+// have.
+// If the player cannot reach the entity at its position, the method returns immediately.
+func (p *Player) AttackEntity(e world.Entity) {
+	if !p.canReach(e.Position()) {
+		return
+	}
+	i, _ := p.HeldItems()
+
+	ctx := event.C()
+	p.handler().HandleAttackEntity(ctx, e)
+	ctx.Continue(func() {
+		p.swingArm()
+		living, ok := e.(entity.Living)
+		if !ok {
+			return
+		}
+		if living.AttackImmune() {
+			return
+		}
+		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
+		living.KnockBack(p.Position(), 0.5, 0.3)
+	})
 }
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
@@ -525,8 +699,7 @@ func (p *Player) teleport(pos mgl32.Vec3) {
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
 // position of the player.
 func (p *Player) Move(deltaPos mgl32.Vec3) {
-	if deltaPos.ApproxEqual(mgl32.Vec3{}) {
-		// The delta was too small: We don't actually handle this.
+	if p.Dead() || deltaPos.ApproxEqual(mgl32.Vec3{}) {
 		return
 	}
 
@@ -545,8 +718,7 @@ func (p *Player) Move(deltaPos mgl32.Vec3) {
 
 // Rotate rotates the player, adding deltaYaw and deltaPitch to the respective values.
 func (p *Player) Rotate(deltaYaw, deltaPitch float32) {
-	if mgl32.FloatEqual(deltaYaw, 0) && mgl32.FloatEqual(deltaPitch, 0) {
-		// The yaw and pitch deltas were so small we can ignore them.
+	if p.Dead() || (mgl32.FloatEqual(deltaYaw, 0) && mgl32.FloatEqual(deltaPitch, 0)) {
 		return
 	}
 
@@ -593,6 +765,9 @@ func (p *Player) State() (s []state.State) {
 	if atomic.LoadUint32(&p.sprinting) == 1 {
 		s = append(s, state.Sprinting{})
 	}
+	if atomic.LoadUint32(&p.invisible) == 1 {
+		s = append(s, state.Invisible{})
+	}
 	// TODO: Only set the player as breathing when it is above water.
 	s = append(s, state.Breathing{})
 	return
@@ -607,6 +782,9 @@ func (p *Player) updateState() {
 
 // swingArm makes the player swing its arm.
 func (p *Player) swingArm() {
+	if p.Dead() {
+		return
+	}
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityAction(p, action.SwingArm{})
 	}
@@ -634,13 +812,14 @@ func (p *Player) canReach(pos mgl32.Vec3) bool {
 	if _, ok := p.GameMode().(gamemode.Creative); ok {
 		return world.Distance(eyes, pos) <= creativeRange
 	}
-	return world.Distance(eyes, pos) <= survivalRange
+	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
 	p.handler().HandleQuit()
+
 	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
 
@@ -650,6 +829,10 @@ func (p *Player) close() {
 	_ = p.inv.Close()
 	_ = p.offHand.Close()
 	p.sMutex.Unlock()
+
+	if p.World() != nil {
+		p.World().RemoveEntity(p)
+	}
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session

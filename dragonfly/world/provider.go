@@ -46,21 +46,21 @@ type Provider interface {
 	// LoadTimeCycle loads the state of the time cycle: If time is running, true is returned. If the time
 	// cycle is stopped, false is returned.
 	LoadTimeCycle() bool
-	// DefaultGameMode loads the default game mode of the world.
-	DefaultGameMode() gamemode.GameMode
-	// SetDefaultGameMode sets the default game mode of the world.
-	SetDefaultGameMode(mode gamemode.GameMode)
+	// LoadDefaultGameMode loads the default game mode of the world.
+	LoadDefaultGameMode() gamemode.GameMode
+	// SaveDefaultGameMode sets the default game mode of the world.
+	SaveDefaultGameMode(mode gamemode.GameMode)
 }
 
 // NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
 // dynamically, instead of reading and writing data, and returns otherwise empty values.
 type NoIOProvider struct{}
 
-// DefaultGameMode ...
-func (p NoIOProvider) DefaultGameMode() gamemode.GameMode { return gamemode.Adventure{} }
+// LoadDefaultGameMode ...
+func (p NoIOProvider) LoadDefaultGameMode() gamemode.GameMode { return gamemode.Adventure{} }
 
-// SetDefaultGameMode ...
-func (p NoIOProvider) SetDefaultGameMode(mode gamemode.GameMode) {}
+// SaveDefaultGameMode ...
+func (p NoIOProvider) SaveDefaultGameMode(mode gamemode.GameMode) {}
 
 // SetWorldSpawn ...
 func (p NoIOProvider) SetWorldSpawn(pos block.Position) {}

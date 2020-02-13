@@ -110,6 +110,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 	switch v := e.(type) {
 	case Controllable:
+		s.writePacket(&packet.PlayerSkin{
+			UUID: v.UUID(),
+			Skin: skinToProtocol(v.Skin()),
+		})
 		s.writePacket(&packet.AddPlayer{
 			UUID:            v.UUID(),
 			Username:        v.Name(),
@@ -290,6 +294,16 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventArmSwing,
 		})
+	case action.Hurt:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventHurt,
+		})
+	case action.Death:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventDeath,
+		})
 	}
 }
 
@@ -304,6 +318,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagSprinting)
 		case state.Breathing:
 			m.setFlag(dataKeyFlags, dataFlagBreathing)
+		case state.Invisible:
+			m.setFlag(dataKeyFlags, dataFlagInvisible)
 		}
 	}
 	s.writePacket(&packet.SetActorData{

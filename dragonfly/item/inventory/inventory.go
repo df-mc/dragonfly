@@ -153,6 +153,15 @@ func (inv *Inventory) Empty() bool {
 	return true
 }
 
+// Clear clears the entire inventory. All items are removed.
+func (inv *Inventory) Clear() {
+	inv.mu.Lock()
+	for slot := range inv.slots {
+		inv.setItem(slot, item.Stack{})
+	}
+	inv.mu.Unlock()
+}
+
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
 func (inv *Inventory) setItem(slot int, item item.Stack) {

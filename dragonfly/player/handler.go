@@ -2,6 +2,7 @@ package player
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
@@ -19,7 +20,12 @@ type Handler interface {
 	HandleTeleport(ctx *event.Context, pos mgl32.Vec3)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
+	// The message may be changed by assigning to *message.
 	HandleChat(ctx *event.Context, message *string)
+	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
+	// damage being dealt to the player.
+	// The damage dealt to the player may be changed by assigning to *damage.
+	HandleHurt(ctx *event.Context, damage *float32, src damage.Source)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos block.Position)
@@ -38,6 +44,12 @@ type Handler interface {
 	// the item actually does anything when used on an entity. It is also called if the player is holding no
 	// item.
 	HandleItemUseOnEntity(ctx *event.Context, e world.Entity)
+	// HandleAttackEntity handles the player attacking an entity using the item held in its hand. ctx.Cancel()
+	// may be called to cancel the attack, which will cancel damage dealt to the target and will stop the
+	// entity from being knocked back.
+	// The entity attacked may not be alive (implements entity.Living), in which case no damage will be dealt
+	// and the target won't be knocked back.
+	HandleAttackEntity(ctx *event.Context, e world.Entity)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -81,6 +93,12 @@ func (NopHandler) HandleItemUseOnBlock(ctx *event.Context, pos block.Position, f
 
 // HandleItemUseOnEntity ...
 func (NopHandler) HandleItemUseOnEntity(ctx *event.Context, e world.Entity) {}
+
+// HandleHurt ...
+func (NopHandler) HandleHurt(ctx *event.Context, damage *float32, src damage.Source) {}
+
+// HandleAttackEntity ...
+func (NopHandler) HandleAttackEntity(ctx *event.Context, e world.Entity) {}
 
 // HandleQuit ...
 func (NopHandler) HandleQuit() {}

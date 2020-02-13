@@ -29,6 +29,9 @@ type World struct {
 	time        int64
 	timeStopped uint32
 
+	gamemodeMu      sync.RWMutex
+	defaultGameMode gamemode.GameMode
+
 	hMutex sync.RWMutex
 	hand   Handler
 
@@ -52,14 +55,15 @@ type World struct {
 func New(log *logrus.Logger) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		name:       "World",
-		prov:       NoIOProvider{},
-		gen:        FlatGenerator{},
-		log:        log,
-		viewers:    make(map[ChunkPos][]Viewer),
-		entities:   make(map[ChunkPos][]Entity),
-		stopTick:   ctx,
-		cancelTick: cancel,
+		name:            "World",
+		prov:            NoIOProvider{},
+		gen:             FlatGenerator{},
+		log:             log,
+		viewers:         make(map[ChunkPos][]Viewer),
+		entities:        make(map[ChunkPos][]Entity),
+		stopTick:        ctx,
+		cancelTick:      cancel,
+		defaultGameMode: gamemode.Survival{},
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -226,6 +230,7 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 	if !w.removeEntity(chunkPos, e) {
+
 		w.log.Debugf("entity %T cannot be found at chunk position %v: looking for other chunks", e, chunkPos)
 		for c := range w.entities {
 			// Try to remove the entity from every other chunk until we find it: This is a very heavy
@@ -259,17 +264,21 @@ func (w *World) SetSpawn(pos block.Position) {
 	w.provider().SetWorldSpawn(pos)
 }
 
-// DefaultGameMode returns the default game mode of the world. When players join, they are given this game
+// LoadDefaultGameMode returns the default game mode of the world. When players join, they are given this game
 // mode.
-// The default game mode may be changed using SetDefaultGameMode().
+// The default game mode may be changed using SaveDefaultGameMode().
 func (w *World) DefaultGameMode() gamemode.GameMode {
-	return w.provider().DefaultGameMode()
+	w.gamemodeMu.RLock()
+	defer w.gamemodeMu.RUnlock()
+	return w.defaultGameMode
 }
 
-// SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
+// SaveDefaultGameMode changes the default game mode of the world. When players join, they are then given that
 // game mode.
 func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
-	w.provider().SetDefaultGameMode(mode)
+	w.gamemodeMu.Lock()
+	w.defaultGameMode = mode
+	w.gamemodeMu.Unlock()
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
@@ -283,6 +292,9 @@ func (w *World) Provider(p Provider) {
 	}
 	w.prov = p
 	w.name = p.WorldName()
+	w.gamemodeMu.Lock()
+	w.defaultGameMode = p.LoadDefaultGameMode()
+	w.gamemodeMu.Unlock()
 	atomic.StoreInt64(&w.time, p.LoadTime())
 	if timeRunning := p.LoadTimeCycle(); !timeRunning {
 		atomic.StoreUint32(&w.timeStopped, 1)
@@ -329,13 +341,20 @@ func (w *World) Close() error {
 	w.viewers = map[ChunkPos][]Viewer{}
 	w.viewerMutex.Unlock()
 
+	w.log.Debug("Saving chunks in memory to disk...")
 	for key := range w.chunkCache().Items() {
 		// We delete all chunks from the cache so that they are saved to the provider.
 		w.chunkCache().Delete(key)
 	}
+	w.log.Debug("Updating level.dat values...")
 	w.provider().SaveTime(atomic.LoadInt64(&w.time))
 	w.provider().SaveTimeCycle(atomic.LoadUint32(&w.timeStopped) == 0)
 
+	w.gamemodeMu.RLock()
+	w.provider().SaveDefaultGameMode(w.defaultGameMode)
+	w.gamemodeMu.RUnlock()
+
+	w.log.Debug("Writing level.dat...")
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
@@ -665,14 +684,16 @@ func (w *World) saveChunk(hash string, i interface{}) {
 		w.log.Errorf("error saving chunk %v to provider: %v", pos, err)
 	}
 	w.entityMutex.Lock()
-	for _, entity := range w.entities[pos] {
-		_ = entity.Close()
-	}
-	if err := w.provider().SaveEntities(pos, w.entities[pos]); err != nil {
-		w.log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
-	}
+	entities := w.entities[pos]
 	delete(w.entities, pos)
 	w.entityMutex.Unlock()
+
+	if err := w.provider().SaveEntities(pos, entities); err != nil {
+		w.log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
+	}
+	for _, entity := range entities {
+		_ = entity.Close()
+	}
 }
 
 // initChunkCache initialises the chunk cache of the world to its default values.

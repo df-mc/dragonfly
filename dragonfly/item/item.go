@@ -56,6 +56,13 @@ type User interface {
 	Pitch() float32
 }
 
+// Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
+// damage that attacking with an empty hand deals.
+type Weapon interface {
+	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
+	AttackDamage() float32
+}
+
 // Carrier represents an entity that is able to carry an item.
 type Carrier interface {
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see

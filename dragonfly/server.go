@@ -273,6 +273,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		EntityUniqueID:  1,
 		EntityRuntimeID: 1,
 		Time:            int64(server.world.Time()),
+		GameRules:       map[string]interface{}{"naturalregeneration": false},
 	}
 	if err := conn.StartGame(data); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")
@@ -324,6 +325,7 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	modelConfig, _ := skin.DecodeModelConfig(skinResourcePatch)
 
 	playerSkin := skin.New(data.SkinImageWidth, data.SkinImageHeight)
+	playerSkin.Persona = data.PersonaSkin
 	playerSkin.Pix = skinData
 	playerSkin.Model = modelData
 	playerSkin.ModelConfig = modelConfig

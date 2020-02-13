@@ -40,6 +40,15 @@ func (s Stack) Item() Item {
 	return s.item
 }
 
+// AttackDamage returns the attack damage of the stack. By default, the value returned is 2.0. If the item
+// held implements the item.Weapon interface, this damage may be different.
+func (s Stack) AttackDamage() float32 {
+	if weapon, ok := s.Item().(Weapon); ok {
+		return weapon.AttackDamage()
+	}
+	return 2.0
+}
+
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
 // many items in it as possible to fit in the stack, according to a max count of either 64 or otherwise as
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of

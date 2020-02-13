@@ -22,14 +22,17 @@ type Controllable interface {
 	Move(deltaPos mgl32.Vec3)
 	Rotate(deltaYaw, deltaPitch float32)
 
-	Chat(message string)
+	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
 	SetGameMode(mode gamemode.GameMode)
-	BreakBlock(pos block.Position) error
 
-	UseItem() error
-	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) error
-	UseItemOnEntity(e world.Entity) error
+	UseItem()
+	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3)
+	UseItemOnEntity(e world.Entity)
+	BreakBlock(pos block.Position)
+	AttackEntity(e world.Entity)
+
+	Respawn()
 
 	StartSneaking()
 	StopSneaking()

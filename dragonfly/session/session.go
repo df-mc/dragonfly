@@ -28,10 +28,9 @@ type Session struct {
 	cmdOrigin     protocol.CommandOrigin
 	scoreboardObj atomic.Value
 
-	chunkBuf       *bytes.Buffer
-	chunkLoader    atomic.Value
-	chunkRadius    int32
-	maxChunkRadius int32
+	chunkBuf                    *bytes.Buffer
+	chunkLoader                 atomic.Value
+	chunkRadius, maxChunkRadius int32
 
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
@@ -115,10 +114,9 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) Close() error {
-	_ = s.c.Close()
 	_ = s.conn.Close()
 	_ = s.chunkLoader.Load().(*world.Loader).Close()
-	s.c.World().RemoveEntity(s.c)
+	_ = s.c.Close()
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
@@ -169,10 +167,9 @@ func (s *Session) sendChunks(closeChan <-chan struct{}) {
 		select {
 		case <-t.C:
 			if err := s.chunkLoader.Load().(*world.Loader).Load(4); err != nil {
-				// The world was closed. We need to close the session as soon as possible.
-
+				// The world was closed. This should generally never happen.
 				s.log.Errorf("error loading chunk: %v", err)
-				continue
+				return
 			}
 		case <-closeChan:
 			return
@@ -200,7 +197,9 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handlePlayerAction(pk)
 	case *packet.ModalFormResponse:
 		return s.handleModalFormResponse(pk)
-	case *packet.BossEvent, *packet.Animate:
+	case *packet.Respawn:
+		return s.handleRespawn(pk)
+	case *packet.BossEvent, *packet.Animate, *packet.LevelSoundEvent, *packet.ActorFall:
 		// No need to do anything here. We don't care about these when they're incoming.
 	default:
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())
