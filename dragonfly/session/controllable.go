@@ -24,6 +24,7 @@ type Controllable interface {
 
 	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
+	GameMode() gamemode.GameMode
 	SetGameMode(mode gamemode.GameMode)
 
 	UseItem()

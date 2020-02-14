@@ -231,7 +231,7 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	if !w.removeEntity(chunkPos, e) {
 
-		w.log.Debugf("entity %T cannot be found at chunk position %v: looking for other chunks", e, chunkPos)
+		w.log.Debugf("entity %T{%v} cannot be found at chunk position %v: looking for other chunks", e, e, chunkPos)
 		for c := range w.entities {
 			// Try to remove the entity from every other chunk until we find it: This is a very heavy
 			// operation, but it shouldn't typically occur.

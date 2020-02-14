@@ -108,12 +108,17 @@ func (s *Session) handleRespawn(pk *packet.Respawn) error {
 		return fmt.Errorf("respawn state in Respawn packet must always be %v, but got %v", packet.RespawnStateClientReadyToSpawn, pk.State)
 	}
 	s.c.Respawn()
+	s.SendRespawn()
+	return nil
+}
+
+// Respawn respawns the controllable of the session client-side
+func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
 		Position:        s.c.Position(),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
-	return nil
 }
 
 // handleInventoryTransaction ...

@@ -360,8 +360,7 @@ func (p *Player) Hurt(dmg float32, source damage.Source) {
 		}
 		p.immunity.Store(time.Now().Add(time.Second / 2))
 		if p.Dead() {
-			p.handler().HandleDeath(source)
-			p.kill()
+			p.kill(source)
 		}
 	})
 }
@@ -404,7 +403,7 @@ func (p *Player) Dead() bool {
 }
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
-func (p *Player) kill() {
+func (p *Player) kill(src damage.Source) {
 	for _, viewer := range p.World().Viewers(p.Position()) {
 		viewer.ViewEntityAction(p, action.Death{})
 	}
@@ -415,33 +414,37 @@ func (p *Player) kill() {
 	p.Inventory().Clear()
 	p.offHand.Clear()
 
+	p.handler().HandleDeath(src)
 	time.AfterFunc(time.Millisecond*1100, func() {
 		if p.session() == session.Nop {
 			_ = p.Close()
 			return
 		}
-		p.SetInvisible()
-
-		// We have an actual client connected to this player: We change its position server side so that in
-		// the future, the client won't respawn on the death location when disconnecting. The client should
-		// not see the movement itself yet, though.
-		p.pos.Store(p.World().Spawn().Vec3())
+		if p.Dead() {
+			p.SetInvisible()
+			// We have an actual client connected to this player: We change its position server side so that in
+			// the future, the client won't respawn on the death location when disconnecting. The client should
+			// not see the movement itself yet, though.
+			p.pos.Store(p.World().Spawn().Vec3())
+		}
 	})
 }
 
 // Respawn respawns the player, so that its health is replenished and it is spawned in the world again.
+// Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	if !p.Dead() || p.World() == nil {
+	if !p.Dead() || p.World() == nil || p.session() == session.Nop {
 		return
 	}
 	pos := p.World().Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5})
 	p.handler().HandleRespawn(&pos)
-	p.Teleport(pos)
-
 	p.setHealth(p.MaxHealth())
 
 	p.World().AddEntity(p)
 	p.SetVisible()
+
+	p.Teleport(pos)
+	p.session().SendRespawn()
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
