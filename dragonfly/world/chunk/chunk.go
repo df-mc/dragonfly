@@ -6,7 +6,7 @@ import "sync"
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	sync.Mutex
+	sync.RWMutex
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub [16]*SubChunk

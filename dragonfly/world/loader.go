@@ -74,13 +74,13 @@ func (l *Loader) Load(n int) error {
 			return nil
 		}
 		pos := l.loadQueue[0]
-		c, err := l.w.chunk(pos)
+		c, err := l.w.chunk(pos, true)
 		if err != nil {
 			l.mu.Unlock()
 			return err
 		}
 		l.viewer.ViewChunk(pos, c)
-		c.Unlock()
+		c.RUnlock()
 
 		l.w.addViewer(pos, l.viewer)
 

@@ -85,12 +85,12 @@ func (w *World) Name() string {
 // loaded synchronously.
 // An error is returned if the chunk that the block is located in could not be loaded successfully.
 func (w *World) Block(pos block.Position) (block.Block, error) {
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
 	if err != nil {
 		return nil, err
 	}
 	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
-	c.Unlock()
+	c.RUnlock()
 
 	state, ok := block.ByRuntimeID(id)
 	if !ok {
@@ -111,7 +111,7 @@ func (w *World) SetBlock(pos block.Position, b block.Block) error {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
 
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
+	c, err := w.chunk(chunkPosFromBlockPos(pos), false)
 	if err != nil {
 		return err
 	}
@@ -188,11 +188,11 @@ func (w *World) AddEntity(e Entity) {
 		e.World().RemoveEntity(e)
 	}
 	chunkPos := chunkPosFromVec3(e.Position())
-	c, err := w.chunk(chunkPos)
+	c, err := w.chunk(chunkPos, true)
 	if err != nil {
 		w.log.Errorf("error loading chunk to add entity: %v", err)
 	}
-	c.Unlock()
+	c.RUnlock()
 
 	worldsMu.Lock()
 	entityWorlds[e] = w
@@ -632,7 +632,7 @@ func showEntity(e Entity, viewer Viewer) {
 // An error is returned if the chunk could not be loaded successfully.
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
-func (w *World) chunk(pos ChunkPos) (c *chunk.Chunk, err error) {
+func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 	s, ok := w.chunkCache().Get(pos.Hash())
 	if !ok {
 		// We don't currently have the chunk cached, so we have to load it from the provider.
@@ -663,7 +663,11 @@ func (w *World) chunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 	w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
 	w.chunkCache().Set(pos.timeHash(), time.Now().Add(time.Minute*5), cache.DefaultExpiration)
 
-	c.Lock()
+	if readOnly {
+		c.RLock()
+	} else {
+		c.Lock()
+	}
 	return c, nil
 }
 
