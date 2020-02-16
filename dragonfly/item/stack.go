@@ -88,15 +88,11 @@ func (s Stack) Grow(n int) Stack {
 }
 
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
-// equal item type and have equal enchantments, lore and custom names.
+// equal item type and have equal enchantments, lore and custom names, or if one of the stacks is empty.
 func (s Stack) Comparable(s2 Stack) bool {
-	if s.count == 0 {
-		s.item = s2.item
+	if s.count == 0 || s2.count == 0 {
+		return true
 	}
-	if s2.count == 0 {
-		s2.item = s.item
-	}
-
 	// Make sure the counts are equal so that we can deep compare.
 	s.count = s2.count
 	return reflect.DeepEqual(s, s2)

@@ -109,6 +109,11 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has joined the game"))
+
+	s.writePacket(&packet.InventoryContent{
+		WindowID: protocol.WindowIDCreative,
+		Content:  creativeItems(),
+	})
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session

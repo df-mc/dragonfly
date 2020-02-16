@@ -68,6 +68,15 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	return nil
 }
 
+// All returns the full content of the inventory, copying all items into a new slice.
+func (inv *Inventory) All() []item.Stack {
+	r := make([]item.Stack, inv.Size())
+	inv.mu.RLock()
+	copy(r, inv.slots)
+	inv.mu.RUnlock()
+	return r
+}
+
 // AddItem attempts to add an item to the inventory. It does so in a couple of steps: It first iterates over
 // the inventory to make sure no existing stacks of the same type exist. If these stacks do exist, the item
 // added is first added on top of those stacks to make sure they are fully filled.
@@ -135,6 +144,9 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 			// No more items left to remove: We can exit the loop.
 			return nil
 		}
+	}
+	if toRemove <= 0 {
+		return nil
 	}
 	return fmt.Errorf("could not remove all items from the inventory")
 }

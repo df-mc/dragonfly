@@ -119,6 +119,10 @@ func (s *Session) SendRespawn() {
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
+	s.writePacket(&packet.InventoryContent{
+		WindowID: protocol.WindowIDCreative,
+		Content:  creativeItems(),
+	})
 }
 
 // handleInventoryTransaction ...
@@ -129,6 +133,9 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 			return nil
 		}
 		if err := s.verifyTransaction(pk.Actions); err != nil {
+			s.sendInv(s.inv, protocol.WindowIDInventory)
+			s.sendInv(s.ui, protocol.WindowIDUI)
+			s.sendInv(s.offHand, protocol.WindowIDOffHand)
 			return fmt.Errorf("invalid inventory transaction: %v", err)
 		}
 		atomic.StoreUint32(&s.inTransaction, 1)
@@ -159,10 +166,25 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 	return nil
 }
 
+// sendInv sends the inventory passed to the client with the window ID.
+func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
+	pk := &packet.InventoryContent{
+		WindowID: windowID,
+		Content:  make([]protocol.ItemStack, 0, s.inv.Size()),
+	}
+	for _, i := range inv.All() {
+		pk.Content = append(pk.Content, stackFromItem(i))
+	}
+	s.writePacket(pk)
+}
+
 // executeTransaction executes all actions of a transaction passed. It assumes the actions are all valid,
 // which would otherwise be checked by calling verifyTransaction.
 func (s *Session) executeTransaction(actions []protocol.InventoryAction) {
 	for _, action := range actions {
+		if action.SourceType == protocol.InventoryActionSourceCreative {
+			continue
+		}
 		// The window IDs are already checked when using verifyTransaction, so we don't need to check again.
 		inv, _ := s.invByID(action.WindowID)
 		_ = inv.SetItem(int(action.InventorySlot), stackToItem(action.NewItem))
@@ -173,9 +195,16 @@ func (s *Session) executeTransaction(actions []protocol.InventoryAction) {
 // items are precisely equal to the new items: No new items must be added or removed.
 // verifyTransaction also checks if all window IDs sent match some inventory, and if the old items match the
 // items found in that inventory.
-func (s *Session) verifyTransaction(actions []protocol.InventoryAction) error {
+func (s *Session) verifyTransaction(a []protocol.InventoryAction) error {
 	// Allocate a big inventory and add all new items to it.
 	temp := inventory.New(128, nil)
+	actions := make([]protocol.InventoryAction, 0, len(a))
+	for _, action := range a {
+		if action.OldItem.Count == 0 && action.NewItem.Count == 0 {
+			continue
+		}
+		actions = append(actions, action)
+	}
 	for _, action := range actions {
 		inv, ok := s.invByID(action.WindowID)
 		if !ok {
@@ -190,9 +219,11 @@ func (s *Session) verifyTransaction(actions []protocol.InventoryAction) error {
 		}
 		old := stackToItem(action.OldItem)
 		if !actualOld.Comparable(old) || actualOld.Count() != old.Count() {
-			// Either the type or the count of the old item as registered by the server and the client are
-			// mismatched.
-			return fmt.Errorf("slot %v holds a different item than the client expects: %v is actually %v", action.InventorySlot, old, actualOld)
+			if _, creative := s.c.GameMode().(gamemode.Creative); !creative || action.SourceType != protocol.InventoryActionSourceCreative {
+				// Either the type or the count of the old item as registered by the server and the client are
+				// mismatched.
+				return fmt.Errorf("slot %v holds a different item than the client expects: %v is actually %v", action.InventorySlot, old, actualOld)
+			}
 		}
 		if err := temp.AddItem(old); err != nil {
 			return fmt.Errorf("inventory was full: %v", err)
@@ -200,7 +231,7 @@ func (s *Session) verifyTransaction(actions []protocol.InventoryAction) error {
 	}
 	for _, action := range actions {
 		if err := temp.RemoveItem(stackToItem(action.NewItem)); err != nil {
-			return fmt.Errorf("item removed was not present in old items: %v", err)
+			return fmt.Errorf("item %v removed was not present in old items: %v", stackToItem(action.NewItem), err)
 		}
 	}
 	// Now that we made sure every new item was also present in the old items, we must also check if every old
@@ -409,18 +440,12 @@ func (s *Session) SendHealth(health, max float32) {
 // SendGameRules sends all the provided game rules to the player. Once sent, they will be immediately updated
 // on the client if they are valid.
 func (s *Session) sendGameRules(gamerules map[string]interface{}) {
-	s.writePacket(&packet.GameRulesChanged{
-		GameRules: gamerules,
-	})
+	s.writePacket(&packet.GameRulesChanged{GameRules: gamerules})
 }
 
-// EnableCoordinates will either enable or disable coordinates for the
-// player depending on the value given.
+// EnableCoordinates will either enable or disable coordinates for the player depending on the value given.
 func (s *Session) EnableCoordinates(enable bool) {
-	gamerules := make(map[string]interface{})
-	gamerules["showCoordinates"] = enable
-
-	s.sendGameRules(gamerules)
+	s.sendGameRules(map[string]interface{}{"showcoordinates": enable})
 }
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
@@ -555,6 +580,15 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = block.Air{}
 	}
 	return item.NewStack(t, int(it.Count))
+}
+
+// creativeItems returns all creative inventory items as protocol item stacks.
+func creativeItems() []protocol.ItemStack {
+	it := make([]protocol.ItemStack, 0, len(item.CreativeItems()))
+	for _, i := range item.CreativeItems() {
+		it = append(it, stackFromItem(i))
+	}
+	return it
 }
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID

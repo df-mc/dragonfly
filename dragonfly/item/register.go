@@ -31,6 +31,8 @@ func init() {
 	Register(-8, 0, block.Log{Wood: material.AcaciaWood(), Stripped: true})
 	Register(-9, 0, block.Log{Wood: material.DarkOakWood(), Stripped: true})
 	Register(-10, 0, block.Log{Wood: material.OakWood(), Stripped: true})
+
+	initCreativeItems()
 }
 
 var items = map[int32]Item{}
