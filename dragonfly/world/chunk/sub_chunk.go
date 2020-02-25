@@ -1,7 +1,5 @@
 package chunk
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
-
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
@@ -14,8 +12,7 @@ func (subChunk *SubChunk) Layer(layer uint8) *BlockStorage {
 	for uint8(len(subChunk.storages)) <= layer {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		id, _ := block.RuntimeID(block.Air{})
-		subChunk.storages = append(subChunk.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{id})))
+		subChunk.storages = append(subChunk.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{0})))
 	}
 	return subChunk.storages[layer]
 }
@@ -34,11 +31,10 @@ func (subChunk *SubChunk) SetRuntimeID(x, y, z byte, layer uint8, runtimeID uint
 // Compact cleans the garbage from all block storages that sub chunk contains, so that they may be
 // cleanly written to a database.
 func (subChunk *SubChunk) compact() {
-	id, _ := block.RuntimeID(block.Air{})
 	newStorages := make([]*BlockStorage, 0, len(subChunk.storages))
 	for _, storage := range subChunk.storages {
 		storage.compact()
-		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == id {
+		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == 0 {
 			// If the palette has only air in it, it means the storage is empty, so we can ignore it.
 			continue
 		}

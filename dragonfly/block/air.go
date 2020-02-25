@@ -3,10 +3,12 @@ package block
 // Air is the block present in otherwise empty space.
 type Air struct{}
 
-func (Air) Name() string {
-	return "Air"
+// EncodeItem ...
+func (Air) EncodeItem() (id int32, meta int16) {
+	return 0, 0
 }
 
-func (Air) Minecraft() (name string, properties map[string]interface{}) {
+// EncodeBlock ...
+func (Air) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:air", nil
 }

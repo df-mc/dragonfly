@@ -1,11 +1,65 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"github.com/go-gl/mathgl/mgl32"
 	"math"
 	"unsafe"
 )
+
+// BlockPos holds the position of a block. The position is represented of an array with an x, y and z value,
+// where the y value is positive.
+type BlockPos [3]int
+
+// X returns the X coordinate of the block position.
+func (p BlockPos) X() int {
+	return p[0]
+}
+
+// Y returns the Y coordinate of the block position.
+func (p BlockPos) Y() int {
+	return p[1]
+}
+
+// Z returns the Z coordinate of the block position.
+func (p BlockPos) Z() int {
+	return p[2]
+}
+
+// Vec3 returns a vec3 holding the same coordinates as the block position.
+func (p BlockPos) Vec3() mgl32.Vec3 {
+	return mgl32.Vec3{float32(p[0]), float32(p[1]), float32(p[2])}
+}
+
+// Side returns the position on the side of this block position, at a specific face.
+func (p BlockPos) Side(face Face) BlockPos {
+	switch face {
+	case Up:
+		p[1]++
+	case Down:
+		p[1]--
+	case North:
+		p[2]--
+	case South:
+		p[2]++
+	case West:
+		p[0]--
+	case East:
+		p[0]++
+	}
+	return p
+}
+
+// BlockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
+// map is assumed to have an 'x', 'y' and 'z' key.
+func BlockPosFromNBT(data map[string]interface{}) BlockPos {
+	xIntf, _ := data["x"]
+	yIntf, _ := data["y"]
+	zIntf, _ := data["z"]
+	x, _ := xIntf.(int32)
+	y, _ := yIntf.(int32)
+	z, _ := zIntf.(int32)
+	return BlockPos{int(x), int(y), int(z)}
+}
 
 // ChunkPos holds the position of a chunk. The type is provided as a utility struct for keeping track of a
 // chunk's position. Chunks do not themselves keep track of that. Chunk positions are different than block
@@ -23,10 +77,10 @@ func (p ChunkPos) Z() int32 {
 	return p[1]
 }
 
-// Position returns a block position that represents the corner of the chunk, where the X and Z of the chunk
+// BlockPos returns a block position that represents the corner of the chunk, where the X and Z of the chunk
 // position are multiplied by 16. The y value of the block position returned is always 0.
-func (p ChunkPos) BlockPos() block.Position {
-	return block.Position{int(p[0] << 4), 0, int(p[1] << 4)}
+func (p ChunkPos) BlockPos() BlockPos {
+	return BlockPos{int(p[0] << 4), 0, int(p[1] << 4)}
 }
 
 // Hash returns the hash of the chunk position. It is essentially the bytes of the X and Z values of the
@@ -75,7 +129,7 @@ func chunkPosFromVec3(vec3 mgl32.Vec3) ChunkPos {
 }
 
 // chunkPosFromBlockPos returns a chunk position of the chunk that a block at this position would be in.
-func chunkPosFromBlockPos(p block.Position) ChunkPos {
+func chunkPosFromBlockPos(p BlockPos) ChunkPos {
 	return ChunkPos{int32(p[0] >> 4), int32(p[2] >> 4)}
 }
 

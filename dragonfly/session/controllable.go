@@ -1,7 +1,6 @@
 package session
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
@@ -28,9 +27,9 @@ type Controllable interface {
 	SetGameMode(mode gamemode.GameMode)
 
 	UseItem()
-	UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3)
+	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3)
 	UseItemOnEntity(e world.Entity)
-	BreakBlock(pos block.Position)
+	BreakBlock(pos world.BlockPos)
 	AttackEntity(e world.Entity)
 
 	Respawn()

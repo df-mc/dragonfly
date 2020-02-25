@@ -7,10 +7,12 @@ type Bedrock struct {
 	InfiniteBurning bool
 }
 
-func (b Bedrock) Minecraft() (name string, properties map[string]interface{}) {
-	return "minecraft:bedrock", map[string]interface{}{"infiniburn_bit": b.InfiniteBurning}
+// EncodeItem ...
+func (Bedrock) EncodeItem() (id int32, meta int16) {
+	return 7, 0
 }
 
-func (Bedrock) Name() string {
-	return "Bedrock"
+// EncodeBlock ...
+func (b Bedrock) EncodeBlock() (name string, properties map[string]interface{}) {
+	return "minecraft:bedrock", map[string]interface{}{"infiniburn_bit": b.InfiniteBurning}
 }

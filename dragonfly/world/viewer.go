@@ -1,7 +1,7 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	block_action "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
@@ -46,5 +46,8 @@ type Viewer interface {
 	ViewSound(pos mgl32.Vec3, s sound.Sound)
 	// ViewBlockUpdate views the updating of a block. It is called when a block is set at the position passed
 	// to the method.
-	ViewBlockUpdate(pos block.Position, b block.Block)
+	ViewBlockUpdate(pos BlockPos, b Block)
+	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
+	// package, and include things such as a chest opening.
+	ViewBlockAction(pos BlockPos, a block_action.Action)
 }

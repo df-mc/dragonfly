@@ -1,4 +1,4 @@
-package block
+package world
 
 // Axis represents the axis that a block may be directed in. Most blocks do not have an axis, but blocks such
 // as logs or pillars do.
@@ -10,7 +10,7 @@ const (
 	X
 )
 
-// Minecraft converts an Axis into either x, y or z, depending on which axis it is.
+// EncodeBlock converts an Axis into either x, y or z, depending on which axis it is.
 func (a Axis) String() string {
 	if a == X {
 		return "x"

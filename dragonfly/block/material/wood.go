@@ -5,7 +5,7 @@ package material
 type Wood interface {
 	// Name returns a human-readable name of the wood type, such as 'Oak'.
 	Name() string
-	// Minecraft returns a string that represents the wood type in Minecraft (over network, for example), such
+	// EncodeBlock returns a string that represents the wood type in EncodeBlock (over network, for example), such
 	// as 'dark_oak'.
 	Minecraft() string
 	__()

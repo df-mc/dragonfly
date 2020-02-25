@@ -1,7 +1,6 @@
 package player
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
@@ -33,7 +32,7 @@ type Handler interface {
 	HandleRespawn(pos *mgl32.Vec3)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
-	HandleBlockBreak(ctx *event.Context, pos block.Position)
+	HandleBlockBreak(ctx *event.Context, pos world.BlockPos)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is also called if the player is holding no item.
@@ -42,7 +41,7 @@ type Handler interface {
 	// position passed. The face of the block clicked is also passed, along with the relative click position.
 	// The click position has X, Y and Z values which are all in the range 0.0-1.0. It is also called if the
 	// player is holding no item.
-	HandleItemUseOnBlock(ctx *event.Context, pos block.Position, face block.Face, clickPos mgl32.Vec3)
+	HandleItemUseOnBlock(ctx *event.Context, pos world.BlockPos, face world.Face, clickPos mgl32.Vec3)
 	// HandleItemUseOnEntity handles the player using the item held in its main hand on an entity passed to
 	// the method.
 	// HandleItemUseOnEntity is always called when a player uses an item on an entity, regardless of whether
@@ -89,13 +88,13 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 func (NopHandler) HandleChat(*event.Context, *string) {}
 
 // HandleBlockBreak ...
-func (NopHandler) HandleBlockBreak(*event.Context, block.Position) {}
+func (NopHandler) HandleBlockBreak(*event.Context, world.BlockPos) {}
 
 // HandleItemUse ...
 func (NopHandler) HandleItemUse(*event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(*event.Context, block.Position, block.Face, mgl32.Vec3) {
+func (NopHandler) HandleItemUseOnBlock(*event.Context, world.BlockPos, world.Face, mgl32.Vec3) {
 }
 
 // HandleItemUseOnEntity ...

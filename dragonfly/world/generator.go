@@ -1,7 +1,6 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 )
 
@@ -13,24 +12,9 @@ type Generator interface {
 	GenerateChunk(pos ChunkPos, chunk *chunk.Chunk)
 }
 
-// FlatGenerator is the default generator of World. It generates flat worlds (like those in vanilla) with no
-// other decoration.
-type FlatGenerator struct{}
-
-var (
-	grass, _   = block.RuntimeID(block.Grass{})
-	dirt, _    = block.RuntimeID(block.Dirt{})
-	bedrock, _ = block.RuntimeID(block.Bedrock{})
-)
+// NopGenerator is the default generator a world. It places no blocks in the world which results in a void
+// world.
+type NopGenerator struct{}
 
 // GenerateChunk ...
-func (FlatGenerator) GenerateChunk(pos ChunkPos, chunk *chunk.Chunk) {
-	for x := uint8(0); x < 16; x++ {
-		for z := uint8(0); z < 16; z++ {
-			chunk.SetRuntimeID(x, 0, z, 0, bedrock)
-			chunk.SetRuntimeID(x, 1, z, 0, dirt)
-			chunk.SetRuntimeID(x, 2, z, 0, dirt)
-			chunk.SetRuntimeID(x, 3, z, 0, grass)
-		}
-	}
-}
+func (NopGenerator) GenerateChunk(pos ChunkPos, chunk *chunk.Chunk) {}

@@ -19,10 +19,10 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/session"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
+	"math"
 	"net"
 	"strings"
 	"sync"
@@ -550,7 +550,7 @@ func (p *Player) GameMode() gamemode.GameMode {
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
-func (p *Player) BreakBlock(pos block.Position) {
+func (p *Player) BreakBlock(pos world.BlockPos) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
 		return
 	}
@@ -559,12 +559,12 @@ func (p *Player) BreakBlock(pos block.Position) {
 
 	ctx.Continue(func() {
 		p.swingArm()
-		_ = p.World().BreakBlock(pos)
+		p.World().BreakBlock(pos)
 	})
 	ctx.Stop(func() {
-		b, _ := p.World().Block(pos)
+		b := p.World().Block(pos)
 		// Set back the block to make sure the client sees it like that again.
-		_ = p.World().SetBlock(pos, b)
+		p.World().SetBlock(pos, b)
 	})
 }
 
@@ -597,7 +597,7 @@ func (p *Player) UseItem() {
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
 // returns immediately.
-func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mgl32.Vec3) {
+func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
 		return
 	}
@@ -607,30 +607,43 @@ func (p *Player) UseItemOnBlock(pos block.Position, face block.Face, clickPos mg
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
 
 	ctx.Continue(func() {
+		clickedBlock := p.World().Block(pos)
+
+		if activatable, ok := clickedBlock.(block.Activatable); ok {
+			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
+			// items, in which the block will activated as usual.
+			if atomic.LoadUint32(&p.sneaking) == 0 || i.Empty() {
+				p.swingArm()
+				// The block was activated: Blocks such as doors must always have precedence over the item being
+				// used.
+				activatable.Activate(pos, face, p.World(), p)
+				return
+			}
+		}
 		if i.Empty() {
 			return
 		}
 		p.swingArm()
+
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
+			// The item does something when used on a block.
 			usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p)
-		} else if b, ok := i.Item().(block.Block); ok {
+		} else if b, ok := i.Item().(world.Block); ok {
+			// The item IS a block, meaning it is being placed.
 			placedPos := pos.Side(face)
-			existing, _ := p.World().Block(placedPos)
+			existing := p.World().Block(placedPos)
 			if _, ok := existing.(block.Air); !ok {
 				return
 			}
-			_ = p.World().SetBlock(placedPos, b)
-			for _, v := range p.World().Viewers(placedPos.Vec3()) {
-				v.ViewSound(placedPos.Vec3(), sound.BlockPlace{Block: b})
-			}
+			p.World().PlaceBlock(placedPos, b)
 		}
 	})
 	ctx.Stop(func() {
-		if _, ok := i.Item().(block.Block); ok {
+		if _, ok := i.Item().(world.Block); ok {
 			placedPos := pos.Side(face)
-			existing, _ := p.World().Block(placedPos)
+			existing := p.World().Block(placedPos)
 			// Always put back the block so that the client sees it there again.
-			_ = p.World().SetBlock(placedPos, existing)
+			p.World().SetBlock(placedPos, existing)
 		}
 	})
 }
@@ -740,6 +753,25 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float32) {
 	p.pitch.Store(p.Pitch() + deltaPitch)
 }
 
+// Facing returns the horizontal direction that the player is facing.
+func (p *Player) Facing() world.Face {
+	yaw := math.Mod(float64(p.Yaw())-90, 360)
+	if yaw < 0 {
+		yaw += 360
+	}
+	switch {
+	case (yaw > 0 && yaw < 45) || (yaw > 315 && yaw < 360):
+		return world.West
+	case yaw > 45 && yaw < 135:
+		return world.North
+	case yaw > 135 && yaw < 225:
+		return world.East
+	case yaw > 225 && yaw < 315:
+		return world.South
+	}
+	return 0
+}
+
 // World returns the world that the player is currently in.
 func (p *Player) World() *world.World {
 	w, _ := world.OfEntity(p)
@@ -762,6 +794,16 @@ func (p *Player) Yaw() float32 {
 // and is 0 when the entity faces forward.
 func (p *Player) Pitch() float32 {
 	return p.pitch.Load().(float32)
+}
+
+// OpenBlockContainer opens a block container, such as a chest or a shulker box, at the position passed. If
+// no container was present at that location, OpenBlockContainer does nothing.
+// OpenBlockContainer will also do nothing if the player has no session connected to it.
+func (p *Player) OpenBlockContainer(pos world.BlockPos) {
+	if p.session() == session.Nop {
+		return
+	}
+	p.session().OpenBlockContainer(pos)
 }
 
 // State returns the current state of the player. Types from the `entity/state` package are returned
@@ -832,13 +874,15 @@ func (p *Player) close() {
 	chat.Global.Unsubscribe(p)
 
 	p.sMutex.Lock()
+	s := p.s
 	p.s = nil
+
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = p.inv.Close()
 	_ = p.offHand.Close()
 	p.sMutex.Unlock()
 
-	if p.World() != nil {
+	if s == session.Nop {
 		p.World().RemoveEntity(p)
 	}
 }

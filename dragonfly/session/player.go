@@ -99,6 +99,24 @@ func (s *Session) handleModalFormResponse(pk *packet.ModalFormResponse) error {
 	return nil
 }
 
+// handleContainerClose ...
+func (s *Session) handleContainerClose(pk *packet.ContainerClose) error {
+	switch pk.WindowID {
+	case byte(atomic.LoadUint32(&s.openedWindowID)):
+		s.closeCurrentContainer()
+	}
+	return nil
+}
+
+// closeCurrentContainer closes the container the player might currently have open.
+func (s *Session) closeCurrentContainer() {
+	s.closeWindow()
+	pos := s.openedPos.Load().(world.BlockPos)
+	if container, ok := s.c.World().Block(pos).(block.Container); ok {
+		container.RemoveViewer(s, s.c.World(), pos)
+	}
+}
+
 // handleRespawn ...
 func (s *Session) handleRespawn(pk *packet.Respawn) error {
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
@@ -136,7 +154,7 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 			s.sendInv(s.inv, protocol.WindowIDInventory)
 			s.sendInv(s.ui, protocol.WindowIDUI)
 			s.sendInv(s.offHand, protocol.WindowIDOffHand)
-			return fmt.Errorf("invalid inventory transaction: %v", err)
+			return nil
 		}
 		atomic.StoreUint32(&s.inTransaction, 1)
 		s.executeTransaction(pk.Actions)
@@ -153,12 +171,12 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 			s.c.AttackEntity(e)
 		}
 	case *protocol.UseItemTransactionData:
-		pos := block.Position{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
+		pos := world.BlockPos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
 		switch data.ActionType {
 		case protocol.UseItemActionBreakBlock:
 			s.c.BreakBlock(pos)
 		case protocol.UseItemActionClickBlock:
-			s.c.UseItemOnBlock(pos, block.Face(data.BlockFace), data.ClickedPosition)
+			s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), data.ClickedPosition)
 		case protocol.UseItemActionClickAir:
 			s.c.UseItem()
 		}
@@ -253,6 +271,10 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.offHand, true
 	case protocol.WindowIDUI:
 		return s.ui, true
+	case int32(atomic.LoadUint32(&s.openedWindowID)):
+		if atomic.LoadUint32(&s.containerOpened) == 1 {
+			return s.openedWindow.Load().(*inventory.Inventory), true
+		}
 	}
 	return nil, false
 }
@@ -562,7 +584,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
-	id, meta := item_toID(it.Item())
+	id, meta := it.Item().EncodeItem()
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
 			NetworkID:     id,
@@ -575,7 +597,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
 	// TODO: Handle item NBT.
-	t, ok := item_byID(it.NetworkID, it.MetadataValue)
+	t, ok := world_itemByID(it.NetworkID, it.MetadataValue)
 	if !ok {
 		t = block.Air{}
 	}
@@ -594,10 +616,6 @@ func creativeItems() []protocol.ItemStack {
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
-//go:linkname item_byID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.byID
+//go:linkname world_itemByID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemByID
 //noinspection ALL
-func item_byID(id int32, meta int16) (item.Item, bool)
-
-//go:linkname item_toID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.toID
-//noinspection ALL
-func item_toID(it item.Item) (id int32, meta int16)
+func world_itemByID(id int32, meta int16) (world.Item, bool)

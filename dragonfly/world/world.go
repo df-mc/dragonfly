@@ -3,10 +3,10 @@ package world
 import (
 	"context"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
@@ -31,6 +31,9 @@ type World struct {
 
 	gamemodeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode
+
+	bMutex       sync.RWMutex
+	entityBlocks map[ChunkPos]map[BlockPos]Block
 
 	hMutex sync.RWMutex
 	hand   Handler
@@ -57,10 +60,11 @@ func New(log *logrus.Logger) *World {
 	w := &World{
 		name:            "World",
 		prov:            NoIOProvider{},
-		gen:             FlatGenerator{},
+		gen:             NopGenerator{},
 		log:             log,
 		viewers:         make(map[ChunkPos][]Viewer),
 		entities:        make(map[ChunkPos][]Entity),
+		entityBlocks:    make(map[ChunkPos]map[BlockPos]Block),
 		stopTick:        ctx,
 		cancelTick:      cancel,
 		defaultGameMode: gamemode.Survival{},
@@ -84,40 +88,91 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 // An error is returned if the chunk that the block is located in could not be loaded successfully.
-func (w *World) Block(pos block.Position) (block.Block, error) {
+func (w *World) Block(pos BlockPos) Block {
 	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
+	b, err := w.block(c, pos)
+	if err != nil {
+		w.log.Errorf("error getting block: %v", err)
+	}
 	c.RUnlock()
+	return b
+}
 
-	state, ok := block.ByRuntimeID(id)
+// block reads a block from the world at the position passed. The block is assumed to be in the chunk passed,
+// which is also assumed to be locked already or otherwise not yet accessible.
+func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
+	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
+
+	state, ok := blockByRuntimeID(id)
 	if !ok {
 		// This should never happen.
 		return nil, fmt.Errorf("could not find block state by runtime ID %v", id)
 	}
-	// TODO: Implement block NBT reading.
+	if _, ok := state.(NBTer); ok {
+		// The block was also a block entity, so we look it up in the block entity map.
+		w.bMutex.RLock()
+		b, ok := w.entityBlocks[chunkPosFromBlockPos(pos)][pos]
+		w.bMutex.RUnlock()
+		if ok {
+			return b, nil
+		}
+	}
 	return state, nil
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
 // An error is returned if the chunk that the block should be written to could not be loaded successfully.
-// SetBlock panics if the block passed has not yet been registered using block.Register().
-func (w *World) SetBlock(pos block.Position, b block.Block) error {
-	runtimeID, ok := block.RuntimeID(b)
+// SetBlock panics if the block passed has not yet been registered using RegisterBlock().
+// Nil may be passed as the block to set the block to air.
+func (w *World) SetBlock(pos BlockPos, b Block) {
+	c, err := w.chunk(chunkPosFromBlockPos(pos), false)
+	if err != nil {
+		return
+	}
+	if err := w.setBlock(c, pos, b); err != nil {
+		w.log.Errorf("error setting block: %v", err)
+	}
+	c.Unlock()
+	return
+}
+
+// setBlock sets a block at a position in a chunk to a given block. It does not lock the chunk passed, and
+// assumes that is already done or that the chunk is otherwise inaccessible.
+// Nil may be passed as the block to set the block to air.
+func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
+	runtimeID, ok := BlockRuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
-
-	c, err := w.chunk(chunkPosFromBlockPos(pos), false)
-	if err != nil {
-		return err
-	}
 	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0, runtimeID)
-	// TODO: Implement block NBT writing.
-	c.Unlock()
+
+	nbter, hasBlockEntity := b.(NBTer)
+	if hasBlockEntity {
+		// Encode the NBT of the block and add the 'x', 'y' and 'z' tags to it before saving it to the
+		// chunk.
+		data := nbter.EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		c.SetBlockNBT(pos, data)
+
+		chunkPos := chunkPosFromBlockPos(pos)
+
+		w.bMutex.Lock()
+		if w.entityBlocks[chunkPos] == nil {
+			w.entityBlocks[chunkPos] = map[BlockPos]Block{}
+		}
+		w.entityBlocks[chunkPos][pos] = b
+		w.bMutex.Unlock()
+	} else {
+		// Clear any block NBT that might be present at the location.
+		c.SetBlockNBT(pos, nil)
+		w.bMutex.Lock()
+		delete(w.entityBlocks[chunkPosFromBlockPos(pos)], pos)
+		w.bMutex.Unlock()
+	}
 
 	for _, viewer := range w.Viewers(pos.Vec3()) {
 		viewer.ViewBlockUpdate(pos, b)
@@ -127,14 +182,17 @@ func (w *World) SetBlock(pos block.Position, b block.Block) error {
 
 // BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlock will also show particles.
-func (w *World) BreakBlock(pos block.Position) error {
-	old, err := w.Block(pos)
-	if err != nil {
-		return fmt.Errorf("cannot get block at position broken: %v", err)
-	}
-	_ = w.SetBlock(pos, block.Air{})
+func (w *World) BreakBlock(pos BlockPos) {
+	old := w.Block(pos)
+	w.SetBlock(pos, nil)
 	w.AddParticle(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), particle.BlockBreak{Block: old})
-	return nil
+}
+
+// PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also plays the
+// sound to viewers.
+func (w *World) PlaceBlock(pos BlockPos, b Block) {
+	w.SetBlock(pos, b)
+	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 }
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
@@ -171,6 +229,14 @@ func (w *World) StartTime() {
 func (w *World) AddParticle(pos mgl32.Vec3, p particle.Particle) {
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewParticle(pos, p)
+	}
+}
+
+// PlaySound plays a sound at a specific position in the world. Viewers of that position will be able to hear
+// the sound if they're close enough.
+func (w *World) PlaySound(pos mgl32.Vec3, s sound.Sound) {
+	for _, viewer := range w.Viewers(pos) {
+		viewer.ViewSound(pos, s)
 	}
 }
 
@@ -254,13 +320,13 @@ func OfEntity(e Entity) (*World, bool) {
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
 // when joining.
-func (w *World) Spawn() block.Position {
+func (w *World) Spawn() BlockPos {
 	return w.provider().WorldSpawn()
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player will be spawned in the center of
 // this position when newly joining.
-func (w *World) SetSpawn(pos block.Position) {
+func (w *World) SetSpawn(pos BlockPos) {
 	w.provider().SetWorldSpawn(pos)
 }
 
@@ -303,13 +369,13 @@ func (w *World) Provider(p Provider) {
 }
 
 // Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
-// the default: FlatGenerator.
+// the default, NopGenerator.
 func (w *World) Generator(g Generator) {
 	w.gMutex.Lock()
 	defer w.gMutex.Unlock()
 
 	if g == nil {
-		g = FlatGenerator{}
+		g = NopGenerator{}
 	}
 	w.gen = g
 }
@@ -643,7 +709,7 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 		}
 		if !found {
 			// The provider doesn't have a chunk saved at this position, so we generate a new one.
-			c = &chunk.Chunk{}
+			c = chunk.New()
 			w.generator().GenerateChunk(pos, c)
 		} else {
 			entities, err := w.provider().LoadEntities(pos)
@@ -651,10 +717,15 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 				return nil, fmt.Errorf("error loading entities of chunk %v: %v", pos, err)
 			}
 			if len(entities) != 0 {
-				w.entityMutex.Lock()
-				w.entities[pos] = entities
-				w.entityMutex.Unlock()
+				for _, e := range entities {
+					w.AddEntity(e)
+				}
 			}
+			blockEntities, err := w.provider().LoadBlockNBT(pos)
+			if err != nil {
+				return nil, fmt.Errorf("error loading block entities of chunk %v: %v", pos, err)
+			}
+			w.loadIntoBlocks(c, blockEntities)
 		}
 	} else {
 		c = s.(*chunk.Chunk)
@@ -671,29 +742,63 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 	return c, nil
 }
 
+// loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
+// have block NBT will then be stored into memory.
+func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]interface{}) {
+	for _, data := range blockEntityData {
+		pos := BlockPosFromNBT(data)
+		b, err := w.block(c, pos)
+		if err != nil {
+			w.log.Errorf("error loading block for block entity: %v", err)
+			continue
+		}
+		if nbter, ok := b.(NBTer); ok {
+			b = nbter.DecodeNBT(data)
+		}
+		if err := w.setBlock(c, pos, b); err != nil {
+			w.log.Errorf("error setting block with block entity back: %v", err)
+		}
+	}
+}
+
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
 func (w *World) saveChunk(hash string, i interface{}) {
 	if _, ok := i.(*chunk.Chunk); !ok {
 		return
 	}
-	pos := chunkPosFromHash(hash)
+	chunkPos := chunkPosFromHash(hash)
 
 	c := i.(*chunk.Chunk)
 	c.Lock()
 	c.Compact()
 	c.Unlock()
 
-	if err := w.provider().SaveChunk(pos, c); err != nil {
-		w.log.Errorf("error saving chunk %v to provider: %v", pos, err)
+	if err := w.provider().SaveChunk(chunkPos, c); err != nil {
+		w.log.Errorf("error saving chunk %v to provider: %v", chunkPos, err)
 	}
 	w.entityMutex.Lock()
-	entities := w.entities[pos]
-	delete(w.entities, pos)
+	entities := w.entities[chunkPos]
+	delete(w.entities, chunkPos)
 	w.entityMutex.Unlock()
 
-	if err := w.provider().SaveEntities(pos, entities); err != nil {
-		w.log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
+	w.bMutex.Lock()
+	// We allocate a new map for all block entities.
+	m := make(map[[3]int]map[string]interface{}, len(w.entityBlocks))
+	for pos, b := range w.entityBlocks[chunkPos] {
+		// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
+		data := b.(NBTer).EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		m[pos] = data
+	}
+	delete(w.entityBlocks, chunkPos)
+	w.bMutex.Unlock()
+
+	if err := w.provider().SaveEntities(chunkPos, entities); err != nil {
+		w.log.Errorf("error saving entities in chunk %v to provider: %v", chunkPos, err)
+	}
+	if err := w.provider().SaveBlockNBT(chunkPos, m); err != nil {
+		w.log.Errorf("error saving block NBT in chunk %v to provider: %v", chunkPos, err)
 	}
 	for _, entity := range entities {
 		_ = entity.Close()

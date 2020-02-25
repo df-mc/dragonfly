@@ -2,6 +2,9 @@ package block
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six
@@ -13,23 +16,57 @@ type Log struct {
 	Wood material.Wood
 	// Stripped specifies if the log is stripped or not.
 	Stripped bool
-
 	// Axis is the axis which the log block faces.
-	Axis Axis
+	Axis world.Axis
 }
 
-// Name returns the name of the log, including the wood type and whether it is stripped or not.
-func (l Log) Name() (name string) {
-	if l.Wood == nil {
-		panic("log has no wood type")
+// UseOnBlock ...
+func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User) {
+	if _, ok := w.Block(pos.Side(face)).(Air); ok {
+		l.Axis = face.Axis()
+		w.PlaceBlock(pos.Side(face), l)
 	}
-	if l.Stripped {
-		return "Stripped " + l.Wood.Name() + " Log"
-	}
-	return l.Wood.Name() + " Log"
 }
 
-func (l Log) Minecraft() (name string, properties map[string]interface{}) {
+// EncodeItem ...
+func (l Log) EncodeItem() (id int32, meta int16) {
+	switch l.Wood {
+	case material.OakWood():
+		if l.Stripped {
+			return -10, 0
+		}
+		return 17, 0
+	case material.SpruceWood():
+		if l.Stripped {
+			return -5, 0
+		}
+		return 17, 1
+	case material.BirchWood():
+		if l.Stripped {
+			return -6, 0
+		}
+		return 17, 2
+	case material.JungleWood():
+		if l.Stripped {
+			return -7, 0
+		}
+		return 17, 3
+	case material.AcaciaWood():
+		if l.Stripped {
+			return -8, 0
+		}
+		return 162, 0
+	case material.DarkOakWood():
+		if l.Stripped {
+			return -9, 0
+		}
+		return 162, 1
+	}
+	panic("invalid wood type")
+}
+
+// EncodeBlock ...
+func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 	if !l.Stripped {
 		switch l.Wood {
 		case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
@@ -56,8 +93,8 @@ func (l Log) Minecraft() (name string, properties map[string]interface{}) {
 }
 
 // allLogs returns a list of all possible log states.
-func allLogs() (logs []Block) {
-	f := func(axis Axis, stripped bool) {
+func allLogs() (logs []world.Block) {
+	f := func(axis world.Axis, stripped bool) {
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.OakWood()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.SpruceWood()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.BirchWood()})
@@ -65,7 +102,7 @@ func allLogs() (logs []Block) {
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.AcaciaWood()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.DarkOakWood()})
 	}
-	for axis := Axis(0); axis < 3; axis++ {
+	for axis := world.Axis(0); axis < 3; axis++ {
 		f(axis, true)
 		f(axis, false)
 	}

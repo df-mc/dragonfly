@@ -4,11 +4,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	_ "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/session"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/generator"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/mcdb"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
@@ -24,6 +25,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	_ "unsafe"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -118,6 +120,11 @@ func (server *Server) Start() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
+	server.World().Generator(generator.Flat{})
+
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
+
 	if err := server.startListening(); err != nil {
 		return err
 	}
@@ -222,7 +229,7 @@ func (server *Server) running() bool {
 	return atomic.LoadUint32(server.started) == 1
 }
 
-// startListening starts making the Minecraft listener listen, accepting new connections from players.
+// startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
 	server.startTime = time.Now()
 
@@ -354,8 +361,8 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 // blockEntries loads a list of all block state entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) blockEntries() (entries []interface{}) {
-	for _, b := range block.All() {
-		name, properties := b.Minecraft()
+	for _, b := range world_allBlocks() {
+		name, properties := b.EncodeBlock()
 		entries = append(entries, map[string]interface{}{
 			"block": map[string]interface{}{
 				"version": protocol.CurrentBlockVersion,
@@ -366,3 +373,15 @@ func (server *Server) blockEntries() (entries []interface{}) {
 	}
 	return
 }
+
+//go:linkname world_registerAllStates git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.registerAllStates
+//noinspection ALL
+func world_registerAllStates()
+
+//go:linkname item_registerVanillaCreativeItems git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.registerVanillaCreativeItems
+//noinspection ALL
+func item_registerVanillaCreativeItems()
+
+//go:linkname world_allBlocks git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.allBlocks
+//noinspection ALL
+func world_allBlocks() []world.Block

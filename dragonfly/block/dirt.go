@@ -8,16 +8,18 @@ type Dirt struct {
 	Coarse bool
 }
 
-func (d Dirt) Minecraft() (name string, properties map[string]interface{}) {
+// EncodeItem ...
+func (d Dirt) EncodeItem() (id int32, meta int16) {
+	if d.Coarse {
+		meta = 1
+	}
+	return 3, meta
+}
+
+// EncodeBlock ...
+func (d Dirt) EncodeBlock() (name string, properties map[string]interface{}) {
 	if d.Coarse {
 		return "minecraft:dirt", map[string]interface{}{"dirt_type": "coarse"}
 	}
 	return "minecraft:dirt", map[string]interface{}{"dirt_type": "normal"}
-}
-
-func (d Dirt) Name() string {
-	if d.Coarse {
-		return "Coarse Dirt"
-	}
-	return "Dirt"
 }

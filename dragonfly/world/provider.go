@@ -1,7 +1,6 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"io"
@@ -18,9 +17,9 @@ type Provider interface {
 	SetWorldName(name string)
 	// WorldSpawn returns the spawn position of the world. Although players may spawn at different positions,
 	// every new player spawns at this position.
-	WorldSpawn() block.Position
+	WorldSpawn() BlockPos
 	// SetWorldSpawn sets the spawn of a world to a new position.
-	SetWorldSpawn(pos block.Position)
+	SetWorldSpawn(pos BlockPos)
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -36,6 +35,12 @@ type Provider interface {
 	// SaveEntities saves a list of entities in a chunk position. If writing is not successful, an error is
 	// returned.
 	SaveEntities(position ChunkPos, entities []Entity) error
+	// LoadBlockNBT loads the block NBT, also known as block entities, at a specific chunk position. If the
+	// NBT cannot be read, LoadBlockNBT returns a non-nil error.
+	LoadBlockNBT(position ChunkPos) ([]map[string]interface{}, error)
+	// SaveBlockNBT saves block NBT, or block entities, to a specific chunk position. If the NBT cannot be
+	// stored, SaveBlockNBT returns a non-nil error.
+	SaveBlockNBT(position ChunkPos, data map[[3]int]map[string]interface{}) error
 	// LoadTime loads the time of the world.
 	LoadTime() int64
 	// SaveTime saves the time of the world.
@@ -57,64 +62,74 @@ type Provider interface {
 type NoIOProvider struct{}
 
 // LoadDefaultGameMode ...
-func (p NoIOProvider) LoadDefaultGameMode() gamemode.GameMode { return gamemode.Adventure{} }
+func (NoIOProvider) LoadDefaultGameMode() gamemode.GameMode { return gamemode.Adventure{} }
 
 // SaveDefaultGameMode ...
-func (p NoIOProvider) SaveDefaultGameMode(mode gamemode.GameMode) {}
+func (NoIOProvider) SaveDefaultGameMode(gamemode.GameMode) {}
 
 // SetWorldSpawn ...
-func (p NoIOProvider) SetWorldSpawn(pos block.Position) {}
+func (NoIOProvider) SetWorldSpawn(BlockPos) {}
 
 // SaveTimeCycle ...
-func (p NoIOProvider) SaveTimeCycle(running bool) {}
+func (NoIOProvider) SaveTimeCycle(bool) {}
 
 // LoadTimeCycle ...
-func (p NoIOProvider) LoadTimeCycle() bool {
+func (NoIOProvider) LoadTimeCycle() bool {
 	return true
 }
 
 // LoadTime ...
-func (p NoIOProvider) LoadTime() int64 {
+func (NoIOProvider) LoadTime() int64 {
 	return 0
 }
 
 // SaveTime ...
-func (p NoIOProvider) SaveTime(time int64) {}
+func (NoIOProvider) SaveTime(int64) {}
 
 // LoadEntities ...
-func (p NoIOProvider) LoadEntities(position ChunkPos) ([]Entity, error) {
+func (NoIOProvider) LoadEntities(ChunkPos) ([]Entity, error) {
 	return nil, nil
 }
 
 // SaveEntities ...
-func (p NoIOProvider) SaveEntities(position ChunkPos, entities []Entity) error {
+func (NoIOProvider) SaveEntities(ChunkPos, []Entity) error {
+	return nil
+}
+
+// LoadBlockNBT ...
+func (NoIOProvider) LoadBlockNBT(ChunkPos) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+// SaveBlockNBT ...
+func (NoIOProvider) SaveBlockNBT(ChunkPos, map[[3]int]map[string]interface{}) error {
 	return nil
 }
 
 // SaveChunk ...
-func (p NoIOProvider) SaveChunk(position ChunkPos, c *chunk.Chunk) error {
+func (NoIOProvider) SaveChunk(ChunkPos, *chunk.Chunk) error {
 	return nil
 }
 
 // LoadChunk ...
-func (p NoIOProvider) LoadChunk(position ChunkPos) (*chunk.Chunk, bool, error) {
+func (NoIOProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error) {
 	return nil, false, nil
 }
 
 // WorldName ...
-func (p NoIOProvider) WorldName() string {
+func (NoIOProvider) WorldName() string {
 	return ""
 }
 
 // SetWorldName ...
-func (p NoIOProvider) SetWorldName(name string) {}
+func (NoIOProvider) SetWorldName(string) {}
 
 // WorldSpawn ...
-func (p NoIOProvider) WorldSpawn() block.Position {
-	return block.Position{0, 30, 0}
+func (NoIOProvider) WorldSpawn() BlockPos {
+	return BlockPos{0, 30, 0}
 }
 
 // Close ...
-func (p NoIOProvider) Close() error {
+func (NoIOProvider) Close() error {
 	return nil
 }

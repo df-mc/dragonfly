@@ -2,9 +2,11 @@ package session
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	block_action "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
@@ -258,25 +260,37 @@ func (s *Session) ViewParticle(pos mgl32.Vec3, p particle.Particle) {
 
 // ViewSound ...
 func (s *Session) ViewSound(pos mgl32.Vec3, soundType sound.Sound) {
+	pk := &packet.LevelSoundEvent{
+		Position:   pos,
+		EntityType: ":",
+		ExtraData:  -1,
+	}
 	switch so := soundType.(type) {
 	case sound.BlockPlace:
-		s.writePacket(&packet.LevelSoundEvent{
-			SoundType:  packet.SoundEventPlace,
-			Position:   pos,
-			ExtraData:  int32(s.blockRuntimeID(so.Block)),
-			EntityType: ":",
-		})
+		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.blockRuntimeID(so.Block))
+	case sound.ChestClose:
+		pk.SoundType = packet.SoundEventChestClosed
+	case sound.ChestOpen:
+		pk.SoundType = packet.SoundEventChestOpen
 	}
+	s.writePacket(pk)
 }
 
 // ViewBlockUpdate ...
-func (s *Session) ViewBlockUpdate(pos block.Position, b block.Block) {
-	runtimeID, _ := block.RuntimeID(b)
+func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block) {
+	runtimeID, _ := world.BlockRuntimeID(b)
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
-		Position:          protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Position:          blockPos,
 		NewBlockRuntimeID: runtimeID,
 		Flags:             packet.BlockUpdateNetwork,
 	})
+	if nbter, ok := b.(world.NBTer); ok {
+		s.writePacket(&packet.BlockActorData{
+			Position: blockPos,
+			NBTData:  nbter.EncodeNBT(),
+		})
+	}
 }
 
 // ViewEntityAction ...
@@ -328,9 +342,92 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 	})
 }
 
+// OpenBlockContainer ...
+func (s *Session) OpenBlockContainer(pos world.BlockPos) {
+	s.closeWindow()
+
+	b, ok := s.c.World().Block(pos).(block.Container)
+	if !ok {
+		// The block was no container.
+		return
+	}
+	b.AddViewer(s, s.c.World(), pos)
+
+	nextID := s.nextWindowID()
+	atomic.StoreUint32(&s.containerOpened, 1)
+	s.openedWindow.Store(b.Inventory())
+	s.openedPos.Store(pos)
+
+	var containerType byte
+	switch b.(type) {
+	}
+
+	s.writePacket(&packet.ContainerOpen{
+		WindowID:                nextID,
+		ContainerType:           containerType,
+		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		ContainerEntityUniqueID: -1,
+	})
+	s.sendInv(b.Inventory(), uint32(nextID))
+}
+
+// ViewSlotChange ...
+func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
+	if atomic.LoadUint32(&s.containerOpened) == 0 {
+		return
+	}
+	if atomic.LoadUint32(&s.inTransaction) == 1 {
+		// Don't send slot changes to the player itself.
+		return
+	}
+	s.writePacket(&packet.InventorySlot{
+		WindowID: atomic.LoadUint32(&s.openedWindowID),
+		Slot:     uint32(slot),
+		NewItem:  stackFromItem(newItem),
+	})
+}
+
+// ViewBlockAction ...
+func (s *Session) ViewBlockAction(pos world.BlockPos, a block_action.Action) {
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	switch a.(type) {
+	case block_action.Open:
+		s.writePacket(&packet.BlockEvent{
+			Position:  blockPos,
+			EventType: packet.BlockEventChangeChestState,
+			EventData: 1,
+		})
+	case block_action.Close:
+		s.writePacket(&packet.BlockEvent{
+			Position:  blockPos,
+			EventType: packet.BlockEventChangeChestState,
+		})
+	}
+}
+
+// nextWindowID produces the next window ID for a new window. It is an int of 1-99.
+func (s *Session) nextWindowID() byte {
+	if atomic.LoadUint32(&s.openedWindowID) == 99 {
+		atomic.StoreUint32(&s.openedWindowID, 1)
+		return 1
+	}
+	return byte(atomic.AddUint32(&s.openedWindowID, 1))
+}
+
+// closeWindow closes the container window currently opened. If no window is open, closeWindow will do
+// nothing.
+func (s *Session) closeWindow() {
+	if atomic.LoadUint32(&s.containerOpened) == 0 {
+		return
+	}
+	atomic.StoreUint32(&s.containerOpened, 0)
+	s.openedWindow.Store(inventory.New(1, nil))
+	s.writePacket(&packet.ContainerClose{WindowID: byte(atomic.LoadUint32(&s.openedWindowID))})
+}
+
 // blockRuntimeID returns the runtime ID of the block passed.
-func (s *Session) blockRuntimeID(b block.Block) uint32 {
-	id, _ := block.RuntimeID(b)
+func (s *Session) blockRuntimeID(b world.Block) uint32 {
+	id, _ := world.BlockRuntimeID(b)
 	return id
 }
 

@@ -1,6 +1,9 @@
 package block
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+)
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
 type Leaves struct {
@@ -14,16 +17,27 @@ type Leaves struct {
 	shouldUpdate bool
 }
 
-// Name ...
-func (l Leaves) Name() string {
-	if l.Wood == nil {
-		panic("leaves has no wood type")
+// EncodeItem ...
+func (l Leaves) EncodeItem() (id int32, meta int16) {
+	switch l.Wood {
+	case material.OakWood():
+		return 18, 0
+	case material.SpruceWood():
+		return 18, 1
+	case material.BirchWood():
+		return 18, 2
+	case material.JungleWood():
+		return 18, 3
+	case material.AcaciaWood():
+		return 161, 0
+	case material.DarkOakWood():
+		return 161, 1
 	}
-	return l.Wood.Name() + " Leaves"
+	panic("invalid wood type")
 }
 
-// Minecraft ...
-func (l Leaves) Minecraft() (name string, properties map[string]interface{}) {
+// EncodeBlock ...
+func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {
 	case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
 		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.Minecraft(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
@@ -34,7 +48,7 @@ func (l Leaves) Minecraft() (name string, properties map[string]interface{}) {
 }
 
 // allLogs returns a list of all possible leaves states.
-func allLeaves() (leaves []Block) {
+func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
 		leaves = append(leaves, Leaves{Wood: material.OakWood(), Persistent: persistent, shouldUpdate: update})
 		leaves = append(leaves, Leaves{Wood: material.SpruceWood(), Persistent: persistent, shouldUpdate: update})

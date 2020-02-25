@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
@@ -95,17 +94,17 @@ func (p *Provider) SetWorldName(name string) {
 }
 
 // WorldSpawn returns the spawn of the world as present in the level.dat.
-func (p *Provider) WorldSpawn() block.Position {
+func (p *Provider) WorldSpawn() world.BlockPos {
 	y := p.d.SpawnY
 	if p.d.SpawnY > 256 {
 		// TODO: Spawn at the highest block of the world. We're currently doing a guess.
 		y = 90
 	}
-	return block.Position{int(p.d.SpawnX), int(y), int(p.d.SpawnZ)}
+	return world.BlockPos{int(p.d.SpawnX), int(y), int(p.d.SpawnZ)}
 }
 
 // SetWorldSpawn sets the spawn of the world to a new one.
-func (p *Provider) SetWorldSpawn(pos block.Position) {
+func (p *Provider) SetWorldSpawn(pos world.BlockPos) {
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 }
 
@@ -212,6 +211,42 @@ func (p *Provider) LoadEntities(position world.ChunkPos) ([]world.Entity, error)
 func (p *Provider) SaveEntities(position world.ChunkPos, entities []world.Entity) error {
 	// TODO: Implement entities.
 	return nil
+}
+
+// LoadBlockNBT loads all block entities from the chunk position passed.
+func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]interface{}, error) {
+	data, err := p.db.Get(append(index(position), keyBlockEntities), nil)
+	if err != leveldb.ErrNotFound && err != nil {
+		return nil, err
+	}
+	var a []map[string]interface{}
+
+	buf := bytes.NewBuffer(data)
+	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
+
+	for buf.Len() != 0 {
+		var m map[string]interface{}
+		if err := dec.Decode(&m); err != nil {
+			return nil, fmt.Errorf("error decoding block NBT: %v", err)
+		}
+		a = append(a, m)
+	}
+	return a, nil
+}
+
+// SaveBlockNBT saves all block NBT data to the chunk position passed.
+func (p *Provider) SaveBlockNBT(position world.ChunkPos, data map[[3]int]map[string]interface{}) error {
+	if len(data) == 0 {
+		return p.db.Delete(append(index(position), keyBlockEntities), nil)
+	}
+	buf := bytes.NewBuffer(nil)
+	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+	for _, d := range data {
+		if err := enc.Encode(d); err != nil {
+			return fmt.Errorf("error encoding block NBT: %v", err)
+		}
+	}
+	return p.db.Put(append(index(position), keyBlockEntities), buf.Bytes(), nil)
 }
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.

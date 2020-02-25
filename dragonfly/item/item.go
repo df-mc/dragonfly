@@ -1,13 +1,9 @@
 package item
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
 )
-
-// Item represents an item that may be added to an inventory.
-type Item interface{}
 
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
 // a maximum count of 64. MaxCounter may be implemented to change this behaviour.
@@ -24,7 +20,7 @@ type UsableOnBlock interface {
 	// used in. The user passed is the entity that used the item. Usually this entity is a player.
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
-	UseOnBlock(pos block.Position, clickedFace block.Face, clickPos mgl32.Vec3, w *world.World, user User)
+	UseOnBlock(pos world.BlockPos, clickedFace world.Face, clickPos mgl32.Vec3, w *world.World, user User)
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -46,7 +42,9 @@ type Usable interface {
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
-	// Position returns the current position of the user in the world.
+	// Facing returns the direction that the user is facing.
+	Facing() world.Face
+	// BlockPos returns the current position of the user in the world.
 	Position() mgl32.Vec3
 	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 	// is 0 when the entity faces forward.

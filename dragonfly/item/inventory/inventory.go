@@ -8,20 +8,20 @@ import (
 	"sync"
 )
 
-// Inventory represents an inventory containing items. These inventories may be carried by entities or may be
+// inventory represents an inventory containing items. These inventories may be carried by entities or may be
 // held by blocks such as chests.
 // The size of an inventory may be specified upon construction, but cannot be changed after. The zero value of
-// an Inventory is invalid. Use New() to obtain a new inventory.
-// Inventory is safe for concurrent usage: Its values are protected by a mutex.
+// an inventory is invalid. Use New() to obtain a new inventory.
+// inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
 	mu    sync.RWMutex
 	slots []item.Stack
 	f     func(slot int, item item.Stack)
 }
 
-// ErrSlotOutOfRange is returned by any methods on Inventory when a slot is passed which is not within the
+// ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
-var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < Inventory.Size()")
+var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Size()")
 
 // New creates a new inventory with the size passed. The inventory size cannot be changed after it has been
 // constructed.
@@ -37,10 +37,10 @@ func New(size int, f func(slot int, item item.Stack)) *Inventory {
 	return &Inventory{slots: make([]item.Stack, size), f: f}
 }
 
-// Item attempts to obtain an item from a specific slot in the Inventory. If an item was present in that slot,
+// Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
 // and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.
-// Item only returns an error if the slot passed is out of range. (0 <= slot < Inventory.Size())
+// Item only returns an error if the slot passed is out of range. (0 <= slot < inventory.Size())
 func (inv *Inventory) Item(slot int) (item.Stack, error) {
 	inv.check()
 	if !inv.validSlot(slot) {
@@ -53,9 +53,9 @@ func (inv *Inventory) Item(slot int) (item.Stack, error) {
 	return i, nil
 }
 
-// SetItem sets a stack of items to a specific slot in the Inventory. If an item is already present in the
+// SetItem sets a stack of items to a specific slot in the inventory. If an item is already present in the
 // slot, that item will be overwritten.
-// SetItem will return an error if the slot passed is out of range. (0 <= slot < Inventory.Size())
+// SetItem will return an error if the slot passed is out of range. (0 <= slot < inventory.Size())
 func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	inv.check()
 	if !inv.validSlot(slot) {
@@ -84,6 +84,9 @@ func (inv *Inventory) All() []item.Stack {
 // item added.
 // If the item could not be fully added to the inventory, an error is returned.
 func (inv *Inventory) AddItem(it item.Stack) error {
+	if it.Empty() {
+		return nil
+	}
 	inv.mu.Lock()
 	defer inv.mu.Unlock()
 
@@ -214,7 +217,7 @@ func (inv *Inventory) validSlot(slot int) bool {
 	return slot >= 0 && slot < inv.Size()
 }
 
-// check panics if the Inventory is valid, and panics if it is not. This typically happens if the inventory
+// check panics if the inventory is valid, and panics if it is not. This typically happens if the inventory
 // was not created using New().
 func (inv *Inventory) check() {
 	if inv.Size() == 0 {

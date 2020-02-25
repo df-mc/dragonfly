@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"sync"
 )
+
+var RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]interface{}, found bool)
+var StateToRuntimeID func(name string, properties map[string]interface{}) (runtimeID uint32, found bool)
 
 const (
 	// SubChunkVersion is the current version of the written sub chunks, specifying the format they are
@@ -64,6 +66,13 @@ func NetworkEncode(c *Chunk) (d SerialisedData) {
 	d.Data2D = append(c.biomes[:], 0)
 
 	buf.Reset()
+	enc := nbt.NewEncoder(buf)
+	for _, data := range c.blockEntities {
+		_ = enc.Encode(data)
+	}
+	d.BlockNBT = append([]byte(nil), buf.Bytes()...)
+
+	buf.Reset()
 	pool.Put(buf)
 	return
 }
@@ -94,10 +103,6 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 	buf.Write(c.biomes[:])
 	d.Data2D = append([]byte(nil), buf.Bytes()...)
 	buf.Reset()
-
-	// TODO: Add block NBT and save them to the chunk here.
-	d.BlockNBT = nil
-
 	pool.Put(buf)
 	return d
 }
@@ -105,10 +110,8 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
 // invalid, an error is returned.
 func DiskDecode(data SerialisedData) (*Chunk, error) {
-	c := &Chunk{}
+	c := New()
 	copy(c.biomes[:], data.Data2D[512:])
-
-	// TODO: Read block NBT into chunk here.
 
 	for y, sub := range data.SubChunks {
 		if len(sub) == 0 {
@@ -170,12 +173,11 @@ func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
 		// Get the block state registered with the runtime IDs we have in the palette of the block storage
 		// as we need the name and data value to store.
 
-		b, ok := block.ByRuntimeID(runtimeID)
+		name, props, ok := RuntimeIDToState(runtimeID)
 		if !ok {
 			// Should never happen, but we panic with a reasonable error anyway.
 			panic(fmt.Sprintf("cannot find block by runtime ID %v", runtimeID))
 		}
-		name, props := b.Minecraft()
 		blocks[index] = blockEntry{
 			Name:    name,
 			State:   props,
@@ -244,14 +246,10 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 
 	palette := &palette{blockRuntimeIDs: make([]uint32, paletteCount), size: paletteSize(blockSize)}
 	for i, b := range blocks {
-		blockInstance, ok := block.Get(b.Name + block.HashProperties(b.State))
+		var ok bool
+		palette.blockRuntimeIDs[i], ok = StateToRuntimeID(b.Name, b.State)
 		if !ok {
-			return nil, fmt.Errorf("cannot decode unknown block %v (%+v)", b.Name, b.State)
-		}
-		// Finally we add the runtime ID of the block to the palette we create.
-		palette.blockRuntimeIDs[i], ok = block.RuntimeID(blockInstance)
-		if !ok {
-			return nil, fmt.Errorf("cannot get runtime ID of unregistered block state %+v", blockInstance)
+			return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", b.Name, b.State)
 		}
 	}
 	return newBlockStorage(uint32s, palette), nil

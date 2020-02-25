@@ -2,20 +2,23 @@ package item
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"reflect"
 )
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
 // size of the stack.
 type Stack struct {
-	item  Item
+	item  world.Item
 	count int
 }
 
-func NewStack(t Item, count int) Stack {
+func NewStack(t world.Item, count int) Stack {
 	if count < 0 {
 		panic("cannot use negative count for item stack")
+	}
+	if t == nil {
+		panic("cannot have a stack with item type nil")
 	}
 	return Stack{item: t, count: count}
 }
@@ -32,10 +35,10 @@ func (s Stack) Empty() bool {
 }
 
 // Item returns the item that the stack holds. If the stack is considered empty (Stack.Empty()), Item will
-// always return block.Air.
-func (s Stack) Item() Item {
+// always return nil.
+func (s Stack) Item() world.Item {
 	if s.Empty() || s.item == nil {
-		return block.Air{}
+		return nil
 	}
 	return s.item
 }

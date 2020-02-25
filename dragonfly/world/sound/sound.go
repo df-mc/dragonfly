@@ -5,3 +5,7 @@ package sound
 type Sound interface {
 	__()
 }
+
+type sound struct{}
+
+func (sound) __() {}

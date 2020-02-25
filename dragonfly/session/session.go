@@ -54,6 +54,10 @@ type Session struct {
 	formID uint32
 
 	inTransaction uint32
+
+	containerOpened         uint32
+	openedWindowID          uint32
+	openedWindow, openedPos atomic.Value
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -86,6 +90,8 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		ui:                     inventory.New(128, nil),
 	}
 	s.scoreboardObj.Store("")
+	s.openedWindow.Store(inventory.New(1, nil))
+	s.openedPos.Store(world.BlockPos{})
 	return s
 }
 
@@ -119,12 +125,16 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) Close() error {
+	s.closeCurrentContainer()
+
 	_ = s.conn.Close()
 	_ = s.chunkLoader.Load().(*world.Loader).Close()
 	_ = s.c.Close()
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
+
+	s.c.World().RemoveEntity(s.c)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
@@ -204,6 +214,8 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		return s.handleModalFormResponse(pk)
 	case *packet.Respawn:
 		return s.handleRespawn(pk)
+	case *packet.ContainerClose:
+		return s.handleContainerClose(pk)
 	case *packet.BossEvent, *packet.Animate, *packet.LevelSoundEvent, *packet.ActorFall:
 		// No need to do anything here. We don't care about these when they're incoming.
 	default:
