@@ -110,6 +110,9 @@ func (s *Session) handleContainerClose(pk *packet.ContainerClose) error {
 
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
+	if atomic.LoadUint32(&s.containerOpened) == 0 {
+		return
+	}
 	s.closeWindow()
 	pos := s.openedPos.Load().(world.BlockPos)
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {

@@ -344,7 +344,7 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos world.BlockPos) {
-	s.closeWindow()
+	s.closeCurrentContainer()
 
 	b, ok := s.c.World().Block(pos).(block.Container)
 	if !ok {
