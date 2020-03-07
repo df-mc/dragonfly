@@ -1,6 +1,7 @@
 package world
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"github.com/go-gl/mathgl/mgl32"
 	"io"
@@ -11,6 +12,7 @@ import (
 // Viewers of a world may view an entity when near it.
 type Entity interface {
 	io.Closer
+	physics.AABBer
 	// Position returns the current position of the entity in the world.
 	Position() mgl32.Vec3
 	// World returns the current world of the entity. This is always the world that the entity can actually be
@@ -25,11 +27,13 @@ type Entity interface {
 	// State returns a list of entity states which the entity is currently subject to. Generally, these states
 	// alter the way the entity looks.
 	State() []state.State
+
+	Velocity() mgl32.Vec3
+	SetVelocity(v mgl32.Vec3)
 }
 
-// NBTer represents either an entity or a block which may decode NBT data and encode to NBT data. Typically
-// this is done to store additional data.
-type NBTer interface {
-	DecodeNBT(data map[string]interface{}) Block
-	EncodeNBT() map[string]interface{}
+// TickerEntity represents an entity that has a Tick method which should be called every time the entity is
+// ticked every 20th of a second.
+type TickerEntity interface {
+	Tick()
 }

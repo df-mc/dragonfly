@@ -35,7 +35,7 @@ type Handler interface {
 	HandleBlockBreak(ctx *event.Context, pos world.BlockPos)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
-	// the context using ctx.Cancel(). It is also called if the player is holding no item.
+	// the context using ctx.Cancel(). It is not called if the player is holding no item.
 	HandleItemUse(ctx *event.Context)
 	// HandleItemUseOnBlock handles the player using the item held in its main hand on a block at the block
 	// position passed. The face of the block clicked is also passed, along with the relative click position.

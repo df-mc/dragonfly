@@ -17,6 +17,15 @@ type Hurt struct{ action }
 // watching it.
 type Death struct{ action }
 
+// PickedUp makes an item get picked up by a collector. After this animation, the item disappears from viewers
+// watching it.
+type PickedUp struct {
+	// Collector is the entity that collected the item.
+	Collector interface{}
+
+	action
+}
+
 // action implements the Action interface. Structures in this package may embed it to gets its functionality
 // out of the box.
 type action struct{}

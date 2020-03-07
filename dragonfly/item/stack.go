@@ -29,6 +29,15 @@ func (s Stack) Count() int {
 	return s.count
 }
 
+// MaxCount returns the maximum count that the stack is able to hold when added to an inventory or when added
+// to an item entity.
+func (s Stack) MaxCount() int {
+	if counter, ok := s.Item().(MaxCounter); ok {
+		return counter.MaxCount()
+	}
+	return 64
+}
+
 // Empty checks if the stack is empty (has a count of 0). If this is the case
 func (s Stack) Empty() bool {
 	return s.Count() == 0
@@ -62,15 +71,11 @@ func (s Stack) AddStack(s2 Stack) (a, b Stack) {
 		// The items are not comparable and thus cannot be stacked together.
 		return s, s2
 	}
-	max := 64
-	if counter, ok := s.Item().(MaxCounter); ok {
-		max = counter.MaxCount()
-	}
-	if s.Count() >= max {
+	if s.Count() >= s.MaxCount() {
 		// No more items could be added to the original stack.
 		return s, s2
 	}
-	diff := max - s.Count()
+	diff := s.MaxCount() - s.Count()
 	if s2.Count() < diff {
 		diff = s2.Count()
 	}

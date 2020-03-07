@@ -40,6 +40,7 @@ const (
 	dataFlagSprinting
 	dataFlagAction
 	dataFlagInvisible
+	dataFlagNoAI              = 16
 	dataFlagBreathing         = 35
 	dataFlagAffectedByGravity = 48
 )

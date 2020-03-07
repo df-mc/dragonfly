@@ -87,7 +87,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		forms:                  map[uint32]form.Form{},
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
-		ui:                     inventory.New(128, nil),
+		ui:                     inventory.New(51, nil),
 	}
 	s.scoreboardObj.Store("")
 	s.openedWindow.Store(inventory.New(1, nil))

@@ -3,6 +3,7 @@ package world
 import (
 	"context"
 	"fmt"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
@@ -309,6 +310,35 @@ func (w *World) RemoveEntity(e Entity) {
 	w.entityMutex.Unlock()
 }
 
+// EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
+// those which are contained within the AABB when it comes to their position.
+func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
+	// Make an estimate of 16 entities on average.
+	m := make([]Entity, 0, 16)
+
+	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
+
+	w.entityMutex.RLock()
+	for x := minPos[0]; x <= maxPos[0]; x++ {
+		for z := minPos[1]; z <= maxPos[1]; z++ {
+			chunkEntities, ok := w.entities[ChunkPos{x, z}]
+			if !ok {
+				// Chunk wasn't currently loaded or had no entities in it, so we can continue with the next.
+				continue
+			}
+			for _, entity := range chunkEntities {
+				if aabb.Vec3Within(entity.Position()) {
+					// The entity position was within the AABB, so we add it to the slice to return.
+					m = append(m, entity)
+				}
+			}
+		}
+	}
+	w.entityMutex.RUnlock()
+
+	return m
+}
+
 // OfEntity attempts to return a world that an entity is currently in. If the entity was not currently added
 // to a world, the world returned is nil and the bool returned is false.
 func OfEntity(e Entity) (*World, bool) {
@@ -465,9 +495,14 @@ func (w *World) tick(tick int) {
 // updating where necessary.
 func (w *World) tickEntities() {
 	w.entityMutex.Lock()
+	entitiesToTick := make([]TickerEntity, 0, len(w.entities)*8)
 	for chunkPos, entities := range w.entities {
 		chunkEntities := make([]Entity, 0, len(entities))
 		for _, entity := range entities {
+			if ticker, ok := entity.(TickerEntity); ok {
+				entitiesToTick = append(entitiesToTick, ticker)
+			}
+
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for viewers to view it.
 			newChunkPos := chunkPosFromVec3(entity.Position())
@@ -502,6 +537,15 @@ func (w *World) tickEntities() {
 		w.entities[chunkPos] = chunkEntities
 	}
 	w.entityMutex.Unlock()
+
+	for _, ticker := range entitiesToTick {
+		if _, ok := OfEntity(ticker.(Entity)); !ok {
+			continue
+		}
+		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
+		// active.
+		ticker.Tick()
+	}
 }
 
 // removeEntity attempts to remove an entity located in a chunk at the chunk position passed. If found, it
@@ -814,7 +858,7 @@ func (w *World) initChunkCache() {
 		for {
 			select {
 			case <-t.C:
-				for k, i := range w.cCache.Items() {
+				for k, i := range w.chunkCache().Items() {
 					if len(k) == 8 {
 						// A chunk was stored at this hash, but we're looking for times.
 						continue
@@ -827,8 +871,8 @@ func (w *World) initChunkCache() {
 					}
 					if i.Object.(time.Time).Sub(time.Now()) <= 0 {
 						// The time set is below the current time: We should evict the chunk.
-						w.cCache.Delete(k)
-						w.cCache.Delete(k[:8])
+						w.chunkCache().Delete(k)
+						w.chunkCache().Delete(k[:8])
 					}
 				}
 			case <-w.stopTick.Done():

@@ -82,11 +82,14 @@ func (inv *Inventory) All() []item.Stack {
 // added is first added on top of those stacks to make sure they are fully filled.
 // If no existing stacks with leftover space are left, empty slots will be filled up with the remainder of the
 // item added.
-// If the item could not be fully added to the inventory, an error is returned.
-func (inv *Inventory) AddItem(it item.Stack) error {
+// If the item could not be fully added to the inventory, an error is returned along with the count that was
+// added to the inventory.
+func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 	if it.Empty() {
-		return nil
+		return 0, nil
 	}
+	first := it.Count()
+
 	inv.mu.Lock()
 	defer inv.mu.Unlock()
 
@@ -101,7 +104,7 @@ func (inv *Inventory) AddItem(it item.Stack) error {
 		it = b
 		if it.Empty() {
 			// We were able to add the entire stack to existing stacks in the inventory.
-			return nil
+			return first, nil
 		}
 	}
 	for slot, invIt := range inv.slots {
@@ -116,11 +119,11 @@ func (inv *Inventory) AddItem(it item.Stack) error {
 		it = b
 		if it.Empty() {
 			// We were able to add the entire stack to empty slots.
-			return nil
+			return first, nil
 		}
 	}
 	// We were unable to clear out the entire stack to be added to the inventory: There wasn't enough space.
-	return fmt.Errorf("could not add full item stack to inventory")
+	return first - it.Count(), fmt.Errorf("could not add full item stack to inventory")
 }
 
 // RemoveItem attempts to remove an item from the inventory. It will visit all slots in the inventory and

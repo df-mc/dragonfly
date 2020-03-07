@@ -246,7 +246,7 @@ func (s *Session) verifyTransaction(a []protocol.InventoryAction) error {
 				return fmt.Errorf("slot %v holds a different item than the client expects: %v is actually %v", action.InventorySlot, old, actualOld)
 			}
 		}
-		if err := temp.AddItem(old); err != nil {
+		if _, err := temp.AddItem(old); err != nil {
 			return fmt.Errorf("inventory was full: %v", err)
 		}
 	}

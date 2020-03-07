@@ -12,6 +12,13 @@ type Item interface {
 	EncodeItem() (id int32, meta int16)
 }
 
+// NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
+// this is done to store additional data.
+type NBTer interface {
+	DecodeNBT(data map[string]interface{}) Block
+	EncodeNBT() map[string]interface{}
+}
+
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
 // ID and metadata value using itemByID().
 // If an item with the ID and meta passed already exists, RegisterItem panics.

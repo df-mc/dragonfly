@@ -3,6 +3,7 @@ package session
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	block_action "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
@@ -125,6 +126,13 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           e.Pitch(),
 			Yaw:             e.Yaw(),
 			HeadYaw:         e.Yaw(),
+		})
+	case *entity.Item:
+		s.writePacket(&packet.AddItemActor{
+			EntityUniqueID:  int64(runtimeID),
+			EntityRuntimeID: runtimeID,
+			Item:            stackFromItem(v.Item()),
+			Position:        v.Position(),
 		})
 	default:
 		s.writePacket(&packet.AddActor{
@@ -295,7 +303,7 @@ func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block) {
 
 // ViewEntityAction ...
 func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
-	switch a.(type) {
+	switch act := a.(type) {
 	case action.SwingArm:
 		if _, ok := e.(Controllable); ok {
 			s.writePacket(&packet.Animate{
@@ -317,6 +325,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventDeath,
+		})
+	case action.PickedUp:
+		s.writePacket(&packet.TakeItemActor{
+			ItemEntityRuntimeID:  s.entityRuntimeID(e),
+			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector.(world.Entity)),
 		})
 	}
 }

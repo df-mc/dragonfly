@@ -6,6 +6,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
@@ -22,7 +23,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/cmd"
-	"math"
 	"net"
 	"strings"
 	"sync"
@@ -33,10 +33,10 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name            string
-	uuid            uuid.UUID
-	xuid            string
-	pos, yaw, pitch atomic.Value
+	name                      string
+	uuid                      uuid.UUID
+	xuid                      string
+	pos, velocity, yaw, pitch atomic.Value
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -76,6 +76,7 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 		gameMode: gamemode.Adventure{},
 	}
 	p.pos.Store(pos)
+	p.velocity.Store(mgl32.Vec3{})
 	p.yaw.Store(float32(0.0))
 	p.pitch.Store(float32(0.0))
 	p.speed.Store(float32(0.1))
@@ -755,21 +756,7 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float32) {
 
 // Facing returns the horizontal direction that the player is facing.
 func (p *Player) Facing() world.Face {
-	yaw := math.Mod(float64(p.Yaw())-90, 360)
-	if yaw < 0 {
-		yaw += 360
-	}
-	switch {
-	case (yaw > 0 && yaw < 45) || (yaw > 315 && yaw < 360):
-		return world.West
-	case yaw > 45 && yaw < 135:
-		return world.North
-	case yaw > 135 && yaw < 225:
-		return world.East
-	case yaw > 225 && yaw < 315:
-		return world.South
-	}
-	return 0
+	return entity.Facing(p)
 }
 
 // World returns the world that the player is currently in.
@@ -796,6 +783,12 @@ func (p *Player) Pitch() float32 {
 	return p.pitch.Load().(float32)
 }
 
+// Collect makes the player collect the item stack passed, adding it to the inventory.
+func (p *Player) Collect(s item.Stack) (n int) {
+	n, _ = p.Inventory().AddItem(s)
+	return
+}
+
 // OpenBlockContainer opens a block container, such as a chest or a shulker box, at the position passed. If
 // no container was present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.
@@ -804,6 +797,28 @@ func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 		return
 	}
 	p.session().OpenBlockContainer(pos)
+}
+
+// Velocity returns the current velocity of the player.
+func (p *Player) Velocity() mgl32.Vec3 {
+	// TODO: Implement server-side movement of player entities.
+	return p.velocity.Load().(mgl32.Vec3)
+}
+
+// SetVelocity sets the velocity of the player.
+func (p *Player) SetVelocity(v mgl32.Vec3) {
+	// TODO: Implement server-side movement of player entities.
+	p.velocity.Store(v)
+}
+
+// AABB returns the axis aligned bounding box of the player.
+func (p *Player) AABB() []physics.AABB {
+	switch {
+	case atomic.LoadUint32(&p.sneaking) == 1:
+		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.65, 0.3})}
+	default:
+		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.8, 0.3})}
+	}
 }
 
 // State returns the current state of the player. Types from the `entity/state` package are returned

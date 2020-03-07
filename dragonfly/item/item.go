@@ -54,6 +54,16 @@ type User interface {
 	Pitch() float32
 }
 
+// Collector represents an entity in the world that is able to collect an item, typically an entity such as
+// a player or a zombie.
+type Collector interface {
+	world.Entity
+	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
+	// may be picked up.
+	// The count of items collected from the stack n is returned.
+	Collect(stack Stack) (n int)
+}
+
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {
