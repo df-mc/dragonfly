@@ -111,6 +111,9 @@ func (it *Item) collect(collector item.Collector) {
 		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
 	}
 	n := collector.Collect(it.i)
+	if n == 0 {
+		return
+	}
 
 	if n == it.i.Count() {
 		// The collector picked up the entire stack.
