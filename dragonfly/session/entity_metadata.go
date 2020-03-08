@@ -34,6 +34,7 @@ const (
 	dataKeyAir
 )
 
+//noinspection GoUnusedConst
 const (
 	dataFlagOnFire = iota
 	dataFlagSneaking
