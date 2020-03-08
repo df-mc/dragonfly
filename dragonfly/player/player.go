@@ -555,6 +555,10 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
 		return
 	}
+	if _, air := p.World().Block(pos).(block.Air); air {
+		// Don't do anything if the position broken is already air.
+		return
+	}
 	ctx := event.C()
 	p.handler().HandleBlockBreak(ctx, pos)
 
