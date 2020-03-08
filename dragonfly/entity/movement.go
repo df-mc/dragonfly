@@ -24,6 +24,7 @@ type movementComputer struct {
 }
 
 // defaultGravity is the default gravity applied to entities.
+//noinspection GoUnusedConst
 const defaultGravity = 0.08
 
 // tickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values

@@ -22,6 +22,7 @@ func (m entityMetadata) setFlag(key uint32, index uint8) {
 	}
 }
 
+//noinspection GoUnusedConst
 const (
 	dataKeyFlags = iota
 	dataKeyHealth
