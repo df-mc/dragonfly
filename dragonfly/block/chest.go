@@ -18,9 +18,8 @@ type Chest struct {
 	Facing world.Face
 
 	inventory *inventory.Inventory
-
-	viewerMu *sync.RWMutex
-	viewers  *[]ContainerViewer
+	viewerMu  *sync.RWMutex
+	viewers   *[]ContainerViewer
 }
 
 // NewChest creates a new initialised chest. The inventory is properly initialised.
@@ -95,7 +94,7 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos world.BlockPo
 }
 
 // Activate ...
-func (c Chest) Activate(pos world.BlockPos, _ world.Face, w *world.World, e world.Entity) {
+func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, e world.Entity) {
 	if opener, ok := e.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 	}
@@ -110,14 +109,16 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *
 
 // DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]interface{}) world.Block {
+	//noinspection GoAssignmentToReceiver
 	c = NewChest(c.Facing)
-	invFromNBT(c.inventory, rslice(data, "Items"))
+	invFromNBT(c.inventory, readSlice(data, "Items"))
 	return c
 }
 
 // EncodeNBT ...
 func (c Chest) EncodeNBT() map[string]interface{} {
 	if c.inventory == nil {
+		//noinspection GoAssignmentToReceiver
 		c = NewChest(c.Facing)
 	}
 	return map[string]interface{}{

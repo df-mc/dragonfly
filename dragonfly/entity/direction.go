@@ -29,11 +29,11 @@ func Facing(e world.Entity) world.Face {
 // returned is always 1.
 func DirectionVector(e world.Entity) mgl32.Vec3 {
 	yaw, pitch := float64(mgl32.DegToRad(e.Yaw())), float64(mgl32.DegToRad(e.Pitch()))
-	mult := math.Cos(pitch)
+	m := math.Cos(pitch)
 
 	return mgl32.Vec3{
-		float32(-mult * math.Sin(yaw)),
+		float32(-m * math.Sin(yaw)),
 		float32(-math.Sin(pitch)),
-		float32(mult * math.Cos(yaw)),
+		float32(m * math.Cos(yaw)),
 	}.Normalize()
 }

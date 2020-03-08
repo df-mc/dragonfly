@@ -57,12 +57,12 @@ func (p BlockPos) Side(face Face) BlockPos {
 // BlockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
 // map is assumed to have an 'x', 'y' and 'z' key.
 func BlockPosFromNBT(data map[string]interface{}) BlockPos {
-	xIntf, _ := data["x"]
-	yIntf, _ := data["y"]
-	zIntf, _ := data["z"]
-	x, _ := xIntf.(int32)
-	y, _ := yIntf.(int32)
-	z, _ := zIntf.(int32)
+	xInterface, _ := data["x"]
+	yInterface, _ := data["y"]
+	zInterface, _ := data["z"]
+	x, _ := xInterface.(int32)
+	y, _ := yInterface.(int32)
+	z, _ := zInterface.(int32)
 	return BlockPos{int(x), int(y), int(z)}
 }
 

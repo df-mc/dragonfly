@@ -1,7 +1,7 @@
 package world
 
 import (
-	block_action "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
+	blockAction "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
@@ -49,5 +49,5 @@ type Viewer interface {
 	ViewBlockUpdate(pos BlockPos, b Block)
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
-	ViewBlockAction(pos BlockPos, a block_action.Action)
+	ViewBlockAction(pos BlockPos, a blockAction.Action)
 }

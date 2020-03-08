@@ -1,6 +1,6 @@
 package block
 
-// Grass blocks generate abundantly across the surface of the Overworld.
+// Grass blocks generate abundantly across the surface of the world.
 type Grass struct{}
 
 // EncodeItem ...

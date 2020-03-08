@@ -367,7 +367,7 @@ func (p *Player) Hurt(dmg float32, source damage.Source) {
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
-// source of the knockback, typically the position of an attacking entity. The source is used to calculate the
+// source of the velocity, typically the position of an attacking entity. The source is used to calculate the
 // direction which the entity should be knocked back in.
 func (p *Player) KnockBack(src mgl32.Vec3, force, height float32) {
 	if p.Dead() || !p.survival() {
@@ -388,7 +388,7 @@ func (p *Player) AttackImmune() bool {
 	return p.immunity.Load().(time.Time).After(time.Now())
 }
 
-// survival checks if the player is considered to be survival, meaning either adventure or survival gamemode.
+// survival checks if the player is considered to be survival, meaning either adventure or survival game mode.
 func (p *Player) survival() bool {
 	switch p.GameMode().(type) {
 	case gamemode.Survival, gamemode.Adventure:
@@ -431,8 +431,8 @@ func (p *Player) kill(src damage.Source) {
 	})
 }
 
-// Respawn respawns the player, so that its health is replenished and it is spawned in the world again.
-// Nothing will happen if the player does not have a session connected to it.
+// Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
+// again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
 	if !p.Dead() || p.World() == nil || p.session() == session.Nop {
 		return
@@ -793,8 +793,8 @@ func (p *Player) Collect(s item.Stack) (n int) {
 	return
 }
 
-// OpenBlockContainer opens a block container, such as a chest or a shulker box, at the position passed. If
-// no container was present at that location, OpenBlockContainer does nothing.
+// OpenBlockContainer opens a block container, such as a chest, at the position passed. If no container was
+// present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.
 func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 	if p.session() == session.Nop {

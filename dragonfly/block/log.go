@@ -21,7 +21,7 @@ type Log struct {
 }
 
 // UseOnBlock ...
-func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User) {
+func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ item.User) {
 	if _, ok := w.Block(pos.Side(face)).(Air); ok {
 		l.Axis = face.Axis()
 		w.PlaceBlock(pos.Side(face), l)

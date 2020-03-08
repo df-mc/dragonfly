@@ -67,22 +67,22 @@ func world_itemToName(it world.Item) (name string, meta int16)
 
 // itemFromNBT decodes the data of an item into an item stack.
 func itemFromNBT(data map[string]interface{}) item.Stack {
-	it, ok := world_itemByName(rstring(data, "Name"), rint16(data, "Damage"))
+	it, ok := world_itemByName(readString(data, "Name"), readInt16(data, "Damage"))
 	if !ok {
 		it = Air{}
 	}
-	if nbter, ok := it.(world.NBTer); ok {
-		it = nbter.DecodeNBT(data).(world.Item)
+	if nbt, ok := it.(world.NBTer); ok {
+		it = nbt.DecodeNBT(data).(world.Item)
 	}
-	stack := item.NewStack(it, int(rbyte(data, "Count")))
+	stack := item.NewStack(it, int(readByte(data, "Count")))
 	return stack
 }
 
 // itemToNBT encodes an item stack to its NBT representation.
 func itemToNBT(s item.Stack) map[string]interface{} {
 	m := make(map[string]interface{})
-	if nbter, ok := s.Item().(world.NBTer); ok {
-		m = nbter.EncodeNBT()
+	if nbt, ok := s.Item().(world.NBTer); ok {
+		m = nbt.EncodeNBT()
 	}
 	m["Name"], m["Damage"] = world_itemToName(s.Item())
 	m["Count"] = byte(s.Count())
@@ -97,7 +97,7 @@ func invFromNBT(inv *inventory.Inventory, items []interface{}) {
 		if it.Empty() {
 			continue
 		}
-		_ = inv.SetItem(int(rbyte(data, "Slot")), it)
+		_ = inv.SetItem(int(readByte(data, "Slot")), it)
 	}
 }
 
@@ -115,29 +115,29 @@ func invToNBT(inv *inventory.Inventory) []map[string]interface{} {
 	return items
 }
 
-// rbyte reads a byte from a map at the key passed.
-func rbyte(m map[string]interface{}, key string) byte {
+// readByte reads a byte from a map at the key passed.
+func readByte(m map[string]interface{}, key string) byte {
 	v, _ := m[key]
 	b, _ := v.(byte)
 	return b
 }
 
-// rint16 reads an int16 from a map at the key passed.
-func rint16(m map[string]interface{}, key string) int16 {
+// readInt16 reads an int16 from a map at the key passed.
+func readInt16(m map[string]interface{}, key string) int16 {
 	v, _ := m[key]
 	b, _ := v.(int16)
 	return b
 }
 
-// rstring reads a string from a map at the key passed.
-func rstring(m map[string]interface{}, key string) string {
+// readString reads a string from a map at the key passed.
+func readString(m map[string]interface{}, key string) string {
 	v, _ := m[key]
 	b, _ := v.(string)
 	return b
 }
 
-// rslice reads an interface slice from a map at the key passed.
-func rslice(m map[string]interface{}, key string) []interface{} {
+// readSlice reads an interface slice from a map at the key passed.
+func readSlice(m map[string]interface{}, key string) []interface{} {
 	v, _ := m[key]
 	b, _ := v.([]interface{})
 	return b

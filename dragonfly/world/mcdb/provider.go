@@ -202,13 +202,13 @@ func (p *Provider) SaveDefaultGameMode(mode gamemode.GameMode) {
 }
 
 // LoadEntities loads all entities from the chunk position passed.
-func (p *Provider) LoadEntities(position world.ChunkPos) ([]world.Entity, error) {
+func (p *Provider) LoadEntities(world.ChunkPos) ([]world.Entity, error) {
 	// TODO: Implement entities.
 	return nil, nil
 }
 
 // SaveEntities saves all entities to the chunk position passed.
-func (p *Provider) SaveEntities(position world.ChunkPos, entities []world.Entity) error {
+func (p *Provider) SaveEntities(world.ChunkPos, []world.Entity) error {
 	// TODO: Implement entities.
 	return nil
 }
@@ -270,6 +270,7 @@ func (p *Provider) Close() error {
 	if err := f.Close(); err != nil {
 		return fmt.Errorf("error closing level.dat: %v", err)
 	}
+	//noinspection SpellCheckingInspection
 	if err := ioutil.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
 		return fmt.Errorf("error writing levelname.txt: %v", err)
 	}

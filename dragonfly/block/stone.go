@@ -1,7 +1,7 @@
 package block
 
 type (
-	// Stone is a block found underground in the Overworld or on mountains.
+	// Stone is a block found underground in the world or on mountains.
 	Stone struct{}
 	// Granite is a type of igneous rock.
 	Granite polishable

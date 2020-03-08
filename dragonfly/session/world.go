@@ -2,7 +2,7 @@ package session
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
-	block_action "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
+	blockAction "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
@@ -29,33 +29,6 @@ func (s *Session) handleRequestChunkRadius(pk *packet.RequestChunkRadius) error 
 
 	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: s.chunkRadius})
 	return nil
-}
-
-// SendNetherDimension sends the player to the nether dimension
-func (s *Session) SendNetherDimension() {
-	s.writePacket(&packet.ChangeDimension{
-		Dimension: packet.DimensionNether,
-		Position:  mgl32.Vec3{},
-		Respawn:   false,
-	})
-}
-
-// SendEndDimension sends the player to the end dimension
-func (s *Session) SendEndDimension() {
-	s.writePacket(&packet.ChangeDimension{
-		Dimension: packet.DimensionEnd,
-		Position:  mgl32.Vec3{},
-		Respawn:   false,
-	})
-}
-
-// SendNetherDimension sends the player to the overworld dimension
-func (s *Session) SendOverworldDimension() {
-	s.writePacket(&packet.ChangeDimension{
-		Dimension: packet.DimensionOverworld,
-		Position:  mgl32.Vec3{},
-		Respawn:   false,
-	})
 }
 
 // ViewChunk ...
@@ -293,10 +266,10 @@ func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block) {
 		NewBlockRuntimeID: runtimeID,
 		Flags:             packet.BlockUpdateNetwork,
 	})
-	if nbter, ok := b.(world.NBTer); ok {
+	if nbt, ok := b.(world.NBTer); ok {
 		s.writePacket(&packet.BlockActorData{
 			Position: blockPos,
-			NBTData:  nbter.EncodeNBT(),
+			NBTData:  nbt.EncodeNBT(),
 		})
 	}
 }
@@ -401,16 +374,16 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 }
 
 // ViewBlockAction ...
-func (s *Session) ViewBlockAction(pos world.BlockPos, a block_action.Action) {
+func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch a.(type) {
-	case block_action.Open:
+	case blockAction.Open:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,
 			EventData: 1,
 		})
-	case block_action.Close:
+	case blockAction.Close:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,

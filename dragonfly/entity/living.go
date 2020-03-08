@@ -16,7 +16,7 @@ type Living interface {
 	// If the final damage exceeds the health that the player currently has, the entity is killed.
 	Hurt(damage float32, source damage.Source)
 	// KnockBack knocks the entity back with a given force and height. A source is passed which indicates the
-	// source of the knockback, typically the position of an attacking entity. The source is used to calculate
+	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.
 	KnockBack(src mgl32.Vec3, force, height float32)
 }

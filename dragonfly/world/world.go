@@ -30,7 +30,7 @@ type World struct {
 	time        int64
 	timeStopped uint32
 
-	gamemodeMu      sync.RWMutex
+	gameModeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode
 
 	bMutex       sync.RWMutex
@@ -151,11 +151,11 @@ func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
 	}
 	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0, runtimeID)
 
-	nbter, hasBlockEntity := b.(NBTer)
+	nbt, hasBlockEntity := b.(NBTer)
 	if hasBlockEntity {
 		// Encode the NBT of the block and add the 'x', 'y' and 'z' tags to it before saving it to the
 		// chunk.
-		data := nbter.EncodeNBT()
+		data := nbt.EncodeNBT()
 		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 		c.SetBlockNBT(pos, data)
 
@@ -364,17 +364,17 @@ func (w *World) SetSpawn(pos BlockPos) {
 // mode.
 // The default game mode may be changed using SaveDefaultGameMode().
 func (w *World) DefaultGameMode() gamemode.GameMode {
-	w.gamemodeMu.RLock()
-	defer w.gamemodeMu.RUnlock()
+	w.gameModeMu.RLock()
+	defer w.gameModeMu.RUnlock()
 	return w.defaultGameMode
 }
 
 // SaveDefaultGameMode changes the default game mode of the world. When players join, they are then given that
 // game mode.
 func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
-	w.gamemodeMu.Lock()
+	w.gameModeMu.Lock()
 	w.defaultGameMode = mode
-	w.gamemodeMu.Unlock()
+	w.gameModeMu.Unlock()
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
@@ -388,9 +388,9 @@ func (w *World) Provider(p Provider) {
 	}
 	w.prov = p
 	w.name = p.WorldName()
-	w.gamemodeMu.Lock()
+	w.gameModeMu.Lock()
 	w.defaultGameMode = p.LoadDefaultGameMode()
-	w.gamemodeMu.Unlock()
+	w.gameModeMu.Unlock()
 	atomic.StoreInt64(&w.time, p.LoadTime())
 	if timeRunning := p.LoadTimeCycle(); !timeRunning {
 		atomic.StoreUint32(&w.timeStopped, 1)
@@ -446,9 +446,9 @@ func (w *World) Close() error {
 	w.provider().SaveTime(atomic.LoadInt64(&w.time))
 	w.provider().SaveTimeCycle(atomic.LoadUint32(&w.timeStopped) == 0)
 
-	w.gamemodeMu.RLock()
+	w.gameModeMu.RLock()
 	w.provider().SaveDefaultGameMode(w.defaultGameMode)
-	w.gamemodeMu.RUnlock()
+	w.gameModeMu.RUnlock()
 
 	w.log.Debug("Writing level.dat...")
 	if err := w.provider().Close(); err != nil {
@@ -796,8 +796,8 @@ func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]inte
 			w.log.Errorf("error loading block for block entity: %v", err)
 			continue
 		}
-		if nbter, ok := b.(NBTer); ok {
-			b = nbter.DecodeNBT(data)
+		if nbt, ok := b.(NBTer); ok {
+			b = nbt.DecodeNBT(data)
 		}
 		if err := w.setBlock(c, pos, b); err != nil {
 			w.log.Errorf("error setting block with block entity back: %v", err)

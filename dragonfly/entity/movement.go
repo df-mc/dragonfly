@@ -7,18 +7,10 @@ import (
 	"math"
 )
 
-// friction returns the friction of a block.
-func friction(b world.Block) float32 {
-	if frictioner, ok := b.(physics.Frictioner); ok {
-		return frictioner.Friction()
-	}
-	return physics.DefaultFriction
-}
-
 // boxes returns the axis aligned bounding box of a block.
 func boxes(b world.Block) []physics.AABB {
-	if aabber, ok := b.(physics.AABBer); ok {
-		return aabber.AABB()
+	if aabb, ok := b.(physics.AABBer); ok {
+		return aabb.AABB()
 	}
 	return []physics.AABB{physics.NewAABB(mgl32.Vec3{}, mgl32.Vec3{1, 1, 1})}
 }
@@ -147,16 +139,16 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 	maxX, maxY, maxZ := int(math.Ceil(float64(max[0]))), int(math.Ceil(float64(max[1]))), int(math.Ceil(float64(max[2])))
 
 	// A prediction of one AABB per block, plus an additional 2, in case
-	aabbs := make([]physics.AABB, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
+	blockAABBs := make([]physics.AABB, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
 	for y := minY; y <= maxY; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				boxes := boxes(e.World().Block(world.BlockPos{x, y, z}))
 				for _, box := range boxes {
-					aabbs = append(aabbs, box.Translate(mgl32.Vec3{float32(x), float32(y), float32(z)}))
+					blockAABBs = append(blockAABBs, box.Translate(mgl32.Vec3{float32(x), float32(y), float32(z)}))
 				}
 			}
 		}
 	}
-	return aabbs
+	return blockAABBs
 }

@@ -3,6 +3,7 @@ package mcdb
 // data holds a collection of data that specify a range of settings of the world. These settings usually
 // alter the way that players interact with the world.
 // The data held here is usually saved in a level.dat file of the world.
+//noinspection SpellCheckingInspection
 type data struct {
 	BaseGameVersion                string `nbt:"baseGameVersion"`
 	ConfirmedPlatformLockedContent bool

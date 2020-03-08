@@ -133,7 +133,7 @@ func (s *Session) handleRespawn(pk *packet.Respawn) error {
 	return nil
 }
 
-// Respawn respawns the controllable of the session client-side
+// Respawn spawns the controllable of the session client-side in the world, provided it is has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
 		Position:        s.c.Position(),
@@ -464,12 +464,13 @@ func (s *Session) SendHealth(health, max float32) {
 
 // SendGameRules sends all the provided game rules to the player. Once sent, they will be immediately updated
 // on the client if they are valid.
-func (s *Session) sendGameRules(gamerules map[string]interface{}) {
-	s.writePacket(&packet.GameRulesChanged{GameRules: gamerules})
+func (s *Session) sendGameRules(gameRules map[string]interface{}) {
+	s.writePacket(&packet.GameRulesChanged{GameRules: gameRules})
 }
 
 // EnableCoordinates will either enable or disable coordinates for the player depending on the value given.
 func (s *Session) EnableCoordinates(enable bool) {
+	//noinspection SpellCheckingInspection
 	s.sendGameRules(map[string]interface{}{"showcoordinates": enable})
 }
 

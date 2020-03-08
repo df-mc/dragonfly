@@ -68,8 +68,9 @@ func (storage *BlockStorage) setPaletteOffset(x, y, z byte, paletteOffset uint16
 	setUint16(&storage.blocks[uint32Offset], bitOffset, storage.bitsPerBlock, paletteOffset)
 }
 
-// resize resizes a block storage to palette size newPaletteSize. A new block storage is constructed, and all
-// blocks available in the current storage are set in their appropriate locations in the new storage.
+// resize changes the size of a block storage to palette size newPaletteSize. A new block storage is
+// constructed, and all blocks available in the current storage are set in their appropriate locations in the
+// new storage.
 func (storage *BlockStorage) resize(newPaletteSize paletteSize) {
 	if newPaletteSize == paletteSize(storage.bitsPerBlock) {
 		return // Don't resize if the size is already equal.

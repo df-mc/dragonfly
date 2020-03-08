@@ -246,6 +246,7 @@ func (server *Server) startListening() error {
 		MaximumPlayers: server.c.Server.MaximumPlayers,
 	}
 
+	//noinspection SpellCheckingInspection
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
 		return fmt.Errorf("listening on address failed: %v", err)
 	}
@@ -271,6 +272,7 @@ func (server *Server) run() {
 
 // handleConn handles an incoming connection accepted from the Listener.
 func (server *Server) handleConn(conn *minecraft.Conn) {
+	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
@@ -325,7 +327,7 @@ func (server *Server) loadWorld() {
 
 // createSkin creates a new skin using the skin data found in the client data in the login, and returns it.
 func (server *Server) createSkin(data login.ClientData) skin.Skin {
-	// gophertunnel guarantees the following values are valid data and are of the correct size.
+	// gopher tunnel guarantees the following values are valid data and are of the correct size.
 	skinData, _ := base64.StdEncoding.DecodeString(data.SkinData)
 	modelData, _ := base64.StdEncoding.DecodeString(data.SkinGeometry)
 	skinResourcePatch, _ := base64.StdEncoding.DecodeString(data.SkinResourcePatch)

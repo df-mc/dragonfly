@@ -52,8 +52,8 @@ func (s *Session) SendPopup(message string) {
 	})
 }
 
-// SendJukeBoxPopup ...
-func (s *Session) SendJukeBoxPopup(message string) {
+// SendJukeboxPopup ...
+func (s *Session) SendJukeboxPopup(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeJukeboxPopup,
 		Message:  message,
@@ -143,7 +143,7 @@ func (s *Session) SendSubtitle(text string) {
 	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetSubtitle, Text: text})
 }
 
-// SendActionbarMessage ...
+// SendActionBarMessage ...
 func (s *Session) SendActionBarMessage(text string) {
 	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetActionBar, Text: text})
 }

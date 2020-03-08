@@ -17,7 +17,7 @@ var (
 )
 
 // GenerateChunk ...
-func (Flat) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
+func (Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			chunk.SetRuntimeID(x, 0, z, 0, bedrock)

@@ -44,7 +44,8 @@ func itemByID(id int32, meta int16) (Item, bool) {
 	return it, ok
 }
 
-// itemByName attempts to return an item by a name and a metadata value, rather than an iD.
+// itemByName attempts to return an item by a name and a metadata value, rather than an ID.
+//noinspection GoUnusedFunction
 func itemByName(name string, meta int16) (Item, bool) {
 	id, ok := itemsNames[name]
 	if !ok {
@@ -54,6 +55,7 @@ func itemByName(name string, meta int16) (Item, bool) {
 }
 
 // itemToName encodes an item to its string ID and metadata value.
+//noinspection GoUnusedFunction
 func itemToName(it Item) (name string, meta int16) {
 	id, meta := it.EncodeItem()
 	return names[id], meta

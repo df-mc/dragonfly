@@ -17,4 +17,4 @@ type Generator interface {
 type NopGenerator struct{}
 
 // GenerateChunk ...
-func (NopGenerator) GenerateChunk(pos ChunkPos, chunk *chunk.Chunk) {}
+func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
