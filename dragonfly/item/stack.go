@@ -13,6 +13,8 @@ type Stack struct {
 	count int
 }
 
+// NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
+// is negative or if the item type passed is nil.
 func NewStack(t world.Item, count int) Stack {
 	if count < 0 {
 		panic("cannot use negative count for item stack")

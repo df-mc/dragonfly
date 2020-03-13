@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-// inventory represents an inventory containing items. These inventories may be carried by entities or may be
+// Inventory represents an inventory containing items. These inventories may be carried by entities or may be
 // held by blocks such as chests.
 // The size of an inventory may be specified upon construction, but cannot be changed after. The zero value of
 // an inventory is invalid. Use New() to obtain a new inventory.

@@ -5,8 +5,11 @@ package world
 type Axis int
 
 const (
+	// Y represents the vertical Y axis.
 	Y Axis = iota
+	// Z represents the horizontal Z axis.
 	Z
+	// X represents the horizontal X axis.
 	X
 )
 

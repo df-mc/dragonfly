@@ -4,11 +4,17 @@ package world
 type Face int
 
 const (
+	// Down represents the bottom face of a block.
 	Down Face = iota
+	// Up represents the top face of a block.
 	Up
+	// North represents the north face of a block.
 	North
+	// South represents the south face of a block.
 	South
+	// West represents the west face of the block.
 	West
+	// East represents the east face of the block.
 	East
 )
 

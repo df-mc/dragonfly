@@ -9,7 +9,7 @@ import (
 	"net"
 )
 
-// Handle handles events that are called by a player. Implementations of Handler may be used to listen to
+// Handler handles events that are called by a player. Implementations of Handler may be used to listen to
 // specific events such as when a player chats or moves.
 type Handler interface {
 	// HandleMove handles the movement of a player. ctx.Cancel() may be called to cancel the movement event.

@@ -3,7 +3,7 @@ package item
 import (
 	"encoding/json"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	_ "unsafe"
+	_ "unsafe" // Imported for compiler directives.
 )
 
 // CreativeItems returns a list with all items that have been registered as a creative item. These items will

@@ -360,16 +360,16 @@ func (w *World) SetSpawn(pos BlockPos) {
 	w.provider().SetWorldSpawn(pos)
 }
 
-// LoadDefaultGameMode returns the default game mode of the world. When players join, they are given this game
+// DefaultGameMode returns the default game mode of the world. When players join, they are given this game
 // mode.
-// The default game mode may be changed using SaveDefaultGameMode().
+// The default game mode may be changed using SetDefaultGameMode().
 func (w *World) DefaultGameMode() gamemode.GameMode {
 	w.gameModeMu.RLock()
 	defer w.gameModeMu.RUnlock()
 	return w.defaultGameMode
 }
 
-// SaveDefaultGameMode changes the default game mode of the world. When players join, they are then given that
+// SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
 // game mode.
 func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
 	w.gameModeMu.Lock()
@@ -410,9 +410,9 @@ func (w *World) Generator(g Generator) {
 	w.gen = g
 }
 
-// Start changes the current handler of the world. As a result, events called by the world will call
+// Handle changes the current handler of the world. As a result, events called by the world will call
 // handlers of the Handler passed.
-// Start sets the world's handler to NopHandler if nil is passed.
+// Handle sets the world's handler to NopHandler if nil is passed.
 func (w *World) Handle(h Handler) {
 	w.hMutex.Lock()
 	defer w.hMutex.Unlock()

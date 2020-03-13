@@ -290,7 +290,7 @@ func (p *Player) ShowCoordinates() {
 	p.session().EnableCoordinates(true)
 }
 
-// ShowCoordinates disables the vanilla coordinates for the player.
+// HideCoordinates disables the vanilla coordinates for the player.
 func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
 }
@@ -383,7 +383,7 @@ func (p *Player) KnockBack(src mgl32.Vec3, force, height float32) {
 	p.session().SendVelocity(velocity)
 }
 
-// Immune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
+// AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
 func (p *Player) AttackImmune() bool {
 	return p.immunity.Load().(time.Time).After(time.Now())
 }

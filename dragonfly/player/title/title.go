@@ -30,7 +30,7 @@ func (title Title) Text() string {
 	return title.text
 }
 
-// WithSubTitle sets the subtitle of the title. The text passed will be formatted according to the formatting
+// WithSubtitle sets the subtitle of the title. The text passed will be formatted according to the formatting
 // rules of fmt.Sprintln, but without the newline.
 // The subtitle is shown under the title in a somewhat smaller font.
 // The new Title with the subtitle is returned.

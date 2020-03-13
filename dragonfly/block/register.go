@@ -5,10 +5,10 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	_ "unsafe"
+	_ "unsafe" // Imported for compiler directives.
 )
 
-// withInv registers all blocks implemented by Dragonfly.
+// init registers all blocks implemented by Dragonfly.
 func init() {
 	world.RegisterBlock(Air{})
 	world.RegisterBlock(Stone{})

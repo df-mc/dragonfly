@@ -19,7 +19,7 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
-	_ "unsafe"
+	_ "unsafe" // Imported for compiler directives.
 )
 
 // handleMovePlayer ...
@@ -133,7 +133,7 @@ func (s *Session) handleRespawn(pk *packet.Respawn) error {
 	return nil
 }
 
-// Respawn spawns the controllable of the session client-side in the world, provided it is has died.
+// SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
 		Position:        s.c.Position(),
@@ -557,7 +557,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 	})
 }
 
-// handleInventories starts handling the inventories of the Controllable of the session. It sends packets when
+// HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSlot *uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {

@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
+// Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
@@ -40,7 +40,7 @@ func (chunk *Chunk) SetBiomeID(x, z, biomeID uint8) {
 	chunk.biomes[columnOffset(x, z)] = biomeID
 }
 
-// BlockRuntimeID returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
+// RuntimeID returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 	subChunkY := y >> 4

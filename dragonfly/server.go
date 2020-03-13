@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	_ "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	_ "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item" // Imported for compiler directives.
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/session"
@@ -25,7 +25,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-	_ "unsafe"
+	_ "unsafe" // Imported for compiler directives.
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players

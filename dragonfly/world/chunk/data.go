@@ -9,7 +9,10 @@ import (
 	"sync"
 )
 
+// RuntimeIDToState must hold a function to convert a runtime ID to a name and its state properties.
 var RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]interface{}, found bool)
+
+// StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
 var StateToRuntimeID func(name string, properties map[string]interface{}) (runtimeID uint32, found bool)
 
 const (
