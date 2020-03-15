@@ -51,6 +51,8 @@ type World struct {
 
 	viewerMutex sync.RWMutex
 	viewers     map[ChunkPos][]Viewer
+
+	rdonly bool
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -398,6 +400,12 @@ func (w *World) Provider(p Provider) {
 	w.initChunkCache()
 }
 
+// ReadOnly makes the world read only. Chunks will no longer be saved to disk, just like entities and data
+// in the level.dat.
+func (w *World) ReadOnly() {
+	w.rdonly = true
+}
+
 // Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
 // the default, NopGenerator.
 func (w *World) Generator(g Generator) {
@@ -442,13 +450,15 @@ func (w *World) Close() error {
 		// We delete all chunks from the cache so that they are saved to the provider.
 		w.chunkCache().Delete(key)
 	}
-	w.log.Debug("Updating level.dat values...")
-	w.provider().SaveTime(atomic.LoadInt64(&w.time))
-	w.provider().SaveTimeCycle(atomic.LoadUint32(&w.timeStopped) == 0)
+	if !w.rdonly {
+		w.log.Debug("Updating level.dat values...")
+		w.provider().SaveTime(atomic.LoadInt64(&w.time))
+		w.provider().SaveTimeCycle(atomic.LoadUint32(&w.timeStopped) == 0)
 
-	w.gameModeMu.RLock()
-	w.provider().SaveDefaultGameMode(w.defaultGameMode)
-	w.gameModeMu.RUnlock()
+		w.gameModeMu.RLock()
+		w.provider().SaveDefaultGameMode(w.defaultGameMode)
+		w.gameModeMu.RUnlock()
+	}
 
 	w.log.Debug("Writing level.dat...")
 	if err := w.provider().Close(); err != nil {
@@ -813,14 +823,6 @@ func (w *World) saveChunk(hash string, i interface{}) {
 	}
 	chunkPos := chunkPosFromHash(hash)
 
-	c := i.(*chunk.Chunk)
-	c.Lock()
-	c.Compact()
-	c.Unlock()
-
-	if err := w.provider().SaveChunk(chunkPos, c); err != nil {
-		w.log.Errorf("error saving chunk %v to provider: %v", chunkPos, err)
-	}
 	w.entityMutex.Lock()
 	entities := w.entities[chunkPos]
 	delete(w.entities, chunkPos)
@@ -838,12 +840,22 @@ func (w *World) saveChunk(hash string, i interface{}) {
 	delete(w.entityBlocks, chunkPos)
 	w.bMutex.Unlock()
 
-	if err := w.provider().SaveEntities(chunkPos, entities); err != nil {
-		w.log.Errorf("error saving entities in chunk %v to provider: %v", chunkPos, err)
+	if !w.rdonly {
+		c := i.(*chunk.Chunk)
+		c.Lock()
+		c.Compact()
+		c.Unlock()
+		if err := w.provider().SaveChunk(chunkPos, c); err != nil {
+			w.log.Errorf("error saving chunk %v to provider: %v", chunkPos, err)
+		}
+		if err := w.provider().SaveEntities(chunkPos, entities); err != nil {
+			w.log.Errorf("error saving entities in chunk %v to provider: %v", chunkPos, err)
+		}
+		if err := w.provider().SaveBlockNBT(chunkPos, m); err != nil {
+			w.log.Errorf("error saving block NBT in chunk %v to provider: %v", chunkPos, err)
+		}
 	}
-	if err := w.provider().SaveBlockNBT(chunkPos, m); err != nil {
-		w.log.Errorf("error saving block NBT in chunk %v to provider: %v", chunkPos, err)
-	}
+
 	for _, entity := range entities {
 		_ = entity.Close()
 	}
