@@ -299,6 +299,7 @@ func (p *Player) HideCoordinates() {
 // obtain.
 func (p *Player) SetSpeed(speed float32) {
 	p.speed.Store(speed)
+	p.s.SendSpeed(speed)
 }
 
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
