@@ -40,9 +40,9 @@ func (l Leaves) EncodeItem() (id int32, meta int16) {
 func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {
 	case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
-		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.Minecraft(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
+		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
 	case material.AcaciaWood(), material.DarkOakWood():
-		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.Minecraft(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
+		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
 	}
 	panic("invalid wood type")
 }

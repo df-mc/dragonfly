@@ -21,6 +21,7 @@ func init() {
 	world.RegisterBlock(allLeaves()...)
 	world.RegisterBlock(Bedrock{}, Bedrock{InfiniteBurning: true})
 	world.RegisterBlock(Chest{Facing: world.Down}, Chest{Facing: world.Up}, Chest{Facing: world.East}, Chest{Facing: world.West}, Chest{Facing: world.North}, Chest{Facing: world.South})
+	world.RegisterBlock(allConcrete()...)
 }
 
 func init() {
@@ -55,6 +56,9 @@ func init() {
 	world.RegisterItem("minecraft:stripped_acacia_log", Log{Wood: material.AcaciaWood(), Stripped: true})
 	world.RegisterItem("minecraft:stripped_dark_oak_log", Log{Wood: material.DarkOakWood(), Stripped: true})
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: material.OakWood(), Stripped: true})
+	for _, c := range allConcrete() {
+		world.RegisterItem("minecraft:concrete", c.(Concrete))
+	}
 }
 
 //go:linkname world_itemByName git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemByName

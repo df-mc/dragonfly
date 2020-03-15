@@ -5,9 +5,9 @@ package material
 type Wood interface {
 	// Name returns a human-readable name of the wood type, such as 'Oak'.
 	Name() string
-	// EncodeBlock returns a string that represents the wood type in EncodeBlock (over network, for example), such
+	// String returns a string that represents the wood type in Minecraft (over network, for example), such
 	// as 'dark_oak'.
-	Minecraft() string
+	String() string
 	__()
 }
 
@@ -63,7 +63,7 @@ func (w wood) Name() string {
 	panic("unknown wood type")
 }
 
-func (w wood) Minecraft() string {
+func (w wood) String() string {
 	switch w {
 	case 0:
 		return "oak"

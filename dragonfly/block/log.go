@@ -70,9 +70,9 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 	if !l.Stripped {
 		switch l.Wood {
 		case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
-			return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.Minecraft()}
+			return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.String()}
 		case material.AcaciaWood(), material.DarkOakWood():
-			return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.Minecraft()}
+			return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
 		}
 	}
 	switch l.Wood {
