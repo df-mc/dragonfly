@@ -2,7 +2,7 @@ module git.jetbrains.space/dragonfly/dragonfly.git
 
 go 1.12
 
-replace github.com/syndtr/goleveldb => github.com/dragonfly-tech/goleveldb v1.1.1
+replace github.com/syndtr/goleveldb => github.com/dragonfly-tech/goleveldb v1.1.2
 
 require (
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
@@ -10,7 +10,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.6.0
-	github.com/sandertv/gophertunnel v1.3.17
+	github.com/sandertv/gophertunnel v1.3.18
 	github.com/sirupsen/logrus v1.4.2
 	github.com/syndtr/goleveldb v1.0.0
 	golang.org/x/image v0.0.0-20200119044424-58c23975cae1 // indirect
