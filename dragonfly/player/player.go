@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
@@ -22,7 +23,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
-	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
 	"strings"
 	"sync"

@@ -2,8 +2,8 @@ package session
 
 import (
 	"fmt"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )

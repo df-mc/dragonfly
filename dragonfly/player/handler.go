@@ -1,11 +1,11 @@
 package player
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/sandertv/gophertunnel/minecraft/cmd"
 	"net"
 )
 
