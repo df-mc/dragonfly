@@ -1,6 +1,9 @@
 package block
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
+import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+)
 
 // Air is the block present in otherwise empty space.
 type Air struct{}
@@ -18,4 +21,9 @@ func (Air) EncodeBlock() (name string, properties map[string]interface{}) {
 // AABB returns an empty Axis Aligned Bounding Box (as nothing can collide with air).
 func (Air) AABB() []physics.AABB {
 	return nil
+}
+
+// ReplaceableBy always returns true.
+func (Air) ReplaceableBy(b world.Block) bool {
+	return true
 }

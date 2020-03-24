@@ -103,7 +103,7 @@ func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, e worl
 
 // UseOnBlock ...
 func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User) {
-	if _, ok := w.Block(pos.Side(face)).(Air); ok {
+	if replaceable(w, pos, c) {
 		w.PlaceBlock(pos.Side(face), NewChest(user.Facing().Opposite()))
 	}
 }

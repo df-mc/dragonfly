@@ -637,11 +637,13 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		} else if b, ok := i.Item().(world.Block); ok {
 			// The item IS a block, meaning it is being placed.
 			placedPos := pos.Side(face)
-			existing := p.World().Block(placedPos)
-			if _, ok := existing.(block.Air); !ok {
-				return
+			if replaceable, ok := p.World().Block(placedPos).(block.Replaceable); ok {
+				if replaceable.ReplaceableBy(b) {
+					// The block at the side of the one clicked was replaceable with the block held in the
+					// hand of the player, so we can set it.
+					p.World().PlaceBlock(placedPos, b)
+				}
 			}
-			p.World().PlaceBlock(placedPos, b)
 		}
 	})
 	ctx.Stop(func() {
