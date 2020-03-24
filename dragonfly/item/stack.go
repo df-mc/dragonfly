@@ -71,6 +71,9 @@ func (s Stack) AttackDamage() float32 {
 // according to the rules of fmt.Sprintln.
 func (s Stack) WithCustomName(a ...interface{}) Stack {
 	s.customName = format(a)
+	if nameable, ok := s.Item().(nameable); ok {
+		s.item = nameable.WithName(a...)
+	}
 	return s
 }
 

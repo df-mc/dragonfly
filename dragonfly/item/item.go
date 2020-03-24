@@ -77,3 +77,10 @@ type Carrier interface {
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
 }
+
+// nameable represents a block that may be named. These are often containers such as chests, which have a
+// name displayed in their interface.
+type nameable interface {
+	// WithName returns the block itself, except with a custom name applied to it.
+	WithName(a ...interface{}) world.Item
+}

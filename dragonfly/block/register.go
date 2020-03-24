@@ -66,6 +66,16 @@ func readSlice(m map[string]interface{}, key string) []interface{} {
 	return b
 }
 
+// readMap reads an interface map from a map at the key passed.
+func readMap(m map[string]interface{}, key string) map[string]interface{} {
+	v, _ := m[key]
+	b, _ := v.(map[string]interface{})
+	if b == nil {
+		b = map[string]interface{}{}
+	}
+	return b
+}
+
 // readString reads a string from a map at the key passed.
 func readString(m map[string]interface{}, key string) string {
 	v, _ := m[key]

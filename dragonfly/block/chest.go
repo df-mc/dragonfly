@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
@@ -8,6 +9,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
+	"strings"
 	"sync"
 )
 
@@ -27,11 +29,10 @@ type Chest struct {
 }
 
 // NewChest creates a new initialised chest. The inventory is properly initialised.
-func NewChest(facing world.Face) Chest {
+func NewChest() Chest {
 	m := new(sync.RWMutex)
 	v := new([]ContainerViewer)
 	return Chest{
-		Facing: facing,
 		inventory: inventory.New(27, func(slot int, item item.Stack) {
 			m.RLock()
 			for _, viewer := range *v {
@@ -48,6 +49,12 @@ func NewChest(facing world.Face) Chest {
 // whether the chest is single or double.
 func (c Chest) Inventory() *inventory.Inventory {
 	return c.inventory
+}
+
+// WithName returns the chest after applying a specific name to the block.
+func (c Chest) WithName(a ...interface{}) world.Item {
+	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
+	return c
 }
 
 // open opens the chest, displaying the animation and playing a sound.
@@ -109,18 +116,19 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *
 	if replaceable(w, pos.Side(face), c) {
 		if c.inventory == nil {
 			//noinspection GoAssignmentToReceiver
-			c = NewChest(user.Facing().Opposite())
-		} else {
-			c.Facing = user.Facing().Opposite()
+			c = NewChest()
 		}
+		c.Facing = user.Facing().Opposite()
 		w.PlaceBlock(pos.Side(face), c)
 	}
 }
 
 // DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
+	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
-	c = NewChest(c.Facing)
+	c = NewChest()
+	c.Facing = facing
 	c.CustomName = readString(data, "CustomName")
 	nbtconv.InvFromNBT(c.inventory, readSlice(data, "Items"))
 	return c
@@ -129,8 +137,10 @@ func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT ...
 func (c Chest) EncodeNBT() map[string]interface{} {
 	if c.inventory == nil {
+		facing := c.Facing
 		//noinspection GoAssignmentToReceiver
-		c = NewChest(c.Facing)
+		c = NewChest()
+		c.Facing = facing
 	}
 	m := map[string]interface{}{
 		"Items": nbtconv.InvToNBT(c.inventory),
