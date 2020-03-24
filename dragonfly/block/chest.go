@@ -17,6 +17,9 @@ import (
 type Chest struct {
 	// Facing is the direction that the chest is facing.
 	Facing world.Face
+	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
+	// include colour codes.
+	CustomName string
 
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
@@ -103,8 +106,14 @@ func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, e worl
 
 // UseOnBlock ...
 func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User) {
-	if replaceable(w, pos, c) {
-		w.PlaceBlock(pos.Side(face), NewChest(user.Facing().Opposite()))
+	if replaceable(w, pos.Side(face), c) {
+		if c.inventory == nil {
+			//noinspection GoAssignmentToReceiver
+			c = NewChest(user.Facing().Opposite())
+		} else {
+			c.Facing = user.Facing().Opposite()
+		}
+		w.PlaceBlock(pos.Side(face), c)
 	}
 }
 
@@ -112,6 +121,7 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *
 func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	c = NewChest(c.Facing)
+	c.CustomName = readString(data, "CustomName")
 	nbtconv.InvFromNBT(c.inventory, readSlice(data, "Items"))
 	return c
 }
@@ -122,10 +132,14 @@ func (c Chest) EncodeNBT() map[string]interface{} {
 		//noinspection GoAssignmentToReceiver
 		c = NewChest(c.Facing)
 	}
-	return map[string]interface{}{
+	m := map[string]interface{}{
 		"Items": nbtconv.InvToNBT(c.inventory),
 		"id":    "Chest",
 	}
+	if c.CustomName != "" {
+		m["CustomName"] = c.CustomName
+	}
+	return m
 }
 
 // EncodeItem ...

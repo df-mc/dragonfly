@@ -22,7 +22,7 @@ type Log struct {
 
 // UseOnBlock ...
 func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ item.User) {
-	if replaceable(w, pos, l) {
+	if replaceable(w, pos.Side(face), l) {
 		l.Axis = face.Axis()
 		w.PlaceBlock(pos.Side(face), l)
 	}
