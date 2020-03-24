@@ -2,6 +2,7 @@ package block
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
@@ -108,10 +109,10 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *
 }
 
 // DecodeNBT ...
-func (c Chest) DecodeNBT(data map[string]interface{}) world.Block {
+func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	c = NewChest(c.Facing)
-	invFromNBT(c.inventory, readSlice(data, "Items"))
+	nbtconv.InvFromNBT(c.inventory, readSlice(data, "Items"))
 	return c
 }
 
@@ -122,7 +123,7 @@ func (c Chest) EncodeNBT() map[string]interface{} {
 		c = NewChest(c.Facing)
 	}
 	return map[string]interface{}{
-		"Items": invToNBT(c.inventory),
+		"Items": nbtconv.InvToNBT(c.inventory),
 		"id":    "Chest",
 	}
 }

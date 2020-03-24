@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"reflect"
+	"strings"
 )
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
@@ -11,6 +12,9 @@ import (
 type Stack struct {
 	item  world.Item
 	count int
+
+	customName string
+	lore       []string
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -63,6 +67,32 @@ func (s Stack) AttackDamage() float32 {
 	return 2.0
 }
 
+// WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
+// according to the rules of fmt.Sprintln.
+func (s Stack) WithCustomName(a ...interface{}) Stack {
+	s.customName = format(a)
+	return s
+}
+
+// CustomName returns the custom name set for the Stack. An empty string is returned if the Stack has no
+// custom name set.
+func (s Stack) CustomName() string {
+	return s.customName
+}
+
+// WithLore returns a copy of the Stack with the lore passed. Each string passed is put on a different line,
+// where the first string is at the top and the last at the bottom.
+// The lore may be cleared by passing no lines into the Stack.
+func (s Stack) WithLore(lines ...string) Stack {
+	s.lore = lines
+	return s
+}
+
+// Lore returns the lore set for the Stack. If no lore is present, the slice returned has a len of 0.
+func (s Stack) Lore() []string {
+	return s.lore
+}
+
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
 // many items in it as possible to fit in the stack, according to a max count of either 64 or otherwise as
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of
@@ -100,12 +130,30 @@ func (s Stack) Grow(n int) Stack {
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
 // equal item type and have equal enchantments, lore and custom names, or if one of the stacks is empty.
 func (s Stack) Comparable(s2 Stack) bool {
-	if s.count == 0 || s2.count == 0 {
+	if s.Empty() || s2.Empty() {
 		return true
 	}
-	// Make sure the counts are equal so that we can deep compare.
-	s.count = s2.count
-	return reflect.DeepEqual(s, s2)
+	id, meta := s.Item().EncodeItem()
+	id2, meta2 := s2.Item().EncodeItem()
+	if id != id2 || meta != meta2 {
+		return false
+	}
+	if s.customName != s2.customName || len(s.lore) != len(s2.lore) {
+		return false
+	}
+	for i := range s.lore {
+		if s.lore[i] != s2.lore[i] {
+			return false
+		}
+	}
+	if nbt, ok := s.Item().(world.NBTer); ok {
+		nbt2, ok := s2.Item().(world.NBTer)
+		if !ok {
+			return false
+		}
+		return reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
+	}
+	return true
 }
 
 // String implements the fmt.Stringer interface.
@@ -113,5 +161,11 @@ func (s Stack) String() string {
 	if s.item == nil {
 		return fmt.Sprintf("Stack<nil> x%v", s.count)
 	}
-	return fmt.Sprintf("Stack<%T%+v>x%v", s.item, s.item, s.count)
+	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v') x%v", s.item, s.item, s.customName, s.lore, s.count)
+}
+
+// format is a utility function to format a list of values to have spaces between them, but no newline at the
+// end, which is typically used for sending messages, popups and tips.
+func format(a []interface{}) string {
+	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 }

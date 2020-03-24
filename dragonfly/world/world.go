@@ -807,7 +807,7 @@ func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]inte
 			continue
 		}
 		if nbt, ok := b.(NBTer); ok {
-			b = nbt.DecodeNBT(data)
+			b = nbt.DecodeNBT(data).(Block)
 		}
 		if err := w.setBlock(c, pos, b); err != nil {
 			w.log.Errorf("error setting block with block entity back: %v", err)

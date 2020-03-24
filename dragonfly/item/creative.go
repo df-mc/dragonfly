@@ -1,8 +1,10 @@
 package item
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	_ "unsafe" // Imported for compiler directives.
 )
 
@@ -25,6 +27,7 @@ var creativeItemStacks []Stack
 // been registered as normal items and are present in vanilla.
 //noinspection GoUnusedFunction
 func registerVanillaCreativeItems() {
+	var temp map[string]interface{}
 	type s struct {
 		ID   int32
 		Meta int16
@@ -40,7 +43,15 @@ func registerVanillaCreativeItems() {
 			// The item wasn't registered, so don't register it as a creative item.
 			continue
 		}
-		// TODO: Handle item NBT
+		if nbter, ok := it.(world.NBTer); ok {
+			nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
+			if err := nbt.Unmarshal(nbtData, &temp); err != nil {
+				panic(err)
+			}
+			if len(temp) != 0 {
+				it = nbter.DecodeNBT(temp).(world.Item)
+			}
+		}
 		RegisterCreativeItem(NewStack(it, 1))
 	}
 }

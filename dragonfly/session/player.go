@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
@@ -157,7 +158,7 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 			s.sendInv(s.inv, protocol.WindowIDInventory)
 			s.sendInv(s.ui, protocol.WindowIDUI)
 			s.sendInv(s.offHand, protocol.WindowIDOffHand)
-			return nil
+			return err
 		}
 		atomic.StoreUint32(&s.inTransaction, 1)
 		s.executeTransaction(pk.Actions)
@@ -251,8 +252,9 @@ func (s *Session) verifyTransaction(a []protocol.InventoryAction) error {
 		}
 	}
 	for _, action := range actions {
-		if err := temp.RemoveItem(stackToItem(action.NewItem)); err != nil {
-			return fmt.Errorf("item %v removed was not present in old items: %v", stackToItem(action.NewItem), err)
+		newItem := stackToItem(action.NewItem)
+		if err := temp.RemoveItem(newItem); err != nil {
+			return fmt.Errorf("item %v removed was not present in old items: %v", newItem, err)
 		}
 	}
 	// Now that we made sure every new item was also present in the old items, we must also check if every old
@@ -594,18 +596,22 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 			NetworkID:     id,
 			MetadataValue: meta,
 		},
-		Count: int16(it.Count()),
+		Count:   int16(it.Count()),
+		NBTData: nbtconv.ItemToNBT(it, true),
 	}
 }
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
-	// TODO: Handle item NBT.
 	t, ok := world_itemByID(it.NetworkID, it.MetadataValue)
 	if !ok {
 		t = block.Air{}
 	}
-	return item.NewStack(t, int(it.Count))
+	if nbter, ok := t.(world.NBTer); ok && len(it.NBTData) != 0 {
+		t = nbter.DecodeNBT(it.NBTData).(world.Item)
+	}
+	s := item.NewStack(t, int(it.Count))
+	return nbtconv.ItemFromNBT(it.NBTData, &s)
 }
 
 // creativeItems returns all creative inventory items as protocol item stacks.

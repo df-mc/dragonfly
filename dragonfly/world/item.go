@@ -15,7 +15,9 @@ type Item interface {
 // NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
 // this is done to store additional data.
 type NBTer interface {
-	DecodeNBT(data map[string]interface{}) Block
+	// DecodeNBT returns the item or block, depending on which of those the NBTer was, with the NBT data
+	// decoded into it.
+	DecodeNBT(data map[string]interface{}) interface{}
 	EncodeNBT() map[string]interface{}
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"math"
 	"strings"
 	"sync"
 )
@@ -112,7 +113,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 			// We can only use empty slots now: All existing stacks have already been filled up.
 			continue
 		}
-		invIt = item.NewStack(it.Item(), 0)
+		invIt = it.Grow(-math.MaxInt32)
 		a, b := invIt.AddStack(it)
 
 		inv.setItem(slot, a)
