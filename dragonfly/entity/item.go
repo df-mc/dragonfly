@@ -96,9 +96,15 @@ func (it *Item) merge(other *Item) bool {
 	}
 
 	a, b := other.i.AddStack(it.i)
-	it.World().AddEntity(NewItem(a, other.Position()))
+
+	newA := NewItem(a, other.Position())
+	newA.SetVelocity(other.Velocity())
+	it.World().AddEntity(newA)
+
 	if !b.Empty() {
-		it.World().AddEntity(NewItem(b, it.Position()))
+		newB := NewItem(b, it.Position())
+		newB.SetVelocity(it.Velocity())
+		it.World().AddEntity(newB)
 	}
 	_ = it.Close()
 	_ = other.Close()
