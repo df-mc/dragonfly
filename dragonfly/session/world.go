@@ -153,7 +153,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        e.Position().Add(deltaPos),
+			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, 1.62}),
 			Pitch:           e.Pitch() + deltaPitch,
 			Yaw:             e.Yaw() + deltaYaw,
 			HeadYaw:         e.Yaw() + deltaYaw,
@@ -161,10 +161,21 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 	default:
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        e.Position().Add(deltaPos),
+			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, entityOffset(e)}),
 			Rotation:        mgl32.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw},
 		})
 	}
+}
+
+// entityOffset returns the offset that entities have client-side.
+func entityOffset(e world.Entity) float32 {
+	switch e.(type) {
+	case Controllable:
+		return 1.62
+	case *entity.Item:
+		return 0.125
+	}
+	return 0
 }
 
 // ViewTime ...
@@ -184,7 +195,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        position,
+			Position:        position.Add(mgl32.Vec3{0, 1.62}),
 			Pitch:           e.Pitch(),
 			Yaw:             e.Yaw(),
 			HeadYaw:         e.Yaw(),
@@ -193,7 +204,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 	default:
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        position,
+			Position:        position.Add(mgl32.Vec3{0, entityOffset(e)}),
 			Rotation:        mgl32.Vec3{e.Pitch(), e.Yaw()},
 			Flags:           packet.MoveFlagTeleport,
 		})

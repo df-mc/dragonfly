@@ -28,6 +28,8 @@ func (s *Session) handleMovePlayer(pk *packet.MovePlayer) error {
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
 		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be 1", pk.EntityRuntimeID)
 	}
+	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
+
 	s.c.Move(pk.Position.Sub(s.c.Position()))
 	s.c.Rotate(pk.Yaw-s.c.Yaw(), pk.Pitch-s.c.Pitch())
 
@@ -137,7 +139,7 @@ func (s *Session) handleRespawn(pk *packet.Respawn) error {
 // SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
-		Position:        s.c.Position(),
+		Position:        s.c.Position().Add(mgl32.Vec3{0, 1.62}),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
