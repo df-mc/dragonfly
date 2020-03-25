@@ -23,6 +23,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
+	"math/rand"
 	"net"
 	"strings"
 	"sync"
@@ -398,6 +399,15 @@ func (p *Player) survival() bool {
 	return false
 }
 
+// canEdit checks if the player has a game mode that allows it to edit the world.
+func (p *Player) canEdit() bool {
+	switch p.GameMode().(type) {
+	case gamemode.Survival, gamemode.Creative:
+		return true
+	}
+	return false
+}
+
 // Dead checks if the player is considered dead. True is returned if the health of the player is equal to or
 // lower than 0.
 func (p *Player) Dead() bool {
@@ -553,7 +563,7 @@ func (p *Player) GameMode() gamemode.GameMode {
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos world.BlockPos) {
-	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
+	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
 		return
 	}
 	if _, air := p.World().Block(pos).(block.Air); air {
@@ -565,7 +575,39 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 
 	ctx.Continue(func() {
 		p.swingArm()
+
+		b := p.World().Block(pos)
 		p.World().BreakBlock(pos)
+
+		var drops []item.Stack
+		if container, ok := b.(block.Container); ok {
+			// If the block is a container, it should drop its inventory contents regardless whether the
+			// player is in creative mode or not.
+			drops := container.Inventory().Contents()
+			if dropper, ok := b.(item.Dropper); ok && p.survival() {
+				drops = dropper.Drops()
+			}
+			for _, drop := range drops {
+				itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
+				itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
+				p.World().AddEntity(itemEntity)
+			}
+			container.Inventory().Clear()
+			return
+		} else if dropper, ok := b.(item.Dropper); ok && p.survival() {
+			drops = dropper.Drops()
+		} else if it, ok := b.(world.Item); ok && p.survival() {
+			drops = []item.Stack{item.NewStack(it, 1)}
+		} else {
+			// The block wasn't an Item and also didn't implement the item.Dropper interface, meaning it
+			// doesn't drop anything.
+			return
+		}
+		for _, drop := range drops {
+			itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
+			itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
+			p.World().AddEntity(itemEntity)
+		}
 	})
 	ctx.Stop(func() {
 		b := p.World().Block(pos)
@@ -882,7 +924,7 @@ func (p *Player) canReach(pos mgl32.Vec3) bool {
 	eyes := p.Position().Add(mgl32.Vec3{0, eyeHeight})
 
 	if _, ok := p.GameMode().(gamemode.Creative); ok {
-		return world.Distance(eyes, pos) <= creativeRange
+		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()
 	}
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }

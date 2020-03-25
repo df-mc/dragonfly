@@ -158,6 +158,20 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 	return fmt.Errorf("could not remove all items from the inventory")
 }
 
+// Contents returns a list of all contents of the inventory. This method excludes air items, so the method
+// only ever returns item stacks which actually represent an item.
+func (inv *Inventory) Contents() []item.Stack {
+	contents := make([]item.Stack, 0, inv.Size())
+	inv.mu.RLock()
+	for _, it := range inv.slots {
+		if !it.Empty() {
+			contents = append(contents, it)
+		}
+	}
+	inv.mu.RUnlock()
+	return contents
+}
+
 // Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
 // it is empty.
 func (inv *Inventory) Empty() bool {

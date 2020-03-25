@@ -123,6 +123,11 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *
 	}
 }
 
+// Drops returns the drops of the chest. This includes all items held in the inventory and the chest itself.
+func (c Chest) Drops() []item.Stack {
+	return append(c.inventory.Contents(), item.NewStack(c, 1))
+}
+
 // DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 	facing := c.Facing

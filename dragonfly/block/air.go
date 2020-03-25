@@ -2,11 +2,17 @@ package block
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
 // Air is the block present in otherwise empty space.
 type Air struct{}
+
+// Drops returns an empty slice.
+func (Air) Drops() []item.Stack {
+	return nil
+}
 
 // EncodeItem ...
 func (Air) EncodeItem() (id int32, meta int16) {

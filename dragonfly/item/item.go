@@ -78,6 +78,15 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
+// Dropper represents something that is able to drop items. Generally, these are entities or blocks, which
+// drop items when killed or broken.
+// If a block does not implement this interface, it will drop itself. If an entity does not implement this
+// interface, it will not drop anything.
+type Dropper interface {
+	// Drops returns a list of all item stacks dropped.
+	Drops() []Stack
+}
+
 // nameable represents a block that may be named. These are often containers such as chests, which have a
 // name displayed in their interface.
 type nameable interface {

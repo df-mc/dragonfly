@@ -2,6 +2,7 @@ package block
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
@@ -15,6 +16,11 @@ type Leaves struct {
 	Persistent bool
 
 	shouldUpdate bool
+}
+
+// Drops returns an empty slice.
+func (Leaves) Drops() []item.Stack {
+	return nil
 }
 
 // EncodeItem ...
