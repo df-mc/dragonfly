@@ -1,13 +1,15 @@
 package world
 
 import (
-	"crypto/sha256"
+	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"sort"
+	"sync"
 	"unsafe"
 )
 
@@ -126,30 +128,41 @@ func registerAllStates() {
 	}
 }
 
+var buffers = sync.Pool{New: func() interface{} {
+	return bytes.NewBuffer(make([]byte, 0, 1024))
+}}
+
 // hashProperties produces a hash for the block properties map passed.
 // Passing the same map into hashProperties will always result in the same hash.
 func hashProperties(properties map[string]interface{}) string {
-	l := len(properties)
-
-	keys := make([]string, 0, l)
+	keys := make([]string, 0, len(properties))
 	for k := range properties {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	values := make([]interface{}, 0, l)
+	b := buffers.Get().(*bytes.Buffer)
 	for _, k := range keys {
-		values = append(values, properties[k])
+		b.WriteString(k)
+		switch v := properties[k].(type) {
+		case bool:
+			if v {
+				_ = b.WriteByte(1)
+			}
+			_ = b.WriteByte(0)
+		case uint8:
+			_ = b.WriteByte(v)
+		case int32:
+			_ = binary.Write(b, binary.LittleEndian, v)
+		case string:
+			b.WriteString(v)
+		}
 	}
 
-	a, _ := nbt.Marshal(keys)
-	b, _ := nbt.Marshal(values)
-
-	h := sha256.New()
-	h.Write(a)
-	v := h.Sum(b)
-
-	return *(*string)(unsafe.Pointer(&v))
+	data := append([]byte(nil), b.Bytes()...)
+	b.Reset()
+	buffers.Put(b)
+	return *(*string)(unsafe.Pointer(&data))
 }
 
 // unimplementedBlock represents a block that has not yet been implemented. It is used for registering block
