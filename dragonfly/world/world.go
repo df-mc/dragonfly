@@ -131,6 +131,8 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 // An error is returned if the chunk that the block should be written to could not be loaded successfully.
 // SetBlock panics if the block passed has not yet been registered using RegisterBlock().
 // Nil may be passed as the block to set the block to air.
+// SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
+// to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos BlockPos, b Block) {
 	c, err := w.chunk(chunkPosFromBlockPos(pos), false)
 	if err != nil {
@@ -147,6 +149,16 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 // assumes that is already done or that the chunk is otherwise inaccessible.
 // Nil may be passed as the block to set the block to air.
 func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
+	err := w.setBlockSilent(c, pos, b)
+	for _, viewer := range w.Viewers(pos.Vec3()) {
+		viewer.ViewBlockUpdate(pos, b)
+	}
+	return err
+}
+
+// setBlockSilent sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockSilent
+// does not send block updates to viewer.
+func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
 	runtimeID, ok := BlockRuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
@@ -176,10 +188,6 @@ func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
 		delete(w.entityBlocks[chunkPosFromBlockPos(pos)], pos)
 		w.bMutex.Unlock()
 	}
-
-	for _, viewer := range w.Viewers(pos.Vec3()) {
-		viewer.ViewBlockUpdate(pos, b)
-	}
 	return nil
 }
 
@@ -196,6 +204,58 @@ func (w *World) BreakBlock(pos BlockPos) {
 func (w *World) PlaceBlock(pos BlockPos, b Block) {
 	w.SetBlock(pos, b)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
+}
+
+// BuildStructure builds a Structure passed at a specific position in the world. Unlike SetBlock, it takes a
+// Structure implementation, which provides blocks to be placed at a specific location.
+// BuildStructure is specifically tinkered to be able to process a large batch of chunks simultaneously and
+// will do so within much less time than separate SetBlock calls would.
+// The method operates on a per-chunk basis, setting all blocks within a single chunk part of the structure
+// before moving on to the next chunk.
+func (w *World) BuildStructure(pos BlockPos, s Structure) {
+	dim := s.Dimensions()
+	width, height, length := dim[0], dim[1], dim[2]
+	maxX, maxZ := pos[0]+width, pos[2]+length
+
+	for chunkX := pos[0] >> 4; chunkX < ((pos[0]+width)>>4)+1; chunkX++ {
+		for chunkZ := pos[2] >> 4; chunkZ < ((pos[2]+length)>>4)+1; chunkZ++ {
+			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
+			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
+			// block updates, but instead send a single chunk update once.
+
+			chunkPos := ChunkPos{int32(chunkX), int32(chunkZ)}
+			c, err := w.chunk(chunkPos, false)
+			if err != nil {
+				w.log.Errorf("error loading chunk for structure: %v", err)
+			}
+			baseX, baseZ := chunkX<<4, chunkZ<<4
+			for localX := 0; localX < 16; localX++ {
+				xOffset := baseX + localX
+				if xOffset < pos[0] || xOffset > maxX {
+					continue
+				}
+				for localZ := 0; localZ < 16; localZ++ {
+					zOffset := baseZ + localZ
+					if zOffset < pos[2] || zOffset > maxZ {
+						continue
+					}
+					for y := 0; y < height; y++ {
+						placePos := BlockPos{xOffset, y + pos[1], zOffset}
+
+						if err := w.setBlockSilent(c, placePos, s.At(xOffset-pos[0], y, zOffset-pos[2])); err != nil {
+							w.log.Errorf("error setting block of structure: %v", err)
+						}
+					}
+				}
+			}
+			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
+			// viewers once, and unlock it.
+			for _, viewer := range w.chunkViewers(chunkPos) {
+				viewer.ViewChunk(chunkPos, c)
+			}
+			c.Unlock()
+		}
+	}
 }
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
