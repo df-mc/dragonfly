@@ -231,12 +231,12 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			for localX := 0; localX < 16; localX++ {
 				xOffset := baseX + localX
-				if xOffset < pos[0] || xOffset > maxX {
+				if xOffset < pos[0] || xOffset >= maxX {
 					continue
 				}
 				for localZ := 0; localZ < 16; localZ++ {
 					zOffset := baseZ + localZ
-					if zOffset < pos[2] || zOffset > maxZ {
+					if zOffset < pos[2] || zOffset >= maxZ {
 						continue
 					}
 					for y := 0; y < height; y++ {
