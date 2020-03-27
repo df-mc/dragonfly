@@ -8,7 +8,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"sort"
+	"github.com/yourbasic/radix"
 	"sync"
 	"unsafe"
 )
@@ -31,7 +31,7 @@ func RegisterBlock(states ...Block) {
 	}
 	for _, state := range states {
 		name, props := state.EncodeBlock()
-		key := name + hashProperties(props)
+		key := keyStruct{name: name, pHash: hashProperties(props)}
 
 		if _, ok := blocksHash[key]; ok {
 			if _, unimplemented := state.(unimplementedBlock); !unimplemented {
@@ -66,7 +66,7 @@ func init() {
 		return name, properties, true
 	}
 	chunk.StateToRuntimeID = func(name string, properties map[string]interface{}) (runtimeID uint32, found bool) {
-		blockInstance, ok := blocksHash[name+hashProperties(properties)]
+		blockInstance, ok := blockByNameAndProperties(name, properties)
 		if !ok {
 			return 0, false
 		}
@@ -75,8 +75,13 @@ func init() {
 }
 
 var registeredStates []Block
-var runtimeIDs = map[string]uint32{}
-var blocksHash = map[string]Block{}
+var runtimeIDs = map[keyStruct]uint32{}
+var blocksHash = map[keyStruct]Block{}
+
+type keyStruct struct {
+	name  string
+	pHash string
+}
 
 // BlockRuntimeID attempts to return a runtime ID of a block state previously registered using
 // RegisterBlock(). If the runtime ID is found, the bool returned is true. It is otherwise false.
@@ -85,7 +90,7 @@ func BlockRuntimeID(state Block) (uint32, bool) {
 		return 0, true
 	}
 	name, props := state.EncodeBlock()
-	runtimeID, ok := runtimeIDs[name+hashProperties(props)]
+	runtimeID, ok := runtimeIDs[keyStruct{name: name, pHash: hashProperties(props)}]
 	return runtimeID, ok
 }
 
@@ -96,6 +101,12 @@ func blockByRuntimeID(runtimeID uint32) (Block, bool) {
 		return nil, false
 	}
 	return registeredStates[runtimeID], true
+}
+
+// blockByNameAndProperties attempts to return a block instance by a name and its properties passed.
+func blockByNameAndProperties(name string, properties map[string]interface{}) (b Block, found bool) {
+	blockInstance, ok := blocksHash[keyStruct{name: name, pHash: hashProperties(properties)}]
+	return blockInstance, ok
 }
 
 // registerAllStates registers all block states present in the game, skipping ones that have already been
@@ -119,7 +130,7 @@ func registerAllStates() {
 	_ = nbt.Unmarshal(b, &m)
 
 	for _, b := range m {
-		key := b.Block.Name + hashProperties(b.Block.Properties)
+		key := keyStruct{name: b.Block.Name, pHash: hashProperties(b.Block.Properties)}
 		if _, ok := blocksHash[key]; ok {
 			// Duplicate state, don't add it.
 			continue
@@ -135,11 +146,15 @@ var buffers = sync.Pool{New: func() interface{} {
 // hashProperties produces a hash for the block properties map passed.
 // Passing the same map into hashProperties will always result in the same hash.
 func hashProperties(properties map[string]interface{}) string {
+	// TODO: Find a way to speed this up even more. Even though a lot of effort has been put into reducing the
+	//  time this function takes, it is still too much. Any improvements to its performance have a large
+	//  impact on large world modifications.
+
 	keys := make([]string, 0, len(properties))
 	for k := range properties {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	radix.Sort(keys)
 
 	b := buffers.Get().(*bytes.Buffer)
 	for _, k := range keys {
