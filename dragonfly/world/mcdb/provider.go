@@ -9,6 +9,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -48,7 +49,9 @@ func New(dir string) (*Provider, error) {
 			return nil, fmt.Errorf("error decoding level.dat NBT: %v", err)
 		}
 	}
-	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), nil)
+	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
+		Compression: opt.FlateCompression,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening leveldb database: %v", err)
 	}
