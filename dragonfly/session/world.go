@@ -35,15 +35,13 @@ func (s *Session) handleRequestChunkRadius(pk *packet.RequestChunkRadius) error 
 func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	data := chunk.NetworkEncode(c)
 
-	count := 16
-	for y := 15; y >= 0; y-- {
-		if data.SubChunks[y] == nil {
-			count--
-			continue
+	count := byte(0)
+	for y := byte(0); y < 16; y++ {
+		if data.SubChunks[y] != nil {
+			count = y + 1
 		}
-		break
 	}
-	for y := 0; y < count; y++ {
+	for y := byte(0); y < count; y++ {
 		if data.SubChunks[y] == nil {
 			_ = s.chunkBuf.WriteByte(chunk.SubChunkVersion)
 			// We write zero here, meaning the sub chunk has no block storages: The sub chunk is completely

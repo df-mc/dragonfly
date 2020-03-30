@@ -42,6 +42,59 @@ var pool = sync.Pool{
 	},
 }
 
+// NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
+// returned is nil and the error non-nil.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
+	c, buf := New(), bytes.NewBuffer(data)
+	for y := 0; y < subChunkCount; y++ {
+		ver, err := buf.ReadByte()
+		if err != nil {
+			return nil, fmt.Errorf("error reading version: %v", err)
+		}
+		c.sub[y] = &SubChunk{}
+		switch ver {
+		default:
+			return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
+		case 1:
+			// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
+			storage, err := networkDecodeBlockStorage(buf)
+			if err != nil {
+				return nil, err
+			}
+			c.sub[y].storages = append(c.sub[y].storages, storage)
+		case 8:
+			// Version 8 allows up to 256 layers for one sub chunk.
+			storageCount, err := buf.ReadByte()
+			if err != nil {
+				return nil, fmt.Errorf("error reading storage count: %v", err)
+			}
+			c.sub[y].storages = make([]*BlockStorage, storageCount)
+
+			for i := byte(0); i < storageCount; i++ {
+				c.sub[y].storages[i], err = networkDecodeBlockStorage(buf)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	if _, err := buf.Read(c.biomes[:]); err != nil {
+		return nil, fmt.Errorf("error reading biomes: %v", err)
+	}
+	_, _ = buf.ReadByte()
+
+	dec := nbt.NewDecoder(buf)
+	for buf.Len() != 0 {
+		var m map[string]interface{}
+		if err := dec.Decode(&m); err != nil {
+			return nil, fmt.Errorf("error decoding block entity: %v", err)
+		}
+		c.SetBlockNBT([3]int{int(m["x"].(int32)), int(m["y"].(int32)), int(m["z"].(int32))}, m)
+	}
+	return c, nil
+}
+
 // NetworkEncode encodes a chunk passed to its network representation and returns it as a SerialisedData,
 // which may be sent over network.
 func NetworkEncode(c *Chunk) (d SerialisedData) {
@@ -192,6 +245,56 @@ func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
 	for _, b := range blocks {
 		_ = enc.Encode(b)
 	}
+}
+
+// networkDecodeBlockStorage decodes a block storage from the buffer passed, assuming it holds data for a
+// network encoded block storage, and returns it if successful.
+func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
+	blockSize, err := buf.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("error reading block size: %v", err)
+	}
+	blockSize >>= 1
+
+	// blocksPerUint32 is the amount of blocks that may be stored in a single uint32.
+	blocksPerUint32 := 32 / int(blockSize)
+
+	// uint32Count is the amount of uint32s required to store all blocks: 4096 blocks need to be stored in
+	// total.
+	uint32Count := 4096 / blocksPerUint32
+
+	if blockSize == 3 || blockSize == 5 || blockSize == 6 {
+		// We've got one of the padded sizes, so the block storage has another uint32 to be able to store
+		// every block.
+		uint32Count++
+	}
+
+	uint32s := make([]uint32, uint32Count)
+	data := buf.Next(uint32Count * 4)
+	if len(data) != uint32Count*4 {
+		return nil, fmt.Errorf("cannot read block storage: not enough block data present: expected %v bytes, got %v", uint32Count*4, len(data))
+	}
+	for i := 0; i < uint32Count; i++ {
+		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
+		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
+	}
+
+	var paletteCount int32
+	if err := protocol.Varint32(buf, &paletteCount); err != nil {
+		return nil, fmt.Errorf("error reading palette entry count: %v", err)
+	}
+	if paletteCount <= 0 {
+		return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+	}
+
+	blocks, temp := make([]uint32, paletteCount), int32(0)
+	for i := int32(0); i < paletteCount; i++ {
+		if err := protocol.Varint32(buf, &temp); err != nil {
+			return nil, fmt.Errorf("error decoding palette entry: %v", err)
+		}
+		blocks[i] = uint32(temp)
+	}
+	return newBlockStorage(uint32s, &palette{blockRuntimeIDs: blocks, size: paletteSize(blockSize)}), nil
 }
 
 // diskDecodeBlockStorage decodes a block storage from the buffer passed. If not successful, an error is

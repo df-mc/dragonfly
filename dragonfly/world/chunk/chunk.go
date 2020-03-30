@@ -23,13 +23,6 @@ func New() *Chunk {
 	return &Chunk{blockEntities: make(map[[3]int]map[string]interface{})}
 }
 
-// Sub returns the sub chunk at the given y, which is a number from 0-15. If the number is higher than that,
-// the y value will 'overflow' and return the sub chunk at y % 16.
-// If a sub chunk at this y is not present, nil is returned.
-func (chunk *Chunk) Sub(y uint8) *SubChunk {
-	return chunk.sub[y&15]
-}
-
 // BiomeID returns the biome ID at a specific column in the chunk.
 func (chunk *Chunk) BiomeID(x, z uint8) uint8 {
 	return chunk.biomes[columnOffset(x, z)]
