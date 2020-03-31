@@ -870,6 +870,11 @@ func (p *Player) AABB() []physics.AABB {
 	}
 }
 
+// EyeHeight returns the eye height of the player: 1.62.
+func (p *Player) EyeHeight() float32 {
+	return 1.62
+}
+
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {

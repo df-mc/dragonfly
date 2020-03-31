@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"math"
@@ -36,4 +37,40 @@ func DirectionVector(e world.Entity) mgl32.Vec3 {
 		float32(-math.Sin(pitch)),
 		float32(m * math.Cos(yaw)),
 	}.Normalize()
+}
+
+// TargetBlock finds the target block of the entity passed. The block position returned will be at most
+// maxDistance away from the entity. If no block can be found there, the block position returned will be
+// that of an air block.
+func TargetBlock(e world.Entity, maxDistance float64) world.BlockPos {
+	// TODO: Implement accurate ray tracing for this.
+	directionVector := DirectionVector(e)
+	current := e.Position()
+	if eyed, ok := e.(Eyed); ok {
+		current = current.Add(mgl32.Vec3{0, eyed.EyeHeight()})
+	}
+
+	step := 0.5
+	for i := 0.0; i < maxDistance; i += step {
+		current = current.Add(directionVector.Mul(float32(step)))
+		pos := vec3ToPos(current)
+
+		b := e.World().Block(pos)
+		if _, ok := b.(block.Air); !ok {
+			// We hit a block that isn't air.
+			return pos
+		}
+	}
+	return vec3ToPos(current)
+}
+
+// Eyed represents an entity that has eyes.
+type Eyed interface {
+	// EyeHeight returns the offset from their base position that the eyes of an entity are found at.
+	EyeHeight() float32
+}
+
+// vec3ToPos converts a Vec3 to a world.BlockPos.
+func vec3ToPos(vec mgl32.Vec3) world.BlockPos {
+	return world.BlockPos{int(math.Floor(float64(vec[0]))), int(math.Floor(float64(vec[1]))), int(math.Floor(float64(vec[2])))}
 }
