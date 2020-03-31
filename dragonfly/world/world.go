@@ -241,9 +241,11 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 					}
 					for y := 0; y < height; y++ {
 						placePos := BlockPos{xOffset, y + pos[1], zOffset}
-
-						if err := w.setBlockSilent(c, placePos, s.At(xOffset-pos[0], y, zOffset-pos[2])); err != nil {
-							w.log.Errorf("error setting block of structure: %v", err)
+						b := s.At(xOffset-pos[0], y, zOffset-pos[2])
+						if b != nil {
+							if err := w.setBlockSilent(c, placePos, b); err != nil {
+								w.log.Errorf("error setting block of structure: %v", err)
+							}
 						}
 					}
 				}
