@@ -161,6 +161,11 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 	key := index(position)
 	_ = p.db.Put(append(key, keyVersion), []byte{chunkVersion}, nil)
 	_ = p.db.Put(append(key, key2DData), data.Data2D, nil)
+
+	finalisation := make([]byte, 4)
+	binary.LittleEndian.PutUint32(finalisation, 2)
+	_ = p.db.Put(append(key, keyFinalisation), finalisation, nil)
+
 	if len(data.BlockNBT) != 0 {
 		// We only write block NBT if there actually is any.
 		_ = p.db.Put(append(key, keyBlockEntities), data.BlockNBT, nil)
