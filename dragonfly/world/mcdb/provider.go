@@ -65,6 +65,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.SpawnY = 128
 	p.d.GameType = 2
 	p.d.StorageVersion = 8
+	p.d.Generator = 1
 }
 
 // LoadTime returns the time as it was stored in the level.dat of the world loaded.
