@@ -1,6 +1,8 @@
 package nbtconv
 
 import (
+	"bytes"
+	"encoding/gob"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
@@ -14,6 +16,10 @@ func world_itemByName(name string, meta int16) (world.Item, bool)
 //go:linkname world_itemToName git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemToName
 //noinspection ALL
 func world_itemToName(it world.Item) (name string, meta int16)
+
+//go:linkname item_values git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.values
+//noinspection ALL
+func item_values(s item.Stack) map[string]interface{}
 
 // ItemFromNBT decodes the data of an item into an item stack.
 func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
@@ -47,6 +53,19 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 			}
 		}
 	}
+	if customData, ok := data["dragonflyData"]; ok {
+		d := make([]byte, len(customData.([]interface{})))
+		for i, v := range customData.([]interface{}) {
+			d[i] = v.(byte)
+		}
+		var m map[string]interface{}
+		if err := gob.NewDecoder(bytes.NewBuffer(d)).Decode(&m); err != nil {
+			panic("error decoding item user data: " + err.Error())
+		}
+		for k, v := range m {
+			*s = s.WithValue(k, v)
+		}
+	}
 	return *s
 }
 
@@ -70,6 +89,13 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		} else {
 			m["display"] = map[string]interface{}{"Lore": s.Lore()}
 		}
+	}
+	if len(item_values(s)) != 0 {
+		buf := new(bytes.Buffer)
+		if err := gob.NewEncoder(buf).Encode(item_values(s)); err != nil {
+			panic("error encoding item user data: " + err.Error())
+		}
+		m["dragonflyData"] = buf.Bytes()
 	}
 	return m
 }

@@ -15,6 +15,8 @@ type Stack struct {
 
 	customName string
 	lore       []string
+
+	data map[string]interface{}
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -96,6 +98,31 @@ func (s Stack) Lore() []string {
 	return s.lore
 }
 
+// WithValue returns the current Stack with a value set at a specific key. This method may be used to
+// associate custom data with the item stack, which will persist through server restarts.
+// The value stored may later be obtained by making a call to Stack.Value().
+//
+// WithValue may be called with a nil value, in which case the value at the key will be cleared.
+//
+// WithValue stores values by encoding them using the encoding/gob package. Users of WithValue must ensure
+// that their value is valid for encoding with this package.
+func (s Stack) WithValue(key string, val interface{}) Stack {
+	s.data = copyMap(s.data)
+	if val != nil {
+		s.data[key] = val
+	} else {
+		delete(s.data, key)
+	}
+	return s
+}
+
+// Value attempts to return a value set to the Stack using Stack.WithValue(). If a value is found by the key
+// passed, it is returned and ok is true. If not found, the value returned is nil and ok is false.
+func (s Stack) Value(key string) (val interface{}, ok bool) {
+	val, ok = s.data[key]
+	return val, ok
+}
+
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
 // many items in it as possible to fit in the stack, according to a max count of either 64 or otherwise as
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of
@@ -167,8 +194,23 @@ func (s Stack) String() string {
 	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v') x%v", s.item, s.item, s.customName, s.lore, s.count)
 }
 
+// values returns all values associated with the stack by users.
+//noinspection GoUnusedFunction
+func values(s Stack) map[string]interface{} {
+	return s.data
+}
+
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
 func format(a []interface{}) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
+}
+
+// copyMap makes a copy of the map passed. It does not recursively copy the map.
+func copyMap(m map[string]interface{}) map[string]interface{} {
+	cp := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
 }
