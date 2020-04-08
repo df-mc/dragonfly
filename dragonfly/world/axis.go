@@ -1,5 +1,9 @@
 package world
 
+import (
+	"fmt"
+)
+
 // Axis represents the axis that a block may be directed in. Most blocks do not have an axis, but blocks such
 // as logs or pillars do.
 type Axis int
@@ -21,4 +25,17 @@ func (a Axis) String() string {
 		return "y"
 	}
 	return "z"
+}
+
+// FromString returns an axis by a string.
+func (a Axis) FromString(s string) (interface{}, error) {
+	switch s {
+	case "x":
+		return X, nil
+	case "y":
+		return Y, nil
+	case "z":
+		return Z, nil
+	}
+	return nil, fmt.Errorf("unexpected axis '%v', expecting one of 'x', 'y' or 'z'", s)
 }

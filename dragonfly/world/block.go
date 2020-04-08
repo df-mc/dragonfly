@@ -9,7 +9,10 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/yourbasic/radix"
+	"reflect"
+	"strings"
 	"sync"
+	"unicode"
 	"unsafe"
 )
 
@@ -45,6 +48,7 @@ func RegisterBlock(states ...Block) {
 		registeredStates = append(registeredStates, state)
 
 		blocksHash[key] = state
+		registerBlockByTypeName(state)
 	}
 }
 
@@ -53,6 +57,26 @@ func RegisterBlock(states ...Block) {
 //noinspection GoUnusedFunction
 func allBlocks() []Block {
 	return registeredStates
+}
+
+// blocksByName is a list of blocks indexed by their type names.
+var blocksByName = map[string]Block{}
+
+// RegisterBlockByTypeName registers the block passed by its type name. It converts the type name of blocks
+// such as 'Leaves' to 'leaves' and the name of blocks suck as 'CoralFan' to 'coral_fan'.
+func registerBlockByTypeName(b Block) {
+	var name strings.Builder
+	for i, r := range reflect.TypeOf(b).Name() {
+		if unicode.IsUpper(r) {
+			if i != 0 {
+				name.WriteByte('_')
+			}
+			name.WriteRune(unicode.ToLower(r))
+			continue
+		}
+		name.WriteRune(r)
+	}
+	blocksByName[name.String()] = reflect.New(reflect.TypeOf(b)).Elem().Interface().(Block)
 }
 
 // init registers all default states.

@@ -142,10 +142,10 @@ func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT ...
 func (c Chest) EncodeNBT() map[string]interface{} {
 	if c.inventory == nil {
-		facing := c.Facing
+		facing, customName := c.Facing, c.CustomName
 		//noinspection GoAssignmentToReceiver
 		c = NewChest()
-		c.Facing = facing
+		c.Facing, c.CustomName = facing, customName
 	}
 	m := map[string]interface{}{
 		"Items": nbtconv.InvToNBT(c.inventory),

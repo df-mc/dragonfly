@@ -1,50 +1,48 @@
 package material
 
+import "fmt"
+
 // Wood represents a type of wood of a block. Some blocks, such as log blocks, bark blocks, wooden planks and
 // others carry one of these types.
-type Wood interface {
-	// Name returns a human-readable name of the wood type, such as 'Oak'.
-	Name() string
-	// String returns a string that represents the wood type in Minecraft (over network, for example), such
-	// as 'dark_oak'.
-	String() string
-	__()
+type Wood struct {
+	wood
 }
 
 // OakWood returns oak wood material.
 func OakWood() Wood {
-	return wood(0)
+	return Wood{wood(0)}
 }
 
 // SpruceWood returns spruce wood material.
 func SpruceWood() Wood {
-	return wood(1)
+	return Wood{wood(1)}
 }
 
 // BirchWood returns birch wood material.
 func BirchWood() Wood {
-	return wood(2)
+	return Wood{wood(2)}
 }
 
 // JungleWood returns jungle wood material.
 func JungleWood() Wood {
-	return wood(3)
+	return Wood{wood(3)}
 }
 
 // AcaciaWood returns acacia wood material.
 func AcaciaWood() Wood {
-	return wood(4)
+	return Wood{wood(4)}
 }
 
 // DarkOakWood returns dark oak wood material.
 func DarkOakWood() Wood {
-	return wood(5)
+	return Wood{wood(5)}
 }
 
 type wood uint8
 
 func (w wood) __() {}
 
+// Name ...
 func (w wood) Name() string {
 	switch w {
 	case 0:
@@ -63,6 +61,26 @@ func (w wood) Name() string {
 	panic("unknown wood type")
 }
 
+// FromString ...
+func (w wood) FromString(s string) (interface{}, error) {
+	switch s {
+	case "oak":
+		return Wood{wood(0)}, nil
+	case "spruce":
+		return Wood{wood(1)}, nil
+	case "birch":
+		return Wood{wood(2)}, nil
+	case "jungle":
+		return Wood{wood(3)}, nil
+	case "acacia":
+		return Wood{wood(4)}, nil
+	case "dark_oak":
+		return Wood{wood(5)}, nil
+	}
+	return nil, fmt.Errorf("unexpected wood type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia' or 'dark_oak'", s)
+}
+
+// String ...
 func (w wood) String() string {
 	switch w {
 	case 0:

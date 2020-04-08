@@ -1,7 +1,28 @@
 package world
 
+import "fmt"
+
 // Face represents the face of a block or entity.
 type Face int
+
+// FromString returns a Face by a string.
+func (f Face) FromString(s string) (interface{}, error) {
+	switch s {
+	case "down":
+		return Down, nil
+	case "up":
+		return Up, nil
+	case "north":
+		return North, nil
+	case "south":
+		return South, nil
+	case "west":
+		return West, nil
+	case "east":
+		return East, nil
+	}
+	return nil, fmt.Errorf("unexpected facing '%v', expecting one of 'down', 'up', 'north', 'south', 'west' or 'east'", s)
+}
 
 const (
 	// Down represents the bottom face of a block.
