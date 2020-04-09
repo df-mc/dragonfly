@@ -204,6 +204,12 @@ func hashProperties(properties map[string]interface{}) string {
 	return *(*string)(unsafe.Pointer(&data))
 }
 
+// air returns an air block.
+func air() Block {
+	b, _ := blockByRuntimeID(0)
+	return b
+}
+
 // unimplementedBlock represents a block that has not yet been implemented. It is used for registering block
 // states that haven't yet been added.
 type unimplementedBlock struct {

@@ -90,15 +90,20 @@ func (w *World) Name() string {
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
-// An error is returned if the chunk that the block is located in could not be loaded successfully.
 func (w *World) Block(pos BlockPos) Block {
+	if pos[1] < 0 || pos[1] > 255 {
+		// Fast way out.
+		return air()
+	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
 	if err != nil {
-		return nil
+		return air()
 	}
 	b, err := w.block(c, pos)
 	if err != nil {
 		w.log.Errorf("error getting block: %v", err)
+		c.RUnlock()
+		return air()
 	}
 	c.RUnlock()
 	return b
@@ -107,6 +112,10 @@ func (w *World) Block(pos BlockPos) Block {
 // block reads a block from the world at the position passed. The block is assumed to be in the chunk passed,
 // which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
+	if pos[1] < 0 || pos[1] > 255 {
+		// Fast way out.
+		return air(), nil
+	}
 	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
 
 	state, ok := blockByRuntimeID(id)
@@ -128,12 +137,15 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
-// An error is returned if the chunk that the block should be written to could not be loaded successfully.
 // SetBlock panics if the block passed has not yet been registered using RegisterBlock().
 // Nil may be passed as the block to set the block to air.
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos BlockPos, b Block) {
+	if pos[1] < 0 || pos[1] > 255 {
+		// Fast way out.
+		return
+	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos), false)
 	if err != nil {
 		return
@@ -248,6 +260,14 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 						continue
 					}
 					for y := 0; y < height; y++ {
+						if y+pos[1] > 255 {
+							// We've hit the height limit for blocks.
+							break
+						} else if y+pos[1] < 0 {
+							// We've got a block below the minimum, but other blocks might still reach above
+							// it, so don't break but continue.
+							continue
+						}
 						placePos := BlockPos{xOffset, y + pos[1], zOffset}
 						b := s.At(xOffset-pos[0], y, zOffset-pos[2], f)
 						if b != nil {
