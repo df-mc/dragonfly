@@ -102,7 +102,7 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 	case mgl32.Vec3:
 		return protocol.CommandArgTypePosition, enum
 	}
-	if param, ok := i.(cmd.Parameter); ok && param.Type() == "player" || param.Type() == "target" {
+	if param, ok := i.(cmd.Parameter); ok && (param.Type() == "player" || param.Type() == "target") {
 		return protocol.CommandArgTypeTarget, enum
 	}
 	if enum, ok := i.(cmd.Enum); ok {
