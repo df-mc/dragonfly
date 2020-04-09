@@ -228,6 +228,14 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			if err != nil {
 				w.log.Errorf("error loading chunk for structure: %v", err)
 			}
+			f := func(x, y, z int) Block {
+				if x>>4 == chunkX && z>>4 == chunkZ {
+					b, _ := w.block(c, BlockPos{x, y, z})
+					return b
+				}
+				return w.Block(BlockPos{x, y, z})
+			}
+
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			for localX := 0; localX < 16; localX++ {
 				xOffset := baseX + localX
@@ -241,7 +249,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 					}
 					for y := 0; y < height; y++ {
 						placePos := BlockPos{xOffset, y + pos[1], zOffset}
-						b := s.At(xOffset-pos[0], y, zOffset-pos[2])
+						b := s.At(xOffset-pos[0], y, zOffset-pos[2], f)
 						if b != nil {
 							if err := w.setBlockSilent(c, placePos, b); err != nil {
 								w.log.Errorf("error setting block of structure: %v", err)

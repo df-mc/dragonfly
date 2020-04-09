@@ -9,5 +9,8 @@ type Structure interface {
 	// world, this method is called for every location within the dimensions of the structure.
 	// At may return nil to not place any block at the position. Returning Air will set any block at that
 	// position to air, but returning nil will not do anything.
-	At(x, y, z int) Block
+	// In addition to the coordinates, At will have a function passed that may be used to get a block at a
+	// specific position. In scope of At(), structures should use this over World.Block(), due to the way
+	// chunks are locked.
+	At(x, y, z int, blockAt func(x, y, z int) Block) Block
 }
