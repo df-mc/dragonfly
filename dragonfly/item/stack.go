@@ -72,7 +72,9 @@ func (s Stack) AttackDamage() float32 {
 // WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
 // according to the rules of fmt.Sprintln.
 func (s Stack) WithCustomName(a ...interface{}) Stack {
-	s.customName = format(a)
+	// We always reset it, because Vanilla makes custom names in italic, which servers generally just don't
+	// want.
+	s.customName = "§r" + format(a)
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)
 	}
