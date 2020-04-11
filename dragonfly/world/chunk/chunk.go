@@ -36,15 +36,13 @@ func (chunk *Chunk) SetBiomeID(x, z, biomeID uint8) {
 // RuntimeID returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
-	subChunkY := y >> 4
-	for i := byte(0); i <= subChunkY; i++ {
+	sub := chunk.sub[y>>4]
+	if sub == nil {
 		// The sub chunk was not initialised, so we can conclude that the block at that location would be
 		// an air block. (always runtime ID 0)
-		if chunk.sub[i] == nil {
-			return 0
-		}
+		return 0
 	}
-	return chunk.sub[subChunkY].Layer(layer).RuntimeID(x, y, z)
+	return sub.Layer(layer).RuntimeID(x, y, z)
 }
 
 // SetRuntimeID sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
@@ -52,9 +50,8 @@ func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 	i := y >> 4
 	if chunk.sub[i] == nil {
+		// The first layer is initialised in the next call to Layer().
 		chunk.sub[i] = &SubChunk{}
-		// Initialise the first layer of the SubChunk.
-		chunk.sub[i].Layer(layer)
 	}
 	chunk.sub[i].Layer(layer).SetRuntimeID(x, y, z, runtimeID)
 }
