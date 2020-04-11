@@ -161,7 +161,9 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 // assumes that is already done or that the chunk is otherwise inaccessible.
 // Nil may be passed as the block to set the block to air.
 func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
+	w.bMutex.Lock()
 	err := w.setBlockSilent(c, pos, b)
+	w.bMutex.Unlock()
 	for _, viewer := range w.Viewers(pos.Vec3()) {
 		viewer.ViewBlockUpdate(pos, b)
 	}
@@ -170,6 +172,7 @@ func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
 
 // setBlockSilent sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockSilent
 // does not send block updates to viewer.
+// Callers of setBlockSilent must ensure that w.bMutex is locked while this method is called.
 func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
 	runtimeID, ok := BlockRuntimeID(b)
 	if !ok {
@@ -186,19 +189,14 @@ func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
 		c.SetBlockNBT(pos, data)
 
 		chunkPos := chunkPosFromBlockPos(pos)
-
-		w.bMutex.Lock()
 		if w.entityBlocks[chunkPos] == nil {
 			w.entityBlocks[chunkPos] = map[BlockPos]Block{}
 		}
 		w.entityBlocks[chunkPos][pos] = b
-		w.bMutex.Unlock()
 	} else {
 		// Clear any block NBT that might be present at the location.
 		c.SetBlockNBT(pos, nil)
-		w.bMutex.Lock()
 		delete(w.entityBlocks[chunkPosFromBlockPos(pos)], pos)
-		w.bMutex.Unlock()
 	}
 	return nil
 }
@@ -229,6 +227,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxZ := pos[0]+width, pos[2]+length
 
+	w.bMutex.Lock()
 	for chunkX := pos[0] >> 4; chunkX < ((pos[0]+width)>>4)+1; chunkX++ {
 		for chunkZ := pos[2] >> 4; chunkZ < ((pos[2]+length)>>4)+1; chunkZ++ {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
@@ -269,8 +268,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 							continue
 						}
 						placePos := BlockPos{xOffset, y + pos[1], zOffset}
-						b := s.At(xOffset-pos[0], y, zOffset-pos[2], f)
-						if b != nil {
+						if b := s.At(xOffset-pos[0], y, zOffset-pos[2], f); b != nil {
 							if err := w.setBlockSilent(c, placePos, b); err != nil {
 								w.log.Errorf("error setting block of structure: %v", err)
 							}
@@ -286,6 +284,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			c.Unlock()
 		}
 	}
+	w.bMutex.Unlock()
 }
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
