@@ -72,9 +72,12 @@ func (s Stack) AttackDamage() float32 {
 // WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
 // according to the rules of fmt.Sprintln.
 func (s Stack) WithCustomName(a ...interface{}) Stack {
-	// We always reset it, because Vanilla makes custom names in italic, which servers generally just don't
-	// want.
-	s.customName = "§r" + format(a)
+	s.customName = format(a)
+	if !strings.HasPrefix(s.customName, "§r") {
+		// We always reset it if it's not already done, because Vanilla makes custom names in italic, which
+		// servers generally just don't want.
+		s.customName = "§r" + s.customName
+	}
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)
 	}
@@ -165,6 +168,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 	if s.Empty() || s2.Empty() {
 		return true
 	}
+
 	id, meta := s.Item().EncodeItem()
 	id2, meta2 := s2.Item().EncodeItem()
 	if id != id2 || meta != meta2 {
@@ -177,6 +181,9 @@ func (s Stack) Comparable(s2 Stack) bool {
 		if s.lore[i] != s2.lore[i] {
 			return false
 		}
+	}
+	if !reflect.DeepEqual(s.data, s2.data) {
+		return false
 	}
 	if nbt, ok := s.Item().(world.NBTer); ok {
 		nbt2, ok := s2.Item().(world.NBTer)
