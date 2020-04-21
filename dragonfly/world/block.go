@@ -3,7 +3,6 @@ package world
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -164,7 +163,7 @@ func registerAllStates() {
 }
 
 var buffers = sync.Pool{New: func() interface{} {
-	return bytes.NewBuffer(make([]byte, 0, 1024))
+	return bytes.NewBuffer(make([]byte, 0, 128))
 }}
 
 // hashProperties produces a hash for the block properties map passed.
@@ -192,7 +191,11 @@ func hashProperties(properties map[string]interface{}) string {
 		case uint8:
 			_ = b.WriteByte(v)
 		case int32:
-			_ = binary.Write(b, binary.LittleEndian, v)
+			a := uint32(v)
+			_ = b.WriteByte(byte(a))
+			_ = b.WriteByte(byte(a >> 8))
+			_ = b.WriteByte(byte(a >> 16))
+			_ = b.WriteByte(byte(a >> 24))
 		case string:
 			b.WriteString(v)
 		}
