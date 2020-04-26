@@ -74,5 +74,6 @@ func allLeaves() (leaves []world.Block) {
 	f(true, true)
 	f(true, false)
 	f(false, true)
+	f(false, false)
 	return
 }
