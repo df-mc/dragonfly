@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
@@ -13,7 +12,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -84,31 +82,12 @@ func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
 		s.c.StopSneaking()
 	case packet.PlayerActionStartBreak:
 		s.c.StartBreaking(blockPos)
-		held, _ := s.c.HeldItems()
-		breakTime := block.BreakDuration(s.c.World().Block(blockPos), held)
-		for _, viewer := range s.c.World().Viewers(blockPos.Vec3()) {
-			viewer.ViewBlockAction(blockPos, action.StartCrack{BreakTime: breakTime})
-		}
 	case packet.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
-		for _, viewer := range s.c.World().Viewers(blockPos.Vec3()) {
-			viewer.ViewBlockAction(blockPos, action.StopCrack{})
-		}
-		s.breakSoundCounter = 0
 	case packet.PlayerActionStopBreak:
 		s.c.FinishBreaking()
-		for _, viewer := range s.c.World().Viewers(blockPos.Vec3()) {
-			viewer.ViewBlockAction(blockPos, action.StopCrack{})
-		}
-		s.breakSoundCounter = 0
 	case packet.PlayerActionContinueBreak:
 		s.c.ContinueBreaking(face)
-		if s.breakSoundCounter%5 == 0 {
-			// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
-			// either. Every 5 ticks seems accurate.
-			s.c.World().PlaySound(blockPos.Vec3(), sound.BlockBreaking{Block: s.c.World().Block(blockPos)})
-		}
-		s.breakSoundCounter++
 	}
 	return nil
 }

@@ -30,6 +30,9 @@ type Handler interface {
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos.
 	HandleRespawn(pos *mgl32.Vec3)
+	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
+	// be called to stop the player from breaking the block completely.
+	HandleStartBreak(ctx *event.Context, pos world.BlockPos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos world.BlockPos)
@@ -86,6 +89,9 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 
 // HandleChat ...
 func (NopHandler) HandleChat(*event.Context, *string) {}
+
+// HandleStartBreak ...
+func (NopHandler) HandleStartBreak(*event.Context, world.BlockPos) {}
 
 // HandleBlockBreak ...
 func (NopHandler) HandleBlockBreak(*event.Context, world.BlockPos) {}

@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
+	blockAction "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
@@ -23,6 +24,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"math/rand"
@@ -66,21 +68,24 @@ type Player struct {
 
 	breaking    *uint32
 	breakingPos atomic.Value
+
+	breakParticleCounter *uint32
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
 func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 	p := &Player{
-		name:     name,
-		h:        NopHandler{},
-		uuid:     uuid.New(),
-		skin:     skin,
-		inv:      inventory.New(36, nil),
-		offHand:  inventory.New(1, nil),
-		heldSlot: new(uint32),
-		breaking: new(uint32),
-		gameMode: gamemode.Adventure{},
+		name:                 name,
+		h:                    NopHandler{},
+		uuid:                 uuid.New(),
+		skin:                 skin,
+		inv:                  inventory.New(36, nil),
+		offHand:              inventory.New(1, nil),
+		heldSlot:             new(uint32),
+		breaking:             new(uint32),
+		breakParticleCounter: new(uint32),
+		gameMode:             gamemode.Adventure{},
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl32.Vec3{})
@@ -709,10 +714,20 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
-	atomic.StoreUint32(p.breaking, 1)
-	p.breakingPos.Store(pos)
+	ctx := event.C()
+	p.handler().HandleStartBreak(ctx, pos)
+	ctx.Continue(func() {
+		atomic.StoreUint32(p.breaking, 1)
+		p.breakingPos.Store(pos)
 
-	p.swingArm()
+		p.swingArm()
+
+		held, _ := p.HeldItems()
+		breakTime := block.BreakDuration(p.World().Block(pos), held)
+		for _, viewer := range p.World().Viewers(pos.Vec3()) {
+			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
+		}
+	})
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -734,6 +749,12 @@ func (p *Player) AbortBreaking() {
 		return
 	}
 	atomic.StoreUint32(p.breaking, 0)
+	atomic.StoreUint32(p.breakParticleCounter, 0)
+
+	pos := p.breakingPos.Load().(world.BlockPos)
+	for _, viewer := range p.World().Viewers(pos.Vec3()) {
+		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
+	}
 }
 
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
@@ -749,6 +770,12 @@ func (p *Player) ContinueBreaking(face world.Face) {
 
 	b := p.World().Block(pos)
 	p.World().AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+
+	if atomic.AddUint32(p.breakParticleCounter, 1)%5 == 0 {
+		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
+		// either. Every 5 ticks seems accurate.
+		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
+	}
 }
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
