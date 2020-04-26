@@ -46,9 +46,9 @@ func (s Stack) MaxCount() int {
 	return 64
 }
 
-// Empty checks if the stack is empty (has a count of 0). If this is the case
+// Empty checks if the stack is empty (has a count of 0).
 func (s Stack) Empty() bool {
-	return s.Count() == 0
+	return s.Count() == 0 || s.item == nil
 }
 
 // Item returns the item that the stack holds. If the stack is considered empty (Stack.Empty()), Item will

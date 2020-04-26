@@ -6,7 +6,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/patrickmn/go-cache"
@@ -201,12 +200,15 @@ func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
 	return nil
 }
 
+// breakParticle has its value set in the block_internal package.
+var breakParticle func(b Block) Particle
+
 // BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlock will also show particles.
 func (w *World) BreakBlock(pos BlockPos) {
 	old := w.Block(pos)
 	w.SetBlock(pos, nil)
-	w.AddParticle(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), particle.BlockBreak{Block: old})
+	w.AddParticle(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), breakParticle(old))
 }
 
 // PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also plays the
@@ -318,7 +320,8 @@ func (w *World) StartTime() {
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
-func (w *World) AddParticle(pos mgl32.Vec3, p particle.Particle) {
+func (w *World) AddParticle(pos mgl32.Vec3, p Particle) {
+	p.Spawn(w, pos)
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewParticle(pos, p)
 	}

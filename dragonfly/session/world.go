@@ -237,13 +237,19 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 }
 
 // ViewParticle ...
-func (s *Session) ViewParticle(pos mgl32.Vec3, p particle.Particle) {
+func (s *Session) ViewParticle(pos mgl32.Vec3, p world.Particle) {
 	switch pa := p.(type) {
 	case particle.BlockBreak:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleDestroy,
 			Position:  pos,
 			EventData: int32(s.blockRuntimeID(pa.Block)),
+		})
+	case particle.PunchBlock:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticlePunchBlock,
+			Position:  pos,
+			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
 	}
 }
@@ -262,6 +268,8 @@ func (s *Session) ViewSound(pos mgl32.Vec3, soundType sound.Sound) {
 		pk.SoundType = packet.SoundEventChestClosed
 	case sound.ChestOpen:
 		pk.SoundType = packet.SoundEventChestOpen
+	case sound.BlockBreaking:
+		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.blockRuntimeID(so.Block))
 	}
 	s.writePacket(pk)
 }
@@ -385,7 +393,7 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 // ViewBlockAction ...
 func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
-	switch a.(type) {
+	switch t := a.(type) {
 	case blockAction.Open:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
@@ -396,6 +404,18 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,
+		})
+	case blockAction.StartCrack:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventBlockStartBreak,
+			Position:  pos.Vec3(),
+			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
+		})
+	case blockAction.StopCrack:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventBlockStopBreak,
+			Position:  pos.Vec3(),
+			EventData: 0,
 		})
 	}
 }

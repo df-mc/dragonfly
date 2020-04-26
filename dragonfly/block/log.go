@@ -21,10 +21,21 @@ type Log struct {
 }
 
 // UseOnBlock ...
-func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ item.User) {
+func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, s *item.Stack, w *world.World, _ item.User) {
 	if replaceable(w, pos.Side(face), l) {
 		l.Axis = face.Axis()
 		w.PlaceBlock(pos.Side(face), l)
+		*s = (*s).Grow(-1)
+	}
+}
+
+// BreakInfo ...
+func (l Log) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    2,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(item.NewStack(l, 1)),
 	}
 }
 

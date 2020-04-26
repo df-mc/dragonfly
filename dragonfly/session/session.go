@@ -58,6 +58,8 @@ type Session struct {
 	containerOpened         uint32
 	openedWindowID          uint32
 	openedWindow, openedPos atomic.Value
+
+	breakSoundCounter uint64
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.

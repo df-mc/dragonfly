@@ -5,7 +5,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -41,7 +40,7 @@ type Viewer interface {
 	ViewEntityState(e Entity, s []state.State)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
-	ViewParticle(pos mgl32.Vec3, p particle.Particle)
+	ViewParticle(pos mgl32.Vec3, p Particle)
 	// ViewSound is called when a sound is played in the world.
 	ViewSound(pos mgl32.Vec3, s sound.Sound)
 	// ViewBlockUpdate views the updating of a block. It is called when a block is set at the position passed

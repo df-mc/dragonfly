@@ -9,6 +9,15 @@ type BlockPlace struct {
 	sound
 }
 
+// BlockBreaking is a sound sent continuously while a player is breaking a block.
+type BlockBreaking struct {
+	// Block is the block which is being broken, for which a sound should be played. The sound played depends
+	// on the block type.
+	Block block
+
+	sound
+}
+
 // ChestOpen is played when a chest is opened.
 type ChestOpen struct{ sound }
 

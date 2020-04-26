@@ -1,8 +1,13 @@
 package block
 
+import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+)
+
 type (
 	// Stone is a block found underground in the world or on mountains.
 	Stone struct{}
+
 	// Granite is a type of igneous rock.
 	Granite polishable
 	// Diorite is a type of igneous rock.
@@ -17,6 +22,46 @@ type (
 		Polished bool
 	}
 )
+
+var (
+	stoneBreakInfo = BreakInfo{
+		Hardness:    1.5,
+		Harvestable: pickaxeHarvestable,
+		Effective:   pickaxeEffective,
+		Drops:       simpleDrops(item.NewStack(Cobblestone{}, 1)),
+	}
+)
+
+// BreakInfo ...
+func (s Stone) BreakInfo() BreakInfo {
+	return stoneBreakInfo
+}
+
+// BreakInfo ...
+func (g Granite) BreakInfo() BreakInfo {
+	i := stoneBreakInfo
+	i.Drops = simpleDrops(item.NewStack(g, 1))
+	return i
+}
+
+// BreakInfo ...
+func (d Diorite) BreakInfo() BreakInfo {
+	i := stoneBreakInfo
+	i.Drops = simpleDrops(item.NewStack(d, 1))
+	return i
+}
+
+// BreakInfo ...
+func (a Andesite) BreakInfo() BreakInfo {
+	i := stoneBreakInfo
+	i.Drops = simpleDrops(item.NewStack(a, 1))
+	return i
+}
+
+// EncodeItem ...
+func (s Stone) EncodeItem() (id int32, meta int16) {
+	return 1, 0
+}
 
 // EncodeItem ...
 func (a Andesite) EncodeItem() (id int32, meta int16) {
@@ -42,9 +87,9 @@ func (g Granite) EncodeItem() (id int32, meta int16) {
 	return 1, 1
 }
 
-// EncodeItem ...
-func (s Stone) EncodeItem() (id int32, meta int16) {
-	return 1, 0
+// EncodeBlock ...
+func (Stone) EncodeBlock() (name string, properties map[string]interface{}) {
+	return "minecraft:stone", map[string]interface{}{"stone_type": "stone"}
 }
 
 // EncodeBlock ...
@@ -69,9 +114,4 @@ func (g Granite) EncodeBlock() (name string, properties map[string]interface{}) 
 		return "minecraft:stone", map[string]interface{}{"stone_type": "granite_smooth"}
 	}
 	return "minecraft:stone", map[string]interface{}{"stone_type": "granite"}
-}
-
-// EncodeBlock ...
-func (Stone) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:stone", map[string]interface{}{"stone_type": "stone"}
 }

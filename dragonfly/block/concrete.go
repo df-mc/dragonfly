@@ -2,6 +2,7 @@ package block
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/colour"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
@@ -10,6 +11,16 @@ import (
 type Concrete struct {
 	// Colour is the colour of the concrete block.
 	Colour colour.Colour
+}
+
+// BreakInfo ...
+func (c Concrete) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    1.8,
+		Harvestable: pickaxeHarvestable,
+		Effective:   pickaxeEffective,
+		Drops:       simpleDrops(item.NewStack(c, 1)),
+	}
 }
 
 // EncodeItem ...

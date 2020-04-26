@@ -7,9 +7,14 @@ import (
 // Grass blocks generate abundantly across the surface of the world.
 type Grass struct{}
 
-// Drops returns a dirt item.
-func (g Grass) Drops() []item.Stack {
-	return []item.Stack{item.NewStack(Dirt{}, 1)}
+// BreakInfo ...
+func (g Grass) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    0.6,
+		Harvestable: alwaysHarvestable,
+		Effective:   shovelEffective,
+		Drops:       simpleDrops(item.NewStack(Dirt{}, 1)),
+	}
 }
 
 // EncodeItem ...

@@ -12,6 +12,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/bossbar"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/chat"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
@@ -21,6 +22,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/session"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"math/rand"
@@ -61,6 +63,9 @@ type Player struct {
 	speed             atomic.Value
 	health, maxHealth atomic.Value
 	immunity          atomic.Value
+
+	breaking    *uint32
+	breakingPos atomic.Value
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -74,6 +79,7 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 		inv:      inventory.New(36, nil),
 		offHand:  inventory.New(1, nil),
 		heldSlot: new(uint32),
+		breaking: new(uint32),
 		gameMode: gamemode.Adventure{},
 	}
 	p.pos.Store(pos)
@@ -84,6 +90,7 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 	p.health.Store(float32(20))
 	p.maxHealth.Store(float32(20))
 	p.immunity.Store(time.Now())
+	p.breakingPos.Store(world.BlockPos{})
 	return p
 }
 
@@ -560,62 +567,6 @@ func (p *Player) GameMode() gamemode.GameMode {
 	return mode
 }
 
-// BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
-// reach the block passed, the method returns immediately.
-func (p *Player) BreakBlock(pos world.BlockPos) {
-	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
-		return
-	}
-	if _, air := p.World().Block(pos).(block.Air); air {
-		// Don't do anything if the position broken is already air.
-		return
-	}
-	ctx := event.C()
-	p.handler().HandleBlockBreak(ctx, pos)
-
-	ctx.Continue(func() {
-		p.swingArm()
-
-		b := p.World().Block(pos)
-		p.World().BreakBlock(pos)
-
-		var drops []item.Stack
-		if container, ok := b.(block.Container); ok {
-			// If the block is a container, it should drop its inventory contents regardless whether the
-			// player is in creative mode or not.
-			drops := container.Inventory().Contents()
-			if dropper, ok := b.(item.Dropper); ok && p.survival() {
-				drops = dropper.Drops()
-			}
-			for _, drop := range drops {
-				itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
-				itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
-				p.World().AddEntity(itemEntity)
-			}
-			container.Inventory().Clear()
-			return
-		} else if dropper, ok := b.(item.Dropper); ok && p.survival() {
-			drops = dropper.Drops()
-		} else if it, ok := b.(world.Item); ok && p.survival() {
-			drops = []item.Stack{item.NewStack(it, 1)}
-		} else {
-			// The block wasn't an Item and also didn't implement the item.Dropper interface, meaning it
-			// doesn't drop anything.
-			return
-		}
-		for _, drop := range drops {
-			itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
-			itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
-			p.World().AddEntity(itemEntity)
-		}
-	})
-	ctx.Stop(func() {
-		b := p.World().Block(pos)
-		// Set back the block to make sure the client sees it like that again.
-		p.World().SetBlock(pos, b)
-	})
-}
-
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
@@ -649,15 +600,13 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
 		return
 	}
-	i, _ := p.HeldItems()
+	i, left := p.HeldItems()
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
 
 	ctx.Continue(func() {
-		clickedBlock := p.World().Block(pos)
-
-		if activatable, ok := clickedBlock.(block.Activatable); ok {
+		if activatable, ok := p.World().Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which the block will activated as usual.
 			if atomic.LoadUint32(&p.sneaking) == 0 || i.Empty() {
@@ -675,15 +624,19 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p)
-		} else if b, ok := i.Item().(world.Block); ok {
+			usableOnBlock.UseOnBlock(pos, face, clickPos, &i, p.World(), p)
+			p.SetHeldItems(i, left)
+		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
 			// The item IS a block, meaning it is being placed.
-			placedPos := pos.Side(face)
-			if replaceable, ok := p.World().Block(placedPos).(block.Replaceable); ok {
-				if replaceable.ReplaceableBy(b) {
-					// The block at the side of the one clicked was replaceable with the block held in the
-					// hand of the player, so we can set it.
-					p.World().PlaceBlock(placedPos, b)
+			replacedPos := pos
+			if replaceable, ok := p.World().Block(pos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(b) {
+				// The block clicked was either not replaceable, or not replaceable using the block passed.
+				replacedPos = pos.Side(face)
+			}
+			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) {
+				p.World().PlaceBlock(replacedPos, b)
+				if p.survival() {
+					p.SetHeldItems(i.Grow(-1), left)
 				}
 			}
 		}
@@ -743,6 +696,119 @@ func (p *Player) AttackEntity(e world.Entity) {
 		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.5, 0.3)
 	})
+}
+
+// StartBreaking makes the player start breaking the block at the position passed using the item currently
+// held in its main hand.
+// If no block is present at the position, or if the block is out of range, StartBreaking will return
+// immediately and the block will not be broken. StartBreaking will stop the breaking of any block that the
+// player might be breaking before this method is called.
+func (p *Player) StartBreaking(pos world.BlockPos) {
+	p.AbortBreaking()
+	if _, air := p.World().Block(pos).(block.Air); air || !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
+		// The block was either out of range or air, so it can't be broken by the player.
+		return
+	}
+	atomic.StoreUint32(p.breaking, 1)
+	p.breakingPos.Store(pos)
+
+	p.swingArm()
+}
+
+// FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
+// if the player isn't breaking anything.
+// FinishBreaking will stop the animation and break the block.
+func (p *Player) FinishBreaking() {
+	if atomic.LoadUint32(p.breaking) == 0 {
+		return
+	}
+	p.AbortBreaking()
+	p.BreakBlock(p.breakingPos.Load().(world.BlockPos))
+}
+
+// AbortBreaking makes the player stop breaking the block it is currently breaking, or returns immediately
+// if the player isn't breaking anything.
+// Unlike FinishBreaking, AbortBreaking does not stop the animation.
+func (p *Player) AbortBreaking() {
+	if atomic.LoadUint32(p.breaking) == 0 {
+		return
+	}
+	atomic.StoreUint32(p.breaking, 0)
+}
+
+// ContinueBreaking makes the player continue breaking the block it started breaking after a call to
+// Player.StartBreaking().
+// The face passed is used to display particles on the side of the block broken.
+func (p *Player) ContinueBreaking(face world.Face) {
+	if atomic.LoadUint32(p.breaking) == 0 {
+		return
+	}
+	pos := p.breakingPos.Load().(world.BlockPos)
+
+	p.swingArm()
+
+	b := p.World().Block(pos)
+	p.World().AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+}
+
+// BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
+// reach the block passed, the method returns immediately.
+func (p *Player) BreakBlock(pos world.BlockPos) {
+	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
+		return
+	}
+	if _, air := p.World().Block(pos).(block.Air); air {
+		// Don't do anything if the position broken is already air.
+		return
+	}
+	ctx := event.C()
+	p.handler().HandleBlockBreak(ctx, pos)
+
+	ctx.Continue(func() {
+		p.swingArm()
+
+		b := p.World().Block(pos)
+		p.World().BreakBlock(pos)
+		held, _ := p.HeldItems()
+
+		for _, drop := range p.drops(held, b) {
+			itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
+			itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
+			p.World().AddEntity(itemEntity)
+		}
+	})
+	ctx.Stop(func() {
+		b := p.World().Block(pos)
+		// Set back the block to make sure the client sees it like that again.
+		p.World().SetBlock(pos, b)
+	})
+}
+
+// drops returns the drops that the player can get from the block passed using the item held.
+func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
+	t, ok := held.Item().(tool.Tool)
+	if !ok {
+		t = tool.None{}
+	}
+	var drops []item.Stack
+	if container, ok := b.(block.Container); ok {
+		// If the block is a container, it should drop its inventory contents regardless whether the
+		// player is in creative mode or not.
+		drops = container.Inventory().Contents()
+		if breakable, ok := b.(block.Breakable); ok && p.survival() {
+			if breakable.BreakInfo().Harvestable(t) {
+				drops = breakable.BreakInfo().Drops(t)
+			}
+		}
+		container.Inventory().Clear()
+	} else if breakable, ok := b.(block.Breakable); ok && p.survival() {
+		if breakable.BreakInfo().Harvestable(t) {
+			drops = breakable.BreakInfo().Drops(t)
+		}
+	} else if it, ok := b.(world.Item); ok && p.survival() {
+		drops = []item.Stack{item.NewStack(it, 1)}
+	}
+	return drops
 }
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
@@ -846,6 +912,11 @@ func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 		return
 	}
 	p.session().OpenBlockContainer(pos)
+}
+
+// Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
+func (p *Player) Tick() {
+
 }
 
 // Velocity returns the current velocity of the player.

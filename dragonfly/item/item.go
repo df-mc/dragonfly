@@ -20,7 +20,8 @@ type UsableOnBlock interface {
 	// used in. The user passed is the entity that used the item. Usually this entity is a player.
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
-	UseOnBlock(pos world.BlockPos, clickedFace world.Face, clickPos mgl32.Vec3, w *world.World, user User)
+	// The stack used is also passed as a pointer, which may be modified to edit the original item.
+	UseOnBlock(pos world.BlockPos, clickedFace world.Face, clickPos mgl32.Vec3, s *Stack, w *world.World, user User)
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -76,15 +77,6 @@ type Carrier interface {
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
-}
-
-// Dropper represents something that is able to drop items. Generally, these are entities or blocks, which
-// drop items when killed or broken.
-// If a block does not implement this interface, it will drop itself. If an entity does not implement this
-// interface, it will not drop anything.
-type Dropper interface {
-	// Drops returns a list of all item stacks dropped.
-	Drops() []Stack
 }
 
 // nameable represents a block that may be named. These are often containers such as chests, which have a

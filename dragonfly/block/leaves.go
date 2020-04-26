@@ -2,7 +2,7 @@ package block
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
@@ -18,9 +18,17 @@ type Leaves struct {
 	shouldUpdate bool
 }
 
-// Drops returns an empty slice.
-func (Leaves) Drops() []item.Stack {
-	return nil
+// BreakInfo ...
+func (l Leaves) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    0.2,
+		Harvestable: alwaysHarvestable,
+		Effective: func(t tool.Tool) bool {
+			return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
+		},
+		// TODO: Add saplings and apples and drop them here.
+		Drops: simpleDrops(),
+	}
 }
 
 // EncodeItem ...

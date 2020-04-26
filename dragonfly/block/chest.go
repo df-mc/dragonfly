@@ -112,7 +112,7 @@ func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, e worl
 }
 
 // UseOnBlock ...
-func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User) {
+func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, s *item.Stack, w *world.World, user item.User) {
 	if replaceable(w, pos.Side(face), c) {
 		if c.inventory == nil {
 			//noinspection GoAssignmentToReceiver
@@ -120,6 +120,17 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *
 		}
 		c.Facing = user.Facing().Opposite()
 		w.PlaceBlock(pos.Side(face), c)
+		*s = (*s).Grow(-1)
+	}
+}
+
+// BreakInfo ...
+func (c Chest) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    2.5,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(append(c.inventory.Contents(), item.NewStack(c, 1))...),
 	}
 }
 
