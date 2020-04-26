@@ -4,6 +4,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"net"
@@ -59,6 +60,9 @@ type Handler interface {
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity)
+	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
+	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
+	HandleItemPickup(ctx *event.Context, i item.Stack)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -95,6 +99,9 @@ func (NopHandler) HandleStartBreak(*event.Context, world.BlockPos) {}
 
 // HandleBlockBreak ...
 func (NopHandler) HandleBlockBreak(*event.Context, world.BlockPos) {}
+
+// HandleItemPickup ...
+func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
 
 // HandleItemUse ...
 func (NopHandler) HandleItemUse(*event.Context) {}

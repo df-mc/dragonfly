@@ -927,7 +927,11 @@ func (p *Player) Pitch() float32 {
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
 func (p *Player) Collect(s item.Stack) (n int) {
-	n, _ = p.Inventory().AddItem(s)
+	ctx := event.C()
+	p.handler().HandleItemPickup(ctx, s)
+	ctx.Continue(func() {
+		n, _ = p.Inventory().AddItem(s)
+	})
 	return
 }
 
