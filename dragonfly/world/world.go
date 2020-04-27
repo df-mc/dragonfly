@@ -410,7 +410,9 @@ func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
 	// Make an estimate of 16 entities on average.
 	m := make([]Entity, 0, 16)
 
-	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
+	// We expand it by 3 blocks in all horizontal directions to account for entities that may be in
+	// neighbouring chunks while having a bounding box that extends into the current one.
+	minPos, maxPos := chunkPosFromVec3(aabb.Min().Sub(mgl32.Vec3{3, 0, 3})), chunkPosFromVec3(aabb.Max().Add(mgl32.Vec3{3, 0, 3}))
 
 	w.entityMutex.RLock()
 	for x := minPos[0]; x <= maxPos[0]; x++ {
