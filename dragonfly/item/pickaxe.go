@@ -2,6 +2,7 @@ package item
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
 // Pickaxe is a tool generally used for mining stone-like blocks and ores at a higher speed and to obtain
@@ -24,7 +25,7 @@ func (p Pickaxe) HarvestLevel() int {
 
 // BaseMiningEfficiency is the base efficiency of the pickaxe, when it comes to mining blocks. This decides
 // the speed with which blocks can be mined.
-func (p Pickaxe) BaseMiningEfficiency() float64 {
+func (p Pickaxe) BaseMiningEfficiency(world.Block) float64 {
 	return p.Tier.BaseMiningEfficiency
 }
 
@@ -35,17 +36,17 @@ func (p Pickaxe) MaxCount() int {
 
 // AttackDamage returns the attack damage of the pickaxe.
 func (p Pickaxe) AttackDamage() float32 {
-	switch p.Tier {
-	case tool.TierWood, tool.TierGold:
-		return 2
-	case tool.TierStone:
-		return 3
-	case tool.TierIron:
-		return 4
-	case tool.TierDiamond:
-		return 5
+	return p.Tier.BaseAttackDamage + 1
+}
+
+// DurabilityInfo ...
+func (p Pickaxe) DurabilityInfo() DurabilityInfo {
+	return DurabilityInfo{
+		MaxDurability:    p.Tier.Durability,
+		BrokenItem:       simpleItem(Stack{}),
+		AttackDurability: 2,
+		BreakDurability:  1,
 	}
-	return 0
 }
 
 // EncodeItem ...
@@ -62,5 +63,5 @@ func (p Pickaxe) EncodeItem() (id int32, meta int16) {
 	case tool.TierDiamond:
 		return 278, 0
 	}
-	return 0, 0
+	panic("invalid pickaxe tier")
 }

@@ -23,7 +23,8 @@ func item_values(s item.Stack) map[string]interface{}
 
 // ItemFromNBT decodes the data of an item into an item stack.
 func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
-	if s == nil {
+	disk := s == nil
+	if disk {
 		it, ok := world_itemByName(readString(data, "Name"), readInt16(data, "Damage"))
 		if !ok {
 			return item.Stack{}
@@ -33,6 +34,13 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 		}
 		a := item.NewStack(it, int(readByte(data, "Count")))
 		s = &a
+		if _, ok := s.Item().(item.Durable); ok {
+			*s = s.Damage(int(readInt16(data, "Damage")))
+		}
+	} else if !disk {
+		if _, ok := s.Item().(item.Durable); ok {
+			*s = s.Damage(int(readInt32(data, "Damage")))
+		}
 	}
 	if displayInterface, ok := data["display"]; ok {
 		display, ok := displayInterface.(map[string]interface{})
@@ -78,8 +86,14 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 	if !network {
 		m["Name"], m["Damage"] = world_itemToName(s.Item())
 		m["Count"] = byte(s.Count())
+		if _, ok := s.Item().(item.Durable); ok {
+			m["Damage"] = int16(s.MaxDurability() - s.Durability())
+		}
+	} else if network {
+		if _, ok := s.Item().(item.Durable); ok {
+			m["Damage"] = int32(s.MaxDurability() - s.Durability())
+		}
 	}
-
 	if s.CustomName() != "" {
 		m["display"] = map[string]interface{}{"Name": s.CustomName()}
 	}
@@ -137,6 +151,13 @@ func readByte(m map[string]interface{}, key string) byte {
 func readInt16(m map[string]interface{}, key string) int16 {
 	v, _ := m[key]
 	b, _ := v.(int16)
+	return b
+}
+
+// readInt32 reads an int32 from a map at the key passed.
+func readInt32(m map[string]interface{}, key string) int32 {
+	v, _ := m[key]
+	b, _ := v.(int32)
 	return b
 }
 

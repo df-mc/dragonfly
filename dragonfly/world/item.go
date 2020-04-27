@@ -43,6 +43,10 @@ var names = map[int32]string{}
 // returned and the bool true.
 func itemByID(id int32, meta int16) (Item, bool) {
 	it, ok := items[(id<<4)|int32(meta)]
+	if !ok {
+		// Also try obtaining the item with a metadata value of 0, for cases with durability.
+		it, ok = items[(id<<4)|int32(0)]
+	}
 	return it, ok
 }
 

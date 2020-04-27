@@ -685,7 +685,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	if !p.canReach(e.Position()) {
 		return
 	}
-	i, _ := p.HeldItems()
+	i, left := p.HeldItems()
 
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e)
@@ -700,6 +700,10 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.5, 0.3)
+
+		if durable, ok := i.Item().(item.Durable); ok {
+			p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+		}
 	})
 }
 
@@ -796,12 +800,18 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 
 		b := p.World().Block(pos)
 		p.World().BreakBlock(pos)
-		held, _ := p.HeldItems()
+		held, left := p.HeldItems()
 
 		for _, drop := range p.drops(held, b) {
 			itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
 			itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
 			p.World().AddEntity(itemEntity)
+		}
+
+		if !block.BreaksInstantly(b, held) {
+			if durable, ok := held.Item().(item.Durable); ok {
+				p.SetHeldItems(p.damageItem(held, durable.DurabilityInfo().BreakDurability), left)
+			}
 		}
 	})
 	ctx.Stop(func() {
@@ -1018,6 +1028,21 @@ func (p *Player) Close() error {
 	p.session().Disconnect("Connection closed.")
 	p.close()
 	return nil
+}
+
+// damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
+// broke, a breaking sound is played.
+func (p *Player) damageItem(s item.Stack, d int) item.Stack {
+	ctx := event.C()
+	p.handler().HandleItemDamage(ctx, s, d)
+
+	ctx.Continue(func() {
+		s = s.Damage(d)
+		if s.Empty() {
+			p.World().PlaySound(p.Position(), sound.ItemBreak{})
+		}
+	})
+	return s
 }
 
 // canReach checks if a player can reach a position with its current range. The range depends on if the player

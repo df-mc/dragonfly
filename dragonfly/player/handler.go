@@ -60,6 +60,11 @@ type Handler interface {
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity)
+	// HandleItemDamage handles the event wherein the item either held by the player or as armour takes
+	// damage through usage.
+	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
+	// the item is passed.
+	HandleItemDamage(ctx *event.Context, i item.Stack, damage int)
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *event.Context, i item.Stack)
@@ -112,6 +117,9 @@ func (NopHandler) HandleItemUseOnBlock(*event.Context, world.BlockPos, world.Fac
 
 // HandleItemUseOnEntity ...
 func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
+
+// HandleItemDamage ...
+func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 
 // HandleAttackEntity ...
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity) {}

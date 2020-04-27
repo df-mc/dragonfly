@@ -270,6 +270,8 @@ func (s *Session) ViewSound(pos mgl32.Vec3, soundType sound.Sound) {
 		pk.SoundType = packet.SoundEventChestOpen
 	case sound.BlockBreaking:
 		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.blockRuntimeID(so.Block))
+	case sound.ItemBreak:
+		pk.SoundType = packet.SoundEventBreak
 	}
 	s.writePacket(pk)
 }

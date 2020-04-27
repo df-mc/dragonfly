@@ -40,6 +40,20 @@ type Usable interface {
 	Use(w *world.World, user User)
 }
 
+// Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
+// damage that attacking with an empty hand deals.
+type Weapon interface {
+	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
+	AttackDamage() float32
+}
+
+// nameable represents a block that may be named. These are often containers such as chests, which have a
+// name displayed in their interface.
+type nameable interface {
+	// WithName returns the block itself, except with a custom name applied to it.
+	WithName(a ...interface{}) world.Item
+}
+
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
@@ -65,23 +79,9 @@ type Collector interface {
 	Collect(stack Stack) (n int)
 }
 
-// Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
-// damage that attacking with an empty hand deals.
-type Weapon interface {
-	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
-	AttackDamage() float32
-}
-
 // Carrier represents an entity that is able to carry an item.
 type Carrier interface {
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
-}
-
-// nameable represents a block that may be named. These are often containers such as chests, which have a
-// name displayed in their interface.
-type nameable interface {
-	// WithName returns the block itself, except with a custom name applied to it.
-	WithName(a ...interface{}) world.Item
 }

@@ -1,5 +1,7 @@
 package tool
 
+import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+
 // None is a tool type typically used in functions for items that do not function as tools.
 type None struct{}
 
@@ -14,6 +16,6 @@ func (n None) HarvestLevel() int {
 }
 
 // BaseMiningEfficiency ...
-func (n None) BaseMiningEfficiency() float64 {
+func (n None) BaseMiningEfficiency(world.Block) float64 {
 	return 1
 }

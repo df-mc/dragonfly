@@ -26,11 +26,34 @@ func BreakDuration(b world.Block, i item.Stack) time.Duration {
 		breakTime = info.Hardness * 1.5
 	}
 	if info.Effective(t) {
-		breakTime /= t.BaseMiningEfficiency()
+		breakTime /= t.BaseMiningEfficiency(b)
 	}
+	// TODO: Account for haste, efficiency etc here.
 	timeInTicksAccurate := math.Round(breakTime/0.05) * 0.05
 
 	return (time.Duration(math.Round(timeInTicksAccurate*20)) * time.Second) / 20
+}
+
+// BreaksInstantly checks if the block passed can be broken instantly using the item stack passed to break
+// it.
+func BreaksInstantly(b world.Block, i item.Stack) bool {
+	breakable, ok := b.(Breakable)
+	if !ok {
+		return false
+	}
+	hardness := breakable.BreakInfo().Hardness
+	if hardness == 0 {
+		return true
+	}
+	t, ok := i.Item().(tool.Tool)
+	if !ok || !breakable.BreakInfo().Effective(t) {
+		return false
+	}
+
+	// TODO: Account for haste, efficiency etc here.
+	efficiencyVal := 0.0
+	hasteVal := 0.0
+	return (t.BaseMiningEfficiency(b)+efficiencyVal)*hasteVal >= hardness*30
 }
 
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks

@@ -16,6 +16,8 @@ type Stack struct {
 	customName string
 	lore       []string
 
+	damage int
+
 	data map[string]interface{}
 }
 
@@ -46,6 +48,87 @@ func (s Stack) MaxCount() int {
 	return 64
 }
 
+// Grow grows the Stack's count by n, returning the resulting Stack. If a positive number is passed, the stack
+// is grown, whereas if a negative size is passed, the resulting Stack will have a lower count. The count of
+// the returned Stack will never be negative.
+func (s Stack) Grow(n int) Stack {
+	s.count += n
+	if s.count < 0 {
+		s.count = 0
+	}
+	return s
+}
+
+// Durability returns the current durability of the item stack. If the item is not one that implements the
+// Durable interface, Durability will always return -1.
+// The closer the durability returned is to 0, the closer the item is to breaking.
+func (s Stack) Durability() int {
+	if durable, ok := s.Item().(Durable); ok {
+		return durable.DurabilityInfo().MaxDurability - s.damage
+	}
+	return -1
+}
+
+// MaxDurability returns the maximum durability that the item stack is able to have. If the item does not
+// implement the Durable interface, MaxDurability will always return -1.
+func (s Stack) MaxDurability() int {
+	if durable, ok := s.Item().(Durable); ok {
+		return durable.DurabilityInfo().MaxDurability
+	}
+	return -1
+}
+
+// Damage returns a new stack that is damaged by the amount passed. (Meaning, its durability lowered by the
+// amount passed.) If the item does not implement the Durable interface, the original stack is returned.
+// The damage passed may be negative to add durability.
+// If the final durability reaches 0 or below, the item returned is the resulting item of the breaking of the
+// item. If the final durability reaches a number higher than the maximum durability, the stack returned will
+// get the maximum durability.
+func (s Stack) Damage(d int) Stack {
+	durable, ok := s.Item().(Durable)
+	if !ok {
+		// Not a durable item.
+		return s
+	}
+	info := durable.DurabilityInfo()
+	if s.Durability()-d <= 0 {
+		// A durability of 0, so the item is broken.
+		return info.BrokenItem()
+	}
+	if s.Durability()-d > info.MaxDurability {
+		// We've passed the maximum durability, so we just need to make sure the final durability of the item
+		// will be equal to the max.
+		s.damage, d = 0, 0
+	}
+	s.damage += d
+	return s
+}
+
+// WithDurability returns a new item stack with the durability passed. If the item does not implement the
+// Durable interface, WithDurability returns the original stack.
+// The closer the durability d is to 0, the closer the item is to breaking. If a durability of 0 is passed,
+// a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
+// maximum durability, the stack returned will have the maximum durability.
+func (s Stack) WithDurability(d int) Stack {
+	durable, ok := s.Item().(Durable)
+	if !ok {
+		// Not a durable item.
+		return s
+	}
+	maxDurability := durable.DurabilityInfo().MaxDurability
+	if d > maxDurability {
+		// A durability bigger than the max, so the item has no damage at all.
+		s.damage = 0
+		return s
+	}
+	if d == 0 {
+		// A durability of 0, so the item is broken.
+		return durable.DurabilityInfo().BrokenItem()
+	}
+	s.damage = maxDurability - d
+	return s
+}
+
 // Empty checks if the stack is empty (has a count of 0).
 func (s Stack) Empty() bool {
 	return s.Count() == 0 || s.item == nil
@@ -64,7 +147,11 @@ func (s Stack) Item() world.Item {
 // held implements the item.Weapon interface, this damage may be different.
 func (s Stack) AttackDamage() float32 {
 	if weapon, ok := s.Item().(Weapon); ok {
-		return weapon.AttackDamage()
+		// Bonus attack damage from weapons is a bit quirky in Bedrock Edition: Even though tools say they
+		// have, for example, + 5 Attack Damage, it is actually 1 + 5, while punching with a hand in Bedrock
+		// Edition deals 2 damage, not 1 like in Java Edition.
+		// The tooltip displayed in-game is therefore not exactly correct.
+		return weapon.AttackDamage() + 1
 	}
 	return 2.0
 }
@@ -149,17 +236,6 @@ func (s Stack) AddStack(s2 Stack) (a, b Stack) {
 
 	s.count, s2.count = s.count+diff, s2.count-diff
 	return s, s2
-}
-
-// Grow grows the Stack's count by n, returning the resulting Stack. If a positive number is passed, the stack
-// is grown, whereas if a negative size is passed, the resulting Stack will have a lower count. The count of
-// the returned Stack will never be negative.
-func (s Stack) Grow(n int) Stack {
-	s.count += n
-	if s.count < 0 {
-		s.count = 0
-	}
-	return s
 }
 
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
