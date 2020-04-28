@@ -596,7 +596,7 @@ func (p *Player) UseItem() {
 			p.swingArm()
 		}
 
-		p.SetHeldItems(p.damageItem(i, ctx.Damage).Grow(-ctx.CountSub), left)
+		p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 	})
 }
 
@@ -635,7 +635,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.swingArm()
 			}
-			p.SetHeldItems(p.damageItem(i, ctx.Damage).Grow(-ctx.CountSub), left)
+			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 
 		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
 			// The item IS a block, meaning it is being placed.
@@ -648,7 +648,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				p.World().PlaceBlock(replacedPos, b)
 				p.swingArm()
 				if p.survival() {
-					p.SetHeldItems(i.Grow(-1), left)
+					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
 		}
@@ -681,7 +681,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.swingArm()
 			}
-			p.SetHeldItems(p.damageItem(i, ctx.Damage).Grow(-ctx.CountSub), left)
+			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 		}
 	})
 }
@@ -1056,6 +1056,15 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 			p.World().PlaySound(p.Position(), sound.ItemBreak{})
 		}
 	})
+	return s
+}
+
+// subtractItem subtracts d from the count of the item stack passed and returns it, if the player is in
+// survival or adventure mode.
+func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
+	if p.survival() && d != 0 {
+		return s.Grow(-d)
+	}
 	return s
 }
 
