@@ -68,6 +68,15 @@ func init() {
 func init() {
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = Grass{Path: true}
+	item_internal.IsUnstrippedLog = func(b world.Block) bool {
+		l, ok := b.(Log)
+		return ok && !l.Stripped
+	}
+	item_internal.StripLog = func(b world.Block) world.Block {
+		l := b.(Log)
+		l.Stripped = true
+		return l
+	}
 }
 
 // readSlice reads an interface slice from a map at the key passed.
