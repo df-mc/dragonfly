@@ -5,7 +5,11 @@ import (
 )
 
 // Grass blocks generate abundantly across the surface of the world.
-type Grass struct{}
+type Grass struct {
+	// Path specifies if the grass was made into a path or not. If true, the block will have only 15/16th of
+	// the height of a full block.
+	Path bool
+}
 
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
@@ -18,11 +22,17 @@ func (g Grass) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Grass) EncodeItem() (id int32, meta int16) {
+func (g Grass) EncodeItem() (id int32, meta int16) {
+	if g.Path {
+		return 198, 0
+	}
 	return 2, 0
 }
 
 // EncodeBlock ...
-func (Grass) EncodeBlock() (name string, properties map[string]interface{}) {
+func (g Grass) EncodeBlock() (name string, properties map[string]interface{}) {
+	if g.Path {
+		return "minecraft:grass_path", nil
+	}
 	return "minecraft:grass", nil
 }

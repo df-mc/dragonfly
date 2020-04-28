@@ -579,7 +579,7 @@ func (p *Player) UseItem() {
 	if !p.canReach(p.Position()) {
 		return
 	}
-	i, _ := p.HeldItems()
+	i, left := p.HeldItems()
 	ctx := event.C()
 	p.handler().HandleItemUse(ctx)
 
@@ -589,11 +589,14 @@ func (p *Player) UseItem() {
 			// The item wasn't usable, so we can stop doing anything right away.
 			return
 		}
-		usable.Use(p.World(), p)
+		ctx := &item.UseContext{}
+		if usable.Use(p.World(), p, ctx) {
+			// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
+			// reason to swing the arm.
+			p.swingArm()
+		}
 
-		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
-		// reason to swing the arm.
-		p.swingArm()
+		p.SetHeldItems(p.damageItem(i, ctx.Damage).Grow(-ctx.CountSub), left)
 	})
 }
 
@@ -625,12 +628,15 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		if i.Empty() {
 			return
 		}
-		p.swingArm()
 
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			usableOnBlock.UseOnBlock(pos, face, clickPos, &i, p.World(), p)
-			p.SetHeldItems(i, left)
+			ctx := &item.UseContext{}
+			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
+				p.swingArm()
+			}
+			p.SetHeldItems(p.damageItem(i, ctx.Damage).Grow(-ctx.CountSub), left)
+
 		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
 			// The item IS a block, meaning it is being placed.
 			replacedPos := pos
@@ -640,6 +646,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 			}
 			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) {
 				p.World().PlaceBlock(replacedPos, b)
+				p.swingArm()
 				if p.survival() {
 					p.SetHeldItems(i.Grow(-1), left)
 				}
@@ -663,15 +670,18 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 	if !p.canReach(e.Position()) {
 		return
 	}
-	i, _ := p.HeldItems()
+	i, left := p.HeldItems()
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnEntity(ctx, e)
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
-			usableOnEntity.UseOnEntity(e, e.World(), p)
-			p.swingArm()
+			ctx := &item.UseContext{}
+			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
+				p.swingArm()
+			}
+			p.SetHeldItems(p.damageItem(i, ctx.Damage).Grow(-ctx.CountSub), left)
 		}
 	})
 }
@@ -1032,7 +1042,11 @@ func (p *Player) Close() error {
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
 // broke, a breaking sound is played.
+// If the player is not survival, the original stack is returned.
 func (p *Player) damageItem(s item.Stack, d int) item.Stack {
+	if !p.survival() || d == 0 {
+		return s
+	}
 	ctx := event.C()
 	p.handler().HandleItemDamage(ctx, s, d)
 

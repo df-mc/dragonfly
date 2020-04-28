@@ -20,8 +20,8 @@ type UsableOnBlock interface {
 	// used in. The user passed is the entity that used the item. Usually this entity is a player.
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
-	// The stack used is also passed as a pointer, which may be modified to edit the original item.
-	UseOnBlock(pos world.BlockPos, clickedFace world.Face, clickPos mgl32.Vec3, s *Stack, w *world.World, user User)
+	// UseOnBlock returns a bool indicating if the item was used successfully.
+	UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, w *world.World, user User, ctx *UseContext) bool
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -29,7 +29,8 @@ type UsableOnBlock interface {
 type UsableOnEntity interface {
 	// UseOnEntity is called when an item is used on an entity. The world passed is the world that the item is
 	// used in, and the entity clicked and the user of the item are also passed.
-	UseOnEntity(e world.Entity, w *world.World, user User)
+	// UseOnEntity returns a bool indicating if the item was used successfully.
+	UseOnEntity(e world.Entity, w *world.World, user User, ctx *UseContext) bool
 }
 
 // Usable represents an item that may be used 'in the air'. If an item implements this interface, the Use
@@ -37,8 +38,22 @@ type UsableOnEntity interface {
 type Usable interface {
 	// Use is called when the item is used in the air. The user that used the item and the world that the item
 	// was used in are passed to the method.
-	Use(w *world.World, user User)
+	// Use returns a bool indicating if the item was used successfully.
+	Use(w *world.World, user User, ctx *UseContext) bool
 }
+
+// UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
+// after the action is complete.
+type UseContext struct {
+	Damage   int
+	CountSub int
+}
+
+// DamageItem damages the item used by d points.
+func (ctx *UseContext) DamageItem(d int) { ctx.Damage += d }
+
+// SubtractFromCount subtracts d from the count of the item stack used.
+func (ctx *UseContext) SubtractFromCount(d int) { ctx.CountSub += d }
 
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
@@ -67,6 +82,7 @@ type User interface {
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
 	Pitch() float32
+	HeldItems() (right, left Stack)
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as

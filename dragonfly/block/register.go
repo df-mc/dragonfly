@@ -3,6 +3,7 @@ package block
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/colour"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/item_internal"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -14,7 +15,7 @@ func init() {
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
-	world.RegisterBlock(Grass{})
+	world.RegisterBlock(Grass{}, Grass{Path: true})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
 	world.RegisterBlock(allLogs()...)
@@ -34,6 +35,7 @@ func init() {
 	world.RegisterItem("minecraft:stone", Andesite{})
 	world.RegisterItem("minecraft:stone", Andesite{Polished: true})
 	world.RegisterItem("minecraft:grass", Grass{})
+	world.RegisterItem("minecraft:grass_path", Grass{Path: true})
 	world.RegisterItem("minecraft:dirt", Dirt{})
 	world.RegisterItem("minecraft:dirt", Dirt{Coarse: true})
 	world.RegisterItem("minecraft:cobblestone", Cobblestone{})
@@ -61,6 +63,11 @@ func init() {
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
 	}
+}
+
+func init() {
+	item_internal.Grass = Grass{}
+	item_internal.GrassPath = Grass{Path: true}
 }
 
 // readSlice reads an interface slice from a map at the key passed.

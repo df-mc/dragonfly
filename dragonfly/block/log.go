@@ -21,12 +21,15 @@ type Log struct {
 }
 
 // UseOnBlock ...
-func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, s *item.Stack, w *world.World, _ item.User) {
+func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ item.User, ctx *item.UseContext) bool {
 	if replaceable(w, pos.Side(face), l) {
 		l.Axis = face.Axis()
 		w.PlaceBlock(pos.Side(face), l)
-		*s = (*s).Grow(-1)
+
+		ctx.SubtractFromCount(1)
+		return true
 	}
+	return false
 }
 
 // BreakInfo ...
