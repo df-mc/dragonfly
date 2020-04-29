@@ -609,6 +609,7 @@ func (w *World) tickRandomBlocks() {
 		// NOP if the simulation distance is 0.
 		return
 	}
+	viewers := w.allViewers()
 	for k, v := range w.chunkCache().Items() {
 		if len(k) == 9 {
 			// This is a chunk timestamp, proceed to the next.
@@ -617,7 +618,7 @@ func (w *World) tickRandomBlocks() {
 		pos := chunkPosFromHash(k)
 
 		withinSimDist := false
-		for _, viewer := range w.chunkViewers(pos) {
+		for _, viewer := range viewers {
 			chunkPos := chunkPosFromVec3(viewer.Position())
 			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
 			if (xDiff*xDiff)+(zDiff*zDiff) <= w.simDistSq {
