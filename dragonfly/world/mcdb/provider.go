@@ -51,6 +51,7 @@ func New(dir string) (*Provider, error) {
 	}
 	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: opt.FlateCompression,
+		BlockSize:   16 * opt.KiB,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening leveldb database: %v", err)
