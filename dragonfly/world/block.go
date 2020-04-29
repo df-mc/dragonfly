@@ -24,6 +24,13 @@ type Block interface {
 	EncodeBlock() (name string, properties map[string]interface{})
 }
 
+// RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
+// one random block in each sub chunk are picked to receive a random tick.
+type RandomTicker interface {
+	// RandomTick handles a random tick of the block at the position passed.
+	RandomTick(pos BlockPos, w *World)
+}
+
 // RegisterBlock registers a block with the save name passed. The save name is used to save the block to the
 // world's database and must not conflict with existing blocks.
 // If a saveName is passed which already has a block registered for it, RegisterBlock panics.

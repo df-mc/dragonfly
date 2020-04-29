@@ -10,6 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -52,12 +53,15 @@ type World struct {
 	viewers     map[ChunkPos][]Viewer
 
 	rdonly bool
+
+	r         *rand.Rand
+	simDistSq int32
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log *logrus.Logger) *World {
+func New(log *logrus.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
 		name:            "World",
@@ -70,6 +74,8 @@ func New(log *logrus.Logger) *World {
 		stopTick:        ctx,
 		cancelTick:      cancel,
 		defaultGameMode: gamemode.Survival{},
+		r:               rand.New(rand.NewSource(time.Now().Unix())),
+		simDistSq:       int32(simulationDistance * simulationDistance),
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -593,6 +599,75 @@ func (w *World) tick(tick int) {
 		}
 	}
 	w.tickEntities()
+	w.tickRandomBlocks()
+}
+
+// tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
+// registered.
+func (w *World) tickRandomBlocks() {
+	if w.simDistSq == 0 {
+		// NOP if the simulation distance is 0.
+		return
+	}
+	for k, v := range w.chunkCache().Items() {
+		if len(k) == 9 {
+			// This is a chunk timestamp, proceed to the next.
+			continue
+		}
+		pos := chunkPosFromHash(k)
+
+		withinSimDist := false
+		for _, viewer := range w.chunkViewers(pos) {
+			chunkPos := chunkPosFromVec3(viewer.Position())
+			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
+			if (xDiff*xDiff)+(zDiff*zDiff) <= w.simDistSq {
+				// The chunk was within the simulation distance of at least one viewer, so we can proceed to
+				// ticking the block.
+				withinSimDist = true
+				break
+			}
+		}
+
+		if !withinSimDist {
+			// No viewers in this chunk that are within the simulation distance, so proceed to the next.
+			continue
+		}
+
+		c := v.Object.(*chunk.Chunk)
+		c.RLock()
+
+		// In total we generate 3 random blocks per sub chunk.
+		for j := 0; j < 3; j++ {
+			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
+			// obtain a total of 16 coordinates on one axis from one uint64. One for each sub chunk.
+			ra, rb, rc := int(w.r.Uint64()), int(w.r.Uint64()), int(w.r.Uint64())
+			for i := 0; i < 64; i += 4 {
+				if !c.SubChunkPresent(uint8(i >> 2)) {
+					// No sub chunk present, so skip it right away.
+					continue
+				}
+				x, y, z := ra>>i&0xf, (rb>>i&0xf)+i<<2, rc>>i&0xf
+
+				blockPos := pos.BlockPos().Add(BlockPos{x, y, z})
+
+				// Generally we would want to make sure the block has its block entities, but provided blocks
+				// with block entities are generally ticked already, we are safe to assume that blocks
+				// implementing the RandomTicker don't rely on additional block entity data.
+				rid := c.RuntimeID(uint8(blockPos[0]&15), uint8(blockPos[1]), uint8(blockPos[2]&15), 0)
+				if rid == 0 {
+					// The block was air, take the fast route out.
+					continue
+				}
+				b, _ := blockByRuntimeID(rid)
+
+				if randomTicker, ok := b.(RandomTicker); ok {
+					randomTicker.RandomTick(blockPos, w)
+				}
+			}
+		}
+
+		c.RUnlock()
+	}
 }
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and

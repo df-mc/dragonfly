@@ -17,6 +17,8 @@ type BlockStorage struct {
 	// bitsPerBlock is the amount of bits required to store one block. The number increases as the block
 	// storage holds more unique block states.
 	bitsPerBlock uint16
+	// filledBitsPerWord returns the amount of blocks that are actually filled per uint32.
+	filledBitsPerWord uint16
 	// palette holds all block runtime IDs that the blocks in the blocks slice point to. These runtime IDs
 	// point to block states.
 	palette *palette
@@ -29,7 +31,8 @@ type BlockStorage struct {
 // NewBlockStorage creates a new block storage using the uint32 slice as the blocks and the palette passed.
 // The bits per block are calculated using the length of the uint32 slice.
 func newBlockStorage(blocks []uint32, palette *palette) *BlockStorage {
-	return &BlockStorage{blocks: blocks, bitsPerBlock: uint16(len(blocks) / uint32BitSize / uint32ByteSize), palette: palette}
+	bitsPerBlock := uint16(len(blocks) / uint32BitSize / uint32ByteSize)
+	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, palette: palette}
 }
 
 // RuntimeID returns the runtime ID of the block located at the given x, y and z.
@@ -103,13 +106,7 @@ func (storage *BlockStorage) resize(newPaletteSize paletteSize) {
 func (storage *BlockStorage) offsets(x, y, z byte) (wordOffset uint16, bitOffset uint16) {
 	// Offset is the offset in bits that the X, Y and Z result in.
 	offset := storage.offset(x, y, z) * storage.bitsPerBlock
-	return offset / storage.filledBitsPerWord(), offset % storage.filledBitsPerWord()
-}
-
-// filledBitsPerWord calculates the filled bits per uint32 using the bits per block of a block storage. This
-// will always be equal to 32, unless the format is padded, in which case it returns 30.
-func (storage *BlockStorage) filledBitsPerWord() uint16 {
-	return uint32BitSize / storage.bitsPerBlock * storage.bitsPerBlock
+	return offset / storage.filledBitsPerWord, offset % storage.filledBitsPerWord
 }
 
 // offset calculates the offset at which an x, y and z are stored in the block storage. The x, y and z are

@@ -1,6 +1,6 @@
 module git.jetbrains.space/dragonfly/dragonfly.git
 
-go 1.12
+go 1.13
 
 require (
 	github.com/dragonfly-tech/goleveldb v1.1.5

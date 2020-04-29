@@ -12,6 +12,8 @@ import (
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
 // entities and the changes of blocks.
 type Viewer interface {
+	// Position returns the position of the viewer.
+	Position() mgl32.Vec3
 	// ViewEntity views the entity passed. It is called for every entity that the viewer may encounter in the
 	// world, either by moving entities or by moving the viewer using a world.Loader.
 	ViewEntity(e Entity)

@@ -56,6 +56,11 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 	chunk.sub[i].Layer(layer).SetRuntimeID(x, y, z, runtimeID)
 }
 
+// SubChunkPresent checks if a sub chunk is present at the y value passed.
+func (chunk *Chunk) SubChunkPresent(y uint8) bool {
+	return chunk.sub[y] != nil
+}
+
 // SetBlockNBT sets block NBT data to a given position in the chunk. If the data passed is nil, the block NBT
 // currently present will be cleared.
 func (chunk *Chunk) SetBlockNBT(pos [3]int, data map[string]interface{}) {

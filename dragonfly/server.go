@@ -57,16 +57,17 @@ func New(c *Config, log *logrus.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
+	if c == nil {
+		conf := DefaultConfig()
+		c = &conf
+	}
 	s := &Server{
 		started: new(uint32),
 		c:       DefaultConfig(),
 		log:     log,
 		players: make(chan *player.Player),
-		world:   world.New(log),
+		world:   world.New(log, c.World.SimulationDistance),
 		p:       make(map[uuid.UUID]*player.Player),
-	}
-	if c != nil {
-		s.c = *c
 	}
 	return s
 }

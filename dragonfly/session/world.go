@@ -466,3 +466,8 @@ func (s *Session) entityFromRuntimeID(id uint64) (world.Entity, bool) {
 	s.entityMutex.RUnlock()
 	return e, ok
 }
+
+// Position ...
+func (s *Session) Position() mgl32.Vec3 {
+	return s.c.Position()
+}

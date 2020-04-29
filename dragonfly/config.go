@@ -28,6 +28,9 @@ type Config struct {
 		// MaximumChunkRadius is the maximum chunk radius that players may set in their settings. If they try
 		// to set it above this number, it will be capped and set to the max.
 		MaximumChunkRadius int
+		// SimulationDistance is the maximum distance in chunks that a chunk must be to a player in order for
+		// it to receive random ticks. This field may be set to 0 to disable random block updates altogether.
+		SimulationDistance int
 	}
 }
 
@@ -40,5 +43,6 @@ func DefaultConfig() Config {
 	c.World.Name = "World"
 	c.World.Folder = "world"
 	c.World.MaximumChunkRadius = 32
+	c.World.SimulationDistance = 8
 	return c
 }
