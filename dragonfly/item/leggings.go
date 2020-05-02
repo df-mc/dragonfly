@@ -5,8 +5,8 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
-// Leggings are a defensive item that may be equipped in the leggings armour slot. It comes in multiple tiers
-// like helmets, chestplates and boots.
+// Leggings are a defensive item that may be equipped in the leggings armour slot. They come in several tiers,
+// like leather, gold, chain, iron and diamond.
 type Leggings struct {
 	// Tier is the tier of the leggings.
 	Tier armour.Tier

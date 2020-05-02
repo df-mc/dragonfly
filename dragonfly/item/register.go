@@ -49,4 +49,10 @@ func init() {
 	world.RegisterItem("minecraft:chainmail_leggings", Leggings{Tier: armour.TierChain})
 	world.RegisterItem("minecraft:iron_leggings", Leggings{Tier: armour.TierIron})
 	world.RegisterItem("minecraft:diamond_leggings", Leggings{Tier: armour.TierDiamond})
+
+	world.RegisterItem("minecraft:leather_boots", Boots{Tier: armour.TierLeather})
+	world.RegisterItem("minecraft:golden_boots", Boots{Tier: armour.TierGold})
+	world.RegisterItem("minecraft:chainmail_boots", Boots{Tier: armour.TierChain})
+	world.RegisterItem("minecraft:iron_boots", Boots{Tier: armour.TierIron})
+	world.RegisterItem("minecraft:diamond_boots", Boots{Tier: armour.TierDiamond})
 }
