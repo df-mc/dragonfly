@@ -6,6 +6,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
+//noinspection SpellCheckingInspection
 func init() {
 	world.RegisterItem("minecraft:wooden_pickaxe", Pickaxe{Tier: tool.TierWood})
 	world.RegisterItem("minecraft:golden_pickaxe", Pickaxe{Tier: tool.TierGold})
@@ -33,13 +34,19 @@ func init() {
 
 	world.RegisterItem("minecraft:leather_helmet", Helmet{Tier: armour.TierLeather})
 	world.RegisterItem("minecraft:golden_helmet", Helmet{Tier: armour.TierGold})
-	world.RegisterItem("minecraft:chain_helmet", Helmet{Tier: armour.TierChain})
+	world.RegisterItem("minecraft:chainmail_helmet", Helmet{Tier: armour.TierChain})
 	world.RegisterItem("minecraft:iron_helmet", Helmet{Tier: armour.TierIron})
 	world.RegisterItem("minecraft:diamond_helmet", Helmet{Tier: armour.TierDiamond})
 
 	world.RegisterItem("minecraft:leather_chestplate", Chestplate{Tier: armour.TierLeather})
 	world.RegisterItem("minecraft:golden_chestplate", Chestplate{Tier: armour.TierGold})
-	world.RegisterItem("minecraft:chain_chestplate", Chestplate{Tier: armour.TierChain})
+	world.RegisterItem("minecraft:chainmail_chestplate", Chestplate{Tier: armour.TierChain})
 	world.RegisterItem("minecraft:iron_chestplate", Chestplate{Tier: armour.TierIron})
 	world.RegisterItem("minecraft:diamond_chestplate", Chestplate{Tier: armour.TierDiamond})
+
+	world.RegisterItem("minecraft:leather_leggings", Leggings{Tier: armour.TierLeather})
+	world.RegisterItem("minecraft:golden_leggings", Leggings{Tier: armour.TierGold})
+	world.RegisterItem("minecraft:chainmail_leggings", Leggings{Tier: armour.TierChain})
+	world.RegisterItem("minecraft:iron_leggings", Leggings{Tier: armour.TierIron})
+	world.RegisterItem("minecraft:diamond_leggings", Leggings{Tier: armour.TierDiamond})
 }
