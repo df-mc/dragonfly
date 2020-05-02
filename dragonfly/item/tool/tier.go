@@ -1,7 +1,6 @@
 package tool
 
-// Tier represents the t, or material, that a tool is made of. A higher tier indicates a tool which is able
-// to mine more different types of blocks at a higher speed.
+// Tier represents the tier, or material, that a tool is made of.
 type Tier struct {
 	// HarvestLevel is the level that this tier of tools is able to harvest. If a block has a harvest level
 	// above this one, a tool with this tier won't be able to harvest it.
@@ -12,11 +11,11 @@ type Tier struct {
 	// BaseAttackDamage is the base attack damage of tools with this tiers. All tools have a constant value
 	// that is added on top of this.
 	BaseAttackDamage float32
-	// Durability returns the maximum durability that a tool with this tier has.
+	// BaseDurability returns the maximum durability that a tool with this tier has.
 	Durability int
 }
 
-// TierWood is the tier of wood tools. This is the lowest possible t.
+// TierWood is the tier of wood tools. This is the lowest possible tier.
 var TierWood = Tier{HarvestLevel: 1, Durability: 59, BaseMiningEfficiency: 2, BaseAttackDamage: 1}
 
 // TierGold is the tier of gold tools.

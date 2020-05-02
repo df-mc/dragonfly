@@ -13,7 +13,7 @@ import (
 // held by blocks such as chests.
 // The size of an inventory may be specified upon construction, but cannot be changed after. The zero value of
 // an inventory is invalid. Use New() to obtain a new inventory.
-// inventory is safe for concurrent usage: Its values are protected by a mutex.
+// Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
 	mu    sync.RWMutex
 	slots []item.Stack
@@ -64,8 +64,10 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	}
 
 	inv.mu.Lock()
-	inv.setItem(slot, item)
+	f := inv.setItem(slot, item)
 	inv.mu.Unlock()
+
+	f()
 	return nil
 }
 
@@ -101,7 +103,10 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		}
 
 		a, b := invIt.AddStack(it)
-		inv.setItem(slot, a)
+		f := inv.setItem(slot, a)
+		//noinspection GoDeferInLoop
+		defer f()
+
 		it = b
 		if it.Empty() {
 			// We were able to add the entire stack to existing stacks in the inventory.
@@ -116,7 +121,10 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		invIt = it.Grow(-math.MaxInt32)
 		a, b := invIt.AddStack(it)
 
-		inv.setItem(slot, a)
+		f := inv.setItem(slot, a)
+		//noinspection GoDeferInLoop
+		defer f()
+
 		it = b
 		if it.Empty() {
 			// We were able to add the entire stack to empty slots.
@@ -144,7 +152,10 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 			// The items were not comparable: Continue with the next slot.
 			continue
 		}
-		inv.setItem(slot, slotIt.Grow(-toRemove))
+		f := inv.setItem(slot, slotIt.Grow(-toRemove))
+		//noinspection GoDeferInLoop
+		defer f()
+
 		toRemove -= slotIt.Count()
 
 		if toRemove <= 0 {
@@ -190,16 +201,20 @@ func (inv *Inventory) Empty() bool {
 func (inv *Inventory) Clear() {
 	inv.mu.Lock()
 	for slot := range inv.slots {
-		inv.setItem(slot, item.Stack{})
+		f := inv.setItem(slot, item.Stack{})
+		//noinspection GoDeferInLoop
+		defer f()
 	}
 	inv.mu.Unlock()
 }
 
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
-func (inv *Inventory) setItem(slot int, item item.Stack) {
+func (inv *Inventory) setItem(slot int, item item.Stack) func() {
 	inv.slots[slot] = item
-	inv.f(slot, item)
+	return func() {
+		inv.f(slot, item)
+	}
 }
 
 // Size returns the size of the inventory. It is always the same value as that passed in the call to New() and
@@ -211,9 +226,11 @@ func (inv *Inventory) Size() int {
 	return l
 }
 
-// Close closes the inventory, freeing the function called for every slot change.
+// Close closes the inventory, freeing the function called for every slot change. It also clears any items
+// that may currently be in the inventory.
 // The returned error is always nil.
 func (inv *Inventory) Close() error {
+	inv.Clear()
 	inv.mu.Lock()
 	inv.f = func(int, item.Stack) {}
 	inv.mu.Unlock()
@@ -226,7 +243,7 @@ func (inv *Inventory) String() string {
 	for _, it := range inv.slots {
 		s = append(s, it.String())
 	}
-	return strings.Join(s, ", ")
+	return "{" + strings.Join(s, ", ") + "}"
 }
 
 // validSlot checks if the slot passed is valid for the inventory. It returns false if the slot is either

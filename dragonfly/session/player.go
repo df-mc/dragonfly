@@ -291,6 +291,8 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.offHand, true
 	case protocol.WindowIDUI:
 		return s.ui, true
+	case protocol.WindowIDArmour:
+		return s.armour.Inv(), true
 	case int32(atomic.LoadUint32(&s.openedWindowID)):
 		if atomic.LoadUint32(&s.containerOpened) == 1 {
 			return s.openedWindow.Load().(*inventory.Inventory), true
@@ -472,8 +474,8 @@ func (s *Session) SendHealth(health, max float32) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			Name:    "minecraft:health",
-			Value:   health,
-			Max:     max,
+			Value:   float32(math.Ceil(float64(health))),
+			Max:     float32(math.Ceil(float64(max))),
 			Default: 20,
 		}},
 	})
@@ -576,7 +578,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSlot *uint32) {
+func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if atomic.LoadUint32(&s.inTransaction) == 1 {
 			return
@@ -586,6 +588,11 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSl
 			Slot:     uint32(slot),
 			NewItem:  stackFromItem(item),
 		})
+		if slot == int(atomic.LoadUint32(s.heldSlot)) {
+			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+				viewer.ViewEntityItems(s.c)
+			}
+		}
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
 		if atomic.LoadUint32(&s.inTransaction) == 1 {
@@ -596,8 +603,24 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, heldSl
 			Slot:     uint32(slot),
 			NewItem:  stackFromItem(item),
 		})
+		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+			viewer.ViewEntityItems(s.c)
+		}
 	})
-	return s.inv, s.offHand, s.heldSlot
+	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+		if atomic.LoadUint32(&s.inTransaction) == 1 {
+			return
+		}
+		s.writePacket(&packet.InventorySlot{
+			WindowID: protocol.WindowIDArmour,
+			Slot:     uint32(slot),
+			NewItem:  stackFromItem(item),
+		})
+		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+			viewer.ViewEntityArmour(s.c)
+		}
+	})
+	return s.inv, s.offHand, s.armour, s.heldSlot
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.

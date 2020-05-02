@@ -59,8 +59,8 @@ func (s Stack) Grow(n int) Stack {
 	return s
 }
 
-// Durability returns the current durability of the item stack. If the item is not one that implements the
-// Durable interface, Durability will always return -1.
+// BaseDurability returns the current durability of the item stack. If the item is not one that implements the
+// Durable interface, BaseDurability will always return -1.
 // The closer the durability returned is to 0, the closer the item is to breaking.
 func (s Stack) Durability() int {
 	if durable, ok := s.Item().(Durable); ok {
@@ -247,7 +247,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	id, meta := s.Item().EncodeItem()
 	id2, meta2 := s2.Item().EncodeItem()
-	if id != id2 || meta != meta2 {
+	if id != id2 || meta != meta2 || s.damage != s2.damage {
 		return false
 	}
 	if s.customName != s2.customName || len(s.lore) != len(s2.lore) {

@@ -211,17 +211,17 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 
 // ViewEntityItems ...
 func (s *Session) ViewEntityItems(e world.Entity) {
+	runtimeID := s.entityRuntimeID(e)
+	if runtimeID == selfEntityRuntimeID {
+		// Don't view the items of the entity if the entity is the Controllable of the session.
+		return
+	}
 	c, ok := e.(item.Carrier)
 	if !ok {
 		return
 	}
 
-	if s.entityRuntimeID(e) == selfEntityRuntimeID {
-		// Don't view the items of the entity if the entity is the Controllable of the session.
-		return
-	}
 	mainHand, offHand := c.HeldItems()
-	runtimeID := s.entityRuntimeID(e)
 
 	// Show the main hand item.
 	s.writePacket(&packet.MobEquipment{
@@ -233,6 +233,30 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 		EntityRuntimeID: runtimeID,
 		NewItem:         stackFromItem(offHand),
 		WindowID:        protocol.WindowIDOffHand,
+	})
+}
+
+// ViewEntityArmour ...
+func (s *Session) ViewEntityArmour(e world.Entity) {
+	runtimeID := s.entityRuntimeID(e)
+	if runtimeID == selfEntityRuntimeID {
+		// Don't view the items of the entity if the entity is the Controllable of the session.
+		return
+	}
+	armoured, ok := e.(item.Armoured)
+	if !ok {
+		return
+	}
+
+	inv := armoured.Armour()
+
+	// Show the main hand item.
+	s.writePacket(&packet.MobArmourEquipment{
+		EntityRuntimeID: runtimeID,
+		Helmet:          stackFromItem(inv.Helmet()),
+		Chestplate:      stackFromItem(inv.Chestplate()),
+		Leggings:        stackFromItem(inv.Leggings()),
+		Boots:           stackFromItem(inv.Boots()),
 	})
 }
 

@@ -914,6 +914,7 @@ func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntity(e)
 	viewer.ViewEntityState(e, e.State())
 	viewer.ViewEntityItems(e)
+	viewer.ViewEntityArmour(e)
 }
 
 // chunk reads a chunk from the position passed. If a chunk at that position is not yet loaded, the chunk is

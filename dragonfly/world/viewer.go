@@ -34,6 +34,8 @@ type Viewer interface {
 	ViewTime(time int)
 	// ViewEntityItems views the items currently held by an entity that is able to equip items.
 	ViewEntityItems(e Entity)
+	// ViewEntityArmour views the items currently equipped as armour by the entity.
+	ViewEntityArmour(e Entity)
 	// ViewEntityAction views an action performed by an entity. Available actions may be found in the `action`
 	// package, and include things such as swinging an arm.
 	ViewEntityAction(e Entity, a action.Action)

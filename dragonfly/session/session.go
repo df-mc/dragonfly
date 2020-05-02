@@ -43,6 +43,7 @@ type Session struct {
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot         *uint32
 	inv, offHand, ui *inventory.Inventory
+	armour           *inventory.Armour
 
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
 	// session controls.

@@ -83,6 +83,7 @@ type User interface {
 	// and is 0 when the entity faces forward.
 	Pitch() float32
 	HeldItems() (right, left Stack)
+	SetHeldItems(right, left Stack)
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as

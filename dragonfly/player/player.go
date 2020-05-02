@@ -12,6 +12,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/armour"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/bossbar"
@@ -58,6 +59,7 @@ type Player struct {
 	h Handler
 
 	inv, offHand *inventory.Inventory
+	armour       *inventory.Armour
 	heldSlot     *uint32
 
 	sneaking, sprinting, invisible uint32
@@ -75,13 +77,19 @@ type Player struct {
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
 func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
-	p := &Player{
-		name:                 name,
-		h:                    NopHandler{},
-		uuid:                 uuid.New(),
-		skin:                 skin,
-		inv:                  inventory.New(36, nil),
-		offHand:              inventory.New(1, nil),
+	p := &Player{}
+	*p = Player{
+		name: name,
+		h:    NopHandler{},
+		uuid: uuid.New(),
+		skin: skin,
+		inv: inventory.New(36, func(slot int, item item.Stack) {
+			if slot == int(atomic.LoadUint32(p.heldSlot)) {
+				p.broadcastItems(slot, item)
+			}
+		}),
+		offHand:              inventory.New(1, p.broadcastItems),
+		armour:               inventory.NewArmour(p.broadcastArmour),
 		heldSlot:             new(uint32),
 		breaking:             new(uint32),
 		breakParticleCounter: new(uint32),
@@ -105,12 +113,8 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 // name and the skin of the player.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl32.Vec3) *Player {
 	p := New(name, skin, pos)
-	p.s = s
-	p.uuid = uuid
-	p.xuid = xuid
-	p.skin = skin
-
-	p.inv, p.offHand, p.heldSlot = s.HandleInventories()
+	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
+	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 
 	chat.Global.Subscribe(p)
 	return p
@@ -361,13 +365,15 @@ func (p *Player) Hurt(dmg float32, source damage.Source) {
 	if p.Dead() || dmg < 0 || !p.survival() {
 		return
 	}
-	if p.Health()-dmg < 0 {
-		dmg = p.Health()
-	}
 
 	ctx := event.C()
 	p.handler().HandleHurt(ctx, &dmg, source)
+
 	ctx.Continue(func() {
+		dmg = p.resolveFinalDamage(dmg, source)
+		if p.Health()-dmg < 0 {
+			dmg = p.Health()
+		}
 		p.setHealth(p.Health() - dmg)
 
 		for _, viewer := range p.World().Viewers(p.Position()) {
@@ -378,6 +384,33 @@ func (p *Player) Hurt(dmg float32, source damage.Source) {
 			p.kill(source)
 		}
 	})
+}
+
+// resolveFinalDamage resolves the final damage received by the player if it is attacked by the source passed
+// with the damage passed. resolveFinalDamage takes into account things such as the armour worn and the
+// enchantments on the individual pieces.
+func (p *Player) resolveFinalDamage(dmg float32, src damage.Source) float32 {
+	if src.ReducedByArmour() {
+		defencePoints, damageToArmour := 0.0, int(dmg/4)
+		if damageToArmour == 0 {
+			damageToArmour++
+		}
+		for i := 0; i < 4; i++ {
+			it, _ := p.armour.Inv().Item(i)
+			if a, ok := it.Item().(armour.Armour); ok {
+				defencePoints += a.DefencePoints()
+				if _, ok := it.Item().(item.Durable); ok {
+					_ = p.armour.Inv().SetItem(i, p.damageItem(it, damageToArmour))
+				}
+			}
+		}
+		// Armour in Bedrock edition reduces the damage taken by 4% for every armour point that the player
+		// has, with a maximum of 4*20=80%
+		dmg -= dmg * float32(0.04*defencePoints)
+	}
+	// TODO: Account for enchantments.
+
+	return dmg
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
@@ -435,10 +468,14 @@ func (p *Player) kill(src damage.Source) {
 	p.setHealth(0)
 	p.StopSneaking()
 	p.StopSprinting()
-	p.Inventory().Clear()
+	p.inv.Clear()
+	p.armour.Clear()
 	p.offHand.Clear()
 
 	p.handler().HandleDeath(src)
+
+	// Wait for a little bit before removing the entity. The client displays a death animation while the
+	// player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
 		if p.session() == session.Nop {
 			_ = p.Close()
@@ -532,6 +569,12 @@ func (p *Player) Inventory() *inventory.Inventory {
 	return p.inv
 }
 
+// Armour returns the armour inventory of the player. This inventory yields 4 slots, for the helmet,
+// chestplate, leggings and boots respectively.
+func (p *Player) Armour() item.ArmourContainer {
+	return p.armour
+}
+
 // HeldItems returns the items currently held in the hands of the player. The first item stack returned is the
 // one held in the main hand, the second is held in the off-hand.
 // If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
@@ -547,10 +590,6 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
-
-	for _, viewer := range p.World().Viewers(p.Position()) {
-		viewer.ViewEntityItems(p)
-	}
 }
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
@@ -594,9 +633,9 @@ func (p *Player) UseItem() {
 			// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 			// reason to swing the arm.
 			p.swingArm()
-		}
 
-		p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+		}
 	})
 }
 
@@ -634,8 +673,8 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 			ctx := &item.UseContext{}
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.swingArm()
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 			}
-			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 
 		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
 			// The item IS a block, meaning it is being placed.
@@ -680,8 +719,8 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 			ctx := &item.UseContext{}
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.swingArm()
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 			}
-			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 		}
 	})
 }
@@ -930,6 +969,9 @@ func (p *Player) World() *world.World {
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl32.Vec3 {
+	if v := p.pos.Load(); v == nil {
+		fmt.Println("v is nil")
+	}
 	return p.pos.Load().(mgl32.Vec3)
 }
 
@@ -1099,6 +1141,7 @@ func (p *Player) close() {
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = p.inv.Close()
 	_ = p.offHand.Close()
+	_ = p.armour.Close()
 	p.sMutex.Unlock()
 
 	if s == session.Nop {
@@ -1125,6 +1168,20 @@ func (p *Player) handler() Handler {
 	handler := p.h
 	p.hMutex.RUnlock()
 	return handler
+}
+
+// broadcastItems broadcasts the items held to viewers.
+func (p *Player) broadcastItems(int, item.Stack) {
+	for _, viewer := range p.World().Viewers(p.Position()) {
+		viewer.ViewEntityItems(p)
+	}
+}
+
+// broadcastArmour broadcasts the armour equipped to viewers.
+func (p *Player) broadcastArmour(int, item.Stack) {
+	for _, viewer := range p.World().Viewers(p.Position()) {
+		viewer.ViewEntityArmour(p)
+	}
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
