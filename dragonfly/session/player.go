@@ -170,7 +170,8 @@ func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) er
 			s.sendInv(s.inv, protocol.WindowIDInventory)
 			s.sendInv(s.ui, protocol.WindowIDUI)
 			s.sendInv(s.offHand, protocol.WindowIDOffHand)
-			return err
+			s.log.Debugf("%v: %v", s.c.Name(), err)
+			return nil
 		}
 		atomic.StoreUint32(&s.inTransaction, 1)
 		s.executeTransaction(pk.Actions)

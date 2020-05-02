@@ -170,7 +170,8 @@ func (s *Session) handlePackets() {
 			// An error occurred during the handling of a packet. Print the error and stop handling any more
 			// packets.
 			s.log.Debugf("failed processing packet from %v: %v\n", s.conn.RemoteAddr(), err)
-			continue
+			_ = s.Close()
+			return
 		}
 	}
 }
