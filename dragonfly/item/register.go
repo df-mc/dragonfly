@@ -36,4 +36,10 @@ func init() {
 	world.RegisterItem("minecraft:chain_helmet", Helmet{Tier: armour.TierChain})
 	world.RegisterItem("minecraft:iron_helmet", Helmet{Tier: armour.TierIron})
 	world.RegisterItem("minecraft:diamond_helmet", Helmet{Tier: armour.TierDiamond})
+
+	world.RegisterItem("minecraft:leather_chestplate", Chestplate{Tier: armour.TierLeather})
+	world.RegisterItem("minecraft:golden_chestplate", Chestplate{Tier: armour.TierGold})
+	world.RegisterItem("minecraft:chain_chestplate", Chestplate{Tier: armour.TierChain})
+	world.RegisterItem("minecraft:iron_chestplate", Chestplate{Tier: armour.TierIron})
+	world.RegisterItem("minecraft:diamond_chestplate", Chestplate{Tier: armour.TierDiamond})
 }
