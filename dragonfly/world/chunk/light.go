@@ -227,7 +227,7 @@ func insertSkyLightNodes(queue *nodeQueue, c *Chunk) {
 			// column can't spread below that anyway.
 			for y := current; y < highestY; y++ {
 				if y == current {
-					level := filterLevel(c.sub[y>>4], x, y+1, z)
+					level := filterLevel(c.sub[y>>4], x, y, z)
 					if level != 15 && level > 0 {
 						// If we hit a block like water or leaves, we need a node above this block regardless
 						// of the neighbours.
