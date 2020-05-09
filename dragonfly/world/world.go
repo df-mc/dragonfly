@@ -56,6 +56,8 @@ type World struct {
 
 	r         *rand.Rand
 	simDistSq int32
+
+	randomTickSpeed uint32
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -76,6 +78,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		defaultGameMode: gamemode.Survival{},
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		simDistSq:       int32(simulationDistance * simulationDistance),
+		randomTickSpeed: 3,
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -497,6 +500,13 @@ func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
 	w.gameModeMu.Unlock()
 }
 
+// SetRandomTickSpeed sets the random tick speed of blocks. By default, each sub chunk has 3 blocks randomly
+// ticked per sub chunk, so the default value is 3. Setting this value to 0 will stop random ticking
+// altogether, while setting it higher results in faster ticking.
+func (w *World) SetRandomTickSpeed(v int) {
+	atomic.StoreUint32(&w.randomTickSpeed, uint32(v))
+}
+
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
 // will be set, which does not read or write any data.
 func (w *World) Provider(p Provider) {
@@ -652,11 +662,17 @@ func (w *World) tickRandomBlocks() {
 			continue
 		}
 
+		type toTick struct {
+			b   RandomTicker
+			pos BlockPos
+		}
+		var t []toTick
+
 		c := v.Object.(*chunk.Chunk)
 		c.RLock()
 
 		// In total we generate 3 random blocks per sub chunk.
-		for j := 0; j < 3; j++ {
+		for j := uint32(0); j < atomic.LoadUint32(&w.randomTickSpeed); j++ {
 			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
 			// obtain a total of 16 coordinates on one axis from one uint64. One for each sub chunk.
 			ra, rb, rc := int(w.r.Uint64()), int(w.r.Uint64()), int(w.r.Uint64())
@@ -680,12 +696,16 @@ func (w *World) tickRandomBlocks() {
 				b, _ := blockByRuntimeID(rid)
 
 				if randomTicker, ok := b.(RandomTicker); ok {
-					randomTicker.RandomTick(blockPos, w)
+					t = append(t, toTick{b: randomTicker, pos: blockPos})
 				}
 			}
 		}
 
 		c.RUnlock()
+
+		for _, a := range t {
+			a.b.RandomTick(a.pos, w, w.r)
+		}
 	}
 }
 

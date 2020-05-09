@@ -8,6 +8,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/yourbasic/radix"
+	"math/rand"
 	"reflect"
 	"strings"
 	"sync"
@@ -27,8 +28,9 @@ type Block interface {
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
 // one random block in each sub chunk are picked to receive a random tick.
 type RandomTicker interface {
-	// RandomTick handles a random tick of the block at the position passed.
-	RandomTick(pos BlockPos, w *World)
+	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.Rand
+	// instance is passed which may be used to generate values randomly without locking.
+	RandomTick(pos BlockPos, w *World, r *rand.Rand)
 }
 
 // lightEmitter is identical to a block.lightEmitter.
