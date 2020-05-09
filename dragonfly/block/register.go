@@ -24,6 +24,7 @@ func init() {
 	world.RegisterBlock(Chest{Facing: world.Down}, Chest{Facing: world.Up}, Chest{Facing: world.East}, Chest{Facing: world.West}, Chest{Facing: world.North}, Chest{Facing: world.South})
 	world.RegisterBlock(allConcrete()...)
 	world.RegisterBlock(allLight()...)
+	world.RegisterBlock(allPlanks()...)
 }
 
 func init() {
@@ -66,6 +67,9 @@ func init() {
 	}
 	for _, b := range allLight() {
 		world.RegisterItem("minecraft:light_block", b.(world.Item))
+	}
+	for _, b := range allPlanks() {
+		world.RegisterItem("minecraft:planks", b.(world.Item))
 	}
 }
 

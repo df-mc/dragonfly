@@ -12,7 +12,7 @@ import (
 // Stripped log is a variant obtained by using an axe on a log.
 type Log struct {
 	// Wood is the type of wood of the log. This field must have one of the values found in the material
-	// package. Using Log without a Wood type will panic.
+	// package.
 	Wood material.Wood
 	// Stripped specifies if the log is stripped or not.
 	Stripped bool

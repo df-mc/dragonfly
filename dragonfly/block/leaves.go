@@ -9,7 +9,7 @@ import (
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
 type Leaves struct {
 	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
-	// package. Using Leaves without a Wood type will panic.
+	// package.
 	Wood material.Wood
 	// Persistent specifies if the leaves are persistent, meaning they will not decay as a result of no wood
 	// being nearby.
