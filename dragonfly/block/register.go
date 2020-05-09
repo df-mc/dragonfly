@@ -23,6 +23,7 @@ func init() {
 	world.RegisterBlock(Bedrock{}, Bedrock{InfiniteBurning: true})
 	world.RegisterBlock(Chest{Facing: world.Down}, Chest{Facing: world.Up}, Chest{Facing: world.East}, Chest{Facing: world.West}, Chest{Facing: world.North}, Chest{Facing: world.South})
 	world.RegisterBlock(allConcrete()...)
+	world.RegisterBlock(allLight()...)
 }
 
 func init() {
@@ -62,6 +63,9 @@ func init() {
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: material.OakWood(), Stripped: true})
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
+	}
+	for _, b := range allLight() {
+		world.RegisterItem("minecraft:light_block", b.(world.Item))
 	}
 }
 

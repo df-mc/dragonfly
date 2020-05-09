@@ -295,6 +295,24 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 	w.bMutex.Unlock()
 }
 
+// Light returns the light level at the position passed. This is the highest of the sky and block light.
+// The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
+// 15 means the block is fully lit.
+func (w *World) Light(pos BlockPos) uint8 {
+	if pos[1] < 0 || pos[1] > 255 {
+		// Fast way out.
+		return 0
+	}
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	if err != nil {
+		return 0
+	}
+	l := c.Light(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]))
+	c.RUnlock()
+
+	return l
+}
+
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
 // World.StopTime() is called.
 func (w *World) Time() int {
@@ -926,37 +944,16 @@ func showEntity(e Entity, viewer Viewer) {
 func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 	s, ok := w.chunkCache().Get(pos.Hash())
 	if !ok {
-		// We don't currently have the chunk cached, so we have to load it from the provider.
-		var found bool
-		c, found, err = w.provider().LoadChunk(pos)
+		c, err = w.loadChunk(pos)
 		if err != nil {
-			return nil, fmt.Errorf("error loading chunk %v: %v", pos, err)
+			return nil, err
 		}
-		if !found {
-			// The provider doesn't have a chunk saved at this position, so we generate a new one.
-			c = chunk.New()
-			w.generator().GenerateChunk(pos, c)
-		} else {
-			entities, err := w.provider().LoadEntities(pos)
-			if err != nil {
-				return nil, fmt.Errorf("error loading entities of chunk %v: %v", pos, err)
-			}
-			if len(entities) != 0 {
-				for _, e := range entities {
-					w.AddEntity(e)
-				}
-			}
-			blockEntities, err := w.provider().LoadBlockNBT(pos)
-			if err != nil {
-				return nil, fmt.Errorf("error loading block entities of chunk %v: %v", pos, err)
-			}
-			w.loadIntoBlocks(c, blockEntities)
-		}
+		w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
+		w.calculateLight(c, pos)
 	} else {
 		c = s.(*chunk.Chunk)
 	}
-	// We set the chunk back to the cache right away, so that the expiration time is reset.
-	w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
+	// Update the timestamp to that it doesn't expire after we just used it.
 	w.chunkCache().Set(pos.timeHash(), time.Now().Add(time.Minute*5), cache.DefaultExpiration)
 
 	if readOnly {
@@ -965,6 +962,91 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 		c.Lock()
 	}
 	return c, nil
+}
+
+// loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
+func (w *World) loadChunk(pos ChunkPos) (c *chunk.Chunk, err error) {
+	var found bool
+	c, found, err = w.provider().LoadChunk(pos)
+	if err != nil {
+		return nil, fmt.Errorf("error loading chunk %v: %v", pos, err)
+	}
+	if !found {
+		// The provider doesn't have a chunk saved at this position, so we generate a new one.
+		c = chunk.New()
+		w.generator().GenerateChunk(pos, c)
+	} else {
+		entities, err := w.provider().LoadEntities(pos)
+		if err != nil {
+			return nil, fmt.Errorf("error loading entities of chunk %v: %v", pos, err)
+		}
+		if len(entities) != 0 {
+			for _, e := range entities {
+				w.AddEntity(e)
+			}
+		}
+		blockEntities, err := w.provider().LoadBlockNBT(pos)
+		if err != nil {
+			return nil, fmt.Errorf("error loading block entities of chunk %v: %v", pos, err)
+		}
+		w.loadIntoBlocks(c, blockEntities)
+	}
+	return c, nil
+}
+
+// calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
+// neighbours if they have all chunks loaded around it as a result of the one passed.
+func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
+	chunk.FillLight(c)
+
+	for x := int32(-1); x <= 1; x++ {
+		for z := int32(-1); z <= 1; z++ {
+			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
+			// now exist because of this one.
+			centrePos := ChunkPos{pos[0] + x, pos[1] + z}
+			s, ok := w.chunkCache().Get(centrePos.Hash())
+			if !ok {
+				continue
+			}
+			neighbour := s.(*chunk.Chunk)
+			neighbour.Lock()
+			// We first attempt to spread the light of all neighbours into the ones around them.
+			w.spreadLight(neighbour, centrePos)
+			neighbour.Unlock()
+		}
+	}
+	// If the chunk loaded happened to be in the middle of a bunch of other chunks, we are able to spread it
+	// right away, so we try to do that.
+	w.spreadLight(c, pos)
+}
+
+// spreadLight spreads the light from the chunk passed at the position passed to all neighbours if each of
+// them is loaded.
+func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
+	neighbours, allPresent := make([]*chunk.Chunk, 0, 8), true
+	for x := int32(-1); x <= 1; x++ {
+		for z := int32(-1); z <= 1; z++ {
+			s, ok := w.chunkCache().Get(ChunkPos{pos[0] + x, pos[1] + z}.Hash())
+			if !ok {
+				allPresent = false
+				break
+			}
+			if !(x == 0 && z == 0) {
+				neighbour := s.(*chunk.Chunk)
+				neighbour.Lock()
+
+				neighbours = append(neighbours, neighbour)
+			}
+		}
+	}
+	if allPresent {
+		// All neighbours of the current one are present, so we can spread the light from this chunk
+		// to all neighbours.
+		chunk.SpreadLight(c, neighbours)
+	}
+	for _, neighbour := range neighbours {
+		neighbour.Unlock()
+	}
 }
 
 // loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that

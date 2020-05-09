@@ -8,6 +8,11 @@ import (
 // Air is the block present in otherwise empty space.
 type Air struct{}
 
+// LightDiffusionLevel ...
+func (Air) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // EncodeItem ...
 func (Air) EncodeItem() (id int32, meta int16) {
 	return 0, 0
@@ -24,6 +29,6 @@ func (Air) AABB() []physics.AABB {
 }
 
 // ReplaceableBy always returns true.
-func (Air) ReplaceableBy(b world.Block) bool {
+func (Air) ReplaceableBy(world.Block) bool {
 	return true
 }

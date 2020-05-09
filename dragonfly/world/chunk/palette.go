@@ -21,7 +21,7 @@ func (palette *palette) Len() int {
 	return len(palette.blockRuntimeIDs)
 }
 
-// Add adds a runtime ID to the palette. It does not check if the runtime ID was already set in the palette.
+// Add adds a runtime ID to the palette. It does not first if the runtime ID was already set in the palette.
 // The index at which the runtime ID was added is returned.
 func (palette *palette) Add(runtimeID uint32) uint16 {
 	palette.blockRuntimeIDs = append(palette.blockRuntimeIDs, runtimeID)

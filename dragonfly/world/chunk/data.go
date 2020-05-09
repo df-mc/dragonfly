@@ -141,7 +141,7 @@ var emptyHeightMap = make([]byte, 512)
 func DiskEncode(c *Chunk) (d SerialisedData) {
 	buf := pool.Get().(*bytes.Buffer)
 	for y, sub := range c.sub {
-		if sub == nil {
+		if sub == nil || len(sub.storages) == 0 {
 			// The sub chunk at this Y value is empty, so don't write it.
 			continue
 		}

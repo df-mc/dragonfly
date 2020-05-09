@@ -646,6 +646,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	if !ok {
 		t = block.Air{}
 	}
+	//noinspection SpellCheckingInspection
 	if nbter, ok := t.(world.NBTer); ok && len(it.NBTData) != 0 {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}

@@ -13,6 +13,25 @@ type Activatable interface {
 	Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User)
 }
 
+// LightEmitter represents a block that emits light when placed. Blocks such as torches or lanterns implement
+// this interface.
+type LightEmitter interface {
+	// LightEmissionLevel returns the light emission level of the block, a number from 0-15 where 15 is the
+	// brightest and 0 means it doesn't emit light at all.
+	LightEmissionLevel() uint8
+}
+
+// LightDiffuser represents a block that diffuses light. This means that a specific amount of light levels
+// will be subtracted when light passes through the block.
+// Blocks that do not implement LightDiffuser will be assumed to be solid: Light will not be able to pass
+// through these blocks.
+type LightDiffuser interface {
+	// LightDiffusionLevel returns the amount of light levels that is subtracted when light passes through
+	// this block. Some locks, such as leaves, have this behaviour. A diffusion level of 15 means that all
+	// light will be completely blocked when light passes through the block.
+	LightDiffusionLevel() uint8
+}
+
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {

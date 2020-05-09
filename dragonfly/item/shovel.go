@@ -52,7 +52,7 @@ func (s Shovel) HarvestLevel() int {
 }
 
 // BaseMiningEfficiency ...
-func (s Shovel) BaseMiningEfficiency(b world.Block) float64 {
+func (s Shovel) BaseMiningEfficiency(world.Block) float64 {
 	return s.Tier.BaseMiningEfficiency
 }
 

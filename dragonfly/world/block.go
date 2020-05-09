@@ -31,6 +31,16 @@ type RandomTicker interface {
 	RandomTick(pos BlockPos, w *World)
 }
 
+// lightEmitter is identical to a block.lightEmitter.
+type lightEmitter interface {
+	LightEmissionLevel() uint8
+}
+
+// lightDiffuser is identical to a block.LightDiffuser.
+type lightDiffuser interface {
+	LightDiffusionLevel() uint8
+}
+
 // RegisterBlock registers a block with the save name passed. The save name is used to save the block to the
 // world's database and must not conflict with existing blocks.
 // If a saveName is passed which already has a block registered for it, RegisterBlock panics.
@@ -49,9 +59,21 @@ func RegisterBlock(states ...Block) {
 				continue
 			}
 		}
+		rid := uint32(len(registeredStates))
 
-		runtimeIDs[key] = uint32(len(registeredStates))
+		runtimeIDs[key] = rid
 		registeredStates = append(registeredStates, state)
+
+		if diffuser, ok := state.(lightDiffuser); ok {
+			if level := diffuser.LightDiffusionLevel(); level != 0 {
+				chunk.FilteringBlocks[rid] = level
+			}
+		} else {
+			chunk.OpaqueBlocks[rid] = struct{}{}
+		}
+		if emitter, ok := state.(lightEmitter); ok {
+			chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
+		}
 
 		blocksHash[key] = state
 		registerBlockByTypeName(state)

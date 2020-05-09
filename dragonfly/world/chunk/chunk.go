@@ -33,6 +33,15 @@ func (chunk *Chunk) SetBiomeID(x, z, biomeID uint8) {
 	chunk.biomes[columnOffset(x, z)] = biomeID
 }
 
+// Light returns the light level at a specific position in the chunk.
+func (chunk *Chunk) Light(x, y, z uint8) uint8 {
+	i := y >> 4
+	if chunk.sub[i] == nil {
+		return 15
+	}
+	return chunk.sub[i].Light(x&15, y&15, z&15)
+}
+
 // RuntimeID returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
@@ -42,7 +51,7 @@ func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 		// an air block. (always runtime ID 0)
 		return 0
 	}
-	return sub.Layer(layer).RuntimeID(x, y, z)
+	return sub.RuntimeID(x, y, z, layer)
 }
 
 // SetRuntimeID sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
@@ -53,7 +62,7 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 		// The first layer is initialised in the next call to Layer().
 		chunk.sub[i] = &SubChunk{}
 	}
-	chunk.sub[i].Layer(layer).SetRuntimeID(x, y, z, runtimeID)
+	chunk.sub[i].SetRuntimeID(x, y, z, layer, runtimeID)
 }
 
 // SubChunkPresent checks if a sub chunk is present at the y value passed.

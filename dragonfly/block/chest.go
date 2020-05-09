@@ -171,6 +171,11 @@ func (c Chest) EncodeNBT() map[string]interface{} {
 	return m
 }
 
+// LightDiffusionLevel ...
+func (Chest) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // EncodeItem ...
 func (Chest) EncodeItem() (id int32, meta int16) {
 	return 54, 0

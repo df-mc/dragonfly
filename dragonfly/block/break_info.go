@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+// Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
+// such as bedrock.
+type Breakable interface {
+	// BreakInfo returns information of the block related to the breaking of it.
+	BreakInfo() BreakInfo
+}
+
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the
 // item passed.
 func BreakDuration(b world.Block, i item.Stack) time.Duration {
@@ -54,13 +61,6 @@ func BreaksInstantly(b world.Block, i item.Stack) bool {
 	efficiencyVal := 0.0
 	hasteVal := 0.0
 	return (t.BaseMiningEfficiency(b)+efficiencyVal)*hasteVal >= hardness*30
-}
-
-// Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
-// such as bedrock.
-type Breakable interface {
-	// BreakInfo returns information of the block related to the breaking of it.
-	BreakInfo() BreakInfo
 }
 
 // BreakInfo is a struct returned by every block. It holds information on block breaking related data, such as

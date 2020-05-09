@@ -43,6 +43,7 @@ func registerVanillaCreativeItems() {
 			// The item wasn't registered, so don't register it as a creative item.
 			continue
 		}
+		//noinspection ALL
 		if nbter, ok := it.(world.NBTer); ok {
 			nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
 			if err := nbt.Unmarshal(nbtData, &temp); err != nil {
