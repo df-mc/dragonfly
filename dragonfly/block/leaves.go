@@ -50,6 +50,11 @@ func (l Leaves) EncodeItem() (id int32, meta int16) {
 	panic("invalid wood type")
 }
 
+// LightDiffusionLevel ...
+func (Leaves) LightDiffusionLevel() uint8 {
+	return 1
+}
+
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {
