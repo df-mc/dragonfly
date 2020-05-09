@@ -1,6 +1,8 @@
 package chunk
 
 import (
+	"bytes"
+	"math"
 	"sync"
 )
 
@@ -54,15 +56,22 @@ func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 	return sub.RuntimeID(x, y, z, layer)
 }
 
+// fullSkyLight is used to copy full light to newly created sub chunks.
+var fullSkyLight = bytes.Repeat([]byte{math.MaxUint8}, 2048)
+
 // SetRuntimeID sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
 // SubChunk exists at the given y, a new SubChunk is created and the block is set.
 func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 	i := y >> 4
-	if chunk.sub[i] == nil {
+	sub := chunk.sub[i]
+	if sub == nil {
 		// The first layer is initialised in the next call to Layer().
-		chunk.sub[i] = &SubChunk{}
+		sub = &SubChunk{}
+		copy(sub.skyLight[:], fullSkyLight)
+
+		chunk.sub[i] = sub
 	}
-	chunk.sub[i].SetRuntimeID(x, y, z, layer, runtimeID)
+	sub.SetRuntimeID(x, y, z, layer, runtimeID)
 }
 
 // SubChunkPresent checks if a sub chunk is present at the y value passed.
