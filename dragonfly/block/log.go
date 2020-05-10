@@ -20,7 +20,7 @@ type Log struct {
 	Axis world.Axis
 }
 
-// UseOnBlock ...
+// UseOnBlock handles the rotational placing of logs.
 func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ item.User, ctx *item.UseContext) bool {
 	if replaceable(w, pos.Side(face), l) {
 		l.Axis = face.Axis()

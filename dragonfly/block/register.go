@@ -25,6 +25,7 @@ func init() {
 	world.RegisterBlock(allConcrete()...)
 	world.RegisterBlock(allLight()...)
 	world.RegisterBlock(allPlanks()...)
+	world.RegisterBlock(allWoodStairs()...)
 }
 
 func init() {
@@ -71,6 +72,12 @@ func init() {
 	for _, b := range allPlanks() {
 		world.RegisterItem("minecraft:planks", b.(world.Item))
 	}
+	world.RegisterItem("minecraft:oak_stairs", WoodStairs{Wood: material.OakWood()})
+	world.RegisterItem("minecraft:spruce_stairs", WoodStairs{Wood: material.SpruceWood()})
+	world.RegisterItem("minecraft:birch_stairs", WoodStairs{Wood: material.BirchWood()})
+	world.RegisterItem("minecraft:jungle_stairs", WoodStairs{Wood: material.JungleWood()})
+	world.RegisterItem("minecraft:acacia_stairs", WoodStairs{Wood: material.AcaciaWood()})
+	world.RegisterItem("minecraft:dark_oak_stairs", WoodStairs{Wood: material.DarkOakWood()})
 }
 
 func init() {

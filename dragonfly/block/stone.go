@@ -23,14 +23,12 @@ type (
 	}
 )
 
-var (
-	stoneBreakInfo = BreakInfo{
-		Hardness:    1.5,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(Cobblestone{}, 1)),
-	}
-)
+var stoneBreakInfo = BreakInfo{
+	Hardness:    1.5,
+	Harvestable: pickaxeHarvestable,
+	Effective:   pickaxeEffective,
+	Drops:       simpleDrops(item.NewStack(Cobblestone{}, 1)),
+}
 
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
