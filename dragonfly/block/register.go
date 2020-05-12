@@ -26,6 +26,7 @@ func init() {
 	world.RegisterBlock(allLight()...)
 	world.RegisterBlock(allPlanks()...)
 	world.RegisterBlock(allWoodStairs()...)
+	world.RegisterBlock(allWoodSlabs()...)
 }
 
 func init() {
@@ -78,6 +79,18 @@ func init() {
 	world.RegisterItem("minecraft:jungle_stairs", WoodStairs{Wood: material.JungleWood()})
 	world.RegisterItem("minecraft:acacia_stairs", WoodStairs{Wood: material.AcaciaWood()})
 	world.RegisterItem("minecraft:dark_oak_stairs", WoodStairs{Wood: material.DarkOakWood()})
+	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: material.OakWood()})
+	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: material.SpruceWood()})
+	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: material.BirchWood()})
+	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: material.JungleWood()})
+	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: material.AcaciaWood()})
+	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: material.DarkOakWood()})
+	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: material.OakWood(), Double: true})
+	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: material.SpruceWood(), Double: true})
+	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: material.BirchWood(), Double: true})
+	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: material.JungleWood(), Double: true})
+	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: material.AcaciaWood(), Double: true})
+	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: material.DarkOakWood(), Double: true})
 }
 
 func init() {
@@ -98,16 +111,6 @@ func init() {
 func readSlice(m map[string]interface{}, key string) []interface{} {
 	v, _ := m[key]
 	b, _ := v.([]interface{})
-	return b
-}
-
-// readMap reads an interface map from a map at the key passed.
-func readMap(m map[string]interface{}, key string) map[string]interface{} {
-	v, _ := m[key]
-	b, _ := v.(map[string]interface{})
-	if b == nil {
-		b = map[string]interface{}{}
-	}
 	return b
 }
 

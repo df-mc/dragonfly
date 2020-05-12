@@ -162,7 +162,6 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 		w.log.Errorf("error setting block: %v", err)
 	}
 	c.Unlock()
-	return
 }
 
 // setBlock sets a block at a position in a chunk to a given block. It does not lock the chunk passed, and
@@ -909,43 +908,6 @@ func (w *World) chunkViewers(pos ChunkPos) []Viewer {
 	return viewers
 }
 
-// moveChunkEntity moves an entity from one chunk to another. It makes sure viewers of the old chunk that are
-// not viewing the new one no longer see the entity, and viewers of the new chunk that were not already
-// viewing the old chunk are shown the entity.
-func (w *World) moveChunkEntity(e Entity, chunkPos, newChunkPos ChunkPos) {
-	w.entityMutex.Lock()
-	n := make([]Entity, 0, len(w.entities[chunkPos]))
-	for _, entity := range w.entities[chunkPos] {
-		if entity != e {
-			n = append(n, entity)
-		}
-	}
-	if len(n) == 0 {
-		// The entity is the last in the chunk, so we can delete the value from the map.
-		delete(w.entities, chunkPos)
-	} else {
-		w.entities[chunkPos] = n
-	}
-
-	w.entities[newChunkPos] = append(w.entities[newChunkPos], e)
-	w.entityMutex.Unlock()
-
-	w.viewerMutex.RLock()
-	for _, viewer := range w.viewers[chunkPos] {
-		if !w.hasViewer(newChunkPos, viewer) {
-			// First we hide the entity from all viewers that were previously viewing it, but no longer are.
-			viewer.HideEntity(e)
-		}
-	}
-	for _, viewer := range w.viewers[newChunkPos] {
-		if !w.hasViewer(chunkPos, viewer) {
-			// Then we show the entity to all viewers that are now viewing the entity in the new chunk.
-			showEntity(e, viewer)
-		}
-	}
-	w.viewerMutex.RUnlock()
-}
-
 // showEntity shows an entity to a viewer of the world. It makes sure everything of the entity, including the
 // items held, is shown.
 func showEntity(e Entity, viewer Viewer) {
@@ -1154,7 +1116,7 @@ func (w *World) initChunkCache() {
 						w.chunkCache().Set(k, time.Now().Add(time.Minute*5), cache.DefaultExpiration)
 						continue
 					}
-					if i.Object.(time.Time).Sub(time.Now()) <= 0 {
+					if time.Until(i.Object.(time.Time)) <= 0 {
 						// The time set is below the current time: We should evict the chunk.
 						w.chunkCache().Delete(k)
 						w.chunkCache().Delete(k[:8])

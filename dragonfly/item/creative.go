@@ -23,17 +23,19 @@ func RegisterCreativeItem(item Stack) {
 // RegisterCreativeItem.
 var creativeItemStacks []Stack
 
+type creativeItemEntry struct {
+	ID   int32
+	Meta int16
+	NBT  string
+}
+
 // registerVanillaCreativeItems initialises the creative items, registering all creative items that have also
 // been registered as normal items and are present in vanilla.
 //noinspection GoUnusedFunction
 func registerVanillaCreativeItems() {
 	var temp map[string]interface{}
-	type s struct {
-		ID   int32
-		Meta int16
-		NBT  string
-	}
-	var m []s
+
+	var m []creativeItemEntry
 	if err := json.Unmarshal([]byte(creativeItems), &m); err != nil {
 		panic(err)
 	}

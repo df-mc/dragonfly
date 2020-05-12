@@ -142,7 +142,7 @@ func InvToNBT(inv *inventory.Inventory) []map[string]interface{} {
 
 // readByte reads a byte from a map at the key passed.
 func readByte(m map[string]interface{}, key string) byte {
-	v, _ := m[key]
+	v := m[key]
 	b, _ := v.(byte)
 	return b
 }

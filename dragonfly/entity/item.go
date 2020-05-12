@@ -130,7 +130,6 @@ func (it *Item) collect(collector item.Collector) {
 	it.World().AddEntity(NewItem(it.i.Grow(-n), it.Position()))
 
 	_ = it.Close()
-	return
 }
 
 // Velocity returns the current velocity of the item. The values in the Vec3 returned represent the speed on

@@ -218,7 +218,7 @@ type blockEntry struct {
 
 // diskEncodeBlockStorage encodes a block storage to its disk representation into the buffer passed.
 func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
-	_ = buf.WriteByte(byte(storage.bitsPerBlock<<1) | 0)
+	_ = buf.WriteByte(byte(storage.bitsPerBlock << 1))
 	for _, b := range storage.blocks {
 		_ = binary.Write(buf, binary.LittleEndian, b)
 	}

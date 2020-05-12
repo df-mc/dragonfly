@@ -16,7 +16,7 @@ type WoodStairs struct {
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part
 	// of the block.
 	UpsideDown bool
-	// Facing is the direction that the stairs are facing.
+	// Facing is the direction that the full side of the stairs is facing.
 	Facing world.Face
 }
 
@@ -25,10 +25,7 @@ type WoodStairs struct {
 func (w WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, wo *world.World, user item.User, ctx *item.UseContext) bool {
 	if replaceable(wo, pos.Side(face), w) {
 		w.Facing = user.Facing()
-
-		if face == world.Up {
-			w.UpsideDown = false
-		} else if face == world.Down || clickPos[1] > 0.5 {
+		if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
 			w.UpsideDown = true
 		}
 

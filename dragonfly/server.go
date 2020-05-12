@@ -139,7 +139,7 @@ func (server *Server) Uptime() time.Duration {
 	if !server.running() {
 		return 0
 	}
-	return time.Now().Sub(server.startTime)
+	return time.Since(server.startTime)
 }
 
 // PlayerCount returns the current player count of the server. It is equivalent to calling
