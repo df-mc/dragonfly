@@ -63,7 +63,7 @@ func New(c *Config, log *logrus.Logger) *Server {
 	}
 	s := &Server{
 		started: new(uint32),
-		c:       DefaultConfig(),
+		c:       *c,
 		log:     log,
 		players: make(chan *player.Player),
 		world:   world.New(log, c.World.SimulationDistance),
