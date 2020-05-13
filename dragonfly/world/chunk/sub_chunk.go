@@ -19,6 +19,11 @@ func (sub *SubChunk) Layer(layer uint8) *BlockStorage {
 	return sub.storages[layer]
 }
 
+// Layers returns all layers in the sub chunk. This method may also return an empty slice.
+func (sub *SubChunk) Layers() []*BlockStorage {
+	return sub.storages
+}
+
 // RuntimeID returns the runtime ID of the block located at the given X, Y and Z. X, Y and Z must be in a
 // range of 0-15.
 func (sub *SubChunk) RuntimeID(x, y, z byte, layer uint8) uint32 {
