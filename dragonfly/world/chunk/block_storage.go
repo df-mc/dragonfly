@@ -19,9 +19,9 @@ type BlockStorage struct {
 	bitsPerBlock uint16
 	// filledBitsPerWord returns the amount of blocks that are actually filled per uint32.
 	filledBitsPerWord uint16
-	// palette holds all block runtime IDs that the blocks in the blocks slice point to. These runtime IDs
+	// Palette holds all block runtime IDs that the blocks in the blocks slice point to. These runtime IDs
 	// point to block states.
-	palette *palette
+	palette *Palette
 
 	// blocks contains all blocks in the block storage. This slice has a variable size, but may not be changed
 	// unless the whole block storage is resized, including the palette.
@@ -30,9 +30,14 @@ type BlockStorage struct {
 
 // NewBlockStorage creates a new block storage using the uint32 slice as the blocks and the palette passed.
 // The bits per block are calculated using the length of the uint32 slice.
-func newBlockStorage(blocks []uint32, palette *palette) *BlockStorage {
+func newBlockStorage(blocks []uint32, palette *Palette) *BlockStorage {
 	bitsPerBlock := uint16(len(blocks) / uint32BitSize / uint32ByteSize)
 	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, palette: palette}
+}
+
+// Palette returns the Palette of the block storage.
+func (storage *BlockStorage) Palette() *Palette {
+	return storage.palette
 }
 
 // RuntimeID returns the runtime ID of the block located at the given x, y and z.
