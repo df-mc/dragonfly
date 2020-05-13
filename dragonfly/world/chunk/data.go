@@ -294,7 +294,7 @@ func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 		}
 		blocks[i] = uint32(temp)
 	}
-	return newBlockStorage(uint32s, &palette{blockRuntimeIDs: blocks, size: paletteSize(blockSize)}), nil
+	return newBlockStorage(uint32s, &Palette{blockRuntimeIDs: blocks, size: paletteSize(blockSize)}), nil
 }
 
 // diskDecodeBlockStorage decodes a block storage from the buffer passed. If not successful, an error is
@@ -350,7 +350,7 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 		}
 	}
 
-	palette := &palette{blockRuntimeIDs: make([]uint32, paletteCount), size: paletteSize(blockSize)}
+	palette := &Palette{blockRuntimeIDs: make([]uint32, paletteCount), size: paletteSize(blockSize)}
 	for i, b := range blocks {
 		var ok bool
 		palette.blockRuntimeIDs[i], ok = StateToRuntimeID(b.Name, b.State)
