@@ -28,13 +28,11 @@ func (palette *Palette) Add(runtimeID uint32) uint16 {
 	return uint16(len(palette.blockRuntimeIDs) - 1)
 }
 
-// Replace replaces the runtime ID 'x' in the palette with the runtime ID 'with'. All blocks in the block
-// storage pointing to x will, after calling this, point to with instead.
-func (palette *Palette) Replace(x uint32, with uint32) {
+// Replace calls the function passed for each runtime ID present in the palette. The value returned by the
+// function replaces the runtime ID present at the index of the runtime ID passed.
+func (palette *Palette) Replace(f func(runtimeID uint32) uint32) {
 	for index, id := range palette.blockRuntimeIDs {
-		if id == x {
-			palette.blockRuntimeIDs[index] = with
-		}
+		palette.blockRuntimeIDs[index] = f(id)
 	}
 }
 
