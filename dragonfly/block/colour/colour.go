@@ -97,8 +97,6 @@ func All() []Colour {
 
 type colour uint8
 
-func (colour) __() {}
-
 // String ...
 func (c colour) String() string {
 	switch c {

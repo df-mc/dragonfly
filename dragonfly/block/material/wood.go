@@ -40,8 +40,6 @@ func DarkOakWood() Wood {
 
 type wood uint8
 
-func (w wood) __() {}
-
 // Name ...
 func (w wood) Name() string {
 	switch w {
