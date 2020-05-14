@@ -107,7 +107,7 @@ func (s *Session) handleModalFormResponse(pk *packet.ModalFormResponse) error {
 		return nil
 	}
 	if err := f.SubmitJSON(pk.ResponseData, s.c); err != nil {
-		return fmt.Errorf("error parsing form data: %v", err)
+		return fmt.Errorf("error parsing form data: %w", err)
 	}
 	return nil
 }
@@ -264,13 +264,13 @@ func (s *Session) verifyTransaction(a []protocol.InventoryAction) error {
 			}
 		}
 		if _, err := temp.AddItem(old); err != nil {
-			return fmt.Errorf("inventory was full: %v", err)
+			return fmt.Errorf("inventory was full: %w", err)
 		}
 	}
 	for _, action := range actions {
 		newItem := stackToItem(action.NewItem)
 		if err := temp.RemoveItem(newItem); err != nil {
-			return fmt.Errorf("item %v removed was not present in old items: %v", newItem, err)
+			return fmt.Errorf("item %v removed was not present in old items: %w", newItem, err)
 		}
 	}
 	// Now that we made sure every new item was also present in the old items, we must also check if every old

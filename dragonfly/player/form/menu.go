@@ -79,7 +79,7 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	var index uint
 	err := json.Unmarshal(b, &index)
 	if err != nil {
-		return fmt.Errorf("cannot parse button index as int: %v", err)
+		return fmt.Errorf("cannot parse button index as int: %w", err)
 	}
 	buttons := m.Buttons()
 	if index >= uint(len(buttons)) {

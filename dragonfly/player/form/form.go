@@ -73,7 +73,7 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 
 	var data []interface{}
 	if err := dec.Decode(&data); err != nil {
-		return fmt.Errorf("error decoding JSON data to slice: %v", err)
+		return fmt.Errorf("error decoding JSON data to slice: %w", err)
 	}
 
 	origin := reflect.ValueOf(f.submittable)
@@ -96,7 +96,7 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 		}
 		elem, err := f.parseValue(fieldV.Interface().(Element), data[0])
 		if err != nil {
-			return fmt.Errorf("error parsing: %v", err)
+			return fmt.Errorf("error parsing: %w", err)
 		}
 		fieldV.Set(elem)
 		data = data[1:]

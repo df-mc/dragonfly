@@ -90,7 +90,7 @@ func setStringToField(val reflect.Value, s string) error {
 	case FromStringer:
 		newValue, err := v.FromString(s)
 		if err != nil {
-			return fmt.Errorf("cannot parse '%v': %v", s, err)
+			return fmt.Errorf("cannot parse '%v': %w", s, err)
 		}
 		val.Set(reflect.ValueOf(newValue))
 	case bool:

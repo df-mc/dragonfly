@@ -951,7 +951,7 @@ func (w *World) loadChunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 	var found bool
 	c, found, err = w.provider().LoadChunk(pos)
 	if err != nil {
-		return nil, fmt.Errorf("error loading chunk %v: %v", pos, err)
+		return nil, fmt.Errorf("error loading chunk %v: %w", pos, err)
 	}
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
@@ -960,7 +960,7 @@ func (w *World) loadChunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 	} else {
 		entities, err := w.provider().LoadEntities(pos)
 		if err != nil {
-			return nil, fmt.Errorf("error loading entities of chunk %v: %v", pos, err)
+			return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
 		}
 		if len(entities) != 0 {
 			for _, e := range entities {
@@ -969,7 +969,7 @@ func (w *World) loadChunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 		}
 		blockEntities, err := w.provider().LoadBlockNBT(pos)
 		if err != nil {
-			return nil, fmt.Errorf("error loading block entities of chunk %v: %v", pos, err)
+			return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
 		}
 		w.loadIntoBlocks(c, blockEntities)
 	}

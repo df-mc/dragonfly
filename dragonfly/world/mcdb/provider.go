@@ -38,7 +38,7 @@ func New(dir string) (*Provider, error) {
 	} else {
 		f, err := ioutil.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
-			return nil, fmt.Errorf("error opening level.dat file: %v", err)
+			return nil, fmt.Errorf("error opening level.dat file: %w", err)
 		}
 		// The first 8 bytes are a useless header (version and length): We don't need it.
 		if len(f) < 8 {
@@ -46,7 +46,7 @@ func New(dir string) (*Provider, error) {
 			return nil, fmt.Errorf("level.dat exists but has no data")
 		}
 		if err := nbt.UnmarshalEncoding(f[8:], &p.d, nbt.LittleEndian); err != nil {
-			return nil, fmt.Errorf("error decoding level.dat NBT: %v", err)
+			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
 	}
 	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
@@ -54,7 +54,7 @@ func New(dir string) (*Provider, error) {
 		BlockSize:   16 * opt.KiB,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error opening leveldb database: %v", err)
+		return nil, fmt.Errorf("error opening leveldb database: %w", err)
 	}
 	p.db = db
 	return p, nil
@@ -126,20 +126,20 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	if err == leveldb.ErrNotFound {
 		return nil, false, nil
 	} else if err != nil {
-		return nil, true, fmt.Errorf("error reading version: %v", err)
+		return nil, true, fmt.Errorf("error reading version: %w", err)
 	}
 
 	data.Data2D, err = p.db.Get(append(key, key2DData), nil)
 	if err == leveldb.ErrNotFound {
 		return nil, false, nil
 	} else if err != nil {
-		return nil, true, fmt.Errorf("error reading 2D data: %v", err)
+		return nil, true, fmt.Errorf("error reading 2D data: %w", err)
 	}
 
 	data.BlockNBT, err = p.db.Get(append(key, keyBlockEntities), nil)
 	// Block entities aren't present when there aren't any, so it's okay if we can't find the key.
 	if err != nil && err != leveldb.ErrNotFound {
-		return nil, true, fmt.Errorf("error reading block entities: %v", err)
+		return nil, true, fmt.Errorf("error reading block entities: %w", err)
 	}
 
 	for y := byte(0); y < 16; y++ {
@@ -149,7 +149,7 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 			// be present.
 			continue
 		} else if err != nil {
-			return nil, true, fmt.Errorf("error reading 2D sub chunk %v: %v", y, err)
+			return nil, true, fmt.Errorf("error reading 2D sub chunk %v: %w", y, err)
 		}
 	}
 	c, err = chunk.DiskDecode(data)
@@ -240,7 +240,7 @@ func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]interface
 	for buf.Len() != 0 {
 		var m map[string]interface{}
 		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("error decoding block NBT: %v", err)
+			return nil, fmt.Errorf("error decoding block NBT: %w", err)
 		}
 		a = append(a, m)
 	}
@@ -256,7 +256,7 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data map[[3]int]map[str
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 	for _, d := range data {
 		if err := enc.Encode(d); err != nil {
-			return fmt.Errorf("error encoding block NBT: %v", err)
+			return fmt.Errorf("error encoding block NBT: %w", err)
 		}
 	}
 	return p.db.Put(append(index(position), keyBlockEntities), buf.Bytes(), nil)
@@ -266,14 +266,14 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data map[[3]int]map[str
 func (p *Provider) Close() error {
 	f, err := os.OpenFile(filepath.Join(p.dir, "level.dat"), os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("error opening level.dat file: %v", err)
+		return fmt.Errorf("error opening level.dat file: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
 	_ = binary.Write(buf, binary.LittleEndian, int32(3))
 	nbtData, err := nbt.MarshalEncoding(p.d, nbt.LittleEndian)
 	if err != nil {
-		return fmt.Errorf("error encoding level.dat to NBT: %v", err)
+		return fmt.Errorf("error encoding level.dat to NBT: %w", err)
 	}
 	_ = binary.Write(buf, binary.LittleEndian, int32(len(nbtData)))
 	_, _ = buf.Write(nbtData)
@@ -281,11 +281,11 @@ func (p *Provider) Close() error {
 	_, _ = f.Write(buf.Bytes())
 
 	if err := f.Close(); err != nil {
-		return fmt.Errorf("error closing level.dat: %v", err)
+		return fmt.Errorf("error closing level.dat: %w", err)
 	}
 	//noinspection SpellCheckingInspection
 	if err := ioutil.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
-		return fmt.Errorf("error writing levelname.txt: %v", err)
+		return fmt.Errorf("error writing levelname.txt: %w", err)
 	}
 	return p.db.Close()
 }

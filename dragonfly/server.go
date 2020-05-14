@@ -249,7 +249,7 @@ func (server *Server) startListening() error {
 
 	//noinspection SpellCheckingInspection
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
-		return fmt.Errorf("listening on address failed: %v", err)
+		return fmt.Errorf("listening on address failed: %w", err)
 	}
 
 	server.log.Infof("Server running on %v.\n", server.listener.Addr())

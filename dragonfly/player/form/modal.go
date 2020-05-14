@@ -61,7 +61,7 @@ func (m Modal) Body() string {
 func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 	var value bool
 	if err := json.Unmarshal(b, &value); err != nil {
-		return fmt.Errorf("error parsing JSON as bool: %v", err)
+		return fmt.Errorf("error parsing JSON as bool: %w", err)
 	}
 	if value {
 		m.submittable.Submit(submitter, m.Buttons()[0])

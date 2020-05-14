@@ -50,7 +50,7 @@ func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
 	for y := 0; y < subChunkCount; y++ {
 		ver, err := buf.ReadByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading version: %v", err)
+			return nil, fmt.Errorf("error reading version: %w", err)
 		}
 		c.sub[y] = &SubChunk{}
 		switch ver {
@@ -67,7 +67,7 @@ func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
 			// Version 8 allows up to 256 layers for one sub chunk.
 			storageCount, err := buf.ReadByte()
 			if err != nil {
-				return nil, fmt.Errorf("error reading storage count: %v", err)
+				return nil, fmt.Errorf("error reading storage count: %w", err)
 			}
 			c.sub[y].storages = make([]*BlockStorage, storageCount)
 
@@ -80,7 +80,7 @@ func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
 		}
 	}
 	if _, err := buf.Read(c.biomes[:]); err != nil {
-		return nil, fmt.Errorf("error reading biomes: %v", err)
+		return nil, fmt.Errorf("error reading biomes: %w", err)
 	}
 	_, _ = buf.ReadByte()
 
@@ -88,7 +88,7 @@ func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
 	for buf.Len() != 0 {
 		var m map[string]interface{}
 		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("error decoding block entity: %v", err)
+			return nil, fmt.Errorf("error decoding block entity: %w", err)
 		}
 		c.SetBlockNBT([3]int{int(m["x"].(int32)), int(m["y"].(int32)), int(m["z"].(int32))}, m)
 	}
@@ -177,7 +177,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		buf := bytes.NewBuffer(sub)
 		ver, err := buf.ReadByte()
 		if err != nil {
-			return nil, fmt.Errorf("error reading version: %v", err)
+			return nil, fmt.Errorf("error reading version: %w", err)
 		}
 		c.sub[y] = &SubChunk{}
 		switch ver {
@@ -194,7 +194,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 			// Version 8 allows up to 256 layers for one sub chunk.
 			storageCount, err := buf.ReadByte()
 			if err != nil {
-				return nil, fmt.Errorf("error reading storage count: %v", err)
+				return nil, fmt.Errorf("error reading storage count: %w", err)
 			}
 			c.sub[y].storages = make([]*BlockStorage, storageCount)
 
@@ -252,7 +252,7 @@ func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
 func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	blockSize, err := buf.ReadByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading block size: %v", err)
+		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
 	blockSize >>= 1
 
@@ -281,7 +281,7 @@ func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 
 	var paletteCount int32
 	if err := protocol.Varint32(buf, &paletteCount); err != nil {
-		return nil, fmt.Errorf("error reading palette entry count: %v", err)
+		return nil, fmt.Errorf("error reading palette entry count: %w", err)
 	}
 	if paletteCount <= 0 {
 		return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
@@ -290,7 +290,7 @@ func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	blocks, temp := make([]uint32, paletteCount), int32(0)
 	for i := int32(0); i < paletteCount; i++ {
 		if err := protocol.Varint32(buf, &temp); err != nil {
-			return nil, fmt.Errorf("error decoding palette entry: %v", err)
+			return nil, fmt.Errorf("error decoding palette entry: %w", err)
 		}
 		blocks[i] = uint32(temp)
 	}
@@ -302,7 +302,7 @@ func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	blockSize, err := buf.ReadByte()
 	if err != nil {
-		return nil, fmt.Errorf("error reading block size: %v", err)
+		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
 	blockSize >>= 1
 
@@ -346,7 +346,7 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	// There are paletteCount NBT tags that represent unique blocks.
 	for i := uint32(0); i < paletteCount; i++ {
 		if err := dec.Decode(&blocks[i]); err != nil {
-			return nil, fmt.Errorf("error decoding block: %v", err)
+			return nil, fmt.Errorf("error decoding block: %w", err)
 		}
 	}
 
