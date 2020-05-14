@@ -23,7 +23,7 @@ type WoodSlab struct {
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
 // being turned into double slabs.
-func (w WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, wo *world.World, user item.User, ctx *item.UseContext) bool {
+func (w WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, wo *world.World, _ item.User, ctx *item.UseContext) bool {
 	clickedBlock := wo.Block(pos)
 	if clickedSlab, ok := clickedBlock.(WoodSlab); ok && !w.Double {
 		if face == world.Up && !clickedSlab.Double && clickedSlab.Wood == w.Wood && !clickedSlab.UpsideDown {
