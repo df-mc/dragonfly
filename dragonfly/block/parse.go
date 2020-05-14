@@ -1,5 +1,7 @@
 package block
 
+//lint:file-ignore ST1005 Errors returned by this file are intentionally readable for an end user.
+
 import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/block_internal"

@@ -17,7 +17,7 @@ const (
 	X
 )
 
-// EncodeBlock converts an Axis into either x, y or z, depending on which axis it is.
+// String converts an Axis into either x, y or z, depending on which axis it is.
 func (a Axis) String() string {
 	if a == X {
 		return "x"

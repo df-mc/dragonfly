@@ -109,6 +109,7 @@ func init() {
 
 // readSlice reads an interface slice from a map at the key passed.
 func readSlice(m map[string]interface{}, key string) []interface{} {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
 	b, _ := v.([]interface{})
 	return b
@@ -116,6 +117,7 @@ func readSlice(m map[string]interface{}, key string) []interface{} {
 
 // readString reads a string from a map at the key passed.
 func readString(m map[string]interface{}, key string) string {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
 	b, _ := v.(string)
 	return b

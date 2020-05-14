@@ -54,11 +54,14 @@ func (p BlockPos) Side(face Face) BlockPos {
 	return p
 }
 
-// BlockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
+// blockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
 // map is assumed to have an 'x', 'y' and 'z' key.
-func BlockPosFromNBT(data map[string]interface{}) BlockPos {
+func blockPosFromNBT(data map[string]interface{}) BlockPos {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	xInterface, _ := data["x"]
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	yInterface, _ := data["y"]
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	zInterface, _ := data["z"]
 	x, _ := xInterface.(int32)
 	y, _ := yInterface.(int32)

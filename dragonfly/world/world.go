@@ -1035,7 +1035,7 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 // have block NBT will then be stored into memory.
 func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]interface{}) {
 	for _, data := range blockEntityData {
-		pos := BlockPosFromNBT(data)
+		pos := blockPosFromNBT(data)
 		b, err := w.block(c, pos)
 		if err != nil {
 			w.log.Errorf("error loading block for block entity: %v", err)

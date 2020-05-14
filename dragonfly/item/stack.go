@@ -59,7 +59,7 @@ func (s Stack) Grow(n int) Stack {
 	return s
 }
 
-// BaseDurability returns the current durability of the item stack. If the item is not one that implements the
+// Durability returns the current durability of the item stack. If the item is not one that implements the
 // Durable interface, BaseDurability will always return -1.
 // The closer the durability returned is to 0, the closer the item is to breaking.
 func (s Stack) Durability() int {
