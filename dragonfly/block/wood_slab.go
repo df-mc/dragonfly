@@ -83,6 +83,14 @@ func (w WoodSlab) BreakInfo() BreakInfo {
 	}
 }
 
+// LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.
+func (w WoodSlab) LightDiffusionLevel() uint8 {
+	if w.Double {
+		return 15
+	}
+	return 0
+}
+
 // AABB ...
 func (w WoodSlab) AABB() []physics.AABB {
 	if w.Double {

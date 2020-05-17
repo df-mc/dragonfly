@@ -47,6 +47,11 @@ func (w WoodStairs) BreakInfo() BreakInfo {
 	}
 }
 
+// LightDiffusionLevel always returns 0.
+func (WoodStairs) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // AABB ...
 func (w WoodStairs) AABB() []physics.AABB {
 	// TODO: Account for stair curving.
