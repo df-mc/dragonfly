@@ -58,6 +58,8 @@ type World struct {
 	simDistSq int32
 
 	randomTickSpeed uint32
+
+	chunkLoadMu sync.Mutex
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -924,6 +926,8 @@ func showEntity(e Entity, viewer Viewer) {
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
 func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
+	w.chunkLoadMu.Lock()
+
 	s, ok := w.chunkCache().Get(pos.Hash())
 	if !ok {
 		c, err = w.loadChunk(pos)
@@ -935,6 +939,8 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 	} else {
 		c = s.(*chunk.Chunk)
 	}
+	w.chunkLoadMu.Unlock()
+
 	// Update the timestamp to that it doesn't expire after we just used it.
 	w.chunkCache().Set(pos.timeHash(), time.Now().Add(time.Minute*5), cache.DefaultExpiration)
 
@@ -1016,20 +1022,20 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 				break
 			}
 			if !(x == 0 && z == 0) {
-				neighbour := s.(*chunk.Chunk)
-				neighbour.Lock()
-
-				neighbours = append(neighbours, neighbour)
+				neighbours = append(neighbours, s.(*chunk.Chunk))
 			}
 		}
 	}
 	if allPresent {
+		for _, neighbour := range neighbours {
+			neighbour.Lock()
+		}
 		// All neighbours of the current one are present, so we can spread the light from this chunk
 		// to all neighbours.
 		chunk.SpreadLight(c, neighbours)
-	}
-	for _, neighbour := range neighbours {
-		neighbour.Unlock()
+		for _, neighbour := range neighbours {
+			neighbour.Unlock()
+		}
 	}
 }
 

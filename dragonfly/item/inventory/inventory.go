@@ -94,8 +94,6 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 	first := it.Count()
 
 	inv.mu.Lock()
-	defer inv.mu.Unlock()
-
 	for slot, invIt := range inv.slots {
 		if invIt.Empty() {
 			// This slot was empty, and we should first try to add the item stack to existing stacks.
@@ -109,6 +107,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 
 		it = b
 		if it.Empty() {
+			inv.mu.Unlock()
 			// We were able to add the entire stack to existing stacks in the inventory.
 			return first, nil
 		}
@@ -127,10 +126,12 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 
 		it = b
 		if it.Empty() {
+			inv.mu.Unlock()
 			// We were able to add the entire stack to empty slots.
 			return first, nil
 		}
 	}
+	inv.mu.Unlock()
 	// We were unable to clear out the entire stack to be added to the inventory: There wasn't enough space.
 	return first - it.Count(), fmt.Errorf("could not add full item stack to inventory")
 }
@@ -142,8 +143,6 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 	toRemove := it.Count()
 
 	inv.mu.Lock()
-	defer inv.mu.Unlock()
-
 	for slot, slotIt := range inv.slots {
 		if slotIt.Empty() {
 			continue
@@ -160,12 +159,15 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 
 		if toRemove <= 0 {
 			// No more items left to remove: We can exit the loop.
+			inv.mu.Unlock()
 			return nil
 		}
 	}
 	if toRemove <= 0 {
+		inv.mu.Unlock()
 		return nil
 	}
+	inv.mu.Unlock()
 	return fmt.Errorf("could not remove all items from the inventory")
 }
 
@@ -240,9 +242,11 @@ func (inv *Inventory) Close() error {
 // String implements the fmt.Stringer interface.
 func (inv *Inventory) String() string {
 	s := make([]string, 0, inv.Size())
+	inv.mu.RLock()
 	for _, it := range inv.slots {
 		s = append(s, it.String())
 	}
+	inv.mu.RUnlock()
 	return "{" + strings.Join(s, ", ") + "}"
 }
 
