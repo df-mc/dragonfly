@@ -440,7 +440,7 @@ func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
 
 	// We expand it by 3 blocks in all horizontal directions to account for entities that may be in
 	// neighbouring chunks while having a bounding box that extends into the current one.
-	minPos, maxPos := chunkPosFromVec3(aabb.Min().Sub(mgl32.Vec3{3, 0, 3})), chunkPosFromVec3(aabb.Max().Add(mgl32.Vec3{3, 0, 3}))
+	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
 
 	w.entityMutex.RLock()
 	for x := minPos[0]; x <= maxPos[0]; x++ {
@@ -934,8 +934,8 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 		if err != nil {
 			return nil, err
 		}
-		w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
 		w.calculateLight(c, pos)
+		w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
 	} else {
 		c = s.(*chunk.Chunk)
 	}

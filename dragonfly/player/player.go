@@ -684,9 +684,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				replacedPos = pos.Side(face)
 			}
 			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) {
-				p.World().PlaceBlock(replacedPos, b)
-				p.swingArm()
-				if p.survival() {
+				if p.placeBlock(replacedPos, b) && p.survival() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
@@ -831,6 +829,35 @@ func (p *Player) ContinueBreaking(face world.Face) {
 	}
 }
 
+// PlaceBlock makes the player place the block passed at the position passed, granted it is within the range
+// of the player.
+// A use context may be passed to obtain information on if the block placement was successful. (SubCount will
+// be incremented). Nil may also be passed for the context parameter.
+func (p *Player) PlaceBlock(pos world.BlockPos, b world.Block, ctx *item.UseContext) {
+	if p.placeBlock(pos, b) {
+		ctx.CountSub++
+	}
+}
+
+// placeBlock makes the player place the block passed at the position passed, granted it is within the range
+// of the player. A bool is returned indicating if a block was placed successfully.
+func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
+	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
+		return false
+	}
+	ctx := event.C()
+	p.handler().HandleBlockPlace(ctx, pos, b)
+	ctx.Continue(func() {
+		p.World().PlaceBlock(pos, b)
+		p.swingArm()
+		success = true
+	})
+	ctx.Stop(func() {
+		p.World().SetBlock(pos, p.World().Block(pos))
+	})
+	return
+}
+
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos world.BlockPos) {
@@ -864,9 +891,7 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 		}
 	})
 	ctx.Stop(func() {
-		b := p.World().Block(pos)
-		// Set back the block to make sure the client sees it like that again.
-		p.World().SetBlock(pos, b)
+		p.World().SetBlock(pos, p.World().Block(pos))
 	})
 }
 

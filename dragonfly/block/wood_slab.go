@@ -23,115 +23,106 @@ type WoodSlab struct {
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
 // being turned into double slabs.
-func (w WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, wo *world.World, _ item.User, ctx *item.UseContext) bool {
-	clickedBlock := wo.Block(pos)
-	if clickedSlab, ok := clickedBlock.(WoodSlab); ok && !w.Double {
-		if face == world.Up && !clickedSlab.Double && clickedSlab.Wood == w.Wood && !clickedSlab.UpsideDown {
+func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	clickedBlock := w.Block(pos)
+	if clickedSlab, ok := clickedBlock.(WoodSlab); ok && !s.Double {
+		if (face == world.Up && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.UpsideDown) ||
+			(face == world.Down && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.UpsideDown) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
-			wo.PlaceBlock(pos, clickedSlab)
 
-			ctx.SubtractFromCount(1)
-			return true
-		} else if face == world.Down && !clickedSlab.Double && clickedSlab.Wood == w.Wood && clickedSlab.UpsideDown {
-			// A half slab of the same type was clicked at the bottom, so we can make it full.
-			clickedSlab.Double = true
-			wo.PlaceBlock(pos, clickedSlab)
-
-			ctx.SubtractFromCount(1)
-			return true
+			place(w, pos, clickedSlab, user, ctx)
+			return placed(ctx)
 		}
 	}
-	if sideSlab, ok := wo.Block(pos.Side(face)).(WoodSlab); ok && !replaceable(wo, pos, w) && !w.Double {
+	if sideSlab, ok := w.Block(pos.Side(face)).(WoodSlab); ok && !replaceable(w, pos, s) && !s.Double {
 		// The block on the side of the one clicked was a slab and the block clicked was not replaceable, so
 		// the slab on the side must've been half and may now be filled if the wood types are the same.
-		if !sideSlab.Double && sideSlab.Wood == w.Wood {
+		if !sideSlab.Double && sideSlab.Wood == s.Wood {
 			sideSlab.Double = true
-			wo.PlaceBlock(pos.Side(face), sideSlab)
 
-			ctx.SubtractFromCount(1)
-			return true
+			place(w, pos.Side(face), sideSlab, user, ctx)
+			return placed(ctx)
 		}
 	}
-	if replaceable(wo, pos.Side(face), w) {
-		if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
-			w.UpsideDown = true
-		}
-
-		wo.PlaceBlock(pos.Side(face), w)
-
-		ctx.SubtractFromCount(1)
-		return true
+	pos, face, used = firstReplaceable(w, pos, face, s)
+	if !used {
+		return
 	}
-	return false
+	if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
+		s.UpsideDown = true
+	}
+
+	place(w, pos, s, user, ctx)
+	return placed(ctx)
 }
 
 // BreakInfo ...
-func (w WoodSlab) BreakInfo() BreakInfo {
+func (s WoodSlab) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    2,
 		Harvestable: alwaysHarvestable,
 		Effective:   axeEffective,
 		Drops: func(t tool.Tool) []item.Stack {
-			if w.Double {
-				w.Double = false
+			if s.Double {
+				s.Double = false
 				// If the slab is double, it should drop two single slabs.
-				return []item.Stack{item.NewStack(w, 2)}
+				return []item.Stack{item.NewStack(s, 2)}
 			}
-			return []item.Stack{item.NewStack(w, 1)}
+			return []item.Stack{item.NewStack(s, 1)}
 		},
 	}
 }
 
 // LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.
-func (w WoodSlab) LightDiffusionLevel() uint8 {
-	if w.Double {
+func (s WoodSlab) LightDiffusionLevel() uint8 {
+	if s.Double {
 		return 15
 	}
 	return 0
 }
 
 // AABB ...
-func (w WoodSlab) AABB() []physics.AABB {
-	if w.Double {
+func (s WoodSlab) AABB() []physics.AABB {
+	if s.Double {
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{}, mgl32.Vec3{1, 1, 1})}
 	}
-	if w.UpsideDown {
+	if s.UpsideDown {
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{0, 0.5, 0}, mgl32.Vec3{1, 1, 1})}
 	}
 	return []physics.AABB{physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 0.5, 1})}
 }
 
 // EncodeItem ...
-func (w WoodSlab) EncodeItem() (id int32, meta int16) {
-	switch w.Wood {
+func (s WoodSlab) EncodeItem() (id int32, meta int16) {
+	switch s.Wood {
 	case material.OakWood():
-		if w.Double {
+		if s.Double {
 			return 157, 0
 		}
 		return 158, 0
 	case material.SpruceWood():
-		if w.Double {
+		if s.Double {
 			return 157, 1
 		}
 		return 158, 1
 	case material.BirchWood():
-		if w.Double {
+		if s.Double {
 			return 157, 2
 		}
 		return 158, 2
 	case material.JungleWood():
-		if w.Double {
+		if s.Double {
 			return 157, 3
 		}
 		return 158, 3
 	case material.AcaciaWood():
-		if w.Double {
+		if s.Double {
 			return 157, 4
 		}
 		return 158, 4
 	case material.DarkOakWood():
-		if w.Double {
+		if s.Double {
 			return 157, 5
 		}
 		return 158, 5
@@ -140,11 +131,11 @@ func (w WoodSlab) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (w WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
-	if w.Double {
-		return "double_wooden_slab", map[string]interface{}{"top_slot_bit": w.UpsideDown, "wood_type": w.Wood.String()}
+func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
+	if s.Double {
+		return "double_wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 	}
-	return "wooden_slab", map[string]interface{}{"top_slot_bit": w.UpsideDown, "wood_type": w.Wood.String()}
+	return "wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 }
 
 // allWoodSlabs returns all states of wood slabs.

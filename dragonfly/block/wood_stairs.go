@@ -22,28 +22,27 @@ type WoodStairs struct {
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
 // when needed.
-func (w WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, wo *world.World, user item.User, ctx *item.UseContext) bool {
-	if replaceable(wo, pos.Side(face), w) {
-		w.Facing = user.Facing()
-		if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
-			w.UpsideDown = true
-		}
-
-		wo.PlaceBlock(pos.Side(face), w)
-
-		ctx.SubtractFromCount(1)
-		return true
+func (s WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(w, pos, face, s)
+	if !used {
+		return
 	}
-	return false
+	s.Facing = user.Facing()
+	if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
+		s.UpsideDown = true
+	}
+
+	place(w, pos, s, user, ctx)
+	return placed(ctx)
 }
 
 // BreakInfo ...
-func (w WoodStairs) BreakInfo() BreakInfo {
+func (s WoodStairs) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    2,
 		Harvestable: alwaysHarvestable,
 		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(w, 1)),
+		Drops:       simpleDrops(item.NewStack(s, 1)),
 	}
 }
 
@@ -53,13 +52,13 @@ func (WoodStairs) LightDiffusionLevel() uint8 {
 }
 
 // AABB ...
-func (w WoodStairs) AABB() []physics.AABB {
+func (s WoodStairs) AABB() []physics.AABB {
 	// TODO: Account for stair curving.
 	b := []physics.AABB{physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 0.5, 1})}
-	if w.UpsideDown {
+	if s.UpsideDown {
 		b[0] = physics.NewAABB(mgl32.Vec3{0, 0.5, 0}, mgl32.Vec3{1, 1, 1})
 	}
-	switch w.Facing {
+	switch s.Facing {
 	case world.North:
 		b = append(b, physics.NewAABB(mgl32.Vec3{0, 0, 0.5}, mgl32.Vec3{1, 0.5, 1}))
 	case world.South:
@@ -70,7 +69,7 @@ func (w WoodStairs) AABB() []physics.AABB {
 		b = append(b, physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0.5, 0.5, 1}))
 	}
 
-	if w.UpsideDown {
+	if s.UpsideDown {
 		b[0] = b[0].Translate(mgl32.Vec3{0, 0.5})
 	} else {
 		b[1] = b[1].Translate(mgl32.Vec3{0, 0.5})
@@ -79,8 +78,8 @@ func (w WoodStairs) AABB() []physics.AABB {
 }
 
 // EncodeItem ...
-func (w WoodStairs) EncodeItem() (id int32, meta int16) {
-	switch w.Wood {
+func (s WoodStairs) EncodeItem() (id int32, meta int16) {
+	switch s.Wood {
 	case material.OakWood():
 		return 53, 0
 	case material.SpruceWood():
@@ -98,20 +97,20 @@ func (w WoodStairs) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (w WoodStairs) EncodeBlock() (name string, properties map[string]interface{}) {
-	switch w.Wood {
+func (s WoodStairs) EncodeBlock() (name string, properties map[string]interface{}) {
+	switch s.Wood {
 	case material.OakWood():
-		return "minecraft:oak_stairs", map[string]interface{}{"upside_down_bit": w.UpsideDown, "weirdo_direction": toStairsDirection(w.Facing)}
+		return "minecraft:oak_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	case material.SpruceWood():
-		return "minecraft:spruce_stairs", map[string]interface{}{"upside_down_bit": w.UpsideDown, "weirdo_direction": toStairsDirection(w.Facing)}
+		return "minecraft:spruce_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	case material.BirchWood():
-		return "minecraft:birch_stairs", map[string]interface{}{"upside_down_bit": w.UpsideDown, "weirdo_direction": toStairsDirection(w.Facing)}
+		return "minecraft:birch_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	case material.JungleWood():
-		return "minecraft:jungle_stairs", map[string]interface{}{"upside_down_bit": w.UpsideDown, "weirdo_direction": toStairsDirection(w.Facing)}
+		return "minecraft:jungle_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	case material.AcaciaWood():
-		return "minecraft:acacia_stairs", map[string]interface{}{"upside_down_bit": w.UpsideDown, "weirdo_direction": toStairsDirection(w.Facing)}
+		return "minecraft:acacia_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	case material.DarkOakWood():
-		return "minecraft:dark_oak_stairs", map[string]interface{}{"upside_down_bit": w.UpsideDown, "weirdo_direction": toStairsDirection(w.Facing)}
+		return "minecraft:dark_oak_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	panic("invalid wood type")
 }

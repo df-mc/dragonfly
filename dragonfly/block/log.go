@@ -21,15 +21,15 @@ type Log struct {
 }
 
 // UseOnBlock handles the rotational placing of logs.
-func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ item.User, ctx *item.UseContext) bool {
-	if replaceable(w, pos.Side(face), l) {
-		l.Axis = face.Axis()
-		w.PlaceBlock(pos.Side(face), l)
-
-		ctx.SubtractFromCount(1)
-		return true
+func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(w, pos, face, l)
+	if !used {
+		return
 	}
-	return false
+	l.Axis = face.Axis()
+
+	place(w, pos, l, user, ctx)
+	return placed(ctx)
 }
 
 // BreakInfo ...

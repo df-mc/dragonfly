@@ -37,6 +37,9 @@ type Handler interface {
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos world.BlockPos)
+	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
+	// may be called to cancel the block being placed.
+	HandleBlockPlace(ctx *event.Context, pos world.BlockPos, b world.Block)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -104,6 +107,9 @@ func (NopHandler) HandleStartBreak(*event.Context, world.BlockPos) {}
 
 // HandleBlockBreak ...
 func (NopHandler) HandleBlockBreak(*event.Context, world.BlockPos) {}
+
+// HandleBlockPlace ...
+func (NopHandler) HandleBlockPlace(*event.Context, world.BlockPos, world.Block) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}

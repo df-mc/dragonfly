@@ -30,11 +30,14 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 
 	// The item the client claims to have must be identical to the one we have registered server-side.
 	if !clientSideItem.Comparable(actual) {
-		return fmt.Errorf("client-side item must be identical to server-side item, but got different types: client: %v vs server: %v", clientSideItem, actual)
+		// Only ever debug these as they are frequent and expected to happen whenever client and server get
+		// out of sync.
+		s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different types: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
 	}
 	if clientSideItem.Count() != actual.Count() {
-		fmt.Printf("%v, %v", clientSideItem, actual)
-		return fmt.Errorf("client-side item must be identical to server-side item, but got different counts: client: %v vs server: %v", clientSideItem.Count(), actual.Count())
+		// Only ever debug these as they are frequent and expected to happen whenever client and server get
+		// out of sync.
+		s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different counts: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem.Count(), actual.Count())
 	}
 
 	// We first change the held slot.
