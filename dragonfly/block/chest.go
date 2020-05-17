@@ -3,6 +3,7 @@ package block
 import (
 	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
@@ -55,6 +56,11 @@ func (c Chest) Inventory() *inventory.Inventory {
 func (c Chest) WithName(a ...interface{}) world.Item {
 	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return c
+}
+
+// AABB ...
+func (c Chest) AABB() []physics.AABB {
+	return []physics.AABB{physics.NewAABB(mgl32.Vec3{0.025, 0, 0.025}, mgl32.Vec3{0.975, 0.95, 0.975})}
 }
 
 // open opens the chest, displaying the animation and playing a sound.
