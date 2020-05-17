@@ -1,24 +1,11 @@
 package session
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"time"
 )
-
-// handleText ...
-func (s *Session) handleText(pk *packet.Text) error {
-	if pk.TextType != packet.TextTypeChat {
-		return fmt.Errorf("text packet can only contain text type of type chat (%v) but got %v", packet.TextTypeChat, pk.TextType)
-	}
-	if pk.SourceName != s.conn.IdentityData().DisplayName {
-		return fmt.Errorf("text packet source name must be equal to display name")
-	}
-	s.c.Chat(pk.Message)
-	return nil
-}
 
 // SendMessage ...
 func (s *Session) SendMessage(message string) {

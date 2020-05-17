@@ -1,22 +1,11 @@
 package session
 
 import (
-	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
-
-// handleCommandRequest ...
-func (s *Session) handleCommandRequest(pk *packet.CommandRequest) error {
-	if pk.Internal {
-		return fmt.Errorf("command request packet must never have the internal field set to true")
-	}
-	s.cmdOrigin = pk.CommandOrigin
-	s.c.ExecuteCommand(pk.CommandLine)
-	return nil
-}
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
 // command, which might be the player or a websocket server.
@@ -36,7 +25,7 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 	}
 
 	s.writePacket(&packet.CommandOutput{
-		CommandOrigin:  s.cmdOrigin,
+		CommandOrigin:  s.handlers[packet.IDCommandRequest].(*CommandRequestHandler).origin,
 		OutputType:     3,
 		SuccessCount:   uint32(output.MessageCount()),
 		OutputMessages: messages,

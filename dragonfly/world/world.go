@@ -979,7 +979,9 @@ func (w *World) loadChunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 // calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
 // neighbours if they have all chunks loaded around it as a result of the one passed.
 func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
+	c.Lock()
 	chunk.FillLight(c)
+	c.Unlock()
 
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {

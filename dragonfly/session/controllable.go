@@ -19,6 +19,7 @@ type Controllable interface {
 	form.Submitter
 
 	Move(deltaPos mgl32.Vec3)
+	Speed() float32
 	Rotate(deltaYaw, deltaPitch float32)
 
 	Chat(msg ...interface{})

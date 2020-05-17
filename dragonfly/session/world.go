@@ -18,19 +18,6 @@ import (
 	"sync/atomic"
 )
 
-// handleRequestChunkRadius ...
-func (s *Session) handleRequestChunkRadius(pk *packet.RequestChunkRadius) error {
-	if pk.ChunkRadius > s.maxChunkRadius {
-		pk.ChunkRadius = s.maxChunkRadius
-	}
-	atomic.StoreInt32(&s.chunkRadius, pk.ChunkRadius)
-
-	s.chunkLoader.Load().(*world.Loader).ChangeRadius(int(pk.ChunkRadius))
-
-	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: s.chunkRadius})
-	return nil
-}
-
 // ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	data := chunk.NetworkEncode(c)
@@ -186,7 +173,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 	id := s.entityRuntimeID(e)
 
 	if id == selfEntityRuntimeID {
-		s.chunkLoader.Load().(*world.Loader).Move(position)
+		s.chunkLoader.Move(position)
 	}
 
 	switch e.(type) {

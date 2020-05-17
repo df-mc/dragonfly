@@ -1,9 +1,7 @@
 package session
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
@@ -23,104 +21,6 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-// handleMovePlayer ...
-func (s *Session) handleMovePlayer(pk *packet.MovePlayer) error {
-	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be 1", pk.EntityRuntimeID)
-	}
-	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
-
-	s.c.Move(pk.Position.Sub(s.c.Position()))
-	s.c.Rotate(pk.Yaw-s.c.Yaw(), pk.Pitch-s.c.Pitch())
-
-	s.chunkLoader.Load().(*world.Loader).Move(pk.Position)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pk.Position[0]), int32(pk.Position[1]), int32(pk.Position[2])},
-		Radius:   uint32(s.chunkRadius * 16),
-	})
-	return nil
-}
-
-// handleMobEquipment ...
-func (s *Session) handleMobEquipment(pk *packet.MobEquipment) error {
-	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return fmt.Errorf("incorrect entity runtime ID %v: runtime ID must be 1", pk.EntityRuntimeID)
-	}
-	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
-	// different place in the inventory.
-	if pk.InventorySlot > 8 {
-		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", pk.InventorySlot)
-	}
-	if pk.WindowID != protocol.WindowIDInventory {
-		return fmt.Errorf("MobEquipmentPacket should only involve main inventory, got window ID %v", pk.WindowID)
-	}
-
-	// We first change the held slot.
-	atomic.StoreUint32(s.heldSlot, uint32(pk.InventorySlot))
-
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
-	}
-	return nil
-}
-
-// handlePlayerAction ...
-func (s *Session) handlePlayerAction(pk *packet.PlayerAction) error {
-	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return fmt.Errorf("PlayerAction packet must only have runtime ID of the own entity")
-	}
-	blockPos, face := world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])}, world.Face(pk.BlockFace)
-
-	switch pk.ActionType {
-	case packet.PlayerActionStartSprint:
-		s.c.StartSprinting()
-	case packet.PlayerActionStopSprint:
-		s.c.StopSprinting()
-	case packet.PlayerActionStartSneak:
-		s.c.StartSneaking()
-	case packet.PlayerActionStopSneak:
-		s.c.StopSneaking()
-	case packet.PlayerActionStartBreak:
-		s.c.StartBreaking(blockPos)
-	case packet.PlayerActionAbortBreak:
-		s.c.AbortBreaking()
-	case packet.PlayerActionStopBreak:
-		s.c.FinishBreaking()
-	case packet.PlayerActionContinueBreak:
-		s.c.ContinueBreaking(face)
-	}
-	return nil
-}
-
-// handleModalFormResponse ...
-func (s *Session) handleModalFormResponse(pk *packet.ModalFormResponse) error {
-	s.formMu.Lock()
-	f, ok := s.forms[pk.FormID]
-	delete(s.forms, pk.FormID)
-	s.formMu.Unlock()
-
-	if !ok {
-		return fmt.Errorf("form with ID %v not currently open", pk.FormID)
-	}
-	if bytes.Equal(pk.ResponseData, []byte("null")) {
-		// The form was cancelled: The cross in the top right corner was clicked.
-		return nil
-	}
-	if err := f.SubmitJSON(pk.ResponseData, s.c); err != nil {
-		return fmt.Errorf("error parsing form data: %w", err)
-	}
-	return nil
-}
-
-// handleContainerClose ...
-func (s *Session) handleContainerClose(pk *packet.ContainerClose) error {
-	switch pk.WindowID {
-	case byte(atomic.LoadUint32(&s.openedWindowID)):
-		s.closeCurrentContainer()
-	}
-	return nil
-}
-
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
 	if atomic.LoadUint32(&s.containerOpened) == 0 {
@@ -131,19 +31,6 @@ func (s *Session) closeCurrentContainer() {
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}
-}
-
-// handleRespawn ...
-func (s *Session) handleRespawn(pk *packet.Respawn) error {
-	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return fmt.Errorf("entity runtime ID in Respawn packet must always be the player's (%v), but got %v", selfEntityRuntimeID, pk.EntityRuntimeID)
-	}
-	if pk.State != packet.RespawnStateClientReadyToSpawn {
-		return fmt.Errorf("respawn state in Respawn packet must always be %v, but got %v", packet.RespawnStateClientReadyToSpawn, pk.State)
-	}
-	s.c.Respawn()
-	s.SendRespawn()
-	return nil
 }
 
 // SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
@@ -159,51 +46,6 @@ func (s *Session) SendRespawn() {
 	})
 }
 
-// handleInventoryTransaction ...
-func (s *Session) handleInventoryTransaction(pk *packet.InventoryTransaction) error {
-	switch data := pk.TransactionData.(type) {
-	case *protocol.NormalTransactionData:
-		if len(pk.Actions) == 0 {
-			return nil
-		}
-		if err := s.verifyTransaction(pk.Actions); err != nil {
-			s.sendInv(s.inv, protocol.WindowIDInventory)
-			s.sendInv(s.ui, protocol.WindowIDUI)
-			s.sendInv(s.offHand, protocol.WindowIDOffHand)
-			s.log.Debugf("%v: %v", s.c.Name(), err)
-			return nil
-		}
-		atomic.StoreUint32(&s.inTransaction, 1)
-		s.executeTransaction(pk.Actions)
-		atomic.StoreUint32(&s.inTransaction, 0)
-	case *protocol.UseItemOnEntityTransactionData:
-		e, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
-		if !ok {
-			return fmt.Errorf("invalid entity interaction: no entity found with runtime ID %v", data.TargetEntityRuntimeID)
-		}
-		switch data.ActionType {
-		case protocol.UseItemOnEntityActionInteract:
-			s.c.UseItemOnEntity(e)
-		case protocol.UseItemOnEntityActionAttack:
-			s.c.AttackEntity(e)
-		}
-	case *protocol.UseItemTransactionData:
-		pos := world.BlockPos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
-		switch data.ActionType {
-		case protocol.UseItemActionBreakBlock:
-			s.c.BreakBlock(pos)
-		case protocol.UseItemActionClickBlock:
-			// We reset the inventory so that we can send the held item update without the client already
-			// having done that client-side.
-			s.sendInv(s.inv, protocol.WindowIDInventory)
-			s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), data.ClickedPosition)
-		case protocol.UseItemActionClickAir:
-			s.c.UseItem()
-		}
-	}
-	return nil
-}
-
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
@@ -214,72 +56,6 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 		pk.Content = append(pk.Content, stackFromItem(i))
 	}
 	s.writePacket(pk)
-}
-
-// executeTransaction executes all actions of a transaction passed. It assumes the actions are all valid,
-// which would otherwise be checked by calling verifyTransaction.
-func (s *Session) executeTransaction(actions []protocol.InventoryAction) {
-	for _, action := range actions {
-		if action.SourceType == protocol.InventoryActionSourceCreative {
-			continue
-		}
-		// The window IDs are already checked when using verifyTransaction, so we don't need to check again.
-		inv, _ := s.invByID(action.WindowID)
-		_ = inv.SetItem(int(action.InventorySlot), stackToItem(action.NewItem))
-	}
-}
-
-// verifyTransaction verifies a transaction composed of the actions passed. The method makes sure the old
-// items are precisely equal to the new items: No new items must be added or removed.
-// verifyTransaction also checks if all window IDs sent match some inventory, and if the old items match the
-// items found in that inventory.
-func (s *Session) verifyTransaction(a []protocol.InventoryAction) error {
-	// Allocate a big inventory and add all new items to it.
-	temp := inventory.New(128, nil)
-	actions := make([]protocol.InventoryAction, 0, len(a))
-	for _, action := range a {
-		if action.OldItem.Count == 0 && action.NewItem.Count == 0 {
-			continue
-		}
-		actions = append(actions, action)
-	}
-	for _, action := range actions {
-		inv, ok := s.invByID(action.WindowID)
-		if !ok {
-			// The inventory with that window ID did not exist.
-			return fmt.Errorf("unknown inventory ID %v", action.WindowID)
-		}
-		actualOld, err := inv.Item(int(action.InventorySlot))
-		if err != nil {
-			// The slot passed actually exceeds the inventory size, meaning we can't actually get an item at
-			// that slot.
-			return fmt.Errorf("slot %v out of range for inventory %v", action.InventorySlot, action.WindowID)
-		}
-		old := stackToItem(action.OldItem)
-		if !actualOld.Comparable(old) || actualOld.Count() != old.Count() {
-			if _, creative := s.c.GameMode().(gamemode.Creative); !creative || action.SourceType != protocol.InventoryActionSourceCreative {
-				// Either the type or the count of the old item as registered by the server and the client are
-				// mismatched.
-				return fmt.Errorf("slot %v holds a different item than the client expects: %v is actually %v", action.InventorySlot, old, actualOld)
-			}
-		}
-		if _, err := temp.AddItem(old); err != nil {
-			return fmt.Errorf("inventory was full: %w", err)
-		}
-	}
-	for _, action := range actions {
-		newItem := stackToItem(action.NewItem)
-		if err := temp.RemoveItem(newItem); err != nil {
-			return fmt.Errorf("item %v removed was not present in old items: %w", newItem, err)
-		}
-	}
-	// Now that we made sure every new item was also present in the old items, we must also check if every old
-	// item is present as a new item. We can do that by simply checking if the inventory has any items left in
-	// it.
-	if !temp.Empty() {
-		return fmt.Errorf("new items and old items must be balanced")
-	}
-	return nil
 }
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -305,11 +81,11 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 // Disconnect disconnects the client and ultimately closes the session. If the message passed is non-empty,
 // it will be shown to the client.
 func (s *Session) Disconnect(message string) {
-	s.writePacket(&packet.Disconnect{
-		HideDisconnectionScreen: message == "",
-		Message:                 message,
-	})
 	if s != Nop {
+		s.writePacket(&packet.Disconnect{
+			HideDisconnectionScreen: message == "",
+			Message:                 message,
+		})
 		_ = s.conn.Flush()
 		_ = s.conn.Close()
 	}
@@ -371,18 +147,19 @@ func (s *Session) SendForm(f form.Form) {
 	}
 	b, _ := json.Marshal(m)
 
-	s.formMu.Lock()
-	if len(s.forms) > 10 {
-		s.log.Debug("more than 10 active forms: dropping an existing one.")
-		for k := range s.forms {
-			delete(s.forms, k)
+	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
+	id := atomic.AddUint32(h.currentID, 1)
+
+	h.mu.Lock()
+	if len(h.forms) > 10 {
+		s.log.Debugf("SendForm %v: more than 10 active forms: dropping an existing one.", s.c.Name())
+		for k := range h.forms {
+			delete(h.forms, k)
 			break
 		}
 	}
-	id := s.formID
-	s.forms[id] = f
-	s.formID++
-	s.formMu.Unlock()
+	h.forms[id] = f
+	h.mu.Unlock()
 
 	s.writePacket(&packet.ModalFormRequest{
 		FormID:   id,
