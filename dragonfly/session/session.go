@@ -223,6 +223,7 @@ func (s *Session) registerHandlers() {
 		packet.IDModalFormResponse:    &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
 		packet.IDMovePlayer:           &MovePlayerHandler{},
 		packet.IDPlayerAction:         &PlayerActionHandler{},
+		packet.IDPlayerAuthInput:      &PlayerAuthInputHandler{},
 		packet.IDRequestChunkRadius:   &RequestChunkRadiusHandler{},
 		packet.IDRespawn:              &RespawnHandler{},
 		packet.IDText:                 &TextHandler{},

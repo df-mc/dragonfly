@@ -60,9 +60,22 @@ func (aabb AABB) Translate(vec mgl32.Vec3) AABB {
 
 // IntersectsWith checks if the AABB intersects with another AABB, returning true if this is the case.
 func (aabb AABB) IntersectsWith(other AABB) bool {
-	if other.max[0]-aabb.min[0] > 0 && aabb.max[0]-other.min[0] > 0 {
-		if other.max[1]-aabb.min[1] > 0 && aabb.max[1]-other.min[1] > 0 {
-			return other.max[2]-aabb.min[2] > 0 && aabb.max[2]-other.min[2] > 0
+	if other.max[0]-aabb.min[0] > 1e-5 && aabb.max[0]-other.min[0] > 1e-5 {
+		if other.max[1]-aabb.min[1] > 1e-5 && aabb.max[1]-other.min[1] > 1e-5 {
+			return other.max[2]-aabb.min[2] > 1e-5 && aabb.max[2]-other.min[2] > 1e-5
+		}
+	}
+	return false
+}
+
+// AnyIntersections checks if any of boxes1 have intersections with any of boxes2 and returns true if this
+// happens to be the case.
+func AnyIntersections(boxes1, boxes2 []AABB) bool {
+	for _, box1 := range boxes1 {
+		for _, box2 := range boxes2 {
+			if box1.IntersectsWith(box2) {
+				return true
+			}
 		}
 	}
 	return false

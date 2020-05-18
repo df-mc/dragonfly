@@ -280,10 +280,11 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		PlayerPosition: server.world.Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5}),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
-		EntityUniqueID:  1,
-		EntityRuntimeID: 1,
-		Time:            int64(server.world.Time()),
-		GameRules:       map[string]interface{}{"naturalregeneration": false},
+		EntityUniqueID:              1,
+		EntityRuntimeID:             1,
+		Time:                        int64(server.world.Time()),
+		GameRules:                   map[string]interface{}{"naturalregeneration": false},
+		ServerAuthoritativeMovement: true,
 	}
 	if err := conn.StartGame(data); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")

@@ -845,6 +845,10 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
 		return false
 	}
+	if p.obstructedPos(pos, b) {
+		return false
+	}
+
 	ctx := event.C()
 	p.handler().HandleBlockPlace(ctx, pos, b)
 	ctx.Continue(func() {
@@ -856,6 +860,35 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 		p.World().SetBlock(pos, p.World().Block(pos))
 	})
 	return
+}
+
+// obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
+// This returns true if there is an entity in the way that could prevent the block from being placed.
+func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
+	blockBoxes := []physics.AABB{physics.NewAABB(mgl32.Vec3{}, mgl32.Vec3{1, 1, 1})}
+	if aabb, ok := b.(physics.AABBer); ok {
+		blockBoxes = aabb.AABB()
+	}
+	for i, box := range blockBoxes {
+		blockBoxes[i] = box.Translate(pos.Vec3())
+	}
+
+	around := p.World().EntitiesWithin(physics.NewAABB(mgl32.Vec3{-3, -3, -3}, mgl32.Vec3{3, 3, 3}).Translate(pos.Vec3()))
+	for _, e := range around {
+		if _, ok := e.(*entity.Item); ok {
+			// Placing blocks inside of item entities is fine.
+			continue
+		}
+		boxes := e.AABB()
+		for i, box := range boxes {
+			boxes[i] = box.Translate(e.Position())
+		}
+
+		if physics.AnyIntersections(blockBoxes, boxes) {
+			return true
+		}
+	}
+	return false
 }
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
