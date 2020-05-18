@@ -133,20 +133,20 @@ func (s WoodSlab) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Double {
-		return "double_wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
+		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 	}
-	return "wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
+	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 }
 
 // allWoodSlabs returns all states of wood slabs.
-func allWoodSlabs() (stairs []world.Block) {
+func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
-		stairs = append(stairs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.OakWood()})
-		stairs = append(stairs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.SpruceWood()})
-		stairs = append(stairs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.BirchWood()})
-		stairs = append(stairs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.JungleWood()})
-		stairs = append(stairs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.AcaciaWood()})
-		stairs = append(stairs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.DarkOakWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.OakWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.SpruceWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.BirchWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.JungleWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.AcaciaWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.DarkOakWood()})
 	}
 	f(false, false)
 	f(false, true)
