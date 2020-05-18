@@ -842,6 +842,11 @@ func (p *Player) PlaceBlock(pos world.BlockPos, b world.Block, ctx *item.UseCont
 // placeBlock makes the player place the block passed at the position passed, granted it is within the range
 // of the player. A bool is returned indicating if a block was placed successfully.
 func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
+	defer func() {
+		if !success {
+			p.World().SetBlock(pos, p.World().Block(pos))
+		}
+	}()
 	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
 		return false
 	}
@@ -855,9 +860,6 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 		p.World().PlaceBlock(pos, b)
 		p.swingArm()
 		success = true
-	})
-	ctx.Stop(func() {
-		p.World().SetBlock(pos, p.World().Block(pos))
 	})
 	return
 }
