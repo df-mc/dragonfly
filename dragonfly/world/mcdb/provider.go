@@ -10,9 +10,11 @@ import (
 	"github.com/dragonfly-tech/goleveldb/leveldb"
 	"github.com/dragonfly-tech/goleveldb/leveldb/opt"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
@@ -48,6 +50,7 @@ func New(dir string) (*Provider, error) {
 		if err := nbt.UnmarshalEncoding(f[8:], &p.d, nbt.LittleEndian); err != nil {
 			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
+		p.d.WorldStartCount++
 	}
 	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: opt.FlateCompression,
@@ -62,11 +65,22 @@ func New(dir string) (*Provider, error) {
 
 // initDefaultLevelDat initialises a default level.dat file.
 func (p *Provider) initDefaultLevelDat() {
+	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.LevelName = "World"
 	p.d.SpawnY = 128
 	p.d.GameType = 2
 	p.d.StorageVersion = 8
 	p.d.Generator = 1
+	p.d.NetworkVersion = protocol.CurrentProtocol
+	p.d.Abilities.WalkSpeed = 0.1
+	p.d.PVP = true
+	p.d.WorldStartCount = 1
+	p.d.RandomTickSpeed = 1
+	p.d.FallDamage = true
+	p.d.FireDamage = true
+	p.d.DrowningDamage = true
+	p.d.CommandsEnabled = true
+	p.d.MultiPlayerGame = true
 }
 
 // LoadTime returns the time as it was stored in the level.dat of the world loaded.
@@ -264,6 +278,8 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data map[[3]int]map[str
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
 func (p *Provider) Close() error {
+	p.d.LastPlayed = time.Now().Unix()
+
 	f, err := os.OpenFile(filepath.Join(p.dir, "level.dat"), os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("error opening level.dat file: %w", err)
