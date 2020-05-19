@@ -153,8 +153,7 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 		d.SubChunks[y] = append([]byte(nil), buf.Bytes()...)
 		buf.Reset()
 	}
-	// We simply keep a zero slice for the height map, as we don't currently build it up.
-	// TODO: Implement calculation of height maps of chunks.
+	// We simply write a zero slice for the height map, as there is little profit of writing it here.
 	buf.Write(emptyHeightMap)
 	buf.Write(c.biomes[:])
 	d.Data2D = append([]byte(nil), buf.Bytes()...)
