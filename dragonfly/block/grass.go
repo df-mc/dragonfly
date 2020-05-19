@@ -13,6 +13,18 @@ type Grass struct {
 	Path bool
 }
 
+// ScheduledTick handles the turning from grass path into dirt if a block is placed on top of it.
+func (g Grass) ScheduledTick(pos world.BlockPos, w *world.World) {
+	if !g.Path {
+		return
+	}
+	if _, air := w.Block(pos).(Air); !air {
+		// Technically vanilla doesn't always turn grass paths into dirt when a block is placed above it,
+		// for example torches, but the logic doesn't make sense.
+		w.SetBlock(pos, Dirt{})
+	}
+}
+
 // RandomTick handles the ticking of grass, which may or may not result in the spreading of grass onto dirt.
 func (g Grass) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	if g.Path {

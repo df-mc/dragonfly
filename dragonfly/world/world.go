@@ -59,6 +59,13 @@ type World struct {
 
 	randomTickSpeed uint32
 
+	updateMu sync.Mutex
+	// blockUpdates is a map of unix nano time values indexed by the block position at which an update is
+	// scheduled. If the current time exceeds the unix time value passed, the block update will be performed
+	// and the entry will be removed from the map.
+	blockUpdates    map[BlockPos]int64
+	updatePositions []BlockPos
+
 	chunkLoadMu sync.Mutex
 }
 
@@ -75,6 +82,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		viewers:         make(map[ChunkPos][]Viewer),
 		entities:        make(map[ChunkPos][]Entity),
 		entityBlocks:    make(map[ChunkPos]map[BlockPos]Block),
+		blockUpdates:    make(map[BlockPos]int64),
 		stopTick:        ctx,
 		cancelTick:      cancel,
 		defaultGameMode: gamemode.Survival{},
@@ -219,6 +227,7 @@ func (w *World) BreakBlock(pos BlockPos) {
 	old := w.Block(pos)
 	w.SetBlock(pos, nil)
 	w.AddParticle(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), breakParticle(old))
+	w.scheduleBlockUpdatesAround(pos, 0)
 }
 
 // PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also plays the
@@ -226,6 +235,7 @@ func (w *World) BreakBlock(pos BlockPos) {
 func (w *World) PlaceBlock(pos BlockPos, b Block) {
 	w.SetBlock(pos, b)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
+	w.scheduleBlockUpdatesAround(pos, 0)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the world. Unlike SetBlock, it takes a
@@ -508,6 +518,34 @@ func (w *World) SetRandomTickSpeed(v int) {
 	atomic.StoreUint32(&w.randomTickSpeed, uint32(v))
 }
 
+// ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
+// that position does not handle block updates, nothing will happen.
+func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
+	w.updateMu.Lock()
+	w.blockUpdates[pos] = time.Now().Add(delay).UnixNano()
+	w.updateMu.Unlock()
+}
+
+// scheduleBlockUpdatesAround schedules block updates directly around and on the position passed after the
+// duration passed.
+func (w *World) scheduleBlockUpdatesAround(pos BlockPos, delay time.Duration) {
+	w.ScheduleBlockUpdate(pos, delay)
+	pos[0]++
+	w.ScheduleBlockUpdate(pos, delay)
+	pos[0] -= 2
+	w.ScheduleBlockUpdate(pos, delay)
+	pos[0]++
+	pos[1]++
+	w.ScheduleBlockUpdate(pos, delay)
+	pos[1] -= 2
+	w.ScheduleBlockUpdate(pos, delay)
+	pos[1]++
+	pos[2]++
+	w.ScheduleBlockUpdate(pos, delay)
+	pos[2] -= 2
+	w.ScheduleBlockUpdate(pos, delay)
+}
+
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
 // will be set, which does not read or write any data.
 func (w *World) Provider(p Provider) {
@@ -629,6 +667,30 @@ func (w *World) tick(tick int) {
 	}
 	w.tickEntities()
 	w.tickRandomBlocks()
+	w.tickScheduledBlocks()
+}
+
+// tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
+// execution.
+func (w *World) tickScheduledBlocks() {
+	currentNano := time.Now().UnixNano()
+
+	w.updateMu.Lock()
+	for pos, unixNano := range w.blockUpdates {
+		if unixNano <= currentNano {
+			w.updatePositions = append(w.updatePositions, pos)
+			delete(w.blockUpdates, pos)
+		}
+	}
+	w.updateMu.Unlock()
+
+	for _, pos := range w.updatePositions {
+		if ticker, ok := w.Block(pos).(ScheduledTicker); ok {
+			ticker.ScheduledTick(pos, w)
+		}
+	}
+
+	w.updatePositions = w.updatePositions[:0]
 }
 
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer

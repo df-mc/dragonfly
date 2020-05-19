@@ -22,6 +22,10 @@ func (s Shovel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w 
 			// Grass paths are not created when the bottom face is clicked.
 			return false
 		}
+		if w.Block(pos.Add(world.BlockPos{0, 1})) != item_internal.Air {
+			// Grass paths can only be created if air is above the grass block.
+			return false
+		}
 		w.SetBlock(pos, item_internal.GrassPath)
 		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: item_internal.GrassPath})
 

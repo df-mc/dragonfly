@@ -94,6 +94,7 @@ func init() {
 }
 
 func init() {
+	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = Grass{Path: true}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {

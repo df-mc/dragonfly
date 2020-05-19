@@ -33,6 +33,14 @@ type RandomTicker interface {
 	RandomTick(pos BlockPos, w *World, r *rand.Rand)
 }
 
+// ScheduledTicker represents a block that executes an action when it has a block update scheduled, such as
+// when a block adjacent to it is broken.
+type ScheduledTicker interface {
+	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
+	// when a block is placed or broken.
+	ScheduledTick(pos BlockPos, w *World)
+}
+
 // lightEmitter is identical to a block.lightEmitter.
 type lightEmitter interface {
 	LightEmissionLevel() uint8

@@ -4,6 +4,9 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
 
+// Air holds an air block.
+var Air world.Block
+
 // GrassPath holds a grass path block.
 var GrassPath world.Block
 
