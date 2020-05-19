@@ -45,4 +45,5 @@ const (
 	dataFlagNoAI              = 16
 	dataFlagBreathing         = 35
 	dataFlagAffectedByGravity = 48
+	dataFlagSwimming          = 56
 )

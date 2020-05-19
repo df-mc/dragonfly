@@ -138,7 +138,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, 1.62}),
+			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, entityOffset(e)}),
 			Pitch:           e.Pitch() + deltaPitch,
 			Yaw:             e.Yaw() + deltaYaw,
 			HeadYaw:         e.Yaw() + deltaYaw,
@@ -180,7 +180,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        position.Add(mgl32.Vec3{0, 1.62}),
+			Position:        position.Add(mgl32.Vec3{0, entityOffset(e)}),
 			Pitch:           e.Pitch(),
 			Yaw:             e.Yaw(),
 			HeadYaw:         e.Yaw(),
@@ -352,6 +352,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagBreathing)
 		case state.Invisible:
 			m.setFlag(dataKeyFlags, dataFlagInvisible)
+		case state.Swimming:
+			m.setFlag(dataKeyFlags, dataFlagSwimming)
 		}
 	}
 	s.writePacket(&packet.SetActorData{

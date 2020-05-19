@@ -13,6 +13,9 @@ type Sneaking struct{}
 // around the world.
 type Sprinting struct{}
 
+// Swimming makes an entity show up as if it is swimming.
+type Swimming struct{}
+
 // Breathing makes an entity breath: This state will not show up for entities other than players.
 type Breathing struct{}
 
@@ -20,6 +23,7 @@ type Breathing struct{}
 type Invisible struct{}
 
 func (Sneaking) __()  {}
+func (Swimming) __()  {}
 func (Breathing) __() {}
 func (Sprinting) __() {}
 func (Invisible) __() {}

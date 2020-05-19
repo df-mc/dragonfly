@@ -36,7 +36,7 @@ func (s *Session) closeCurrentContainer() {
 // SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
-		Position:        s.c.Position().Add(mgl32.Vec3{0, 1.62}),
+		Position:        s.c.Position().Add(mgl32.Vec3{0, entityOffset(s.c)}),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})

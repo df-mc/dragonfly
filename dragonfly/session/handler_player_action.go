@@ -2,7 +2,9 @@ package session
 
 import (
 	"fmt"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -27,6 +29,12 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		s.c.StartSneaking()
 	case packet.PlayerActionStopSneak:
 		s.c.StopSneaking()
+	case packet.PlayerActionStartSwimming:
+		if _, ok := s.c.World().Block(world.BlockPosFromVec3(s.c.Position().Add(mgl32.Vec3{0, s.c.EyeHeight()}))).(block.Liquid); ok {
+			s.c.StartSwimming()
+		}
+	case packet.PlayerActionStopSwimming:
+		s.c.StopSwimming()
 	case packet.PlayerActionStartBreak:
 		s.c.StartBreaking(world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])})
 	case packet.PlayerActionAbortBreak:

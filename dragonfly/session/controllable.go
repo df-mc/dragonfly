@@ -20,6 +20,7 @@ type Controllable interface {
 
 	Move(deltaPos mgl32.Vec3)
 	Speed() float32
+	EyeHeight() float32
 	Rotate(deltaYaw, deltaPitch float32)
 
 	Chat(msg ...interface{})
@@ -39,6 +40,8 @@ type Controllable interface {
 	StopSneaking()
 	StartSprinting()
 	StopSprinting()
+	StartSwimming()
+	StopSwimming()
 
 	StartBreaking(pos world.BlockPos)
 	ContinueBreaking(face world.Face)

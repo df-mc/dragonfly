@@ -62,7 +62,7 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *uint32
 
-	sneaking, sprinting, invisible uint32
+	sneaking, sprinting, swimming, invisible uint32
 
 	speed             atomic.Value
 	health, maxHealth atomic.Value
@@ -547,6 +547,20 @@ func (p *Player) StartSneaking() {
 // will not do anything.
 func (p *Player) StopSneaking() {
 	atomic.StoreUint32(&p.sneaking, 0)
+	p.updateState()
+}
+
+// StartSwimming makes the player start swimming if it is not currently doing so. If the player is sneaking
+// while StartSwimming is called, the sneaking is stopped.
+func (p *Player) StartSwimming() {
+	p.StopSneaking()
+	atomic.StoreUint32(&p.swimming, 1)
+	p.updateState()
+}
+
+// StopSwimming makes the player stop swimming if it is currently doing so.
+func (p *Player) StopSwimming() {
+	atomic.StoreUint32(&p.swimming, 0)
 	p.updateState()
 }
 
@@ -1069,7 +1083,9 @@ func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick() {
-
+	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(block.Liquid); !ok {
+		p.StopSwimming()
+	}
 }
 
 // Velocity returns the current velocity of the player.
@@ -1089,6 +1105,8 @@ func (p *Player) AABB() []physics.AABB {
 	switch {
 	case atomic.LoadUint32(&p.sneaking) == 1:
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.65, 0.3})}
+	case atomic.LoadUint32(&p.swimming) == 1:
+		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 0.6, 0.3})}
 	default:
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.8, 0.3})}
 	}
@@ -1107,6 +1125,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if atomic.LoadUint32(&p.sprinting) == 1 {
 		s = append(s, state.Sprinting{})
+	}
+	if atomic.LoadUint32(&p.swimming) == 1 {
+		s = append(s, state.Swimming{})
 	}
 	if atomic.LoadUint32(&p.invisible) == 1 {
 		s = append(s, state.Invisible{})
