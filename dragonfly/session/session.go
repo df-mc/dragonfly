@@ -219,6 +219,7 @@ func (s *Session) registerHandlers() {
 		packet.IDCommandRequest:       &CommandRequestHandler{},
 		packet.IDContainerClose:       &ContainerCloseHandler{},
 		packet.IDInventoryTransaction: &InventoryTransactionHandler{},
+		packet.IDLevelSoundEvent:      nil,
 		packet.IDMobEquipment:         &MobEquipmentHandler{},
 		packet.IDModalFormResponse:    &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
 		packet.IDMovePlayer:           &MovePlayerHandler{},
@@ -227,7 +228,7 @@ func (s *Session) registerHandlers() {
 		packet.IDRequestChunkRadius:   &RequestChunkRadiusHandler{},
 		packet.IDRespawn:              &RespawnHandler{},
 		packet.IDText:                 &TextHandler{},
-		packet.IDLevelSoundEvent:      nil,
+		packet.IDTickSync:             nil,
 	}
 }
 
