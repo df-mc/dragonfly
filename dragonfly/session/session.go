@@ -222,6 +222,7 @@ func (s *Session) registerHandlers() {
 		packet.IDLevelSoundEvent:      nil,
 		packet.IDMobEquipment:         &MobEquipmentHandler{},
 		packet.IDModalFormResponse:    &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
+		packet.IDMovePlayer:           nil,
 		packet.IDPlayerAction:         &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:      &PlayerAuthInputHandler{},
 		packet.IDRequestChunkRadius:   &RequestChunkRadiusHandler{},
