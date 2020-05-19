@@ -31,6 +31,21 @@ func (aabb AABB) Max() mgl32.Vec3 {
 	return aabb.max
 }
 
+// Width returns the width of the AABB.
+func (aabb AABB) Width() float32 {
+	return aabb.max[0] - aabb.min[0]
+}
+
+// Length returns the length of the AABB.
+func (aabb AABB) Length() float32 {
+	return aabb.max[2] - aabb.min[2]
+}
+
+// Height returns the height of the AABB.
+func (aabb AABB) Height() float32 {
+	return aabb.max[1] - aabb.min[1]
+}
+
 // Extend expands the AABB on all axes as represented by the Vec3 passed. Negative coordinates result in an
 // expansion towards the negative axis, and vice versa for positive coordinates.
 func (aabb AABB) Extend(vec mgl32.Vec3) AABB {

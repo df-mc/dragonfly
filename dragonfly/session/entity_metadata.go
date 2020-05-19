@@ -1,14 +1,23 @@
 package session
 
+import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+)
+
 // entityMetadata represents a map that holds metadata associated with an entity. The data held in the map
 // depends on the entity and varies on a per-entity basis.
 type entityMetadata map[uint32]interface{}
 
 // defaultEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
-func defaultEntityMetadata() entityMetadata {
+func defaultEntityMetadata(e world.Entity) entityMetadata {
 	m := entityMetadata{}
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
+
+	bb := e.AABB()[0]
+	m[dataKeyBoundingBoxWidth] = bb.Width()
+	m[dataKeyBoundingBoxHeight] = bb.Height()
+
 	return m
 }
 
@@ -32,6 +41,8 @@ const (
 	dataKeyOwnerRuntimeID
 	dataKeyTargetRuntimeID
 	dataKeyAir
+	dataKeyBoundingBoxWidth  = 53
+	dataKeyBoundingBoxHeight = 54
 )
 
 //noinspection GoUnusedConst

@@ -341,7 +341,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 
 // ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
-	m := defaultEntityMetadata()
+	m := defaultEntityMetadata(e)
 	for _, eState := range states {
 		switch eState.(type) {
 		case state.Sneaking:
