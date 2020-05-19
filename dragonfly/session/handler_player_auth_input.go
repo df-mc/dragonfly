@@ -12,13 +12,13 @@ type PlayerAuthInputHandler struct{}
 // Handle ...
 func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.PlayerAuthInput)
-	if pk.Position.Len() == 0 && pk.Yaw == s.c.Yaw() && pk.Pitch == s.c.Pitch() {
+	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
+
+	if pk.Position.Sub(s.c.Position()).Len() == 0 && pk.Yaw == s.c.Yaw() && pk.Pitch == s.c.Pitch() {
 		// The PlayerAuthInput packet is sent every tick, so don't do anything if the position and rotation
 		// were unchanged.
 		return nil
 	}
-
-	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
 
 	s.c.Move(pk.Position.Sub(s.c.Position()))
 	s.c.Rotate(pk.Yaw-s.c.Yaw(), pk.Pitch-s.c.Pitch())
