@@ -17,7 +17,16 @@ type SourceEntityAttack struct {
 	Attacker world.Entity
 }
 
+// SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
+// but otherwise no enchantments have an additional effect.
+type SourceCustom struct{}
+
 // ReducedByArmour ...
 func (SourceEntityAttack) ReducedByArmour() bool {
+	return true
+}
+
+// ReducedByArmour ...
+func (SourceCustom) ReducedByArmour() bool {
 	return true
 }
