@@ -16,8 +16,8 @@ func (*RespawnHandler) Handle(p packet.Packet, s *Session) error {
 		return ErrSelfRuntimeID
 	}
 	if pk.State != packet.RespawnStateClientReadyToSpawn {
-		//noinspection GoErrorStringFormat
 		//lint:ignore ST1005 Error string is only capitalised because of the field name.
+		//noinspection GoErrorStringFormat
 		return fmt.Errorf("State must always be %v, but got %v", packet.RespawnStateClientReadyToSpawn, pk.State)
 	}
 	s.c.Respawn()

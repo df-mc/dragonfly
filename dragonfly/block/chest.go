@@ -119,7 +119,7 @@ func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, u item
 
 // UseOnBlock ...
 func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, c)
+	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
