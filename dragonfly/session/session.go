@@ -74,12 +74,18 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
 func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session {
+	r := conn.ChunkRadius()
+	if r > maxChunkRadius {
+		r = maxChunkRadius
+		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
+	}
+
 	s := &Session{
 		conn:                   conn,
 		log:                    log,
 		handlers:               make(map[uint32]packetHandler),
 		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
-		chunkRadius:            int32(maxChunkRadius / 2),
+		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
