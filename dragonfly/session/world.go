@@ -319,7 +319,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 		}
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
-			EventType:       packet.ActorEventArmSwing,
+			EventType:       packet.ActorEventStartAttack,
 		})
 	case action.Hurt:
 		s.writePacket(&packet.ActorEvent{
