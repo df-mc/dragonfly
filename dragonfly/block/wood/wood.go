@@ -1,4 +1,4 @@
-package material
+package wood
 
 import "fmt"
 
@@ -8,33 +8,33 @@ type Wood struct {
 	wood
 }
 
-// OakWood returns oak wood material.
-func OakWood() Wood {
+// Oak returns oak wood material.
+func Oak() Wood {
 	return Wood{wood(0)}
 }
 
-// SpruceWood returns spruce wood material.
-func SpruceWood() Wood {
+// Spruce returns spruce wood material.
+func Spruce() Wood {
 	return Wood{wood(1)}
 }
 
-// BirchWood returns birch wood material.
-func BirchWood() Wood {
+// Birch returns birch wood material.
+func Birch() Wood {
 	return Wood{wood(2)}
 }
 
-// JungleWood returns jungle wood material.
-func JungleWood() Wood {
+// Jungle returns jungle wood material.
+func Jungle() Wood {
 	return Wood{wood(3)}
 }
 
-// AcaciaWood returns acacia wood material.
-func AcaciaWood() Wood {
+// Acacia returns acacia wood material.
+func Acacia() Wood {
 	return Wood{wood(4)}
 }
 
-// DarkOakWood returns dark oak wood material.
-func DarkOakWood() Wood {
+// DarkOak returns dark oak wood material.
+func DarkOak() Wood {
 	return Wood{wood(5)}
 }
 

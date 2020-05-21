@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
@@ -10,7 +10,7 @@ import (
 type Planks struct {
 	// Wood is the type of wood of the planks. This field must have one of the values found in the material
 	// package.
-	Wood material.Wood
+	Wood wood.Wood
 }
 
 // BreakInfo ...
@@ -26,17 +26,17 @@ func (p Planks) BreakInfo() BreakInfo {
 // EncodeItem ...
 func (p Planks) EncodeItem() (id int32, meta int16) {
 	switch p.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		return 5, 0
-	case material.SpruceWood():
+	case wood.Spruce():
 		return 5, 1
-	case material.BirchWood():
+	case wood.Birch():
 		return 5, 2
-	case material.JungleWood():
+	case wood.Jungle():
 		return 5, 3
-	case material.AcaciaWood():
+	case wood.Acacia():
 		return 5, 4
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		return 5, 5
 	}
 	panic("invalid wood type")
@@ -50,11 +50,11 @@ func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 // allPlanks returns all planks types.
 func allPlanks() []world.Block {
 	return []world.Block{
-		Planks{Wood: material.OakWood()},
-		Planks{Wood: material.SpruceWood()},
-		Planks{Wood: material.BirchWood()},
-		Planks{Wood: material.JungleWood()},
-		Planks{Wood: material.AcaciaWood()},
-		Planks{Wood: material.DarkOakWood()},
+		Planks{Wood: wood.Oak()},
+		Planks{Wood: wood.Spruce()},
+		Planks{Wood: wood.Birch()},
+		Planks{Wood: wood.Jungle()},
+		Planks{Wood: wood.Acacia()},
+		Planks{Wood: wood.DarkOak()},
 	}
 }

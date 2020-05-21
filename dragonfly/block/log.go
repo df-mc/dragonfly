@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
@@ -13,7 +13,7 @@ import (
 type Log struct {
 	// Wood is the type of wood of the log. This field must have one of the values found in the material
 	// package.
-	Wood material.Wood
+	Wood wood.Wood
 	// Stripped specifies if the log is stripped or not.
 	Stripped bool
 	// Axis is the axis which the log block faces.
@@ -45,32 +45,32 @@ func (l Log) BreakInfo() BreakInfo {
 // EncodeItem ...
 func (l Log) EncodeItem() (id int32, meta int16) {
 	switch l.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		if l.Stripped {
 			return -10, 0
 		}
 		return 17, 0
-	case material.SpruceWood():
+	case wood.Spruce():
 		if l.Stripped {
 			return -5, 0
 		}
 		return 17, 1
-	case material.BirchWood():
+	case wood.Birch():
 		if l.Stripped {
 			return -6, 0
 		}
 		return 17, 2
-	case material.JungleWood():
+	case wood.Jungle():
 		if l.Stripped {
 			return -7, 0
 		}
 		return 17, 3
-	case material.AcaciaWood():
+	case wood.Acacia():
 		if l.Stripped {
 			return -8, 0
 		}
 		return 162, 0
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		if l.Stripped {
 			return -9, 0
 		}
@@ -83,24 +83,24 @@ func (l Log) EncodeItem() (id int32, meta int16) {
 func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 	if !l.Stripped {
 		switch l.Wood {
-		case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
+		case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle():
 			return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.String()}
-		case material.AcaciaWood(), material.DarkOakWood():
+		case wood.Acacia(), wood.DarkOak():
 			return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
 		}
 	}
 	switch l.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		return "minecraft:stripped_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
-	case material.SpruceWood():
+	case wood.Spruce():
 		return "minecraft:stripped_spruce_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
-	case material.BirchWood():
+	case wood.Birch():
 		return "minecraft:stripped_birch_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
-	case material.JungleWood():
+	case wood.Jungle():
 		return "minecraft:stripped_jungle_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
-	case material.AcaciaWood():
+	case wood.Acacia():
 		return "minecraft:stripped_acacia_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		return "minecraft:stripped_dark_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
 	}
 	panic("invalid wood type")
@@ -109,12 +109,12 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 // allLogs returns a list of all possible log states.
 func allLogs() (logs []world.Block) {
 	f := func(axis world.Axis, stripped bool) {
-		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.OakWood()})
-		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.SpruceWood()})
-		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.BirchWood()})
-		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.JungleWood()})
-		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.AcaciaWood()})
-		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: material.DarkOakWood()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Oak()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Spruce()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Birch()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Jungle()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Acacia()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.DarkOak()})
 	}
 	for axis := world.Axis(0); axis < 3; axis++ {
 		f(axis, true)

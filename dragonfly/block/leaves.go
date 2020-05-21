@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
@@ -10,7 +10,7 @@ import (
 type Leaves struct {
 	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
 	// package.
-	Wood material.Wood
+	Wood wood.Wood
 	// Persistent specifies if the leaves are persistent, meaning they will not decay as a result of no wood
 	// being nearby.
 	Persistent bool
@@ -34,17 +34,17 @@ func (l Leaves) BreakInfo() BreakInfo {
 // EncodeItem ...
 func (l Leaves) EncodeItem() (id int32, meta int16) {
 	switch l.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		return 18, 0
-	case material.SpruceWood():
+	case wood.Spruce():
 		return 18, 1
-	case material.BirchWood():
+	case wood.Birch():
 		return 18, 2
-	case material.JungleWood():
+	case wood.Jungle():
 		return 18, 3
-	case material.AcaciaWood():
+	case wood.Acacia():
 		return 161, 0
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		return 161, 1
 	}
 	panic("invalid wood type")
@@ -58,9 +58,9 @@ func (Leaves) LightDiffusionLevel() uint8 {
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {
-	case material.OakWood(), material.SpruceWood(), material.BirchWood(), material.JungleWood():
+	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle():
 		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
-	case material.AcaciaWood(), material.DarkOakWood():
+	case wood.Acacia(), wood.DarkOak():
 		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
 	}
 	panic("invalid wood type")
@@ -69,12 +69,12 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
-		leaves = append(leaves, Leaves{Wood: material.OakWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: material.SpruceWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: material.BirchWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: material.JungleWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: material.AcaciaWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: material.DarkOakWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Oak(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Spruce(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Birch(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Jungle(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Acacia(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.DarkOak(), Persistent: persistent, shouldUpdate: update})
 	}
 	f(true, true)
 	f(true, false)

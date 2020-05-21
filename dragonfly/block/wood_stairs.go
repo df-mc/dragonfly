@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
@@ -12,7 +12,7 @@ import (
 type WoodStairs struct {
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
-	Wood material.Wood
+	Wood wood.Wood
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part
 	// of the block.
 	UpsideDown bool
@@ -80,17 +80,17 @@ func (s WoodStairs) AABB() []physics.AABB {
 // EncodeItem ...
 func (s WoodStairs) EncodeItem() (id int32, meta int16) {
 	switch s.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		return 53, 0
-	case material.SpruceWood():
+	case wood.Spruce():
 		return 134, 0
-	case material.BirchWood():
+	case wood.Birch():
 		return 135, 0
-	case material.JungleWood():
+	case wood.Jungle():
 		return 136, 0
-	case material.AcaciaWood():
+	case wood.Acacia():
 		return 163, 0
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		return 164, 0
 	}
 	panic("invalid wood type")
@@ -99,17 +99,17 @@ func (s WoodStairs) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (s WoodStairs) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch s.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		return "minecraft:oak_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-	case material.SpruceWood():
+	case wood.Spruce():
 		return "minecraft:spruce_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-	case material.BirchWood():
+	case wood.Birch():
 		return "minecraft:birch_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-	case material.JungleWood():
+	case wood.Jungle():
 		return "minecraft:jungle_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-	case material.AcaciaWood():
+	case wood.Acacia():
 		return "minecraft:acacia_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		return "minecraft:dark_oak_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	panic("invalid wood type")
@@ -123,12 +123,12 @@ func toStairsDirection(v world.Face) int32 {
 // allWoodStairs returns all states of wood stairs.
 func allWoodStairs() (stairs []world.Block) {
 	f := func(facing world.Face, upsideDown bool) {
-		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: material.OakWood()})
-		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: material.SpruceWood()})
-		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: material.BirchWood()})
-		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: material.JungleWood()})
-		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: material.AcaciaWood()})
-		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: material.DarkOakWood()})
+		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Oak()})
+		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Spruce()})
+		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Birch()})
+		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Jungle()})
+		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Acacia()})
+		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.DarkOak()})
 	}
 	for i := world.Face(2); i <= 5; i++ {
 		f(i, true)

@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/material"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
@@ -13,7 +13,7 @@ import (
 type WoodSlab struct {
 	// Wood is the type of wood of the slabs. This field must have one of the values found in the material
 	// package.
-	Wood material.Wood
+	Wood wood.Wood
 	// UpsideDown specifies if the slabs are upside down.
 	UpsideDown bool
 	// Double specifies if the slab is a double slab. These double slabs can be made by placing another slab
@@ -96,32 +96,32 @@ func (s WoodSlab) AABB() []physics.AABB {
 // EncodeItem ...
 func (s WoodSlab) EncodeItem() (id int32, meta int16) {
 	switch s.Wood {
-	case material.OakWood():
+	case wood.Oak():
 		if s.Double {
 			return 157, 0
 		}
 		return 158, 0
-	case material.SpruceWood():
+	case wood.Spruce():
 		if s.Double {
 			return 157, 1
 		}
 		return 158, 1
-	case material.BirchWood():
+	case wood.Birch():
 		if s.Double {
 			return 157, 2
 		}
 		return 158, 2
-	case material.JungleWood():
+	case wood.Jungle():
 		if s.Double {
 			return 157, 3
 		}
 		return 158, 3
-	case material.AcaciaWood():
+	case wood.Acacia():
 		if s.Double {
 			return 157, 4
 		}
 		return 158, 4
-	case material.DarkOakWood():
+	case wood.DarkOak():
 		if s.Double {
 			return 157, 5
 		}
@@ -141,12 +141,12 @@ func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{})
 // allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.OakWood()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.SpruceWood()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.BirchWood()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.JungleWood()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.AcaciaWood()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: material.DarkOakWood()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Oak()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Spruce()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Birch()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Jungle()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Acacia()})
+		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.DarkOak()})
 	}
 	f(false, false)
 	f(false, true)
