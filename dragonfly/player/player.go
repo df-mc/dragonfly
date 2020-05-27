@@ -1225,7 +1225,7 @@ func (p *Player) close() {
 	_ = p.armour.Close()
 	p.sMutex.Unlock()
 
-	if s == session.Nop {
+	if s == nil {
 		p.World().RemoveEntity(p)
 	}
 }

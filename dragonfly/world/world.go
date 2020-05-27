@@ -988,20 +988,24 @@ func showEntity(e Entity, viewer Viewer) {
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
 func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
-	w.chunkLoadMu.Lock()
+	var needsLight bool
 
+	w.chunkLoadMu.Lock()
 	s, ok := w.chunkCache().Get(pos.Hash())
 	if !ok {
 		c, err = w.loadChunk(pos)
 		if err != nil {
 			return nil, err
 		}
-		w.calculateLight(c, pos)
 		w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
 	} else {
 		c = s.(*chunk.Chunk)
 	}
 	w.chunkLoadMu.Unlock()
+
+	if needsLight {
+		w.calculateLight(c, pos)
+	}
 
 	// Update the timestamp to that it doesn't expire after we just used it.
 	w.chunkCache().Set(pos.timeHash(), time.Now().Add(time.Minute*5), cache.DefaultExpiration)
