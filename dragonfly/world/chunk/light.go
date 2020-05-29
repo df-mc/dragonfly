@@ -442,6 +442,9 @@ func spreadPropagate(queue *nodeQueue, c *Chunk, neighbourChunks []*Chunk, skyli
 
 		nSub := subByY(neighbour.y, chunkByNode(node, c, neighbourChunks))
 		filter := filterLevel(nSub, uint8(neighbour.x&0xf), neighbour.y, uint8(neighbour.z&0xf)) + 1
+		if filter >= node.level {
+			continue
+		}
 		neighbour.level = node.level - filter
 		queue.PushBack(neighbour)
 	}
@@ -487,7 +490,12 @@ func fillPropagate(queue *nodeQueue, c *Chunk, skyLight bool) {
 				// In the fill stage, we don't propagate sky light out of the chunk.
 				continue
 			}
-			neighbour.level = node.level - (filterLevel(subByY(neighbour.y, c), uint8(neighbour.x), neighbour.y, uint8(neighbour.z)) + 1)
+			sub := filterLevel(subByY(neighbour.y, c), uint8(neighbour.x), neighbour.y, uint8(neighbour.z)) + 1
+			if sub >= node.level {
+				// No light left to propagate.
+				continue
+			}
+			neighbour.level = node.level - sub
 			queue.PushBack(neighbour)
 		}
 	}
