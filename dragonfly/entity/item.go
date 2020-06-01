@@ -17,7 +17,7 @@ type Item struct {
 	i             item.Stack
 	velocity, pos atomic.Value
 
-	c *movementComputer
+	*movementComputer
 }
 
 // NewItem creates a new item entity using the item stack passed. The item entity will be positioned at the
@@ -27,7 +27,7 @@ func NewItem(i item.Stack, pos mgl32.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.Count() - i.MaxCount())
 	}
-	it := &Item{i: i, c: &movementComputer{
+	it := &Item{i: i, movementComputer: &movementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,
 	}}
@@ -55,7 +55,7 @@ func (it *Item) World() *world.World {
 
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick() {
-	it.pos.Store(it.c.tickMovement(it))
+	it.pos.Store(it.tickMovement(it))
 	if it.age++; it.age > 6000 {
 		_ = it.Close()
 		return

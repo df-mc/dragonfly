@@ -15,6 +15,8 @@ type Entity interface {
 	physics.AABBer
 	// Position returns the current position of the entity in the world.
 	Position() mgl32.Vec3
+	// OnGround checks if the entity is currently on the ground.
+	OnGround() bool
 	// World returns the current world of the entity. This is always the world that the entity can actually be
 	// found in.
 	World() *World

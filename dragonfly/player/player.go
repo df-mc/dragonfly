@@ -62,7 +62,7 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *uint32
 
-	sneaking, sprinting, swimming, invisible *uint32
+	sneaking, sprinting, swimming, invisible, onGround *uint32
 
 	speed             atomic.Value
 	health, maxHealth atomic.Value
@@ -97,6 +97,7 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 		sprinting:            new(uint32),
 		swimming:             new(uint32),
 		invisible:            new(uint32),
+		onGround:             new(uint32),
 		gameMode:             gamemode.Adventure{},
 	}
 	p.pos.Store(pos)
@@ -1099,6 +1100,38 @@ func (p *Player) Tick() {
 	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(block.Liquid); !ok {
 		p.StopSwimming()
 	}
+
+	if p.checkOnGround() {
+		atomic.StoreUint32(p.onGround, 1)
+		return
+	}
+	atomic.StoreUint32(p.onGround, 0)
+}
+
+// checkOnGround checks if the player is currently considered to be on the ground.
+func (p *Player) checkOnGround() bool {
+	pos := p.Position()
+	pAABB := p.AABB()[0].Translate(pos)
+	min, max := pAABB.Min(), pAABB.Max()
+
+	for x := min[0]; x <= max[0]+1; x++ {
+		for z := min[2]; z <= max[2]+1; z++ {
+			for y := pos[1] - 1; y < pos[1]+1; y++ {
+				bPos := world.BlockPosFromVec3(mgl32.Vec3{x, y, z})
+				b := p.World().Block(bPos)
+				aabbList := []physics.AABB{physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 1, 1})}
+				if aabb, ok := b.(physics.AABBer); ok {
+					aabbList = aabb.AABB()
+				}
+				for _, aabb := range aabbList {
+					if aabb.Grow(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Velocity returns the current velocity of the player.
@@ -1123,6 +1156,11 @@ func (p *Player) AABB() []physics.AABB {
 	default:
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.8, 0.3})}
 	}
+}
+
+// OnGround checks if the player is considered to be on the ground.
+func (p *Player) OnGround() bool {
+	return atomic.LoadUint32(p.onGround) == 1
 }
 
 // EyeHeight returns the eye height of the player: 1.62.

@@ -142,12 +142,18 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 			Pitch:           e.Pitch() + deltaPitch,
 			Yaw:             e.Yaw() + deltaYaw,
 			HeadYaw:         e.Yaw() + deltaYaw,
+			OnGround:        e.OnGround(),
 		})
 	default:
+		flags := byte(0)
+		if e.OnGround() {
+			flags |= packet.MoveFlagOnGround
+		}
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
 			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, entityOffset(e)}),
 			Rotation:        mgl32.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw},
+			Flags:           flags,
 		})
 	}
 }

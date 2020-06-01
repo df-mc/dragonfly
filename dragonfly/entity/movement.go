@@ -149,3 +149,8 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 	}
 	return blockAABBs
 }
+
+// OnGround checks if the entity that this computer calculates is currently on the ground.
+func (c *movementComputer) OnGround() bool {
+	return c.onGround
+}
