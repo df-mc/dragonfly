@@ -50,7 +50,7 @@ type Session struct {
 	inv, offHand, ui *inventory.Inventory
 	armour           *inventory.Armour
 
-	inTransaction, containerOpened, openedWindowID uint32
+	inTransaction, containerOpened, openedWindowID *uint32
 	openedWindow, openedPos                        atomic.Value
 }
 
@@ -92,6 +92,9 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
 		ui:                     inventory.New(51, nil),
+		inTransaction:          new(uint32),
+		containerOpened:        new(uint32),
+		openedWindowID:         new(uint32),
 	}
 	s.scoreboardObj.Store("")
 	s.openedWindow.Store(inventory.New(1, nil))

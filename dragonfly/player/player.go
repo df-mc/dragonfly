@@ -62,7 +62,7 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *uint32
 
-	sneaking, sprinting, swimming, invisible uint32
+	sneaking, sprinting, swimming, invisible *uint32
 
 	speed             atomic.Value
 	health, maxHealth atomic.Value
@@ -93,6 +93,10 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 		heldSlot:             new(uint32),
 		breaking:             new(uint32),
 		breakParticleCounter: new(uint32),
+		sneaking:             new(uint32),
+		sprinting:            new(uint32),
+		swimming:             new(uint32),
+		invisible:            new(uint32),
 		gameMode:             gamemode.Adventure{},
 	}
 	p.pos.Store(pos)
@@ -512,12 +516,10 @@ func (p *Player) Respawn() {
 // particles show up under the feet.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if atomic.LoadUint32(&p.sprinting) == 1 {
+	if !atomic.CompareAndSwapUint32(p.sprinting, 0, 1) {
 		return
 	}
 	p.StopSneaking()
-
-	atomic.StoreUint32(&p.sprinting, 1)
 	p.SetSpeed(p.Speed() * 1.3)
 
 	p.updateState()
@@ -525,10 +527,9 @@ func (p *Player) StartSprinting() {
 
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
 func (p *Player) StopSprinting() {
-	if atomic.LoadUint32(&p.sprinting) == 0 {
+	if !atomic.CompareAndSwapUint32(p.sprinting, 1, 0) {
 		return
 	}
-	atomic.StoreUint32(&p.sprinting, 0)
 	p.SetSpeed(p.Speed() / 1.3)
 
 	p.updateState()
@@ -538,42 +539,54 @@ func (p *Player) StopSprinting() {
 // anything.
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
+	if !atomic.CompareAndSwapUint32(p.sneaking, 0, 1) {
+		return
+	}
 	p.StopSprinting()
-	atomic.StoreUint32(&p.sneaking, 1)
 	p.updateState()
 }
 
 // StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
 // will not do anything.
 func (p *Player) StopSneaking() {
-	atomic.StoreUint32(&p.sneaking, 0)
+	if !atomic.CompareAndSwapUint32(p.sneaking, 1, 0) {
+		return
+	}
 	p.updateState()
 }
 
 // StartSwimming makes the player start swimming if it is not currently doing so. If the player is sneaking
 // while StartSwimming is called, the sneaking is stopped.
 func (p *Player) StartSwimming() {
+	if !atomic.CompareAndSwapUint32(p.swimming, 0, 1) {
+		return
+	}
 	p.StopSneaking()
-	atomic.StoreUint32(&p.swimming, 1)
 	p.updateState()
 }
 
 // StopSwimming makes the player stop swimming if it is currently doing so.
 func (p *Player) StopSwimming() {
-	atomic.StoreUint32(&p.swimming, 0)
+	if !atomic.CompareAndSwapUint32(p.swimming, 1, 0) {
+		return
+	}
 	p.updateState()
 }
 
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
-	atomic.StoreUint32(&p.invisible, 1)
+	if !atomic.CompareAndSwapUint32(p.invisible, 0, 1) {
+		return
+	}
 	p.updateState()
 }
 
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, nothing happens.
 func (p *Player) SetVisible() {
-	atomic.StoreUint32(&p.invisible, 0)
+	if !atomic.CompareAndSwapUint32(p.invisible, 1, 0) {
+		return
+	}
 	p.updateState()
 }
 
@@ -670,7 +683,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		if activatable, ok := p.World().Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which the block will activated as usual.
-			if atomic.LoadUint32(&p.sneaking) == 0 || i.Empty() {
+			if atomic.LoadUint32(p.sneaking) == 0 || i.Empty() {
 				p.swingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
 				// used.
@@ -810,10 +823,9 @@ func (p *Player) FinishBreaking() {
 // if the player isn't breaking anything.
 // Unlike FinishBreaking, AbortBreaking does not stop the animation.
 func (p *Player) AbortBreaking() {
-	if atomic.LoadUint32(p.breaking) == 0 {
+	if !atomic.CompareAndSwapUint32(p.breaking, 1, 0) {
 		return
 	}
-	atomic.StoreUint32(p.breaking, 0)
 	atomic.StoreUint32(p.breakParticleCounter, 0)
 
 	pos := p.breakingPos.Load().(world.BlockPos)
@@ -1104,9 +1116,9 @@ func (p *Player) SetVelocity(v mgl32.Vec3) {
 // AABB returns the axis aligned bounding box of the player.
 func (p *Player) AABB() []physics.AABB {
 	switch {
-	case atomic.LoadUint32(&p.sneaking) == 1:
+	case atomic.LoadUint32(p.sneaking) == 1:
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.65, 0.3})}
-	case atomic.LoadUint32(&p.swimming) == 1:
+	case atomic.LoadUint32(p.swimming) == 1:
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 0.6, 0.3})}
 	default:
 		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.8, 0.3})}
@@ -1121,16 +1133,16 @@ func (p *Player) EyeHeight() float32 {
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {
-	if atomic.LoadUint32(&p.sneaking) == 1 {
+	if atomic.LoadUint32(p.sneaking) == 1 {
 		s = append(s, state.Sneaking{})
 	}
-	if atomic.LoadUint32(&p.sprinting) == 1 {
+	if atomic.LoadUint32(p.sprinting) == 1 {
 		s = append(s, state.Sprinting{})
 	}
-	if atomic.LoadUint32(&p.swimming) == 1 {
+	if atomic.LoadUint32(p.swimming) == 1 {
 		s = append(s, state.Swimming{})
 	}
-	if atomic.LoadUint32(&p.invisible) == 1 {
+	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
 	}
 	// TODO: Only set the player as breathing when it is above water.

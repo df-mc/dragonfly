@@ -376,7 +376,7 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 	b.AddViewer(s, s.c.World(), pos)
 
 	nextID := s.nextWindowID()
-	atomic.StoreUint32(&s.containerOpened, 1)
+	atomic.StoreUint32(s.containerOpened, 1)
 	s.openedWindow.Store(b.Inventory())
 	s.openedPos.Store(pos)
 
@@ -395,15 +395,15 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 
 // ViewSlotChange ...
 func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
-	if atomic.LoadUint32(&s.containerOpened) == 0 {
+	if atomic.LoadUint32(s.containerOpened) == 0 {
 		return
 	}
-	if atomic.LoadUint32(&s.inTransaction) == 1 {
+	if atomic.LoadUint32(s.inTransaction) == 1 {
 		// Don't send slot changes to the player itself.
 		return
 	}
 	s.writePacket(&packet.InventorySlot{
-		WindowID: atomic.LoadUint32(&s.openedWindowID),
+		WindowID: atomic.LoadUint32(s.openedWindowID),
 		Slot:     uint32(slot),
 		NewItem:  stackFromItem(newItem),
 	})
@@ -441,22 +441,21 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
-	if atomic.LoadUint32(&s.openedWindowID) == 99 {
-		atomic.StoreUint32(&s.openedWindowID, 1)
+	if atomic.LoadUint32(s.openedWindowID) == 99 {
+		atomic.StoreUint32(s.openedWindowID, 1)
 		return 1
 	}
-	return byte(atomic.AddUint32(&s.openedWindowID, 1))
+	return byte(atomic.AddUint32(s.openedWindowID, 1))
 }
 
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
 func (s *Session) closeWindow() {
-	if atomic.LoadUint32(&s.containerOpened) == 0 {
+	if !atomic.CompareAndSwapUint32(s.containerOpened, 1, 0) {
 		return
 	}
-	atomic.StoreUint32(&s.containerOpened, 0)
 	s.openedWindow.Store(inventory.New(1, nil))
-	s.writePacket(&packet.ContainerClose{WindowID: byte(atomic.LoadUint32(&s.openedWindowID))})
+	s.writePacket(&packet.ContainerClose{WindowID: byte(atomic.LoadUint32(s.openedWindowID))})
 }
 
 // blockRuntimeID returns the runtime ID of the block passed.

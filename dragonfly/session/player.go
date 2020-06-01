@@ -23,7 +23,7 @@ import (
 
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
-	if atomic.LoadUint32(&s.containerOpened) == 0 {
+	if atomic.LoadUint32(s.containerOpened) == 0 {
 		return
 	}
 	s.closeWindow()
@@ -70,8 +70,8 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.ui, true
 	case protocol.WindowIDArmour:
 		return s.armour.Inv(), true
-	case int32(atomic.LoadUint32(&s.openedWindowID)):
-		if atomic.LoadUint32(&s.containerOpened) == 1 {
+	case int32(atomic.LoadUint32(s.openedWindowID)):
+		if atomic.LoadUint32(s.containerOpened) == 1 {
 			return s.openedWindow.Load().(*inventory.Inventory), true
 		}
 	}
@@ -358,7 +358,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
-		if atomic.LoadUint32(&s.inTransaction) == 1 {
+		if atomic.LoadUint32(s.inTransaction) == 1 {
 			return
 		}
 		s.writePacket(&packet.InventorySlot{
@@ -373,7 +373,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
-		if atomic.LoadUint32(&s.inTransaction) == 1 {
+		if atomic.LoadUint32(s.inTransaction) == 1 {
 			return
 		}
 		s.writePacket(&packet.InventorySlot{
@@ -386,7 +386,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
-		if atomic.LoadUint32(&s.inTransaction) == 1 {
+		if atomic.LoadUint32(s.inTransaction) == 1 {
 			return
 		}
 		s.writePacket(&packet.InventorySlot{

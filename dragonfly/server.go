@@ -96,10 +96,9 @@ func (server *Server) World() *world.World {
 // accept incoming connections.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
-	if server.running() {
+	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
 		panic("server already running")
 	}
-	atomic.StoreUint32(server.started, 1)
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
@@ -114,18 +113,12 @@ func (server *Server) Run() error {
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // One started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
-	if server.running() {
+	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
 		panic("server already running")
 	}
-	atomic.StoreUint32(server.started, 1)
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
-	server.World().Generator(generator.Flat{})
-
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
-
 	if err := server.startListening(); err != nil {
 		return err
 	}
@@ -259,6 +252,10 @@ func (server *Server) startListening() error {
 // run runs the server, continuously accepting new connections from players. It returns when the server is
 // closed by a call to Close.
 func (server *Server) run() {
+	server.World().Generator(generator.Flat{})
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
+
 	for {
 		c, err := server.listener.Accept()
 		if err != nil {

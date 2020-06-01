@@ -40,9 +40,9 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 		s.log.Debugf("%v: %v", s.c.Name(), err)
 		return nil
 	}
-	atomic.StoreUint32(&s.inTransaction, 1)
+	atomic.StoreUint32(s.inTransaction, 1)
 	executeTransaction(pk.Actions, s)
-	atomic.StoreUint32(&s.inTransaction, 0)
+	atomic.StoreUint32(s.inTransaction, 0)
 	return nil
 }
 

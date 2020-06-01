@@ -14,7 +14,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ContainerClose)
 
 	switch pk.WindowID {
-	case byte(atomic.LoadUint32(&s.openedWindowID)):
+	case byte(atomic.LoadUint32(s.openedWindowID)):
 		s.closeCurrentContainer()
 	case 255:
 		// TODO: Handle closing the crafting grid.
