@@ -148,6 +148,7 @@ func readByte(m map[string]interface{}, key string) byte {
 }
 
 // readInt16 reads an int16 from a map at the key passed.
+//noinspection GoCommentLeadingSpace
 func readInt16(m map[string]interface{}, key string) int16 {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
@@ -156,6 +157,7 @@ func readInt16(m map[string]interface{}, key string) int16 {
 }
 
 // readInt32 reads an int32 from a map at the key passed.
+//noinspection GoCommentLeadingSpace
 func readInt32(m map[string]interface{}, key string) int32 {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
@@ -164,6 +166,7 @@ func readInt32(m map[string]interface{}, key string) int32 {
 }
 
 // readString reads a string from a map at the key passed.
+//noinspection GoCommentLeadingSpace
 func readString(m map[string]interface{}, key string) string {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]

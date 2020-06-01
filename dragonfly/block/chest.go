@@ -68,7 +68,7 @@ func (c Chest) open(w *world.World, pos world.BlockPos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, action.Open{})
 	}
-	w.PlaySound(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), sound.ChestOpen{})
+	w.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
 }
 
 // close closes the chest, displaying the animation and playing a sound.
@@ -76,7 +76,7 @@ func (c Chest) close(w *world.World, pos world.BlockPos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, action.Close{})
 	}
-	w.PlaySound(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), sound.ChestClose{})
+	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }
 
 // AddViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.

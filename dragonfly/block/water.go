@@ -1,0 +1,141 @@
+package block
+
+import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
+	"time"
+)
+
+// Water is a natural fluid that generates abundantly in the world.
+type Water struct {
+	// Still makes the water appear as if it is not flowing.
+	Still bool
+	// Depth is the depth of the water. This is a number from 1-8, where 8 is a source block and 1 is the
+	// smallest possible water block.
+	Depth int
+	// Falling specifies if the water is falling. Falling water will always appear as a source block, but its
+	// behaviour differs when it starts spreading.
+	Falling bool
+}
+
+// LiquidDepth returns the depth of the water.
+func (w Water) LiquidDepth() int {
+	return w.Depth
+}
+
+// SpreadDecay returns 1 - The amount of levels decreased upon spreading.
+func (Water) SpreadDecay() int {
+	return 1
+}
+
+// WithDepth returns the water with the depth passed.
+func (w Water) WithDepth(depth int, falling bool) Liquid {
+	w.Depth = depth
+	w.Falling = falling
+	w.Still = false
+	return w
+}
+
+// LiquidFalling returns Water.Falling.
+func (w Water) LiquidFalling() bool {
+	return w.Falling
+}
+
+// HasLiquidDrops ...
+func (Water) HasLiquidDrops() bool {
+	return false
+}
+
+// ReplaceableBy ...
+func (Water) ReplaceableBy(world.Block) bool {
+	return true
+}
+
+// LightDiffusionLevel ...
+func (Water) LightDiffusionLevel() uint8 {
+	return 2
+}
+
+// ScheduledTick ...
+func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
+	if w.Depth == 7 {
+		// Attempt to form new water source blocks.
+		count := 0
+		pos.Neighbours(func(neighbour world.BlockPos) {
+			if neighbour[1] == pos[1] {
+				if water, ok := wo.Block(neighbour).(Water); ok && water.Depth == 8 && !water.Falling {
+					count++
+				}
+			}
+		})
+		if count >= 2 {
+			if waterBelow, ok := wo.Block(pos.Side(world.Down)).(Water); !ok || !waterBelow.Falling {
+				// Only form a new source block if there either is no water below this block, or if the water
+				// below this is not falling (full source block).
+				wo.PlaceBlock(pos, Water{Depth: 8, Still: true})
+			}
+		}
+	}
+	tickLiquid(w, pos, wo)
+}
+
+// NeighbourUpdateTick ...
+func (Water) NeighbourUpdateTick(pos, _ world.BlockPos, wo *world.World) {
+	wo.ScheduleBlockUpdate(pos, time.Second/4)
+}
+
+// LiquidType ...
+func (Water) LiquidType() string {
+	return "water"
+}
+
+// Harden hardens the water if lava flows into it.
+func (Water) Harden(pos world.BlockPos, wo *world.World, flownIntoBy *world.BlockPos) bool {
+	if flownIntoBy == nil {
+		return false
+	}
+	if _, ok := wo.Block(pos.Side(world.Up)).(Lava); ok {
+		wo.PlaceBlock(pos, Stone{})
+		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+		return true
+	} else if _, ok := wo.Block(*flownIntoBy).(Lava); ok {
+		wo.PlaceBlock(*flownIntoBy, Cobblestone{})
+		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+		return true
+	}
+	return false
+}
+
+// EncodeBlock ...
+func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
+	if w.Depth < 1 || w.Depth > 8 {
+		panic("invalid water depth, must be between 1 and 8")
+	}
+	v := 8 - w.Depth
+	if w.Falling {
+		v += 8
+	}
+	if w.Still {
+		return "minecraft:water", map[string]interface{}{"liquid_depth": int32(v)}
+	}
+	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
+}
+
+// allWater returns a list of all water states.
+func allWater() (b []world.Block) {
+	f := func(still, falling bool) {
+		b = append(b, Water{Still: still, Falling: falling, Depth: 8})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 7})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 6})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 5})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 4})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 3})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 2})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 1})
+	}
+	f(true, true)
+	f(true, false)
+	f(false, false)
+	f(false, true)
+	return
+}

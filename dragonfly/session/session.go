@@ -109,7 +109,10 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 	s.c = c
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = c
+
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
+	s.chunkLoader.Move(w.Spawn().Vec3Middle())
+
 	s.initPlayerList()
 
 	w.AddEntity(s.c)
@@ -139,8 +142,6 @@ func (s *Session) Close() error {
 
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
-
-	s.c.World().RemoveEntity(s.c)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()

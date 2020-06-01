@@ -24,8 +24,9 @@ type World struct {
 	name string
 	log  *logrus.Logger
 
-	stopTick   context.Context
-	cancelTick context.CancelFunc
+	stopTick    context.Context
+	cancelTick  context.CancelFunc
+	doneTicking chan struct{}
 
 	time        int64
 	timeStopped uint32
@@ -89,9 +90,11 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		simDistSq:       int32(simulationDistance * simulationDistance),
 		randomTickSpeed: 3,
+		doneTicking:     make(chan struct{}),
 	}
 	w.initChunkCache()
 	go w.startTicking()
+	go w.chunkCacheJanitor()
 	return w
 }
 
@@ -109,7 +112,7 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos BlockPos) Block {
-	if pos[1] < 0 || pos[1] > 255 {
+	if pos.OutOfBounds() {
 		// Fast way out.
 		return air()
 	}
@@ -130,7 +133,7 @@ func (w *World) Block(pos BlockPos) Block {
 // block reads a block from the world at the position passed. The block is assumed to be in the chunk passed,
 // which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
-	if pos[1] < 0 || pos[1] > 255 {
+	if pos.OutOfBounds() {
 		// Fast way out.
 		return air(), nil
 	}
@@ -153,6 +156,22 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 	return state, nil
 }
 
+// runtimeID gets the block runtime ID at a specific position in the world.
+func runtimeID(w *World, pos BlockPos) uint32 {
+	if pos[1] < 0 || pos[1] > 255 {
+		// Fast way out.
+		return 0
+	}
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	if err != nil {
+		return 0
+	}
+	rid := c.RuntimeID(uint8(pos[0]&0xf), uint8(pos[1]), uint8(pos[2]&0xf), 0)
+	c.RUnlock()
+
+	return rid
+}
+
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
 // SetBlock panics if the block passed has not yet been registered using RegisterBlock().
@@ -160,7 +179,7 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos BlockPos, b Block) {
-	if pos[1] < 0 || pos[1] > 255 {
+	if pos.OutOfBounds() {
 		// Fast way out.
 		return
 	}
@@ -226,16 +245,15 @@ var breakParticle func(b Block) Particle
 func (w *World) BreakBlock(pos BlockPos) {
 	old := w.Block(pos)
 	w.SetBlock(pos, nil)
-	w.AddParticle(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}), breakParticle(old))
-	w.scheduleBlockUpdatesAround(pos, 0)
+	w.AddParticle(pos.Vec3Centre(), breakParticle(old))
+	w.doBlockUpdatesAround(pos)
 }
 
-// PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also plays the
-// sound to viewers.
+// PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also schedules
+// block updates around the position.
 func (w *World) PlaceBlock(pos BlockPos, b Block) {
 	w.SetBlock(pos, b)
-	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
-	w.scheduleBlockUpdatesAround(pos, 0)
+	w.doBlockUpdatesAround(pos)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the world. Unlike SetBlock, it takes a
@@ -429,15 +447,7 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 	if !w.removeEntity(chunkPos, e) {
-
-		w.log.Debugf("entity %T{%v} cannot be found at chunk position %v: looking for other chunks", e, e, chunkPos)
-		for c := range w.entities {
-			// Try to remove the entity from every other chunk until we find it: This is a very heavy
-			// operation, but it shouldn't typically occur.
-			if w.removeEntity(c, e) {
-				break
-			}
-		}
+		w.log.Debugf("failed removing entity %T{%v} at chunk position %v", e, e, chunkPos)
 	}
 	w.entityMutex.Unlock()
 }
@@ -521,29 +531,36 @@ func (w *World) SetRandomTickSpeed(v int) {
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
 func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
+	if pos.OutOfBounds() {
+		return
+	}
 	w.updateMu.Lock()
+	if _, exists := w.blockUpdates[pos]; exists {
+		w.updateMu.Unlock()
+		return
+	}
 	w.blockUpdates[pos] = time.Now().Add(delay).UnixNano()
 	w.updateMu.Unlock()
 }
 
-// scheduleBlockUpdatesAround schedules block updates directly around and on the position passed after the
-// duration passed.
-func (w *World) scheduleBlockUpdatesAround(pos BlockPos, delay time.Duration) {
-	w.ScheduleBlockUpdate(pos, delay)
-	pos[0]++
-	w.ScheduleBlockUpdate(pos, delay)
-	pos[0] -= 2
-	w.ScheduleBlockUpdate(pos, delay)
-	pos[0]++
-	pos[1]++
-	w.ScheduleBlockUpdate(pos, delay)
-	pos[1] -= 2
-	w.ScheduleBlockUpdate(pos, delay)
-	pos[1]++
-	pos[2]++
-	w.ScheduleBlockUpdate(pos, delay)
-	pos[2] -= 2
-	w.ScheduleBlockUpdate(pos, delay)
+// doBlockUpdatesAround schedules block updates directly around and on the position passed.
+func (w *World) doBlockUpdatesAround(pos BlockPos) {
+	if pos.OutOfBounds() {
+		return
+	}
+
+	changed := pos
+	w.updateNeighbour(pos, changed)
+	pos.Neighbours(func(pos BlockPos) {
+		w.updateNeighbour(pos, changed)
+	})
+}
+
+// updateNeighbour ticks the position passed as a result of the neighbour passed being updated.
+func (w *World) updateNeighbour(pos, changedNeighbour BlockPos) {
+	if ticker, ok := w.Block(pos).(NeighbourUpdateTicker); ok {
+		ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
+	}
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
@@ -607,6 +624,7 @@ func (w *World) Viewers(pos mgl32.Vec3) []Viewer {
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
 	w.cancelTick()
+	<-w.doneTicking
 
 	w.viewerMutex.Lock()
 	w.viewers = map[ChunkPos][]Viewer{}
@@ -649,6 +667,7 @@ func (w *World) startTicking() {
 			tick++
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
+			w.doneTicking <- struct{}{}
 			return
 		}
 	}
@@ -998,6 +1017,7 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 			return nil, err
 		}
 		w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
+		needsLight = true
 	} else {
 		c = s.(*chunk.Chunk)
 	}
@@ -1174,31 +1194,33 @@ func (w *World) saveChunk(hash string, i interface{}) {
 func (w *World) initChunkCache() {
 	w.cCache = cache.New(cache.NoExpiration, cache.NoExpiration)
 	w.cCache.OnEvicted(w.saveChunk)
-	go func() {
-		t := time.NewTicker(time.Minute * 5)
-		for {
-			select {
-			case <-t.C:
-				for k, i := range w.chunkCache().Items() {
-					if len(k) == 8 {
-						// A chunk was stored at this hash, but we're looking for times.
-						continue
-					}
-					pos := chunkPosFromHash(k)
-					if len(w.chunkViewers(pos)) != 0 {
-						// There are still viewers viewing the chunk: Don't evict it.
-						w.chunkCache().Set(k, time.Now().Add(time.Minute*5), cache.DefaultExpiration)
-						continue
-					}
-					if time.Until(i.Object.(time.Time)) <= 0 {
-						// The time set is below the current time: We should evict the chunk.
-						w.chunkCache().Delete(k)
-						w.chunkCache().Delete(k[:8])
-					}
+}
+
+// chunkCacheJanitor runs until the world is closed, cleaning chunks that are no longer in use from the cache.
+func (w *World) chunkCacheJanitor() {
+	t := time.NewTicker(time.Minute * 5)
+	for {
+		select {
+		case <-t.C:
+			for k, i := range w.chunkCache().Items() {
+				if len(k) == 8 {
+					// A chunk was stored at this hash, but we're looking for times.
+					continue
 				}
-			case <-w.stopTick.Done():
-				return
+				pos := chunkPosFromHash(k)
+				if len(w.chunkViewers(pos)) != 0 {
+					// There are still viewers viewing the chunk: Don't evict it.
+					w.chunkCache().Set(k, time.Now().Add(time.Minute*5), cache.DefaultExpiration)
+					continue
+				}
+				if time.Until(i.Object.(time.Time)) <= 0 {
+					// The time set is below the current time: We should evict the chunk.
+					w.chunkCache().Delete(k)
+					w.chunkCache().Delete(k[:8])
+				}
 			}
+		case <-w.stopTick.Done():
+			return
 		}
-	}()
+	}
 }

@@ -8,6 +8,11 @@ import (
 // Air is the block present in otherwise empty space.
 type Air struct{}
 
+// HasLiquidDrops ...
+func (a Air) HasLiquidDrops() bool {
+	return false
+}
+
 // LightDiffusionLevel ...
 func (Air) LightDiffusionLevel() uint8 {
 	return 0

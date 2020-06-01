@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/world_internal"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -41,6 +42,14 @@ type ScheduledTicker interface {
 	ScheduledTick(pos BlockPos, w *World)
 }
 
+// NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
+// through placement or being broken.
+type NeighbourUpdateTicker interface {
+	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
+	// position of this block is passed.
+	NeighbourUpdateTick(pos, changedNeighbour BlockPos, w *World)
+}
+
 // lightEmitter is identical to a block.lightEmitter.
 type lightEmitter interface {
 	LightEmissionLevel() uint8
@@ -49,6 +58,11 @@ type lightEmitter interface {
 // lightDiffuser is identical to a block.LightDiffuser.
 type lightDiffuser interface {
 	LightDiffusionLevel() uint8
+}
+
+// liquidRemovable is identical to a block.LiquidRemovable.
+type liquidRemovable interface {
+	HasLiquidDrops() bool
 }
 
 // RegisterBlock registers a block with the save name passed. The save name is used to save the block to the
@@ -83,6 +97,9 @@ func RegisterBlock(states ...Block) {
 		}
 		if emitter, ok := state.(lightEmitter); ok {
 			chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
+		}
+		if removable, ok := state.(liquidRemovable); ok {
+			world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
 		}
 
 		blocksHash[key] = state

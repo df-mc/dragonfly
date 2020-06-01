@@ -277,7 +277,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
-		PlayerPosition: server.world.Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5}),
+		PlayerPosition: server.world.Spawn().Vec3Centre(),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:              1,

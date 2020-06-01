@@ -18,6 +18,10 @@ type BlockBreaking struct {
 	sound
 }
 
+// Fizz is a sound sent when a lava block and a water block interact with each other in a way that one of
+// them turns into a solid block.
+type Fizz struct{ sound }
+
 // ChestOpen is played when a chest is opened.
 type ChestOpen struct{ sound }
 

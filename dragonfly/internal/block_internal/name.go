@@ -14,6 +14,14 @@ var world_blocksByName = map[string]world.Block{}
 //noinspection ALL
 var world_breakParticle func(b world.Block) world.Particle
 
+//go:linkname World_registeredStates git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.registeredStates
+//noinspection ALL
+var World_registeredStates []world.Block
+
+//go:linkname World_runtimeID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.runtimeID
+//noinspection ALL
+func World_runtimeID(w *world.World, pos world.BlockPos) uint32
+
 func init() {
 	world_breakParticle = func(b world.Block) world.Particle {
 		return particle.BlockBreak{Block: b}

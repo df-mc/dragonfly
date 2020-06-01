@@ -497,7 +497,7 @@ func (p *Player) Respawn() {
 	if !p.Dead() || p.World() == nil || p.session() == session.Nop {
 		return
 	}
-	pos := p.World().Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5})
+	pos := p.World().Spawn().Vec3Middle()
 	p.handler().HandleRespawn(&pos)
 	p.setHealth(p.MaxHealth())
 
@@ -658,7 +658,7 @@ func (p *Player) UseItem() {
 // If the item could not be used successfully, for example when the position is out of range, the method
 // returns immediately.
 func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3) {
-	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
+	if !p.canReach(pos.Vec3Centre()) {
 		return
 	}
 	i, left := p.HeldItems()
@@ -775,7 +775,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 // player might be breaking before this method is called.
 func (p *Player) StartBreaking(pos world.BlockPos) {
 	p.AbortBreaking()
-	if _, air := p.World().Block(pos).(block.Air); air || !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) {
+	if _, air := p.World().Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
@@ -861,7 +861,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 			p.World().SetBlock(pos, p.World().Block(pos))
 		}
 	}()
-	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
+	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
 		return false
 	}
 	if p.obstructedPos(pos, b) {
@@ -872,6 +872,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 	p.handler().HandleBlockPlace(ctx, pos, b)
 	ctx.Continue(func() {
 		p.World().PlaceBlock(pos, b)
+		p.World().PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 		p.swingArm()
 		success = true
 	})
@@ -910,7 +911,7 @@ func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos world.BlockPos) {
-	if !p.canReach(pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5})) || !p.canEdit() {
+	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
 		return
 	}
 	if _, air := p.World().Block(pos).(block.Air); air {
@@ -928,7 +929,7 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 		held, left := p.HeldItems()
 
 		for _, drop := range p.drops(held, b) {
-			itemEntity := entity.NewItem(drop, pos.Vec3().Add(mgl32.Vec3{0.5, 0.5, 0.5}))
+			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
 			itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
 			p.World().AddEntity(itemEntity)
 		}
@@ -1158,6 +1159,9 @@ func (p *Player) swingArm() {
 // Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.
 func (p *Player) Close() error {
+	if p.World() == nil {
+		return nil
+	}
 	p.session().Disconnect("Connection closed.")
 	p.close()
 	return nil
@@ -1216,7 +1220,6 @@ func (p *Player) close() {
 	chat.Global.Unsubscribe(p)
 
 	p.sMutex.Lock()
-	s := p.s
 	p.s = nil
 
 	// Clear the inventories so that they no longer hold references to the connection.
@@ -1225,9 +1228,7 @@ func (p *Player) close() {
 	_ = p.armour.Close()
 	p.sMutex.Unlock()
 
-	if s == nil {
-		p.World().RemoveEntity(p)
-	}
+	p.World().RemoveEntity(p)
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session

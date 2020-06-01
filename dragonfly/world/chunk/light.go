@@ -107,6 +107,11 @@ func removeEmptySubChunks(c *Chunk) {
 		}
 		if len(sub.storages) == 0 {
 			c.sub[y] = nil
+		} else if len(sub.storages) == 1 {
+			if len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == 0 {
+				// Sub chunk with only air in it.
+				c.sub[y] = nil
+			}
 		} else {
 			// We found a sub chunk that has blocks, so break out.
 			break

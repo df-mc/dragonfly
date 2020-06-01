@@ -3,6 +3,7 @@ package block
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -72,6 +73,7 @@ func place(w *world.World, pos world.BlockPos, b world.Block, user item.User, ct
 		return
 	}
 	w.PlaceBlock(pos, b)
+	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 }
 
 // placed checks if an item was placed with the use context passed.

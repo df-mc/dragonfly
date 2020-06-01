@@ -27,6 +27,9 @@ func init() {
 	world.RegisterBlock(allPlanks()...)
 	world.RegisterBlock(allWoodStairs()...)
 	world.RegisterBlock(allWoodSlabs()...)
+	world.RegisterBlock(allWater()...)
+	world.RegisterBlock(allLava()...)
+	world.RegisterBlock(Obsidian{})
 }
 
 func init() {
@@ -91,6 +94,7 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Jungle(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Acacia(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
+	world.RegisterItem("minecraft:obsidian", Obsidian{})
 }
 
 func init() {
@@ -109,6 +113,7 @@ func init() {
 }
 
 // readSlice reads an interface slice from a map at the key passed.
+//noinspection GoCommentLeadingSpace
 func readSlice(m map[string]interface{}, key string) []interface{} {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
@@ -117,6 +122,7 @@ func readSlice(m map[string]interface{}, key string) []interface{} {
 }
 
 // readString reads a string from a map at the key passed.
+//noinspection GoCommentLeadingSpace
 func readString(m map[string]interface{}, key string) string {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]

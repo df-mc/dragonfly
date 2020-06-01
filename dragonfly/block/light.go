@@ -10,7 +10,7 @@ type Light struct {
 }
 
 // ReplaceableBy ...
-func (l Light) ReplaceableBy(b world.Block) bool {
+func (l Light) ReplaceableBy(world.Block) bool {
 	return true
 }
 

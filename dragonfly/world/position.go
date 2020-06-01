@@ -25,6 +25,12 @@ func (p BlockPos) Z() int {
 	return p[2]
 }
 
+// OutOfBounds checks if the Y value is either bigger than 255 or smaller than 0.
+func (p BlockPos) OutOfBounds() bool {
+	y := p[1]
+	return y > 255 || y < 0
+}
+
 // Add adds two block positions together and returns a new one with the combined values.
 func (p BlockPos) Add(pos BlockPos) BlockPos {
 	return BlockPos{p[0] + pos[0], p[1] + pos[1], p[2] + pos[2]}
@@ -33,6 +39,17 @@ func (p BlockPos) Add(pos BlockPos) BlockPos {
 // Vec3 returns a vec3 holding the same coordinates as the block position.
 func (p BlockPos) Vec3() mgl32.Vec3 {
 	return mgl32.Vec3{float32(p[0]), float32(p[1]), float32(p[2])}
+}
+
+// Vec3Middle returns a Vec3 holding the coordinates of the block position with 0.5 added on both horizontal
+// axes.
+func (p BlockPos) Vec3Middle() mgl32.Vec3 {
+	return mgl32.Vec3{float32(p[0]) + 0.5, float32(p[1]), float32(p[2]) + 0.5}
+}
+
+// Vec3Centre returns a Vec3 holding the coordinates of the block position with 0.5 added on all axes.
+func (p BlockPos) Vec3Centre() mgl32.Vec3 {
+	return mgl32.Vec3{float32(p[0]) + 0.5, float32(p[1]) + 0.5, float32(p[2]) + 0.5}
 }
 
 // Side returns the position on the side of this block position, at a specific face.
@@ -54,8 +71,36 @@ func (p BlockPos) Side(face Face) BlockPos {
 	return p
 }
 
+// Neighbours calls the function passed for each of the block position's neighbours. If the Y value is below
+// 0 or above 255, the function will not be called for that position.
+func (p BlockPos) Neighbours(f func(neighbour BlockPos)) {
+	y := p[1]
+	if y > 255 || y < 0 {
+		return
+	}
+	p[0]++
+	f(p)
+	p[0] -= 2
+	f(p)
+	p[0]++
+	p[1]++
+	if p[1] <= 255 {
+		f(p)
+	}
+	p[1] -= 2
+	if p[1] >= 0 {
+		f(p)
+	}
+	p[1]++
+	p[2]++
+	f(p)
+	p[2] -= 2
+	f(p)
+}
+
 // blockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
 // map is assumed to have an 'x', 'y' and 'z' key.
+//noinspection GoCommentLeadingSpace
 func blockPosFromNBT(data map[string]interface{}) BlockPos {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	xInterface, _ := data["x"]

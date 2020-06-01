@@ -15,6 +15,7 @@ func (*RespawnHandler) Handle(p packet.Packet, s *Session) error {
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
 		return ErrSelfRuntimeID
 	}
+	//noinspection GoCommentLeadingSpace
 	if pk.State != packet.RespawnStateClientReadyToSpawn {
 		//lint:ignore ST1005 Error string is only capitalised because of the field name.
 		//noinspection GoErrorStringFormat

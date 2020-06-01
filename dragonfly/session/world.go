@@ -285,6 +285,8 @@ func (s *Session) ViewSound(pos mgl32.Vec3, soundType sound.Sound) {
 		pk.SoundType = packet.SoundEventBreak
 	case sound.ItemUseOn:
 		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.blockRuntimeID(so.Block))
+	case sound.Fizz:
+		pk.SoundType = packet.SoundEventFizz
 	}
 	s.writePacket(pk)
 }
@@ -464,6 +466,7 @@ func (s *Session) blockRuntimeID(b world.Block) uint32 {
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.
+//noinspection GoCommentLeadingSpace
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	s.entityMutex.RLock()
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
