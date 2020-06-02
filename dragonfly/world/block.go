@@ -89,11 +89,7 @@ func RegisterBlock(states ...Block) {
 		registeredStates = append(registeredStates, state)
 
 		if diffuser, ok := state.(lightDiffuser); ok {
-			if level := diffuser.LightDiffusionLevel(); level != 0 {
-				chunk.FilteringBlocks[rid] = level
-			}
-		} else {
-			chunk.OpaqueBlocks[rid] = struct{}{}
+			chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
 		}
 		if emitter, ok := state.(lightEmitter); ok {
 			chunk.LightBlocks[rid] = emitter.LightEmissionLevel()

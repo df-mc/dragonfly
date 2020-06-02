@@ -25,10 +25,7 @@ func calculateHeightmap(c *Chunk) heightmap {
 				yVal := uint8(y)
 				localYVal := uint8(y) & 0xf
 				sub := subByY(yVal, c)
-				if opaqueBlockPresent(sub, x, localYVal, z) {
-					h.set(x, z, yVal)
-					break
-				} else if filterLevel(sub, x, localYVal, z) > 0 {
+				if filterLevel(sub, x, localYVal, z) > 0 {
 					h.set(x, z, yVal)
 					break
 				}

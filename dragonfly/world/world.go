@@ -8,7 +8,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"sync"
@@ -42,7 +41,13 @@ type World struct {
 
 	pMutex sync.RWMutex
 	prov   Provider
-	cCache *cache.Cache
+
+	cMu sync.RWMutex
+	// cCache holds a cache of chunks currently loaded. These chunks are cleared from this map after a while
+	// of not being used.
+	cCache map[ChunkPos]*chunk.Chunk
+	// cTimes holds the times since last usage of the chunks at the same index in the map above.
+	cTimes map[ChunkPos]time.Time
 
 	gMutex sync.RWMutex
 	gen    Generator
@@ -66,6 +71,8 @@ type World struct {
 	// and the entry will be removed from the map.
 	blockUpdates    map[BlockPos]int64
 	updatePositions []BlockPos
+
+	toTick []toTick
 
 	chunkLoadMu sync.Mutex
 }
@@ -445,7 +452,7 @@ func (w *World) RemoveEntity(e Entity) {
 	worldsMu.Unlock()
 
 	w.entityMutex.Lock()
-	if _, ok := w.chunkCache().Get(chunkPos.Hash()); !ok {
+	if _, ok := w.chunkFromCache(chunkPos); !ok {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		w.entityMutex.Unlock()
 		return
@@ -635,10 +642,21 @@ func (w *World) Close() error {
 	w.viewerMutex.Unlock()
 
 	w.log.Debug("Saving chunks in memory to disk...")
-	for key := range w.chunkCache().Items() {
-		// We delete all chunks from the cache so that they are saved to the provider.
-		w.chunkCache().Delete(key)
+
+	w.cMu.Lock()
+	chunksToSave := make(map[ChunkPos]*chunk.Chunk, len(w.cCache))
+	for pos, c := range w.cCache {
+		// We delete all chunks from the cache and save them to the provider.
+		delete(w.cTimes, pos)
+		delete(w.cCache, pos)
+		chunksToSave[pos] = c
 	}
+	w.cMu.Unlock()
+
+	for pos, c := range chunksToSave {
+		w.saveChunk(pos, c)
+	}
+
 	if !w.rdonly {
 		w.log.Debug("Updating level.dat values...")
 		w.provider().SaveTime(atomic.LoadInt64(w.time))
@@ -649,7 +667,7 @@ func (w *World) Close() error {
 		w.gameModeMu.RUnlock()
 	}
 
-	w.log.Debug("Writing level.dat...")
+	w.log.Debug("Closing provider...")
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
@@ -716,6 +734,12 @@ func (w *World) tickScheduledBlocks() {
 	w.updatePositions = w.updatePositions[:0]
 }
 
+// toTick is a struct used to keep track of blocks that need to be ticked upon a random tick.
+type toTick struct {
+	b   RandomTicker
+	pos BlockPos
+}
+
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered.
 func (w *World) tickRandomBlocks() {
@@ -724,13 +748,9 @@ func (w *World) tickRandomBlocks() {
 		return
 	}
 	viewers := w.allViewers()
-	for k, v := range w.chunkCache().Items() {
-		if len(k) == 9 {
-			// This is a chunk timestamp, proceed to the next.
-			continue
-		}
-		pos := chunkPosFromHash(k)
 
+	w.cMu.RLock()
+	for pos, c := range w.cCache {
 		withinSimDist := false
 		for _, viewer := range viewers {
 			chunkPos := chunkPosFromVec3(viewer.Position())
@@ -742,21 +762,12 @@ func (w *World) tickRandomBlocks() {
 				break
 			}
 		}
-
 		if !withinSimDist {
 			// No viewers in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
 
-		type toTick struct {
-			b   RandomTicker
-			pos BlockPos
-		}
-		var t []toTick
-
-		c := v.Object.(*chunk.Chunk)
 		c.RLock()
-
 		// In total we generate 3 random blocks per sub chunk.
 		for j := uint32(0); j < atomic.LoadUint32(w.randomTickSpeed); j++ {
 			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
@@ -782,17 +793,18 @@ func (w *World) tickRandomBlocks() {
 				b, _ := blockByRuntimeID(rid)
 
 				if randomTicker, ok := b.(RandomTicker); ok {
-					t = append(t, toTick{b: randomTicker, pos: blockPos})
+					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: blockPos})
 				}
 			}
 		}
-
 		c.RUnlock()
-
-		for _, a := range t {
-			a.b.RandomTick(a.pos, w, w.r)
-		}
 	}
+	w.cMu.RUnlock()
+
+	for _, a := range w.toTick {
+		a.b.RandomTick(a.pos, w, w.r)
+	}
+	w.toTick = w.toTick[:0]
 }
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
@@ -977,13 +989,21 @@ func (w *World) generator() Generator {
 	return generator
 }
 
-// chunkCache returns the chunk cache of the world. It should always be used, rather than direct field
-// access, in order to provide synchronisation safety.
-func (w *World) chunkCache() *cache.Cache {
-	w.pMutex.RLock()
-	c := w.cCache
-	w.pMutex.RUnlock()
-	return c
+// chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the
+// chunk returned is nil and false is returned.
+func (w *World) chunkFromCache(pos ChunkPos) (*chunk.Chunk, bool) {
+	w.cMu.RLock()
+	c, ok := w.cCache[pos]
+	w.cMu.RUnlock()
+	return c, ok
+}
+
+// storeChunkToCache stores a chunk at a position passed to the chunk cache.
+func (w *World) storeChunkToCache(pos ChunkPos, c *chunk.Chunk) {
+	w.cMu.Lock()
+	w.cCache[pos] = c
+	w.cTimes[pos] = time.Now().Add(time.Minute * 5)
+	w.cMu.Unlock()
 }
 
 // chunkViewers returns a list of all viewers of a chunk at a given position.
@@ -1010,20 +1030,19 @@ func showEntity(e Entity, viewer Viewer) {
 // An error is returned if the chunk could not be loaded successfully.
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
-func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
+func (w *World) chunk(pos ChunkPos, readOnly bool) (*chunk.Chunk, error) {
 	var needsLight bool
+	var err error
 
 	w.chunkLoadMu.Lock()
-	s, ok := w.chunkCache().Get(pos.Hash())
+	c, ok := w.chunkFromCache(pos)
 	if !ok {
 		c, err = w.loadChunk(pos)
 		if err != nil {
 			return nil, err
 		}
-		w.chunkCache().Set(pos.Hash(), c, cache.DefaultExpiration)
+		w.storeChunkToCache(pos, c)
 		needsLight = true
-	} else {
-		c = s.(*chunk.Chunk)
 	}
 	w.chunkLoadMu.Unlock()
 
@@ -1032,7 +1051,7 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (c *chunk.Chunk, err error) {
 	}
 
 	// Update the timestamp to that it doesn't expire after we just used it.
-	w.chunkCache().Set(pos.timeHash(), time.Now().Add(time.Minute*5), cache.DefaultExpiration)
+	w.storeChunkToCache(pos, c)
 
 	if readOnly {
 		c.RLock()
@@ -1084,11 +1103,10 @@ func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
 			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
 			// now exist because of this one.
 			centrePos := ChunkPos{pos[0] + x, pos[1] + z}
-			s, ok := w.chunkCache().Get(centrePos.Hash())
+			neighbour, ok := w.chunkFromCache(centrePos)
 			if !ok {
 				continue
 			}
-			neighbour := s.(*chunk.Chunk)
 			neighbour.Lock()
 			// We first attempt to spread the light of all neighbours into the ones around them.
 			w.spreadLight(neighbour, centrePos)
@@ -1106,13 +1124,13 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 	neighbours, allPresent := make([]*chunk.Chunk, 0, 8), true
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
-			s, ok := w.chunkCache().Get(ChunkPos{pos[0] + x, pos[1] + z}.Hash())
+			neighbour, ok := w.chunkFromCache(ChunkPos{pos[0] + x, pos[1] + z})
 			if !ok {
 				allPresent = false
 				break
 			}
 			if !(x == 0 && z == 0) {
-				neighbours = append(neighbours, s.(*chunk.Chunk))
+				neighbours = append(neighbours, neighbour)
 			}
 		}
 	}
@@ -1150,42 +1168,36 @@ func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]inte
 
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
-func (w *World) saveChunk(hash string, i interface{}) {
-	if _, ok := i.(*chunk.Chunk); !ok {
-		return
-	}
-	chunkPos := chunkPosFromHash(hash)
-
+func (w *World) saveChunk(pos ChunkPos, c *chunk.Chunk) {
 	w.entityMutex.Lock()
-	entities := w.entities[chunkPos]
-	delete(w.entities, chunkPos)
+	entities := w.entities[pos]
+	delete(w.entities, pos)
 	w.entityMutex.Unlock()
 
 	w.bMutex.Lock()
 	// We allocate a new map for all block entities.
 	m := make(map[[3]int]map[string]interface{}, len(w.entityBlocks))
-	for pos, b := range w.entityBlocks[chunkPos] {
+	for pos, b := range w.entityBlocks[pos] {
 		// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
 		data := b.(NBTer).EncodeNBT()
 		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 		m[pos] = data
 	}
-	delete(w.entityBlocks, chunkPos)
+	delete(w.entityBlocks, pos)
 	w.bMutex.Unlock()
 
 	if !w.rdonly {
-		c := i.(*chunk.Chunk)
 		c.Lock()
 		c.Compact()
 		c.Unlock()
-		if err := w.provider().SaveChunk(chunkPos, c); err != nil {
-			w.log.Errorf("error saving chunk %v to provider: %v", chunkPos, err)
+		if err := w.provider().SaveChunk(pos, c); err != nil {
+			w.log.Errorf("error saving chunk %v to provider: %v", pos, err)
 		}
-		if err := w.provider().SaveEntities(chunkPos, entities); err != nil {
-			w.log.Errorf("error saving entities in chunk %v to provider: %v", chunkPos, err)
+		if err := w.provider().SaveEntities(pos, entities); err != nil {
+			w.log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
 		}
-		if err := w.provider().SaveBlockNBT(chunkPos, m); err != nil {
-			w.log.Errorf("error saving block NBT in chunk %v to provider: %v", chunkPos, err)
+		if err := w.provider().SaveBlockNBT(pos, m); err != nil {
+			w.log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
 		}
 	}
 
@@ -1196,32 +1208,38 @@ func (w *World) saveChunk(hash string, i interface{}) {
 
 // initChunkCache initialises the chunk cache of the world to its default values.
 func (w *World) initChunkCache() {
-	w.cCache = cache.New(cache.NoExpiration, cache.NoExpiration)
-	w.cCache.OnEvicted(w.saveChunk)
+	w.cMu.Lock()
+	w.cCache = make(map[ChunkPos]*chunk.Chunk)
+	w.cTimes = make(map[ChunkPos]time.Time)
+	w.cMu.Unlock()
 }
 
 // chunkCacheJanitor runs until the world is closed, cleaning chunks that are no longer in use from the cache.
 func (w *World) chunkCacheJanitor() {
 	t := time.NewTicker(time.Minute * 5)
+	chunksToRemove := map[ChunkPos]*chunk.Chunk{}
 	for {
 		select {
 		case <-t.C:
-			for k, i := range w.chunkCache().Items() {
-				if len(k) == 8 {
-					// A chunk was stored at this hash, but we're looking for times.
-					continue
-				}
-				pos := chunkPosFromHash(k)
+			w.cMu.Lock()
+			for pos, t := range w.cTimes {
 				if len(w.chunkViewers(pos)) != 0 {
-					// There are still viewers viewing the chunk: Don't evict it.
-					w.chunkCache().Set(k, time.Now().Add(time.Minute*5), cache.DefaultExpiration)
+					w.cTimes[pos] = time.Now().Add(time.Minute * 5)
 					continue
 				}
-				if time.Until(i.Object.(time.Time)) <= 0 {
-					// The time set is below the current time: We should evict the chunk.
-					w.chunkCache().Delete(k)
-					w.chunkCache().Delete(k[:8])
+				if time.Until(t) <= 0 {
+					chunksToRemove[pos] = w.cCache[pos]
+					delete(w.cTimes, pos)
+					delete(w.cCache, pos)
 				}
+			}
+			w.cMu.Unlock()
+
+			for pos, c := range chunksToRemove {
+				w.saveChunk(pos, c)
+			}
+			for k := range chunksToRemove {
+				delete(chunksToRemove, k)
 			}
 		case <-w.stopTick.Done():
 			return
