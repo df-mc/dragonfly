@@ -145,7 +145,7 @@ func (s Stack) Item() world.Item {
 
 // AttackDamage returns the attack damage of the stack. By default, the value returned is 2.0. If the item
 // held implements the item.Weapon interface, this damage may be different.
-func (s Stack) AttackDamage() float32 {
+func (s Stack) AttackDamage() float64 {
 	if weapon, ok := s.Item().(Weapon); ok {
 		// Bonus attack damage from weapons is a bit quirky in Bedrock Edition: Even though tools say they
 		// have, for example, + 5 Attack Damage, it is actually 1 + 5, while punching with a hand in Bedrock

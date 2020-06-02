@@ -3,13 +3,13 @@ package entity
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
 
 // Facing returns the horizontal direction that an entity is facing.
 func Facing(e world.Entity) world.Face {
-	yaw := math.Mod(float64(e.Yaw())-90, 360)
+	yaw := math.Mod(e.Yaw()-90, 360)
 	if yaw < 0 {
 		yaw += 360
 	}
@@ -28,14 +28,14 @@ func Facing(e world.Entity) world.Face {
 
 // DirectionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
 // returned is always 1.
-func DirectionVector(e world.Entity) mgl32.Vec3 {
-	yaw, pitch := float64(mgl32.DegToRad(e.Yaw())), float64(mgl32.DegToRad(e.Pitch()))
+func DirectionVector(e world.Entity) mgl64.Vec3 {
+	yaw, pitch := mgl64.DegToRad(e.Yaw()), mgl64.DegToRad(e.Pitch())
 	m := math.Cos(pitch)
 
-	return mgl32.Vec3{
-		float32(-m * math.Sin(yaw)),
-		float32(-math.Sin(pitch)),
-		float32(m * math.Cos(yaw)),
+	return mgl64.Vec3{
+		-m * math.Sin(yaw),
+		-math.Sin(pitch),
+		m * math.Cos(yaw),
 	}.Normalize()
 }
 
@@ -47,12 +47,12 @@ func TargetBlock(e world.Entity, maxDistance float64) world.BlockPos {
 	directionVector := DirectionVector(e)
 	current := e.Position()
 	if eyed, ok := e.(Eyed); ok {
-		current = current.Add(mgl32.Vec3{0, eyed.EyeHeight()})
+		current = current.Add(mgl64.Vec3{0, eyed.EyeHeight()})
 	}
 
 	step := 0.5
 	for i := 0.0; i < maxDistance; i += step {
-		current = current.Add(directionVector.Mul(float32(step)))
+		current = current.Add(directionVector.Mul(step))
 		pos := vec3ToPos(current)
 
 		b := e.World().Block(pos)
@@ -67,10 +67,10 @@ func TargetBlock(e world.Entity, maxDistance float64) world.BlockPos {
 // Eyed represents an entity that has eyes.
 type Eyed interface {
 	// EyeHeight returns the offset from their base position that the eyes of an entity are found at.
-	EyeHeight() float32
+	EyeHeight() float64
 }
 
 // vec3ToPos converts a Vec3 to a world.BlockPos.
-func vec3ToPos(vec mgl32.Vec3) world.BlockPos {
-	return world.BlockPos{int(math.Floor(float64(vec[0]))), int(math.Floor(float64(vec[1]))), int(math.Floor(float64(vec[2])))}
+func vec3ToPos(vec mgl64.Vec3) world.BlockPos {
+	return world.BlockPos{int(math.Floor(vec[0])), int(math.Floor(vec[1])), int(math.Floor(vec[2]))}
 }

@@ -1,7 +1,7 @@
 package world
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"unsafe"
 )
@@ -37,19 +37,19 @@ func (p BlockPos) Add(pos BlockPos) BlockPos {
 }
 
 // Vec3 returns a vec3 holding the same coordinates as the block position.
-func (p BlockPos) Vec3() mgl32.Vec3 {
-	return mgl32.Vec3{float32(p[0]), float32(p[1]), float32(p[2])}
+func (p BlockPos) Vec3() mgl64.Vec3 {
+	return mgl64.Vec3{float64(p[0]), float64(p[1]), float64(p[2])}
 }
 
 // Vec3Middle returns a Vec3 holding the coordinates of the block position with 0.5 added on both horizontal
 // axes.
-func (p BlockPos) Vec3Middle() mgl32.Vec3 {
-	return mgl32.Vec3{float32(p[0]) + 0.5, float32(p[1]), float32(p[2]) + 0.5}
+func (p BlockPos) Vec3Middle() mgl64.Vec3 {
+	return mgl64.Vec3{float64(p[0]) + 0.5, float64(p[1]), float64(p[2]) + 0.5}
 }
 
 // Vec3Centre returns a Vec3 holding the coordinates of the block position with 0.5 added on all axes.
-func (p BlockPos) Vec3Centre() mgl32.Vec3 {
-	return mgl32.Vec3{float32(p[0]) + 0.5, float32(p[1]) + 0.5, float32(p[2]) + 0.5}
+func (p BlockPos) Vec3Centre() mgl64.Vec3 {
+	return mgl64.Vec3{float64(p[0]) + 0.5, float64(p[1]) + 0.5, float64(p[2]) + 0.5}
 }
 
 // Side returns the position on the side of this block position, at a specific face.
@@ -115,8 +115,8 @@ func blockPosFromNBT(data map[string]interface{}) BlockPos {
 }
 
 // BlockPosFromVec3 returns a block position by a Vec3, rounding the values down adequately.
-func BlockPosFromVec3(vec3 mgl32.Vec3) BlockPos {
-	return BlockPos{int(math.Floor(float64(vec3[0]))), int(math.Floor(float64(vec3[1]))), int(math.Floor(float64(vec3[2])))}
+func BlockPosFromVec3(vec3 mgl64.Vec3) BlockPos {
+	return BlockPos{int(math.Floor(vec3[0])), int(math.Floor(vec3[1])), int(math.Floor(vec3[2]))}
 }
 
 // ChunkPos holds the position of a chunk. The type is provided as a utility struct for keeping track of a
@@ -179,10 +179,10 @@ func chunkPosFromHash(hash string) ChunkPos {
 
 // chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
 // those of the Vec3 divided by 16, then rounded down.
-func chunkPosFromVec3(vec3 mgl32.Vec3) ChunkPos {
+func chunkPosFromVec3(vec3 mgl64.Vec3) ChunkPos {
 	return ChunkPos{
-		int32(math.Floor(float64(vec3[0]) / 16)),
-		int32(math.Floor(float64(vec3[2]) / 16)),
+		int32(math.Floor(vec3[0] / 16)),
+		int32(math.Floor(vec3[2] / 16)),
 	}
 }
 
@@ -192,10 +192,10 @@ func chunkPosFromBlockPos(p BlockPos) ChunkPos {
 }
 
 // Distance returns the distance between two vectors.
-func Distance(a, b mgl32.Vec3) float32 {
-	return float32(math.Sqrt(
-		math.Pow(float64(b[0]-a[0]), 2) +
-			math.Pow(float64(b[1]-a[1]), 2) +
-			math.Pow(float64(b[2]-a[2]), 2),
-	))
+func Distance(a, b mgl64.Vec3) float64 {
+	return math.Sqrt(
+		math.Pow(b[0]-a[0], 2) +
+			math.Pow(b[1]-a[1], 2) +
+			math.Pow(b[2]-a[2], 2),
+	)
 }

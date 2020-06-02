@@ -1,54 +1,54 @@
 package physics
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // AABB represents an Axis Aligned Bounding Box in a 3D space. It is defined as two Vec3s, of which one is the
 // minimum and one is the maximum.
 type AABB struct {
-	min, max mgl32.Vec3
+	min, max mgl64.Vec3
 }
 
 // NewAABB creates a new axis aligned bounding box with the minimum and maximum coordinates provided.
-func NewAABB(min, max mgl32.Vec3) AABB {
+func NewAABB(min, max mgl64.Vec3) AABB {
 	return AABB{min: min, max: max}
 }
 
 // Grow grows the bounding box in all directions by x and returns the new bounding box.
-func (aabb AABB) Grow(x float32) AABB {
-	add := mgl32.Vec3{x, x, x}
+func (aabb AABB) Grow(x float64) AABB {
+	add := mgl64.Vec3{x, x, x}
 	return AABB{min: aabb.min.Sub(add), max: aabb.max.Add(add)}
 }
 
 // Min returns the minimum coordinate of the bounding box.
-func (aabb AABB) Min() mgl32.Vec3 {
+func (aabb AABB) Min() mgl64.Vec3 {
 	return aabb.min
 }
 
 // Max returns the maximum coordinate of the bounding box.
-func (aabb AABB) Max() mgl32.Vec3 {
+func (aabb AABB) Max() mgl64.Vec3 {
 	return aabb.max
 }
 
 // Width returns the width of the AABB.
-func (aabb AABB) Width() float32 {
+func (aabb AABB) Width() float64 {
 	return aabb.max[0] - aabb.min[0]
 }
 
 // Length returns the length of the AABB.
-func (aabb AABB) Length() float32 {
+func (aabb AABB) Length() float64 {
 	return aabb.max[2] - aabb.min[2]
 }
 
 // Height returns the height of the AABB.
-func (aabb AABB) Height() float32 {
+func (aabb AABB) Height() float64 {
 	return aabb.max[1] - aabb.min[1]
 }
 
 // Extend expands the AABB on all axes as represented by the Vec3 passed. Negative coordinates result in an
 // expansion towards the negative axis, and vice versa for positive coordinates.
-func (aabb AABB) Extend(vec mgl32.Vec3) AABB {
+func (aabb AABB) Extend(vec mgl64.Vec3) AABB {
 	if vec[0] < 0 {
 		aabb.min[0] += vec[0]
 	} else if vec[0] > 0 {
@@ -69,7 +69,7 @@ func (aabb AABB) Extend(vec mgl32.Vec3) AABB {
 
 // Translate moves the entire AABB with the Vec3 given. The (minimum and maximum) x, y and z coordinates are
 // moved by those in the Vec3 passed.
-func (aabb AABB) Translate(vec mgl32.Vec3) AABB {
+func (aabb AABB) Translate(vec mgl64.Vec3) AABB {
 	return NewAABB(aabb.min.Add(vec), aabb.max.Add(vec))
 }
 
@@ -97,7 +97,7 @@ func AnyIntersections(boxes1, boxes2 []AABB) bool {
 }
 
 // Vec3Within checks if the AABB has a Vec3 within it, returning true if it does.
-func (aabb AABB) Vec3Within(vec mgl32.Vec3) bool {
+func (aabb AABB) Vec3Within(vec mgl64.Vec3) bool {
 	if vec[0] <= aabb.min[0] || vec[0] >= aabb.max[0] {
 		return false
 	}
@@ -110,7 +110,7 @@ func (aabb AABB) Vec3Within(vec mgl32.Vec3) bool {
 // CalculateXOffset calculates the offset on the X axis between two bounding boxes, returning a delta always
 // smaller than or equal to deltaX if deltaX is bigger than 0, or always bigger than or equal to deltaX if it
 // is smaller than 0.
-func (aabb AABB) CalculateXOffset(nearby AABB, deltaX float32) float32 {
+func (aabb AABB) CalculateXOffset(nearby AABB, deltaX float64) float64 {
 	// Bail out if not within the same Y/Z plane.
 	if aabb.max[1] <= nearby.min[1] || aabb.min[1] >= nearby.max[1] {
 		return deltaX
@@ -136,7 +136,7 @@ func (aabb AABB) CalculateXOffset(nearby AABB, deltaX float32) float32 {
 // CalculateYOffset calculates the offset on the Y axis between two bounding boxes, returning a delta always
 // smaller than or equal to deltaY if deltaY is bigger than 0, or always bigger than or equal to deltaY if it
 // is smaller than 0.
-func (aabb AABB) CalculateYOffset(nearby AABB, deltaY float32) float32 {
+func (aabb AABB) CalculateYOffset(nearby AABB, deltaY float64) float64 {
 	// Bail out if not within the same X/Z plane.
 	if aabb.max[0] <= nearby.min[0] || aabb.min[0] >= nearby.max[0] {
 		return deltaY
@@ -162,7 +162,7 @@ func (aabb AABB) CalculateYOffset(nearby AABB, deltaY float32) float32 {
 // CalculateZOffset calculates the offset on the Z axis between two bounding boxes, returning a delta always
 // smaller than or equal to deltaZ if deltaZ is bigger than 0, or always bigger than or equal to deltaZ if it
 // is smaller than 0.
-func (aabb AABB) CalculateZOffset(nearby AABB, deltaZ float32) float32 {
+func (aabb AABB) CalculateZOffset(nearby AABB, deltaZ float64) float64 {
 	// Bail out if not within the same X/Y plane.
 	if aabb.max[0] <= nearby.min[0] || aabb.min[0] >= nearby.max[0] {
 		return deltaZ

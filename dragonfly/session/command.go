@@ -2,7 +2,7 @@ package session
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -88,7 +88,7 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 			Type:    "bool",
 			Options: []string{"true", "1", "false", "0"},
 		}
-	case mgl32.Vec3:
+	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
 	}
 	if param, ok := i.(cmd.Parameter); ok && (param.Type() == "player" || param.Type() == "target") {

@@ -35,7 +35,7 @@ func (p Pickaxe) MaxCount() int {
 }
 
 // AttackDamage returns the attack damage of the pickaxe.
-func (p Pickaxe) AttackDamage() float32 {
+func (p Pickaxe) AttackDamage() float64 {
 	return p.Tier.BaseAttackDamage + 1
 }
 

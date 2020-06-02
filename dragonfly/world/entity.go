@@ -3,7 +3,7 @@ package world
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"io"
 )
 
@@ -14,7 +14,7 @@ type Entity interface {
 	io.Closer
 	physics.AABBer
 	// Position returns the current position of the entity in the world.
-	Position() mgl32.Vec3
+	Position() mgl64.Vec3
 	// OnGround checks if the entity is currently on the ground.
 	OnGround() bool
 	// World returns the current world of the entity. This is always the world that the entity can actually be
@@ -22,16 +22,16 @@ type Entity interface {
 	World() *World
 	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 	// is 0 when the entity faces forward.
-	Yaw() float32
+	Yaw() float64
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
-	Pitch() float32
+	Pitch() float64
 	// State returns a list of entity states which the entity is currently subject to. Generally, these states
 	// alter the way the entity looks.
 	State() []state.State
 
-	Velocity() mgl32.Vec3
-	SetVelocity(v mgl32.Vec3)
+	Velocity() mgl64.Vec3
+	SetVelocity(v mgl64.Vec3)
 }
 
 // TickerEntity represents an entity that has a Tick method which should be called every time the entity is

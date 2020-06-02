@@ -5,7 +5,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Shovel is a tool generally used for mining ground-like blocks, such as sand, gravel and dirt. Additionally,
@@ -16,7 +16,7 @@ type Shovel struct {
 }
 
 // UseOnBlock handles the creation of grass path blocks from grass blocks.
-func (s Shovel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (s Shovel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if grass := w.Block(pos); grass == item_internal.Grass {
 		if face == world.Down {
 			// Grass paths are not created when the bottom face is clicked.
@@ -41,7 +41,7 @@ func (s Shovel) MaxCount() int {
 }
 
 // AttackDamage returns the attack damage of the shovel.
-func (s Shovel) AttackDamage() float32 {
+func (s Shovel) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage
 }
 

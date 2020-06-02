@@ -10,7 +10,7 @@ type Tier struct {
 	BaseMiningEfficiency float64
 	// BaseAttackDamage is the base attack damage of tools with this tiers. All tools have a constant value
 	// that is added on top of this.
-	BaseAttackDamage float32
+	BaseAttackDamage float64
 	// BaseDurability returns the maximum durability that a tool with this tier has.
 	Durability int
 }

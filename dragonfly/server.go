@@ -12,6 +12,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/generator"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/mcdb"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -274,7 +275,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
-		PlayerPosition: server.world.Spawn().Vec3Centre(),
+		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre()),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:              1,
@@ -307,7 +308,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
 	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3().Add(mgl32.Vec3{0.5, 0, 0.5}))
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
 	s.Start(p, server.world, server.handleSessionClose)
 
 	return p
@@ -373,6 +374,11 @@ func (server *Server) blockEntries() (entries []interface{}) {
 		})
 	}
 	return
+}
+
+// vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
+func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
 //go:linkname world_registerAllStates git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.registerAllStates

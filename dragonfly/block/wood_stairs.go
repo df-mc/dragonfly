@@ -5,7 +5,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // WoodStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
@@ -22,7 +22,7 @@ type WoodStairs struct {
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
 // when needed.
-func (s WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, s)
 	if !used {
 		return
@@ -54,25 +54,25 @@ func (WoodStairs) LightDiffusionLevel() uint8 {
 // AABB ...
 func (s WoodStairs) AABB() []physics.AABB {
 	// TODO: Account for stair curving.
-	b := []physics.AABB{physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 0.5, 1})}
+	b := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
 	if s.UpsideDown {
-		b[0] = physics.NewAABB(mgl32.Vec3{0, 0.5, 0}, mgl32.Vec3{1, 1, 1})
+		b[0] = physics.NewAABB(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})
 	}
 	switch s.Facing {
 	case world.North:
-		b = append(b, physics.NewAABB(mgl32.Vec3{0, 0, 0.5}, mgl32.Vec3{1, 0.5, 1}))
+		b = append(b, physics.NewAABB(mgl64.Vec3{0, 0, 0.5}, mgl64.Vec3{1, 0.5, 1}))
 	case world.South:
-		b = append(b, physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 0.5, 0.5}))
+		b = append(b, physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 0.5}))
 	case world.East:
-		b = append(b, physics.NewAABB(mgl32.Vec3{0.5, 0, 0}, mgl32.Vec3{1, 0.5, 1}))
+		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0, 0}, mgl64.Vec3{1, 0.5, 1}))
 	case world.West:
-		b = append(b, physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0.5, 0.5, 1}))
+		b = append(b, physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{0.5, 0.5, 1}))
 	}
 
 	if s.UpsideDown {
-		b[0] = b[0].Translate(mgl32.Vec3{0, 0.5})
+		b[0] = b[0].Translate(mgl64.Vec3{0, 0.5})
 	} else {
-		b[1] = b[1].Translate(mgl32.Vec3{0, 0.5})
+		b[1] = b[1].Translate(mgl64.Vec3{0, 0.5})
 	}
 	return b
 }

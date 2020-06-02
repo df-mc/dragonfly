@@ -13,7 +13,7 @@ type Sword struct {
 }
 
 // AttackDamage returns the attack damage of the sword.
-func (s Sword) AttackDamage() float32 {
+func (s Sword) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage + 3
 }
 

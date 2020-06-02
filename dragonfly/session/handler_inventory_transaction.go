@@ -76,7 +76,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
 		s.sendInv(s.inv, protocol.WindowIDInventory)
-		s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), data.ClickedPosition)
+		s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
 	default:

@@ -2,7 +2,7 @@ package world
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"sync"
 )
@@ -41,10 +41,10 @@ func (l *Loader) ChangeRadius(new int) {
 }
 
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
-func (l *Loader) Move(pos mgl32.Vec3) {
+func (l *Loader) Move(pos mgl64.Vec3) {
 	l.mu.Lock()
 
-	floorX, floorZ := math.Floor(float64(pos[0])), math.Floor(float64(pos[2]))
+	floorX, floorZ := math.Floor(pos[0]), math.Floor(pos[2])
 	chunkPos := ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
 
 	if chunkPos == l.pos {

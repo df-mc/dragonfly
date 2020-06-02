@@ -6,7 +6,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"net"
 )
 
@@ -15,9 +15,9 @@ import (
 type Handler interface {
 	// HandleMove handles the movement of a player. ctx.Cancel() may be called to cancel the movement event.
 	// The new position, yaw and pitch are passed.
-	HandleMove(ctx *event.Context, newPos mgl32.Vec3, newYaw, newPitch float32)
+	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
-	HandleTeleport(ctx *event.Context, pos mgl32.Vec3)
+	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
@@ -25,12 +25,12 @@ type Handler interface {
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
-	HandleHurt(ctx *event.Context, damage *float32, src damage.Source)
+	HandleHurt(ctx *event.Context, damage *float64, src damage.Source)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(src damage.Source)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos.
-	HandleRespawn(pos *mgl32.Vec3)
+	HandleRespawn(pos *mgl64.Vec3)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos world.BlockPos)
@@ -48,7 +48,7 @@ type Handler interface {
 	// position passed. The face of the block clicked is also passed, along with the relative click position.
 	// The click position has X, Y and Z values which are all in the range 0.0-1.0. It is also called if the
 	// player is holding no item.
-	HandleItemUseOnBlock(ctx *event.Context, pos world.BlockPos, face world.Face, clickPos mgl32.Vec3)
+	HandleItemUseOnBlock(ctx *event.Context, pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
 	// HandleItemUseOnEntity handles the player using the item held in its main hand on an entity passed to
 	// the method.
 	// HandleItemUseOnEntity is always called when a player uses an item on an entity, regardless of whether
@@ -88,10 +88,10 @@ type Handler interface {
 type NopHandler struct{}
 
 // HandleMove ...
-func (NopHandler) HandleMove(*event.Context, mgl32.Vec3, float32, float32) {}
+func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
 
 // HandleTeleport ...
-func (NopHandler) HandleTeleport(*event.Context, mgl32.Vec3) {}
+func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
 
 // HandleCommandExecution ...
 func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) {}
@@ -118,7 +118,7 @@ func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
 func (NopHandler) HandleItemUse(*event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(*event.Context, world.BlockPos, world.Face, mgl32.Vec3) {
+func (NopHandler) HandleItemUseOnBlock(*event.Context, world.BlockPos, world.Face, mgl64.Vec3) {
 }
 
 // HandleItemUseOnEntity ...
@@ -131,13 +131,13 @@ func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity) {}
 
 // HandleHurt ...
-func (NopHandler) HandleHurt(*event.Context, *float32, damage.Source) {}
+func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source) {}
 
 // HandleDeath ...
 func (NopHandler) HandleDeath(damage.Source) {}
 
 // HandleRespawn ...
-func (NopHandler) HandleRespawn(*mgl32.Vec3) {}
+func (NopHandler) HandleRespawn(*mgl64.Vec3) {}
 
 // HandleQuit ...
 func (NopHandler) HandleQuit() {}

@@ -2,7 +2,7 @@ package item
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
@@ -21,7 +21,7 @@ type UsableOnBlock interface {
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
 	// UseOnBlock returns a bool indicating if the item was used successfully.
-	UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3, w *world.World, user User, ctx *UseContext) bool
+	UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -59,7 +59,7 @@ func (ctx *UseContext) SubtractFromCount(d int) { ctx.CountSub += d }
 // damage that attacking with an empty hand deals.
 type Weapon interface {
 	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
-	AttackDamage() float32
+	AttackDamage() float64
 }
 
 // nameable represents a block that may be named. These are often containers such as chests, which have a
@@ -75,13 +75,13 @@ type User interface {
 	// Facing returns the direction that the user is facing.
 	Facing() world.Face
 	// Position returns the current position of the user in the world.
-	Position() mgl32.Vec3
+	Position() mgl64.Vec3
 	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 	// is 0 when the entity faces forward.
-	Yaw() float32
+	Yaw() float64
 	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 	// and is 0 when the entity faces forward.
-	Pitch() float32
+	Pitch() float64
 	HeldItems() (right, left Stack)
 	SetHeldItems(right, left Stack)
 }

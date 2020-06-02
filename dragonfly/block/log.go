@@ -4,7 +4,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six
@@ -21,7 +21,7 @@ type Log struct {
 }
 
 // UseOnBlock handles the rotational placing of logs.
-func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, l)
 	if !used {
 		return

@@ -7,7 +7,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -160,6 +160,7 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 }
 
 // runtimeID gets the block runtime ID at a specific position in the world.
+//noinspection GoUnusedFunction
 func runtimeID(w *World, pos BlockPos) uint32 {
 	if pos[1] < 0 || pos[1] > 255 {
 		// Fast way out.
@@ -379,7 +380,7 @@ func (w *World) StartTime() {
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
-func (w *World) AddParticle(pos mgl32.Vec3, p Particle) {
+func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 	p.Spawn(w, pos)
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewParticle(pos, p)
@@ -388,7 +389,7 @@ func (w *World) AddParticle(pos mgl32.Vec3, p Particle) {
 
 // PlaySound plays a sound at a specific position in the world. Viewers of that position will be able to hear
 // the sound if they're close enough.
-func (w *World) PlaySound(pos mgl32.Vec3, s sound.Sound) {
+func (w *World) PlaySound(pos mgl64.Vec3, s sound.Sound) {
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewSound(pos, s)
 	}
@@ -620,7 +621,7 @@ func (w *World) Handle(h Handler) {
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
-func (w *World) Viewers(pos mgl32.Vec3) []Viewer {
+func (w *World) Viewers(pos mgl64.Vec3) []Viewer {
 	return w.chunkViewers(chunkPosFromVec3(pos))
 }
 

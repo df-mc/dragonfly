@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"reflect"
 	"strings"
 )
@@ -12,7 +12,7 @@ import (
 // and may be used for behaviour in the Command.
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
-// float32, float64, string, bool, mgl32.Vec3,
+// float32, float64, string, bool, mgl64.Vec3,
 // or a type that implements the cmd.Parameter or cmd.Enum interface.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
@@ -279,7 +279,7 @@ func getTypeName(i interface{}) string {
 		return "string"
 	case bool:
 		return "bool"
-	case mgl32.Vec3:
+	case mgl64.Vec3:
 		return "x y z"
 	}
 	if param, ok := i.(Parameter); ok {

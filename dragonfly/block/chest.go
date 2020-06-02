@@ -9,7 +9,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
 )
@@ -60,7 +60,7 @@ func (c Chest) WithName(a ...interface{}) world.Item {
 
 // AABB ...
 func (c Chest) AABB() []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl32.Vec3{0.025, 0, 0.025}, mgl32.Vec3{0.975, 0.95, 0.975})}
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
 // open opens the chest, displaying the animation and playing a sound.
@@ -118,7 +118,7 @@ func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, u item
 }
 
 // UseOnBlock ...
-func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl32.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return

@@ -6,7 +6,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"sync/atomic"
 )
 
@@ -23,7 +23,7 @@ type Item struct {
 // NewItem creates a new item entity using the item stack passed. The item entity will be positioned at the
 // position passed.
 // If the stack's count exceeds its max count, the count of the stack will be changed to the maximum.
-func NewItem(i item.Stack, pos mgl32.Vec3) *Item {
+func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.Count() - i.MaxCount())
 	}
@@ -32,7 +32,7 @@ func NewItem(i item.Stack, pos mgl32.Vec3) *Item {
 		dragBeforeGravity: true,
 	}}
 	it.pos.Store(pos)
-	it.velocity.Store(mgl32.Vec3{})
+	it.velocity.Store(mgl64.Vec3{})
 
 	return it
 }
@@ -43,8 +43,8 @@ func (it *Item) Item() item.Stack {
 }
 
 // Position returns the current position of the item entity.
-func (it *Item) Position() mgl32.Vec3 {
-	return it.pos.Load().(mgl32.Vec3)
+func (it *Item) Position() mgl64.Vec3 {
+	return it.pos.Load().(mgl64.Vec3)
 }
 
 // World returns the world that the item entity is currently in, or nil if it is not added to a world.
@@ -134,25 +134,25 @@ func (it *Item) collect(collector item.Collector) {
 
 // Velocity returns the current velocity of the item. The values in the Vec3 returned represent the speed on
 // that axis in blocks/tick.
-func (it *Item) Velocity() mgl32.Vec3 {
-	return it.velocity.Load().(mgl32.Vec3)
+func (it *Item) Velocity() mgl64.Vec3 {
+	return it.velocity.Load().(mgl64.Vec3)
 }
 
 // SetVelocity sets the velocity of the item entity. The values in the Vec3 passed represent the speed on
 // that axis in blocks/tick.
-func (it *Item) SetVelocity(v mgl32.Vec3) {
+func (it *Item) SetVelocity(v mgl64.Vec3) {
 	it.velocity.Store(v)
 }
 
 // Yaw always returns 0.
-func (it *Item) Yaw() float32 { return 0 }
+func (it *Item) Yaw() float64 { return 0 }
 
 // Pitch always returns 0.
-func (it *Item) Pitch() float32 { return 0 }
+func (it *Item) Pitch() float64 { return 0 }
 
 // AABB ...
 func (it *Item) AABB() []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.125, 0, -0.125}, mgl32.Vec3{0.125, 0.25, 0.125})}
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})}
 }
 
 // State ...

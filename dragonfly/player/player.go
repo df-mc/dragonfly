@@ -26,7 +26,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"math/rand"
 	"net"
@@ -76,7 +76,7 @@ type Player struct {
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
-func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
+func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
 		name: name,
@@ -101,12 +101,12 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 		gameMode:             gamemode.Adventure{},
 	}
 	p.pos.Store(pos)
-	p.velocity.Store(mgl32.Vec3{})
-	p.yaw.Store(float32(0.0))
-	p.pitch.Store(float32(0.0))
-	p.speed.Store(float32(0.1))
-	p.health.Store(float32(20))
-	p.maxHealth.Store(float32(20))
+	p.velocity.Store(mgl64.Vec3{})
+	p.yaw.Store(0.0)
+	p.pitch.Store(0.0)
+	p.speed.Store(0.1)
+	p.health.Store(20.0)
+	p.maxHealth.Store(20.0)
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
 	return p
@@ -116,7 +116,7 @@ func New(name string, skin skin.Skin, pos mgl32.Vec3) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl32.Vec3) *Player {
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
@@ -319,32 +319,32 @@ func (p *Player) HideCoordinates() {
 
 // SetSpeed sets the speed of the player. The value passed is the blocks/tick speed that the player will then
 // obtain.
-func (p *Player) SetSpeed(speed float32) {
+func (p *Player) SetSpeed(speed float64) {
 	p.speed.Store(speed)
 	p.s.SendSpeed(speed)
 }
 
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
 // speed of a player is 0.1.
-func (p *Player) Speed() float32 {
-	return p.speed.Load().(float32)
+func (p *Player) Speed() float64 {
+	return p.speed.Load().(float64)
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
-func (p *Player) Health() float32 {
-	return p.health.Load().(float32)
+func (p *Player) Health() float64 {
+	return p.health.Load().(float64)
 }
 
 // MaxHealth returns the maximum amount of health that a player may have. The MaxHealth will always be higher
 // than Player.Health().
-func (p *Player) MaxHealth() float32 {
-	return p.maxHealth.Load().(float32)
+func (p *Player) MaxHealth() float64 {
+	return p.maxHealth.Load().(float64)
 }
 
 // SetMaxHealth sets the maximum health of the player. If the current health of the player is higher than the
 // new maximum health, the health is set to the new maximum.
 // SetMaxHealth panics if the max health passed is 0 or lower.
-func (p *Player) SetMaxHealth(health float32) {
+func (p *Player) SetMaxHealth(health float64) {
 	if health <= 0 {
 		panic("max health must not be lower than 0")
 	}
@@ -356,7 +356,7 @@ func (p *Player) SetMaxHealth(health float32) {
 }
 
 // setHealth sets the current health of the player to the health passed.
-func (p *Player) setHealth(health float32) {
+func (p *Player) setHealth(health float64) {
 	p.health.Store(health)
 	p.session().SendHealth(health, p.MaxHealth())
 }
@@ -366,7 +366,7 @@ func (p *Player) setHealth(health float32) {
 // If the final damage exceeds the health that the player currently has, the player is killed and will have to
 // respawn.
 // If the damage passed is negative, Hurt will not do anything.
-func (p *Player) Hurt(dmg float32, source damage.Source) {
+func (p *Player) Hurt(dmg float64, source damage.Source) {
 	if p.Dead() || dmg < 0 || !p.survival() {
 		return
 	}
@@ -394,7 +394,7 @@ func (p *Player) Hurt(dmg float32, source damage.Source) {
 // resolveFinalDamage resolves the final damage received by the player if it is attacked by the source passed
 // with the damage passed. resolveFinalDamage takes into account things such as the armour worn and the
 // enchantments on the individual pieces.
-func (p *Player) resolveFinalDamage(dmg float32, src damage.Source) float32 {
+func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
 		defencePoints, damageToArmour := 0.0, int(dmg/4)
 		if damageToArmour == 0 {
@@ -411,7 +411,7 @@ func (p *Player) resolveFinalDamage(dmg float32, src damage.Source) float32 {
 		}
 		// Armour in Bedrock edition reduces the damage taken by 4% for every armour point that the player
 		// has, with a maximum of 4*20=80%
-		dmg -= dmg * float32(0.04*defencePoints)
+		dmg -= dmg * 0.04 * defencePoints
 	}
 	// TODO: Account for enchantments.
 
@@ -421,7 +421,7 @@ func (p *Player) resolveFinalDamage(dmg float32, src damage.Source) float32 {
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
 // source of the velocity, typically the position of an attacking entity. The source is used to calculate the
 // direction which the entity should be knocked back in.
-func (p *Player) KnockBack(src mgl32.Vec3, force, height float32) {
+func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	if p.Dead() || !p.survival() {
 		return
 	}
@@ -671,7 +671,7 @@ func (p *Player) UseItem() {
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
 // returns immediately.
-func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3) {
+func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3) {
 	if !p.canReach(pos.Vec3Centre()) {
 		return
 	}
@@ -895,7 +895,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
 // This returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
-	blockBoxes := []physics.AABB{physics.NewAABB(mgl32.Vec3{}, mgl32.Vec3{1, 1, 1})}
+	blockBoxes := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 	if aabb, ok := b.(physics.AABBer); ok {
 		blockBoxes = aabb.AABB()
 	}
@@ -903,7 +903,7 @@ func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := p.World().EntitiesWithin(physics.NewAABB(mgl32.Vec3{-3, -3, -3}, mgl32.Vec3{3, 3, 3}).Translate(pos.Vec3()))
+	around := p.World().EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()))
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside of item entities is fine.
@@ -943,7 +943,7 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 
 		for _, drop := range p.drops(held, b) {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
-			itemEntity.SetVelocity(mgl32.Vec3{rand.Float32()*0.2 - 0.1, 0.2, rand.Float32()*0.2 - 0.1})
+			itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 			p.World().AddEntity(itemEntity)
 		}
 
@@ -987,9 +987,9 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
-func (p *Player) Teleport(pos mgl32.Vec3) {
+func (p *Player) Teleport(pos mgl64.Vec3) {
 	// Generally it is expected you are teleported to the middle of the block.
-	pos = pos.Add(mgl32.Vec3{0.5, 0, 0.5})
+	pos = pos.Add(mgl64.Vec3{0.5, 0, 0.5})
 
 	ctx := event.C()
 	p.handler().HandleTeleport(ctx, pos)
@@ -1000,7 +1000,7 @@ func (p *Player) Teleport(pos mgl32.Vec3) {
 
 // teleport teleports the player to a target position in the world. It does not call the handler of the
 // player.
-func (p *Player) teleport(pos mgl32.Vec3) {
+func (p *Player) teleport(pos mgl64.Vec3) {
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityTeleport(p, pos)
 	}
@@ -1009,8 +1009,8 @@ func (p *Player) teleport(pos mgl32.Vec3) {
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
 // position of the player.
-func (p *Player) Move(deltaPos mgl32.Vec3) {
-	if p.Dead() || deltaPos.ApproxEqual(mgl32.Vec3{}) {
+func (p *Player) Move(deltaPos mgl64.Vec3) {
+	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
 
@@ -1028,8 +1028,8 @@ func (p *Player) Move(deltaPos mgl32.Vec3) {
 }
 
 // Rotate rotates the player, adding deltaYaw and deltaPitch to the respective values.
-func (p *Player) Rotate(deltaYaw, deltaPitch float32) {
-	if p.Dead() || (mgl32.FloatEqual(deltaYaw, 0) && mgl32.FloatEqual(deltaPitch, 0)) {
+func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
+	if p.Dead() || (mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
 		return
 	}
 
@@ -1037,7 +1037,7 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float32) {
 
 	// Cancelling player rotation is rather scuffed, so we don't do that.
 	for _, v := range p.World().Viewers(p.Position()) {
-		v.ViewEntityMovement(p, mgl32.Vec3{}, deltaYaw, deltaPitch)
+		v.ViewEntityMovement(p, mgl64.Vec3{}, deltaYaw, deltaPitch)
 	}
 	p.yaw.Store(p.Yaw() + deltaYaw)
 	p.pitch.Store(p.Pitch() + deltaPitch)
@@ -1056,23 +1056,23 @@ func (p *Player) World() *world.World {
 
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
-func (p *Player) Position() mgl32.Vec3 {
+func (p *Player) Position() mgl64.Vec3 {
 	if v := p.pos.Load(); v == nil {
 		fmt.Println("v is nil")
 	}
-	return p.pos.Load().(mgl32.Vec3)
+	return p.pos.Load().(mgl64.Vec3)
 }
 
 // Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 // is 0 when the entity faces forward.
-func (p *Player) Yaw() float32 {
-	return p.yaw.Load().(float32)
+func (p *Player) Yaw() float64 {
+	return p.yaw.Load().(float64)
 }
 
 // Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 // and is 0 when the entity faces forward.
-func (p *Player) Pitch() float32 {
-	return p.pitch.Load().(float32)
+func (p *Player) Pitch() float64 {
+	return p.pitch.Load().(float64)
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
@@ -1117,9 +1117,9 @@ func (p *Player) checkOnGround() bool {
 	for x := min[0]; x <= max[0]+1; x++ {
 		for z := min[2]; z <= max[2]+1; z++ {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
-				bPos := world.BlockPosFromVec3(mgl32.Vec3{x, y, z})
+				bPos := world.BlockPosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
-				aabbList := []physics.AABB{physics.NewAABB(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 1, 1})}
+				aabbList := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 				if aabb, ok := b.(physics.AABBer); ok {
 					aabbList = aabb.AABB()
 				}
@@ -1135,13 +1135,13 @@ func (p *Player) checkOnGround() bool {
 }
 
 // Velocity returns the current velocity of the player.
-func (p *Player) Velocity() mgl32.Vec3 {
+func (p *Player) Velocity() mgl64.Vec3 {
 	// TODO: Implement server-side movement of player entities.
-	return p.velocity.Load().(mgl32.Vec3)
+	return p.velocity.Load().(mgl64.Vec3)
 }
 
 // SetVelocity sets the velocity of the player.
-func (p *Player) SetVelocity(v mgl32.Vec3) {
+func (p *Player) SetVelocity(v mgl64.Vec3) {
 	// TODO: Implement server-side movement of player entities.
 	p.velocity.Store(v)
 }
@@ -1150,11 +1150,11 @@ func (p *Player) SetVelocity(v mgl32.Vec3) {
 func (p *Player) AABB() []physics.AABB {
 	switch {
 	case atomic.LoadUint32(p.sneaking) == 1:
-		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.65, 0.3})}
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.65, 0.3})}
 	case atomic.LoadUint32(p.swimming) == 1:
-		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 0.6, 0.3})}
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 0.6, 0.3})}
 	default:
-		return []physics.AABB{physics.NewAABB(mgl32.Vec3{-0.3, 0, -0.3}, mgl32.Vec3{0.3, 1.8, 0.3})}
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.8, 0.3})}
 	}
 }
 
@@ -1164,7 +1164,7 @@ func (p *Player) OnGround() bool {
 }
 
 // EyeHeight returns the eye height of the player: 1.62.
-func (p *Player) EyeHeight() float32 {
+func (p *Player) EyeHeight() float64 {
 	return 1.62
 }
 
@@ -1247,13 +1247,13 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // canReach checks if a player can reach a position with its current range. The range depends on if the player
 // is either survival or creative mode.
-func (p *Player) canReach(pos mgl32.Vec3) bool {
+func (p *Player) canReach(pos mgl64.Vec3) bool {
 	const (
 		eyeHeight     = 1.62
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
-	eyes := p.Position().Add(mgl32.Vec3{0, eyeHeight})
+	eyes := p.Position().Add(mgl64.Vec3{0, eyeHeight})
 
 	if _, ok := p.GameMode().(gamemode.Creative); ok {
 		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()

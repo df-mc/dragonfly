@@ -10,7 +10,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -36,7 +36,7 @@ func (s *Session) closeCurrentContainer() {
 // SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
-		Position:        s.c.Position().Add(mgl32.Vec3{0, entityOffset(s.c)}),
+		Position:        vec64To32(s.c.Position().Add(mgl64.Vec3{0, entityOffset(s.c)})),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -92,12 +92,12 @@ func (s *Session) Disconnect(message string) {
 }
 
 // SendSpeed sends the speed of the player in an UpdateAttributes packet, so that it is updated client-side.
-func (s *Session) SendSpeed(speed float32) {
+func (s *Session) SendSpeed(speed float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			Name:    "minecraft:movement",
-			Value:   speed,
+			Value:   float32(speed),
 			Max:     math.MaxFloat32,
 			Min:     0,
 			Default: 0.1,
@@ -106,10 +106,10 @@ func (s *Session) SendSpeed(speed float32) {
 }
 
 // SendVelocity sends the velocity of the player to the client.
-func (s *Session) SendVelocity(velocity mgl32.Vec3) {
+func (s *Session) SendVelocity(velocity mgl64.Vec3) {
 	s.writePacket(&packet.SetActorMotion{
 		EntityRuntimeID: selfEntityRuntimeID,
-		Velocity:        velocity,
+		Velocity:        vec64To32(velocity),
 	})
 }
 
@@ -247,13 +247,13 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 }
 
 // SendHealth sends the health and max health to the player.
-func (s *Session) SendHealth(health, max float32) {
+func (s *Session) SendHealth(health, max float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			Name:    "minecraft:health",
-			Value:   float32(math.Ceil(float64(health))),
-			Max:     float32(math.Ceil(float64(max))),
+			Value:   float32(math.Ceil(health)),
+			Max:     float32(math.Ceil(max)),
 			Default: 20,
 		}},
 	})

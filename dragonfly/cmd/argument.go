@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"reflect"
 	"strconv"
 )
@@ -68,7 +68,7 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 		err = p.string(line, v)
 	case bool:
 		err = p.bool(line, v)
-	case mgl32.Vec3:
+	case mgl64.Vec3:
 		err = p.vec3(line, v)
 	default:
 		if param, ok := i.(Parameter); ok {

@@ -90,13 +90,13 @@ func (s *Session) SendScoreboardLines(v []string) {
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.
 // SendBossBar removes any boss bar that might be active before sending the new one.
-func (s *Session) SendBossBar(text string, healthPercentage float32) {
+func (s *Session) SendBossBar(text string, healthPercentage float64) {
 	s.RemoveBossBar()
 	s.writePacket(&packet.BossEvent{
 		BossEntityUniqueID: selfEntityRuntimeID,
 		EventType:          packet.BossEventShow,
 		BossBarTitle:       text,
-		HealthPercentage:   healthPercentage,
+		HealthPercentage:   float32(healthPercentage),
 	})
 }
 

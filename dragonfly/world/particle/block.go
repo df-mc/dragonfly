@@ -2,7 +2,7 @@ package particle
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // BlockBreak is a particle sent when a block is broken. It represents a bunch of particles that are textured
@@ -24,7 +24,7 @@ type PunchBlock struct {
 }
 
 // Spawn ...
-func (PunchBlock) Spawn(*world.World, mgl32.Vec3) {}
+func (PunchBlock) Spawn(*world.World, mgl64.Vec3) {}
 
 // Spawn ...
-func (BlockBreak) Spawn(*world.World, mgl32.Vec3) {}
+func (BlockBreak) Spawn(*world.World, mgl64.Vec3) {}

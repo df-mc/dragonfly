@@ -13,6 +13,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync/atomic"
@@ -80,17 +81,17 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Username:        v.Name(),
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
-			Position:        e.Position(),
-			Pitch:           e.Pitch(),
-			Yaw:             e.Yaw(),
-			HeadYaw:         e.Yaw(),
+			Position:        vec64To32(e.Position()),
+			Pitch:           float32(e.Pitch()),
+			Yaw:             float32(e.Yaw()),
+			HeadYaw:         float32(e.Yaw()),
 		})
 	case *entity.Item:
 		s.writePacket(&packet.AddItemActor{
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
 			Item:            stackFromItem(v.Item()),
-			Position:        v.Position(),
+			Position:        vec64To32(v.Position()),
 		})
 	default:
 		s.writePacket(&packet.AddActor{
@@ -98,10 +99,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityRuntimeID: runtimeID,
 			// TODO: Add methods for entity types.
 			EntityType: "",
-			Position:   e.Position(),
-			Pitch:      e.Pitch(),
-			Yaw:        e.Yaw(),
-			HeadYaw:    e.Yaw(),
+			Position:   vec64To32(e.Position()),
+			Pitch:      float32(e.Pitch()),
+			Yaw:        float32(e.Yaw()),
+			HeadYaw:    float32(e.Yaw()),
 		})
 	}
 }
@@ -127,7 +128,7 @@ func (s *Session) HideEntity(e world.Entity) {
 }
 
 // ViewEntityMovement ...
-func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaYaw, deltaPitch float32) {
+func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	id := s.entityRuntimeID(e)
 
 	if id == selfEntityRuntimeID {
@@ -138,10 +139,10 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, entityOffset(e)}),
-			Pitch:           e.Pitch() + deltaPitch,
-			Yaw:             e.Yaw() + deltaYaw,
-			HeadYaw:         e.Yaw() + deltaYaw,
+			Position:        vec64To32(e.Position().Add(deltaPos).Add(mgl64.Vec3{0, entityOffset(e)})),
+			Pitch:           float32(e.Pitch() + deltaPitch),
+			Yaw:             float32(e.Yaw() + deltaYaw),
+			HeadYaw:         float32(e.Yaw() + deltaYaw),
 			OnGround:        e.OnGround(),
 		})
 	default:
@@ -151,15 +152,15 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl32.Vec3, deltaY
 		}
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        e.Position().Add(deltaPos).Add(mgl32.Vec3{0, entityOffset(e)}),
-			Rotation:        mgl32.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw},
+			Position:        vec64To32(e.Position().Add(deltaPos).Add(mgl64.Vec3{0, entityOffset(e)})),
+			Rotation:        vec64To32(mgl64.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw}),
 			Flags:           flags,
 		})
 	}
 }
 
 // entityOffset returns the offset that entities have client-side.
-func entityOffset(e world.Entity) float32 {
+func entityOffset(e world.Entity) float64 {
 	switch e.(type) {
 	case Controllable:
 		return 1.62
@@ -175,7 +176,7 @@ func (s *Session) ViewTime(time int) {
 }
 
 // ViewEntityTeleport ...
-func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
+func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
 
 	if id == selfEntityRuntimeID {
@@ -186,17 +187,17 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl32.Vec3) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        position.Add(mgl32.Vec3{0, entityOffset(e)}),
-			Pitch:           e.Pitch(),
-			Yaw:             e.Yaw(),
-			HeadYaw:         e.Yaw(),
+			Position:        vec64To32(position.Add(mgl64.Vec3{0, entityOffset(e)})),
+			Pitch:           float32(e.Pitch()),
+			Yaw:             float32(e.Yaw()),
+			HeadYaw:         float32(e.Yaw()),
 			Mode:            packet.MoveModeTeleport,
 		})
 	default:
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        position.Add(mgl32.Vec3{0, entityOffset(e)}),
-			Rotation:        mgl32.Vec3{e.Pitch(), e.Yaw()},
+			Position:        vec64To32(position.Add(mgl64.Vec3{0, entityOffset(e)})),
+			Rotation:        vec64To32(mgl64.Vec3{e.Pitch(), e.Yaw()}),
 			Flags:           packet.MoveFlagTeleport,
 		})
 	}
@@ -254,27 +255,27 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 }
 
 // ViewParticle ...
-func (s *Session) ViewParticle(pos mgl32.Vec3, p world.Particle) {
+func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
 	case particle.BlockBreak:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleDestroy,
-			Position:  pos,
+			Position:  vec64To32(pos),
 			EventData: int32(s.blockRuntimeID(pa.Block)),
 		})
 	case particle.PunchBlock:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticlePunchBlock,
-			Position:  pos,
+			Position:  vec64To32(pos),
 			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
 	}
 }
 
 // ViewSound ...
-func (s *Session) ViewSound(pos mgl32.Vec3, soundType sound.Sound) {
+func (s *Session) ViewSound(pos mgl64.Vec3, soundType sound.Sound) {
 	pk := &packet.LevelSoundEvent{
-		Position:   pos,
+		Position:   vec64To32(pos),
 		EntityType: ":",
 		ExtraData:  -1,
 	}
@@ -433,13 +434,13 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 	case blockAction.StartCrack:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventBlockStartBreak,
-			Position:  pos.Vec3(),
+			Position:  vec64To32(pos.Vec3()),
 			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
 		})
 	case blockAction.StopCrack:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventBlockStopBreak,
-			Position:  pos.Vec3(),
+			Position:  vec64To32(pos.Vec3()),
 			EventData: 0,
 		})
 	}
@@ -490,6 +491,16 @@ func (s *Session) entityFromRuntimeID(id uint64) (world.Entity, bool) {
 }
 
 // Position ...
-func (s *Session) Position() mgl32.Vec3 {
+func (s *Session) Position() mgl64.Vec3 {
 	return s.c.Position()
+}
+
+// vec32To64 converts a mgl32.Vec3 to a mgl64.Vec3.
+func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
+	return mgl64.Vec3{float64(vec3[0]), float64(vec3[1]), float64(vec3[2])}
+}
+
+// vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
+func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }

@@ -2,7 +2,7 @@ package entity
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Living represents an entity that is alive and that has health. It is able to take damage and will die upon
@@ -14,9 +14,9 @@ type Living interface {
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the player currently has, the entity is killed.
-	Hurt(damage float32, source damage.Source)
+	Hurt(damage float64, source damage.Source)
 	// KnockBack knocks the entity back with a given force and height. A source is passed which indicates the
 	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.
-	KnockBack(src mgl32.Vec3, force, height float32)
+	KnockBack(src mgl64.Vec3, force, height float64)
 }

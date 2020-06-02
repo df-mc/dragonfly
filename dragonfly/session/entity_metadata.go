@@ -15,8 +15,8 @@ func defaultEntityMetadata(e world.Entity) entityMetadata {
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
 
 	bb := e.AABB()[0]
-	m[dataKeyBoundingBoxWidth] = bb.Width()
-	m[dataKeyBoundingBoxHeight] = bb.Height()
+	m[dataKeyBoundingBoxWidth] = float32(bb.Width())
+	m[dataKeyBoundingBoxHeight] = float32(bb.Height())
 
 	return m
 }

@@ -5,7 +5,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Axe is a tool generally used for mining wood-like blocks. It may also be used to break some plant-like
@@ -16,7 +16,7 @@ type Axe struct {
 }
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
-func (a Axe) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl32.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (a Axe) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if b := w.Block(pos); item_internal.IsUnstrippedLog(b) {
 		strippedLog := item_internal.StripLog(b)
 		w.SetBlock(pos, strippedLog)
@@ -44,7 +44,7 @@ func (a Axe) DurabilityInfo() DurabilityInfo {
 }
 
 // AttackDamage ...
-func (a Axe) AttackDamage() float32 {
+func (a Axe) AttackDamage() float64 {
 	return a.Tier.BaseAttackDamage + 2
 }
 

@@ -6,7 +6,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 )
 
@@ -18,10 +18,10 @@ type Controllable interface {
 	item.Carrier
 	form.Submitter
 
-	Move(deltaPos mgl32.Vec3)
-	Speed() float32
-	EyeHeight() float32
-	Rotate(deltaYaw, deltaPitch float32)
+	Move(deltaPos mgl64.Vec3)
+	Speed() float64
+	EyeHeight() float64
+	Rotate(deltaYaw, deltaPitch float64)
 
 	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
@@ -29,7 +29,7 @@ type Controllable interface {
 	SetGameMode(mode gamemode.GameMode)
 
 	UseItem()
-	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl32.Vec3)
+	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity)
 	BreakBlock(pos world.BlockPos)
 	AttackEntity(e world.Entity)
