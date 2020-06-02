@@ -394,6 +394,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 // resolveFinalDamage resolves the final damage received by the player if it is attacked by the source passed
 // with the damage passed. resolveFinalDamage takes into account things such as the armour worn and the
 // enchantments on the individual pieces.
+// The damage returned will be at the least 0.
 func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
 		defencePoints, damageToArmour := 0.0, int(dmg/4)
@@ -414,6 +415,9 @@ func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 		dmg -= dmg * 0.04 * defencePoints
 	}
 	// TODO: Account for enchantments.
+	if dmg < 0 {
+		dmg = 0
+	}
 
 	return dmg
 }
