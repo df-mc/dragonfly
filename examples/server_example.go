@@ -7,10 +7,12 @@ import (
 func main() {
 	server := dragonfly.New(nil, nil)
 	server.CloseOnProgramEnd()
-	if err := server.Run(); err != nil {
+	if err := server.Start(); err != nil {
 		panic(err)
 	}
 	for {
-		_, _ = server.Accept()
+		if _, err := server.Accept(); err != nil {
+			return
+		}
 	}
 }
