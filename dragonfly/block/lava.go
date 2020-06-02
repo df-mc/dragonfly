@@ -1,6 +1,7 @@
 package block
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"time"
@@ -82,38 +83,52 @@ func (Lava) LiquidType() string {
 }
 
 // Harden handles the hardening logic of lava.
-func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.BlockPos) (hardened bool) {
+func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.BlockPos) bool {
+	var ok bool
+	var water, b world.Block
+
 	if flownIntoBy == nil {
+		var water, b world.Block
 		pos.Neighbours(func(neighbour world.BlockPos) {
-			if hardened || neighbour[1] == pos[1]-1 {
+			if b != nil || neighbour[1] == pos[1]-1 {
 				return
 			}
-			if _, ok := w.Block(neighbour).(Water); !ok {
-				return
+			if waterBlock, ok := w.Block(neighbour).(Water); ok {
+				water = waterBlock
+				if l.Depth == 8 && !l.Falling {
+					b = Obsidian{}
+					return
+				}
+				b = Cobblestone{}
 			}
-			if l.Depth == 8 && !l.Falling {
-				w.PlaceBlock(pos, Obsidian{})
-				hardened = true
-				return
-			}
-			w.PlaceBlock(pos, Cobblestone{})
-			hardened = true
 		})
-		if hardened {
-			w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+		if b != nil {
+			ctx := event.C()
+			w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)
+			ctx.Continue(func() {
+				w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+				w.PlaceBlock(pos, Cobblestone{})
+			})
+			return true
 		}
-		return hardened
-	}
-	if _, isWater := w.Block(*flownIntoBy).(Water); !isWater {
 		return false
 	}
-	if l.Depth == 8 && !l.Falling {
-		w.PlaceBlock(pos, Obsidian{})
-		w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-		return true
+	water, ok = w.Block(*flownIntoBy).(Water)
+	if !ok {
+		return false
 	}
-	w.PlaceBlock(pos, Cobblestone{})
-	w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+
+	if l.Depth == 8 && !l.Falling {
+		b = Obsidian{}
+	} else {
+		b = Cobblestone{}
+	}
+	ctx := event.C()
+	w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)
+	ctx.Continue(func() {
+		w.PlaceBlock(pos, b)
+		w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+	})
 	return true
 }
 

@@ -1,6 +1,7 @@
 package block
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"time"
@@ -90,17 +91,25 @@ func (Water) LiquidType() string {
 }
 
 // Harden hardens the water if lava flows into it.
-func (Water) Harden(pos world.BlockPos, wo *world.World, flownIntoBy *world.BlockPos) bool {
+func (w Water) Harden(pos world.BlockPos, wo *world.World, flownIntoBy *world.BlockPos) bool {
 	if flownIntoBy == nil {
 		return false
 	}
-	if _, ok := wo.Block(pos.Side(world.Up)).(Lava); ok {
-		wo.PlaceBlock(pos, Stone{})
-		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+	if lava, ok := wo.Block(pos.Side(world.Up)).(Lava); ok {
+		ctx := event.C()
+		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{})
+		ctx.Continue(func() {
+			wo.PlaceBlock(pos, Stone{})
+			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+		})
 		return true
-	} else if _, ok := wo.Block(*flownIntoBy).(Lava); ok {
-		wo.PlaceBlock(*flownIntoBy, Cobblestone{})
-		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+	} else if lava, ok := wo.Block(*flownIntoBy).(Lava); ok {
+		ctx := event.C()
+		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Cobblestone{})
+		ctx.Continue(func() {
+			wo.PlaceBlock(*flownIntoBy, Cobblestone{})
+			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+		})
 		return true
 	}
 	return false

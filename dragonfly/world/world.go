@@ -613,9 +613,9 @@ func (w *World) Generator(g Generator) {
 	w.gen = g
 }
 
-// Handle changes the current handler of the world. As a result, events called by the world will call
+// Handle changes the current Handler of the world. As a result, events called by the world will call
 // handlers of the Handler passed.
-// Handle sets the world's handler to NopHandler if nil is passed.
+// Handle sets the world's Handler to NopHandler if nil is passed.
 func (w *World) Handle(h Handler) {
 	w.hMutex.Lock()
 	defer w.hMutex.Unlock()
@@ -971,9 +971,9 @@ func (w *World) provider() Provider {
 	return provider
 }
 
-// handler returns the handler of the world. It should always be used, rather than direct field access, in
+// Handler returns the Handler of the world. It should always be used, rather than direct field access, in
 // order to provide synchronisation safety.
-func (w *World) handler() Handler {
+func (w *World) Handler() Handler {
 	w.hMutex.RLock()
 	handler := w.hand
 	w.hMutex.RUnlock()

@@ -1,6 +1,7 @@
 package block
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/block_internal"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/world_internal"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
@@ -125,7 +126,11 @@ func flowInto(b Liquid, src, pos world.BlockPos, w *world.World, falling bool) b
 			// (basically considered full depth), so no need to continue.
 			return true
 		}
-		w.PlaceBlock(pos, b.WithDepth(newDepth, falling))
+		ctx := event.C()
+		w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
+		ctx.Continue(func() {
+			w.PlaceBlock(pos, b.WithDepth(newDepth, falling))
+		})
 		return true
 	} else if alsoLiquid {
 		existingLiquid.Harden(pos, w, &src)
@@ -148,7 +153,11 @@ func flowInto(b Liquid, src, pos world.BlockPos, w *world.World, falling bool) b
 		// TODO: Drop item entities.
 		_ = it
 	}
-	w.PlaceBlock(pos, b.WithDepth(newDepth, falling))
+	ctx := event.C()
+	w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
+	ctx.Continue(func() {
+		w.PlaceBlock(pos, b.WithDepth(newDepth, falling))
+	})
 	return true
 }
 
