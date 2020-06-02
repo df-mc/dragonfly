@@ -94,7 +94,8 @@ func (server *Server) World() *world.World {
 }
 
 // Run runs the server and blocks until it is closed using a call to Close(). When called, the server will
-// accept incoming connections.
+// accept incoming connections. Run will block the current goroutine until the server is stopped. To start
+// the server on a different goroutine, use (*Server).Start() instead.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
 	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
