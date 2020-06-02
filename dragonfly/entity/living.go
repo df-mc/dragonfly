@@ -8,6 +8,8 @@ import (
 // Living represents an entity that is alive and that has health. It is able to take damage and will die upon
 // taking fatal damage.
 type Living interface {
+	// Health returns the health of the entity.
+	Health() float64
 	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
 	// immune for half a second after being attacked.
 	AttackImmune() bool

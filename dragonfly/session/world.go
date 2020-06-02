@@ -294,6 +294,11 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType sound.Sound) {
 		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.blockRuntimeID(so.Block))
 	case sound.Fizz:
 		pk.SoundType = packet.SoundEventFizz
+	case sound.Attack:
+		pk.SoundType, pk.EntityType = packet.SoundEventAttackStrong, "minecraft:player"
+		if !so.Damage {
+			pk.SoundType = packet.SoundEventAttackNoDamage
+		}
 	}
 	s.writePacket(pk)
 }

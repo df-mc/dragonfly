@@ -70,6 +70,16 @@ type Eyed interface {
 	EyeHeight() float64
 }
 
+// EyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the
+// actual position if it doesn't.
+func EyePosition(e world.Entity) mgl64.Vec3 {
+	pos := e.Position()
+	if eyed, ok := e.(Eyed); ok {
+		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
+	}
+	return pos
+}
+
 // vec3ToPos converts a Vec3 to a world.BlockPos.
 func vec3ToPos(vec mgl64.Vec3) world.BlockPos {
 	return world.BlockPos{int(math.Floor(vec[0])), int(math.Floor(vec[1])), int(math.Floor(vec[2]))}

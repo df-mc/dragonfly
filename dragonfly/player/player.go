@@ -777,8 +777,15 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if living.AttackImmune() {
 			return
 		}
+		healthBefore := living.Health()
 		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.5, 0.3)
+
+		if mgl64.FloatEqual(healthBefore, living.Health()) {
+			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
+		} else {
+			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
+		}
 
 		if durable, ok := i.Item().(item.Durable); ok {
 			p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
