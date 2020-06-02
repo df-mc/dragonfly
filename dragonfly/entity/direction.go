@@ -53,7 +53,7 @@ func TargetBlock(e world.Entity, maxDistance float64) world.BlockPos {
 	step := 0.5
 	for i := 0.0; i < maxDistance; i += step {
 		current = current.Add(directionVector.Mul(step))
-		pos := vec3ToPos(current)
+		pos := world.BlockPosFromVec3(current)
 
 		b := e.World().Block(pos)
 		if _, ok := b.(block.Air); !ok {
@@ -61,7 +61,7 @@ func TargetBlock(e world.Entity, maxDistance float64) world.BlockPos {
 			return pos
 		}
 	}
-	return vec3ToPos(current)
+	return world.BlockPosFromVec3(current)
 }
 
 // Eyed represents an entity that has eyes.
@@ -78,9 +78,4 @@ func EyePosition(e world.Entity) mgl64.Vec3 {
 		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
 	}
 	return pos
-}
-
-// vec3ToPos converts a Vec3 to a world.BlockPos.
-func vec3ToPos(vec mgl64.Vec3) world.BlockPos {
-	return world.BlockPos{int(math.Floor(vec[0])), int(math.Floor(vec[1])), int(math.Floor(vec[2]))}
 }
