@@ -1,5 +1,8 @@
 package block_internal
 
+//lint:file-ignore ST1022 Exported variables in this package have compiler directives. These variables are not otherwise exposed to users.
+//lint:file-ignore ST1020 Exported functions in this package have compiler directives. These functions are not otherwise exposed to users.
+
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
