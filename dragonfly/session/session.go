@@ -81,20 +81,20 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 	}
 
 	s := &Session{
-		conn:                   conn,
-		log:                    log,
-		handlers:               make(map[uint32]packetHandler),
 		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
-		chunkRadius:            int32(r),
-		maxChunkRadius:         int32(maxChunkRadius),
+		ui:                     inventory.New(51, nil),
+		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
-		currentEntityRuntimeID: 1,
+		chunkRadius:            int32(r),
+		maxChunkRadius:         int32(maxChunkRadius),
 		heldSlot:               new(uint32),
-		ui:                     inventory.New(51, nil),
 		inTransaction:          new(uint32),
 		containerOpened:        new(uint32),
 		openedWindowID:         new(uint32),
+		conn:                   conn,
+		log:                    log,
+		currentEntityRuntimeID: 1,
 	}
 	s.scoreboardObj.Store("")
 	s.openedWindow.Store(inventory.New(1, nil))

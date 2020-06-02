@@ -84,23 +84,23 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 	randomTickSpeed := uint32(3)
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		name:            "World",
+		r:               rand.New(rand.NewSource(time.Now().Unix())),
+		viewers:         map[ChunkPos][]Viewer{},
+		entities:        map[ChunkPos][]Entity{},
+		entityBlocks:    map[ChunkPos]map[BlockPos]Block{},
+		blockUpdates:    map[BlockPos]int64{},
+		defaultGameMode: gamemode.Survival{},
 		prov:            NoIOProvider{},
 		gen:             NopGenerator{},
-		log:             log,
-		viewers:         make(map[ChunkPos][]Viewer),
-		entities:        make(map[ChunkPos][]Entity),
-		entityBlocks:    make(map[ChunkPos]map[BlockPos]Block),
-		blockUpdates:    make(map[BlockPos]int64),
-		stopTick:        ctx,
-		cancelTick:      cancel,
-		defaultGameMode: gamemode.Survival{},
-		r:               rand.New(rand.NewSource(time.Now().Unix())),
-		simDistSq:       int32(simulationDistance * simulationDistance),
-		randomTickSpeed: &randomTickSpeed,
 		doneTicking:     make(chan struct{}),
 		time:            new(int64),
 		timeStopped:     new(uint32),
+		simDistSq:       int32(simulationDistance * simulationDistance),
+		randomTickSpeed: &randomTickSpeed,
+		log:             log,
+		stopTick:        ctx,
+		cancelTick:      cancel,
+		name:            "World",
 	}
 	w.initChunkCache()
 	go w.startTicking()

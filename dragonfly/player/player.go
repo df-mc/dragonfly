@@ -79,17 +79,16 @@ type Player struct {
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
-		name: name,
-		h:    NopHandler{},
-		uuid: uuid.New(),
-		skin: skin,
 		inv: inventory.New(36, func(slot int, item item.Stack) {
 			if slot == int(atomic.LoadUint32(p.heldSlot)) {
 				p.broadcastItems(slot, item)
 			}
 		}),
+		uuid:                 uuid.New(),
 		offHand:              inventory.New(1, p.broadcastItems),
 		armour:               inventory.NewArmour(p.broadcastArmour),
+		gameMode:             gamemode.Adventure{},
+		h:                    NopHandler{},
 		heldSlot:             new(uint32),
 		breaking:             new(uint32),
 		breakParticleCounter: new(uint32),
@@ -98,7 +97,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		swimming:             new(uint32),
 		invisible:            new(uint32),
 		onGround:             new(uint32),
-		gameMode:             gamemode.Adventure{},
+		name:                 name,
+		skin:                 skin,
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
