@@ -65,6 +65,7 @@ func New(dir string) (*Provider, error) {
 
 // initDefaultLevelDat initialises a default level.dat file.
 func (p *Provider) initDefaultLevelDat() {
+	p.d.DoDayLightCycle = true
 	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.LevelName = "World"
 	p.d.SpawnY = 128
