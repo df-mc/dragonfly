@@ -110,6 +110,13 @@ func init() {
 		l.Stripped = true
 		return l
 	}
+	item_internal.Lava = Lava{Depth: 8, Still: true}
+	item_internal.Water = Water{Depth: 8, Still: true}
+	item_internal.IsWater = func(b world.Liquid) bool {
+		_, ok := b.(Water)
+		return ok
+	}
+	item_internal.Replaceable = replaceable
 }
 
 // readSlice reads an interface slice from a map at the key passed.

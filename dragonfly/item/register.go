@@ -2,6 +2,7 @@ package item
 
 import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/armour"
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/bucket"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 )
@@ -55,4 +56,8 @@ func init() {
 	world.RegisterItem("minecraft:chainmail_boots", Boots{Tier: armour.TierChain})
 	world.RegisterItem("minecraft:iron_boots", Boots{Tier: armour.TierIron})
 	world.RegisterItem("minecraft:diamond_boots", Boots{Tier: armour.TierDiamond})
+
+	world.RegisterItem("minecraft:bucket", Bucket{})
+	world.RegisterItem("minecraft:bucket", Bucket{Content: bucket.Water()})
+	world.RegisterItem("minecraft:bucket", Bucket{Content: bucket.Lava()})
 }

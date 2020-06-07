@@ -65,7 +65,7 @@ func (Lava) SpreadDecay() int {
 }
 
 // WithDepth returns a new Lava block with the depth passed and falling if set to true.
-func (l Lava) WithDepth(depth int, falling bool) Liquid {
+func (l Lava) WithDepth(depth int, falling bool) world.Liquid {
 	l.Depth = depth
 	l.Falling = falling
 	l.Still = false

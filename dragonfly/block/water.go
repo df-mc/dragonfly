@@ -30,7 +30,7 @@ func (Water) SpreadDecay() int {
 }
 
 // WithDepth returns the water with the depth passed.
-func (w Water) WithDepth(depth int, falling bool) Liquid {
+func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 	w.Depth = depth
 	w.Falling = falling
 	w.Still = false
@@ -64,17 +64,24 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 		count := 0
 		pos.Neighbours(func(neighbour world.BlockPos) {
 			if neighbour[1] == pos[1] {
-				if water, ok := wo.Block(neighbour).(Water); ok && water.Depth == 8 && !water.Falling {
-					count++
+				if liquid, ok := wo.Liquid(neighbour); ok {
+					if water, ok := liquid.(Water); ok && water.Depth == 8 && !water.Falling {
+						count++
+					}
 				}
 			}
 		})
 		if count >= 2 {
-			if waterBelow, ok := wo.Block(pos.Side(world.Down)).(Water); !ok || !waterBelow.Falling {
+			func() {
+				if liquid, ok := wo.Liquid(pos.Side(world.Down)); ok {
+					if waterBelow, ok := liquid.(Water); ok && waterBelow.Falling {
+						return
+					}
+				}
 				// Only form a new source block if there either is no water below this block, or if the water
 				// below this is not falling (full source block).
-				wo.PlaceBlock(pos, Water{Depth: 8, Still: true})
-			}
+				wo.SetLiquid(pos, Water{Depth: 8, Still: true})
+			}()
 		}
 	}
 	tickLiquid(w, pos, wo)

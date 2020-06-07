@@ -5,7 +5,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -46,10 +45,10 @@ type Viewer interface {
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)
 	// ViewSound is called when a sound is played in the world.
-	ViewSound(pos mgl64.Vec3, s sound.Sound)
+	ViewSound(pos mgl64.Vec3, s Sound)
 	// ViewBlockUpdate views the updating of a block. It is called when a block is set at the position passed
 	// to the method.
-	ViewBlockUpdate(pos BlockPos, b Block)
+	ViewBlockUpdate(pos BlockPos, b Block, layer int)
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
 	ViewBlockAction(pos BlockPos, a blockAction.Action)

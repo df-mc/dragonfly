@@ -33,7 +33,7 @@ type LightDiffuser interface {
 	LightDiffusionLevel() uint8
 }
 
-// Replaceable represents a block that may be replaced by another block automatically. An example is grass,
+// replaceableBlock represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {
 	// ReplaceableBy returns a bool which indicates if the block is replaceable by another block.

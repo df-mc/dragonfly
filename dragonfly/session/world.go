@@ -273,7 +273,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 }
 
 // ViewSound ...
-func (s *Session) ViewSound(pos mgl64.Vec3, soundType sound.Sound) {
+func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	pk := &packet.LevelSoundEvent{
 		Position:   vec64To32(pos),
 		EntityType: ":",
@@ -299,18 +299,31 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType sound.Sound) {
 		if !so.Damage {
 			pk.SoundType = packet.SoundEventAttackNoDamage
 		}
+	case sound.BucketFill:
+		if _, water := so.Liquid.(block.Water); water {
+			pk.SoundType = packet.SoundEventBucketFillWater
+			break
+		}
+		pk.SoundType = packet.SoundEventBucketFillLava
+	case sound.BucketEmpty:
+		if _, water := so.Liquid.(block.Water); water {
+			pk.SoundType = packet.SoundEventBucketEmptyWater
+			break
+		}
+		pk.SoundType = packet.SoundEventBucketEmptyLava
 	}
 	s.writePacket(pk)
 }
 
 // ViewBlockUpdate ...
-func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block) {
+func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block, layer int) {
 	runtimeID, _ := world.BlockRuntimeID(b)
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,
 		NewBlockRuntimeID: runtimeID,
 		Flags:             packet.BlockUpdateNetwork,
+		Layer:             uint32(layer),
 	})
 	if nbt, ok := b.(world.NBTer); ok {
 		s.writePacket(&packet.BlockActorData{

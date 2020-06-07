@@ -8,8 +8,13 @@ import (
 // Air is the block present in otherwise empty space.
 type Air struct{}
 
+// CanDisplace ...
+func (Air) CanDisplace(world.Liquid) bool {
+	return true
+}
+
 // HasLiquidDrops ...
-func (a Air) HasLiquidDrops() bool {
+func (Air) HasLiquidDrops() bool {
 	return false
 }
 

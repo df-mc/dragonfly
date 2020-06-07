@@ -138,6 +138,18 @@ func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{})
 	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 }
 
+// CanDisplace ...
+func (s WoodSlab) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return !s.Double && ok
+}
+
+// SideClosed ...
+func (s WoodSlab) SideClosed(pos, side world.BlockPos) bool {
+	// Only returns true if the side is below the slab and if the slab is not upside down.
+	return !s.UpsideDown && side[1] == pos[1]-1
+}
+
 // allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {

@@ -6,7 +6,6 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -23,6 +22,8 @@ type World struct {
 	name string
 	log  *logrus.Logger
 
+	currentTick *int64
+
 	stopTick    context.Context
 	cancelTick  context.CancelFunc
 	doneTicking chan struct{}
@@ -37,7 +38,7 @@ type World struct {
 	entityBlocks map[ChunkPos]map[BlockPos]Block
 
 	handlerMu sync.RWMutex
-	hand      Handler
+	handler   Handler
 
 	providerMu sync.RWMutex
 	prov       Provider
@@ -66,8 +67,8 @@ type World struct {
 	randomTickSpeed *uint32
 
 	updateMu sync.Mutex
-	// blockUpdates is a map of unix nano time values indexed by the block position at which an update is
-	// scheduled. If the current time exceeds the unix time value passed, the block update will be performed
+	// blockUpdates is a map of tick time values indexed by the block position at which an update is
+	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
 	blockUpdates    map[BlockPos]int64
 	updatePositions []BlockPos
@@ -92,7 +93,9 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		defaultGameMode: gamemode.Survival{},
 		prov:            NoIOProvider{},
 		gen:             NopGenerator{},
+		handler:         NopHandler{},
 		doneTicking:     make(chan struct{}),
+		currentTick:     new(int64),
 		time:            new(int64),
 		timeStopped:     new(uint32),
 		simDistSq:       int32(simulationDistance * simulationDistance),
@@ -212,7 +215,7 @@ func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
 	err := w.setBlockSilent(c, pos, b)
 	w.blockMu.Unlock()
 	for _, viewer := range w.Viewers(pos.Vec3()) {
-		viewer.ViewBlockUpdate(pos, b)
+		viewer.ViewBlockUpdate(pos, b, 0)
 	}
 	return err
 }
@@ -252,19 +255,37 @@ func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
 var breakParticle func(b Block) Particle
 
 // BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
-// BreakBlock will also show particles.
+// BreakBlock will also show particles and update blocks around the position.
 func (w *World) BreakBlock(pos BlockPos) {
 	old := w.Block(pos)
 	w.SetBlock(pos, nil)
 	w.AddParticle(pos.Vec3Centre(), breakParticle(old))
-	w.doBlockUpdatesAround(pos)
+	if liq, ok := w.Liquid(pos); ok {
+		// Move the liquid down a layer.
+		w.SetLiquid(pos, liq)
+	} else {
+		w.doBlockUpdatesAround(pos)
+	}
 }
 
 // PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also schedules
 // block updates around the position.
+// If the block can displace liquids at the position placed, it will do so, and liquid source blocks will be
+// put into the same block as the one passed.
 func (w *World) PlaceBlock(pos BlockPos, b Block) {
+	var liquid Liquid
+	if displacer, ok := b.(LiquidDisplacer); ok {
+		liq, ok := w.Liquid(pos)
+		if ok && displacer.CanDisplace(liq) && liq.LiquidDepth() == 8 {
+			liquid = liq
+		}
+	}
 	w.SetBlock(pos, b)
-	w.doBlockUpdatesAround(pos)
+	if liquid != nil {
+		w.SetLiquid(pos, liquid)
+		return
+	}
+	w.SetLiquid(pos, nil)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the world. Unlike SetBlock, it takes a
@@ -338,6 +359,164 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 	w.blockMu.Unlock()
 }
 
+// Liquid attempts to return any liquid block at the position passed. This liquid may be in the foreground or
+// in any other layer.
+// If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
+func (w *World) Liquid(pos BlockPos) (Liquid, bool) {
+	if pos.OutOfBounds() {
+		// Fast way out.
+		return nil, false
+	}
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	if err != nil {
+		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
+		return nil, false
+	}
+	x, y, z := uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15)
+
+	id := c.RuntimeID(x, y, z, 0)
+	b, ok := blockByRuntimeID(id)
+	if !ok {
+		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		return nil, false
+	}
+	if liq, ok := b.(Liquid); ok {
+		c.RUnlock()
+		return liq, true
+	}
+
+	id = c.RuntimeID(x, y, z, 1)
+	b, ok = blockByRuntimeID(id)
+	c.RUnlock()
+	if !ok {
+		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		return nil, false
+	}
+	if liq, ok := b.(Liquid); ok {
+		return liq, true
+	}
+	return nil, false
+}
+
+// SetLiquid sets the liquid at a specific position in the world. Unlike SetBlock, SetLiquid will not
+// overwrite any existing blocks. It will instead be in the same position as a block currently there, unless
+// there already is a liquid at that position, in which case it will be overwritten.
+// If nil is passed for the liquid, any liquid currently present will be removed.
+func (w *World) SetLiquid(pos BlockPos, b Liquid) {
+	if pos.OutOfBounds() {
+		// Fast way out.
+		return
+	}
+	chunkPos := chunkPosFromBlockPos(pos)
+	c, err := w.chunk(chunkPos, false)
+	if err != nil {
+		w.log.Errorf("failed setting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
+		return
+	}
+	if b == nil {
+		w.removeLiquids(c, pos, chunkPos)
+		c.Unlock()
+		w.doBlockUpdatesAround(pos)
+		return
+	}
+	x, y, z := uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15)
+	if !replaceable(w, c, pos, b) {
+		current, err := w.block(c, pos)
+		if err != nil {
+			c.Unlock()
+			w.log.Errorf("failed setting liquid: error getting block at position %v: %w", chunkPosFromBlockPos(pos), err)
+			return
+		}
+		if displacer, ok := current.(LiquidDisplacer); !ok || !displacer.CanDisplace(b) {
+			c.Unlock()
+			return
+		}
+	}
+	runtimeID, ok := BlockRuntimeID(b)
+	if !ok {
+		c.Unlock()
+		w.log.Errorf("failed setting liquid: runtime ID of block state %+v not found", b)
+		return
+	}
+	if w.removeLiquids(c, pos, chunkPos) {
+		c.SetRuntimeID(x, y, z, 0, runtimeID)
+		for _, v := range w.chunkViewers(chunkPos) {
+			v.ViewBlockUpdate(pos, b, 0)
+		}
+	} else {
+		c.SetRuntimeID(x, y, z, 1, runtimeID)
+		for _, v := range w.chunkViewers(chunkPos) {
+			v.ViewBlockUpdate(pos, b, 1)
+		}
+	}
+	c.Unlock()
+
+	w.doBlockUpdatesAround(pos)
+}
+
+// removeLiquids removes any liquid blocks that may be present at a specific block position in the chunk
+// passed.
+// The bool returned specifies if no blocks were left on the foreground layer.
+func (w *World) removeLiquids(c *chunk.Chunk, pos BlockPos, chunkPos ChunkPos) bool {
+	x, y, z := uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15)
+
+	noneLeft := false
+	if noLeft, changed := w.removeLiquidOnLayer(c, x, y, z, 0); noLeft {
+		if changed {
+			for _, v := range w.chunkViewers(chunkPos) {
+				v.ViewBlockUpdate(pos, air(), 0)
+			}
+		}
+		noneLeft = true
+	}
+	if _, changed := w.removeLiquidOnLayer(c, x, y, z, 1); changed {
+		for _, v := range w.chunkViewers(chunkPos) {
+			v.ViewBlockUpdate(pos, air(), 1)
+		}
+	}
+	return noneLeft
+}
+
+// removeLiquidOnLayer removes a liquid block from a specific layer in the chunk passed, returning true if
+// successful.
+func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool, bool) {
+	id := c.RuntimeID(x, y, z, layer)
+
+	b, ok := blockByRuntimeID(id)
+	if !ok {
+		w.log.Errorf("failed removing liquids: cannot get block by runtime ID %v", id)
+		return false, false
+	}
+	if _, ok := b.(Liquid); ok {
+		c.SetRuntimeID(x, y, z, layer, 0)
+		return true, true
+	}
+	return id == 0, false
+}
+
+// additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
+// liquid if so.
+func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
+	if pos.OutOfBounds() {
+		// Fast way out.
+		return nil, false
+	}
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	if err != nil {
+		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
+		return nil, false
+	}
+	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 1)
+	c.RUnlock()
+	b, ok := blockByRuntimeID(id)
+	if !ok {
+		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		return nil, false
+	}
+	liq, ok := b.(Liquid)
+	return liq, ok
+}
+
 // Light returns the light level at the position passed. This is the highest of the sky and block light.
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
@@ -396,7 +575,7 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 
 // PlaySound plays a sound at a specific position in the world. Viewers of that position will be able to hear
 // the sound if they're close enough.
-func (w *World) PlaySound(pos mgl64.Vec3, s sound.Sound) {
+func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewSound(pos, s)
 	}
@@ -550,7 +729,7 @@ func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
 		w.updateMu.Unlock()
 		return
 	}
-	w.blockUpdates[pos] = time.Now().Add(delay).UnixNano()
+	w.blockUpdates[pos] = atomic.LoadInt64(w.currentTick) + delay.Nanoseconds()/int64(time.Second/20)
 	w.updateMu.Unlock()
 }
 
@@ -571,6 +750,11 @@ func (w *World) doBlockUpdatesAround(pos BlockPos) {
 func (w *World) updateNeighbour(pos, changedNeighbour BlockPos) {
 	if ticker, ok := w.Block(pos).(NeighbourUpdateTicker); ok {
 		ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
+	}
+	if liquid, ok := w.additionalLiquid(pos); ok {
+		if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
+			ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
+		}
 	}
 }
 
@@ -623,7 +807,7 @@ func (w *World) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
 	}
-	w.hand = h
+	w.handler = h
 }
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
@@ -681,12 +865,10 @@ func (w *World) startTicking() {
 	ticker := time.NewTicker(time.Second / 20)
 	defer ticker.Stop()
 
-	tick := 0
 	for {
 		select {
 		case <-ticker.C:
-			w.tick(tick)
-			tick++
+			w.tick()
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
 			w.doneTicking <- struct{}{}
@@ -696,29 +878,34 @@ func (w *World) startTicking() {
 }
 
 // tick ticks the world and updates the time, blocks and entities that require updates.
-func (w *World) tick(tick int) {
+func (w *World) tick() {
+	viewers := w.allViewers()
+	if len(viewers) == 0 {
+		return
+	}
+
+	tick := atomic.AddInt64(w.currentTick, 1)
+
 	if atomic.LoadUint32(w.timeStopped) == 0 {
 		// Only if the time is not stopped, we add one to the current time.
 		atomic.AddInt64(w.time, 1)
 	}
 	if tick%20 == 0 {
-		for _, viewer := range w.allViewers() {
+		for _, viewer := range viewers {
 			viewer.ViewTime(int(atomic.LoadInt64(w.time)))
 		}
 	}
 	w.tickEntities()
-	w.tickRandomBlocks()
-	w.tickScheduledBlocks()
+	w.tickRandomBlocks(viewers)
+	w.tickScheduledBlocks(tick)
 }
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
 // execution.
-func (w *World) tickScheduledBlocks() {
-	currentNano := time.Now().UnixNano()
-
+func (w *World) tickScheduledBlocks(tick int64) {
 	w.updateMu.Lock()
-	for pos, unixNano := range w.blockUpdates {
-		if unixNano <= currentNano {
+	for pos, scheduledTick := range w.blockUpdates {
+		if scheduledTick <= tick {
 			w.updatePositions = append(w.updatePositions, pos)
 			delete(w.blockUpdates, pos)
 		}
@@ -728,6 +915,11 @@ func (w *World) tickScheduledBlocks() {
 	for _, pos := range w.updatePositions {
 		if ticker, ok := w.Block(pos).(ScheduledTicker); ok {
 			ticker.ScheduledTick(pos, w)
+		}
+		if liquid, ok := w.additionalLiquid(pos); ok {
+			if ticker, ok := liquid.(ScheduledTicker); ok {
+				ticker.ScheduledTick(pos, w)
+			}
 		}
 	}
 
@@ -741,13 +933,12 @@ type toTick struct {
 }
 
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
-// registered.
-func (w *World) tickRandomBlocks() {
+// registered from the viewers passed.
+func (w *World) tickRandomBlocks(viewers []Viewer) {
 	if w.simDistSq == 0 {
 		// NOP if the simulation distance is 0.
 		return
 	}
-	viewers := w.allViewers()
 
 	w.chunkMu.RLock()
 	for pos, c := range w.cCache {
@@ -975,7 +1166,7 @@ func (w *World) provider() Provider {
 // order to provide synchronisation safety.
 func (w *World) Handler() Handler {
 	w.handlerMu.RLock()
-	handler := w.hand
+	handler := w.handler
 	w.handlerMu.RUnlock()
 	return handler
 }

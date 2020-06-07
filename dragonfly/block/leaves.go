@@ -55,6 +55,17 @@ func (Leaves) LightDiffusionLevel() uint8 {
 	return 1
 }
 
+// CanDisplace ...
+func (Leaves) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return ok
+}
+
+// SideClosed ...
+func (Leaves) SideClosed(world.BlockPos, world.BlockPos) bool {
+	return false
+}
+
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {

@@ -667,6 +667,7 @@ func (p *Player) UseItem() {
 			p.swingArm()
 
 			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+			p.addNewItem(ctx)
 		}
 	})
 }
@@ -702,10 +703,11 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			ctx := &item.UseContext{}
+			ctx := &item.UseContext{NewItem: i}
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.swingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+				p.addNewItem(ctx)
 			}
 
 		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
@@ -746,10 +748,11 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
-			ctx := &item.UseContext{}
+			ctx := &item.UseContext{NewItem: i}
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.swingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+				p.addNewItem(ctx)
 			}
 		}
 	})
@@ -1068,9 +1071,6 @@ func (p *Player) World() *world.World {
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl64.Vec3 {
-	if v := p.pos.Load(); v == nil {
-		fmt.Println("v is nil")
-	}
 	return p.pos.Load().(mgl64.Vec3)
 }
 
@@ -1108,7 +1108,7 @@ func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick() {
-	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(block.Liquid); !ok {
+	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); !ok {
 		p.StopSwimming()
 	}
 
@@ -1254,6 +1254,20 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 		return s.Grow(-d)
 	}
 	return s
+}
+
+// addNewItem adds the new item of the context passed to the inventory.
+func (p *Player) addNewItem(ctx *item.UseContext) {
+	if !p.survival() || ctx.NewItem.Empty() {
+		return
+	}
+	held, left := p.HeldItems()
+	if held.Empty() {
+		p.SetHeldItems(ctx.NewItem, left)
+		return
+	}
+	// TODO: Drop item entities when inventory is full.
+	_, _ = p.Inventory().AddItem(ctx.NewItem)
 }
 
 // canReach checks if a player can reach a position with its current range. The range depends on if the player

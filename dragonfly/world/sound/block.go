@@ -1,10 +1,15 @@
 package sound
 
+import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/go-gl/mathgl/mgl64"
+)
+
 // BlockPlace is a sound sent when a block is placed.
 type BlockPlace struct {
 	// Block is the block which is placed, for which a sound should be played. The sound played depends on
 	// the block type.
-	Block block
+	Block world.Block
 
 	sound
 }
@@ -13,7 +18,7 @@ type BlockPlace struct {
 type BlockBreaking struct {
 	// Block is the block which is being broken, for which a sound should be played. The sound played depends
 	// on the block type.
-	Block block
+	Block world.Block
 
 	sound
 }
@@ -28,8 +33,8 @@ type ChestOpen struct{ sound }
 // ChestClose is played when a chest is closed.
 type ChestClose struct{ sound }
 
-type block interface {
-	EncodeBlock() (name string, properties map[string]interface{})
-}
+// sound implements the world.Sound interface.
+type sound struct{}
 
-func (BlockPlace) __() {}
+// Play ...
+func (sound) Play(*world.World, mgl64.Vec3) {}

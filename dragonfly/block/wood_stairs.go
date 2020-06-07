@@ -120,6 +120,25 @@ func toStairsDirection(v world.Face) int32 {
 	return int32(3 - (v - 2))
 }
 
+// CanDisplace ...
+func (WoodStairs) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return ok
+}
+
+// SideClosed ...
+func (s WoodStairs) SideClosed(pos, side world.BlockPos) bool {
+	if !s.UpsideDown && side[1] == pos[1]-1 {
+		// Non-upside down stairs have a closed side at the bottom.
+		return true
+	}
+	// TODO: Implement stairs rotation calculations.
+	if pos.Side(s.Facing) == side {
+		return true
+	}
+	return false
+}
+
 // allWoodStairs returns all states of wood stairs.
 func allWoodStairs() (stairs []world.Block) {
 	f := func(facing world.Face, upsideDown bool) {
