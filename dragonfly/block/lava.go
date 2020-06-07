@@ -107,7 +107,7 @@ func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.Bloc
 			w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)
 			ctx.Continue(func() {
 				w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-				w.PlaceBlock(pos, Cobblestone{})
+				w.PlaceBlock(pos, b)
 			})
 			return true
 		}
