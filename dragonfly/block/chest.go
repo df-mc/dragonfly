@@ -123,10 +123,8 @@ func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *
 	if !used {
 		return
 	}
-	if c.inventory == nil {
-		//noinspection GoAssignmentToReceiver
-		c = NewChest()
-	}
+	//noinspection GoAssignmentToReceiver
+	c = NewChest()
 	c.Facing = user.Facing().Opposite()
 
 	place(w, pos, c, user, ctx)
