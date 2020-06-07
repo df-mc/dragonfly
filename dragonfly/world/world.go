@@ -967,24 +967,25 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 		}
 
 		c.RLock()
+		subChunks := c.Sub()
+
 		// In total we generate 3 random blocks per sub chunk.
 		for j := uint32(0); j < atomic.LoadUint32(w.randomTickSpeed); j++ {
 			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
 			// obtain a total of 16 coordinates on one axis from one uint64. One for each sub chunk.
 			ra, rb, rc := int(w.r.Uint64()), int(w.r.Uint64()), int(w.r.Uint64())
 			for i := 0; i < 64; i += 4 {
-				if !c.SubChunkPresent(uint8(i >> 2)) {
+				sub := subChunks[i>>2]
+				if sub == nil {
 					// No sub chunk present, so skip it right away.
 					continue
 				}
-				x, y, z := ra>>i&0xf, (rb>>i&0xf)+i<<2, rc>>i&0xf
-
-				blockPos := BlockPos{int(pos[0]<<4) + x, 0 + y, int(pos[1]<<4) + z}
+				x, y, z := ra>>i&0xf, rb>>i&0xf, rc>>i&0xf
 
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := c.RuntimeID(uint8(blockPos[0]&15), uint8(blockPos[1]), uint8(blockPos[2]&15), 0)
+				rid := sub.RuntimeID(uint8(x), uint8(y), uint8(z), 0)
 				if rid == 0 {
 					// The block was air, take the fast route out.
 					continue
@@ -992,7 +993,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 				b, _ := blockByRuntimeID(rid)
 
 				if randomTicker, ok := b.(RandomTicker); ok {
-					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: blockPos})
+					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: BlockPos{int(pos[0]<<4) + x, y + i>>2, int(pos[1]<<4) + z}})
 				}
 			}
 		}

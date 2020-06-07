@@ -25,6 +25,11 @@ func New() *Chunk {
 	return &Chunk{blockEntities: make(map[[3]int]map[string]interface{})}
 }
 
+// Sub returns a list of all sub chunks present in the chunk.
+func (chunk *Chunk) Sub() []*SubChunk {
+	return chunk.sub[:]
+}
+
 // BiomeID returns the biome ID at a specific column in the chunk.
 func (chunk *Chunk) BiomeID(x, z uint8) uint8 {
 	return chunk.biomes[columnOffset(x, z)]
@@ -72,11 +77,6 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 		chunk.sub[i] = sub
 	}
 	sub.SetRuntimeID(x, y, z, layer, runtimeID)
-}
-
-// SubChunkPresent checks if a sub chunk is present at the y value passed.
-func (chunk *Chunk) SubChunkPresent(y uint8) bool {
-	return chunk.sub[y] != nil
 }
 
 // SetBlockNBT sets block NBT data to a given position in the chunk. If the data passed is nil, the block NBT
