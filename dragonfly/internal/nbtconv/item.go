@@ -17,6 +17,14 @@ func world_itemByName(name string, meta int16) (world.Item, bool)
 //noinspection ALL
 func world_itemToName(it world.Item) (name string, meta int16)
 
+//go:linkname item_enchantmentByID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.enchantmentByID
+//noinspection ALL
+func item_enchantmentByID(id int) (item.Enchantment, bool)
+
+//go:linkname item_idByEnchantment git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.idByEnchantment
+//noinspection ALL
+func item_idByEnchantment(ench item.Enchantment) (int, bool)
+
 //go:linkname item_values git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.values
 //noinspection ALL
 func item_values(s item.Stack) map[string]interface{}
@@ -57,6 +65,17 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 						loreLines = append(loreLines, l.(string))
 					}
 					*s = s.WithLore(loreLines...)
+				}
+			}
+		}
+	}
+	if enchantmentList, ok := data["ench"]; ok {
+		enchantments, ok := enchantmentList.([]map[string]interface{})
+		if ok {
+			for _, ench := range enchantments {
+				if e, ok := item_enchantmentByID(int(readInt16(ench, "id"))); ok {
+					e = e.WithLevel(int(readInt16(ench, "lvl")))
+					*s = s.WithEnchantment(e)
 				}
 			}
 		}
@@ -103,6 +122,18 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		} else {
 			m["display"] = map[string]interface{}{"Lore": s.Lore()}
 		}
+	}
+	if len(s.Enchantments()) != 0 {
+		var enchantments []map[string]interface{}
+		for _, ench := range s.Enchantments() {
+			if enchType, ok := item_idByEnchantment(ench); ok {
+				enchantments = append(enchantments, map[string]interface{}{
+					"id":  int16(enchType),
+					"lvl": int16(ench.Level()),
+				})
+			}
+		}
+		m["ench"] = enchantments
 	}
 	if len(item_values(s)) != 0 {
 		buf := new(bytes.Buffer)

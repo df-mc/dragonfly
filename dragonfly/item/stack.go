@@ -19,6 +19,8 @@ type Stack struct {
 	damage int
 
 	data map[string]interface{}
+
+	enchantments map[reflect.Type]Enchantment
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -215,6 +217,40 @@ func (s Stack) Value(key string) (val interface{}, ok bool) {
 	return val, ok
 }
 
+// WithEnchantment returns the current stack with the passed enchantment. If the enchantment is not compatible
+// with the item stack, it will not be applied and will return the original stack.
+func (s Stack) WithEnchantment(ench Enchantment) Stack {
+	if !ench.CompatibleWith(s) {
+		return s
+	}
+	s.enchantments = copyEnchantments(s.enchantments)
+	s.enchantments[reflect.TypeOf(ench)] = ench
+	return s
+}
+
+// WithoutEnchantment returns the current stack but with the passed enchantment removed.
+func (s Stack) WithoutEnchantment(enchant Enchantment) Stack {
+	s.enchantments = copyEnchantments(s.enchantments)
+	delete(s.enchantments, reflect.TypeOf(enchant))
+	return s
+}
+
+// Enchantment attempts to return an enchantment set to the Stack using Stack.WithEnchantment(). If an enchantment
+// is found, the enchantment and the bool true is returned.
+func (s Stack) Enchantment(enchant Enchantment) (Enchantment, bool) {
+	ench, ok := s.enchantments[reflect.TypeOf(enchant)]
+	return ench, ok
+}
+
+// Enchantments returns an array of all Enchantments on the item.
+func (s Stack) Enchantments() []Enchantment {
+	e := make([]Enchantment, 0, len(s.enchantments))
+	for _, ench := range s.enchantments {
+		e = append(e, ench)
+	}
+	return e
+}
+
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
 // many items in it as possible to fit in the stack, according to a max count of either 64 or otherwise as
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of
@@ -294,6 +330,15 @@ func format(a []interface{}) string {
 // copyMap makes a copy of the map passed. It does not recursively copy the map.
 func copyMap(m map[string]interface{}) map[string]interface{} {
 	cp := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
+}
+
+// copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.
+func copyEnchantments(m map[reflect.Type]Enchantment) map[reflect.Type]Enchantment {
+	cp := make(map[reflect.Type]Enchantment, len(m))
 	for k, v := range m {
 		cp[k] = v
 	}
