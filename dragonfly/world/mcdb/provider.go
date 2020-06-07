@@ -31,7 +31,7 @@ const chunkVersion = 15
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
 // error is returned.
 func New(dir string) (*Provider, error) {
-	_ = os.MkdirAll(filepath.Join(dir, "db"), 0644)
+	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
 	p := &Provider{dir: dir}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
