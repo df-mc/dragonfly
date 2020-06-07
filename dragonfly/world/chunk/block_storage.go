@@ -110,14 +110,8 @@ func (storage *BlockStorage) resize(newPaletteSize paletteSize) {
 // this position is in in the word at wordOffset.
 func (storage *BlockStorage) offsets(x, y, z byte) (wordOffset uint16, bitOffset uint16) {
 	// Offset is the offset in bits that the X, Y and Z result in.
-	offset := storage.offset(x, y, z) * storage.bitsPerBlock
+	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
 	return offset / storage.filledBitsPerWord, offset % storage.filledBitsPerWord
-}
-
-// offset calculates the offset at which an x, y and z are stored in the block storage. The x, y and z are
-// automatically converted to block storage relative values. (0-15)
-func (storage *BlockStorage) offset(x, y, z byte) uint16 {
-	return (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 }
 
 // compact clears unused indexes in the palette by scanning for usages in the block storage. This is a

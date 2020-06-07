@@ -135,12 +135,6 @@ func (p ChunkPos) Z() int32 {
 	return p[1]
 }
 
-// BlockPos returns a block position that represents the corner of the chunk, where the X and Z of the chunk
-// position are multiplied by 16. The y value of the block position returned is always 0.
-func (p ChunkPos) BlockPos() BlockPos {
-	return BlockPos{int(p[0] << 4), 0, int(p[1] << 4)}
-}
-
 // Hash returns the hash of the chunk position. It is essentially the bytes of the X and Z values of the
 // position following each other.
 func (p ChunkPos) Hash() string {

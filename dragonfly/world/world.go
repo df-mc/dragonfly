@@ -941,10 +941,18 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 	}
 
 	w.chunkMu.RLock()
-	for pos, c := range w.cCache {
+	for pos := range w.cCache {
+		c := w.cCache[pos]
+
 		withinSimDist := false
 		for _, viewer := range viewers {
-			chunkPos := chunkPosFromVec3(viewer.Position())
+			vPos := viewer.Position()
+			chunkPos := ChunkPos{
+				// Technically we could obtain the wrong chunk position here due to truncating, but this
+				// inaccuracy doesn't matter and it allows us to cut a corner.
+				int32(vPos[0]) >> 4,
+				int32(vPos[2]) >> 4,
+			}
 			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
 			if (xDiff*xDiff)+(zDiff*zDiff) <= w.simDistSq {
 				// The chunk was within the simulation distance of at least one viewer, so we can proceed to
@@ -971,7 +979,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 				}
 				x, y, z := ra>>i&0xf, (rb>>i&0xf)+i<<2, rc>>i&0xf
 
-				blockPos := pos.BlockPos().Add(BlockPos{x, y, z})
+				blockPos := BlockPos{int(pos[0]<<4) + x, 0 + y, int(pos[1]<<4) + z}
 
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
