@@ -63,6 +63,17 @@ func (c Chest) AABB() []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
+// CanDisplace ...
+func (Chest) CanDisplace(b world.Liquid) bool {
+	_, water := b.(Water)
+	return water
+}
+
+// SideClosed ...
+func (Chest) SideClosed(world.BlockPos, world.BlockPos) bool {
+	return false
+}
+
 // open opens the chest, displaying the animation and playing a sound.
 func (c Chest) open(w *world.World, pos world.BlockPos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
