@@ -359,6 +359,9 @@ func (s *Session) removeFromPlayerList(session *Session) {
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if atomic.LoadUint32(s.inTransaction) == 1 {
+			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+				viewer.ViewEntityItems(s.c)
+			}
 			return
 		}
 		s.writePacket(&packet.InventorySlot{
@@ -374,6 +377,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
 		if atomic.LoadUint32(s.inTransaction) == 1 {
+			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+				viewer.ViewEntityItems(s.c)
+			}
 			return
 		}
 		s.writePacket(&packet.InventorySlot{
@@ -387,6 +393,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
 		if atomic.LoadUint32(s.inTransaction) == 1 {
+			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+				viewer.ViewEntityArmour(s.c)
+			}
 			return
 		}
 		s.writePacket(&packet.InventorySlot{
