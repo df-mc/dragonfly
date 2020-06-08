@@ -30,6 +30,7 @@ type World struct {
 
 	time        *int64
 	timeStopped *uint32
+	unixTime    *int64
 
 	gameModeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode
@@ -47,8 +48,9 @@ type World struct {
 	// cCache holds a cache of chunks currently loaded. These chunks are cleared from this map after a while
 	// of not being used.
 	cCache map[ChunkPos]*chunk.Chunk
-	// cTimes holds the times since last usage of the chunks at the same index in the map above.
-	cTimes map[ChunkPos]time.Time
+	// cTimes holds the unix times on which chunks with a chunk position will be closed and saved. These
+	// timestamps are updated every time the chunk at the position is used.
+	cTimes map[ChunkPos]int64
 
 	genMu sync.RWMutex
 	gen   Generator
@@ -83,9 +85,10 @@ type World struct {
 // By default, the name of the world will be 'World'.
 func New(log *logrus.Logger, simulationDistance int) *World {
 	randomTickSpeed := uint32(3)
+	t := time.Now().Unix()
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		r:               rand.New(rand.NewSource(time.Now().Unix())),
+		r:               rand.New(rand.NewSource(t)),
 		viewers:         map[ChunkPos][]Viewer{},
 		entities:        map[ChunkPos][]Entity{},
 		entityBlocks:    map[ChunkPos]map[BlockPos]Block{},
@@ -100,6 +103,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		timeStopped:     new(uint32),
 		simDistSq:       int32(simulationDistance * simulationDistance),
 		randomTickSpeed: &randomTickSpeed,
+		unixTime:        &t,
 		log:             log,
 		stopTick:        ctx,
 		cancelTick:      cancel,
@@ -868,6 +872,7 @@ func (w *World) startTicking() {
 	for {
 		select {
 		case <-ticker.C:
+			atomic.StoreInt64(w.unixTime, time.Now().Unix())
 			w.tick()
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
@@ -965,12 +970,12 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 			// No viewers in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
+		tickSpeed := atomic.LoadUint32(w.randomTickSpeed)
 
 		c.RLock()
 		subChunks := c.Sub()
-
 		// In total we generate 3 random blocks per sub chunk.
-		for j := uint32(0); j < atomic.LoadUint32(w.randomTickSpeed); j++ {
+		for j := uint32(0); j < tickSpeed; j++ {
 			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
 			// obtain a total of 16 coordinates on one axis from one uint64. One for each sub chunk.
 			ra, rb, rc := int(w.r.Uint64()), int(w.r.Uint64()), int(w.r.Uint64())
@@ -980,12 +985,17 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 					// No sub chunk present, so skip it right away.
 					continue
 				}
+				layers := sub.Layers()
+				if len(layers) == 0 {
+					// No layers present, so skip it right away.
+					continue
+				}
 				x, y, z := ra>>i&0xf, rb>>i&0xf, rc>>i&0xf
 
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := sub.RuntimeID(uint8(x), uint8(y), uint8(z), 0)
+				rid := layers[0].RuntimeID(uint8(x), uint8(y), uint8(z))
 				if rid == 0 {
 					// The block was air, take the fast route out.
 					continue
@@ -1202,7 +1212,7 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunk.Chunk, bool) {
 func (w *World) storeChunkToCache(pos ChunkPos, c *chunk.Chunk) {
 	w.chunkMu.Lock()
 	w.cCache[pos] = c
-	w.cTimes[pos] = time.Now().Add(time.Minute * 5)
+	w.cTimes[pos] = atomic.LoadInt64(w.unixTime) + 5*60
 	w.chunkMu.Unlock()
 }
 
@@ -1249,9 +1259,12 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (*chunk.Chunk, error) {
 	if needsLight {
 		w.calculateLight(c, pos)
 	}
-
-	// Update the timestamp to that it doesn't expire after we just used it.
-	w.storeChunkToCache(pos, c)
+	if ok {
+		// A chunk existed at the position, so we update the timestamp and return it.
+		w.chunkMu.Lock()
+		w.cTimes[pos] = atomic.LoadInt64(w.unixTime) + 5*60
+		w.chunkMu.Unlock()
+	}
 
 	if readOnly {
 		c.RLock()
@@ -1410,7 +1423,7 @@ func (w *World) saveChunk(pos ChunkPos, c *chunk.Chunk) {
 func (w *World) initChunkCache() {
 	w.chunkMu.Lock()
 	w.cCache = make(map[ChunkPos]*chunk.Chunk)
-	w.cTimes = make(map[ChunkPos]time.Time)
+	w.cTimes = make(map[ChunkPos]int64)
 	w.chunkMu.Unlock()
 }
 
@@ -1424,10 +1437,10 @@ func (w *World) chunkCacheJanitor() {
 			w.chunkMu.Lock()
 			for pos, t := range w.cTimes {
 				if len(w.chunkViewers(pos)) != 0 {
-					w.cTimes[pos] = time.Now().Add(time.Minute * 5)
+					w.cTimes[pos] = atomic.LoadInt64(w.unixTime) + 5*60
 					continue
 				}
-				if time.Until(t) <= 0 {
+				if t <= atomic.LoadInt64(w.unixTime) {
 					chunksToRemove[pos] = w.cCache[pos]
 					delete(w.cTimes, pos)
 					delete(w.cCache, pos)
