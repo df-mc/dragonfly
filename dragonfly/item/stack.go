@@ -44,7 +44,7 @@ func (s Stack) Count() int {
 // MaxCount returns the maximum count that the stack is able to hold when added to an inventory or when added
 // to an item entity.
 func (s Stack) MaxCount() int {
-	if counter, ok := s.Item().(MaxCounter); ok {
+	if counter, ok := s.item.(MaxCounter); ok {
 		return counter.MaxCount()
 	}
 	return 64

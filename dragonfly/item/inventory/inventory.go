@@ -99,7 +99,6 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 			// This slot was empty, and we should first try to add the item stack to existing stacks.
 			continue
 		}
-
 		a, b := invIt.AddStack(it)
 		f := inv.setItem(slot, a)
 		//noinspection GoDeferInLoop
@@ -117,8 +116,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 			// We can only use empty slots now: All existing stacks have already been filled up.
 			continue
 		}
-		invIt = it.Grow(-math.MaxInt32)
-		a, b := invIt.AddStack(it)
+		a, b := it.Grow(-math.MaxInt32).AddStack(it)
 
 		f := inv.setItem(slot, a)
 		//noinspection GoDeferInLoop
@@ -213,6 +211,9 @@ func (inv *Inventory) Clear() {
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
 func (inv *Inventory) setItem(slot int, item item.Stack) func() {
+	if item.Count() > item.MaxCount() {
+		item = item.Grow(item.MaxCount() - item.Count())
+	}
 	inv.slots[slot] = item
 	return func() {
 		inv.f(slot, item)
