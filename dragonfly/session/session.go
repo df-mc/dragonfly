@@ -52,6 +52,8 @@ type Session struct {
 
 	inTransaction, containerOpened, openedWindowID *uint32
 	openedWindow, openedPos                        atomic.Value
+
+	swingingArm *uint32
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -92,6 +94,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		inTransaction:          new(uint32),
 		containerOpened:        new(uint32),
 		openedWindowID:         new(uint32),
+		swingingArm:            new(uint32),
 		conn:                   conn,
 		log:                    log,
 		currentEntityRuntimeID: 1,

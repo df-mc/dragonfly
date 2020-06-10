@@ -69,6 +69,9 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 // handleUseItemTransaction
 func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.UseItemTransactionData, s *Session) error {
 	pos := world.BlockPos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
+	atomic.StoreUint32(s.swingingArm, 1)
+	defer atomic.StoreUint32(s.swingingArm, 0)
+
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)

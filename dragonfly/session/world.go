@@ -338,6 +338,9 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 	switch act := a.(type) {
 	case action.SwingArm:
 		if _, ok := e.(Controllable); ok {
+			if s.entityRuntimeID(e) == selfEntityRuntimeID && atomic.LoadUint32(s.swingingArm) != 0 {
+				return
+			}
 			s.writePacket(&packet.Animate{
 				ActionType:      packet.AnimateActionSwingArm,
 				EntityRuntimeID: s.entityRuntimeID(e),
