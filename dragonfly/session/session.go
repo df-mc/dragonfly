@@ -54,6 +54,10 @@ type Session struct {
 	openedWindow, openedPos                        atomic.Value
 
 	swingingArm *uint32
+
+	pingID *int64
+	pingMu sync.Mutex
+	pings  map[int64]chan struct{}
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -88,8 +92,10 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
+		pings:                  map[int64]chan struct{}{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
+		pingID:                 new(int64),
 		heldSlot:               new(uint32),
 		inTransaction:          new(uint32),
 		containerOpened:        new(uint32),
@@ -164,6 +170,27 @@ func (s *Session) Close() error {
 	return nil
 }
 
+// Ping sends a ping packet to the client and returns once a response is received.
+func (s *Session) Ping() {
+	// The client for some reason clears out the lowest 3 numbers, so we just multiply by 1000.
+	id := atomic.AddInt64(s.pingID, 1) * 1000
+	s.writePacket(&packet.NetworkStackLatency{
+		Timestamp:     id,
+		NeedsResponse: true,
+	})
+	c := make(chan struct{}, 1)
+	s.pingMu.Lock()
+	s.pings[id] = c
+	s.pingMu.Unlock()
+
+	select {
+	case <-c:
+	case <-time.After(time.Second * 15):
+		s.log.Debugf("player %v has too much latency: disconnecting player", s.c.Name())
+		_ = s.c.Close()
+	}
+}
+
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
@@ -236,6 +263,7 @@ func (s *Session) registerHandlers() {
 		packet.IDMobEquipment:         &MobEquipmentHandler{},
 		packet.IDModalFormResponse:    &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
 		packet.IDMovePlayer:           nil,
+		packet.IDNetworkStackLatency:  &NetworkStackLatencyHandler{},
 		packet.IDPlayerAction:         &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:      &PlayerAuthInputHandler{},
 		packet.IDRequestChunkRadius:   &RequestChunkRadiusHandler{},

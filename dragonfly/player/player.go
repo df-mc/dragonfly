@@ -1106,6 +1106,24 @@ func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 	p.session().OpenBlockContainer(pos)
 }
 
+// Ping sends a ping to the player. The method blocks the caller until a response from the client is received,
+// after which the RTT (time from server -> client -> server) will be returned. Because of the blocking nature
+// of this method, this should be called on another goroutine. The latency may be calculated by dividing the
+// RTT returned by 2.
+// If the Player is not connected to a client, the duration returned will be 0.
+// If the player's latency is too high (15 seconds to reply to the ping and above), the player will be
+// disconnected.
+// The latency returned by this method is generally higher than the actual network latency, due to the
+// overhead of the Minecraft layer. The actual network latency is generally roughly 20-30 ms lower.
+func (p *Player) Ping() time.Duration {
+	if p.session() == session.Nop {
+		return 0
+	}
+	before := time.Now()
+	p.session().Ping()
+	return time.Since(before)
+}
+
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick() {
 	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); !ok {
