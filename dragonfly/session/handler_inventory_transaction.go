@@ -48,6 +48,9 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 
 // handleUseItemOnEntityTransaction
 func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *protocol.UseItemOnEntityTransactionData, s *Session) error {
+	atomic.StoreUint32(s.swingingArm, 1)
+	defer atomic.StoreUint32(s.swingingArm, 0)
+
 	e, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
 	if !ok {
 		return fmt.Errorf("invalid entity interaction: no entity found with runtime ID %v", data.TargetEntityRuntimeID)
