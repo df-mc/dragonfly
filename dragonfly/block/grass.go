@@ -13,8 +13,8 @@ type Grass struct {
 	Path bool
 }
 
-// ScheduledTick handles the turning from grass path into dirt if a block is placed on top of it.
-func (g Grass) ScheduledTick(pos world.BlockPos, w *world.World) {
+// NeighbourUpdateTick handles the turning from grass path into dirt if a block is placed on top of it.
+func (g Grass) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
 	if !g.Path {
 		return
 	}
