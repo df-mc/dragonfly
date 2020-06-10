@@ -1,10 +1,5 @@
 package chunk
 
-import (
-	"reflect"
-	"unsafe"
-)
-
 const (
 	// uint32ByteSize is the amount of bytes in a uint32.
 	uint32ByteSize = 4
@@ -71,7 +66,7 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 // offset is not the runtime ID at this offset, but merely an offset in the palette, pointing to a runtime ID.
 func (storage *BlockStorage) paletteOffset(x, y, z byte) uint16 {
 	uint32Offset, bitOffset := storage.offsets(x, y, z)
-	return extractUint16(*(*uint32)(unsafe.Pointer((*reflect.SliceHeader)(unsafe.Pointer(&storage.blocks)).Data + uintptr(uint32Offset*4))), bitOffset, storage.bitsPerBlock)
+	return extractUint16(storage.blocks[uint32Offset], bitOffset, storage.bitsPerBlock)
 }
 
 // setPaletteOffset sets the palette offset at a given x, y and z to paletteOffset. This offset should point
