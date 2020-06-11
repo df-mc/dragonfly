@@ -8,6 +8,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/chat"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -36,6 +37,9 @@ type Session struct {
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
+
+	teleportMu  sync.Mutex
+	teleportPos *mgl64.Vec3
 
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.

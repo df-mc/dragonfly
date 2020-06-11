@@ -181,6 +181,10 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
+
+		s.teleportMu.Lock()
+		s.teleportPos = &position
+		s.teleportMu.Unlock()
 	}
 
 	switch e.(type) {
