@@ -21,6 +21,12 @@ func (aabb AABB) Grow(x float64) AABB {
 	return AABB{min: aabb.min.Sub(add), max: aabb.max.Add(add)}
 }
 
+// GrowVertically grows the bounding box by x on the vertical axis and returns the new bounding box.
+func (aabb AABB) GrowVertically(x float64) AABB {
+	add := mgl64.Vec3{0, x}
+	return AABB{min: aabb.min.Sub(add), max: aabb.max.Add(add)}
+}
+
 // Min returns the minimum coordinate of the bounding box.
 func (aabb AABB) Min() mgl64.Vec3 {
 	return aabb.min

@@ -1153,7 +1153,7 @@ func (p *Player) checkOnGround() bool {
 					aabbList = aabb.AABB()
 				}
 				for _, aabb := range aabbList {
-					if aabb.Grow(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 						return true
 					}
 				}
