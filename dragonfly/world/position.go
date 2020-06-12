@@ -55,17 +55,17 @@ func (p BlockPos) Vec3Centre() mgl64.Vec3 {
 // Side returns the position on the side of this block position, at a specific face.
 func (p BlockPos) Side(face Face) BlockPos {
 	switch face {
-	case Up:
+	case FaceUp:
 		p[1]++
-	case Down:
+	case FaceDown:
 		p[1]--
-	case North:
+	case FaceNorth:
 		p[2]--
-	case South:
+	case FaceSouth:
 		p[2]++
-	case West:
+	case FaceWest:
 		p[0]--
-	case East:
+	case FaceEast:
 		p[0]++
 	}
 	return p

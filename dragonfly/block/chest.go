@@ -19,7 +19,7 @@ import (
 // The empty value of Chest is not valid. It must be created using item.NewChest().
 type Chest struct {
 	// Facing is the direction that the chest is facing.
-	Facing world.Face
+	Facing world.Direction
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
 	// include colour codes.
 	CustomName string
@@ -198,5 +198,5 @@ func (Chest) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:chest", map[string]interface{}{"facing_direction": int32(c.Facing)}
+	return "minecraft:chest", map[string]interface{}{"facing_direction": 2 + int32(c.Facing)}
 }

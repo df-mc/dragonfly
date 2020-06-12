@@ -1058,7 +1058,7 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 }
 
 // Facing returns the horizontal direction that the player is facing.
-func (p *Player) Facing() world.Face {
+func (p *Player) Facing() world.Direction {
 	return entity.Facing(p)
 }
 

@@ -26,8 +26,8 @@ type WoodSlab struct {
 func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	clickedBlock := w.Block(pos)
 	if clickedSlab, ok := clickedBlock.(WoodSlab); ok && !s.Double {
-		if (face == world.Up && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.UpsideDown) ||
-			(face == world.Down && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.UpsideDown) {
+		if (face == world.FaceUp && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.UpsideDown) ||
+			(face == world.FaceDown && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.UpsideDown) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
 
@@ -49,7 +49,7 @@ func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 	if !used {
 		return
 	}
-	if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
+	if face == world.FaceDown || (clickPos[1] > 0.5 && face != world.FaceUp) {
 		s.UpsideDown = true
 	}
 

@@ -17,7 +17,7 @@ type WoodStairs struct {
 	// of the block.
 	UpsideDown bool
 	// Facing is the direction that the full side of the stairs is facing.
-	Facing world.Face
+	Facing world.Direction
 }
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
@@ -28,7 +28,7 @@ func (s WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl
 		return
 	}
 	s.Facing = user.Facing()
-	if face == world.Down || (clickPos[1] > 0.5 && face != world.Up) {
+	if face == world.FaceDown || (clickPos[1] > 0.5 && face != world.FaceUp) {
 		s.UpsideDown = true
 	}
 
@@ -116,8 +116,8 @@ func (s WoodStairs) EncodeBlock() (name string, properties map[string]interface{
 }
 
 // toStairDirection converts a facing to a stairs direction for Minecraft.
-func toStairsDirection(v world.Face) int32 {
-	return int32(3 - (v - 2))
+func toStairsDirection(v world.Direction) int32 {
+	return int32(3 - v)
 }
 
 // CanDisplace ...
@@ -133,7 +133,7 @@ func (s WoodStairs) SideClosed(pos, side world.BlockPos) bool {
 		return true
 	}
 	// TODO: Implement stairs rotation calculations.
-	if pos.Side(s.Facing) == side {
+	if pos.Side(s.Facing.Face()) == side {
 		return true
 	}
 	return false
@@ -141,7 +141,7 @@ func (s WoodStairs) SideClosed(pos, side world.BlockPos) bool {
 
 // allWoodStairs returns all states of wood stairs.
 func allWoodStairs() (stairs []world.Block) {
-	f := func(facing world.Face, upsideDown bool) {
+	f := func(facing world.Direction, upsideDown bool) {
 		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Oak()})
 		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Spruce()})
 		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Birch()})
@@ -149,7 +149,7 @@ func allWoodStairs() (stairs []world.Block) {
 		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.Acacia()})
 		stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: wood.DarkOak()})
 	}
-	for i := world.Face(2); i <= 5; i++ {
+	for i := world.Direction(0); i <= 3; i++ {
 		f(i, true)
 		f(i, false)
 	}

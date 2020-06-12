@@ -21,7 +21,7 @@ func init() {
 	world.RegisterBlock(allLogs()...)
 	world.RegisterBlock(allLeaves()...)
 	world.RegisterBlock(Bedrock{}, Bedrock{InfiniteBurning: true})
-	world.RegisterBlock(Chest{Facing: world.Down}, Chest{Facing: world.Up}, Chest{Facing: world.East}, Chest{Facing: world.West}, Chest{Facing: world.North}, Chest{Facing: world.South})
+	world.RegisterBlock(Chest{Facing: world.East}, Chest{Facing: world.West}, Chest{Facing: world.North}, Chest{Facing: world.South})
 	world.RegisterBlock(allConcrete()...)
 	world.RegisterBlock(allLight()...)
 	world.RegisterBlock(allPlanks()...)

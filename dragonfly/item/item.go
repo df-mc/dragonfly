@@ -76,7 +76,7 @@ type nameable interface {
 // which interact with the world using an item.
 type User interface {
 	// Facing returns the direction that the user is facing.
-	Facing() world.Face
+	Facing() world.Direction
 	// Position returns the current position of the user in the world.
 	Position() mgl64.Vec3
 	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and

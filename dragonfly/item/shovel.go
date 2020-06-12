@@ -18,7 +18,7 @@ type Shovel struct {
 // UseOnBlock handles the creation of grass path blocks from grass blocks.
 func (s Shovel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if grass := w.Block(pos); grass == item_internal.Grass {
-		if face == world.Down {
+		if face == world.FaceDown {
 			// Grass paths are not created when the bottom face is clicked.
 			return false
 		}

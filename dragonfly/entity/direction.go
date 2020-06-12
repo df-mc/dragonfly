@@ -8,7 +8,7 @@ import (
 )
 
 // Facing returns the horizontal direction that an entity is facing.
-func Facing(e world.Entity) world.Face {
+func Facing(e world.Entity) world.Direction {
 	yaw := math.Mod(e.Yaw()-90, 360)
 	if yaw < 0 {
 		yaw += 360

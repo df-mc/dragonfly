@@ -56,7 +56,7 @@ func firstReplaceable(w *world.World, pos world.BlockPos, face world.Face, with 
 	if replaceable(w, pos, with) {
 		// A replaceable block was clicked, so we can replace it. This will then be assumed to be placed on
 		// the top face. (Torches, for example, will get attached to the floor when clicking tall grass.)
-		return pos, world.Up, true
+		return pos, world.FaceUp, true
 	}
 	side := pos.Side(face)
 	if replaceable(w, side, with) {

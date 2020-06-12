@@ -73,7 +73,7 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 		})
 		if count >= 2 {
 			func() {
-				if liquid, ok := wo.Liquid(pos.Side(world.Down)); ok {
+				if liquid, ok := wo.Liquid(pos.Side(world.FaceDown)); ok {
 					if waterBelow, ok := liquid.(Water); ok && waterBelow.Falling {
 						return
 					}
@@ -102,7 +102,7 @@ func (w Water) Harden(pos world.BlockPos, wo *world.World, flownIntoBy *world.Bl
 	if flownIntoBy == nil {
 		return false
 	}
-	if lava, ok := wo.Block(pos.Side(world.Up)).(Lava); ok {
+	if lava, ok := wo.Block(pos.Side(world.FaceUp)).(Lava); ok {
 		ctx := event.C()
 		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{})
 		ctx.Continue(func() {
