@@ -31,7 +31,7 @@ func canAddArmour(s item.Stack, slot int) bool {
 	switch slot {
 	case 0:
 		_, ok = i.(item.Helmet)
-		// TODO: Allow turtle helmets here.
+		// TODO: Allow turtle helmets and pumpkins here.
 	case 1:
 		_, ok = i.(item.Chestplate)
 		// TODO: Allow elytra here.
