@@ -15,9 +15,10 @@ import (
 // an inventory is invalid. Use New() to obtain a new inventory.
 // Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
-	mu    sync.RWMutex
-	slots []item.Stack
-	f     func(slot int, item item.Stack)
+	mu     sync.RWMutex
+	slots  []item.Stack
+	f      func(slot int, item item.Stack)
+	canAdd func(s item.Stack, slot int) bool
 }
 
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
@@ -35,7 +36,7 @@ func New(size int, f func(slot int, item item.Stack)) *Inventory {
 	if f == nil {
 		f = func(slot int, item item.Stack) {}
 	}
-	return &Inventory{slots: make([]item.Stack, size), f: f}
+	return &Inventory{slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
@@ -211,6 +212,9 @@ func (inv *Inventory) Clear() {
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
 func (inv *Inventory) setItem(slot int, item item.Stack) func() {
+	if !inv.canAdd(item, slot) {
+		return func() {}
+	}
 	if item.Count() > item.MaxCount() {
 		item = item.Grow(item.MaxCount() - item.Count())
 	}

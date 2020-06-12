@@ -16,9 +16,31 @@ type Armour struct {
 // not valid for usage.
 // The function passed is called when a slot is changed. It may be nil to not call anything.
 func NewArmour(f func(slot int, item item.Stack)) *Armour {
-	return &Armour{
-		inv: New(4, f),
+	inv := New(4, f)
+	inv.canAdd = canAddArmour
+	return &Armour{inv: inv}
+}
+
+// canAddArmour checks if the item passed can be worn as armour in the slot passed.
+func canAddArmour(s item.Stack, slot int) bool {
+	ok := s.Empty()
+	if ok {
+		return true
 	}
+	i := s.Item()
+	switch slot {
+	case 0:
+		_, ok = i.(item.Helmet)
+		// TODO: Allow turtle helmets here.
+	case 1:
+		_, ok = i.(item.Chestplate)
+		// TODO: Allow elytra here.
+	case 2:
+		_, ok = i.(item.Leggings)
+	case 3:
+		_, ok = i.(item.Boots)
+	}
+	return ok
 }
 
 // SetHelmet sets the item stack passed as the helmet in the inventory.
