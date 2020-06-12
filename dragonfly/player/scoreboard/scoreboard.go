@@ -96,10 +96,10 @@ func (board *Scoreboard) Lines() []string {
 // If the string passed is already of the same length as the name of the scoreboard or longer, the string will
 // receive one space of padding.
 func (board *Scoreboard) pad(s string) string {
-	if len(board.name)-len(s)-1 <= 0 {
-		return s + " "
+	if len(board.name)-len(s)-2 <= 0 {
+		return " " + s + " "
 	}
-	return s + strings.Repeat(" ", len(board.name)-len(s)-1)
+	return " " + s + strings.Repeat(" ", len(board.name)-len(s)-2)
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
