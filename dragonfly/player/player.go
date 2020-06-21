@@ -910,8 +910,8 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 // This returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
 	blockBoxes := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-	if aabb, ok := b.(physics.AABBer); ok {
-		blockBoxes = aabb.AABB()
+	if aabb, ok := b.(block.AABBer); ok {
+		blockBoxes = aabb.AABB(pos, p.World())
 	}
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
@@ -923,12 +923,7 @@ func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
 			// Placing blocks inside of item entities is fine.
 			continue
 		}
-		boxes := e.AABB()
-		for i, box := range boxes {
-			boxes[i] = box.Translate(e.Position())
-		}
-
-		if physics.AnyIntersections(blockBoxes, boxes) {
+		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
 			return true
 		}
 	}
@@ -1140,7 +1135,7 @@ func (p *Player) Tick() {
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
 	pos := p.Position()
-	pAABB := p.AABB()[0].Translate(pos)
+	pAABB := p.AABB().Translate(pos)
 	min, max := pAABB.Min(), pAABB.Max()
 
 	for x := min[0]; x <= max[0]+1; x++ {
@@ -1149,8 +1144,8 @@ func (p *Player) checkOnGround() bool {
 				bPos := world.BlockPosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
 				aabbList := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-				if aabb, ok := b.(physics.AABBer); ok {
-					aabbList = aabb.AABB()
+				if aabb, ok := b.(block.AABBer); ok {
+					aabbList = aabb.AABB(bPos, p.World())
 				}
 				for _, aabb := range aabbList {
 					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
@@ -1176,14 +1171,14 @@ func (p *Player) SetVelocity(v mgl64.Vec3) {
 }
 
 // AABB returns the axis aligned bounding box of the player.
-func (p *Player) AABB() []physics.AABB {
+func (p *Player) AABB() physics.AABB {
 	switch {
 	case atomic.LoadUint32(p.sneaking) == 1:
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.65, 0.3})}
+		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.65, 0.3})
 	case atomic.LoadUint32(p.swimming) == 1:
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 0.6, 0.3})}
+		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 0.6, 0.3})
 	default:
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.8, 0.3})}
+		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.8, 0.3})
 	}
 }
 

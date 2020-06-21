@@ -1,6 +1,7 @@
 package block
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
@@ -79,4 +80,11 @@ func place(w *world.World, pos world.BlockPos, b world.Block, user item.User, ct
 // placed checks if an item was placed with the use context passed.
 func placed(ctx *item.UseContext) bool {
 	return ctx.CountSub > 0
+}
+
+// AABBer represents a block that has one or multiple specific Axis Aligned Bounding Boxes. These boxes are
+// used to calculate collision.
+type AABBer interface {
+	// AABB returns all the axis aligned bounding boxes of the block.
+	AABB(pos world.BlockPos, w *world.World) []physics.AABB
 }

@@ -83,7 +83,7 @@ func (s WoodSlab) LightDiffusionLevel() uint8 {
 }
 
 // AABB ...
-func (s WoodSlab) AABB() []physics.AABB {
+func (s WoodSlab) AABB(world.BlockPos, *world.World) []physics.AABB {
 	if s.Double {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 	}
@@ -145,7 +145,7 @@ func (s WoodSlab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s WoodSlab) SideClosed(pos, side world.BlockPos) bool {
+func (s WoodSlab) SideClosed(pos, side world.BlockPos, w *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.UpsideDown && side[1] == pos[1]-1
 }

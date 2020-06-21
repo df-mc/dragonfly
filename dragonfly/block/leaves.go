@@ -62,7 +62,7 @@ func (Leaves) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (Leaves) SideClosed(world.BlockPos, world.BlockPos) bool {
+func (Leaves) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 

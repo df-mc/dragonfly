@@ -67,7 +67,7 @@ func (it *Item) Tick() {
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby() {
-	for _, e := range it.World().EntitiesWithin(it.AABB()[0].Translate(it.Position()).Grow(0.75)) {
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.Position()).Grow(0.75)) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
@@ -151,8 +151,8 @@ func (it *Item) Yaw() float64 { return 0 }
 func (it *Item) Pitch() float64 { return 0 }
 
 // AABB ...
-func (it *Item) AABB() []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})}
+func (it *Item) AABB() physics.AABB {
+	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
 }
 
 // State ...

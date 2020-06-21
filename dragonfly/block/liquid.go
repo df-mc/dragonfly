@@ -34,7 +34,7 @@ func tickLiquid(b world.Liquid, pos world.BlockPos, w *world.World) {
 		b = b.WithDepth(8, true)
 	} else if canFlowBelow {
 		below := pos.Add(world.BlockPos{0, -1})
-		if displacer == nil || !displacer.SideClosed(pos, below) {
+		if displacer == nil || !displacer.SideClosed(pos, below, w) {
 			flowInto(b.WithDepth(8, true), pos, below, w, true)
 		}
 	}
@@ -69,7 +69,7 @@ func source(b world.Liquid) bool {
 func spreadOutwards(b world.Liquid, pos world.BlockPos, w *world.World, displacer world.LiquidDisplacer) {
 	pos.Neighbours(func(neighbour world.BlockPos) {
 		if neighbour[1] == pos[1] {
-			if displacer == nil || !displacer.SideClosed(pos, neighbour) {
+			if displacer == nil || !displacer.SideClosed(pos, neighbour, w) {
 				flowInto(b, pos, neighbour, w, false)
 			}
 		}
@@ -87,7 +87,7 @@ func sourceAround(b world.Liquid, pos world.BlockPos, w *world.World) (sourcePre
 		if !ok || side.LiquidType() != b.LiquidType() {
 			return
 		}
-		if displacer, ok := w.Block(neighbour).(world.LiquidDisplacer); ok && displacer.SideClosed(neighbour, pos) {
+		if displacer, ok := w.Block(neighbour).(world.LiquidDisplacer); ok && displacer.SideClosed(neighbour, pos, w) {
 			// The side towards this liquid was closed, so this cannot function as a source for this
 			// liquid.
 			return
@@ -176,25 +176,25 @@ func calculateLiquidPaths(b world.Liquid, pos world.BlockPos, w *world.World, di
 		}
 		node := queue.Front()
 		neighA, neighB, neighC, neighD := node.neighbours(decay * 2)
-		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighA.x, pos[1], neighA.z})) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighA.x, pos[1], neighA.z}, w)) {
 			if spreadNeighbour(b, pos, w, neighA, queue) {
 				queue.shortestPath = neighA.Len()
 				paths = append(paths, neighA.Path(pos))
 			}
 		}
-		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighB.x, pos[1], neighB.z})) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighB.x, pos[1], neighB.z}, w)) {
 			if spreadNeighbour(b, pos, w, neighB, queue) {
 				queue.shortestPath = neighB.Len()
 				paths = append(paths, neighB.Path(pos))
 			}
 		}
-		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighC.x, pos[1], neighC.z})) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighC.x, pos[1], neighC.z}, w)) {
 			if spreadNeighbour(b, pos, w, neighC, queue) {
 				queue.shortestPath = neighC.Len()
 				paths = append(paths, neighC.Path(pos))
 			}
 		}
-		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighD.x, pos[1], neighD.z})) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, world.BlockPos{neighD.x, pos[1], neighD.z}, w)) {
 			if spreadNeighbour(b, pos, w, neighD, queue) {
 				queue.shortestPath = neighD.Len()
 				paths = append(paths, neighD.Path(pos))

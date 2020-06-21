@@ -73,7 +73,7 @@ type LiquidDisplacer interface {
 	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
 	// closed. When this returns true (for example, when the side is below the position and the block is a
 	// slab), liquid inside of the displacer won't flow from pos into side.
-	SideClosed(pos, side BlockPos) bool
+	SideClosed(pos, side BlockPos, w *World) bool
 }
 
 // RegisterBlock registers a block with the save name passed. The save name is used to save the block to the

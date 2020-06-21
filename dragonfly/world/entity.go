@@ -12,7 +12,8 @@ import (
 // Viewers of a world may view an entity when near it.
 type Entity interface {
 	io.Closer
-	physics.AABBer
+	// AABB returns the AABB of the entity.
+	AABB() physics.AABB
 	// Position returns the current position of the entity in the world.
 	Position() mgl64.Vec3
 	// OnGround checks if the entity is currently on the ground.

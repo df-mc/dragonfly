@@ -59,7 +59,7 @@ func (c Chest) WithName(a ...interface{}) world.Item {
 }
 
 // AABB ...
-func (c Chest) AABB() []physics.AABB {
+func (c Chest) AABB(world.BlockPos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
@@ -70,7 +70,7 @@ func (Chest) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (Chest) SideClosed(world.BlockPos, world.BlockPos) bool {
+func (Chest) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 

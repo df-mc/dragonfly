@@ -33,3 +33,18 @@ func (d Direction) Opposite() Direction {
 func (d Direction) Face() Face {
 	return Face(d + 2)
 }
+
+// Rotate90 rotates the direction 90 degrees horizontally and returns the new direction.
+func (d Direction) Rotate90() Direction {
+	switch d {
+	case North:
+		return East
+	case East:
+		return South
+	case South:
+		return West
+	case West:
+		return North
+	}
+	panic("invalid direction")
+}

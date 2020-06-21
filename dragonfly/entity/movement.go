@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -8,9 +9,9 @@ import (
 )
 
 // boxes returns the axis aligned bounding box of a block.
-func boxes(b world.Block) []physics.AABB {
-	if aabb, ok := b.(physics.AABBer); ok {
-		return aabb.AABB()
+func boxes(b world.Block, pos world.BlockPos, w *world.World) []physics.AABB {
+	if aabb, ok := b.(block.AABBer); ok {
+		return aabb.AABB(pos, w)
 	}
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
@@ -82,7 +83,7 @@ func (c *movementComputer) handleCollision(e world.Entity) (move mgl64.Vec3, vel
 	deltaX, deltaY, deltaZ := velocity[0], velocity[1], velocity[2]
 
 	// Entities only ever have a single bounding box.
-	entityAABB := e.AABB()[0].Translate(e.Position())
+	entityAABB := e.AABB().Translate(e.Position())
 	blocks := blockAABBsAround(e, entityAABB.Extend(velocity))
 
 	if !mgl64.FloatEqual(deltaY, 0) {
@@ -130,6 +131,7 @@ func (c *movementComputer) handleCollision(e world.Entity) (move mgl64.Vec3, vel
 // blockAABBsAround returns all blocks around the entity passed, using the AABB passed to make a prediction of
 // what blocks need to have their AABB returned.
 func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
+	w := e.World()
 	grown := aabb.Grow(0.25)
 	min, max := grown.Min(), grown.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
@@ -140,7 +142,8 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 	for y := minY; y <= maxY; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
-				boxes := boxes(e.World().Block(world.BlockPos{x, y, z}))
+				pos := world.BlockPos{x, y, z}
+				boxes := boxes(e.World().Block(pos), pos, w)
 				for _, box := range boxes {
 					blockAABBs = append(blockAABBs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
 				}

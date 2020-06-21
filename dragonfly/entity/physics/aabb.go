@@ -73,6 +73,25 @@ func (aabb AABB) Extend(vec mgl64.Vec3) AABB {
 	return aabb
 }
 
+// ExtendTowards extends the bounding box by x in a given direction.
+func (aabb AABB) ExtendTowards(d int, x float64) AABB {
+	switch d {
+	case 0:
+		aabb.max[1] += x
+	case 1:
+		aabb.min[1] -= x
+	case 2:
+		aabb.min[2] -= x
+	case 3:
+		aabb.max[2] += x
+	case 4:
+		aabb.min[0] -= x
+	case 5:
+		aabb.max[0] += x
+	}
+	return aabb
+}
+
 // Translate moves the entire AABB with the Vec3 given. The (minimum and maximum) x, y and z coordinates are
 // moved by those in the Vec3 passed.
 func (aabb AABB) Translate(vec mgl64.Vec3) AABB {
@@ -91,12 +110,10 @@ func (aabb AABB) IntersectsWith(other AABB) bool {
 
 // AnyIntersections checks if any of boxes1 have intersections with any of boxes2 and returns true if this
 // happens to be the case.
-func AnyIntersections(boxes1, boxes2 []AABB) bool {
-	for _, box1 := range boxes1 {
-		for _, box2 := range boxes2 {
-			if box1.IntersectsWith(box2) {
-				return true
-			}
+func AnyIntersections(boxes []AABB, search AABB) bool {
+	for _, box := range boxes {
+		if box.IntersectsWith(search) {
+			return true
 		}
 	}
 	return false
@@ -189,12 +206,4 @@ func (aabb AABB) CalculateZOffset(nearby AABB, deltaZ float64) float64 {
 		}
 	}
 	return deltaZ
-}
-
-// AABBer represents an entity or a block that has one or multiple specific Axis Aligned Bounding Boxes. These
-// boxes are used to calculate collision.
-type AABBer interface {
-	// AABB returns all the axis aligned bounding boxes of the block, or a single box if the AABBer is an
-	// entity.
-	AABB() []AABB
 }
