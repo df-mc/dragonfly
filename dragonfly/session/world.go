@@ -12,6 +12,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/particle"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
+	"github.com/cespare/xxhash"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -21,6 +22,64 @@ import (
 
 // ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
+	if !s.conn.ClientCacheEnabled() {
+		s.sendNetworkChunk(pos, c)
+		return
+	}
+	s.sendBlobHashes(pos, c)
+}
+
+// sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
+// data that the client doesn't yet have will be sent over the network.
+func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
+	data := chunk.NetworkEncode(c)
+
+	count := byte(0)
+	for y := byte(0); y < 16; y++ {
+		if data.SubChunks[y] != nil {
+			count = y + 1
+		}
+	}
+
+	blobs := make([][]byte, 0, count+1)
+	for y := byte(0); y < count; y++ {
+		if data.SubChunks[y] == nil {
+			blobs = append(blobs, []byte{chunk.SubChunkVersion, 0})
+			continue
+		}
+		blobs = append(blobs, data.SubChunks[y])
+	}
+	blobs = append(blobs, data.Data2D)
+
+	hashes := make([]uint64, len(blobs))
+	for i, blob := range blobs {
+		hashes[i] = xxhash.Sum64(blob)
+	}
+
+	s.blobMu.Lock()
+	if len(s.blobs) > 4096 {
+		s.blobMu.Unlock()
+		s.log.Errorf("player %v has too many blobs pending %v: disconnecting")
+		_ = s.c.Close()
+		return
+	}
+	for i, hash := range hashes {
+		s.blobs[hash] = blobs[i]
+	}
+	s.blobMu.Unlock()
+
+	s.writePacket(&packet.LevelChunk{
+		ChunkX:        pos[0],
+		ChunkZ:        pos[1],
+		SubChunkCount: uint32(count),
+		CacheEnabled:  true,
+		BlobHashes:    hashes,
+		RawPayload:    append([]byte{0}, data.BlockNBT...),
+	})
+}
+
+// sendNetworkChunk sends a network encoded chunk to the client.
+func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	data := chunk.NetworkEncode(c)
 
 	count := byte(0)

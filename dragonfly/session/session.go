@@ -62,6 +62,9 @@ type Session struct {
 	pingID *int64
 	pingMu sync.Mutex
 	pings  map[int64]chan struct{}
+
+	blobMu sync.Mutex
+	blobs  map[uint64][]byte
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -97,6 +100,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
 		pings:                  map[int64]chan struct{}{},
+		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
 		pingID:                 new(int64),
@@ -257,23 +261,24 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 // registerHandlers registers all packet handlers found in the packetHandler package.
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
-		packet.IDActorFall:            nil,
-		packet.IDAnimate:              nil,
-		packet.IDBossEvent:            nil,
-		packet.IDCommandRequest:       &CommandRequestHandler{},
-		packet.IDContainerClose:       &ContainerCloseHandler{},
-		packet.IDInventoryTransaction: &InventoryTransactionHandler{},
-		packet.IDLevelSoundEvent:      nil,
-		packet.IDMobEquipment:         &MobEquipmentHandler{},
-		packet.IDModalFormResponse:    &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
-		packet.IDMovePlayer:           nil,
-		packet.IDNetworkStackLatency:  &NetworkStackLatencyHandler{},
-		packet.IDPlayerAction:         &PlayerActionHandler{},
-		packet.IDPlayerAuthInput:      &PlayerAuthInputHandler{},
-		packet.IDRequestChunkRadius:   &RequestChunkRadiusHandler{},
-		packet.IDRespawn:              &RespawnHandler{},
-		packet.IDText:                 &TextHandler{},
-		packet.IDTickSync:             nil,
+		packet.IDActorFall:             nil,
+		packet.IDAnimate:               nil,
+		packet.IDBossEvent:             nil,
+		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
+		packet.IDCommandRequest:        &CommandRequestHandler{},
+		packet.IDContainerClose:        &ContainerCloseHandler{},
+		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
+		packet.IDLevelSoundEvent:       nil,
+		packet.IDMobEquipment:          &MobEquipmentHandler{},
+		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
+		packet.IDMovePlayer:            nil,
+		packet.IDNetworkStackLatency:   &NetworkStackLatencyHandler{},
+		packet.IDPlayerAction:          &PlayerActionHandler{},
+		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
+		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
+		packet.IDRespawn:               &RespawnHandler{},
+		packet.IDText:                  &TextHandler{},
+		packet.IDTickSync:              nil,
 	}
 }
 
