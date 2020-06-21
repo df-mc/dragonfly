@@ -14,7 +14,7 @@ type Grass struct {
 }
 
 // NeighbourUpdateTick handles the turning from grass path into dirt if a block is placed on top of it.
-func (g Grass) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
+func (g Grass) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if !g.Path {
 		return
 	}

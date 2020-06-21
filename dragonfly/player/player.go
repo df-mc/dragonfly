@@ -936,17 +936,23 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
 		return
 	}
-	if _, air := p.World().Block(pos).(block.Air); air {
+	b := p.World().Block(pos)
+	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
 		return
 	}
+	if _, breakable := b.(block.Breakable); !breakable && p.survival() {
+		// Block cannot be broken server-side. Set the block back so viewers have it resent and cancel all
+		// further action.
+		p.World().SetBlock(pos, p.World().Block(pos))
+		return
+	}
+
 	ctx := event.C()
 	p.handler().HandleBlockBreak(ctx, pos)
 
 	ctx.Continue(func() {
 		p.swingArm()
-
-		b := p.World().Block(pos)
 		p.World().BreakBlock(pos)
 		held, left := p.HeldItems()
 
@@ -1291,6 +1297,9 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
+	if _, spectator := p.GameMode().(gamemode.Spectator); spectator {
+		return false
+	}
 	eyes := p.Position().Add(mgl64.Vec3{0, eyeHeight})
 
 	if _, ok := p.GameMode().(gamemode.Creative); ok {
