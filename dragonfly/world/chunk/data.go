@@ -138,7 +138,7 @@ var emptyHeightMap = make([]byte, 512)
 
 // DiskEncode encodes a chunk to its disk representation, so that it may be stored in a database, giving other
 // servers the ability to read the chunk.
-func DiskEncode(c *Chunk) (d SerialisedData) {
+func DiskEncode(c *Chunk, blob bool) (d SerialisedData) {
 	buf := pool.Get().(*bytes.Buffer)
 	for y, sub := range c.sub {
 		if sub == nil || len(sub.storages) == 0 {
@@ -148,7 +148,7 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 		_ = buf.WriteByte(SubChunkVersion)
 		_ = buf.WriteByte(byte(len(sub.storages)))
 		for _, storage := range sub.storages {
-			diskEncodeBlockStorage(buf, storage)
+			diskEncodeBlockStorage(buf, storage, blob)
 		}
 		d.SubChunks[y] = append([]byte(nil), buf.Bytes()...)
 		buf.Reset()
@@ -157,6 +157,12 @@ func DiskEncode(c *Chunk) (d SerialisedData) {
 	buf.Write(emptyHeightMap)
 	buf.Write(c.biomes[:])
 	d.Data2D = append([]byte(nil), buf.Bytes()...)
+	buf.Reset()
+	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+	for _, data := range c.blockEntities {
+		_ = enc.Encode(data)
+	}
+	d.BlockNBT = append([]byte(nil), buf.Bytes()...)
 	buf.Reset()
 	pool.Put(buf)
 	return d
@@ -216,12 +222,17 @@ type blockEntry struct {
 }
 
 // diskEncodeBlockStorage encodes a block storage to its disk representation into the buffer passed.
-func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
+func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage, blob bool) {
 	_ = buf.WriteByte(byte(storage.bitsPerBlock << 1))
 	for _, b := range storage.blocks {
 		_ = binary.Write(buf, binary.LittleEndian, b)
 	}
-	_ = binary.Write(buf, binary.LittleEndian, int32(storage.palette.Len()))
+
+	if !blob {
+		_ = binary.Write(buf, binary.LittleEndian, int32(storage.palette.Len()))
+	} else {
+		_ = protocol.WriteVarint32(buf, int32(storage.palette.Len()))
+	}
 
 	blocks := make([]blockEntry, storage.palette.Len())
 	for index, runtimeID := range storage.palette.blockRuntimeIDs {
@@ -239,8 +250,13 @@ func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage) {
 			Version: protocol.CurrentBlockVersion,
 		}
 	}
+	var encoding nbt.Encoding = nbt.LittleEndian
+	if blob {
+		encoding = nbt.NetworkLittleEndian
+	}
+
 	// Marshal the slice of block states into NBT and add it to the byte slice.
-	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+	enc := nbt.NewEncoderWithEncoding(buf, encoding)
 	for _, b := range blocks {
 		_ = enc.Encode(b)
 	}

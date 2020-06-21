@@ -32,7 +32,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
 func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
-	data := chunk.NetworkEncode(c)
+	data := chunk.DiskEncode(c, true)
 
 	count := byte(0)
 	for y := byte(0); y < 16; y++ {
