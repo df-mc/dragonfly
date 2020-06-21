@@ -33,7 +33,9 @@ func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
 			// enough to the teleport position, we'll allow the player to move around again.
 			return nil
 		}
-		teleportPos = nil
+		s.teleportMu.Lock()
+		s.teleportPos = nil
+		s.teleportMu.Unlock()
 	}
 
 	s.c.Move(deltaPos)
