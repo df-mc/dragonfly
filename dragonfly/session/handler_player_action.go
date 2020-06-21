@@ -19,6 +19,8 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		return ErrSelfRuntimeID
 	}
 	switch pk.ActionType {
+	case packet.PlayerActionRespawn:
+		// Don't do anything for this action.
 	case packet.PlayerActionJump:
 		// TODO: Handle player jumping. Perhaps fire an event?
 	case packet.PlayerActionStartSprint:
