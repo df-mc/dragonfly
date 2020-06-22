@@ -15,6 +15,7 @@ import (
 	"github.com/cespare/xxhash"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync/atomic"
@@ -528,6 +529,15 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 			EventData: 0,
 		})
 	}
+}
+
+// ViewEmote ...
+func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
+	s.writePacket(&packet.Emote{
+		EntityRuntimeID: s.entityRuntimeID(player),
+		EmoteID:         emote.String(),
+		Flags:           packet.EmoteFlagServerSide,
+	})
 }
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.

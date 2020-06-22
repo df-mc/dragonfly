@@ -6,6 +6,7 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
@@ -52,4 +53,6 @@ type Viewer interface {
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
 	ViewBlockAction(pos BlockPos, a blockAction.Action)
+	// ViewEmote views an emote being performed by another entity.
+	ViewEmote(player Entity, emote uuid.UUID)
 }
