@@ -45,6 +45,7 @@ var pool = sync.Pool{
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
+//noinspection GoUnusedExportedFunction
 func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
 	c, buf := New(), bytes.NewBuffer(data)
 	for y := 0; y < subChunkCount; y++ {
@@ -157,12 +158,14 @@ func DiskEncode(c *Chunk, blob bool) (d SerialisedData) {
 	buf.Write(emptyHeightMap)
 	buf.Write(c.biomes[:])
 	d.Data2D = append([]byte(nil), buf.Bytes()...)
-	buf.Reset()
-	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
-	for _, data := range c.blockEntities {
-		_ = enc.Encode(data)
+	if blob {
+		buf.Reset()
+		enc := nbt.NewEncoder(buf)
+		for _, data := range c.blockEntities {
+			_ = enc.Encode(data)
+		}
+		d.BlockNBT = append([]byte(nil), buf.Bytes()...)
 	}
-	d.BlockNBT = append([]byte(nil), buf.Bytes()...)
 	buf.Reset()
 	pool.Put(buf)
 	return d

@@ -40,37 +40,48 @@ func (s *Session) SendRespawn() {
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
-	s.writePacket(&packet.InventoryContent{
-		WindowID: protocol.WindowIDCreative,
-		Content:  creativeItems(),
-	})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
 		WindowID: windowID,
-		Content:  make([]protocol.ItemStack, 0, s.inv.Size()),
+		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
 	}
 	for _, i := range inv.All() {
-		pk.Content = append(pk.Content, stackFromItem(i))
+		pk.Content = append(pk.Content, instanceFromItem(i))
 	}
 	s.writePacket(pk)
 }
+
+const (
+	containerArmour               = 6
+	containerChest                = 7
+	containerInventoryChestOpened = 12
+	containerCraftingGrid         = 13
+	containerHotbar               = 27
+	containerInventory            = 28
+	containerOffHand              = 33
+	containerCreativeOutput       = 59
+)
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case protocol.WindowIDInventory:
-		return s.inv, true
-	case protocol.WindowIDOffHand:
-		return s.offHand, true
-	case protocol.WindowIDUI:
+	case containerCraftingGrid, containerCreativeOutput:
+		// UI inventory.
 		return s.ui, true
-	case protocol.WindowIDArmour:
+	case containerHotbar, containerInventory, containerInventoryChestOpened:
+		// Hotbar 'inventory', rest of inventory, inventory when container is opened.
+		return s.inv, true
+	case containerOffHand:
+		return s.offHand, true
+	case containerArmour:
+		// Armour inventory.
 		return s.armour.Inv(), true
-	case int32(atomic.LoadUint32(s.openedWindowID)):
+	case containerChest:
+		// Chests, potentially other containers too.
 		if atomic.LoadUint32(s.containerOpened) == 1 {
 			return s.openedWindow.Load().(*inventory.Inventory), true
 		}
@@ -367,7 +378,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDInventory,
 			Slot:     uint32(slot),
-			NewItem:  stackFromItem(item),
+			NewItem:  instanceFromItem(item),
 		})
 		if slot == int(atomic.LoadUint32(s.heldSlot)) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
@@ -375,7 +386,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			}
 		}
 	})
-	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
 		if atomic.LoadUint32(s.inTransaction) == 1 {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
@@ -385,7 +396,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDOffHand,
 			Slot:     uint32(slot),
-			NewItem:  stackFromItem(item),
+			NewItem:  instanceFromItem(item),
 		})
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
@@ -401,7 +412,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		s.writePacket(&packet.InventorySlot{
 			WindowID: protocol.WindowIDArmour,
 			Slot:     uint32(slot),
-			NewItem:  stackFromItem(item),
+			NewItem:  instanceFromItem(item),
 		})
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
@@ -426,6 +437,14 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 }
 
+// instanceFromItem converts an item.Stack to its network ItemInstance representation.
+func instanceFromItem(it item.Stack) protocol.ItemInstance {
+	return protocol.ItemInstance{
+		StackNetworkID: item_id(it),
+		Stack:          stackFromItem(it),
+	}
+}
+
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
 	t, ok := world_itemByID(it.NetworkID, it.MetadataValue)
@@ -441,10 +460,13 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 }
 
 // creativeItems returns all creative inventory items as protocol item stacks.
-func creativeItems() []protocol.ItemStack {
-	it := make([]protocol.ItemStack, 0, len(item.CreativeItems()))
-	for _, i := range item.CreativeItems() {
-		it = append(it, stackFromItem(i))
+func creativeItems() []protocol.CreativeItem {
+	it := make([]protocol.CreativeItem, 0, len(item.CreativeItems()))
+	for index, i := range item.CreativeItems() {
+		it = append(it, protocol.CreativeItem{
+			CreativeItemNetworkID: uint32(index) + 1,
+			Item:                  stackFromItem(i),
+		})
 	}
 	return it
 }
@@ -455,3 +477,7 @@ func creativeItems() []protocol.ItemStack {
 //go:linkname world_itemByID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemByID
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
+
+//go:linkname item_id git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.id
+//noinspection ALL
+func item_id(s item.Stack) int32

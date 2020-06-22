@@ -5,11 +5,14 @@ import (
 	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
 	"reflect"
 	"strings"
+	"sync/atomic"
 )
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
 // size of the stack.
 type Stack struct {
+	id int32
+
 	item  world.Item
 	count int
 
@@ -32,7 +35,7 @@ func NewStack(t world.Item, count int) Stack {
 	if t == nil {
 		panic("cannot have a stack with item type nil")
 	}
-	return Stack{item: t, count: count}
+	return Stack{item: t, count: count, id: newID()}
 }
 
 // Count returns the amount of items that is present on the stack. The count is guaranteed never to be
@@ -58,6 +61,7 @@ func (s Stack) Grow(n int) Stack {
 	if s.count < 0 {
 		s.count = 0
 	}
+	s.id = newID()
 	return s
 }
 
@@ -271,6 +275,7 @@ func (s Stack) AddStack(s2 Stack) (a, b Stack) {
 	}
 
 	s.count, s2.count = s.count+diff, s2.count-diff
+	s.id, s2.id = newID(), newID()
 	return s, s2
 }
 
@@ -319,6 +324,23 @@ func (s Stack) String() string {
 //noinspection GoUnusedFunction
 func values(s Stack) map[string]interface{} {
 	return s.data
+}
+
+// stackID is a counter for unique stack IDs.
+var stackID = new(int32)
+
+// newID returns a new unique stack ID.
+func newID() int32 {
+	return atomic.AddInt32(stackID, 1)
+}
+
+// id returns the unique ID of the stack passed.
+//noinspection GoUnusedFunction
+func id(s Stack) int32 {
+	if s.Empty() {
+		return 0
+	}
+	return s.id
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the

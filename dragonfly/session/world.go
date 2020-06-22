@@ -59,7 +59,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
 	s.blobMu.Lock()
 	if len(s.blobs) > 4096 {
 		s.blobMu.Unlock()
-		s.log.Errorf("player %v has too many blobs pending %v: disconnecting")
+		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), len(s.blobs))
 		_ = s.c.Close()
 		return
 	}
@@ -496,7 +496,7 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 	s.writePacket(&packet.InventorySlot{
 		WindowID: atomic.LoadUint32(s.openedWindowID),
 		Slot:     uint32(slot),
-		NewItem:  stackFromItem(newItem),
+		NewItem:  instanceFromItem(newItem),
 	})
 }
 

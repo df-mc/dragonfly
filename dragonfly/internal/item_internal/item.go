@@ -25,5 +25,5 @@ var StripLog func(b world.Block) world.Block
 // IsWater is a function used to check if a liquid is water.
 var IsWater func(b world.Liquid) bool
 
-// replaceableBlock is a function used to check if a block is replaceable.
+// Replaceable is a function used to check if a block is replaceable.
 var Replaceable func(w *world.World, pos world.BlockPos, with world.Block) bool

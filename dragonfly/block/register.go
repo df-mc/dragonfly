@@ -10,7 +10,9 @@ import (
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
+	// Always register Air first so we can use 0 runtime IDs as air.
 	world.RegisterBlock(Air{})
+
 	world.RegisterBlock(Stone{})
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})

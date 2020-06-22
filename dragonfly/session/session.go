@@ -145,10 +145,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has joined the game"))
 
-	s.writePacket(&packet.InventoryContent{
-		WindowID: protocol.WindowIDCreative,
-		Content:  creativeItems(),
-	})
+	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
@@ -166,6 +163,8 @@ func (s *Session) Close() error {
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
 
+	s.c.World().RemoveEntity(s.c)
+
 	s.entityMutex.Lock()
 	s.entityRuntimeIDs = map[world.Entity]uint64{}
 	s.entities = map[uint64]world.Entity{}
@@ -176,6 +175,12 @@ func (s *Session) Close() error {
 		s.onStop = nil
 	}
 	return nil
+}
+
+// CloseConnection closes the underlying connection of the session so that the session ends up being closed
+// eventually.
+func (s *Session) CloseConnection() {
+	_ = s.conn.Close()
 }
 
 // Ping sends a ping packet to the client and returns once a response is received.
@@ -267,7 +272,9 @@ func (s *Session) registerHandlers() {
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
 		packet.IDContainerClose:        &ContainerCloseHandler{},
+		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo)},
 		packet.IDLevelSoundEvent:       nil,
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
