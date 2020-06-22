@@ -18,9 +18,10 @@ func (h *EmoteHandler) Handle(p packet.Packet, s *Session) error {
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
 		return ErrSelfRuntimeID
 	}
-	if time.Since(h.LastEmote) > time.Second {
-		h.LastEmote = time.Now()
+	if time.Since(h.LastEmote) < time.Second {
+		return nil
 	}
+	h.LastEmote = time.Now()
 	emote, err := uuid.Parse(pk.EmoteID)
 	if err != nil {
 		return err
