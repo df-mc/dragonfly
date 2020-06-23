@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// PlayerEmoteHandler handles the Emote packet.
+// EmoteHandler handles the Emote packet.
 type EmoteHandler struct {
 	LastEmote time.Time
 }
