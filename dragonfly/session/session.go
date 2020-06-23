@@ -63,8 +63,9 @@ type Session struct {
 	pingMu sync.Mutex
 	pings  map[int64]chan struct{}
 
-	blobMu sync.Mutex
-	blobs  map[uint64][]byte
+	blobMu                sync.Mutex
+	blobs                 map[uint64][]byte
+	openChunkTransactions []map[uint64]struct{}
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -95,6 +96,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 
 	s := &Session{
 		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
+		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		ui:                     inventory.New(51, nil),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
@@ -229,12 +231,20 @@ func (s *Session) handlePackets() {
 
 // sendChunks continuously sends chunks to the player, until a value is sent to the closeChan passed.
 func (s *Session) sendChunks(stop <-chan struct{}) {
+	const maxChunkTransactions = 8
 	t := time.NewTicker(time.Second / 20)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			if err := s.chunkLoader.Load(4); err != nil {
+			s.blobMu.Lock()
+			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
+			s.blobMu.Unlock()
+
+			if toLoad > 4 {
+				toLoad = 4
+			}
+			if err := s.chunkLoader.Load(toLoad); err != nil {
 				// The world was closed. This should generally never happen.
 				s.log.Errorf("error loading chunk: %v", err)
 				return

@@ -52,12 +52,16 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 	blobs = append(blobs, data.Data2D)
 
+	m := make(map[uint64]struct{}, len(blobs))
 	hashes := make([]uint64, len(blobs))
 	for i, blob := range blobs {
-		hashes[i] = xxhash.Sum64(blob)
+		h := xxhash.Sum64(blob)
+		hashes[i] = h
+		m[h] = struct{}{}
 	}
 
 	s.blobMu.Lock()
+	s.openChunkTransactions = append(s.openChunkTransactions, m)
 	if len(s.blobs) > 4096 {
 		s.blobMu.Unlock()
 		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), len(s.blobs))

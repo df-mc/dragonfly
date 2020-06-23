@@ -18,6 +18,7 @@ func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session) error
 	s.blobMu.Lock()
 	for _, hit := range pk.HitHashes {
 		delete(s.blobs, hit)
+		c.resolveBlob(hit, s)
 	}
 	for _, miss := range pk.MissHashes {
 		blob, ok := s.blobs[miss]
@@ -26,6 +27,7 @@ func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session) error
 			continue
 		}
 		resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: miss, Payload: blob})
+		c.resolveBlob(miss, s)
 	}
 	s.blobMu.Unlock()
 
@@ -33,4 +35,16 @@ func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session) error
 		s.writePacket(resp)
 	}
 	return nil
+}
+
+// resolveBlob resolves a blob hash in the session passed.
+func (c *ClientCacheBlobStatusHandler) resolveBlob(hash uint64, s *Session) {
+	var newOpenTransactions []map[uint64]struct{}
+	for _, m := range s.openChunkTransactions {
+		delete(m, hash)
+		if len(m) != 0 {
+			newOpenTransactions = append(newOpenTransactions, m)
+		}
+	}
+	s.openChunkTransactions = newOpenTransactions
 }
