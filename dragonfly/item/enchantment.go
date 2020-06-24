@@ -37,6 +37,8 @@ var (
 
 // enchantmentByID attempts to return an enchantment by the ID it was registered with. If found, the enchantment found
 // is returned and the bool true.
+//lint:ignore U1000 Function is used using compiler directives.
+//noinspection GoUnusedFunction
 func enchantmentByID(id int) (Enchantment, bool) {
 	enchantment, ok := enchantments[id]
 	return enchantment, ok
@@ -44,6 +46,8 @@ func enchantmentByID(id int) (Enchantment, bool) {
 
 // idByEnchantment attempts to return the ID the enchantment was registered with. If found, the id is returned and
 // the bool true.
+//lint:ignore U1000 Function is used using compiler directives.
+//noinspection GoUnusedFunction
 func idByEnchantment(ench Enchantment) (int, bool) {
 	id, ok := enchantmentIds[reflect.TypeOf(ench)]
 	return id, ok

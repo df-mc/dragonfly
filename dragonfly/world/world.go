@@ -174,6 +174,7 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 }
 
 // runtimeID gets the block runtime ID at a specific position in the world.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func runtimeID(w *World, pos BlockPos) uint32 {
 	if pos[1] < 0 || pos[1] > 255 {

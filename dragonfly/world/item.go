@@ -41,6 +41,7 @@ var names = map[int32]string{}
 
 // itemByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
 // returned and the bool true.
+//lint:ignore U1000 Function is used using compiler directives.
 func itemByID(id int32, meta int16) (Item, bool) {
 	it, ok := items[(id<<4)|int32(meta)]
 	if !ok {
@@ -51,6 +52,7 @@ func itemByID(id int32, meta int16) (Item, bool) {
 }
 
 // itemByName attempts to return an item by a name and a metadata value, rather than an ID.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func itemByName(name string, meta int16) (Item, bool) {
 	id, ok := itemsNames[name]
@@ -61,6 +63,7 @@ func itemByName(name string, meta int16) (Item, bool) {
 }
 
 // itemToName encodes an item to its string ID and metadata value.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func itemToName(it Item) (name string, meta int16) {
 	id, meta := it.EncodeItem()

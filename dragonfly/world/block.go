@@ -131,6 +131,7 @@ func replaceable(w *World, c *chunk.Chunk, pos BlockPos, with Block) bool {
 
 // allBlocks returns a list of all registered states of the server. The list is ordered according to the
 // runtime ID that the blocks have.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func allBlocks() []Block {
 	return registeredStates
@@ -212,6 +213,7 @@ func blockByNameAndProperties(name string, properties map[string]interface{}) (b
 
 // registerAllStates registers all block states present in the game, skipping ones that have already been
 // registered before this is called.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func registerAllStates() {
 	var m []unimplementedBlock

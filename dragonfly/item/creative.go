@@ -23,6 +23,7 @@ func RegisterCreativeItem(item Stack) {
 // RegisterCreativeItem.
 var creativeItemStacks []Stack
 
+//lint:ignore U1000 Type is used using compiler directives.
 type creativeItemEntry struct {
 	ID   int32
 	Meta int16
@@ -31,6 +32,7 @@ type creativeItemEntry struct {
 
 // registerVanillaCreativeItems initialises the creative items, registering all creative items that have also
 // been registered as normal items and are present in vanilla.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func registerVanillaCreativeItems() {
 	var temp map[string]interface{}

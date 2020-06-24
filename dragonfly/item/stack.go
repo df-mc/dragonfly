@@ -321,6 +321,7 @@ func (s Stack) String() string {
 }
 
 // values returns all values associated with the stack by users.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func values(s Stack) map[string]interface{} {
 	return s.data
@@ -335,6 +336,7 @@ func newID() int32 {
 }
 
 // id returns the unique ID of the stack passed.
+//lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func id(s Stack) int32 {
 	if s.Empty() {
