@@ -9,7 +9,7 @@ more stable stage.
 ### Development setup
 Installing/compiling Dragonfly requires at least Go 1.13.
 
-##### Instant install, when GOPATH is added to $PATH:
+##### Instant install, when GOPATH/bin is added to $PATH:
 ```
 go install github.com/df-mc/dragonfly
 ```
