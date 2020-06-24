@@ -24,10 +24,10 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Lint
+      - name: Staticcheck
         run: |
-          GOBIN=$PWD/bin go install github.com/mgechev/revive
-          ./bin/revive -config=lint.toml ./...
+          GOBIN=$PWD/bin go install github.com/dominikh/staticcheck
+          ./bin/staticcheck ./...
 
       - name: Build
         run: go build -o dragonfly_exec -v .
