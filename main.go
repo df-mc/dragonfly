@@ -50,10 +50,7 @@ func loopbackExempted() bool {
 		return true
 	}
 	data, _ := exec.Command("CheckNetIsolation", "LoopbackExempt", "-s", `-n="microsoft.minecraftuwp_8wekyb3d8bbwe"`).CombinedOutput()
-	if bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe")) {
-		return true
-	}
-	return false
+	return bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe"))
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
