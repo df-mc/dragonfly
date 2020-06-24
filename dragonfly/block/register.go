@@ -1,10 +1,10 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/colour"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/item_internal"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/wood"
+	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	_ "unsafe" // Imported for compiler directives.
 )
 

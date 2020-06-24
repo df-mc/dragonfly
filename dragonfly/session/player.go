@@ -2,14 +2,14 @@ package session
 
 import (
 	"encoding/json"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/nbtconv"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
+	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
+	"github.com/df-mc/dragonfly/dragonfly/player/form"
+	"github.com/df-mc/dragonfly/dragonfly/player/skin"
+	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -474,10 +474,10 @@ func creativeItems() []protocol.CreativeItem {
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
-//go:linkname world_itemByID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemByID
+//go:linkname world_itemByID github.com/df-mc/dragonfly/dragonfly/world.itemByID
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
 
-//go:linkname item_id git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.id
+//go:linkname item_id github.com/df-mc/dragonfly/dragonfly/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32

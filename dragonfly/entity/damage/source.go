@@ -1,6 +1,6 @@
 package damage
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // Source represents the source of the damage dealt to an entity. This source may be passed to the Hurt()
 // method of an entity in order to deal damage to an entity with a specific source.

@@ -4,13 +4,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	_ "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item" // Imported for compiler directives.
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/skin"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/session"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/generator"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/mcdb"
+	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
+	"github.com/df-mc/dragonfly/dragonfly/player"
+	"github.com/df-mc/dragonfly/dragonfly/player/skin"
+	"github.com/df-mc/dragonfly/dragonfly/session"
+	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/generator"
+	"github.com/df-mc/dragonfly/dragonfly/world/mcdb"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -383,14 +383,14 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
-//go:linkname world_registerAllStates git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.registerAllStates
+//go:linkname world_registerAllStates github.com/df-mc/dragonfly/dragonfly/world.registerAllStates
 //noinspection ALL
 func world_registerAllStates()
 
-//go:linkname item_registerVanillaCreativeItems git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.registerVanillaCreativeItems
+//go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL
 func item_registerVanillaCreativeItems()
 
-//go:linkname world_allBlocks git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.allBlocks
+//go:linkname world_allBlocks github.com/df-mc/dragonfly/dragonfly/world.allBlocks
 //noinspection ALL
 func world_allBlocks() []world.Block

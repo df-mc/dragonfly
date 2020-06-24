@@ -1,10 +1,10 @@
 package item
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/armour"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/bucket"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/item/armour"
+	"github.com/df-mc/dragonfly/dragonfly/item/bucket"
+	"github.com/df-mc/dragonfly/dragonfly/item/tool"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 //noinspection SpellCheckingInspection

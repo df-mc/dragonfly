@@ -1,7 +1,7 @@
 package enchantment
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 )
 
 // BlastProtection is an armour enchantment that decreases explosion damage.

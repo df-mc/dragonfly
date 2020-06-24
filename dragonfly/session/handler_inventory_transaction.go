@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync/atomic"

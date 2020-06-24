@@ -2,7 +2,7 @@ package item
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"reflect"
 	"strings"
 	"sync/atomic"

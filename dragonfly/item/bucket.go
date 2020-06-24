@@ -1,10 +1,10 @@
 package item
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/item_internal"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/bucket"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
+	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
+	"github.com/df-mc/dragonfly/dragonfly/item/bucket"
+	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 

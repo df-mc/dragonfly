@@ -4,8 +4,8 @@ package block
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/block_internal"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sahilm/fuzzy"
 	"go/ast"
 	"reflect"

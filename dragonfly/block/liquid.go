@@ -1,10 +1,10 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/block_internal"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/internal/world_internal"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/event"
+	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
+	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"math"
 	"sync"
 )

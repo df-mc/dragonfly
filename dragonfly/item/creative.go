@@ -3,7 +3,7 @@ package item
 import (
 	"encoding/base64"
 	"encoding/json"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -59,7 +59,7 @@ func registerVanillaCreativeItems() {
 	}
 }
 
-//go:linkname world_itemByID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemByID
+//go:linkname world_itemByID github.com/df-mc/dragonfly/dragonfly/world.itemByID
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
 

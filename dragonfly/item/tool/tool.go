@@ -1,6 +1,6 @@
 package tool
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // Tool represents an item that may be used as a tool.
 type Tool interface {

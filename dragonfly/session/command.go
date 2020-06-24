@@ -1,7 +1,7 @@
 package session
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
+	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"

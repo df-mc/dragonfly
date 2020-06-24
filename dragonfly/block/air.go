@@ -1,8 +1,8 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Air is the block present in otherwise empty space.

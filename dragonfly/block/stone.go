@@ -1,7 +1,7 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 )
 
 type (

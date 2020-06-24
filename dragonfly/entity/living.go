@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"github.com/go-gl/mathgl/mgl64"
 )
 

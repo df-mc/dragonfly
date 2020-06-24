@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly"
+	"github.com/df-mc/dragonfly/dragonfly"
 )
 
 func main() {

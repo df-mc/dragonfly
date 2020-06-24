@@ -3,9 +3,9 @@ package world
 import (
 	"context"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
 	"math/rand"

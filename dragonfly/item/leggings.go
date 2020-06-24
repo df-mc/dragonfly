@@ -1,8 +1,8 @@
 package item
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/armour"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/item/armour"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Leggings are a defensive item that may be equipped in the leggings armour slot. They come in several tiers,

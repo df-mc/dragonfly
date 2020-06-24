@@ -1,9 +1,9 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // ContainerViewer represents a viewer that is able to view a container and its inventory.

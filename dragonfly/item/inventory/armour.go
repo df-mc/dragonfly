@@ -2,7 +2,7 @@ package inventory
 
 import (
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and

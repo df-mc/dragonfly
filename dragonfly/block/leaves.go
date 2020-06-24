@@ -1,9 +1,9 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/wood"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/block/wood"
+	"github.com/df-mc/dragonfly/dragonfly/item/tool"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.

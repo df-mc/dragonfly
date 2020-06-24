@@ -1,8 +1,8 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/go-gl/mathgl/mgl64"
 	"io"
 )

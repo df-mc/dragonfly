@@ -1,6 +1,6 @@
 package block
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // Dirt is a block found abundantly in most biomes under a layer of grass blocks at the top of the normal
 // world.

@@ -1,10 +1,10 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block

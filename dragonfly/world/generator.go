@@ -1,7 +1,7 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
+	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 )
 
 // Generator handles the generating of newly created chunks. Worlds have one generator which is used to

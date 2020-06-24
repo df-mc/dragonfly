@@ -1,6 +1,6 @@
 package tool
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // None is a tool type typically used in functions for items that do not function as tools.
 type None struct{}

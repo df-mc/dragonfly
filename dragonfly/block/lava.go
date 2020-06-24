@@ -1,9 +1,9 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/sound"
+	"github.com/df-mc/dragonfly/dragonfly/event"
+	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"time"
 )
 

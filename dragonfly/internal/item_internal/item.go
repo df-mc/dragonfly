@@ -1,7 +1,7 @@
 package item_internal
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Air holds an air block.

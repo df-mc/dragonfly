@@ -1,10 +1,10 @@
 package world
 
 import (
-	blockAction "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block/action"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/action"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/state"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
+	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
+	"github.com/df-mc/dragonfly/dragonfly/entity/action"
+	"github.com/df-mc/dragonfly/dragonfly/entity/state"
+	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 )

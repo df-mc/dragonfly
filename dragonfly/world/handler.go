@@ -1,6 +1,6 @@
 package world
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
+import "github.com/df-mc/dragonfly/dragonfly/event"
 
 // Handler handles events that are called by a world. Implementations of Handler may be used to listen to
 // specific events such as when an entity is added to the world.

@@ -1,8 +1,8 @@
 package block
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/tool"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
 // Obsidian is a dark purple block known for its high blast resistance and strength, most commonly found when

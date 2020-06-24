@@ -3,7 +3,7 @@ package session
 import (
 	"bytes"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/player/form"
+	"github.com/df-mc/dragonfly/dragonfly/player/form"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync"
 )

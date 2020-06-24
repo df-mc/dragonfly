@@ -1,6 +1,6 @@
 package block
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // Cobblestone is a common block, obtained from mining stone.
 type Cobblestone struct {

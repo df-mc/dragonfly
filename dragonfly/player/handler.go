@@ -1,11 +1,11 @@
 package player
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/cmd"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/damage"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/event"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/cmd"
+	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/event"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"net"
 )

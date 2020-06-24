@@ -1,6 +1,6 @@
 package enchantment
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // enchantment is used internally to store the level of enchantments. It implements the Level method so
 // parent enchantments do not need to implement it themselves.

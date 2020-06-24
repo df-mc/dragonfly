@@ -3,7 +3,7 @@ package inventory
 import (
 	"errors"
 	"fmt"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 	"math"
 	"strings"
 	"sync"

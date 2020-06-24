@@ -1,9 +1,9 @@
 package entity
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/block"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/entity/physics"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )

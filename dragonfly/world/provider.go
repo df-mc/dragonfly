@@ -1,8 +1,8 @@
 package world
 
 import (
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/chunk"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world/gamemode"
+	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"io"
 )
 

@@ -3,29 +3,29 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item/inventory"
-	"git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	_ "unsafe" // Imported for compiler directives.
 )
 
-//go:linkname world_itemByName git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemByName
+//go:linkname world_itemByName github.com/df-mc/dragonfly/dragonfly/world.itemByName
 //noinspection ALL
 func world_itemByName(name string, meta int16) (world.Item, bool)
 
-//go:linkname world_itemToName git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/world.itemToName
+//go:linkname world_itemToName github.com/df-mc/dragonfly/dragonfly/world.itemToName
 //noinspection ALL
 func world_itemToName(it world.Item) (name string, meta int16)
 
-//go:linkname item_enchantmentByID git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.enchantmentByID
+//go:linkname item_enchantmentByID github.com/df-mc/dragonfly/dragonfly/item.enchantmentByID
 //noinspection ALL
 func item_enchantmentByID(id int) (item.Enchantment, bool)
 
-//go:linkname item_idByEnchantment git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.idByEnchantment
+//go:linkname item_idByEnchantment github.com/df-mc/dragonfly/dragonfly/item.idByEnchantment
 //noinspection ALL
 func item_idByEnchantment(ench item.Enchantment) (int, bool)
 
-//go:linkname item_values git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item.values
+//go:linkname item_values github.com/df-mc/dragonfly/dragonfly/item.values
 //noinspection ALL
 func item_values(s item.Stack) map[string]interface{}
 

@@ -1,6 +1,6 @@
 package enchantment
 
-import "git.jetbrains.space/dragonfly/dragonfly.git/dragonfly/item"
+import "github.com/df-mc/dragonfly/dragonfly/item"
 
 func init() {
 	item.RegisterEnchantment(0, Protection{})
