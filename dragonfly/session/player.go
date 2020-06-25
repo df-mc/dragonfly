@@ -62,8 +62,8 @@ const (
 	containerHotbar               = 27
 	containerInventory            = 28
 	containerOffHand              = 33
-	containerCreativeOutputAuto   = 58
-	containerCreativeOutput       = 59
+	containerCreativeOutput       = 58
+	containerCreativeOutputAuto   = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
