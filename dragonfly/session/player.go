@@ -62,6 +62,7 @@ const (
 	containerHotbar               = 27
 	containerInventory            = 28
 	containerOffHand              = 33
+	containerCreativeOutputAuto   = 58
 	containerCreativeOutput       = 59
 )
 
@@ -69,7 +70,7 @@ const (
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerCreativeOutput:
+	case containerCraftingGrid, containerCreativeOutput, containerCreativeOutputAuto:
 		// UI inventory.
 		return s.ui, true
 	case containerHotbar, containerInventory, containerInventoryChestOpened:
