@@ -19,6 +19,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	case *protocol.NormalTransactionData:
 		h.resendInventories(s)
 		s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: unhandled normal transaction %#v\n", s.conn.RemoteAddr(), s.c.Name(), data)
+		return nil
 	case *protocol.UseItemOnEntityTransactionData:
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
