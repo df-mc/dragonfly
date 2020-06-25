@@ -16,12 +16,23 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	pk := p.(*packet.InventoryTransaction)
 
 	switch data := pk.TransactionData.(type) {
+	case *protocol.NormalTransactionData:
+		h.resendInventories(s)
+		s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: unhandled normal transaction %#v\n", s.conn.RemoteAddr(), s.c.Name(), data)
 	case *protocol.UseItemOnEntityTransactionData:
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		return h.handleUseItemTransaction(data, s)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
+}
+
+// resendInventories resends all inventories of the player.
+func (h *InventoryTransactionHandler) resendInventories(s *Session) {
+	s.sendInv(s.inv, protocol.WindowIDInventory)
+	s.sendInv(s.ui, protocol.WindowIDUI)
+	s.sendInv(s.offHand, protocol.WindowIDOffHand)
+	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
 }
 
 // handleUseItemOnEntityTransaction
