@@ -83,6 +83,8 @@ func (s Shovel) EncodeItem() (id int32, meta int16) {
 		return 256, 0
 	case tool.TierDiamond:
 		return 277, 0
+	case tool.TierNetherite:
+		return 744, 0
 	}
 	panic("invalid shovel tier")
 }

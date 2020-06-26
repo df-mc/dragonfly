@@ -61,6 +61,8 @@ func (s Sword) EncodeItem() (id int32, meta int16) {
 		return 267, 0
 	case tool.TierDiamond:
 		return 276, 0
+	case tool.TierNetherite:
+		return 743, 0
 	}
 	panic("invalid sword tier")
 }

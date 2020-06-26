@@ -34,16 +34,17 @@ func (h Helmet) DefencePoints() float64 {
 	switch h.Tier {
 	case armour.TierLeather:
 		return 1
-	case armour.TierGold:
+	case armour.TierGold, armour.TierChain, armour.TierIron:
 		return 2
-	case armour.TierChain:
-		return 2
-	case armour.TierIron:
-		return 2
-	case armour.TierDiamond:
+	case armour.TierDiamond, armour.TierNetherite:
 		return 3
 	}
 	panic("invalid helmet tier")
+}
+
+// KnockBackResistance ...
+func (h Helmet) KnockBackResistance() float64 {
+	return h.Tier.KnockBackResistance
 }
 
 // DurabilityInfo ...
@@ -67,6 +68,8 @@ func (h Helmet) EncodeItem() (id int32, meta int16) {
 		return 306, 0
 	case armour.TierDiamond:
 		return 310, 0
+	case armour.TierNetherite:
+		return 748, 0
 	}
 	panic("invalid helmet tier")
 }

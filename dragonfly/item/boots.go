@@ -40,18 +40,19 @@ func (b Boots) DurabilityInfo() DurabilityInfo {
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
 	switch b.Tier {
-	case armour.TierLeather:
-		return 1
-	case armour.TierGold:
-		return 1
-	case armour.TierChain:
+	case armour.TierLeather, armour.TierGold, armour.TierChain:
 		return 1
 	case armour.TierIron:
 		return 2
-	case armour.TierDiamond:
+	case armour.TierDiamond, armour.TierNetherite:
 		return 3
 	}
 	panic("invalid boots tier")
+}
+
+// KnockBackResistance ...
+func (b Boots) KnockBackResistance() float64 {
+	return b.Tier.KnockBackResistance
 }
 
 // EncodeItem ...
@@ -67,6 +68,8 @@ func (b Boots) EncodeItem() (id int32, meta int16) {
 		return 309, 0
 	case armour.TierDiamond:
 		return 313, 0
+	case armour.TierNetherite:
+		return 751, 0
 	}
 	panic("invalid boots tier")
 }

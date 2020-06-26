@@ -5,6 +5,9 @@ type Tier struct {
 	// BaseDurability is the base durability of armour with this tier. This is otherwise the durability of
 	// the helmet with this tier.
 	BaseDurability float64
+	// KnockBackResistance is a number from 0-1 that decides the amount of knock back force that is resisted
+	// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
+	KnockBackResistance float64
 }
 
 // TierLeather is the tier of leather armour.
@@ -23,5 +26,4 @@ var TierIron = Tier{BaseDurability: 165}
 var TierDiamond = Tier{BaseDurability: 363}
 
 // TierNetherite is the tier of netherite armour.
-// TODO: Implement netherite armour once 1.16 lands.
-var TierNetherite = Tier{BaseDurability: 408}
+var TierNetherite = Tier{BaseDurability: 408, KnockBackResistance: 0.1}

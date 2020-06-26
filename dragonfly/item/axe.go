@@ -76,6 +76,8 @@ func (a Axe) EncodeItem() (id int32, meta int16) {
 		return 258, 0
 	case tool.TierDiamond:
 		return 279, 0
+	case tool.TierNetherite:
+		return 746, 0
 	}
 	panic("invalid axe tier")
 }

@@ -62,6 +62,8 @@ func (p Pickaxe) EncodeItem() (id int32, meta int16) {
 		return 257, 0
 	case tool.TierDiamond:
 		return 278, 0
+	case tool.TierNetherite:
+		return 745, 0
 	}
 	panic("invalid pickaxe tier")
 }

@@ -460,10 +460,16 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 		// TODO: Implement server-side movement and knock-back.
 		return
 	}
+	resistance := 0.0
+	for _, i := range p.armour.All() {
+		if a, ok := i.Item().(armour.Armour); ok {
+			resistance += a.KnockBackResistance()
+		}
+	}
 	velocity := p.Position().Sub(src).Normalize().Mul(force)
 	velocity[1] = height
 
-	p.session().SendVelocity(velocity)
+	p.session().SendVelocity(velocity.Sub(velocity.Mul(resistance)))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.

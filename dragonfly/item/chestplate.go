@@ -34,16 +34,19 @@ func (c Chestplate) DefencePoints() float64 {
 	switch c.Tier {
 	case armour.TierLeather:
 		return 3
-	case armour.TierGold:
-		return 5
-	case armour.TierChain:
+	case armour.TierGold, armour.TierChain:
 		return 5
 	case armour.TierIron:
 		return 6
-	case armour.TierDiamond:
+	case armour.TierDiamond, armour.TierNetherite:
 		return 8
 	}
 	panic("invalid chestplate tier")
+}
+
+// KnockBackResistance ...
+func (c Chestplate) KnockBackResistance() float64 {
+	return c.Tier.KnockBackResistance
 }
 
 // DurabilityInfo ...
@@ -67,6 +70,8 @@ func (c Chestplate) EncodeItem() (id int32, meta int16) {
 		return 307, 0
 	case armour.TierDiamond:
 		return 311, 0
+	case armour.TierNetherite:
+		return 749, 0
 	}
 	panic("invalid chestplate tier")
 }

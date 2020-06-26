@@ -31,5 +31,4 @@ var TierIron = Tier{HarvestLevel: 3, Durability: 250, BaseMiningEfficiency: 6, B
 var TierDiamond = Tier{HarvestLevel: 4, Durability: 1561, BaseMiningEfficiency: 8, BaseAttackDamage: 4}
 
 // TierNetherite is the tier of netherite tools. This is the highest possible tier.
-// TODO: Implement netherite tools once 1.16 lands.
 var TierNetherite = Tier{HarvestLevel: 4, Durability: 2031, BaseMiningEfficiency: 9, BaseAttackDamage: 5}

@@ -40,10 +40,15 @@ func (l Leggings) DefencePoints() float64 {
 		return 4
 	case armour.TierIron:
 		return 5
-	case armour.TierDiamond:
+	case armour.TierDiamond, armour.TierNetherite:
 		return 6
 	}
 	panic("invalid leggings tier")
+}
+
+// KnockBackResistance ...
+func (l Leggings) KnockBackResistance() float64 {
+	return l.Tier.KnockBackResistance
 }
 
 // DurabilityInfo ...
@@ -67,6 +72,8 @@ func (l Leggings) EncodeItem() (id int32, meta int16) {
 		return 308, 0
 	case armour.TierDiamond:
 		return 312, 0
+	case armour.TierNetherite:
+		return 750, 0
 	}
 	panic("invalid leggings tier")
 }
