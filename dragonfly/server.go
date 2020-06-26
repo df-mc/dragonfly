@@ -283,6 +283,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		EntityRuntimeID:              1,
 		Time:                         int64(server.world.Time()),
 		GameRules:                    map[string]interface{}{"naturalregeneration": false},
+		Difficulty:                   2,
 		ServerAuthoritativeMovement:  true,
 		ServerAuthoritativeInventory: true,
 	}

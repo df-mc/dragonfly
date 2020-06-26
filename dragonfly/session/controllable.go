@@ -37,16 +37,21 @@ type Controllable interface {
 	Respawn()
 
 	StartSneaking()
+	Sneaking() bool
 	StopSneaking()
 	StartSprinting()
+	Sprinting() bool
 	StopSprinting()
 	StartSwimming()
+	Swimming() bool
 	StopSwimming()
 
 	StartBreaking(pos world.BlockPos)
 	ContinueBreaking(face world.Face)
 	FinishBreaking()
 	AbortBreaking()
+
+	Exhaust(points float64)
 
 	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
 	// world.
