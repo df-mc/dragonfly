@@ -103,7 +103,7 @@ func (m *hungerManager) desaturate() {
 // The rate of regeneration is 1/0.5 seconds.
 func (m *hungerManager) canQuicklyRegenerate() bool {
 	m.mu.RLock()
-	m.mu.RUnlock()
+	defer m.mu.RUnlock()
 
 	return m.foodLevel == 20 && m.saturationLevel > 0
 }
