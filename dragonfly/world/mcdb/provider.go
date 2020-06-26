@@ -239,7 +239,7 @@ func (p *Provider) LoadDifficulty() difficulty.Difficulty {
 		return difficulty.Peaceful{}
 	case 1:
 		return difficulty.Easy{}
-	case 2:
+	case 3:
 		return difficulty.Hard{}
 	}
 }
