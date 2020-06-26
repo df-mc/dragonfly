@@ -509,6 +509,10 @@ func (p *Player) Exhaust(points float64) {
 		p.handler().HandleFoodLoss(ctx, before, after)
 		ctx.Continue(func() {
 			p.hunger.SetFood(after)
+			if before >= 7 && after <= 6 {
+				// The client will stop sprinting by itself too, but we force it just to be sure.
+				p.StopSprinting()
+			}
 		})
 	}
 	p.sendFood()
