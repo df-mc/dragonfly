@@ -377,10 +377,11 @@ func (p *Player) Heal(health float64, source healing.Source) {
 	ctx := event.C()
 	p.handler().HandleHeal(ctx, &health, source)
 	ctx.Continue(func() {
-		if p.Health()+health > p.MaxHealth() {
-			health = p.MaxHealth() - p.Health()
+		current := p.Health()
+		if current+health > p.MaxHealth() {
+			health = p.MaxHealth() - current
 		}
-		p.setHealth(p.Health() + health)
+		p.setHealth(current + health)
 	})
 }
 
@@ -1235,10 +1236,9 @@ func (p *Player) Tick() {
 
 	if p.checkOnGround() {
 		atomic.StoreUint32(p.onGround, 1)
-		return
+	} else {
+		atomic.StoreUint32(p.onGround, 0)
 	}
-	atomic.StoreUint32(p.onGround, 0)
-
 	p.tickFood()
 }
 
