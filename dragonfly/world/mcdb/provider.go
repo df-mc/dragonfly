@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
@@ -226,6 +227,34 @@ func (p *Provider) SaveDefaultGameMode(mode gamemode.GameMode) {
 		p.d.GameType = 2
 	case gamemode.Spectator:
 		p.d.GameType = 3
+	}
+}
+
+// LoadDifficulty loads the difficulty stored in the level.dat.
+func (p *Provider) LoadDifficulty() difficulty.Difficulty {
+	switch p.d.Difficulty {
+	case 0:
+		return difficulty.Peaceful{}
+	case 1:
+		return difficulty.Easy{}
+	default:
+		return difficulty.Normal{}
+	case 2:
+		return difficulty.Hard{}
+	}
+}
+
+// SaveDifficulty saves the difficulty passed to the level.dat.
+func (p *Provider) SaveDifficulty(d difficulty.Difficulty) {
+	switch d.(type) {
+	case difficulty.Peaceful:
+		p.d.Difficulty = 0
+	case difficulty.Easy:
+		p.d.Difficulty = 1
+	case difficulty.Normal:
+		p.d.Difficulty = 2
+	case difficulty.Hard:
+		p.d.Difficulty = 3
 	}
 }
 

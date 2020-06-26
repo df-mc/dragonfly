@@ -19,6 +19,9 @@ type Handler interface {
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
+// Compile time check to make sure NopHandler implements Handler.
+var _ Handler = (*NopHandler)(nil)
+
 // HandleLiquidFlow ...
 func (NopHandler) HandleLiquidFlow(*event.Context, BlockPos, BlockPos, Block, Block) {}
 

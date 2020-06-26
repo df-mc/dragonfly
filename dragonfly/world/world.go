@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,9 @@ type World struct {
 
 	gameModeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode
+
+	difficultyMu sync.RWMutex
+	difficulty   difficulty.Difficulty
 
 	blockMu      sync.RWMutex
 	entityBlocks map[ChunkPos]map[BlockPos]Block
@@ -94,6 +98,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		entityBlocks:    map[ChunkPos]map[BlockPos]Block{},
 		blockUpdates:    map[BlockPos]int64{},
 		defaultGameMode: gamemode.Survival{},
+		difficulty:      difficulty.Normal{},
 		prov:            NoIOProvider{},
 		gen:             NopGenerator{},
 		handler:         NopHandler{},
@@ -712,8 +717,23 @@ func (w *World) DefaultGameMode() gamemode.GameMode {
 // game mode.
 func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
 	w.gameModeMu.Lock()
+	defer w.gameModeMu.Unlock()
 	w.defaultGameMode = mode
-	w.gameModeMu.Unlock()
+}
+
+// Difficulty returns the difficulty of the world. Properties of mobs in the world and the player's hunger
+// will depend on this difficulty.
+func (w *World) Difficulty() difficulty.Difficulty {
+	w.difficultyMu.RLock()
+	defer w.difficultyMu.RUnlock()
+	return w.difficulty
+}
+
+// SetDifficulty changes the difficulty of a world.
+func (w *World) SetDifficulty(d difficulty.Difficulty) {
+	w.difficultyMu.Lock()
+	defer w.difficultyMu.Unlock()
+	w.difficulty = d
 }
 
 // SetRandomTickSpeed sets the random tick speed of blocks. By default, each sub chunk has 3 blocks randomly
@@ -777,6 +797,9 @@ func (w *World) Provider(p Provider) {
 	w.gameModeMu.Lock()
 	w.defaultGameMode = p.LoadDefaultGameMode()
 	w.gameModeMu.Unlock()
+	w.difficultyMu.Lock()
+	w.difficulty = p.LoadDifficulty()
+	w.difficultyMu.Unlock()
 	atomic.StoreInt64(w.time, p.LoadTime())
 	if timeRunning := p.LoadTimeCycle(); !timeRunning {
 		atomic.StoreUint32(w.timeStopped, 1)
@@ -854,6 +877,9 @@ func (w *World) Close() error {
 		w.gameModeMu.RLock()
 		w.provider().SaveDefaultGameMode(w.defaultGameMode)
 		w.gameModeMu.RUnlock()
+		w.difficultyMu.RLock()
+		w.provider().SaveDifficulty(w.difficulty)
+		w.difficultyMu.RUnlock()
 	}
 
 	w.log.Debug("Closing provider...")

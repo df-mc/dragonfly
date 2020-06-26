@@ -117,6 +117,30 @@ func (s *Session) SendSpeed(speed float64) {
 	})
 }
 
+// SendFood ...
+func (s *Session) SendFood(food int, saturation, exhaustion float64) {
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{
+			{
+				Name:  "minecraft:player.hunger",
+				Value: float32(food),
+				Max:   20, Min: 0, Default: 20,
+			},
+			{
+				Name:  "minecraft:player.saturation",
+				Value: float32(saturation),
+				Max:   20, Min: 0, Default: 20,
+			},
+			{
+				Name:  "minecraft:player.exhaustion",
+				Value: float32(exhaustion),
+				Max:   5, Min: 0, Default: 0,
+			},
+		},
+	})
+}
+
 // SendVelocity sends the velocity of the player to the client.
 func (s *Session) SendVelocity(velocity mgl64.Vec3) {
 	s.writePacket(&packet.SetActorMotion{

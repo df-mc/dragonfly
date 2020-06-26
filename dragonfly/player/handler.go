@@ -3,6 +3,7 @@ package player
 import (
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -22,6 +23,13 @@ type Handler interface {
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
 	HandleChat(ctx *event.Context, message *string)
+	// HandleFoodLoss handles the food bar of a player depleting naturally, for example because the player was
+	// sprinting and jumping. ctx.Cancel() may be called to cancel the food points being lost.
+	HandleFoodLoss(ctx *event.Context, from, to int)
+	// HandleHeal handles the player being healed by a healing source. ctx.Cancel() may be called to cancel
+	// the healing.
+	// The health added may be changed by assigning to *health.
+	HandleHeal(ctx *event.Context, health *float64, src healing.Source)
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
@@ -87,6 +95,9 @@ type Handler interface {
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
+// Compile time check to make sure NopHandler implements Handler.
+var _ Handler = (*NopHandler)(nil)
+
 // HandleMove ...
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
 
@@ -132,6 +143,12 @@ func (NopHandler) HandleAttackEntity(*event.Context, world.Entity) {}
 
 // HandleHurt ...
 func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source) {}
+
+// HandleHeal ...
+func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source) {}
+
+// HandleFoodLoss ...
+func (NopHandler) HandleFoodLoss(*event.Context, int, int) {}
 
 // HandleDeath ...
 func (NopHandler) HandleDeath(damage.Source) {}

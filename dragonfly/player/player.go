@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/event"
@@ -23,6 +24,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/player/title"
 	"github.com/df-mc/dragonfly/dragonfly/session"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -72,6 +74,8 @@ type Player struct {
 	breakingPos atomic.Value
 
 	breakParticleCounter *uint32
+
+	hunger *hungerManager
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -87,6 +91,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		uuid:                 uuid.New(),
 		offHand:              inventory.New(2, p.broadcastItems),
 		armour:               inventory.NewArmour(p.broadcastArmour),
+		hunger:               newHungerManager(),
 		gameMode:             gamemode.Adventure{},
 		h:                    NopHandler{},
 		heldSlot:             new(uint32),
@@ -361,6 +366,24 @@ func (p *Player) setHealth(health float64) {
 	p.session().SendHealth(health, p.MaxHealth())
 }
 
+// Heal heals the entity for a given amount of health. The source passed represents the cause of the
+// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
+// added to the original health exceeds the entity's max health, Heal will not add the full amount.
+// If the health passed is negative, Heal will not do anything.
+func (p *Player) Heal(health float64, source healing.Source) {
+	if p.Dead() || health < 0 || !p.survival() {
+		return
+	}
+	ctx := event.C()
+	p.handler().HandleHeal(ctx, &health, source)
+	ctx.Continue(func() {
+		if p.Health()+health > p.MaxHealth() {
+			health = p.MaxHealth() - p.Health()
+		}
+		p.setHealth(p.Health() + health)
+	})
+}
+
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
 // for example damage.SourceEntityAttack if the player is attacked by another entity.
 // If the final damage exceeds the health that the player currently has, the player is killed and will have to
@@ -375,6 +398,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 	p.handler().HandleHurt(ctx, &dmg, source)
 
 	ctx.Continue(func() {
+		if source.ReducedByArmour() {
+			p.Exhaust(0.1)
+		}
 		dmg = p.resolveFinalDamage(dmg, source)
 		if p.Health()-dmg < 0 {
 			dmg = p.Health()
@@ -444,22 +470,65 @@ func (p *Player) AttackImmune() bool {
 	return p.immunity.Load().(time.Time).After(time.Now())
 }
 
+// Food returns the current food level of a player. The level returned is guaranteed to always be between 0
+// and 20. Every half drumstick is one level.
+func (p *Player) Food() int {
+	return p.hunger.Food()
+}
+
+// SetFood sets the food level of a player. The level passed must be in a range of 0-20. If the level passed
+// is negative, the food level will be set to 0. If the level exceeds 20, the food level will be set to 20.
+func (p *Player) SetFood(level int) {
+	p.hunger.SetFood(level)
+	p.sendFood()
+}
+
+// AddFood adds a number of points to the food level of the player. If the new food level is negative or if
+// it exceeds 20, it will be set to 0 or 20 respectively.
+func (p *Player) AddFood(points int) {
+	p.hunger.AddFood(points)
+	p.sendFood()
+}
+
+// Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
+// exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
+func (p *Player) Exhaust(points float64) {
+	if !p.survival() {
+		return
+	}
+	before := p.hunger.Food()
+	if (p.World().Difficulty() != difficulty.Peaceful{}) {
+		p.hunger.exhaust(points)
+	}
+	after := p.hunger.Food()
+	if before != after {
+		// Temporarily set the food level back so that it hasn't yet changed once the event is handled.
+		p.hunger.SetFood(before)
+
+		ctx := event.C()
+		p.handler().HandleFoodLoss(ctx, before, after)
+		ctx.Continue(func() {
+			p.hunger.SetFood(after)
+		})
+	}
+	p.sendFood()
+}
+
+// sendFood sends the current food properties to the client.
+func (p *Player) sendFood() {
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
+}
+
 // survival checks if the player is considered to be survival, meaning either adventure or survival game mode.
 func (p *Player) survival() bool {
-	switch p.GameMode().(type) {
-	case gamemode.Survival, gamemode.Adventure:
-		return true
-	}
-	return false
+	return p.GameMode() == gamemode.Survival{} || p.GameMode() == gamemode.Adventure{}
 }
 
 // canEdit checks if the player has a game mode that allows it to edit the world.
 func (p *Player) canEdit() bool {
-	switch p.GameMode().(type) {
-	case gamemode.Survival, gamemode.Creative:
-		return true
-	}
-	return false
+	return p.GameMode() == gamemode.Creative{} || p.GameMode() == gamemode.Survival{}
 }
 
 // Dead checks if the player is considered dead. True is returned if the health of the player is equal to or
@@ -509,6 +578,8 @@ func (p *Player) Respawn() {
 	pos := p.World().Spawn().Vec3Middle()
 	p.handler().HandleRespawn(&pos)
 	p.setHealth(p.MaxHealth())
+	p.hunger.Reset()
+	p.sendFood()
 
 	p.World().AddEntity(p)
 	p.SetVisible()
@@ -518,16 +589,24 @@ func (p *Player) Respawn() {
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
-// particles show up under the feet.
+// particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
 	if !atomic.CompareAndSwapUint32(p.sprinting, 0, 1) {
+		return
+	}
+	if !p.hunger.canSprint() {
 		return
 	}
 	p.StopSneaking()
 	p.SetSpeed(p.Speed() * 1.3)
 
 	p.updateState()
+}
+
+// Sprinting checks if the player is currently sprinting.
+func (p *Player) Sprinting() bool {
+	return atomic.LoadUint32(p.sprinting) == 1
 }
 
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
@@ -551,6 +630,11 @@ func (p *Player) StartSneaking() {
 	p.updateState()
 }
 
+// Sneaking checks if the player is currently sneaking.
+func (p *Player) Sneaking() bool {
+	return atomic.LoadUint32(p.sneaking) == 1
+}
+
 // StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
 // will not do anything.
 func (p *Player) StopSneaking() {
@@ -568,6 +652,11 @@ func (p *Player) StartSwimming() {
 	}
 	p.StopSneaking()
 	p.updateState()
+}
+
+// Swimming checks if the player is currently swimming.
+func (p *Player) Swimming() bool {
+	return atomic.LoadUint32(p.swimming) == 1
 }
 
 // StopSwimming makes the player stop swimming if it is currently doing so.
@@ -689,7 +778,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		if activatable, ok := p.World().Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which the block will activated as usual.
-			if atomic.LoadUint32(p.sneaking) == 0 || i.Empty() {
+			if !p.Sneaking() || i.Empty() {
 				p.swingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
 				// used.
@@ -788,6 +877,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
 		} else {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
+			p.Exhaust(0.1)
 		}
 
 		if durable, ok := i.Item().(item.Durable); ok {
@@ -962,6 +1052,8 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 			p.World().AddEntity(itemEntity)
 		}
 
+		p.Exhaust(0.005)
+
 		if !block.BreaksInstantly(b, held) {
 			if durable, ok := held.Item().(item.Durable); ok {
 				p.SetHeldItems(p.damageItem(held, durable.DurabilityInfo().BreakDurability), left)
@@ -1036,6 +1128,12 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
 		}
 		p.pos.Store(p.Position().Add(deltaPos))
+
+		if p.Swimming() {
+			p.Exhaust(0.01 * deltaPos.Len())
+		} else if p.Sprinting() {
+			p.Exhaust(0.1 * deltaPos.Len())
+		}
 	})
 	ctx.Stop(func() {
 		p.teleport(p.Position())
@@ -1136,6 +1234,57 @@ func (p *Player) Tick() {
 		return
 	}
 	atomic.StoreUint32(p.onGround, 0)
+
+	p.tickFood()
+}
+
+// tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
+// is full enough.
+func (p *Player) tickFood() {
+	p.hunger.foodTick++
+	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || p.World().Difficulty() == difficulty.Peaceful{}) {
+		p.hunger.foodTick = 0
+		p.regenerate()
+		if (p.World().Difficulty() == difficulty.Peaceful{}) {
+			p.AddFood(1)
+		}
+	} else if p.hunger.foodTick == 80 {
+		p.hunger.foodTick = 0
+		if p.hunger.canRegenerate() {
+			p.regenerate()
+		} else if p.hunger.starving() {
+			p.starve()
+		}
+	}
+}
+
+// regenerate attempts to regenerate half a heart of health, typically caused by a full food bar.
+func (p *Player) regenerate() {
+	if p.Health() == p.MaxHealth() {
+		return
+	}
+	p.Heal(1, healing.SourceFood{})
+	p.Exhaust(6)
+}
+
+// starve deals starvation damage to the player if the difficult allows it. In peaceful mode, no damage will
+// ever be dealt. In easy mode, damage will only be dealt if the player has more than 10 health. In normal
+// mode, damage will only be dealt if the player has more than 2 health and in hard mode, damage will always
+// be dealt.
+func (p *Player) starve() {
+	switch p.World().Difficulty().(type) {
+	case difficulty.Peaceful:
+		return
+	case difficulty.Easy:
+		if p.Health() <= 10 {
+			return
+		}
+	case difficulty.Normal:
+		if p.Health() <= 2 {
+			return
+		}
+	}
+	p.Hurt(1, damage.SourceStarvation{})
 }
 
 // checkOnGround checks if the player is currently considered to be on the ground.
@@ -1179,9 +1328,9 @@ func (p *Player) SetVelocity(v mgl64.Vec3) {
 // AABB returns the axis aligned bounding box of the player.
 func (p *Player) AABB() physics.AABB {
 	switch {
-	case atomic.LoadUint32(p.sneaking) == 1:
+	case p.Sneaking():
 		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.65, 0.3})
-	case atomic.LoadUint32(p.swimming) == 1:
+	case p.Swimming():
 		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 0.6, 0.3})
 	default:
 		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.8, 0.3})
@@ -1201,13 +1350,13 @@ func (p *Player) EyeHeight() float64 {
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {
-	if atomic.LoadUint32(p.sneaking) == 1 {
+	if p.Sneaking() {
 		s = append(s, state.Sneaking{})
 	}
-	if atomic.LoadUint32(p.sprinting) == 1 {
+	if p.Sprinting() {
 		s = append(s, state.Sprinting{})
 	}
-	if atomic.LoadUint32(p.swimming) == 1 {
+	if p.Swimming() {
 		s = append(s, state.Swimming{})
 	}
 	if atomic.LoadUint32(p.invisible) == 1 {
@@ -1297,12 +1446,12 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
-	if _, spectator := p.GameMode().(gamemode.Spectator); spectator {
+	if (p.GameMode() == gamemode.Spectator{}) {
 		return false
 	}
 	eyes := p.Position().Add(mgl64.Vec3{0, eyeHeight})
 
-	if _, ok := p.GameMode().(gamemode.Creative); ok {
+	if (p.GameMode() == gamemode.Creative{}) {
 		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()
 	}
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()

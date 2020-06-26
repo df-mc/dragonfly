@@ -22,7 +22,11 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 	case packet.PlayerActionRespawn:
 		// Don't do anything for this action.
 	case packet.PlayerActionJump:
-		// TODO: Handle player jumping. Perhaps fire an event?
+		if s.c.Sprinting() {
+			s.c.Exhaust(0.2)
+		} else {
+			s.c.Exhaust(0.05)
+		}
 	case packet.PlayerActionStartSprint:
 		s.c.StartSprinting()
 	case packet.PlayerActionStopSprint:
