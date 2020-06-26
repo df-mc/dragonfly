@@ -233,12 +233,12 @@ func (p *Provider) SaveDefaultGameMode(mode gamemode.GameMode) {
 // LoadDifficulty loads the difficulty stored in the level.dat.
 func (p *Provider) LoadDifficulty() difficulty.Difficulty {
 	switch p.d.Difficulty {
+	default:
+		return difficulty.Normal{}
 	case 0:
 		return difficulty.Peaceful{}
 	case 1:
 		return difficulty.Easy{}
-	default:
-		return difficulty.Normal{}
 	case 2:
 		return difficulty.Hard{}
 	}
