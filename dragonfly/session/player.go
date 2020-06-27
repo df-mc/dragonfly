@@ -395,53 +395,41 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
-		if atomic.LoadUint32(s.inTransaction) == 1 {
-			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-				viewer.ViewEntityItems(s.c)
-			}
-			return
-		}
-		s.writePacket(&packet.InventorySlot{
-			WindowID: protocol.WindowIDInventory,
-			Slot:     uint32(slot),
-			NewItem:  instanceFromItem(item),
-		})
 		if slot == int(atomic.LoadUint32(s.heldSlot)) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
 			}
 		}
+		if atomic.LoadUint32(s.inTransaction) == 0 {
+			s.writePacket(&packet.InventorySlot{
+				WindowID: protocol.WindowIDInventory,
+				Slot:     uint32(slot),
+				NewItem:  instanceFromItem(item),
+			})
+		}
 	})
 	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
-		if atomic.LoadUint32(s.inTransaction) == 1 {
-			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-				viewer.ViewEntityItems(s.c)
-			}
-			return
-		}
-		s.writePacket(&packet.InventorySlot{
-			WindowID: protocol.WindowIDOffHand,
-			Slot:     uint32(slot),
-			NewItem:  instanceFromItem(item),
-		})
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
 		}
+		if atomic.LoadUint32(s.inTransaction) == 0 {
+			s.writePacket(&packet.InventorySlot{
+				WindowID: protocol.WindowIDOffHand,
+				Slot:     uint32(slot),
+				NewItem:  instanceFromItem(item),
+			})
+		}
 	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
-		if atomic.LoadUint32(s.inTransaction) == 1 {
-			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-				viewer.ViewEntityArmour(s.c)
-			}
-			return
-		}
-		s.writePacket(&packet.InventorySlot{
-			WindowID: protocol.WindowIDArmour,
-			Slot:     uint32(slot),
-			NewItem:  instanceFromItem(item),
-		})
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
+		}
+		if atomic.LoadUint32(s.inTransaction) == 0 {
+			s.writePacket(&packet.InventorySlot{
+				WindowID: protocol.WindowIDArmour,
+				Slot:     uint32(slot),
+				NewItem:  instanceFromItem(item),
+			})
 		}
 	})
 	return s.inv, s.offHand, s.armour, s.heldSlot
