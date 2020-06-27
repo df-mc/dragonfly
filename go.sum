@@ -42,10 +42,10 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sahilm/fuzzy v0.1.0 h1:FzWGaw2Opqyu+794ZQ9SYifWv2EIXpwP4q8dY1kDAwI=
 github.com/sahilm/fuzzy v0.1.0/go.mod h1:VFvziUEIMCrT6A6tw2RFIXPXXmzXbOsSHF0DOI8ZK9Y=
-github.com/sandertv/go-raknet v1.7.0 h1:r6D5ThBVrCCdq3hXmNRM8kB39yeo65cZnDRaFpAomTw=
-github.com/sandertv/go-raknet v1.7.0/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
-github.com/sandertv/gophertunnel v1.7.1 h1:1bsgm1OLXY1muVPDpvb2xD9prUy8yUkCxvZkU/Hu6f8=
-github.com/sandertv/gophertunnel v1.7.1/go.mod h1:TGUN8UFuUVBQf+CEZzdJLFLIVlo/OPRrNveX0uJeVTU=
+github.com/sandertv/go-raknet v1.7.1 h1:jWVKmBRVfK7F0NZAJmpZYyXefJpe8EYj+Bj4H738AOA=
+github.com/sandertv/go-raknet v1.7.1/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
+github.com/sandertv/gophertunnel v1.7.2 h1:749gq2e9TKbeNCymxd2SutG6b/dJ6oBrCy3llv+4nVc=
+github.com/sandertv/gophertunnel v1.7.2/go.mod h1:beg6qUndtAwxmYd4QqbunpebC7I19sNVKvvyk/eWEYc=
 github.com/sirupsen/logrus v1.6.0 h1:UBcNElsrwanuuMsnGSlYmtmgbb23qDR5dG+6X6Oo89I=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
