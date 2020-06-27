@@ -351,13 +351,13 @@ func (p *Player) MaxHealth() float64 {
 // SetMaxHealth panics if the max health passed is 0 or lower.
 func (p *Player) SetMaxHealth(health float64) {
 	p.health.SetMaxHealth(health)
-	p.session().SendHealth(p.Health(), health)
+	p.session().SendHealth(p.health)
 }
 
 // addHealth adds health to the player's current health.
 func (p *Player) addHealth(health float64) {
 	p.health.AddHealth(health)
-	p.session().SendHealth(health, p.MaxHealth())
+	p.session().SendHealth(p.health)
 }
 
 // Heal heals the entity for a given amount of health. The source passed represents the cause of the

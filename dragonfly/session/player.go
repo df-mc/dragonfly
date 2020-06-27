@@ -3,6 +3,7 @@ package session
 import (
 	"encoding/json"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -283,13 +284,13 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 }
 
 // SendHealth sends the health and max health to the player.
-func (s *Session) SendHealth(health, max float64) {
+func (s *Session) SendHealth(health *entity_internal.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			Name:    "minecraft:health",
-			Value:   float32(math.Ceil(health)),
-			Max:     float32(math.Ceil(max)),
+			Value:   float32(math.Ceil(health.Health())),
+			Max:     float32(math.Ceil(health.MaxHealth())),
 			Default: 20,
 		}},
 	})
