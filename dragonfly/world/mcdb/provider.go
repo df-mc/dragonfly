@@ -26,7 +26,7 @@ type Provider struct {
 }
 
 // chunkVersion is the current version of chunks.
-const chunkVersion = 15
+const chunkVersion = 19
 
 // New creates a new provider reading and writing files to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
