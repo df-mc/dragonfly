@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/event"
+	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/armour"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -66,9 +67,9 @@ type Player struct {
 
 	sneaking, sprinting, swimming, invisible, onGround *uint32
 
-	speed             atomic.Value
-	health, maxHealth atomic.Value
-	immunity          atomic.Value
+	speed    atomic.Value
+	health   *entity_internal.HealthManager
+	immunity atomic.Value
 
 	breaking    *uint32
 	breakingPos atomic.Value
@@ -92,6 +93,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		offHand:              inventory.New(2, p.broadcastItems),
 		armour:               inventory.NewArmour(p.broadcastArmour),
 		hunger:               newHungerManager(),
+		health:               entity_internal.NewHealthManager(),
 		gameMode:             gamemode.Adventure{},
 		h:                    NopHandler{},
 		heldSlot:             new(uint32),
@@ -110,8 +112,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.yaw.Store(0.0)
 	p.pitch.Store(0.0)
 	p.speed.Store(0.1)
-	p.health.Store(20.0)
-	p.maxHealth.Store(20.0)
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
 	return p
@@ -337,32 +337,26 @@ func (p *Player) Speed() float64 {
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
 func (p *Player) Health() float64 {
-	return p.health.Load().(float64)
+	return p.health.Health()
 }
 
 // MaxHealth returns the maximum amount of health that a player may have. The MaxHealth will always be higher
 // than Player.Health().
 func (p *Player) MaxHealth() float64 {
-	return p.maxHealth.Load().(float64)
+	return p.health.MaxHealth()
 }
 
 // SetMaxHealth sets the maximum health of the player. If the current health of the player is higher than the
 // new maximum health, the health is set to the new maximum.
 // SetMaxHealth panics if the max health passed is 0 or lower.
 func (p *Player) SetMaxHealth(health float64) {
-	if health <= 0 {
-		panic("max health must not be lower than 0")
-	}
-	p.maxHealth.Store(health)
-	if p.Health() > p.MaxHealth() {
-		p.health.Store(health)
-	}
+	p.health.SetMaxHealth(health)
 	p.session().SendHealth(p.Health(), health)
 }
 
-// setHealth sets the current health of the player to the health passed.
-func (p *Player) setHealth(health float64) {
-	p.health.Store(health)
+// addHealth adds health to the player's current health.
+func (p *Player) addHealth(health float64) {
+	p.health.AddHealth(health)
 	p.session().SendHealth(health, p.MaxHealth())
 }
 
@@ -377,11 +371,7 @@ func (p *Player) Heal(health float64, source healing.Source) {
 	ctx := event.C()
 	p.handler().HandleHeal(ctx, &health, source)
 	ctx.Continue(func() {
-		current := p.Health()
-		if current+health > p.MaxHealth() {
-			health = p.MaxHealth() - current
-		}
-		p.setHealth(current + health)
+		p.addHealth(health)
 	})
 }
 
@@ -402,11 +392,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
-		dmg = p.resolveFinalDamage(dmg, source)
-		if p.Health()-dmg < 0 {
-			dmg = p.Health()
-		}
-		p.setHealth(p.Health() - dmg)
+		p.addHealth(-p.resolveFinalDamage(dmg, source))
 
 		for _, viewer := range p.World().Viewers(p.Position()) {
 			viewer.ViewEntityAction(p, action.Hurt{})
@@ -554,7 +540,7 @@ func (p *Player) kill(src damage.Source) {
 		viewer.ViewEntityAction(p, action.Death{})
 	}
 
-	p.setHealth(0)
+	p.addHealth(-p.MaxHealth())
 	p.StopSneaking()
 	p.StopSprinting()
 	p.inv.Clear()
@@ -588,7 +574,7 @@ func (p *Player) Respawn() {
 	}
 	pos := p.World().Spawn().Vec3Middle()
 	p.handler().HandleRespawn(&pos)
-	p.setHealth(p.MaxHealth())
+	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
 
@@ -1236,6 +1222,9 @@ func (p *Player) Ping() time.Duration {
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick() {
+	if p.Dead() {
+		return
+	}
 	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); !ok {
 		p.StopSwimming()
 	}
