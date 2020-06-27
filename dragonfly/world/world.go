@@ -20,18 +20,18 @@ import (
 // World generally provides a synchronised state: All entities, blocks and players usually operate in this
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 type World struct {
+	time        *int64
+	unixTime    *int64
+	currentTick *int64
+
 	name string
 	log  *logrus.Logger
-
-	currentTick *int64
 
 	stopTick    context.Context
 	cancelTick  context.CancelFunc
 	doneTicking chan struct{}
 
-	time        *int64
 	timeStopped *uint32
-	unixTime    *int64
 
 	gameModeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode

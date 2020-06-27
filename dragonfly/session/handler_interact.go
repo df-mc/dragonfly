@@ -18,7 +18,7 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session) error {
 	case packet.InteractActionOpenInventory:
 		if s.invOpened {
 			// When there is latency, this might end up being sent multiple times. If we send a ContainerOpen
-			// multiple time, the client crashes.
+			// multiple times, the client crashes.
 			return nil
 		}
 		s.invOpened = true
