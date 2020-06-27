@@ -66,6 +66,7 @@ type Session struct {
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
+	invOpened             bool
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.

@@ -17,6 +17,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session) error {
 	case 0:
 		// Closing of the normal inventory.
 		s.writePacket(&packet.ContainerClose{WindowID: 0})
+		s.invOpened = false
 	case byte(atomic.LoadUint32(s.openedWindowID)):
 		s.closeCurrentContainer()
 	case 0xff:
