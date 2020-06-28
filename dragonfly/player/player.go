@@ -446,7 +446,9 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 		// TODO: Implement server-side movement and knock-back.
 		return
 	}
-	velocity := p.Position().Sub(src).Normalize().Mul(force)
+	velocity := p.Position().Sub(src)
+	velocity[1] = 0
+	velocity = velocity.Normalize().Mul(force)
 	velocity[1] = height
 
 	resistance := 0.0
@@ -868,7 +870,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 		healthBefore := living.Health()
 		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
-		living.KnockBack(p.Position(), 0.5, 0.3)
+		living.KnockBack(p.Position(), 0.45, 0.3608)
 
 		if mgl64.FloatEqual(healthBefore, living.Health()) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
