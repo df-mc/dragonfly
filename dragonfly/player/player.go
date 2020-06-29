@@ -1371,9 +1371,7 @@ func (p *Player) State() (s []state.State) {
 	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
 	}
-	if nameTag := p.nameTag.Load().(string); nameTag != p.Name() {
-		s = append(s, state.Named{NameTag: nameTag})
-	}
+	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
 	// TODO: Only set the player as breathing when it is above water.
 	s = append(s, state.Breathing{})
 	return
