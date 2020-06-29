@@ -22,8 +22,16 @@ type Breathing struct{}
 // Invisible makes an entity invisible, so that other players won't be able to see it.
 type Invisible struct{}
 
+// Named makes an entity show a specific name tag above it.
+type Named struct {
+	// NameTag is the name displayed. This name may have colour codes, newlines etc in it, much like a normal
+	// message.
+	NameTag string
+}
+
 func (Sneaking) __()  {}
 func (Swimming) __()  {}
 func (Breathing) __() {}
 func (Sprinting) __() {}
 func (Invisible) __() {}
+func (Named) __()     {}

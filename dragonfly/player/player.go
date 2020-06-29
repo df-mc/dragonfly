@@ -42,10 +42,10 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                      string
-	uuid                      uuid.UUID
-	xuid                      string
-	pos, velocity, yaw, pitch atomic.Value
+	name                               string
+	uuid                               uuid.UUID
+	xuid                               string
+	pos, velocity, yaw, pitch, nameTag atomic.Value
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -114,6 +114,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.speed.Store(0.1)
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
+	p.nameTag.Store(name)
 	return p
 }
 
@@ -320,6 +321,13 @@ func (p *Player) ShowCoordinates() {
 // HideCoordinates disables the vanilla coordinates for the player.
 func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
+}
+
+// SetNameTag changes the name tag displayed over the player in-game. Changing the name tag does not change
+// the player's name in, for example, the player list or the chat.
+func (p *Player) SetNameTag(name string) {
+	p.nameTag.Store(name)
+	p.updateState()
 }
 
 // SetSpeed sets the speed of the player. The value passed is the blocks/tick speed that the player will then
@@ -1362,6 +1370,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
+	}
+	if nameTag := p.nameTag.Load().(string); nameTag != p.Name() {
+		s = append(s, state.Named{NameTag: nameTag})
 	}
 	// TODO: Only set the player as breathing when it is above water.
 	s = append(s, state.Breathing{})

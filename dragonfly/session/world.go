@@ -441,7 +441,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 	m := defaultEntityMetadata(e)
 	for _, eState := range states {
-		switch eState.(type) {
+		switch st := eState.(type) {
 		case state.Sneaking:
 			m.setFlag(dataKeyFlags, dataFlagSneaking)
 		case state.Sprinting:
@@ -452,6 +452,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagInvisible)
 		case state.Swimming:
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
+		case state.Named:
+			m[dataKeyNameTag] = st.NameTag
 		}
 	}
 	s.writePacket(&packet.SetActorData{
