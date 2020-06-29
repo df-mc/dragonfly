@@ -249,7 +249,6 @@ func hashProperties(properties map[string]interface{}) string {
 
 	b := buffers.Get().(*bytes.Buffer)
 	for _, k := range keys {
-		b.WriteString(k)
 		switch v := properties[k].(type) {
 		case bool:
 			if v {
