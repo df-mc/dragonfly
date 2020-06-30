@@ -41,6 +41,11 @@ func init() {
 	world.RegisterBlock(GoldBlock{})
 	world.RegisterBlock(IronBlock{})
 	world.RegisterBlock(Beacon{})
+	world.RegisterBlock(Glass{})
+	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(GoldBlock{})
+	world.RegisterBlock(IronBlock{})
+	world.RegisterBlock(Beacon{})
 }
 
 func init() {
@@ -107,20 +112,6 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
-	world.RegisterItem("minecraft:sandstone", Sandstone{Red: false, Smooth: false})
-	world.RegisterItem("minecraft:sandstone", Sandstone{Red: false, Smooth: true})
-	world.RegisterItem("minecraft:sandstone", SandstoneChiseled{Red: false})
-	world.RegisterItem("minecraft:sandstone", SandstoneCut{Red: false})
-	world.RegisterItem("minecraft:red_sandstone", Sandstone{Red: true, Smooth: false})
-	world.RegisterItem("minecraft:red_sandstone", Sandstone{Red: true, Smooth: true})
-	world.RegisterItem("minecraft:red_sandstone", SandstoneChiseled{Red: true})
-	world.RegisterItem("minecraft:red_sandstone", SandstoneCut{Red: true})
-	world.RegisterItem("minecraft:gravel", Gravel{})
-	world.RegisterItem("minecraft:glass", Glass{})
-	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
-	world.RegisterItem("minecraft:gold_block", GoldBlock{})
-	world.RegisterItem("minecraft:iron_block", IronBlock{})
-	world.RegisterItem("minecraft:beacon", Beacon{})
 }
 
 func init() {
