@@ -77,7 +77,7 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	panic("invalid wood type")
 }
 
-// allLogs returns a list of all possible leaves states.
+// allLeaves returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
 		leaves = append(leaves, Leaves{Wood: wood.Oak(), Persistent: persistent, shouldUpdate: update})

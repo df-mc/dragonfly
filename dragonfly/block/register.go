@@ -33,6 +33,7 @@ func init() {
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
+	world.RegisterBlock(allSandstone()...)
 }
 
 func init() {
@@ -99,6 +100,15 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
+	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 0})
+	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 1})
+	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 2})
+	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 3})
+	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 0})
+	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 1})
+	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 2})
+	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 3})
+
 }
 
 func init() {
