@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
 //Sand is a block which can be found in a desert or on beaches.
@@ -16,10 +15,8 @@ func (s Sand) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.5,
 		Harvestable: alwaysHarvestable,
-		Effective: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypeShovel
-		},
-		Drops: simpleDrops(item.NewStack(s, 1)),
+		Effective:   shovelEffective,
+		Drops:       simpleDrops(item.NewStack(s, 1)),
 	}
 }
 
