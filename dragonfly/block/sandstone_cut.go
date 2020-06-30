@@ -2,6 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
+// SandstoneCut is a block which can be found in generated structures.
 type SandstoneCut struct {
 	Red bool
 }

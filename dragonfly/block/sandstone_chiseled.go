@@ -2,6 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
+// SandstoneChiseled is a block which naturally generates in Desert Villages and Desert Temples.
 type SandstoneChiseled struct {
 	Red bool
 }

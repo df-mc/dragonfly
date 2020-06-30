@@ -5,11 +5,11 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
-//Sand is a block which can be found in a desert or on beaches.
+// Sandstone is a block which can be found in a desert or on beaches.
 type Sandstone struct {
 	// Red specifies if the sandstone is red or not. Sandstone only has it's basic colour and red.
 	Red bool
-	// Smooth specifies the block state of Sandstone
+	// Smooth specifies the block state of Sandstone.
 	Smooth bool
 }
 
