@@ -33,6 +33,11 @@ func init() {
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
+	world.RegisterBlock(Glass{})
+	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(GoldBlock{})
+	world.RegisterBlock(IronBlock{})
+	world.RegisterBlock(Beacon{})
 }
 
 func init() {
@@ -99,6 +104,11 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
+	world.RegisterItem("minecraft:glass", Glass{})
+	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
+	world.RegisterItem("minecraft:gold_block", GoldBlock{})
+	world.RegisterItem("minecraft:iron_block", IronBlock{})
+	world.RegisterItem("minecraft:beacon", Beacon{})
 }
 
 func init() {
