@@ -295,6 +295,7 @@ func (s *Session) registerHandlers() {
 		packet.IDNetworkStackLatency:   &NetworkStackLatencyHandler{},
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
+		packet.IDPlayerSkin:            &PlayerSkinHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDText:                  &TextHandler{},
@@ -337,5 +338,14 @@ func (s *Session) closePlayerList() {
 		session.removeFromPlayerList(s)
 	}
 	sessions = n
+	sessionMu.Unlock()
+}
+
+// BroadcastSkinChange updates the skin of a session to all other sessions.
+func (s *Session) BroadcastSkinChange(new *packet.PlayerSkin) {
+	sessionMu.Lock()
+	for _, session := range sessions {
+		session.writePacket(new)
+	}
 	sessionMu.Unlock()
 }
