@@ -38,6 +38,8 @@ func init() {
 	world.RegisterBlock(GoldBlock{})
 	world.RegisterBlock(IronBlock{})
 	world.RegisterBlock(Beacon{})
+	world.RegisterBlock(Sponge{})
+	world.RegisterBlock(Sponge{Wet: true})
 }
 
 func init() {
@@ -109,6 +111,7 @@ func init() {
 	world.RegisterItem("minecraft:gold_block", GoldBlock{})
 	world.RegisterItem("minecraft:iron_block", IronBlock{})
 	world.RegisterItem("minecraft:beacon", Beacon{})
+	world.RegisterItem("minecraft:sponge", Sponge{})
 }
 
 func init() {
