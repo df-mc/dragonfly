@@ -4,6 +4,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // SandstoneCut is a block which can be found in generated structures.
 type SandstoneCut struct {
+	// Red specifies if the sandstone is red or not. SandstoneChiseled only has it's basic colour and red.
 	Red bool
 }
 
