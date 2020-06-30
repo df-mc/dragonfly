@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
+// Flint is a mineral obtained from gravel.
 type Flint struct {
 	None tool.None
 }

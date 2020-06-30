@@ -32,8 +32,9 @@ func init() {
 	world.RegisterBlock(allWater()...)
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(Obsidian{})
-	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(allSandstone()...)
+	world.RegisterBlock(DiamondBlock{})
+	world.RegisterBlock(Gravel{})
 }
 
 func init() {
@@ -108,7 +109,7 @@ func init() {
 	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 1})
 	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 2})
 	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 3})
-
+	world.RegisterItem("minecraft:gravel", Gravel{})
 }
 
 func init() {
