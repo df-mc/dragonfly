@@ -32,6 +32,8 @@ func init() {
 	world.RegisterBlock(allWater()...)
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(allSandstone()...)
+	world.RegisterBlock(SandstoneChiseled{Red: true}, SandstoneChiseled{})
+	world.RegisterBlock(SandstoneCut{Red: true}, SandstoneCut{})
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Gravel{})
@@ -40,7 +42,7 @@ func init() {
 	world.RegisterBlock(GoldBlock{})
 	world.RegisterBlock(IronBlock{})
 	world.RegisterBlock(Beacon{})
-	world.RegisterBlock(Sand{Red: true}, Sand{Red: false})
+	world.RegisterBlock(Sand{Red: true}, Sand{})
 }
 
 func init() {
