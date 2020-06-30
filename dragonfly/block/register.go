@@ -31,10 +31,11 @@ func init() {
 	world.RegisterBlock(allWoodSlabs()...)
 	world.RegisterBlock(allWater()...)
 	world.RegisterBlock(allLava()...)
-	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(allSandstone()...)
+	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Gravel{})
+	world.RegisterBlock(Sandstone{})
 }
 
 func init() {
@@ -101,14 +102,14 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
-	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 0})
-	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 1})
-	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 2})
-	world.RegisterItem("minecraft_sandstone", Sandstone{ColourRed: false, DataValue: 3})
-	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 0})
-	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 1})
-	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 2})
-	world.RegisterItem("minecraft:red_sandstone", Sandstone{ColourRed: true, DataValue: 3})
+	world.RegisterItem("minecraft:sandstone", Sandstone{Red: false, Smooth: false})
+	world.RegisterItem("minecraft:sandstone", Sandstone{Red: false, Smooth: true})
+	world.RegisterItem("minecraft:sandstone", SandstoneChiseled{Red: false})
+	world.RegisterItem("minecraft:sandstone", SandstoneCut{Red: false})
+	world.RegisterItem("minecraft:red_sandstone", Sandstone{Red: true, Smooth: false})
+	world.RegisterItem("minecraft:red_sandstone", Sandstone{Red: true, Smooth: true})
+	world.RegisterItem("minecraft:red_sandstone", SandstoneChiseled{Red: true})
+	world.RegisterItem("minecraft:red_sandstone", SandstoneCut{Red: true})
 	world.RegisterItem("minecraft:gravel", Gravel{})
 }
 

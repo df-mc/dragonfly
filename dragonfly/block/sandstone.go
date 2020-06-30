@@ -7,11 +7,10 @@ import (
 
 //Sand is a block which can be found in a desert or on beaches.
 type Sandstone struct {
-	// ColourRed specifies if the sandstone is red or not. Sandstone only has it's basic colour and red.
-	ColourRed bool
-	// DataValue specifies the block state of the sandstone.
-	//Valid values: 0 (Default), 1 (Chiseled), 2 (Cut), 3 (Smooth)
-	DataValue int16
+	// Red specifies if the sandstone is red or not. Sandstone only has it's basic colour and red.
+	Red bool
+	// Smooth specifies the block state of Sandstone
+	Smooth bool
 }
 
 // BreakInfo ...
@@ -26,40 +25,36 @@ func (s Sandstone) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (s Sandstone) EncodeItem() (id int32, meta int16) {
-	if s.ColourRed {
-		return 179, s.DataValue
+	var m int16 = 0
+	if s.Smooth {
+		m = 1
 	}
-	return 24, s.DataValue
+	if s.Red {
+		return 179, m
+	}
+	return 24, m
 }
 
 // EncodeBlock ...
 func (s Sandstone) EncodeBlock() (name string, properties map[string]interface{}) {
 	var blockName = "minecraft:sandstone"
-	if s.ColourRed {
+	if s.Red {
 		blockName = "minecraft:red_sandstone"
 	}
-	switch s.DataValue {
-	case 0:
-		return blockName, map[string]interface{}{"sand_stone_type": "default"}
-	case 1:
-		return blockName, map[string]interface{}{"sand_stone_type": "heiroglyphs"}
-	case 2:
-		return blockName, map[string]interface{}{"sand_stone_type": "cut"}
-	case 3:
+	if s.Smooth {
 		return blockName, map[string]interface{}{"sand_stone_type": "smooth"}
 	}
-	panic("invalid sandstone type")
+	return blockName, map[string]interface{}{"sand_stone_type": "default"}
 }
 
-// allSandstone returns a list of all possible sandstone states.
+// allSandstone returns all states of sandstone.
 func allSandstone() (sandstone []world.Block) {
-	f := func(colour bool) {
-		sandstone = append(sandstone, Sandstone{ColourRed: colour, DataValue: 0})
-		sandstone = append(sandstone, Sandstone{ColourRed: colour, DataValue: 1})
-		sandstone = append(sandstone, Sandstone{ColourRed: colour, DataValue: 2})
-		sandstone = append(sandstone, Sandstone{ColourRed: colour, DataValue: 3})
+	f := func(red bool, smooth bool) {
+		sandstone = append(sandstone, Sandstone{Smooth: smooth, Red: red})
 	}
-	f(true)
-	f(false)
+	f(false, false)
+	f(false, true)
+	f(true, false)
+	f(true, true)
 	return
 }
