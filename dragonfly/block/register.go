@@ -36,6 +36,11 @@ func init() {
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(Sandstone{})
+	world.RegisterBlock(Glass{})
+	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(GoldBlock{})
+	world.RegisterBlock(IronBlock{})
+	world.RegisterBlock(Beacon{})
 }
 
 func init() {
@@ -111,6 +116,11 @@ func init() {
 	world.RegisterItem("minecraft:red_sandstone", SandstoneChiseled{Red: true})
 	world.RegisterItem("minecraft:red_sandstone", SandstoneCut{Red: true})
 	world.RegisterItem("minecraft:gravel", Gravel{})
+	world.RegisterItem("minecraft:glass", Glass{})
+	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
+	world.RegisterItem("minecraft:gold_block", GoldBlock{})
+	world.RegisterItem("minecraft:iron_block", IronBlock{})
+	world.RegisterItem("minecraft:beacon", Beacon{})
 }
 
 func init() {
