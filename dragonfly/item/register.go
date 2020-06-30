@@ -68,4 +68,6 @@ func init() {
 	world.RegisterItem("minecraft:bucket", Bucket{})
 	world.RegisterItem("minecraft:bucket", Bucket{Content: bucket.Water()})
 	world.RegisterItem("minecraft:bucket", Bucket{Content: bucket.Lava()})
+
+	world.RegisterItem("minecraft:flint", Flint{})
 }
