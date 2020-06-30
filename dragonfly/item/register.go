@@ -37,6 +37,13 @@ func init() {
 	world.RegisterItem("minecraft:diamond_sword", Sword{Tier: tool.TierDiamond})
 	world.RegisterItem("minecraft:netherite_sword", Sword{Tier: tool.TierNetherite})
 
+	world.RegisterItem("minecraft:wooden_hoe", Hoe{Tier: tool.TierWood})
+	world.RegisterItem("minecraft:golden_hoe", Hoe{Tier: tool.TierGold})
+	world.RegisterItem("minecraft:stone_hoe", Hoe{Tier: tool.TierStone})
+	world.RegisterItem("minecraft:iron_hoe", Hoe{Tier: tool.TierIron})
+	world.RegisterItem("minecraft:diamond_hoe", Hoe{Tier: tool.TierDiamond})
+	world.RegisterItem("minecraft:netherite_hoe", Hoe{Tier: tool.TierNetherite})
+
 	world.RegisterItem("minecraft:leather_helmet", Helmet{Tier: armour.TierLeather})
 	world.RegisterItem("minecraft:golden_helmet", Helmet{Tier: armour.TierGold})
 	world.RegisterItem("minecraft:chainmail_helmet", Helmet{Tier: armour.TierChain})
