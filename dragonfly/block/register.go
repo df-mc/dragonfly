@@ -32,6 +32,7 @@ func init() {
 	world.RegisterBlock(allWater()...)
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(Obsidian{})
+	world.RegisterBlock(DiamondBlock{})
 }
 
 func init() {
@@ -97,6 +98,7 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Acacia(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
+	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 }
 
 func init() {
