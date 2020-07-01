@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -25,7 +26,7 @@ func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3
 			return false
 		}
 		w.SetBlock(pos, item_internal.FarmLand)
-		//TODO: Play the sound
+		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: item_internal.FarmLand})
 		ctx.DamageItem(1)
 		return true
 	}
