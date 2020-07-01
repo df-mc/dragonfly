@@ -38,6 +38,13 @@ func (w Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:carpet", map[string]interface{}{"color": w.Colour.String()}
 }
 
+// NeighbourUpdateTick ...
+func (c Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
+	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
+		w.BreakBlock(pos)
+	}
+}
+
 // UseOnBlock handles not placing carpets on top of air blocks.
 func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, wrld *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(wrld, pos, face, c)
