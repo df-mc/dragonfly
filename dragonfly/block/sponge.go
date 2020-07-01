@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -41,19 +42,18 @@ func (s Sponge) EncodeBlock() (name string, properties map[string]interface{}) {
 // UseOnBlock places the sponge, absorbs nearby water if it's still dry and flags it as wet if any water has been
 // absorbed.
 func (s Sponge) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+	pos, _, used = firstReplaceable(w, pos, face, s)
 	if !used {
 		return
 	}
 
 	place(w, pos, s, user, ctx)
 
-	// the sponge is dry, so it can absorb nearby water.
+	// The sponge is dry, so it can absorb nearby water.
 	if !s.Wet {
 		if s.absorbWater(pos, w) > 0 {
-			// water has been absorbed, so we flag the sponge as wet.
-			s.Wet = true
-			w.SetBlock(pos, s)
+			// Water has been absorbed, so we flag the sponge as wet.
+			s.setWet(pos, w)
 		}
 	}
 
@@ -63,14 +63,21 @@ func (s Sponge) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 // NeighbourUpdateTick checks for nearby water flow. If water could be found and the sponge is dry, it will absorb the
 // water and be flagged as wet.
 func (s Sponge) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	// the sponge is dry, so it can absorb nearby water.
+	// The sponge is dry, so it can absorb nearby water.
 	if !s.Wet {
 		if s.absorbWater(pos, w) > 0 {
-			// water has been absorbed, so we flag the sponge as wet.
-			s.Wet = true
-			w.SetBlock(pos, s)
+			// Water has been absorbed, so we flag the sponge as wet.
+			s.setWet(pos, w)
 		}
 	}
+}
+
+// setWet flags a sponge as wet. It replaces the block at pos by a wet sponge block and displays a block break
+// particle at the sponge's position with an offset of 0.5 on each axis.
+func (s Sponge) setWet(pos world.BlockPos, w *world.World) {
+	s.Wet = true
+	w.SetBlock(pos, s)
+	w.AddParticle(pos.Vec3().Add(mgl64.Vec3{0.5, 0.5, 0.5}), particle.BlockBreak{Block: Water{Depth: 1}})
 }
 
 // absorbWater replaces water blocks near the sponge by air out to a taxicab geometry of 7 in all directions.
@@ -86,14 +93,14 @@ func (s Sponge) absorbWater(pos world.BlockPos, w *world.World) int {
 	queue := make([]distanceToSponge, 0)
 	queue = append(queue, distanceToSponge{pos, 0})
 
-	// a sponge can only absorb up to 65 water blocks.
+	// A sponge can only absorb up to 65 water blocks.
 	replaced := 0
 	for replaced < 65 {
 		if len(queue) == 0 {
 			break
 		}
 
-		// pop the next distanceToSponge entry from the queue.
+		// Pop the next distanceToSponge entry from the queue.
 		next := queue[0]
 		queue = queue[1:]
 
@@ -107,10 +114,6 @@ func (s Sponge) absorbWater(pos world.BlockPos, w *world.World) int {
 					if next.distance < 7 {
 						queue = append(queue, distanceToSponge{neighbour, next.distance + 1})
 					}
-				}
-			} else if _, isAir := w.Block(neighbour).(Air); isAir {
-				if next.distance < 7 {
-					queue = append(queue, distanceToSponge{neighbour, next.distance + 1})
 				}
 			}
 		})
