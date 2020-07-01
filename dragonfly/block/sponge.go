@@ -104,7 +104,6 @@ func (s Sponge) absorbWater(pos world.BlockPos, w *world.World) int {
 		next := queue[0]
 		queue = queue[1:]
 
-		// TODO: absorb water only if it's next to the sponge or connected to it.
 		next.block.Neighbours(func(neighbour world.BlockPos) {
 			liquid, found := w.Liquid(neighbour)
 			if found {
