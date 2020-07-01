@@ -8,38 +8,43 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
+type Carpet struct {
+	Colour colour.Colour
+}
+
 // AABB ...
 func (Carpet) AABB(world.BlockPos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.0625, 1})}
 }
 
 // BreakInfo ...
-func (w Carpet) BreakInfo() BreakInfo {
+func (c Carpet) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.1,
 		Harvestable: alwaysHarvestable,
 		Effective:   alwaysEffective,
-		Drops:       simpleDrops(item.NewStack(w, 1)),
+		Drops:       simpleDrops(item.NewStack(c, 1)),
 	}
 }
 
-// Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
-type Carpet struct {
-	Colour colour.Colour
-}
-
 // EncodeItem ...
-func (w Carpet) EncodeItem() (id int32, meta int16) {
-	return 171, int16(w.Colour.Uint8())
+func (c Carpet) EncodeItem() (id int32, meta int16) {
+	return 171, int16(c.Colour.Uint8())
 }
 
 // EncodeBlock ...
-func (w Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:carpet", map[string]interface{}{"color": w.Colour.String()}
+func (c Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
+	return "minecraft:carpet", map[string]interface{}{"color": c.Colour.String()}
+}
+
+// HasLiquidDrops ...
+func (Carpet) HasLiquidDrops() bool {
+	return true
 }
 
 // NeighbourUpdateTick ...
-func (c Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
+func (Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
 		w.BreakBlock(pos)
 	}
@@ -47,7 +52,7 @@ func (c Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World)
 
 // UseOnBlock handles not placing carpets on top of air blocks.
 func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, wrld *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(wrld, pos, face, c)
+	pos, _, used = firstReplaceable(wrld, pos, face, c)
 	if !used {
 		return
 	}
