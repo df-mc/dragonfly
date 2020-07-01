@@ -2,14 +2,14 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
-// SandstoneChiseled is a block which naturally generates in Desert Villages and Desert Temples.
-type SandstoneChiseled struct {
-	// Red specifies if the sandstone is red or not. SandstoneChiseled only has it's basic colour and red.
+// ChiseledSandstone is a block which naturally generates in Desert Villages and Desert Temples.
+type ChiseledSandstone struct {
+	// Red specifies if the sandstone is red or not. ChiseledSandstone only has it's basic colour and red.
 	Red bool
 }
 
 // BreakInfo ...
-func (s SandstoneChiseled) BreakInfo() BreakInfo {
+func (s ChiseledSandstone) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.8,
 		Harvestable: pickaxeHarvestable,
@@ -19,7 +19,7 @@ func (s SandstoneChiseled) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s SandstoneChiseled) EncodeItem() (id int32, meta int16) {
+func (s ChiseledSandstone) EncodeItem() (id int32, meta int16) {
 	if s.Red {
 		return 179, 1
 	}
@@ -27,7 +27,7 @@ func (s SandstoneChiseled) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SandstoneChiseled) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s ChiseledSandstone) EncodeBlock() (name string, properties map[string]interface{}) {
 	var blockName = "minecraft:sandstone"
 	if s.Red {
 		blockName = "minecraft:red_sandstone"

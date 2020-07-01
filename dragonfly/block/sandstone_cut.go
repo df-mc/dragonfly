@@ -2,14 +2,14 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
-// SandstoneCut is a block which can be found in generated structures.
-type SandstoneCut struct {
-	// Red specifies if the sandstone is red or not. SandstoneChiseled only has it's basic colour and red.
+// CutSandstone is a block which can be found in generated structures.
+type CutSandstone struct {
+	// Red specifies if the sandstone is red or not. ChiseledSandstone only has it's basic colour and red.
 	Red bool
 }
 
 // BreakInfo ...
-func (s SandstoneCut) BreakInfo() BreakInfo {
+func (s CutSandstone) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.8,
 		Harvestable: pickaxeHarvestable,
@@ -19,7 +19,7 @@ func (s SandstoneCut) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s SandstoneCut) EncodeItem() (id int32, meta int16) {
+func (s CutSandstone) EncodeItem() (id int32, meta int16) {
 	if s.Red {
 		return 179, 2
 	}
@@ -27,7 +27,7 @@ func (s SandstoneCut) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SandstoneCut) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s CutSandstone) EncodeBlock() (name string, properties map[string]interface{}) {
 	var blockName = "minecraft:sandstone"
 	if s.Red {
 		blockName = "minecraft:red_sandstone"
