@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
@@ -46,8 +47,13 @@ func (Carpet) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
-		w.BreakBlock(pos)
+		w.ScheduleBlockUpdate(pos, time.Second/20)
 	}
+}
+
+// ScheduledTick ...
+func (Carpet) ScheduledTick(pos world.BlockPos, w *world.World) {
+	w.BreakBlock(pos)
 }
 
 // UseOnBlock handles not placing carpets on top of air blocks.
