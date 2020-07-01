@@ -99,8 +99,6 @@ var hoeEffective = func(t tool.Tool) bool {
 	return t.ToolType() == tool.TypeHoe
 }
 
-//TODO: Add shearEffective
-
 // alwaysHarvestable is a convenience function for blocks that are harvestable using any item.
 var alwaysHarvestable = func(t tool.Tool) bool {
 	return true

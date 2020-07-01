@@ -16,6 +16,7 @@ func init() {
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
+	world.RegisterBlock(Grass{}, Grass{Path: true})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
 	world.RegisterBlock(Farmland{})
@@ -103,6 +104,7 @@ func init() {
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = Grass{Path: true}
 	item_internal.FarmLand = Farmland{}
+	item_internal.Dirt = Dirt{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)
 		return ok && !l.Stripped
