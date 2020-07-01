@@ -112,6 +112,7 @@ func init() {
 	world.RegisterItem("minecraft:iron_block", IronBlock{})
 	world.RegisterItem("minecraft:beacon", Beacon{})
 	world.RegisterItem("minecraft:sponge", Sponge{})
+	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
 }
 
 func init() {
