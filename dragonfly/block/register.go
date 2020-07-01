@@ -33,6 +33,8 @@ func init() {
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
+	world.RegisterBlock(allCarpets()...)
+	world.RegisterBlock(allWool()...)
 }
 
 func init() {
@@ -71,7 +73,9 @@ func init() {
 	world.RegisterItem("minecraft:stripped_dark_oak_log", Log{Wood: wood.DarkOak(), Stripped: true})
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: wood.Oak(), Stripped: true})
 	for _, c := range colour.All() {
+		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
+		world.RegisterItem("minecraft:wool", Wool{Colour: c})
 	}
 	for _, b := range allLight() {
 		world.RegisterItem("minecraft:light_block", b.(world.Item))
