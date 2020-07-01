@@ -27,7 +27,7 @@ func (s Sandstone) BreakInfo() BreakInfo {
 func (s Sandstone) EncodeItem() (id int32, meta int16) {
 	var m int16 = 0
 	if s.Smooth {
-		m = 1
+		m = 3
 	}
 	if s.Red {
 		return 179, m
