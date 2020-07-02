@@ -17,8 +17,10 @@ type Sponge struct {
 // BreakInfo ...
 func (s Sponge) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness: 0.6,
-		Drops:    simpleDrops(item.NewStack(s, 1)),
+		Hardness:    0.6,
+		Drops:       simpleDrops(item.NewStack(s, 1)),
+		Effective:   nothingEffective,
+		Harvestable: alwaysHarvestable,
 	}
 }
 
