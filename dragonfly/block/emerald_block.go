@@ -5,13 +5,15 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
+// EmeraldBlock is a precious mineral block crafted using 9 emeralds.
 type EmeraldBlock struct{}
 
+// BreakInfo ...
 func (e EmeraldBlock) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness: 5,
 		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
 		},
 		Effective: pickaxeEffective,
 		Drops:     simpleDrops(item.NewStack(e, 1)),

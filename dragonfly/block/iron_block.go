@@ -5,13 +5,15 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
+// IronBlock is a precious metal block made from 9 iron ingots.
 type IronBlock struct{}
 
+// BreakInfo ...
 func (i IronBlock) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness: 5,
 		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
 		},
 		Effective: pickaxeEffective,
 		Drops:     simpleDrops(item.NewStack(i, 1)),

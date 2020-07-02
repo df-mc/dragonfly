@@ -2,19 +2,21 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
+// Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump
+// Boost, Haste, Regeneration, Resistance, or Strength to nearby players.
 type Beacon struct{}
 
+// TODO: Implement beacons properly.
+
+// BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness: 3,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
-		},
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(b, 1)),
+		Hardness:    3,
+		Harvestable: alwaysHarvestable,
+		Effective:   nothingEffective,
+		Drops:       simpleDrops(item.NewStack(b, 1)),
 	}
 }
 
