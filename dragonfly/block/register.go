@@ -43,6 +43,7 @@ func init() {
 	world.RegisterBlock(allStainedTerracotta()...)
 	world.RegisterBlock(allGlazedTerracotta()...)
 	world.RegisterBlock(Terracotta{})
+	world.RegisterBlock(allStainedGlass()...)
 }
 
 func init() {
@@ -83,6 +84,7 @@ func init() {
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
+		world.RegisterItem("minecraft:stained_glass", StainedGlass{Colour: c})
 
 		colourName := c.String()
 		if c == colour.LightGrey() {
