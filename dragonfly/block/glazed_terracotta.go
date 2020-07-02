@@ -7,12 +7,12 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// GlazedTerracotta is a vibrant solid block that comes in the 16 regular dye colors.
+// GlazedTerracotta is a vibrant solid block that comes in the 16 regular dye colours.
 type GlazedTerracotta struct {
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 	// Facing specifies the face of the block.
-	Facing world.Face
+	Facing world.Direction
 }
 
 // BreakInfo ...
@@ -27,28 +27,27 @@ func (t GlazedTerracotta) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (t GlazedTerracotta) EncodeItem() (id int32, meta int16) {
-	// Item ID for glazed terracotta is equal to 220 + color number.
+	// Item ID for glazed terracotta is equal to 220 + colour number.
 	return int32(220 + t.Colour.Uint8()), meta
 }
 
 // EncodeBlock ...
 func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]interface{}) {
-	var colourName string
+	colourName := t.Colour.String()
 	if t.Colour == colour.LightGrey() {
-		// Light grey is actually called "silver" in the block name. Mojang pls.
+		// Light grey is actually called "silver" in the block state. Mojang pls.
 		colourName = "silver"
-	} else {
-		colourName = t.Colour.String()
 	}
-	return "minecraft:" + colourName + "_glazed_terracotta", map[string]interface{}{"facing_direction": int32(t.Facing)}
+	return "minecraft:" + colourName + "_glazed_terracotta", map[string]interface{}{"facing_direction": int32(2 + t.Facing)}
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.
-func (t GlazedTerracotta) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, user.Facing().Opposite().Face(), t)
+func (t GlazedTerracotta) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(w, pos, face, t)
 	if !used {
 		return
 	}
+	t.Facing = user.Facing().Opposite()
 
 	place(w, pos, t, user, ctx)
 	return placed(ctx)

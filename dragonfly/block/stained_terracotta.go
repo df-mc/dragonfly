@@ -7,7 +7,7 @@ import (
 )
 
 // StainedTerracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. In contrast
-// to Terracotta, t can be colored in the same 16 colors that wool can be dyed, but more dulled and earthen.
+// to Terracotta, t can be coloured in the same 16 colours that wool can be dyed, but more dulled and earthen.
 type StainedTerracotta struct {
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
@@ -30,12 +30,10 @@ func (t StainedTerracotta) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]interface{}) {
-	var colourName string
+	colourName := t.Colour.String()
 	if t.Colour == colour.LightGrey() {
 		// Light grey is actually called "silver" in the block state. Mojang pls.
 		colourName = "silver"
-	} else {
-		colourName = t.Colour.String()
 	}
 	return "minecraft:stained_hardened_clay", map[string]interface{}{"color": colourName}
 }
