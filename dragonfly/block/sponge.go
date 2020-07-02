@@ -50,15 +50,6 @@ func (s Sponge) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 	}
 
 	place(w, pos, s, user, ctx)
-	if placed(ctx) {
-		// The sponge is dry, so it can absorb nearby water.
-		if !s.Wet {
-			if s.absorbWater(pos, w) > 0 {
-				// Water has been absorbed, so we flag the sponge as wet.
-				s.setWet(pos, w)
-			}
-		}
-	}
 	return placed(ctx)
 }
 
