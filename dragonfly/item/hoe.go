@@ -14,7 +14,7 @@ type Hoe struct {
 	Tier tool.Tier
 }
 
-// This function will turn a dirt or grass block into a farmland if the necessary properties are met.
+// UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
 func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
 	if grass := w.Block(pos); grass == item_internal.Grass || grass == item_internal.Dirt {
 		if face == world.FaceDown {
