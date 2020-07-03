@@ -104,6 +104,11 @@ var shovelEffective = func(t tool.Tool) bool {
 	return t.ToolType() == tool.TypeShovel
 }
 
+// nothingEffective is a convenience function for blocks that cannot be mined efficiently with any tool.
+var nothingEffective = func(tool.Tool) bool {
+	return false
+}
+
 // alwaysHarvestable is a convenience function for blocks that are harvestable using any item.
 var alwaysHarvestable = func(t tool.Tool) bool {
 	return true

@@ -63,15 +63,15 @@ const (
 	containerHotbar               = 27
 	containerInventory            = 28
 	containerOffHand              = 33
-	containerCreativeOutput       = 58
-	containerCreativeOutputAuto   = 59
+	containerCursor               = 58
+	containerCreativeOutput       = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerCreativeOutput, containerCreativeOutputAuto:
+	case containerCraftingGrid, containerCreativeOutput, containerCursor:
 		// UI inventory.
 		return s.ui, true
 	case containerHotbar, containerInventory, containerInventoryChestOpened:

@@ -33,8 +33,16 @@ func init() {
 	world.RegisterBlock(allLava()...)
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
-	world.RegisterBlock(allCarpets()...)
-	world.RegisterBlock(allWool()...)
+	world.RegisterBlock(Glass{})
+	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(GoldBlock{})
+	world.RegisterBlock(IronBlock{})
+	world.RegisterBlock(Beacon{})
+	world.RegisterBlock(Sponge{})
+	world.RegisterBlock(Sponge{Wet: true})
+	world.RegisterBlock(allStainedTerracotta()...)
+	world.RegisterBlock(allGlazedTerracotta()...)
+	world.RegisterBlock(Terracotta{})
 }
 
 func init() {
@@ -73,9 +81,15 @@ func init() {
 	world.RegisterItem("minecraft:stripped_dark_oak_log", Log{Wood: wood.DarkOak(), Stripped: true})
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: wood.Oak(), Stripped: true})
 	for _, c := range colour.All() {
-		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
-		world.RegisterItem("minecraft:wool", Wool{Colour: c})
+		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
+
+		colourName := c.String()
+		if c == colour.LightGrey() {
+			colourName = "silver"
+		}
+
+		world.RegisterItem("minecraft:"+colourName+"_glazed_terracotta", GlazedTerracotta{Colour: c})
 	}
 	for _, b := range allLight() {
 		world.RegisterItem("minecraft:light_block", b.(world.Item))
@@ -103,6 +117,14 @@ func init() {
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
+	world.RegisterItem("minecraft:glass", Glass{})
+	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
+	world.RegisterItem("minecraft:gold_block", GoldBlock{})
+	world.RegisterItem("minecraft:iron_block", IronBlock{})
+	world.RegisterItem("minecraft:beacon", Beacon{})
+	world.RegisterItem("minecraft:sponge", Sponge{})
+	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
+	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
 }
 
 func init() {
