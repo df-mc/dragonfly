@@ -43,6 +43,8 @@ func init() {
 	world.RegisterBlock(allStainedTerracotta()...)
 	world.RegisterBlock(allGlazedTerracotta()...)
 	world.RegisterBlock(Terracotta{})
+	world.RegisterBlock(allCarpets()...)
+	world.RegisterBlock(allWool()...)
 }
 
 func init() {
