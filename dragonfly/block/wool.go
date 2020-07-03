@@ -6,6 +6,11 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
+// Wool is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
+type Wool struct {
+	Colour colour.Colour
+}
+
 // BreakInfo ...
 func (w Wool) BreakInfo() BreakInfo {
 	return BreakInfo{
@@ -14,11 +19,6 @@ func (w Wool) BreakInfo() BreakInfo {
 		Effective:   shearsEffective,
 		Drops:       simpleDrops(item.NewStack(w, 1)),
 	}
-}
-
-// Wool is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
-type Wool struct {
-	Colour colour.Colour
 }
 
 // EncodeItem ...

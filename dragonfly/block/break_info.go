@@ -79,8 +79,8 @@ type BreakInfo struct {
 	Drops func(t tool.Tool) []item.Stack
 }
 
-// alwaysEffective is a convenience function for blocks that are mined the same by all tools.
-var alwaysEffective = func(t tool.Tool) bool {
+// neverEffective is a convenience function for blocks that are mined the same by all tools.
+var neverEffective = func(t tool.Tool) bool {
 	return true
 }
 
@@ -105,7 +105,9 @@ var shovelEffective = func(t tool.Tool) bool {
 }
 
 // alwaysHarvestable is a convenience function for blocks that are harvestable using any item.
-var alwaysHarvestable = alwaysEffective
+var alwaysHarvestable = func(t tool.Tool) bool {
+	return true
+}
 
 // pickaxeHarvestable is a convenience function for blocks that are harvestable using any kind of pickaxe.
 var pickaxeHarvestable = pickaxeEffective

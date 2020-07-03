@@ -24,7 +24,7 @@ func (c Carpet) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.1,
 		Harvestable: alwaysHarvestable,
-		Effective:   alwaysEffective,
+		Effective:   neverEffective,
 		Drops:       simpleDrops(item.NewStack(c, 1)),
 	}
 }
