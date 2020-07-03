@@ -44,6 +44,8 @@ func init() {
 	world.RegisterBlock(allGlazedTerracotta()...)
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(allStainedGlass()...)
+	world.RegisterBlock(allStainedGlassPane()...)
+	world.RegisterBlock(GlassPane{})
 }
 
 func init() {
@@ -85,6 +87,7 @@ func init() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
 		world.RegisterItem("minecraft:stained_glass", StainedGlass{Colour: c})
+		world.RegisterItem("minecraft:stained_glass_pane", StainedGlassPane{Colour: c})
 
 		colourName := c.String()
 		if c == colour.LightGrey() {
@@ -127,6 +130,7 @@ func init() {
 	world.RegisterItem("minecraft:sponge", Sponge{})
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
+	world.RegisterItem("minecraft:glass_pane", GlassPane{})
 }
 
 func init() {
