@@ -88,3 +88,9 @@ type AABBer interface {
 	// AABB returns all the axis aligned bounding boxes of the block.
 	AABB(pos world.BlockPos, w *world.World) []physics.AABB
 }
+
+// Connectable represents a block that changes its bounds depending on blocks next to it.
+type Connectable interface {
+	// ConnectsWith determines whether the Connectable block is able to connect with the provided other block.
+	ConnectsWith(other world.Block) bool
+}

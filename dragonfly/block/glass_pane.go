@@ -37,6 +37,15 @@ func (p GlassPane) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	return calculateThinBounds(pos, w)
 }
 
+// ConnectsWith ...
+func (p GlassPane) ConnectsWith(other world.Block) bool {
+	switch other.(type) {
+	case GlassPane, StainedGlassPane: // TODO(lhochbaum): Add iron bars as soon as they're implemented.
+		return true
+	}
+	return false
+}
+
 // calculateThinBounds checks the connections of a thin block in all directions and changes its physics.AABB
 // accordingly.
 func calculateThinBounds(pos world.BlockPos, w *world.World) []physics.AABB {
@@ -44,16 +53,14 @@ func calculateThinBounds(pos world.BlockPos, w *world.World) []physics.AABB {
 
 	boxes := make([]physics.AABB, 0, 5)
 	mainBox := physics.NewAABB(mgl64.Vec3{offset, 0, offset}, mgl64.Vec3{1 - offset, 1, 1 - offset})
-	for i := world.Face(2); i < 6; i++ {
-		block := w.Block(pos.Side(i))
-		if connectsWith(block) {
-			boxes = append(boxes, mainBox.ExtendTowards(int(i), offset))
+
+	if c, isConnectable := w.Block(pos).(Connectable); isConnectable {
+		for i := world.Face(2); i < 6; i++ {
+			block := w.Block(pos.Side(i))
+			if c.ConnectsWith(block) {
+				boxes = append(boxes, mainBox.ExtendTowards(int(i), offset))
+			}
 		}
 	}
 	return append(boxes, mainBox)
-}
-
-func connectsWith(world.Block) bool {
-	// TODO: Add actual logic for this.
-	return true
 }
