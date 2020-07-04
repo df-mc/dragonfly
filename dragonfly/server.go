@@ -34,6 +34,9 @@ import (
 type Server struct {
 	started *uint32
 
+	nameMu sync.Mutex
+	name   string
+
 	c        Config
 	log      *logrus.Logger
 	listener *minecraft.Listener
@@ -69,6 +72,7 @@ func New(c *Config, log *logrus.Logger) *Server {
 		players: make(chan *player.Player),
 		world:   world.New(log, c.World.SimulationDistance),
 		p:       make(map[uuid.UUID]*player.Player),
+		name:    c.Server.Name,
 	}
 	return s
 }
@@ -182,6 +186,24 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 	return nil, false
 }
 
+// SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
+// The formatting of the name passed follows the rules of fmt.Sprintf.
+func (server *Server) SetNamef(format string, a ...interface{}) {
+	server.nameMu.Lock()
+	defer server.nameMu.Unlock()
+
+	server.name = fmt.Sprintf(format, a...)
+}
+
+// SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
+// The formatting of the name passed follows the rules of fmt.Sprint.
+func (server *Server) SetName(a ...interface{}) {
+	server.nameMu.Lock()
+	defer server.nameMu.Unlock()
+
+	server.name = fmt.Sprint(a...)
+}
+
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	if !server.running() {
@@ -241,11 +263,11 @@ func (server *Server) startListening() error {
 		ServerName:     server.c.Server.Name,
 		MaximumPlayers: server.c.Server.MaximumPlayers,
 	}
-
 	//noinspection SpellCheckingInspection
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
 		return fmt.Errorf("listening on address failed: %w", err)
 	}
+	server.listener.StatusProvider(statusProvider{s: server})
 
 	server.log.Infof("Server running on %v.\n", server.listener.Addr())
 	return nil
