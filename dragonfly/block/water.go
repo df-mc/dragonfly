@@ -79,10 +79,8 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 		})
 		if count >= 2 {
 			func() {
-				if liquid, ok := wo.Liquid(pos.Side(world.FaceDown)); ok {
-					if waterBelow, ok := liquid.(Water); ok && waterBelow.Falling {
-						return
-					}
+				if canFlowInto(w, wo, pos.Side(world.FaceDown), true) {
+					return
 				}
 				// Only form a new source block if there either is no water below this block, or if the water
 				// below this is not falling (full source block).
