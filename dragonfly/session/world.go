@@ -534,6 +534,12 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 			Position:  vec64To32(pos.Vec3()),
 			EventData: 0,
 		})
+	case blockAction.ContinueCrack:
+		s.writePacket(&packet.LevelEvent{
+			EventType: 3602,
+			Position:  vec64To32(pos.Vec3()),
+			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
+		})
 	}
 }
 

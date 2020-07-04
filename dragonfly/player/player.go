@@ -71,8 +71,9 @@ type Player struct {
 	health   *entity_internal.HealthManager
 	immunity atomic.Value
 
-	breaking    *uint32
-	breakingPos atomic.Value
+	breaking          *uint32
+	breakingPos       atomic.Value
+	lastBreakDuration time.Duration
 
 	breakParticleCounter *uint32
 
@@ -914,9 +915,16 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 
 		held, _ := p.HeldItems()
 		breakTime := block.BreakDuration(p.World().Block(pos), held)
+		if !p.OnGround() {
+			breakTime *= 5
+		}
+		if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+			breakTime *= 5
+		}
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
+		p.lastBreakDuration = breakTime
 	})
 }
 
@@ -964,6 +972,21 @@ func (p *Player) ContinueBreaking(face world.Face) {
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
 		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
+	}
+	held, _ := p.HeldItems()
+	breakTime := block.BreakDuration(b, held)
+
+	if !p.OnGround() {
+		breakTime *= 5
+	}
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+		breakTime *= 5
+	}
+	if breakTime != p.lastBreakDuration {
+		for _, viewer := range p.World().Viewers(pos.Vec3()) {
+			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
+		}
+		p.lastBreakDuration = breakTime
 	}
 }
 

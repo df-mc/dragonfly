@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -18,6 +19,11 @@ type Lava struct {
 	// Falling specifies if the lava is falling. Falling lava will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// AABB returns no boxes.
+func (Lava) AABB(world.BlockPos, *world.World) []physics.AABB {
+	return nil
 }
 
 // ReplaceableBy ...
