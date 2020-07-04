@@ -195,7 +195,7 @@ func (server *Server) SetNamef(format string, a ...interface{}) {
 	server.name = fmt.Sprintf(format, a...)
 }
 
-// SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
+// SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...interface{}) {
 	server.nameMu.Lock()
