@@ -50,7 +50,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
 		}
 		blobs = append(blobs, data.SubChunks[y])
 	}
-	blobs = append(blobs, data.Data2D)
+	blobs = append(blobs, data.Data2D[512:])
 
 	m := make(map[uint64]struct{}, len(blobs))
 	hashes := make([]uint64, len(blobs))
