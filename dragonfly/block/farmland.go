@@ -14,7 +14,7 @@ type Farmland struct {
 	Hydration uint8
 }
 
-// If a block was placed above the farmland that isn't a crop, turn the farmland into dirt.
+// NeighborUpdateTick checks if a block was placed above the farmland that isn't a crop, turn the farmland into dirt.
 func (f Farmland) NeighbourUpdateTick(pos, block world.BlockPos, w *world.World) {
 	if _, isAir := w.Block(pos.Side(world.FaceUp)).(Air); !isAir {
 		if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop {
@@ -76,7 +76,7 @@ func (f Farmland) CalculateHydration(pos world.BlockPos, w *world.World) {
 	}
 }
 
-// BreakInfo...
+// BreakInfo ...
 func (f Farmland) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.6,
@@ -86,7 +86,7 @@ func (f Farmland) BreakInfo() BreakInfo {
 	}
 }
 
-// EncodeBlock...
+// EncodeBlock ...
 func (f Farmland) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:farmland", map[string]interface{}{"moisturized_amount": int32(f.Hydration)}
 }
