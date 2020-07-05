@@ -1,10 +1,7 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/dragonfly/world"
-	"math/rand"
-)
-
+// Crop is an interface for all plants that are grown. A crop uses random chances on ticks to make sure that the crop should grow.
+// A crop doesn't necessarily have to be on a farmland block, as there are non-hydrated plants like trees and cactus that are planted on grass
 type Crop interface {
 	// LightLevelRequired is the light level required for the crop to grow.
 	LightLevelRequired() uint8
@@ -14,9 +11,4 @@ type Crop interface {
 
 	// RequiresFarmland is if the crop requires farmland to be able to grow.
 	RequiresFarmland() bool
-
-	// Grow is ran every random tick to try and grow the crop 1 stage.
-	// Growth stages are handled inside of this method, making crops easier to create on a basis.
-	// LightLevel and Hydration are passed to make crops in better conditions grow faster.
-	Grow(pos world.BlockPos, w *world.World, r *rand.Rand, Hydration uint8)
 }

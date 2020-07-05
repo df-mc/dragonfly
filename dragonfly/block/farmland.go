@@ -7,9 +7,13 @@ import (
 	"math/rand"
 )
 
+// Farmland is a block that crops are grown on. Farmland is created by interacting with a grass block using a hoe.
+// Farmland takes into consideration its distance from a water source block to increase its efficiency and hold its hydration state
 type Farmland struct {
-	// Hydration is how much moisture a block has. This is calculated by checking if there is a water source block
-	// 4 blocks away in any direction from the farmland that is either 1 block above or on the same level as the farmland block.
+	// Hydration is how much moisture a block has. The max and default hydration is 7, with its lowest
+	// hydration being 0, which is essentially dirt with a crop on it.
+	// This is calculated by checking if there is a water source block 4 blocks away in any direction from
+	// the farmland that is either 1 block above or on the same level as the farmland block.
 	// If there isn't, we then count down the hydration level by one until it eventually dries up and turns back into dirt.
 	Hydration uint8
 }
@@ -26,34 +30,21 @@ func (f Farmland) NeighbourUpdateTick(pos, block world.BlockPos, w *world.World)
 // RandomTick ...
 func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	// Calculate the Hydration of the farmland block.
-	f.CalculateHydration(pos, w)
-	// Check if there is a crop on the farmland block.
-	if crop, isCrop := w.Block(pos.Add(world.BlockPos{0, 1})).(Crop); isCrop {
-		// Check if the crop requires Hydration to grow and if it meets those requirements.
-		if crop.RequiresHydration() && f.Hydration == 0 {
-			return
-		}
+	f.Hydrate(pos, w)
 
-		// Check if the crop can grow due to lighting.
-		if w.Light(pos.Add(world.BlockPos{0, 1})) >= crop.LightLevelRequired() {
-			crop.Grow(pos.Add(world.BlockPos{0, 1}), w, r, f.Hydration)
-		}
+	// Check if there is a crop on the farmland block.
+	if _, isCrop := w.Block(pos.Add(world.BlockPos{0, 1})).(Crop); isCrop {
+		return
 	} else if f.Hydration <= 0 {
 		// If no crop exists and the Hydration level is 0, turn the block into dirt.
 		w.SetBlock(pos, item_internal.Dirt)
 	}
-
-	// If the farmland is dehydrated it should be replaced with it's corresponding farmland block.
-	if f.Hydration < 7 && f.Hydration > 0 {
-		// Decrease the hydration one by one down to zero.
-		w.SetBlock(pos, Farmland{f.Hydration - 1})
-	}
 }
 
-// CalculateHydration determines the Hydration or moisture of a block by scanning a 4 block box
+// Hydrate determines the Hydration or moisture of a block by scanning a 4 block box
 // around the Farmland block in each direction for water source blocks.
 // This also takes into account water source blocks one block higher than the farmland.
-func (f Farmland) CalculateHydration(pos world.BlockPos, w *world.World) {
+func (f Farmland) Hydrate(pos world.BlockPos, w *world.World) {
 	// Start on the original Y level of the farmland block and make 9x9 with the center being the farmland block.
 	// If any water source blocks are found, return max hydration.
 	for yLevel := 0; yLevel <= 1; yLevel++ {
@@ -70,9 +61,9 @@ func (f Farmland) CalculateHydration(pos world.BlockPos, w *world.World) {
 		}
 	}
 	// Checks if the farmland block was previously hydrated.
-	if f.Hydration == 7 {
+	if f.Hydration > 0 {
 		// No water blocks are found, meaning the block is now a dehydrated farmland block.
-		w.SetBlock(pos, Farmland{6})
+		w.SetBlock(pos, Farmland{f.Hydration - 1})
 	}
 }
 
