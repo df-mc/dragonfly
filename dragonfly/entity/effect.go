@@ -71,7 +71,6 @@ func (m *EffectManager) Add(e Effect, entity Living) {
 		return
 	}
 	m.effects[t] = e
-	return
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
