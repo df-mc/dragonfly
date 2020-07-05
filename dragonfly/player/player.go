@@ -877,6 +877,8 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if living.AttackImmune() {
 			return
 		}
+		p.StopSprinting()
+
 		healthBefore := living.Health()
 		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.45, 0.3608)
