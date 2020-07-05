@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -17,6 +18,11 @@ type Water struct {
 	// Falling specifies if the water is falling. Falling water will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// AABB returns no boxes.
+func (Water) AABB(world.BlockPos, *world.World) []physics.AABB {
+	return nil
 }
 
 // LiquidDepth returns the depth of the water.
@@ -73,10 +79,8 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 		})
 		if count >= 2 {
 			func() {
-				if liquid, ok := wo.Liquid(pos.Side(world.FaceDown)); ok {
-					if waterBelow, ok := liquid.(Water); ok && waterBelow.Falling {
-						return
-					}
+				if canFlowInto(w, wo, pos.Side(world.FaceDown), true) {
+					return
 				}
 				// Only form a new source block if there either is no water below this block, or if the water
 				// below this is not falling (full source block).

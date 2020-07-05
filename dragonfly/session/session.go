@@ -287,7 +287,7 @@ func (s *Session) registerHandlers() {
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo)},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo), responseChanges: map[int32]map[byte]map[byte]int32{}},
 		packet.IDLevelSoundEvent:       nil,
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
