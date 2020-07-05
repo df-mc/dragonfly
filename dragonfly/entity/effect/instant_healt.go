@@ -22,8 +22,8 @@ func (i InstantHealth) Apply(e entity.Living) {
 		// Potency of 1 by default.
 		i.Potency = 1
 	}
-	base := float64(2 << i.Lvl)
-	e.Heal(base*i.Potency, healing.SourceInstantHealthEffect{})
+	base := 2 << i.Lvl
+	e.Heal(float64(base)*i.Potency, healing.SourceInstantHealthEffect{})
 }
 
 // WithDuration ...
