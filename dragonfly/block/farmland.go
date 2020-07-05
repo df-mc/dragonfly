@@ -35,7 +35,7 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 		}
 
 		// Check if the crop can grow due to lighting.
-		if w.Light(world.BlockPos{0, 1}) >= crop.LightLevelRequired() {
+		if w.Light(pos.Add(world.BlockPos{0, 1})) >= crop.LightLevelRequired() {
 			crop.Grow(pos.Add(world.BlockPos{0, 1}), w, r, f.Hydration)
 		}
 	} else if f.Hydration <= 0 {
