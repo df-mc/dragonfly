@@ -21,7 +21,7 @@ func (r Regeneration) Apply(e entity.Living) {
 	}
 }
 
-// WithDuration returns the Regeneration effect with a specific duration.
+// WithDuration ...
 func (r Regeneration) WithDuration(d time.Duration) entity.Effect {
 	return Regeneration{r.withDuration(d)}
 }

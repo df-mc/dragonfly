@@ -33,6 +33,11 @@ func (i instantEffect) ShowParticles() bool {
 	return false
 }
 
+// AmbientSource always returns false for instant effects.
+func (i instantEffect) AmbientSource() bool {
+	return false
+}
+
 // RGBA always returns an empty color.RGBA.
 func (i instantEffect) RGBA() color.RGBA {
 	return color.RGBA{}
