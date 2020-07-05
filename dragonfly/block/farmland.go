@@ -14,7 +14,7 @@ type Farmland struct {
 	Hydration uint8
 }
 
-// NeighbourUpdateTick checks if a block was placed above the farmland that isn't a crop, turn the farmland into dirt.
+// NeighbourUpdateTick ...
 func (f Farmland) NeighbourUpdateTick(pos, block world.BlockPos, w *world.World) {
 	if _, isAir := w.Block(pos.Side(world.FaceUp)).(Air); !isAir {
 		if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop {
@@ -23,9 +23,9 @@ func (f Farmland) NeighbourUpdateTick(pos, block world.BlockPos, w *world.World)
 	}
 }
 
-// RandomTick wil make an attempt to grow crops, along with dehydrating the land and updating the hydration level.
+// RandomTick ...
 func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
-	// Calculate the Hydration of the farmland block
+	// Calculate the Hydration of the farmland block.
 	f.CalculateHydration(pos, w)
 	// Check if there is a crop on the farmland block.
 	if crop, isCrop := w.Block(pos.Add(world.BlockPos{0, 1})).(Crop); isCrop {
@@ -34,12 +34,12 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 			return
 		}
 
-		// Check if the crop can grow due to lighting
+		// Check if the crop can grow due to lighting.
 		if w.Light(world.BlockPos{0, 1}) >= crop.LightLevelRequired() {
 			crop.Grow(pos.Add(world.BlockPos{0, 1}), w, r, f.Hydration)
 		}
 	} else if f.Hydration <= 0 {
-		// If no crop exists and the Hydration level is 0, turn the block into dirt
+		// If no crop exists and the Hydration level is 0, turn the block into dirt.
 		w.SetBlock(pos, item_internal.Dirt)
 	}
 
@@ -60,7 +60,7 @@ func (f Farmland) CalculateHydration(pos world.BlockPos, w *world.World) {
 		for xLevel := -4; xLevel <= 4; xLevel++ {
 			for zLevel := -4; zLevel <= 4; zLevel++ {
 				if water, isWater := w.Block(world.BlockPos{pos.X() + xLevel, pos.Y() + yLevel, pos.Z() + zLevel}).(Water); isWater && water.Depth == 8 {
-					// If the blocks Hydration wasn't 7 before, replace the block
+					// If the blocks Hydration wasn't 7 before, then replace the block.
 					if f.Hydration < 7 {
 						w.SetBlock(pos, Farmland{7})
 					}
@@ -69,7 +69,7 @@ func (f Farmland) CalculateHydration(pos world.BlockPos, w *world.World) {
 			}
 		}
 	}
-	// Checks if the farmland block was previously hydrated
+	// Checks if the farmland block was previously hydrated.
 	if f.Hydration == 7 {
 		// No water blocks are found, meaning the block is now a dehydrated farmland block.
 		w.SetBlock(pos, Farmland{6})
@@ -91,15 +91,10 @@ func (f Farmland) EncodeBlock() (name string, properties map[string]interface{})
 	return "minecraft:farmland", map[string]interface{}{"moisturized_amount": int32(f.Hydration)}
 }
 
-// allFarmland returns all possible states that a block of farmland can be in
+// allFarmland returns all possible states that a block of farmland can be in.
 func allFarmland() (b []world.Block) {
-	b = append(b, Farmland{Hydration: 7})
-	b = append(b, Farmland{Hydration: 6})
-	b = append(b, Farmland{Hydration: 5})
-	b = append(b, Farmland{Hydration: 4})
-	b = append(b, Farmland{Hydration: 3})
-	b = append(b, Farmland{Hydration: 2})
-	b = append(b, Farmland{Hydration: 1})
-	b = append(b, Farmland{Hydration: 0})
+	for i := 7; i >= 0; i-- {
+		b = append(b, Farmland{Hydration: uint8(i)})
+	}
 	return
 }

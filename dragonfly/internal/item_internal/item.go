@@ -16,7 +16,7 @@ var Grass world.Block
 // Dirt holds a dirt block.
 var Dirt world.Block
 
-// FarmLand holds a fully hydrated farmland block
+// FarmLand holds a fully hydrated farmland block.
 var FarmLand world.Block
 
 // Water and Lava hold blocks for their respective liquids.
@@ -31,7 +31,7 @@ var StripLog func(b world.Block) world.Block
 // IsWater is a function used to check if a liquid is water.
 var IsWater func(b world.Liquid) bool
 
-// IsFarmland is a function set to check if a block is farmland
+// IsFarmland is a function set to check if a block is farmland.
 var IsFarmland func(b world.Block) bool
 
 // Replaceable is a function used to check if a block is replaceable.
