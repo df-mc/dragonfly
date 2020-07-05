@@ -34,27 +34,27 @@ func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3
 	return false
 }
 
-// MaxCount will always return 1.
+// MaxCount ...
 func (h Hoe) MaxCount() int {
 	return 1
 }
 
-// AttackDamage returns the damage that the hoe will do when attacking.
+// AttackDamage ...
 func (h Hoe) AttackDamage() float64 {
 	return h.Tier.BaseAttackDamage + 1
 }
 
-// ToolType returns the Hoe ToolType.
+// ToolType ...
 func (h Hoe) ToolType() tool.Type {
 	return tool.TypeHoe
 }
 
-// BaseMiningEfficiency returns how fast the hoe will mine it's respective blocks.
+// BaseMiningEfficiency ...
 func (h Hoe) BaseMiningEfficiency(world.Block) float64 {
 	return h.Tier.BaseMiningEfficiency
 }
 
-// DurabilityInfo returns the durability of the Hoe after breaking or attacking, along with the max durability of that tier.
+// DurabilityInfo ...
 func (h Hoe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    h.Tier.Durability,
@@ -64,7 +64,7 @@ func (h Hoe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// EncodeItem will return the ID of the Hoe based on it's tier.
+// EncodeItem ...
 func (h Hoe) EncodeItem() (id int32, meta int16) {
 	switch h.Tier {
 	case tool.TierWood:
