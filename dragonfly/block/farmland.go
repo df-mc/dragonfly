@@ -14,7 +14,7 @@ type Farmland struct {
 	Hydration uint8
 }
 
-// NeighborUpdateTick checks if a block was placed above the farmland that isn't a crop, turn the farmland into dirt.
+// NeighbourUpdateTick checks if a block was placed above the farmland that isn't a crop, turn the farmland into dirt.
 func (f Farmland) NeighbourUpdateTick(pos, block world.BlockPos, w *world.World) {
 	if _, isAir := w.Block(pos.Side(world.FaceUp)).(Air); !isAir {
 		if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop {

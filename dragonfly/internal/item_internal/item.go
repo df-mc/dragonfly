@@ -16,7 +16,7 @@ var Grass world.Block
 // Dirt holds a dirt block.
 var Dirt world.Block
 
-// FarmLandHydrated holds a fully hydrated farmland block
+// FarmLand holds a fully hydrated farmland block
 var FarmLand world.Block
 
 // Water and Lava hold blocks for their respective liquids.
