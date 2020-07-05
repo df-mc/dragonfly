@@ -19,7 +19,7 @@ func init() {
 	world.RegisterBlock(Grass{}, Grass{Path: true})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
-	world.RegisterBlock(Farmland{})
+	world.RegisterBlock(allFarmland()...)
 	world.RegisterBlock(allLogs()...)
 	world.RegisterBlock(allLeaves()...)
 	world.RegisterBlock(Bedrock{}, Bedrock{InfiniteBurning: true})
@@ -103,7 +103,11 @@ func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = Grass{Path: true}
-	item_internal.FarmLand = Farmland{}
+	item_internal.FarmLand = Farmland{Hydration: 7}
+	item_internal.IsFarmland = func(b world.Block) bool {
+		_, ok := b.(Farmland)
+		return ok
+	}
 	item_internal.Dirt = Dirt{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)
