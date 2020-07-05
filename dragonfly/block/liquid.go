@@ -237,7 +237,7 @@ func canFlowInto(b world.Liquid, w *world.World, pos world.BlockPos, sideways bo
 	}
 	_, ok := world_internal.LiquidRemovable[rid]
 	if ok && sideways {
-		if liq, ok := w.Block(pos).(world.Liquid); ok && (liq.LiquidDepth() == 8 || liq.LiquidType() != b.LiquidType()) {
+		if liq, ok := w.Block(pos).(world.Liquid); ok && ((liq.LiquidDepth() == 8 && !liq.LiquidFalling()) || liq.LiquidType() != b.LiquidType()) {
 			return false
 		}
 	}

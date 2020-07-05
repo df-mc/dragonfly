@@ -441,7 +441,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 	m := defaultEntityMetadata(e)
 	for _, eState := range states {
-		switch eState.(type) {
+		switch st := eState.(type) {
 		case state.Sneaking:
 			m.setFlag(dataKeyFlags, dataFlagSneaking)
 		case state.Sprinting:
@@ -452,6 +452,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagInvisible)
 		case state.Swimming:
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
+		case state.Named:
+			m[dataKeyNameTag] = st.NameTag
 		}
 	}
 	s.writePacket(&packet.SetActorData{
@@ -531,6 +533,12 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 			EventType: packet.EventBlockStopBreak,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: 0,
+		})
+	case blockAction.ContinueCrack:
+		s.writePacket(&packet.LevelEvent{
+			EventType: 3602,
+			Position:  vec64To32(pos.Vec3()),
+			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
 		})
 	}
 }

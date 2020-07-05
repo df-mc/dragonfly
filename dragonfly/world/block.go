@@ -249,22 +249,21 @@ func hashProperties(properties map[string]interface{}) string {
 
 	b := buffers.Get().(*bytes.Buffer)
 	for _, k := range keys {
-		b.WriteString(k)
 		switch v := properties[k].(type) {
 		case bool:
 			if v {
-				_ = b.WriteByte(1)
+				b.WriteByte(1)
 			} else {
-				_ = b.WriteByte(0)
+				b.WriteByte(0)
 			}
 		case uint8:
-			_ = b.WriteByte(v)
+			b.WriteByte(v)
 		case int32:
 			a := uint32(v)
-			_ = b.WriteByte(byte(a))
-			_ = b.WriteByte(byte(a >> 8))
-			_ = b.WriteByte(byte(a >> 16))
-			_ = b.WriteByte(byte(a >> 24))
+			b.WriteByte(byte(a))
+			b.WriteByte(byte(a >> 8))
+			b.WriteByte(byte(a >> 16))
+			b.WriteByte(byte(a >> 24))
 		case string:
 			b.WriteString(v)
 		}

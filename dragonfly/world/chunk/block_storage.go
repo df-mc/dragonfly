@@ -65,15 +65,26 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 // paletteOffset looks up the palette offset at a given x, y and z value in the block storage. This palette
 // offset is not the runtime ID at this offset, but merely an offset in the palette, pointing to a runtime ID.
 func (storage *BlockStorage) paletteOffset(x, y, z byte) uint16 {
-	uint32Offset, bitOffset := storage.offsets(x, y, z)
-	return extractUint16(storage.blocks[uint32Offset], bitOffset, storage.bitsPerBlock)
+	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
+	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
+	return uint16((storage.blocks[uint32Offset] >> bitOffset) & (1<<storage.bitsPerBlock - 1))
 }
 
 // setPaletteOffset sets the palette offset at a given x, y and z to paletteOffset. This offset should point
 // to a runtime ID in the block storage's palette.
 func (storage *BlockStorage) setPaletteOffset(x, y, z byte, paletteOffset uint16) {
-	uint32Offset, bitOffset := storage.offsets(x, y, z)
-	setUint16(&storage.blocks[uint32Offset], bitOffset, storage.bitsPerBlock, paletteOffset)
+	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
+	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
+	v := &storage.blocks[uint32Offset]
+
+	// Manual inline.
+	for i := uint16(0); i < storage.bitsPerBlock; i++ {
+		if (paletteOffset & (1 << i)) != 0 {
+			*v |= uint32(1 << (i + bitOffset))
+		} else {
+			*v &^= uint32(1 << (i + bitOffset))
+		}
+	}
 }
 
 // resize changes the size of a block storage to palette size newPaletteSize. A new block storage is
@@ -104,14 +115,6 @@ func (storage *BlockStorage) resize(newPaletteSize paletteSize) {
 	}
 	// Set the new storage.
 	*storage = *newStorage
-}
-
-// offsets calculates the word offset from a given x, y and z and returns it, along with the bit offset
-// this position is in in the word at wordOffset.
-func (storage *BlockStorage) offsets(x, y, z byte) (wordOffset uint16, bitOffset uint16) {
-	// Offset is the offset in bits that the X, Y and Z result in.
-	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
-	return offset / storage.filledBitsPerWord, offset % storage.filledBitsPerWord
 }
 
 // compact clears unused indexes in the palette by scanning for usages in the block storage. This is a
@@ -145,21 +148,4 @@ func (storage *BlockStorage) compact() {
 		}
 	}
 	storage.palette.blockRuntimeIDs = newRuntimeIDs
-}
-
-// extractUint16 extracts a uint16 from a uint32 at offset, extracting as many as bitsToExtract bits from the
-// uint32.
-func extractUint16(x uint32, offset uint16, bitsToExtract uint16) uint16 {
-	return uint16((x >> offset) & (1<<bitsToExtract - 1))
-}
-
-// setUint16 sets a uint16 in a uint32 at offset, writing as many as bitsToWrite bits to the uint32.
-func setUint16(x *uint32, offset, bitsToWrite, block uint16) {
-	for i := uint16(0); i < bitsToWrite; i++ {
-		if (block & (1 << i)) != 0 {
-			*x |= uint32(1 << (i + offset))
-		} else {
-			*x &^= uint32(1 << (i + offset))
-		}
-	}
 }

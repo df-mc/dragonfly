@@ -42,10 +42,10 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                      string
-	uuid                      uuid.UUID
-	xuid                      string
-	pos, velocity, yaw, pitch atomic.Value
+	name                               string
+	uuid                               uuid.UUID
+	xuid                               string
+	pos, velocity, yaw, pitch, nameTag atomic.Value
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -71,8 +71,9 @@ type Player struct {
 	health   *entity_internal.HealthManager
 	immunity atomic.Value
 
-	breaking    *uint32
-	breakingPos atomic.Value
+	breaking          *uint32
+	breakingPos       atomic.Value
+	lastBreakDuration time.Duration
 
 	breakParticleCounter *uint32
 
@@ -114,6 +115,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.speed.Store(0.1)
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
+	p.nameTag.Store(name)
 	return p
 }
 
@@ -320,6 +322,13 @@ func (p *Player) ShowCoordinates() {
 // HideCoordinates disables the vanilla coordinates for the player.
 func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
+}
+
+// SetNameTag changes the name tag displayed over the player in-game. Changing the name tag does not change
+// the player's name in, for example, the player list or the chat.
+func (p *Player) SetNameTag(name string) {
+	p.nameTag.Store(name)
+	p.updateState()
 }
 
 // SetSpeed sets the speed of the player. The value passed is the blocks/tick speed that the player will then
@@ -906,9 +915,16 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 
 		held, _ := p.HeldItems()
 		breakTime := block.BreakDuration(p.World().Block(pos), held)
+		if !p.OnGround() {
+			breakTime *= 5
+		}
+		if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+			breakTime *= 5
+		}
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
+		p.lastBreakDuration = breakTime
 	})
 }
 
@@ -956,6 +972,21 @@ func (p *Player) ContinueBreaking(face world.Face) {
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
 		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
+	}
+	held, _ := p.HeldItems()
+	breakTime := block.BreakDuration(b, held)
+
+	if !p.OnGround() {
+		breakTime *= 5
+	}
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+		breakTime *= 5
+	}
+	if breakTime != p.lastBreakDuration {
+		for _, viewer := range p.World().Viewers(pos.Vec3()) {
+			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
+		}
+		p.lastBreakDuration = breakTime
 	}
 }
 
@@ -1363,6 +1394,7 @@ func (p *Player) State() (s []state.State) {
 	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
 	}
+	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
 	// TODO: Only set the player as breathing when it is above water.
 	s = append(s, state.Breathing{})
 	return

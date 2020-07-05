@@ -47,4 +47,5 @@ func (c *ClientCacheBlobStatusHandler) resolveBlob(hash uint64, s *Session) {
 		}
 	}
 	s.openChunkTransactions = newOpenTransactions
+	delete(s.blobs, hash)
 }
