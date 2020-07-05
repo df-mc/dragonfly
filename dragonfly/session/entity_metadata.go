@@ -17,6 +17,8 @@ func defaultEntityMetadata(e world.Entity) entityMetadata {
 	bb := e.AABB()
 	m[dataKeyBoundingBoxWidth] = float32(bb.Width())
 	m[dataKeyBoundingBoxHeight] = float32(bb.Height())
+	m[dataKeyPotionColour] = int32(0)
+	m[dataKeyPotionAmbient] = byte(0)
 
 	return m
 }
@@ -41,6 +43,8 @@ const (
 	dataKeyOwnerRuntimeID
 	dataKeyTargetRuntimeID
 	dataKeyAir
+	dataKeyPotionColour
+	dataKeyPotionAmbient
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
 )

@@ -4,6 +4,10 @@ package healing
 // bar is at least 90% filled.
 type SourceFood struct{}
 
+// SourceRegenerationEffect is a healing source used when the player regenerates thanks to the Regeneration
+// effect.
+type SourceRegenerationEffect struct{}
+
 // SourceCustom is a healing source that may be used by users to represent a custom healing source.
 type SourceCustom struct{}
 
@@ -13,5 +17,6 @@ type Source interface {
 	__()
 }
 
-func (SourceFood) __()   {}
-func (SourceCustom) __() {}
+func (SourceFood) __()               {}
+func (SourceCustom) __()             {}
+func (SourceRegenerationEffect) __() {}

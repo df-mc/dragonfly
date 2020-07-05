@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
@@ -31,6 +32,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"image/color"
 	"math/rand"
 	"net"
 	"strings"
@@ -69,6 +71,7 @@ type Player struct {
 
 	speed    atomic.Value
 	health   *entity_internal.HealthManager
+	effects  *entity.EffectManager
 	immunity atomic.Value
 
 	breaking          *uint32
@@ -95,6 +98,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		armour:               inventory.NewArmour(p.broadcastArmour),
 		hunger:               newHungerManager(),
 		health:               entity_internal.NewHealthManager(),
+		effects:              entity.NewEffectManager(),
 		gameMode:             gamemode.Adventure{},
 		h:                    NopHandler{},
 		heldSlot:             new(uint32),
@@ -492,6 +496,29 @@ func (p *Player) SetFood(level int) {
 func (p *Player) AddFood(points int) {
 	p.hunger.AddFood(points)
 	p.sendFood()
+}
+
+// AddEffect adds an entity.Effect to the Player. If the effect is instant, it is applied to the Player
+// immediately. If not, the effect is applied to the player every time the Tick method is called.
+// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
+// if the effects' levels are equal and the new effect has a longer duration.
+func (p *Player) AddEffect(e entity.Effect) {
+	p.effects.Add(e, p)
+	p.session().SendEffect(e)
+	p.updateState()
+}
+
+// RemoveEffect removes any effect that might currently be active on the Player.
+func (p *Player) RemoveEffect(e entity.Effect) {
+	p.effects.Remove(e)
+	p.session().SendEffectRemoval(e)
+	p.updateState()
+}
+
+// Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
+// expired when returned.
+func (p *Player) Effects() []entity.Effect {
+	return p.effects.Effects()
 }
 
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
@@ -1268,6 +1295,7 @@ func (p *Player) Tick() {
 		atomic.StoreUint32(p.onGround, 0)
 	}
 	p.tickFood()
+	p.effects.Tick(p)
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
@@ -1394,6 +1422,11 @@ func (p *Player) State() (s []state.State) {
 	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
 	}
+	colour, ambient := effect.ResultingColour(p.Effects())
+	if (colour != color.RGBA{}) {
+		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
+	}
+
 	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
 	// TODO: Only set the player as breathing when it is above water.
 	s = append(s, state.Breathing{})
