@@ -147,6 +147,11 @@ func (l Lava) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:flowing_lava", map[string]interface{}{"liquid_depth": int32(v)}
 }
 
+// FaceSolidTo ...
+func (Lava) FaceSolidTo(_ world.BlockPos, _ world.Face, _ world.Block) bool {
+	return false
+}
+
 // allLava returns a list of all lava states.
 func allLava() (b []world.Block) {
 	f := func(still, falling bool) {

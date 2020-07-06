@@ -137,6 +137,11 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
 }
 
+// FaceSolidTo ...
+func (Water) FaceSolidTo(pos world.BlockPos, _ world.Face, _ world.Block) bool {
+	return false
+}
+
 // allWater returns a list of all water states.
 func allWater() (b []world.Block) {
 	f := func(still, falling bool) {

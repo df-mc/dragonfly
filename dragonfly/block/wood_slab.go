@@ -150,6 +150,11 @@ func (s WoodSlab) SideClosed(pos, side world.BlockPos, w *world.World) bool {
 	return !s.UpsideDown && side[1] == pos[1]-1
 }
 
+// FaceSolidTo ...
+func (s WoodSlab) FaceSolidTo(_ world.BlockPos, _ world.Face, _ world.Block) bool {
+	return s.Double
+}
+
 // allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {

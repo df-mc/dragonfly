@@ -81,3 +81,8 @@ func (g Grass) EncodeBlock() (name string, properties map[string]interface{}) {
 	}
 	return "minecraft:grass", nil
 }
+
+// FaceSolidTo ...
+func (Grass) FaceSolidTo(_ world.BlockPos, _ world.Face, _ world.Block) bool {
+	return false
+}

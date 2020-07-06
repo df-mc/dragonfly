@@ -47,9 +47,9 @@ func calculateThinBounds(pos world.BlockPos, w *world.World) []physics.AABB {
 	thin := w.Block(pos)
 
 	for i := world.Face(2); i < 6; i++ {
-		block := w.Block(pos.Side(i))
-		// TODO(lhochbaum): make chests, grass and stuff PartiallySolid.
-		if partial, isPartiallySolid := block.(PartiallySolid); !isPartiallySolid || partial.FaceSolidTo(i, thin) {
+		pos := pos.Side(i)
+		block := w.Block(pos)
+		if partial, isPartiallySolid := block.(PartiallySolid); !isPartiallySolid || partial.FaceSolidTo(pos, i.Opposite(), thin) {
 			boxes = append(boxes, mainBox.ExtendTowards(int(i), offset))
 		}
 	}

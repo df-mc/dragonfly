@@ -77,6 +77,11 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	panic("invalid wood type")
 }
 
+// FaceSolidTo ...
+func (Leaves) FaceSolidTo(_ world.BlockPos, _ world.Face, _ world.Block) bool {
+	return false
+}
+
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
