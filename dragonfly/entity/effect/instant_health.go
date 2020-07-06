@@ -7,7 +7,7 @@ import (
 )
 
 // InstantHealth is an instant effect that causes the player that it is applied to to immediately regain some
-// health. The amount of health regained depends on the effect level.
+// health. The amount of health regained depends on the effect level and potency.
 type InstantHealth struct {
 	instantEffect
 	// Potency specifies the potency of the instant health. By default this value is 1, which means 100% of
@@ -16,7 +16,8 @@ type InstantHealth struct {
 	Potency float64
 }
 
-// Apply instantly heals the entity.Living passed for a bit of health, depending on the effect level.
+// Apply instantly heals the entity.Living passed for a bit of health, depending on the effect level and
+// potency.
 func (i InstantHealth) Apply(e entity.Living) {
 	if i.Potency == 0 {
 		// Potency of 1 by default.
@@ -27,6 +28,6 @@ func (i InstantHealth) Apply(e entity.Living) {
 }
 
 // WithDuration ...
-func (i InstantHealth) WithDuration(d time.Duration) entity.Effect {
+func (i InstantHealth) WithDuration(time.Duration) entity.Effect {
 	return i
 }
