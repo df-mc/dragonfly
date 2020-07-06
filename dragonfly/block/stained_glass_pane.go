@@ -52,12 +52,3 @@ func allStainedGlassPane() []world.Block {
 func (p StainedGlassPane) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	return calculateThinBounds(pos, w)
 }
-
-// ConnectsWith ...
-func (p StainedGlassPane) ConnectsWith(other world.Block) bool {
-	switch other.(type) {
-	case GlassPane, StainedGlassPane: // TODO(lhochbaum): Add iron bars as soon as they're implemented.
-		return true
-	}
-	return false
-}

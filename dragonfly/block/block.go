@@ -89,8 +89,8 @@ type AABBer interface {
 	AABB(pos world.BlockPos, w *world.World) []physics.AABB
 }
 
-// Connectable represents a block that changes its bounds depending on blocks next to it.
-type Connectable interface {
-	// ConnectsWith determines whether the Connectable block is able to connect with the provided other block.
-	ConnectsWith(other world.Block) bool
+// PartiallySolid represents a block that is not fully solid on every side or to every kind of block.
+type PartiallySolid interface {
+	// FaceSolidTo determines whether the block is solid to the specified world.Face or world.Block.
+	FaceSolidTo(face world.Face, other world.Block) bool
 }
