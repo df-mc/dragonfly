@@ -22,8 +22,15 @@ func init() {
 	Register(5, Strength{})
 	Register(6, InstantHealth{})
 	Register(7, InstantDamage{})
+	Register(8, JumpBoost{})
+	Register(9, Nausea{})
 	Register(10, Regeneration{})
+	Register(14, Invisibility{})
+	Register(15, Blindness{})
+	Register(16, NightVision{})
 	Register(18, Weakness{})
+	Register(24, Levitation{})
+	Register(27, SlowFalling{})
 }
 
 var (
