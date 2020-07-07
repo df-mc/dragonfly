@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -38,8 +39,18 @@ func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
 		s.teleportMu.Unlock()
 	}
 
+	_, submergedBefore := s.c.World().Liquid(world.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
+
 	s.c.Move(deltaPos)
 	s.c.Rotate(deltaYaw, deltaPitch)
+
+	_, submergedAfter := s.c.World().Liquid(world.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
+
+	if submergedBefore != submergedAfter {
+		// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,
+		// so send the updated metadata.
+		s.ViewEntityState(s.c, s.c.State())
+	}
 
 	s.chunkLoader.Move(s.c.Position())
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{

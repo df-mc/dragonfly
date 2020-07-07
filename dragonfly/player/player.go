@@ -440,6 +440,11 @@ func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 		// has, with a maximum of 4*20=80%
 		dmg -= dmg * 0.04 * defencePoints
 	}
+	for _, e := range p.Effects() {
+		if resistance, ok := e.(effect.Resistance); ok {
+			dmg *= resistance.Multiplier(src)
+		}
+	}
 	// TODO: Account for enchantments.
 	if dmg < 0 {
 		dmg = 0
@@ -1434,6 +1439,9 @@ func (p *Player) State() (s []state.State) {
 	if p.Swimming() {
 		s = append(s, state.Swimming{})
 	}
+	if p.canBreath() || !p.survival() {
+		s = append(s, state.Breathing{})
+	}
 	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
 	}
@@ -1441,10 +1449,7 @@ func (p *Player) State() (s []state.State) {
 	if (colour != color.RGBA{}) {
 		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
 	}
-
 	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
-	// TODO: Only set the player as breathing when it is above water.
-	s = append(s, state.Breathing{})
 	return
 }
 
@@ -1453,6 +1458,18 @@ func (p *Player) updateState() {
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityState(p, p.State())
 	}
+}
+
+// canBreath checks if the player is currently able to breath. If it's underwater and the player does not have
+// the water breathing effect, this returns false.
+func (p *Player) canBreath() bool {
+	for _, e := range p.Effects() {
+		if _, waterBreathing := e.(effect.WaterBreathing); waterBreathing {
+			return true
+		}
+	}
+	_, submerged := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
+	return !submerged
 }
 
 // swingArm makes the player swing its arm.
