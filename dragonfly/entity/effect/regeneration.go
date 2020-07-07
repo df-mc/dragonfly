@@ -27,6 +27,6 @@ func (r Regeneration) WithDuration(d time.Duration) entity.Effect {
 }
 
 // RGBA ...
-func (r Regeneration) RGBA() color.RGBA {
+func (Regeneration) RGBA() color.RGBA {
 	return color.RGBA{R: 0xcd, G: 0x5c, B: 0xab, A: 0xff}
 }

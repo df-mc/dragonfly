@@ -15,12 +15,18 @@ type Slowness struct {
 // Start ...
 func (s Slowness) Start(e entity.Living) {
 	slowness := 1 - float64(s.Lvl)*0.15
+	if slowness <= 0 {
+		slowness = 0.00001
+	}
 	e.SetSpeed(e.Speed() * slowness)
 }
 
 // Stop ...
 func (s Slowness) Stop(e entity.Living) {
 	slowness := 1 - float64(s.Lvl)*0.15
+	if slowness <= 0 {
+		slowness = 0.00001
+	}
 	e.SetSpeed(e.Speed() / slowness)
 }
 
@@ -30,6 +36,6 @@ func (s Slowness) WithDuration(d time.Duration) entity.Effect {
 }
 
 // RGBA ...
-func (s Slowness) RGBA() color.RGBA {
+func (Slowness) RGBA() color.RGBA {
 	return color.RGBA{R: 0x5a, G: 0x6c, B: 0x81, A: 0xff}
 }

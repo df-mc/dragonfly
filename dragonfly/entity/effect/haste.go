@@ -13,7 +13,11 @@ type Haste struct {
 
 // Multiplier returns the mining speed multiplier from this effect.
 func (h Haste) Multiplier() float64 {
-	return 1 - float64(h.Lvl)*0.1
+	v := 1 - float64(h.Lvl)*0.1
+	if v < 0 {
+		v = 0
+	}
+	return v
 }
 
 // WithDuration ...
@@ -22,6 +26,6 @@ func (h Haste) WithDuration(d time.Duration) entity.Effect {
 }
 
 // RGBA ...
-func (h Haste) RGBA() color.RGBA {
+func (Haste) RGBA() color.RGBA {
 	return color.RGBA{R: 0xd9, G: 0xc0, B: 0x43, A: 0xff}
 }

@@ -905,7 +905,16 @@ func (p *Player) AttackEntity(e world.Entity) {
 			return
 		}
 		healthBefore := living.Health()
-		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
+		damageDealt := i.AttackDamage()
+		for _, e := range p.Effects() {
+			if strength, ok := e.(effect.Strength); ok {
+				damageDealt += damageDealt * strength.Multiplier()
+			} else if weakness, ok := e.(effect.Weakness); ok {
+				damageDealt += damageDealt * weakness.Multiplier()
+			}
+		}
+
+		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.45, 0.3608)
 
 		if mgl64.FloatEqual(healthBefore, living.Health()) {

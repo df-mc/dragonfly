@@ -24,6 +24,6 @@ func (m MiningFatigue) WithDuration(d time.Duration) entity.Effect {
 }
 
 // RGBA ...
-func (m MiningFatigue) RGBA() color.RGBA {
+func (MiningFatigue) RGBA() color.RGBA {
 	return color.RGBA{R: 0x4a, G: 0x42, B: 0x17, A: 0xff}
 }

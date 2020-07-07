@@ -29,6 +29,6 @@ func (s Speed) WithDuration(d time.Duration) entity.Effect {
 }
 
 // RGBA ...
-func (s Speed) RGBA() color.RGBA {
+func (Speed) RGBA() color.RGBA {
 	return color.RGBA{R: 0x7c, G: 0xaf, B: 0xc6, A: 0xff}
 }
