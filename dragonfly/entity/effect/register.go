@@ -26,14 +26,24 @@ func init() {
 	Register(9, Nausea{})
 	Register(10, Regeneration{})
 	Register(11, Resistance{})
-	// TODO: Fire resistance. (Requires fire/lava damage)
+	// TODO: (12) Fire resistance. (Requires fire/lava damage)
 	Register(13, WaterBreathing{})
 	Register(14, Invisibility{})
 	Register(15, Blindness{})
 	Register(16, NightVision{})
+	// TODO: (17) Hunger.
 	Register(18, Weakness{})
+	// TODO: (19) Poison.
+	// TODO: (20) Wither.
+	// TODO: (21) Health boost.
+	// TODO: (22) Absorption.
+	// TODO: (23) Saturation.
 	Register(24, Levitation{})
+	// TODO: (25) Fatal poison.
+	// TODO: (26) Conduit power.
 	Register(27, SlowFalling{})
+	// TODO: (28) Bad omen. (Requires villages ...)
+	// TODO: (29) Hero of the village. (Requires villages ...)
 }
 
 var (
