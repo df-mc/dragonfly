@@ -21,6 +21,7 @@ func init() {
 	Register(4, MiningFatigue{})
 	Register(5, Strength{})
 	Register(6, InstantHealth{})
+	Register(7, InstantDamage{})
 	Register(10, Regeneration{})
 	Register(18, Weakness{})
 }

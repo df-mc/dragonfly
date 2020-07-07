@@ -28,6 +28,6 @@ func (i InstantHealth) Apply(e entity.Living) {
 }
 
 // WithDuration ...
-func (i InstantHealth) WithDuration(time.Duration) entity.Effect {
+func (i InstantHealth) WithDuration(d time.Duration) entity.Effect {
 	return i
 }

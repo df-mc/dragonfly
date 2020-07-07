@@ -20,6 +20,9 @@ type SourceEntityAttack struct {
 // SourceStarvation is used for damage caused by a completely depleted food bar.
 type SourceStarvation struct{}
 
+// SourceInstantDamageEffect is used for damage caused by an effect.InstantDamage applied to an entity.
+type SourceInstantDamageEffect struct{}
+
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
@@ -31,6 +34,11 @@ func (SourceEntityAttack) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceStarvation) ReducedByArmour() bool {
+	return false
+}
+
+// ReducedByArmour ...
+func (SourceInstantDamageEffect) ReducedByArmour() bool {
 	return false
 }
 
