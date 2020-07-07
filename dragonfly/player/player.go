@@ -510,7 +510,7 @@ func (p *Player) AddEffect(e entity.Effect) {
 
 // RemoveEffect removes any effect that might currently be active on the Player.
 func (p *Player) RemoveEffect(e entity.Effect) {
-	p.effects.Remove(e)
+	p.effects.Remove(e, p)
 	p.session().SendEffectRemoval(e)
 	p.updateState()
 }
@@ -940,19 +940,33 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 
 		p.swingArm()
 
-		held, _ := p.HeldItems()
-		breakTime := block.BreakDuration(p.World().Block(pos), held)
-		if !p.OnGround() {
-			breakTime *= 5
-		}
-		if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
-			breakTime *= 5
-		}
+		breakTime := p.breakTime(pos)
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	})
+}
+
+// breakTime returns the time needed to break a block at the position passed, taking into account the item
+// held, if the player is on the ground/underwater and if the player has any effects.
+func (p *Player) breakTime(pos world.BlockPos) time.Duration {
+	held, _ := p.HeldItems()
+	breakTime := block.BreakDuration(p.World().Block(pos), held)
+	if !p.OnGround() {
+		breakTime *= 5
+	}
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+		breakTime *= 5
+	}
+	for _, e := range p.Effects() {
+		if haste, ok := e.(effect.Haste); ok {
+			breakTime = time.Duration(float64(breakTime) * haste.Multiplier())
+		} else if fatigue, ok := e.(effect.MiningFatigue); ok {
+			breakTime = time.Duration(float64(breakTime) * fatigue.Multiplier())
+		}
+	}
+	return breakTime
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -1000,15 +1014,7 @@ func (p *Player) ContinueBreaking(face world.Face) {
 		// either. Every 5 ticks seems accurate.
 		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
 	}
-	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(b, held)
-
-	if !p.OnGround() {
-		breakTime *= 5
-	}
-	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
-		breakTime *= 5
-	}
+	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})

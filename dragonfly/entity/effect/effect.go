@@ -24,24 +24,30 @@ func (i instantEffect) Level() int {
 }
 
 // Duration always returns 0 for instant effects.
-func (i instantEffect) Duration() time.Duration {
+func (instantEffect) Duration() time.Duration {
 	return 0
 }
 
 // ShowParticles always returns false for instant effects.
-func (i instantEffect) ShowParticles() bool {
+func (instantEffect) ShowParticles() bool {
 	return false
 }
 
 // AmbientSource always returns false for instant effects.
-func (i instantEffect) AmbientSource() bool {
+func (instantEffect) AmbientSource() bool {
 	return false
 }
 
 // RGBA always returns an empty color.RGBA.
-func (i instantEffect) RGBA() color.RGBA {
+func (instantEffect) RGBA() color.RGBA {
 	return color.RGBA{}
 }
+
+// End ...
+func (instantEffect) End(entity.Living) {}
+
+// Start ...
+func (instantEffect) Start(entity.Living) {}
 
 // lastingEffect forms the base of an effect that lasts for a specific duration.
 type lastingEffect struct {
@@ -59,7 +65,7 @@ type lastingEffect struct {
 }
 
 // Instant always returns false for lasting effects.
-func (l lastingEffect) Instant() bool {
+func (lastingEffect) Instant() bool {
 	return false
 }
 
@@ -88,6 +94,15 @@ func (l lastingEffect) withDuration(d time.Duration) lastingEffect {
 	l.Dur = d
 	return l
 }
+
+// End ...
+func (lastingEffect) End(entity.Living) {}
+
+// Start ...
+func (lastingEffect) Start(entity.Living) {}
+
+// Apply ...
+func (lastingEffect) Apply(living entity.Living) {}
 
 // tickDuration returns the duration as in-game ticks.
 func tickDuration(d time.Duration) int {

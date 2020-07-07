@@ -15,6 +15,10 @@ func Register(id int, e entity.Effect) {
 
 // init registers all implemented effects.
 func init() {
+	Register(0, Speed{})
+	Register(1, Slowness{})
+	Register(2, Haste{})
+	Register(3, MiningFatigue{})
 	Register(6, InstantHealth{})
 	Register(10, Regeneration{})
 }

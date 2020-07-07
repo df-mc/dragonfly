@@ -31,6 +31,10 @@ type Effect interface {
 	// AmbientSource specifies if the effect came from an ambient source, such as a beacon or conduit. The
 	// particles will be less visible when this is true.
 	AmbientSource() bool
+	// Start is called for lasting events. It is sent the first time the effect is applied to an entity.
+	Start(e Living)
+	// End is called for lasting events. It is sent the moment the effect expires.
+	End(e Living)
 }
 
 // EffectManager manages the effects of an entity. The effect manager will only store effects that last for
@@ -71,14 +75,19 @@ func (m *EffectManager) Add(e Effect, entity Living) {
 		return
 	}
 	m.effects[t] = e
+	e.Start(entity)
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
-func (m *EffectManager) Remove(e Effect) {
+func (m *EffectManager) Remove(e Effect, entity Living) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	delete(m.effects, reflect.TypeOf(e))
+	t := reflect.TypeOf(e)
+	if existing, ok := m.effects[t]; ok {
+		existing.End(entity)
+	}
+	delete(m.effects, t)
 }
 
 // Effects returns a list of all effects currently present in the effect manager. This will never include
@@ -105,6 +114,7 @@ func (m *EffectManager) Tick(entity Living) {
 		m.effects[i] = effect.WithDuration(effect.Duration() - time.Second/20)
 		if m.expired(effect) {
 			delete(m.effects, i)
+			effect.End(entity)
 			continue
 		}
 	}

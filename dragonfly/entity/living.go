@@ -28,4 +28,8 @@ type Living interface {
 	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.
 	KnockBack(src mgl64.Vec3, force, height float64)
+	// Speed returns the current speed of the living entity. The default value is different for each entity.
+	Speed() float64
+	// SetSpeed sets the speed of an entity to a new value.
+	SetSpeed(float64)
 }

@@ -26,7 +26,7 @@ func (r Regeneration) WithDuration(d time.Duration) entity.Effect {
 	return Regeneration{r.withDuration(d)}
 }
 
-// RGBA returns a red colour as shown when a regeneration effect is active.
+// RGBA ...
 func (r Regeneration) RGBA() color.RGBA {
 	return color.RGBA{R: 0xcd, G: 0x5c, B: 0xab, A: 0xff}
 }
