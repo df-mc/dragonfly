@@ -26,6 +26,13 @@ type SourceInstantDamageEffect struct{}
 // SourceVoid is used for damage caused by an entity being in the void.
 type SourceVoid struct{}
 
+// SourcePoisonEffect is used for damage caused by an effect.Poison or effect.FatalPoison applied to an
+// entity.
+type SourcePoisonEffect struct {
+	// Fatal specifies if the damage was caused by effect.FatalPoison or not.
+	Fatal bool
+}
+
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
@@ -52,5 +59,10 @@ func (SourceCustom) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceVoid) ReducedByArmour() bool {
+	return false
+}
+
+// ReducedByArmour ...
+func (SourcePoisonEffect) ReducedByArmour() bool {
 	return false
 }

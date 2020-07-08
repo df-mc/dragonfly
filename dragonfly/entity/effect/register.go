@@ -31,15 +31,15 @@ func init() {
 	Register(14, Invisibility{})
 	Register(15, Blindness{})
 	Register(16, NightVision{})
-	// TODO: (17) Hunger.
+	Register(17, Hunger{})
 	Register(18, Weakness{})
-	// TODO: (19) Poison.
+	Register(19, Poison{})
 	// TODO: (20) Wither.
 	// TODO: (21) Health boost.
 	// TODO: (22) Absorption.
 	// TODO: (23) Saturation.
 	Register(24, Levitation{})
-	// TODO: (25) Fatal poison.
+	Register(25, FatalPoison{})
 	// TODO: (26) Conduit power.
 	Register(27, SlowFalling{})
 	// TODO: (28) Bad omen. (Requires villages ...)
