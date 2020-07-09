@@ -33,6 +33,9 @@ type SourcePoisonEffect struct {
 	Fatal bool
 }
 
+// SourceWitherEffect is used for damage caused by an effect.Wither applied to an entity.
+type SourceWitherEffect struct{}
+
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
@@ -64,5 +67,10 @@ func (SourceVoid) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourcePoisonEffect) ReducedByArmour() bool {
+	return false
+}
+
+// ReducedByArmour ...
+func (SourceWitherEffect) ReducedByArmour() bool {
 	return false
 }

@@ -13,6 +13,10 @@ type Living interface {
 	world.Entity
 	// Health returns the health of the entity.
 	Health() float64
+	// MaxHealth returns the maximum health of the entity.
+	MaxHealth() float64
+	// SetMaxHealth changes the maximum health of the entity to the value passed.
+	SetMaxHealth(v float64)
 	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
 	// immune for half a second after being attacked.
 	AttackImmune() bool
