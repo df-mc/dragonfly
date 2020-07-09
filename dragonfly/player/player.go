@@ -44,10 +44,10 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                               string
-	uuid                               uuid.UUID
-	xuid                               string
-	pos, velocity, yaw, pitch, nameTag atomic.Value
+	name                                                 string
+	uuid                                                 uuid.UUID
+	xuid                                                 string
+	pos, velocity, yaw, pitch, nameTag, absorptionHealth atomic.Value
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -120,6 +120,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
 	p.nameTag.Store(name)
+	p.absorptionHealth.Store(0.0)
 	return p
 }
 
@@ -405,7 +406,20 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
-		p.addHealth(-p.resolveFinalDamage(dmg, source))
+		finalDamage := p.resolveFinalDamage(dmg, source)
+
+		a := p.absorption()
+		if a > 0 && (effect.Absorption{}).Absorbs(source) {
+			if finalDamage > a {
+				finalDamage -= a
+				p.SetAbsorption(0)
+				p.effects.Remove(effect.Absorption{}, p)
+			} else {
+				p.SetAbsorption(a - finalDamage)
+				finalDamage = 0
+			}
+		}
+		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.World().Viewers(p.Position()) {
 			viewer.ViewEntityAction(p, action.Hurt{})
@@ -451,6 +465,22 @@ func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 	}
 
 	return dmg
+}
+
+// SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
+// actually increase the maximum health. Once the hearts are lost, they will not regenerate.
+// Nothing happens if a negative number is passed.
+func (p *Player) SetAbsorption(health float64) {
+	if health < 0 {
+		return
+	}
+	p.absorptionHealth.Store(health)
+	p.session().SendAbsorption(health)
+}
+
+// absorption returns the absorption health that the player has.
+func (p *Player) absorption() float64 {
+	return p.absorptionHealth.Load().(float64)
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
@@ -589,6 +619,9 @@ func (p *Player) kill(src damage.Source) {
 	p.inv.Clear()
 	p.armour.Clear()
 	p.offHand.Clear()
+	for _, e := range p.Effects() {
+		p.RemoveEffect(e)
+	}
 
 	p.handler().HandleDeath(src)
 

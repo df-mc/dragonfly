@@ -36,7 +36,7 @@ func init() {
 	Register(19, Poison{})
 	Register(20, Wither{})
 	Register(21, HealthBoost{})
-	// TODO: (22) Absorption.
+	Register(22, Absorption{})
 	// TODO: (23) Saturation.
 	Register(24, Levitation{})
 	Register(25, FatalPoison{})

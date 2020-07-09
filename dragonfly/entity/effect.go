@@ -69,6 +69,7 @@ func (m *EffectManager) Add(e Effect, entity Living) {
 	existing, ok := m.effects[t]
 	if !ok {
 		m.effects[t] = e
+		e.Start(entity)
 		return
 	}
 	if existing.Level() > e.Level() || (existing.Level() == e.Level() && existing.Duration() > e.Duration()) {
