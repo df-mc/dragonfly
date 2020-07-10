@@ -454,6 +454,13 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
 		case state.Named:
 			m[dataKeyNameTag] = st.NameTag
+		case state.EffectBearing:
+			m[dataKeyPotionColour] = (int32(st.ParticleColour.A) << 24) | (int32(st.ParticleColour.R) << 16) | (int32(st.ParticleColour.G) << 8) | int32(st.ParticleColour.B)
+			if st.Ambient {
+				m[dataKeyPotionAmbient] = byte(1)
+			} else {
+				m[dataKeyPotionAmbient] = byte(0)
+			}
 		}
 	}
 	s.writePacket(&packet.SetActorData{

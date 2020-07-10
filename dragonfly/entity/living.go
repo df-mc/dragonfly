@@ -3,14 +3,20 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Living represents an entity that is alive and that has health. It is able to take damage and will die upon
 // taking fatal damage.
 type Living interface {
+	world.Entity
 	// Health returns the health of the entity.
 	Health() float64
+	// MaxHealth returns the maximum health of the entity.
+	MaxHealth() float64
+	// SetMaxHealth changes the maximum health of the entity to the value passed.
+	SetMaxHealth(v float64)
 	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
 	// immune for half a second after being attacked.
 	AttackImmune() bool
@@ -26,4 +32,8 @@ type Living interface {
 	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.
 	KnockBack(src mgl64.Vec3, force, height float64)
+	// Speed returns the current speed of the living entity. The default value is different for each entity.
+	Speed() float64
+	// SetSpeed sets the speed of an entity to a new value.
+	SetSpeed(float64)
 }

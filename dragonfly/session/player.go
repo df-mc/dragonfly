@@ -2,7 +2,10 @@ package session
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/entity"
+	_ "github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -19,6 +22,7 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
+	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
 
@@ -296,6 +300,49 @@ func (s *Session) SendHealth(health *entity_internal.HealthManager) {
 	})
 }
 
+// SendAbsorption sends the absorption value passed to the player.
+func (s *Session) SendAbsorption(value float64) {
+	max := value
+	if math.Mod(value, 2) != 0 {
+		max = value + 1
+	}
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{{
+			Name:  "minecraft:absorption",
+			Value: float32(math.Ceil(value)),
+			Max:   float32(math.Ceil(max)),
+		}},
+	})
+}
+
+// SendEffect sends an effects passed to the player.
+func (s *Session) SendEffect(e entity.Effect) {
+	s.SendEffectRemoval(e)
+	id, _ := effect_idByEffect(e)
+	s.writePacket(&packet.MobEffect{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Operation:       packet.MobEffectAdd,
+		EffectType:      int32(id),
+		Amplifier:       int32(e.Level() - 1),
+		Particles:       e.ShowParticles(),
+		Duration:        int32(e.Duration() / (time.Second / 20)),
+	})
+}
+
+// SendEffectRemoval sends the removal of an effect passed.
+func (s *Session) SendEffectRemoval(e entity.Effect) {
+	id, ok := effect_idByEffect(e)
+	if !ok {
+		panic(fmt.Sprintf("unregistered effect type %T", e))
+	}
+	s.writePacket(&packet.MobEffect{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Operation:       packet.MobEffectRemove,
+		EffectType:      int32(id),
+	})
+}
+
 // SendGameRules sends all the provided game rules to the player. Once sent, they will be immediately updated
 // on the client if they are valid.
 func (s *Session) sendGameRules(gameRules map[string]interface{}) {
@@ -495,3 +542,7 @@ func world_itemByID(id int32, meta int16) (world.Item, bool)
 //go:linkname item_id github.com/df-mc/dragonfly/dragonfly/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
+
+//go:linkname effect_idByEffect github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
+//noinspection ALL
+func effect_idByEffect(entity.Effect) (int, bool)

@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
@@ -31,6 +32,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"image/color"
 	"math/rand"
 	"net"
 	"strings"
@@ -42,10 +44,10 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                               string
-	uuid                               uuid.UUID
-	xuid                               string
-	pos, velocity, yaw, pitch, nameTag atomic.Value
+	name                                                 string
+	uuid                                                 uuid.UUID
+	xuid                                                 string
+	pos, velocity, yaw, pitch, nameTag, absorptionHealth atomic.Value
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -69,6 +71,7 @@ type Player struct {
 
 	speed    atomic.Value
 	health   *entity_internal.HealthManager
+	effects  *entity.EffectManager
 	immunity atomic.Value
 
 	breaking          *uint32
@@ -95,6 +98,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		armour:               inventory.NewArmour(p.broadcastArmour),
 		hunger:               newHungerManager(),
 		health:               entity_internal.NewHealthManager(),
+		effects:              entity.NewEffectManager(),
 		gameMode:             gamemode.Adventure{},
 		h:                    NopHandler{},
 		heldSlot:             new(uint32),
@@ -116,6 +120,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
 	p.nameTag.Store(name)
+	p.absorptionHealth.Store(0.0)
 	return p
 }
 
@@ -401,7 +406,20 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
-		p.addHealth(-p.resolveFinalDamage(dmg, source))
+		finalDamage := p.resolveFinalDamage(dmg, source)
+
+		a := p.absorption()
+		if a > 0 && (effect.Absorption{}).Absorbs(source) {
+			if finalDamage > a {
+				finalDamage -= a
+				p.SetAbsorption(0)
+				p.effects.Remove(effect.Absorption{}, p)
+			} else {
+				p.SetAbsorption(a - finalDamage)
+				finalDamage = 0
+			}
+		}
+		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.World().Viewers(p.Position()) {
 			viewer.ViewEntityAction(p, action.Hurt{})
@@ -436,12 +454,33 @@ func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 		// has, with a maximum of 4*20=80%
 		dmg -= dmg * 0.04 * defencePoints
 	}
+	for _, e := range p.Effects() {
+		if resistance, ok := e.(effect.Resistance); ok {
+			dmg *= resistance.Multiplier(src)
+		}
+	}
 	// TODO: Account for enchantments.
 	if dmg < 0 {
 		dmg = 0
 	}
 
 	return dmg
+}
+
+// SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
+// actually increase the maximum health. Once the hearts are lost, they will not regenerate.
+// Nothing happens if a negative number is passed.
+func (p *Player) SetAbsorption(health float64) {
+	if health < 0 {
+		return
+	}
+	p.absorptionHealth.Store(health)
+	p.session().SendAbsorption(health)
+}
+
+// absorption returns the absorption health that the player has.
+func (p *Player) absorption() float64 {
+	return p.absorptionHealth.Load().(float64)
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
@@ -494,6 +533,43 @@ func (p *Player) AddFood(points int) {
 	p.sendFood()
 }
 
+// Saturate saturates the player's food bar with the amount of food points and saturation points passed. The
+// total saturation of the player will never exceed its total food level.
+func (p *Player) Saturate(food int, saturation float64) {
+	p.hunger.saturate(food, saturation)
+	p.sendFood()
+}
+
+// sendFood sends the current food properties to the client.
+func (p *Player) sendFood() {
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
+}
+
+// AddEffect adds an entity.Effect to the Player. If the effect is instant, it is applied to the Player
+// immediately. If not, the effect is applied to the player every time the Tick method is called.
+// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
+// if the effects' levels are equal and the new effect has a longer duration.
+func (p *Player) AddEffect(e entity.Effect) {
+	p.effects.Add(e, p)
+	p.session().SendEffect(e)
+	p.updateState()
+}
+
+// RemoveEffect removes any effect that might currently be active on the Player.
+func (p *Player) RemoveEffect(e entity.Effect) {
+	p.effects.Remove(e, p)
+	p.session().SendEffectRemoval(e)
+	p.updateState()
+}
+
+// Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
+// expired when returned.
+func (p *Player) Effects() []entity.Effect {
+	return p.effects.Effects()
+}
+
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
 // exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
 func (p *Player) Exhaust(points float64) {
@@ -520,13 +596,6 @@ func (p *Player) Exhaust(points float64) {
 		})
 	}
 	p.sendFood()
-}
-
-// sendFood sends the current food properties to the client.
-func (p *Player) sendFood() {
-	p.hunger.mu.RLock()
-	defer p.hunger.mu.RUnlock()
-	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
 }
 
 // survival checks if the player is considered to be survival, meaning either adventure or survival game mode.
@@ -557,6 +626,9 @@ func (p *Player) kill(src damage.Source) {
 	p.inv.Clear()
 	p.armour.Clear()
 	p.offHand.Clear()
+	for _, e := range p.Effects() {
+		p.RemoveEffect(e)
+	}
 
 	p.handler().HandleDeath(src)
 
@@ -880,7 +952,16 @@ func (p *Player) AttackEntity(e world.Entity) {
 		p.StopSprinting()
 
 		healthBefore := living.Health()
-		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
+		damageDealt := i.AttackDamage()
+		for _, e := range p.Effects() {
+			if strength, ok := e.(effect.Strength); ok {
+				damageDealt += damageDealt * strength.Multiplier()
+			} else if weakness, ok := e.(effect.Weakness); ok {
+				damageDealt += damageDealt * weakness.Multiplier()
+			}
+		}
+
+		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.45, 0.3608)
 
 		if mgl64.FloatEqual(healthBefore, living.Health()) {
@@ -915,19 +996,35 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 
 		p.swingArm()
 
-		held, _ := p.HeldItems()
-		breakTime := block.BreakDuration(p.World().Block(pos), held)
-		if !p.OnGround() {
-			breakTime *= 5
-		}
-		if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
-			breakTime *= 5
-		}
+		breakTime := p.breakTime(pos)
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	})
+}
+
+// breakTime returns the time needed to break a block at the position passed, taking into account the item
+// held, if the player is on the ground/underwater and if the player has any effects.
+func (p *Player) breakTime(pos world.BlockPos) time.Duration {
+	held, _ := p.HeldItems()
+	breakTime := block.BreakDuration(p.World().Block(pos), held)
+	if !p.OnGround() {
+		breakTime *= 5
+	}
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+		breakTime *= 5
+	}
+	for _, e := range p.Effects() {
+		if haste, ok := e.(effect.Haste); ok {
+			breakTime = time.Duration(float64(breakTime) * haste.Multiplier())
+		} else if fatigue, ok := e.(effect.MiningFatigue); ok {
+			breakTime = time.Duration(float64(breakTime) * fatigue.Multiplier())
+		} else if conduitPower, ok := e.(effect.ConduitPower); ok {
+			breakTime = time.Duration(float64(breakTime) * conduitPower.Multiplier())
+		}
+	}
+	return breakTime
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -975,15 +1072,7 @@ func (p *Player) ContinueBreaking(face world.Face) {
 		// either. Every 5 ticks seems accurate.
 		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
 	}
-	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(b, held)
-
-	if !p.OnGround() {
-		breakTime *= 5
-	}
-	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
-		breakTime *= 5
-	}
+	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
@@ -1270,6 +1359,7 @@ func (p *Player) Tick() {
 		atomic.StoreUint32(p.onGround, 0)
 	}
 	p.tickFood()
+	p.effects.Tick(p)
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
@@ -1393,12 +1483,17 @@ func (p *Player) State() (s []state.State) {
 	if p.Swimming() {
 		s = append(s, state.Swimming{})
 	}
+	if p.canBreathe() || !p.survival() {
+		s = append(s, state.Breathing{})
+	}
 	if atomic.LoadUint32(p.invisible) == 1 {
 		s = append(s, state.Invisible{})
 	}
+	colour, ambient := effect.ResultingColour(p.Effects())
+	if (colour != color.RGBA{}) {
+		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
+	}
 	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
-	// TODO: Only set the player as breathing when it is above water.
-	s = append(s, state.Breathing{})
 	return
 }
 
@@ -1407,6 +1502,21 @@ func (p *Player) updateState() {
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityState(p, p.State())
 	}
+}
+
+// canBreathe checks if the player is currently able to breathe. If it's underwater and the player does not
+// have the water breathing or conduit power effect, this returns false.
+func (p *Player) canBreathe() bool {
+	for _, e := range p.Effects() {
+		if _, waterBreathing := e.(effect.WaterBreathing); waterBreathing {
+			return true
+		}
+		if _, conduitPower := e.(effect.ConduitPower); conduitPower {
+			return true
+		}
+	}
+	_, submerged := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
+	return !submerged
 }
 
 // swingArm makes the player swing its arm.
