@@ -63,8 +63,8 @@ func (it *Item) Tick(current int64) {
 		_ = it.Close()
 		return
 	}
-	it.checkNearby()
 	it.pos.Store(it.tickMovement(it))
+	it.checkNearby()
 }
 
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
