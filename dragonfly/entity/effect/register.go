@@ -40,7 +40,7 @@ func init() {
 	Register(23, Saturation{})
 	Register(24, Levitation{})
 	Register(25, FatalPoison{})
-	// TODO: (26) Conduit power.
+	Register(26, ConduitPower{})
 	Register(27, SlowFalling{})
 	// TODO: (28) Bad omen. (Requires villages ...)
 	// TODO: (29) Hero of the village. (Requires villages ...)

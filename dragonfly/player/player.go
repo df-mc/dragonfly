@@ -1018,6 +1018,8 @@ func (p *Player) breakTime(pos world.BlockPos) time.Duration {
 			breakTime = time.Duration(float64(breakTime) * haste.Multiplier())
 		} else if fatigue, ok := e.(effect.MiningFatigue); ok {
 			breakTime = time.Duration(float64(breakTime) * fatigue.Multiplier())
+		} else if conduitPower, ok := e.(effect.ConduitPower); ok {
+			breakTime = time.Duration(float64(breakTime) * conduitPower.Multiplier())
 		}
 	}
 	return breakTime
@@ -1479,7 +1481,7 @@ func (p *Player) State() (s []state.State) {
 	if p.Swimming() {
 		s = append(s, state.Swimming{})
 	}
-	if p.canBreath() || !p.survival() {
+	if p.canBreathe() || !p.survival() {
 		s = append(s, state.Breathing{})
 	}
 	if atomic.LoadUint32(p.invisible) == 1 {
@@ -1500,11 +1502,14 @@ func (p *Player) updateState() {
 	}
 }
 
-// canBreath checks if the player is currently able to breath. If it's underwater and the player does not have
-// the water breathing effect, this returns false.
-func (p *Player) canBreath() bool {
+// canBreathe checks if the player is currently able to breathe. If it's underwater and the player does not
+// have the water breathing or conduit power effect, this returns false.
+func (p *Player) canBreathe() bool {
 	for _, e := range p.Effects() {
 		if _, waterBreathing := e.(effect.WaterBreathing); waterBreathing {
+			return true
+		}
+		if _, conduitPower := e.(effect.ConduitPower); conduitPower {
 			return true
 		}
 	}
