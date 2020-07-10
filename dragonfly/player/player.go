@@ -533,6 +533,20 @@ func (p *Player) AddFood(points int) {
 	p.sendFood()
 }
 
+// Saturate saturates the player's food bar with the amount of food points and saturation points passed. The
+// total saturation of the player will never exceed its total food level.
+func (p *Player) Saturate(food int, saturation float64) {
+	p.hunger.saturate(food, saturation)
+	p.sendFood()
+}
+
+// sendFood sends the current food properties to the client.
+func (p *Player) sendFood() {
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
+}
+
 // AddEffect adds an entity.Effect to the Player. If the effect is instant, it is applied to the Player
 // immediately. If not, the effect is applied to the player every time the Tick method is called.
 // AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
@@ -582,13 +596,6 @@ func (p *Player) Exhaust(points float64) {
 		})
 	}
 	p.sendFood()
-}
-
-// sendFood sends the current food properties to the client.
-func (p *Player) sendFood() {
-	p.hunger.mu.RLock()
-	defer p.hunger.mu.RUnlock()
-	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
 }
 
 // survival checks if the player is considered to be survival, meaning either adventure or survival game mode.

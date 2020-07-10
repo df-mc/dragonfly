@@ -37,7 +37,7 @@ func init() {
 	Register(20, Wither{})
 	Register(21, HealthBoost{})
 	Register(22, Absorption{})
-	// TODO: (23) Saturation.
+	Register(23, Saturation{})
 	Register(24, Levitation{})
 	Register(25, FatalPoison{})
 	// TODO: (26) Conduit power.
