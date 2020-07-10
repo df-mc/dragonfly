@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/cespare/xxhash v1.1.0
-	github.com/df-mc/goleveldb v1.1.7
+	github.com/df-mc/goleveldb v1.1.8
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/google/uuid v1.1.1
 	github.com/kr/pretty v0.1.0 // indirect
