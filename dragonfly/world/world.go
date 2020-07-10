@@ -927,7 +927,7 @@ func (w *World) tick() {
 			viewer.ViewTime(int(atomic.LoadInt64(w.time)))
 		}
 	}
-	w.tickEntities()
+	w.tickEntities(tick)
 	w.tickRandomBlocks(viewers)
 	w.tickScheduledBlocks(tick)
 }
@@ -1046,7 +1046,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
 // updating where necessary.
-func (w *World) tickEntities() {
+func (w *World) tickEntities(tick int64) {
 	w.entityMu.Lock()
 	entitiesToTick := make([]TickerEntity, 0, len(w.entities)*8)
 	for chunkPos, entities := range w.entities {
@@ -1097,7 +1097,7 @@ func (w *World) tickEntities() {
 		}
 		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
 		// active.
-		ticker.Tick()
+		ticker.Tick(tick)
 	}
 }
 

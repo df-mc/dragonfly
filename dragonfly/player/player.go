@@ -1345,14 +1345,13 @@ func (p *Player) Ping() time.Duration {
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick() {
+func (p *Player) Tick(current int64) {
 	if p.Dead() {
 		return
 	}
 	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); !ok {
 		p.StopSwimming()
 	}
-
 	if p.checkOnGround() {
 		atomic.StoreUint32(p.onGround, 1)
 	} else {
@@ -1360,6 +1359,9 @@ func (p *Player) Tick() {
 	}
 	p.tickFood()
 	p.effects.Tick(p)
+	if p.Position()[1] < 0 && p.survival() && current%10 == 0 {
+		p.Hurt(4, damage.SourceVoid{})
+	}
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
