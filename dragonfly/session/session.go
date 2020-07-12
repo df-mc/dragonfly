@@ -14,8 +14,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -43,23 +43,24 @@ type Session struct {
 
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
-	currentEntityRuntimeID uint64
+	currentEntityRuntimeID atomic.Uint64
 	entityMutex            sync.RWMutex
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot         *uint32
+	heldSlot         *atomic.Uint32
 	inv, offHand, ui *inventory.Inventory
 	armour           *inventory.Armour
 
-	inTransaction, containerOpened, openedWindowID *uint32
-	openedWindow, openedPos                        atomic.Value
+	openedWindowID                 atomic.Uint32
+	inTransaction, containerOpened atomic.Bool
+	openedWindow, openedPos        atomic.Value
 
-	swingingArm *uint32
+	swingingArm atomic.Bool
 
-	pingID *int64
+	pingID atomic.Int64
 	pingMu sync.Mutex
 	pings  map[int64]chan struct{}
 
@@ -106,15 +107,10 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
-		pingID:                 new(int64),
-		heldSlot:               new(uint32),
-		inTransaction:          new(uint32),
-		containerOpened:        new(uint32),
-		openedWindowID:         new(uint32),
-		swingingArm:            new(uint32),
 		conn:                   conn,
 		log:                    log,
-		currentEntityRuntimeID: 1,
+		currentEntityRuntimeID: *atomic.NewUint64(1),
+		heldSlot:               atomic.NewUint32(0),
 	}
 	s.scoreboardObj.Store("")
 	s.openedWindow.Store(inventory.New(1, nil))
@@ -189,7 +185,7 @@ func (s *Session) CloseConnection() {
 // Ping sends a ping packet to the client and returns once a response is received.
 func (s *Session) Ping() {
 	// The client for some reason clears out the lowest 3 numbers, so we just multiply by 1000.
-	id := atomic.AddInt64(s.pingID, 1) * 1000
+	id := s.pingID.Add(1) * 1000
 	s.writePacket(&packet.NetworkStackLatency{
 		Timestamp:     id,
 		NeedsResponse: true,
@@ -290,7 +286,7 @@ func (s *Session) registerHandlers() {
 		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo), responseChanges: map[int32]map[byte]map[byte]int32{}},
 		packet.IDLevelSoundEvent:       nil,
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
-		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
+		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,
 		packet.IDNetworkStackLatency:   &NetworkStackLatencyHandler{},
 		packet.IDPlayerAction:          &PlayerActionHandler{},

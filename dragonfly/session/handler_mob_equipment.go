@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"sync/atomic"
 )
 
 // MobEquipmentHandler handles the MobEquipment packet.
@@ -29,7 +28,7 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 	if pk.InventorySlot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", pk.InventorySlot)
 	}
-	if atomic.SwapUint32(s.heldSlot, uint32(pk.InventorySlot)) == uint32(pk.InventorySlot) {
+	if s.heldSlot.Swap(uint32(pk.InventorySlot)) == uint32(pk.InventorySlot) {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}

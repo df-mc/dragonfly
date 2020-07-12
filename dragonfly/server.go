@@ -19,11 +19,11 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
@@ -32,10 +32,8 @@ import (
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
 // trying to join the server.
 type Server struct {
-	started *uint32
-
-	nameMu sync.Mutex
-	name   string
+	started atomic.Bool
+	name    atomic.String
 
 	c        Config
 	log      *logrus.Logger
@@ -66,13 +64,12 @@ func New(c *Config, log *logrus.Logger) *Server {
 		c = &conf
 	}
 	s := &Server{
-		started: new(uint32),
 		c:       *c,
 		log:     log,
 		players: make(chan *player.Player),
 		world:   world.New(log, c.World.SimulationDistance),
 		p:       make(map[uuid.UUID]*player.Player),
-		name:    c.Server.Name,
+		name:    *atomic.NewString(c.Server.Name),
 	}
 	return s
 }
@@ -102,7 +99,7 @@ func (server *Server) World() *world.World {
 // the server on a different goroutine, use (*Server).Start() instead.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
-	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
+	if !server.started.CAS(false, true) {
 		panic("server already running")
 	}
 
@@ -119,7 +116,7 @@ func (server *Server) Run() error {
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // One started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
-	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
+	if !server.started.CAS(false, true) {
 		panic("server already running")
 	}
 
@@ -189,19 +186,13 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 // SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprintf.
 func (server *Server) SetNamef(format string, a ...interface{}) {
-	server.nameMu.Lock()
-	defer server.nameMu.Unlock()
-
-	server.name = fmt.Sprintf(format, a...)
+	server.name.Store(fmt.Sprintf(format, a...))
 }
 
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...interface{}) {
-	server.nameMu.Lock()
-	defer server.nameMu.Unlock()
-
-	server.name = fmt.Sprint(a...)
+	server.name.Store(fmt.Sprint(a...))
 }
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
@@ -244,7 +235,7 @@ func (server *Server) CloseOnProgramEnd() {
 
 // running checks if the server is currently running.
 func (server *Server) running() bool {
-	return atomic.LoadUint32(server.started) == 1
+	return server.started.Load()
 }
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.

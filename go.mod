@@ -14,9 +14,8 @@ require (
 	github.com/sandertv/gophertunnel v1.7.4
 	github.com/sirupsen/logrus v1.6.0
 	github.com/yourbasic/radix v0.0.0-20180308122924-cbe1cc82e907
+	go.uber.org/atomic v1.6.0
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	golang.org/x/sys v0.0.0-20200622214017-ed371f2e16b4 // indirect
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect

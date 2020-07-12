@@ -9,9 +9,9 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"math/rand"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -20,10 +20,8 @@ import (
 // World generally provides a synchronised state: All entities, blocks and players usually operate in this
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 type World struct {
-	unixTime    *int64
-	currentTick *int64
-	time        *int64
-	timeStopped *uint32
+	unixTime, currentTick, time atomic.Int64
+	timeStopped                 atomic.Bool
 
 	name string
 	log  *logrus.Logger
@@ -61,12 +59,12 @@ type World struct {
 	viewerMu sync.RWMutex
 	viewers  map[ChunkPos][]Viewer
 
-	rdonly bool
+	rdonly atomic.Bool
 
 	r         *rand.Rand
 	simDistSq int32
 
-	randomTickSpeed *uint32
+	randomTickSpeed atomic.Uint32
 
 	updateMu sync.Mutex
 	// blockUpdates is a map of tick time values indexed by the block position at which an update is
@@ -84,11 +82,9 @@ type World struct {
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
 func New(log *logrus.Logger, simulationDistance int) *World {
-	randomTickSpeed := uint32(3)
-	t := time.Now().Unix()
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		r:               rand.New(rand.NewSource(t)),
+		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		viewers:         map[ChunkPos][]Viewer{},
 		entities:        map[ChunkPos][]Entity{},
 		entityBlocks:    map[ChunkPos]map[BlockPos]Block{},
@@ -99,12 +95,9 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		gen:             NopGenerator{},
 		handler:         NopHandler{},
 		doneTicking:     make(chan struct{}),
-		currentTick:     new(int64),
-		time:            new(int64),
-		timeStopped:     new(uint32),
 		simDistSq:       int32(simulationDistance * simulationDistance),
-		randomTickSpeed: &randomTickSpeed,
-		unixTime:        &t,
+		randomTickSpeed: *atomic.NewUint32(3),
+		unixTime:        *atomic.NewInt64(time.Now().Unix()),
 		log:             log,
 		stopTick:        ctx,
 		cancelTick:      cancel,
@@ -534,13 +527,13 @@ func (w *World) Light(pos BlockPos) uint8 {
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
 // World.StopTime() is called.
 func (w *World) Time() int {
-	return int(atomic.LoadInt64(w.time))
+	return int(w.time.Load())
 }
 
 // SetTime sets the new time of the world. SetTime will always work, regardless of whether the time is stopped
 // or not.
 func (w *World) SetTime(new int) {
-	atomic.StoreInt64(w.time, int64(new))
+	w.time.Store(int64(new))
 	for _, viewer := range w.allViewers() {
 		viewer.ViewTime(new)
 	}
@@ -550,14 +543,14 @@ func (w *World) SetTime(new int) {
 // at the time when StopTime is called. The time may be restarted by calling World.StartTime().
 // StopTime will not do anything if the time is already stopped.
 func (w *World) StopTime() {
-	atomic.StoreUint32(w.timeStopped, 1)
+	w.timeStopped.Store(true)
 }
 
 // StartTime restarts the time in the world. When called, the time will start cycling again and the day/night
 // cycle will continue. The time may be stopped again by calling World.StopTime().
 // StartTime will not do anything if the time is already started.
 func (w *World) StartTime() {
-	atomic.StoreUint32(w.timeStopped, 0)
+	w.timeStopped.Store(false)
 }
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
@@ -741,7 +734,7 @@ func (w *World) SetDifficulty(d difficulty.Difficulty) {
 // ticked per sub chunk, so the default value is 3. Setting this value to 0 will stop random ticking
 // altogether, while setting it higher results in faster ticking.
 func (w *World) SetRandomTickSpeed(v int) {
-	atomic.StoreUint32(w.randomTickSpeed, uint32(v))
+	w.randomTickSpeed.Store(uint32(v))
 }
 
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
@@ -755,7 +748,7 @@ func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
 		w.updateMu.Unlock()
 		return
 	}
-	w.blockUpdates[pos] = atomic.LoadInt64(w.currentTick) + delay.Nanoseconds()/int64(time.Second/20)
+	w.blockUpdates[pos] = w.currentTick.Load() + delay.Nanoseconds()/int64(time.Second/20)
 	w.updateMu.Unlock()
 }
 
@@ -801,17 +794,15 @@ func (w *World) Provider(p Provider) {
 	w.difficultyMu.Lock()
 	w.difficulty = p.LoadDifficulty()
 	w.difficultyMu.Unlock()
-	atomic.StoreInt64(w.time, p.LoadTime())
-	if timeRunning := p.LoadTimeCycle(); !timeRunning {
-		atomic.StoreUint32(w.timeStopped, 1)
-	}
+	w.time.Store(p.LoadTime())
+	w.timeStopped.Store(!p.LoadTimeCycle())
 	w.initChunkCache()
 }
 
 // ReadOnly makes the world read only. Chunks will no longer be saved to disk, just like entities and data
 // in the level.dat.
 func (w *World) ReadOnly() {
-	w.rdonly = true
+	w.rdonly.Store(true)
 }
 
 // Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
@@ -869,10 +860,10 @@ func (w *World) Close() error {
 		w.saveChunk(pos, c)
 	}
 
-	if !w.rdonly {
+	if !w.rdonly.Load() {
 		w.log.Debug("Updating level.dat values...")
-		w.provider().SaveTime(atomic.LoadInt64(w.time))
-		w.provider().SaveTimeCycle(atomic.LoadUint32(w.timeStopped) == 0)
+		w.provider().SaveTime(w.time.Load())
+		w.provider().SaveTimeCycle(!w.timeStopped.Load())
 
 		w.gameModeMu.RLock()
 		w.provider().SaveDefaultGameMode(w.defaultGameMode)
@@ -899,7 +890,7 @@ func (w *World) startTicking() {
 	for {
 		select {
 		case <-ticker.C:
-			atomic.StoreInt64(w.unixTime, time.Now().Unix())
+			w.unixTime.Store(time.Now().Unix())
 			w.tick()
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
@@ -916,15 +907,14 @@ func (w *World) tick() {
 		return
 	}
 
-	tick := atomic.AddInt64(w.currentTick, 1)
+	tick := w.currentTick.Add(1)
 
-	if atomic.LoadUint32(w.timeStopped) == 0 {
-		// Only if the time is not stopped, we add one to the current time.
-		atomic.AddInt64(w.time, 1)
+	if !w.timeStopped.Load() {
+		w.time.Add(1)
 	}
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			viewer.ViewTime(int(atomic.LoadInt64(w.time)))
+			viewer.ViewTime(int(w.time.Load()))
 		}
 	}
 	w.tickEntities(tick)
@@ -971,6 +961,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 		// NOP if the simulation distance is 0.
 		return
 	}
+	tickSpeed := w.randomTickSpeed.Load()
 
 	w.chunkMu.RLock()
 	for pos := range w.chunks {
@@ -997,8 +988,6 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 			// No viewers in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
-		tickSpeed := atomic.LoadUint32(w.randomTickSpeed)
-
 		c.RLock()
 		subChunks := c.Sub()
 		// In total we generate 3 random blocks per sub chunk.
@@ -1394,7 +1383,7 @@ func (w *World) saveChunk(pos ChunkPos, c *chunk.Chunk) {
 	delete(w.entityBlocks, pos)
 	w.blockMu.Unlock()
 
-	if !w.rdonly {
+	if !w.rdonly.Load() {
 		c.Lock()
 		c.Compact()
 		c.Unlock()

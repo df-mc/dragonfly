@@ -7,7 +7,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
-	"sync/atomic"
 )
 
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
@@ -22,8 +21,8 @@ type ItemStackRequestHandler struct {
 func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ItemStackRequest)
 
-	atomic.StoreUint32(s.inTransaction, 1)
-	defer atomic.StoreUint32(s.inTransaction, 0)
+	s.inTransaction.Store(true)
+	defer s.inTransaction.Store(false)
 
 	for _, req := range pk.Requests {
 		h.currentRequest = req.RequestID

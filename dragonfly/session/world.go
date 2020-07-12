@@ -20,7 +20,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"sync/atomic"
 )
 
 // ViewChunk ...
@@ -145,7 +144,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	if id, ok := s.entityRuntimeIDs[e]; ok && controllable {
 		runtimeID = id
 	} else {
-		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
+		runtimeID = s.currentEntityRuntimeID.Add(1)
 		s.entityRuntimeIDs[e] = runtimeID
 		s.entities[runtimeID] = e
 	}
@@ -410,10 +409,10 @@ func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block, layer int) 
 		Flags:             packet.BlockUpdateNetwork,
 		Layer:             uint32(layer),
 	})
-	if nbt, ok := b.(world.NBTer); ok {
+	if v, ok := b.(world.NBTer); ok {
 		s.writePacket(&packet.BlockActorData{
 			Position: blockPos,
-			NBTData:  nbt.EncodeNBT(),
+			NBTData:  v.EncodeNBT(),
 		})
 	}
 }
@@ -423,7 +422,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 	switch act := a.(type) {
 	case action.SwingArm:
 		if _, ok := e.(Controllable); ok {
-			if s.entityRuntimeID(e) == selfEntityRuntimeID && atomic.LoadUint32(s.swingingArm) != 0 {
+			if s.entityRuntimeID(e) == selfEntityRuntimeID && s.swingingArm.Load() {
 				return
 			}
 			s.writePacket(&packet.Animate{
@@ -498,7 +497,7 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 	b.AddViewer(s, s.c.World(), pos)
 
 	nextID := s.nextWindowID()
-	atomic.StoreUint32(s.containerOpened, 1)
+	s.containerOpened.Store(true)
 	s.openedWindow.Store(b.Inventory())
 	s.openedPos.Store(pos)
 
@@ -517,15 +516,15 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 
 // ViewSlotChange ...
 func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
-	if atomic.LoadUint32(s.containerOpened) == 0 {
+	if !s.containerOpened.Load() {
 		return
 	}
-	if atomic.LoadUint32(s.inTransaction) == 1 {
+	if s.inTransaction.Load() {
 		// Don't send slot changes to the player itself.
 		return
 	}
 	s.writePacket(&packet.InventorySlot{
-		WindowID: atomic.LoadUint32(s.openedWindowID),
+		WindowID: s.openedWindowID.Load(),
 		Slot:     uint32(slot),
 		NewItem:  instanceFromItem(newItem),
 	})
@@ -578,21 +577,20 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
-	if atomic.LoadUint32(s.openedWindowID) == 99 {
-		atomic.StoreUint32(s.openedWindowID, 1)
+	if s.openedWindowID.CAS(99, 1) {
 		return 1
 	}
-	return byte(atomic.AddUint32(s.openedWindowID, 1))
+	return byte(s.openedWindowID.Add(1))
 }
 
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
 func (s *Session) closeWindow() {
-	if !atomic.CompareAndSwapUint32(s.containerOpened, 1, 0) {
+	if !s.containerOpened.CAS(true, false) {
 		return
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
-	s.writePacket(&packet.ContainerClose{WindowID: byte(atomic.LoadUint32(s.openedWindowID))})
+	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 
 // blockRuntimeID returns the runtime ID of the block passed.

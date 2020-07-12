@@ -18,17 +18,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"go.uber.org/atomic"
 	"math"
 	"net"
 	"strings"
-	"sync/atomic"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
 
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
-	if atomic.LoadUint32(s.containerOpened) == 0 {
+	if !s.containerOpened.Load() {
 		return
 	}
 	s.closeWindow()
@@ -88,7 +88,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.armour.Inv(), true
 	case containerChest:
 		// Chests, potentially other containers too.
-		if atomic.LoadUint32(s.containerOpened) == 1 {
+		if s.containerOpened.Load() {
 			return s.openedWindow.Load().(*inventory.Inventory), true
 		}
 	}
@@ -189,7 +189,7 @@ func (s *Session) SendForm(f form.Form) {
 	b, _ := json.Marshal(m)
 
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
-	id := atomic.AddUint32(h.currentID, 1)
+	id := h.currentID.Add(1)
 
 	h.mu.Lock()
 	if len(h.forms) > 10 {
@@ -363,7 +363,7 @@ func (s *Session) addToPlayerList(session *Session) {
 	s.entityMutex.Lock()
 	runtimeID := uint64(1)
 	if session != s {
-		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
+		runtimeID = s.currentEntityRuntimeID.Add(1)
 	}
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entities[runtimeID] = c
@@ -440,14 +440,14 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
+func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
-		if slot == int(atomic.LoadUint32(s.heldSlot)) {
+		if slot == int(s.heldSlot.Load()) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
 			}
 		}
-		if atomic.LoadUint32(s.inTransaction) == 0 {
+		if !s.inTransaction.Load() {
 			s.writePacket(&packet.InventorySlot{
 				WindowID: protocol.WindowIDInventory,
 				Slot:     uint32(slot),
@@ -459,7 +459,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
 		}
-		if atomic.LoadUint32(s.inTransaction) == 0 {
+		if !s.inTransaction.Load() {
 			s.writePacket(&packet.InventorySlot{
 				WindowID: protocol.WindowIDOffHand,
 				Slot:     uint32(slot),
@@ -471,7 +471,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
 		}
-		if atomic.LoadUint32(s.inTransaction) == 0 {
+		if !s.inTransaction.Load() {
 			s.writePacket(&packet.InventorySlot{
 				WindowID: protocol.WindowIDArmour,
 				Slot:     uint32(slot),

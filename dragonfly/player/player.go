@@ -32,22 +32,24 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"go.uber.org/atomic"
 	"image/color"
 	"math/rand"
 	"net"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                                                 string
-	uuid                                                 uuid.UUID
-	xuid                                                 string
-	pos, velocity, yaw, pitch, nameTag, absorptionHealth atomic.Value
+	name                         string
+	uuid                         uuid.UUID
+	xuid                         string
+	pos, velocity                atomic.Value
+	nameTag                      atomic.String
+	yaw, pitch, absorptionHealth atomic.Float64
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -65,20 +67,20 @@ type Player struct {
 
 	inv, offHand *inventory.Inventory
 	armour       *inventory.Armour
-	heldSlot     *uint32
+	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible, onGround *uint32
+	sneaking, sprinting, swimming, invisible, onGround atomic.Bool
 
-	speed    atomic.Value
+	speed    atomic.Float64
 	health   *entity_internal.HealthManager
 	effects  *entity.EffectManager
 	immunity atomic.Value
 
-	breaking          *uint32
+	breaking          atomic.Bool
 	breakingPos       atomic.Value
 	lastBreakDuration time.Duration
 
-	breakParticleCounter *uint32
+	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
 }
@@ -89,38 +91,27 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
 		inv: inventory.New(36, func(slot int, item item.Stack) {
-			if slot == int(atomic.LoadUint32(p.heldSlot)) {
+			if slot == int(p.heldSlot.Load()) {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:                 uuid.New(),
-		offHand:              inventory.New(2, p.broadcastItems),
-		armour:               inventory.NewArmour(p.broadcastArmour),
-		hunger:               newHungerManager(),
-		health:               entity_internal.NewHealthManager(),
-		effects:              entity.NewEffectManager(),
-		gameMode:             gamemode.Adventure{},
-		h:                    NopHandler{},
-		heldSlot:             new(uint32),
-		breaking:             new(uint32),
-		breakParticleCounter: new(uint32),
-		sneaking:             new(uint32),
-		sprinting:            new(uint32),
-		swimming:             new(uint32),
-		invisible:            new(uint32),
-		onGround:             new(uint32),
-		name:                 name,
-		skin:                 skin,
+		uuid:     uuid.New(),
+		offHand:  inventory.New(2, p.broadcastItems),
+		armour:   inventory.NewArmour(p.broadcastArmour),
+		hunger:   newHungerManager(),
+		health:   entity_internal.NewHealthManager(),
+		effects:  entity.NewEffectManager(),
+		gameMode: gamemode.Adventure{},
+		h:        NopHandler{},
+		name:     name,
+		skin:     skin,
+		speed:    *atomic.NewFloat64(0.1),
+		nameTag:  *atomic.NewString(name),
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
-	p.yaw.Store(0.0)
-	p.pitch.Store(0.0)
-	p.speed.Store(0.1)
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
-	p.nameTag.Store(name)
-	p.absorptionHealth.Store(0.0)
 	return p
 }
 
@@ -346,7 +337,7 @@ func (p *Player) SetSpeed(speed float64) {
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
 // speed of a player is 0.1.
 func (p *Player) Speed() float64 {
-	return p.speed.Load().(float64)
+	return p.speed.Load()
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
@@ -480,7 +471,7 @@ func (p *Player) SetAbsorption(health float64) {
 
 // absorption returns the absorption health that the player has.
 func (p *Player) absorption() float64 {
-	return p.absorptionHealth.Load().(float64)
+	return p.absorptionHealth.Load()
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
@@ -672,7 +663,7 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !atomic.CompareAndSwapUint32(p.sprinting, 0, 1) {
+	if !p.sprinting.CAS(false, true) {
 		return
 	}
 	if !p.hunger.canSprint() {
@@ -686,12 +677,12 @@ func (p *Player) StartSprinting() {
 
 // Sprinting checks if the player is currently sprinting.
 func (p *Player) Sprinting() bool {
-	return atomic.LoadUint32(p.sprinting) == 1
+	return p.sprinting.Load()
 }
 
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
 func (p *Player) StopSprinting() {
-	if !atomic.CompareAndSwapUint32(p.sprinting, 1, 0) {
+	if !p.sprinting.CAS(true, false) {
 		return
 	}
 	p.SetSpeed(p.Speed() / 1.3)
@@ -703,7 +694,7 @@ func (p *Player) StopSprinting() {
 // anything.
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
-	if !atomic.CompareAndSwapUint32(p.sneaking, 0, 1) {
+	if !p.sneaking.CAS(false, true) {
 		return
 	}
 	p.StopSprinting()
@@ -712,13 +703,13 @@ func (p *Player) StartSneaking() {
 
 // Sneaking checks if the player is currently sneaking.
 func (p *Player) Sneaking() bool {
-	return atomic.LoadUint32(p.sneaking) == 1
+	return p.sneaking.Load()
 }
 
 // StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
 // will not do anything.
 func (p *Player) StopSneaking() {
-	if !atomic.CompareAndSwapUint32(p.sneaking, 1, 0) {
+	if !p.sneaking.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -727,7 +718,7 @@ func (p *Player) StopSneaking() {
 // StartSwimming makes the player start swimming if it is not currently doing so. If the player is sneaking
 // while StartSwimming is called, the sneaking is stopped.
 func (p *Player) StartSwimming() {
-	if !atomic.CompareAndSwapUint32(p.swimming, 0, 1) {
+	if !p.swimming.CAS(false, true) {
 		return
 	}
 	p.StopSneaking()
@@ -736,12 +727,12 @@ func (p *Player) StartSwimming() {
 
 // Swimming checks if the player is currently swimming.
 func (p *Player) Swimming() bool {
-	return atomic.LoadUint32(p.swimming) == 1
+	return p.swimming.Load()
 }
 
 // StopSwimming makes the player stop swimming if it is currently doing so.
 func (p *Player) StopSwimming() {
-	if !atomic.CompareAndSwapUint32(p.swimming, 1, 0) {
+	if !p.swimming.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -749,7 +740,7 @@ func (p *Player) StopSwimming() {
 
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
-	if !atomic.CompareAndSwapUint32(p.invisible, 0, 1) {
+	if !p.invisible.CAS(false, true) {
 		return
 	}
 	p.updateState()
@@ -758,7 +749,7 @@ func (p *Player) SetInvisible() {
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, nothing happens.
 func (p *Player) SetVisible() {
-	if !atomic.CompareAndSwapUint32(p.invisible, 1, 0) {
+	if !p.invisible.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -782,14 +773,14 @@ func (p *Player) Armour() item.ArmourContainer {
 // the hand held anything.
 func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 	offHand, _ = p.offHand.Item(1)
-	mainHand, _ = p.inv.Item(int(atomic.LoadUint32(p.heldSlot)))
+	mainHand, _ = p.inv.Item(int(p.heldSlot.Load()))
 	return mainHand, offHand
 }
 
 // SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
 // (Stack.Empty()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
-	_ = p.inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
+	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(1, offHand)
 }
 
@@ -991,7 +982,7 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 	ctx := event.C()
 	p.handler().HandleStartBreak(ctx, pos)
 	ctx.Continue(func() {
-		atomic.StoreUint32(p.breaking, 1)
+		p.breaking.Store(true)
 		p.breakingPos.Store(pos)
 
 		p.swingArm()
@@ -1031,7 +1022,7 @@ func (p *Player) breakTime(pos world.BlockPos) time.Duration {
 // if the player isn't breaking anything.
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
-	if atomic.LoadUint32(p.breaking) == 0 {
+	if !p.breaking.Load() {
 		return
 	}
 	p.AbortBreaking()
@@ -1042,11 +1033,10 @@ func (p *Player) FinishBreaking() {
 // if the player isn't breaking anything.
 // Unlike FinishBreaking, AbortBreaking does not stop the animation.
 func (p *Player) AbortBreaking() {
-	if !atomic.CompareAndSwapUint32(p.breaking, 1, 0) {
+	if !p.breaking.CAS(true, false) {
 		return
 	}
-	atomic.StoreUint32(p.breakParticleCounter, 0)
-
+	p.breakParticleCounter.Store(0)
 	pos := p.breakingPos.Load().(world.BlockPos)
 	for _, viewer := range p.World().Viewers(pos.Vec3()) {
 		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
@@ -1057,7 +1047,7 @@ func (p *Player) AbortBreaking() {
 // Player.StartBreaking().
 // The face passed is used to display particles on the side of the block broken.
 func (p *Player) ContinueBreaking(face world.Face) {
-	if atomic.LoadUint32(p.breaking) == 0 {
+	if !p.breaking.Load() {
 		return
 	}
 	pos := p.breakingPos.Load().(world.BlockPos)
@@ -1067,7 +1057,7 @@ func (p *Player) ContinueBreaking(face world.Face) {
 	b := p.World().Block(pos)
 	p.World().AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
-	if atomic.AddUint32(p.breakParticleCounter, 1)%5 == 0 {
+	if p.breakParticleCounter.Add(1)%5 == 0 {
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
 		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
@@ -1297,13 +1287,13 @@ func (p *Player) Position() mgl64.Vec3 {
 // Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 // is 0 when the entity faces forward.
 func (p *Player) Yaw() float64 {
-	return p.yaw.Load().(float64)
+	return p.yaw.Load()
 }
 
 // Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 // and is 0 when the entity faces forward.
 func (p *Player) Pitch() float64 {
-	return p.pitch.Load().(float64)
+	return p.pitch.Load()
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
@@ -1353,9 +1343,9 @@ func (p *Player) Tick(current int64) {
 		p.StopSwimming()
 	}
 	if p.checkOnGround() {
-		atomic.StoreUint32(p.onGround, 1)
+		p.onGround.Store(true)
 	} else {
-		atomic.StoreUint32(p.onGround, 0)
+		p.onGround.Store(false)
 	}
 	p.tickFood()
 	p.effects.Tick(p)
@@ -1465,7 +1455,7 @@ func (p *Player) AABB() physics.AABB {
 
 // OnGround checks if the player is considered to be on the ground.
 func (p *Player) OnGround() bool {
-	return atomic.LoadUint32(p.onGround) == 1
+	return p.onGround.Load()
 }
 
 // EyeHeight returns the eye height of the player: 1.62.
@@ -1488,14 +1478,14 @@ func (p *Player) State() (s []state.State) {
 	if p.canBreathe() || !p.survival() {
 		s = append(s, state.Breathing{})
 	}
-	if atomic.LoadUint32(p.invisible) == 1 {
+	if p.invisible.Load() {
 		s = append(s, state.Invisible{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {
 		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
 	}
-	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
+	s = append(s, state.Named{NameTag: p.nameTag.Load()})
 	return
 }
 

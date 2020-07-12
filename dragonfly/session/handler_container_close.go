@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"sync/atomic"
 )
 
 // ContainerCloseHandler handles the ContainerClose packet.
@@ -18,7 +17,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session) error {
 		// Closing of the normal inventory.
 		s.writePacket(&packet.ContainerClose{WindowID: 0})
 		s.invOpened = false
-	case byte(atomic.LoadUint32(s.openedWindowID)):
+	case byte(s.openedWindowID.Load()):
 		s.closeCurrentContainer()
 	case 0xff:
 		// TODO: Handle closing the crafting grid.
