@@ -69,6 +69,7 @@ func (l *Loader) Load(n int) error {
 		return nil
 	}
 	l.w.blockMu.RLock()
+	defer l.w.blockMu.RUnlock()
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
 			l.mu.Unlock()
@@ -91,7 +92,6 @@ func (l *Loader) Load(n int) error {
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
-	l.w.blockMu.RUnlock()
 	l.mu.Unlock()
 	return nil
 }
