@@ -20,9 +20,10 @@ import (
 // World generally provides a synchronised state: All entities, blocks and players usually operate in this
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 type World struct {
-	time        *int64
 	unixTime    *int64
 	currentTick *int64
+	time        *int64
+	timeStopped *uint32
 
 	name string
 	log  *logrus.Logger
@@ -30,8 +31,6 @@ type World struct {
 	stopTick    context.Context
 	cancelTick  context.CancelFunc
 	doneTicking chan struct{}
-
-	timeStopped *uint32
 
 	gameModeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode
@@ -49,9 +48,9 @@ type World struct {
 	prov       Provider
 
 	chunkMu sync.RWMutex
-	// cCache holds a cache of chunks currently loaded. These chunks are cleared from this map after a while
+	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
 	// of not being used.
-	cCache map[ChunkPos]*chunk.Chunk
+	chunks map[ChunkPos]*chunk.Chunk
 
 	genMu sync.RWMutex
 	gen   Generator
@@ -156,7 +155,7 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 		// Fast way out.
 		return air(), nil
 	}
-	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0)
+	id := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 
 	state, ok := blockByRuntimeID(id)
 	if !ok {
@@ -369,7 +368,7 @@ func (w *World) Liquid(pos BlockPos) (Liquid, bool) {
 		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
 		return nil, false
 	}
-	x, y, z := uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15)
+	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
 
 	id := c.RuntimeID(x, y, z, 0)
 	b, ok := blockByRuntimeID(id)
@@ -416,7 +415,7 @@ func (w *World) SetLiquid(pos BlockPos, b Liquid) {
 		w.doBlockUpdatesAround(pos)
 		return
 	}
-	x, y, z := uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15)
+	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
 	if !replaceable(w, c, pos, b) {
 		current, err := w.block(c, pos)
 		if err != nil {
@@ -455,7 +454,7 @@ func (w *World) SetLiquid(pos BlockPos, b Liquid) {
 // passed.
 // The bool returned specifies if no blocks were left on the foreground layer.
 func (w *World) removeLiquids(c *chunk.Chunk, pos BlockPos, chunkPos ChunkPos) bool {
-	x, y, z := uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15)
+	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
 
 	noneLeft := false
 	if noLeft, changed := w.removeLiquidOnLayer(c, x, y, z, 0); noLeft {
@@ -503,7 +502,7 @@ func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
 		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
 		return nil, false
 	}
-	id := c.RuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 1)
+	id := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 1)
 	c.RUnlock()
 	b, ok := blockByRuntimeID(id)
 	if !ok {
@@ -858,10 +857,10 @@ func (w *World) Close() error {
 	w.log.Debug("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
-	chunksToSave := make(map[ChunkPos]*chunk.Chunk, len(w.cCache))
-	for pos, c := range w.cCache {
+	chunksToSave := make(map[ChunkPos]*chunk.Chunk, len(w.chunks))
+	for pos, c := range w.chunks {
 		// We delete all chunks from the cache and save them to the provider.
-		delete(w.cCache, pos)
+		delete(w.chunks, pos)
 		chunksToSave[pos] = c
 	}
 	w.chunkMu.Unlock()
@@ -974,8 +973,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 	}
 
 	w.chunkMu.RLock()
-	for pos := range w.cCache {
-		c := w.cCache[pos]
+	for pos := range w.chunks {
+		c := w.chunks[pos]
 
 		withinSimDist := false
 		for _, viewer := range viewers {
@@ -1206,7 +1205,7 @@ func (w *World) generator() Generator {
 // chunk returned is nil and false is returned.
 func (w *World) chunkFromCache(pos ChunkPos) (*chunk.Chunk, bool) {
 	w.chunkMu.RLock()
-	c, ok := w.cCache[pos]
+	c, ok := w.chunks[pos]
 	w.chunkMu.RUnlock()
 	return c, ok
 }
@@ -1214,7 +1213,7 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunk.Chunk, bool) {
 // storeChunkToCache stores a chunk at a position passed to the chunk cache.
 func (w *World) storeChunkToCache(pos ChunkPos, c *chunk.Chunk) {
 	w.chunkMu.Lock()
-	w.cCache[pos] = c
+	w.chunks[pos] = c
 	w.chunkMu.Unlock()
 }
 
@@ -1418,31 +1417,31 @@ func (w *World) saveChunk(pos ChunkPos, c *chunk.Chunk) {
 // initChunkCache initialises the chunk cache of the world to its default values.
 func (w *World) initChunkCache() {
 	w.chunkMu.Lock()
-	w.cCache = make(map[ChunkPos]*chunk.Chunk)
+	w.chunks = make(map[ChunkPos]*chunk.Chunk)
 	w.chunkMu.Unlock()
 }
 
 // chunkCacheJanitor runs until the world is closed, cleaning chunks that are no longer in use from the cache.
 func (w *World) chunkCacheJanitor() {
 	t := time.NewTicker(time.Minute * 5)
+	defer t.Stop()
+
 	chunksToRemove := map[ChunkPos]*chunk.Chunk{}
 	for {
 		select {
 		case <-t.C:
 			w.chunkMu.Lock()
-			for pos, c := range w.cCache {
+			for pos, c := range w.chunks {
 				if len(w.chunkViewers(pos)) == 0 {
 					chunksToRemove[pos] = c
-					delete(w.cCache, pos)
+					delete(w.chunks, pos)
 				}
 			}
 			w.chunkMu.Unlock()
 
 			for pos, c := range chunksToRemove {
 				w.saveChunk(pos, c)
-			}
-			for k := range chunksToRemove {
-				delete(chunksToRemove, k)
+				delete(chunksToRemove, pos)
 			}
 		case <-w.stopTick.Done():
 			return
