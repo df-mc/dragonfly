@@ -238,26 +238,17 @@ func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
-	c.SetRuntimeID(uint8(pos[0]&15), uint8(pos[1]), uint8(pos[2]&15), 0, runtimeID)
+	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, runtimeID)
 
-	nbt, hasBlockEntity := b.(NBTer)
-	if hasBlockEntity {
-		// Encode the NBT of the block and add the 'x', 'y' and 'z' tags to it before saving it to the
-		// chunk.
-		data := nbt.EncodeNBT()
-		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		c.SetBlockNBT(pos, data)
-
-		chunkPos := chunkPosFromBlockPos(pos)
+	chunkPos := chunkPosFromBlockPos(pos)
+	if _, hasNBT := b.(NBTer); hasNBT {
 		if w.entityBlocks[chunkPos] == nil {
 			w.entityBlocks[chunkPos] = map[BlockPos]Block{}
 		}
 		w.entityBlocks[chunkPos][pos] = b
-	} else {
-		// Clear any block NBT that might be present at the location.
-		c.SetBlockNBT(pos, nil)
-		delete(w.entityBlocks[chunkPosFromBlockPos(pos)], pos)
+		return nil
 	}
+	delete(w.entityBlocks[chunkPos], pos)
 	return nil
 }
 
@@ -361,9 +352,8 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
 			for _, viewer := range w.chunkViewers(chunkPos) {
-				viewer.ViewChunk(chunkPos, c)
+				viewer.ViewChunk(chunkPos, c, w.entityBlocks[chunkPos])
 			}
-			c.Unlock()
 		}
 	}
 	w.blockMu.Unlock()

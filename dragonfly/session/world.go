@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
@@ -16,23 +17,24 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync/atomic"
 )
 
 // ViewChunk ...
-func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
+func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
 	if !s.conn.ClientCacheEnabled() {
-		s.sendNetworkChunk(pos, c)
+		s.sendNetworkChunk(pos, c, blockEntities)
 		return
 	}
-	s.sendBlobHashes(pos, c)
+	s.sendBlobHashes(pos, c, blockEntities)
 }
 
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
-func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
+func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
 	data := chunk.DiskEncode(c, true)
 
 	count := byte(0)
@@ -73,18 +75,26 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 	s.blobMu.Unlock()
 
+	raw := bytes.NewBuffer(make([]byte, 1, 32))
+	enc := nbt.NewEncoderWithEncoding(raw, nbt.NetworkLittleEndian)
+	for pos, b := range blockEntities {
+		data := b.(world.NBTer).EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		_ = enc.Encode(enc)
+	}
+
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
 		ChunkZ:        pos[1],
 		SubChunkCount: uint32(count),
 		CacheEnabled:  true,
 		BlobHashes:    hashes,
-		RawPayload:    append([]byte{0}, data.BlockNBT...),
+		RawPayload:    raw.Bytes(),
 	})
 }
 
 // sendNetworkChunk sends a network encoded chunk to the client.
-func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk) {
+func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
 	data := chunk.NetworkEncode(c)
 
 	count := byte(0)
@@ -105,6 +115,13 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 	_, _ = s.chunkBuf.Write(data.Data2D)
 	_, _ = s.chunkBuf.Write(data.BlockNBT)
+
+	enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
+	for pos, b := range blockEntities {
+		data := b.(world.NBTer).EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		_ = enc.Encode(enc)
+	}
 
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],

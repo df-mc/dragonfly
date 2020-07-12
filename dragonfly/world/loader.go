@@ -68,6 +68,7 @@ func (l *Loader) Load(n int) error {
 		l.mu.Unlock()
 		return nil
 	}
+	l.w.blockMu.RLock()
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
 			l.mu.Unlock()
@@ -79,7 +80,7 @@ func (l *Loader) Load(n int) error {
 			l.mu.Unlock()
 			return err
 		}
-		l.viewer.ViewChunk(pos, c)
+		l.viewer.ViewChunk(pos, c, l.w.entityBlocks[pos])
 		c.RUnlock()
 
 		l.w.addViewer(pos, l.viewer)
@@ -90,6 +91,7 @@ func (l *Loader) Load(n int) error {
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
+	l.w.blockMu.RUnlock()
 	l.mu.Unlock()
 	return nil
 }
