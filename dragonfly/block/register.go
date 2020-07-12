@@ -85,6 +85,8 @@ func init() {
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
+		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
+		world.RegisterItem("minecraft:wool", Wool{Colour: c})
 
 		colourName := c.String()
 		if c == colour.LightGrey() {
