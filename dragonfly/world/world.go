@@ -636,9 +636,24 @@ func (w *World) RemoveEntity(e Entity) {
 		w.entityMu.Unlock()
 		return
 	}
-	if !w.removeEntity(chunkPos, e) {
-		w.log.Debugf("failed removing entity %T{%v} at chunk position %v", e, e, chunkPos)
+	n := make([]Entity, 0, len(w.entities[chunkPos]))
+	for _, entity := range w.entities[chunkPos] {
+		if entity != e {
+			n = append(n, entity)
+			continue
+		}
+		w.viewerMu.RLock()
+		for _, viewer := range w.viewers[chunkPos] {
+			viewer.HideEntity(e)
+		}
+		w.viewerMu.RUnlock()
 	}
+	if len(n) == 0 {
+		// The entity is the last in the chunk, so we can delete the value from the map.
+		delete(w.entities, chunkPos)
+		return
+	}
+	w.entities[chunkPos] = n
 	w.entityMu.Unlock()
 }
 
@@ -1089,31 +1104,6 @@ func (w *World) tickEntities(tick int64) {
 		// active.
 		ticker.Tick(tick)
 	}
-}
-
-// removeEntity attempts to remove an entity located in a chunk at the chunk position passed. If found, it
-// removes the entity and returns true. If it can't be found, removeEntity returns false.
-func (w *World) removeEntity(chunkPos ChunkPos, e Entity) (found bool) {
-	n := make([]Entity, 0, len(w.entities[chunkPos]))
-	for _, entity := range w.entities[chunkPos] {
-		if entity != e {
-			n = append(n, entity)
-			continue
-		}
-		w.viewerMu.RLock()
-		for _, viewer := range w.viewers[chunkPos] {
-			viewer.HideEntity(e)
-		}
-		w.viewerMu.RUnlock()
-		found = true
-	}
-	if len(n) == 0 {
-		// The entity is the last in the chunk, so we can delete the value from the map.
-		delete(w.entities, chunkPos)
-		return
-	}
-	w.entities[chunkPos] = n
-	return
 }
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
