@@ -52,9 +52,6 @@ type World struct {
 	// cCache holds a cache of chunks currently loaded. These chunks are cleared from this map after a while
 	// of not being used.
 	cCache map[ChunkPos]*chunk.Chunk
-	// cTimes holds the unix times on which chunks with a chunk position will be closed and saved. These
-	// timestamps are updated every time the chunk at the position is used.
-	cTimes map[ChunkPos]int64
 
 	genMu sync.RWMutex
 	gen   Generator
@@ -864,7 +861,6 @@ func (w *World) Close() error {
 	chunksToSave := make(map[ChunkPos]*chunk.Chunk, len(w.cCache))
 	for pos, c := range w.cCache {
 		// We delete all chunks from the cache and save them to the provider.
-		delete(w.cTimes, pos)
 		delete(w.cCache, pos)
 		chunksToSave[pos] = c
 	}
@@ -1219,7 +1215,6 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunk.Chunk, bool) {
 func (w *World) storeChunkToCache(pos ChunkPos, c *chunk.Chunk) {
 	w.chunkMu.Lock()
 	w.cCache[pos] = c
-	w.cTimes[pos] = atomic.LoadInt64(w.unixTime) + 5*60
 	w.chunkMu.Unlock()
 }
 
@@ -1265,12 +1260,6 @@ func (w *World) chunk(pos ChunkPos, readOnly bool) (*chunk.Chunk, error) {
 
 	if needsLight {
 		w.calculateLight(c, pos)
-	}
-	if ok {
-		// A chunk existed at the position, so we update the timestamp and return it.
-		w.chunkMu.Lock()
-		w.cTimes[pos] = atomic.LoadInt64(w.unixTime) + 5*60
-		w.chunkMu.Unlock()
 	}
 
 	if readOnly {
@@ -1430,7 +1419,6 @@ func (w *World) saveChunk(pos ChunkPos, c *chunk.Chunk) {
 func (w *World) initChunkCache() {
 	w.chunkMu.Lock()
 	w.cCache = make(map[ChunkPos]*chunk.Chunk)
-	w.cTimes = make(map[ChunkPos]int64)
 	w.chunkMu.Unlock()
 }
 
@@ -1442,14 +1430,9 @@ func (w *World) chunkCacheJanitor() {
 		select {
 		case <-t.C:
 			w.chunkMu.Lock()
-			for pos, t := range w.cTimes {
-				if len(w.chunkViewers(pos)) != 0 {
-					w.cTimes[pos] = atomic.LoadInt64(w.unixTime) + 5*60
-					continue
-				}
-				if t <= atomic.LoadInt64(w.unixTime) {
-					chunksToRemove[pos] = w.cCache[pos]
-					delete(w.cTimes, pos)
+			for pos, c := range w.cCache {
+				if len(w.chunkViewers(pos)) == 0 {
+					chunksToRemove[pos] = c
 					delete(w.cCache, pos)
 				}
 			}
