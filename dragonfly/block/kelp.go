@@ -15,8 +15,8 @@ type Kelp struct {
 	Age int
 }
 
-//Kelp can be instantly destroyed.
-func (k Kelp) BreakInfo() BreakInfo {
+// BreakInfo ...
+func (k Kelp) BreakInfo() BreakInfo { //Kelp can be instantly destroyed.
 	return BreakInfo{
 		Hardness:    0.0,
 		Harvestable: alwaysHarvestable,
@@ -58,14 +58,15 @@ func (Kelp) AABB(world.BlockPos, *world.World) []physics.AABB {
 	return nil //Kelp can be placed even if someone is standing on its placement position.
 }
 
-//In Java Edition, the age value can be up to 25, but MCPE limits it to 15.
+// SetRandomAge ...
 func (k Kelp) SetRandomAge() Kelp {
+	//In Java Edition, the age value can be up to 25, but MCPE limits it to 15.
 	k.Age = rand.Intn(14)
 	return k
 }
 
-//The age must be 0-15.
-func (k Kelp) SetAge(age int) Kelp {
+// SetAge ...
+func (k Kelp) SetAge(age int) Kelp { //The age must be 0-15.
 	k.Age = age
 	return k
 }
@@ -91,7 +92,7 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 	return placed(ctx)
 }
 
-// NeighborUpdateTick ...
+// NeighbourUpdateTick ...
 func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	if changed.Y()-1 == pos.Y() { //When a kelp block is broken above, the kelp block underneath it gets a new random age.
 		w.SetBlock(pos, k.SetRandomAge())
