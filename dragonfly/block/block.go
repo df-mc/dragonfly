@@ -43,6 +43,9 @@ type Replaceable interface {
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
 func replaceable(w *world.World, pos world.BlockPos, with world.Block) bool {
+	if pos.OutOfBounds() {
+		return false
+	}
 	b := w.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
 		return replaceable.ReplaceableBy(with)

@@ -877,7 +877,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				// The block clicked was either not replaceable, or not replaceable using the block passed.
 				replacedPos = pos.Side(face)
 			}
-			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) {
+			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds() {
 				if p.placeBlock(replacedPos, b) && p.survival() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
