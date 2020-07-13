@@ -20,11 +20,11 @@ import (
 // World generally provides a synchronised state: All entities, blocks and players usually operate in this
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 type World struct {
+	name atomic.String
+	log  *logrus.Logger
+
 	unixTime, currentTick, time atomic.Int64
 	timeStopped                 atomic.Bool
-
-	name string
-	log  *logrus.Logger
 
 	stopTick    context.Context
 	cancelTick  context.CancelFunc
@@ -101,7 +101,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		log:             log,
 		stopTick:        ctx,
 		cancelTick:      cancel,
-		name:            "World",
+		name:            *atomic.NewString("World"),
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -113,10 +113,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 // in the pause screen in-game.
 // If a provider is set, the name will be updated according to the name that it provides.
 func (w *World) Name() string {
-	w.providerMu.RLock()
-	n := w.name
-	w.providerMu.RUnlock()
-	return n
+	return w.name.Load()
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -787,7 +784,7 @@ func (w *World) Provider(p Provider) {
 		p = NoIOProvider{}
 	}
 	w.prov = p
-	w.name = p.WorldName()
+	w.name.Store(p.WorldName())
 	w.gameModeMu.Lock()
 	w.defaultGameMode = p.LoadDefaultGameMode()
 	w.gameModeMu.Unlock()
