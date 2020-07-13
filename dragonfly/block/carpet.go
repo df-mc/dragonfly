@@ -14,6 +14,17 @@ type Carpet struct {
 	Colour colour.Colour
 }
 
+// CanDisplace ...
+func (Carpet) CanDisplace(b world.Liquid) bool {
+	_, water := b.(Water)
+	return water
+}
+
+// SideClosed ...
+func (Carpet) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+	return false
+}
+
 // AABB ...
 func (Carpet) AABB(world.BlockPos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.0625, 1})}
@@ -53,7 +64,9 @@ func (Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 
 // ScheduledTick ...
 func (Carpet) ScheduledTick(pos world.BlockPos, w *world.World) {
-	w.BreakBlock(pos)
+	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
+		w.BreakBlock(pos)
+	}
 }
 
 // UseOnBlock handles not placing carpets on top of air blocks.
