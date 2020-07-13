@@ -130,12 +130,10 @@ func (w *World) Block(pos BlockPos) Block {
 		return air()
 	}
 	b, err := w.blockInChunk(c, pos, chunkPos)
+	c.RUnlock()
 	if err != nil {
 		w.log.Errorf("error getting block: %v", err)
-		c.RUnlock()
-		return air()
 	}
-	c.RUnlock()
 	return b
 }
 
@@ -151,7 +149,7 @@ func (w *World) blockInChunk(c *chunk.Chunk, pos BlockPos, chunkPos ChunkPos) (B
 	state, ok := blockByRuntimeID(id)
 	if !ok {
 		// This should never happen.
-		return nil, fmt.Errorf("could not find block state by runtime ID %v", id)
+		return air(), fmt.Errorf("could not find block state by runtime ID %v", id)
 	}
 	if _, ok := state.(NBTer); ok {
 		// The block was also a block entity, so we look it up in the block entity map.
@@ -212,7 +210,7 @@ func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block, chunkPos ChunkPo
 	w.blockMu.Lock()
 	err := w.setBlockInChunk(c, pos, b, chunkPos)
 	w.blockMu.Unlock()
-	for _, viewer := range w.Viewers(pos.Vec3()) {
+	for _, viewer := range w.chunkViewers(chunkPos) {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
 	return err
