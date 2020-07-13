@@ -20,7 +20,7 @@ func init() {
 	world.RegisterBlock(Grass{}, Grass{Path: true})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
-	world.RegisterBlock(Kelp{})
+	world.RegisterBlock(allKelp()...)
 	world.RegisterBlock(allLogs()...)
 	world.RegisterBlock(allLeaves()...)
 	world.RegisterBlock(Bedrock{}, Bedrock{InfiniteBurning: true})
