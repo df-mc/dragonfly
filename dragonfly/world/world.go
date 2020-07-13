@@ -124,11 +124,12 @@ func (w *World) Block(pos BlockPos) Block {
 		// Fast way out.
 		return air()
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	chunkPos := chunkPosFromBlockPos(pos)
+	c, err := w.chunk(chunkPos, true)
 	if err != nil {
 		return air()
 	}
-	b, err := w.block(c, pos)
+	b, err := w.blockInChunk(c, pos, chunkPos)
 	if err != nil {
 		w.log.Errorf("error getting block: %v", err)
 		c.RUnlock()
@@ -138,9 +139,9 @@ func (w *World) Block(pos BlockPos) Block {
 	return b
 }
 
-// block reads a block from the world at the position passed. The block is assumed to be in the chunk passed,
-// which is also assumed to be locked already or otherwise not yet accessible.
-func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
+// blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
+// passed, which is also assumed to be locked already or otherwise not yet accessible.
+func (w *World) blockInChunk(c *chunk.Chunk, pos BlockPos, chunkPos ChunkPos) (Block, error) {
 	if pos.OutOfBounds() {
 		// Fast way out.
 		return air(), nil
@@ -155,7 +156,7 @@ func (w *World) block(c *chunk.Chunk, pos BlockPos) (Block, error) {
 	if _, ok := state.(NBTer); ok {
 		// The block was also a block entity, so we look it up in the block entity map.
 		w.blockMu.RLock()
-		b, ok := w.entityBlocks[chunkPosFromBlockPos(pos)][pos]
+		b, ok := w.entityBlocks[chunkPos][pos]
 		w.blockMu.RUnlock()
 		if ok {
 			return b, nil
@@ -193,11 +194,12 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 		// Fast way out.
 		return
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos), false)
+	chunkPos := chunkPosFromBlockPos(pos)
+	c, err := w.chunk(chunkPos, false)
 	if err != nil {
 		return
 	}
-	if err := w.setBlock(c, pos, b); err != nil {
+	if err := w.setBlock(c, pos, b, chunkPos); err != nil {
 		w.log.Errorf("error setting block: %v", err)
 	}
 	c.Unlock()
@@ -206,9 +208,9 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 // setBlock sets a block at a position in a chunk to a given block. It does not lock the chunk passed, and
 // assumes that is already done or that the chunk is otherwise inaccessible.
 // Nil may be passed as the block to set the block to air.
-func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
+func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block, chunkPos ChunkPos) error {
 	w.blockMu.Lock()
-	err := w.setBlockSilent(c, pos, b)
+	err := w.setBlockInChunk(c, pos, b, chunkPos)
 	w.blockMu.Unlock()
 	for _, viewer := range w.Viewers(pos.Vec3()) {
 		viewer.ViewBlockUpdate(pos, b, 0)
@@ -216,17 +218,16 @@ func (w *World) setBlock(c *chunk.Chunk, pos BlockPos, b Block) error {
 	return err
 }
 
-// setBlockSilent sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockSilent
+// setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
 // does not send block updates to viewer.
-// Callers of setBlockSilent must ensure that w.blockMu is locked while this method is called.
-func (w *World) setBlockSilent(c *chunk.Chunk, pos BlockPos, b Block) error {
+// Callers of setBlockInChunk must ensure that w.blockMu is locked while this method is called.
+func (w *World) setBlockInChunk(c *chunk.Chunk, pos BlockPos, b Block, chunkPos ChunkPos) error {
 	runtimeID, ok := BlockRuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, runtimeID)
 
-	chunkPos := chunkPosFromBlockPos(pos)
 	if _, hasNBT := b.(NBTer); hasNBT {
 		if w.entityBlocks[chunkPos] == nil {
 			w.entityBlocks[chunkPos] = map[BlockPos]Block{}
@@ -300,7 +301,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			}
 			f := func(x, y, z int) Block {
 				if x>>4 == chunkX && z>>4 == chunkZ {
-					b, _ := w.block(c, BlockPos{x, y, z})
+					b, _ := w.blockInChunk(c, BlockPos{x, y, z}, chunkPos)
 					return b
 				}
 				return w.Block(BlockPos{x, y, z})
@@ -328,7 +329,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 						}
 						placePos := BlockPos{xOffset, y + pos[1], zOffset}
 						if b := s.At(xOffset-pos[0], y, zOffset-pos[2], f); b != nil {
-							if err := w.setBlockSilent(c, placePos, b); err != nil {
+							if err := w.setBlockInChunk(c, placePos, b, chunkPos); err != nil {
 								w.log.Errorf("error setting block of structure: %v", err)
 							}
 						}
@@ -406,8 +407,8 @@ func (w *World) SetLiquid(pos BlockPos, b Liquid) {
 		return
 	}
 	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
-	if !replaceable(w, c, pos, b) {
-		current, err := w.block(c, pos)
+	if !replaceable(w, c, pos, b, chunkPos) {
+		current, err := w.blockInChunk(c, pos, chunkPos)
 		if err != nil {
 			c.Unlock()
 			w.log.Errorf("failed setting liquid: error getting block at position %v: %w", chunkPosFromBlockPos(pos), err)
@@ -1280,7 +1281,7 @@ func (w *World) loadChunk(pos ChunkPos) (c *chunk.Chunk, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
 		}
-		w.loadIntoBlocks(c, blockEntities)
+		w.loadIntoBlocks(c, pos, blockEntities)
 	}
 	return c, nil
 }
@@ -1343,10 +1344,10 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 
 // loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
 // have block NBT will then be stored into memory.
-func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]interface{}) {
+func (w *World) loadIntoBlocks(c *chunk.Chunk, chunkPos ChunkPos, blockEntityData []map[string]interface{}) {
 	for _, data := range blockEntityData {
 		pos := blockPosFromNBT(data)
-		b, err := w.block(c, pos)
+		b, err := w.blockInChunk(c, pos, chunkPos)
 		if err != nil {
 			w.log.Errorf("error loading block for block entity: %v", err)
 			continue
@@ -1354,7 +1355,7 @@ func (w *World) loadIntoBlocks(c *chunk.Chunk, blockEntityData []map[string]inte
 		if nbt, ok := b.(NBTer); ok {
 			b = nbt.DecodeNBT(data).(Block)
 		}
-		if err := w.setBlock(c, pos, b); err != nil {
+		if err := w.setBlock(c, pos, b, chunkPos); err != nil {
 			w.log.Errorf("error setting block with block entity back: %v", err)
 		}
 	}
