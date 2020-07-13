@@ -636,9 +636,9 @@ func (w *World) RemoveEntity(e Entity) {
 	if len(n) == 0 {
 		// The entity is the last in the chunk, so we can delete the value from the map.
 		delete(w.entities, chunkPos)
-		return
+	} else {
+		w.entities[chunkPos] = n
 	}
-	w.entities[chunkPos] = n
 	w.entityMu.Unlock()
 }
 
