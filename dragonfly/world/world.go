@@ -331,6 +331,16 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 								w.log.Errorf("error setting block of structure: %v", err)
 							}
 						}
+						if liq := s.AdditionalLiquidAt(xOffset-pos[0], y, zOffset-pos[2]); liq != nil {
+							runtimeID, ok := BlockRuntimeID(liq)
+							if !ok {
+								w.log.Errorf("runtime ID of block state %+v not found", liq)
+								continue
+							}
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, runtimeID)
+						} else {
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, 0)
+						}
 					}
 				}
 			}
