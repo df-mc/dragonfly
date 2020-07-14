@@ -25,6 +25,7 @@ type World struct {
 
 	unixTime, currentTick, time atomic.Int64
 	timeStopped                 atomic.Bool
+	rdonly                      atomic.Bool
 
 	stopTick    context.Context
 	cancelTick  context.CancelFunc
@@ -36,30 +37,28 @@ type World struct {
 	difficultyMu sync.RWMutex
 	difficulty   difficulty.Difficulty
 
-	blockMu      sync.RWMutex
-	entityBlocks map[ChunkPos]map[BlockPos]Block
-
 	handlerMu sync.RWMutex
 	handler   Handler
 
 	providerMu sync.RWMutex
 	prov       Provider
 
+	genMu sync.RWMutex
+	gen   Generator
+
 	chunkMu sync.RWMutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
 	// of not being used.
 	chunks map[ChunkPos]*chunk.Chunk
 
-	genMu sync.RWMutex
-	gen   Generator
+	blockMu      sync.RWMutex
+	entityBlocks map[ChunkPos]map[BlockPos]Block
 
 	entityMu sync.RWMutex
 	entities map[ChunkPos][]Entity
 
 	viewerMu sync.RWMutex
 	viewers  map[ChunkPos][]Viewer
-
-	rdonly atomic.Bool
 
 	r         *rand.Rand
 	simDistSq int32
@@ -73,7 +72,8 @@ type World struct {
 	blockUpdates    map[BlockPos]int64
 	updatePositions []BlockPos
 
-	toTick []toTick
+	toTick        []toTick
+	positionCache []ChunkPos
 
 	chunkLoadMu sync.Mutex
 }
@@ -959,19 +959,22 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 	}
 	tickSpeed := w.randomTickSpeed.Load()
 
+	for _, viewer := range viewers {
+		pos := viewer.Position()
+		w.positionCache = append(w.positionCache, ChunkPos{
+			// Technically we could obtain the wrong chunk position here due to truncating, but this
+			// inaccuracy doesn't matter and it allows us to cut a corner.
+			int32(pos[0]) >> 4,
+			int32(pos[2]) >> 4,
+		})
+	}
+
 	w.chunkMu.RLock()
 	for pos := range w.chunks {
 		c := w.chunks[pos]
 
 		withinSimDist := false
-		for _, viewer := range viewers {
-			vPos := viewer.Position()
-			chunkPos := ChunkPos{
-				// Technically we could obtain the wrong chunk position here due to truncating, but this
-				// inaccuracy doesn't matter and it allows us to cut a corner.
-				int32(vPos[0]) >> 4,
-				int32(vPos[2]) >> 4,
-			}
+		for _, chunkPos := range w.positionCache {
 			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
 			if (xDiff*xDiff)+(zDiff*zDiff) <= w.simDistSq {
 				// The chunk was within the simulation distance of at least one viewer, so we can proceed to
@@ -1012,9 +1015,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 					// The block was air, take the fast route out.
 					continue
 				}
-				b, _ := blockByRuntimeID(rid)
 
-				if randomTicker, ok := b.(RandomTicker); ok {
+				if randomTicker, ok := registeredStates[rid].(RandomTicker); ok {
 					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: BlockPos{int(pos[0]<<4) + x, y + i>>2, int(pos[1]<<4) + z}})
 				}
 			}
@@ -1027,6 +1029,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 		a.b.RandomTick(a.pos, w, w.r)
 	}
 	w.toTick = w.toTick[:0]
+	w.positionCache = w.positionCache[:0]
 }
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
