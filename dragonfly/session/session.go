@@ -159,10 +159,10 @@ func (s *Session) Close() error {
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
 
+	s.c.World().RemoveEntity(s.c)
+
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
-
-	s.c.World().RemoveEntity(s.c)
 
 	s.entityMutex.Lock()
 	s.entityRuntimeIDs = map[world.Entity]uint64{}
