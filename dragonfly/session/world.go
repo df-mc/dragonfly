@@ -369,6 +369,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.Deny:
+		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
 		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.blockRuntimeID(so.Block))
 	case sound.ChestClose:
