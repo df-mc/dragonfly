@@ -885,11 +885,13 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		}
 	})
 	ctx.Stop(func() {
-		if _, ok := i.Item().(world.Block); ok {
-			placedPos := pos.Side(face)
-			existing := p.World().Block(placedPos)
-			// Always put back the block so that the client sees it there again.
-			p.World().SetBlock(placedPos, existing)
+		p.World().SetBlock(pos, p.World().Block(pos))
+		p.World().SetBlock(pos.Side(face), p.World().Block(pos.Side(face)))
+		if liq, ok := p.World().Liquid(pos); ok {
+			p.World().SetLiquid(pos, liq)
+		}
+		if liq, ok := p.World().Liquid(pos.Side(face)); ok {
+			p.World().SetLiquid(pos.Side(face), liq)
 		}
 	})
 }
@@ -1103,6 +1105,12 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 		p.World().PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 		p.swingArm()
 		success = true
+	})
+	ctx.Stop(func() {
+		pos.Neighbours(func(neighbour world.BlockPos) {
+			p.World().SetBlock(neighbour, p.World().Block(neighbour))
+		})
+		p.World().SetBlock(pos, p.World().Block(pos))
 	})
 	return
 }
