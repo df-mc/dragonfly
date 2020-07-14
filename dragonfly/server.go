@@ -108,6 +108,8 @@ func (server *Server) Run() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
 	server.run()
 	return nil
 }
@@ -125,6 +127,8 @@ func (server *Server) Start() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
 	go server.run()
 	return nil
 }
@@ -268,9 +272,6 @@ func (server *Server) startListening() error {
 // closed by a call to Close.
 func (server *Server) run() {
 	server.World().Generator(generator.Flat{})
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
-
 	for {
 		c, err := server.listener.Accept()
 		if err != nil {
