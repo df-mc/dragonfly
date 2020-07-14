@@ -18,7 +18,7 @@ func (g Grass) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if !g.Path {
 		return
 	}
-	if _, air := w.Block(pos).(Air); !air {
+	if _, air := w.Block(pos.Add(world.BlockPos{0, 1})).(Air); !air {
 		// Technically vanilla doesn't always turn grass paths into dirt when a block is placed above it,
 		// for example torches, but the logic doesn't make sense.
 		w.SetBlock(pos, Dirt{})
