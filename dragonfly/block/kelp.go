@@ -23,7 +23,7 @@ func (k Kelp) BreakInfo() BreakInfo {
 		Hardness:    0.0,
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(Kelp{}, 1)),
+		Drops:       simpleDrops(item.NewStack(k, 1)),
 	}
 }
 
