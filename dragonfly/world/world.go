@@ -285,7 +285,6 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxZ := pos[0]+width, pos[2]+length
 
-	w.blockMu.Lock()
 	for chunkX := pos[0] >> 4; chunkX < ((pos[0]+width)>>4)+1; chunkX++ {
 		for chunkZ := pos[2] >> 4; chunkZ < ((pos[2]+length)>>4)+1; chunkZ++ {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
@@ -305,6 +304,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 				return w.Block(BlockPos{x, y, z})
 			}
 
+			w.blockMu.Lock()
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			for localX := 0; localX < 16; localX++ {
 				xOffset := baseX + localX
@@ -339,9 +339,10 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			for _, viewer := range w.chunkViewers(chunkPos) {
 				viewer.ViewChunk(chunkPos, c, w.entityBlocks[chunkPos])
 			}
+			w.blockMu.Unlock()
+			c.Unlock()
 		}
 	}
-	w.blockMu.Unlock()
 }
 
 // Liquid attempts to return any liquid block at the position passed. This liquid may be in the foreground or
