@@ -1348,7 +1348,7 @@ func (p *Player) Tick(current int64) {
 	if p.Dead() {
 		return
 	}
-	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); !ok {
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 	}
 	if p.checkOnGround() {
