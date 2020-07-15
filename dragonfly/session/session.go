@@ -234,6 +234,9 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 	for {
 		select {
 		case <-t.C:
+			if s.chunkLoader.World() != s.c.World() {
+				s.chunkLoader.ChangeWorld(s.c.World())
+			}
 			s.blobMu.Lock()
 			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 			s.blobMu.Unlock()
