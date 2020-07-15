@@ -1227,6 +1227,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
+	p.session().ViewEntityTeleport(p, pos)
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityTeleport(p, pos)
 	}
