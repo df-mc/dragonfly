@@ -87,6 +87,10 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 
 // NeighbourUpdateTick ...
 func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
+	if _, ok := w.Liquid(pos); !ok {
+		w.BreakBlock(pos)
+		return
+	}
 	if changed.Y()-1 == pos.Y() {
 		// When a kelp block is broken above, the kelp block underneath it gets a new random age.
 		w.PlaceBlock(pos, k.withRandomAge())
@@ -101,6 +105,10 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 
 // ScheduledTick ...
 func (Kelp) ScheduledTick(pos world.BlockPos, w *world.World) {
+	if _, ok := w.Liquid(pos); !ok {
+		w.BreakBlock(pos)
+		return
+	}
 	// Kelp blocks can only exist on top of a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
 	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
 	// As of now, the breaking logic has to be in here as well to avoid issues.
