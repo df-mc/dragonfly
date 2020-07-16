@@ -20,12 +20,17 @@ func (g GoldBlock) BreakInfo() BreakInfo {
 	}
 }
 
+// PowersBeacon ...
+func (GoldBlock) PowersBeacon() bool {
+	return true
+}
+
 // EncodeItem ...
-func (g GoldBlock) EncodeItem() (id int32, meta int16) {
+func (GoldBlock) EncodeItem() (id int32, meta int16) {
 	return 41, 0
 }
 
 // EncodeBlock ...
-func (g GoldBlock) EncodeBlock() (name string, properties map[string]interface{}) {
+func (GoldBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:gold_block", nil
 }

@@ -36,8 +36,10 @@ func init() {
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
 	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(NetheriteBlock{})
 	world.RegisterBlock(GoldBlock{})
 	world.RegisterBlock(IronBlock{})
+	world.RegisterBlock(CoalBlock{})
 	world.RegisterBlock(Beacon{})
 	world.RegisterBlock(Sponge{})
 	world.RegisterBlock(Sponge{Wet: true})
@@ -125,8 +127,10 @@ func init() {
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
 	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
+	world.RegisterItem("minecraft:netherite_block", NetheriteBlock{})
 	world.RegisterItem("minecraft:gold_block", GoldBlock{})
 	world.RegisterItem("minecraft:iron_block", IronBlock{})
+	world.RegisterItem("minecraft:coal_block", CoalBlock{})
 	world.RegisterItem("minecraft:beacon", Beacon{})
 	world.RegisterItem("minecraft:sponge", Sponge{})
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
@@ -170,5 +174,11 @@ func readString(m map[string]interface{}, key string) string {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
 	b, _ := v.(string)
+	return b
+}
+
+func readInt(m map[string]interface{}, key string) int {
+	v, _ := m[key]
+	b, _ := v.(int)
 	return b
 }

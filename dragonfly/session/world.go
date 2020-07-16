@@ -510,6 +510,9 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 
 	var containerType byte
 	switch b.(type) {
+	/*case block.Beacon:
+		// Beacon container id. TODO: Uncomment when beacon UI is implemented.
+		containerType = 13*/
 	}
 
 	s.writePacket(&packet.ContainerOpen{
