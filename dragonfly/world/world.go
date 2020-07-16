@@ -517,7 +517,11 @@ func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos BlockPos) uint8 {
-	if pos[1] < 0 || pos[1] > 255 {
+	if pos[1] > 255 {
+		// Above the rest of the world, so full sky light.
+		return 15
+	}
+	if pos[1] < 0 {
 		// Fast way out.
 		return 0
 	}
@@ -526,6 +530,28 @@ func (w *World) Light(pos BlockPos) uint8 {
 		return 0
 	}
 	l := c.Light(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]))
+	c.RUnlock()
+
+	return l
+}
+
+// SkyLight returns the sky light level at the position passed. This light level is not influenced by blocks
+// that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
+// range 0-15, where 0 means no light is present.
+func (w *World) SkyLight(pos BlockPos) uint8 {
+	if pos[1] > 255 {
+		// Above the rest of the world, so full sky light.
+		return 15
+	}
+	if pos[1] < 0 {
+		// Fast way out.
+		return 0
+	}
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	if err != nil {
+		return 0
+	}
+	l := c.SkyLight(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]))
 	c.RUnlock()
 
 	return l
