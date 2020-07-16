@@ -209,7 +209,7 @@ func (Beacon) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:beacon", nil
 }
 
-//go:linkname effect_effectByID github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
+//go:linkname effect_effectByID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
 //noinspection ALL
 func effect_effectByID(id int) (entity.Effect, bool)
 
@@ -217,6 +217,6 @@ func effect_effectByID(id int) (entity.Effect, bool)
 //noinspection ALL
 func effect_idByEffect(entity.Effect) (int, bool)
 
-//go:linkname World_runtimeID github.com/df-mc/dragonfly/dragonfly/world.highestLightBlocker
+//go:linkname world_highestLightBlocker github.com/df-mc/dragonfly/dragonfly/world.highestLightBlocker
 //noinspection ALL
 func world_highestLightBlocker(w *world.World, x, z int) uint8
