@@ -181,6 +181,20 @@ func runtimeID(w *World, pos BlockPos) uint32 {
 	return rid
 }
 
+// highestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
+// passed in the world.
+//lint:ignore U1000 Function is used using compiler directives.
+//noinspection GoUnusedFunction
+func highestLightBlocker(w *World, x, z int) uint8 {
+	c, err := w.chunk(chunkPosFromBlockPos(BlockPos{x, 0, z}), true)
+	if err != nil {
+		return 0
+	}
+	v := c.HighestLightBlocker(uint8(x), uint8(z))
+	c.RUnlock()
+	return v
+}
+
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
 // SetBlock panics if the block passed has not yet been registered using RegisterBlock().
