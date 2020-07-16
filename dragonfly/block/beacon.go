@@ -171,7 +171,9 @@ func (b Beacon) preparePowerPlayers(pos world.BlockPos, w *world.World) {
 		// Secondary power can only be set if the primary power is set.
 		if b.Secondary != nil {
 			// It is possible to select 2 primary powers if the beacon's level is 4.
-			if effect_idByEffect(b.Primary) == effect_idByEffect(b.Secondary) {
+			pId, pOk := effect_idByEffect(b.Primary)
+			sId, sOk := effect_idByEffect(b.Secondary)
+			if pOk && sOk && pId == sId {
 				// TODO: Increment primary effect level by 1
 			} else {
 				secondary = b.Secondary.WithDuration(time.Duration(dur))
