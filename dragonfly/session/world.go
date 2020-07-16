@@ -341,6 +341,11 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.BlockForceField:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleBlockForceField,
+			Position:  vec64To32(pos),
+		})
 	case particle.BlockBreak:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleDestroy,
@@ -364,6 +369,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.Deny:
+		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
 		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.blockRuntimeID(so.Block))
 	case sound.ChestClose:

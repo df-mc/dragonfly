@@ -159,10 +159,10 @@ func (s *Session) Close() error {
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
 
+	s.c.World().RemoveEntity(s.c)
+
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
-
-	s.c.World().RemoveEntity(s.c)
 
 	s.entityMutex.Lock()
 	s.entityRuntimeIDs = map[world.Entity]uint64{}
@@ -234,6 +234,9 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 	for {
 		select {
 		case <-t.C:
+			if s.chunkLoader.World() != s.c.World() {
+				s.chunkLoader.ChangeWorld(s.c.World())
+			}
 			s.blobMu.Lock()
 			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 			s.blobMu.Unlock()

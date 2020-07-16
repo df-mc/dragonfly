@@ -18,7 +18,7 @@ func (s *Session) SendMessage(message string) {
 // SendTip ...
 func (s *Session) SendTip(message string) {
 	s.writePacket(&packet.Text{
-		TextType: packet.TextTypePopup,
+		TextType: packet.TextTypeTip,
 		Message:  message,
 	})
 }

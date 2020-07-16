@@ -45,6 +45,15 @@ func (chunk *Chunk) Light(x, y, z uint8) uint8 {
 	return chunk.sub[i].Light(x&15, y&15, z&15)
 }
 
+// SkyLight returns the sky light level at a specific position in the chunk.
+func (chunk *Chunk) SkyLight(x, y, z uint8) uint8 {
+	i := y >> 4
+	if chunk.sub[i] == nil {
+		return 15
+	}
+	return chunk.sub[i].SkyLightAt(x&15, y&15, z&15)
+}
+
 // RuntimeID returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
@@ -70,7 +79,32 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 		sub = &SubChunk{skyLight: fullSkyLight}
 		chunk.sub[i] = sub
 	}
+	if len(sub.storages) < 2 && runtimeID == 0 && layer == 1 {
+		// Air was set at the second layer, but there were less than 2 layers, so there already was air there.
+		// Don't do anything with this, just return.
+		return
+	}
 	sub.SetRuntimeID(x, y, z, layer, runtimeID)
+}
+
+// HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the
+// highest block that completely blocks any light from going through. If none is found, the value returned is
+// 0.
+func (chunk *Chunk) HighestLightBlocker(x, z uint8) uint8 {
+	for subY := 15; subY >= 0; subY-- {
+		sub := chunk.sub[subY]
+		if sub == nil || len(sub.storages) == 0 {
+			continue
+		}
+		for y := 15; y >= 0; y-- {
+			totalY := uint8(y | (subY << 4))
+			rid := sub.storages[0].RuntimeID(x, totalY, z)
+			if _, ok := FilteringBlocks[rid]; !ok {
+				return totalY
+			}
+		}
+	}
+	return 0
 }
 
 // SetBlockNBT sets block NBT data to a given position in the chunk. If the data passed is nil, the block NBT

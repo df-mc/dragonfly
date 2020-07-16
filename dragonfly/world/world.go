@@ -285,7 +285,6 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxZ := pos[0]+width, pos[2]+length
 
-	w.blockMu.Lock()
 	for chunkX := pos[0] >> 4; chunkX < ((pos[0]+width)>>4)+1; chunkX++ {
 		for chunkZ := pos[2] >> 4; chunkZ < ((pos[2]+length)>>4)+1; chunkZ++ {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
@@ -305,6 +304,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 				return w.Block(BlockPos{x, y, z})
 			}
 
+			w.blockMu.Lock()
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			for localX := 0; localX < 16; localX++ {
 				xOffset := baseX + localX
@@ -331,6 +331,16 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 								w.log.Errorf("error setting block of structure: %v", err)
 							}
 						}
+						if liq := s.AdditionalLiquidAt(xOffset-pos[0], y, zOffset-pos[2]); liq != nil {
+							runtimeID, ok := BlockRuntimeID(liq)
+							if !ok {
+								w.log.Errorf("runtime ID of block state %+v not found", liq)
+								continue
+							}
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, runtimeID)
+						} else {
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, 0)
+						}
 					}
 				}
 			}
@@ -339,9 +349,10 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			for _, viewer := range w.chunkViewers(chunkPos) {
 				viewer.ViewChunk(chunkPos, c, w.entityBlocks[chunkPos])
 			}
+			w.blockMu.Unlock()
+			c.Unlock()
 		}
 	}
-	w.blockMu.Unlock()
 }
 
 // Liquid attempts to return any liquid block at the position passed. This liquid may be in the foreground or
@@ -506,7 +517,11 @@ func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos BlockPos) uint8 {
-	if pos[1] < 0 || pos[1] > 255 {
+	if pos[1] > 255 {
+		// Above the rest of the world, so full sky light.
+		return 15
+	}
+	if pos[1] < 0 {
 		// Fast way out.
 		return 0
 	}
@@ -515,6 +530,28 @@ func (w *World) Light(pos BlockPos) uint8 {
 		return 0
 	}
 	l := c.Light(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]))
+	c.RUnlock()
+
+	return l
+}
+
+// SkyLight returns the sky light level at the position passed. This light level is not influenced by blocks
+// that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
+// range 0-15, where 0 means no light is present.
+func (w *World) SkyLight(pos BlockPos) uint8 {
+	if pos[1] > 255 {
+		// Above the rest of the world, so full sky light.
+		return 15
+	}
+	if pos[1] < 0 {
+		// Fast way out.
+		return 0
+	}
+	c, err := w.chunk(chunkPosFromBlockPos(pos), true)
+	if err != nil {
+		return 0
+	}
+	l := c.SkyLight(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]))
 	c.RUnlock()
 
 	return l
