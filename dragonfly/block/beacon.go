@@ -215,7 +215,7 @@ func effect_effectByID(id int) (entity.Effect, bool)
 
 //go:linkname effect_idByEffect github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
 //noinspection ALL
-func effect_idByEffect(entity.Effect) (int, bool)
+func effect_idByEffect(e entity.Effect) (int, bool)
 
 //go:linkname world_highestLightBlocker github.com/df-mc/dragonfly/dragonfly/world.highestLightBlocker
 //noinspection ALL
