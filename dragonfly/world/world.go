@@ -140,13 +140,8 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 		// Fast way out.
 		return air(), nil
 	}
-	id := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
+	state := registeredStates[c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)]
 
-	state, ok := blockByRuntimeID(id)
-	if !ok {
-		// This should never happen.
-		return air(), fmt.Errorf("could not find block state by runtime ID %v", id)
-	}
 	if _, ok := state.(NBTer); ok {
 		// The block was also a block entity, so we look it up in the block entity map.
 		b, ok := c.e[pos]
@@ -663,11 +658,6 @@ func (w *World) RemoveEntity(e Entity) {
 			n = append(n, entity)
 			continue
 		}
-		w.viewerMu.RLock()
-		for _, viewer := range w.viewers[chunkPos] {
-			viewer.HideEntity(e)
-		}
-		w.viewerMu.RUnlock()
 	}
 	if len(n) == 0 {
 		// The entity is the last in the chunk, so we can delete the value from the map.
@@ -676,6 +666,12 @@ func (w *World) RemoveEntity(e Entity) {
 		w.entities[chunkPos] = n
 	}
 	w.entityMu.Unlock()
+
+	w.viewerMu.RLock()
+	for _, viewer := range w.viewers[chunkPos] {
+		viewer.HideEntity(e)
+	}
+	w.viewerMu.RUnlock()
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
