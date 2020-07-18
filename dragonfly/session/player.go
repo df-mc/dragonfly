@@ -417,6 +417,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		CapeID:            uuid.New().String(),
 		FullSkinID:        uuid.New().String(),
 		Animations:        animations,
+		Trusted:           true,
 	}
 }
 
