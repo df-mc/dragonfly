@@ -125,8 +125,8 @@ type replaceableBlock interface {
 }
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *World, c *chunk.Chunk, pos BlockPos, with Block, chunkPos ChunkPos) bool {
-	b, _ := w.blockInChunk(c, pos, chunkPos)
+func replaceable(w *World, c *chunkData, pos BlockPos, with Block) bool {
+	b, _ := w.blockInChunk(c, pos)
 	if replaceable, ok := b.(replaceableBlock); ok {
 		return replaceable.ReplaceableBy(with)
 	}
