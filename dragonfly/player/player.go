@@ -398,7 +398,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
-		finalDamage := p.resolveFinalDamage(dmg, source)
+		finalDamage := p.FinalDamageFrom(dmg, source)
 
 		a := p.absorption()
 		if a > 0 && (effect.Absorption{}).Absorbs(source) {
@@ -423,11 +423,11 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 	})
 }
 
-// resolveFinalDamage resolves the final damage received by the player if it is attacked by the source passed
-// with the damage passed. resolveFinalDamage takes into account things such as the armour worn and the
+// FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
+// with the damage passed. FinalDamageFrom takes into account things such as the armour worn and the
 // enchantments on the individual pieces.
 // The damage returned will be at the least 0.
-func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
+func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
 		defencePoints, damageToArmour := 0.0, int(dmg/4)
 		if damageToArmour == 0 {
@@ -455,7 +455,6 @@ func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 	if dmg < 0 {
 		dmg = 0
 	}
-
 	return dmg
 }
 
