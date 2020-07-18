@@ -19,6 +19,11 @@ func (Obsidian) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:obsidian", nil
 }
 
+// Hash ...
+func (Obsidian) Hash() uint64 {
+	return hashObsidian
+}
+
 // BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
 	return BreakInfo{

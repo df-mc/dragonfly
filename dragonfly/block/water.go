@@ -141,6 +141,11 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
 }
 
+// Hash ...
+func (w Water) Hash() uint64 {
+	return hashWater | (uint64(boolByte(w.Falling)) << 32) | (uint64(boolByte(w.Still)) << 33) | (uint64(w.Depth) << 34)
+}
+
 // allWater returns a list of all water states.
 func allWater() (b []world.Block) {
 	f := func(still, falling bool) {

@@ -138,6 +138,11 @@ func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{})
 	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 }
 
+// Hash ...
+func (s WoodSlab) Hash() uint64 {
+	return hashWoodSlab | (uint64(boolByte(s.UpsideDown)) << 32) | (uint64(boolByte(s.Double)) << 33) | (uint64(s.Wood.Uint8()) << 34)
+}
+
 // CanDisplace ...
 func (s WoodSlab) CanDisplace(b world.Liquid) bool {
 	_, ok := b.(Water)

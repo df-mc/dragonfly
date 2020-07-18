@@ -35,3 +35,8 @@ func (d Dirt) EncodeBlock() (name string, properties map[string]interface{}) {
 	}
 	return "minecraft:dirt", map[string]interface{}{"dirt_type": "normal"}
 }
+
+// Hash ...
+func (d Dirt) Hash() uint64 {
+	return hashDirt | (uint64(boolByte(d.Coarse)) << 32)
+}

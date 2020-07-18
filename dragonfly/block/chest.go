@@ -200,3 +200,8 @@ func (Chest) EncodeItem() (id int32, meta int16) {
 func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:chest", map[string]interface{}{"facing_direction": 2 + int32(c.Facing)}
 }
+
+// Hash ...
+func (c Chest) Hash() uint64 {
+	return hashChest | (uint64(c.Facing) << 32)
+}

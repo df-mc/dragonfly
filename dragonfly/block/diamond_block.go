@@ -29,3 +29,8 @@ func (d DiamondBlock) EncodeItem() (id int32, meta int16) {
 func (d DiamondBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:diamond_block", nil
 }
+
+// Hash ...
+func (d DiamondBlock) Hash() uint64 {
+	return hashDiamondBlock
+}

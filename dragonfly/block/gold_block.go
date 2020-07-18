@@ -29,3 +29,8 @@ func (g GoldBlock) EncodeItem() (id int32, meta int16) {
 func (g GoldBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:gold_block", nil
 }
+
+// Hash ...
+func (GoldBlock) Hash() uint64 {
+	return hashGoldBlock
+}

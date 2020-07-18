@@ -37,6 +37,11 @@ func (k Kelp) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:kelp", map[string]interface{}{"age": int32(k.Age)}
 }
 
+// Hash ...
+func (k Kelp) Hash() uint64 {
+	return hashKelp | (uint64(k.Age) << 32)
+}
+
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.
 func (Kelp) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)

@@ -47,6 +47,11 @@ func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
 }
 
+// Hash ...
+func (p Planks) Hash() uint64 {
+	return hashPlanks | (uint64(p.Wood.Uint8()) << 32)
+}
+
 // allPlanks returns all planks types.
 func allPlanks() []world.Block {
 	return []world.Block{

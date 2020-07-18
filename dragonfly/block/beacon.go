@@ -29,3 +29,8 @@ func (b Beacon) EncodeItem() (id int32, meta int16) {
 func (b Beacon) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:beacon", nil
 }
+
+// Hash ...
+func (Beacon) Hash() uint64 {
+	return hashBeacon
+}

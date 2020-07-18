@@ -31,6 +31,11 @@ func (w Wool) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:wool", map[string]interface{}{"color": w.Colour.String()}
 }
 
+// Hash ...
+func (w Wool) Hash() uint64 {
+	return hashWool | (uint64(w.Colour.Uint8()) << 32)
+}
+
 // allWool returns wool blocks with all possible colours.
 func allWool() []world.Block {
 	b := make([]world.Block, 0, 16)

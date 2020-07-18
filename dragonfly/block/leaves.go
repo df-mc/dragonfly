@@ -77,6 +77,11 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	panic("invalid wood type")
 }
 
+// Hash ...
+func (l Leaves) Hash() uint64 {
+	return hashLeaves | (uint64(boolByte(l.Persistent)) << 32) | (uint64(boolByte(l.shouldUpdate)) << 33) | (uint64(l.Wood.Uint8()) << 34)
+}
+
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {

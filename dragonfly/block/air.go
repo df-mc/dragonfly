@@ -33,6 +33,11 @@ func (Air) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:air", nil
 }
 
+// Hash ...
+func (Air) Hash() uint64 {
+	return hashAir
+}
+
 // AABB returns an empty Axis Aligned Bounding Box (as nothing can collide with air).
 func (Air) AABB(world.BlockPos, *world.World) []physics.AABB {
 	return nil

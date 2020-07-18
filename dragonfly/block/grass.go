@@ -81,3 +81,8 @@ func (g Grass) EncodeBlock() (name string, properties map[string]interface{}) {
 	}
 	return "minecraft:grass", nil
 }
+
+// Hash ...
+func (g Grass) Hash() uint64 {
+	return hashGrass | (uint64(boolByte(g.Path)) << 32)
+}

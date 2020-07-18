@@ -106,6 +106,11 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 	panic("invalid wood type")
 }
 
+// Hash ...
+func (l Log) Hash() uint64 {
+	return hashLog | (uint64(boolByte(l.Stripped)) << 32) | (uint64(l.Axis) << 33) | (uint64(l.Wood.Uint8()) << 35)
+}
+
 // allLogs returns a list of all possible log states.
 func allLogs() (logs []world.Block) {
 	f := func(axis world.Axis, stripped bool) {

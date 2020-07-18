@@ -34,3 +34,8 @@ func (c Cobblestone) EncodeBlock() (name string, properties map[string]interface
 	}
 	return "minecraft:cobblestone", nil
 }
+
+// Hash ...
+func (c Cobblestone) Hash() uint64 {
+	return hashCobblestone | (uint64(boolByte(c.Mossy)) << 32)
+}

@@ -29,3 +29,8 @@ func (e EmeraldBlock) EncodeItem() (id int32, meta int16) {
 func (e EmeraldBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:emerald_block", nil
 }
+
+// Hash ...
+func (EmeraldBlock) Hash() uint64 {
+	return hashEmeraldBlock
+}
