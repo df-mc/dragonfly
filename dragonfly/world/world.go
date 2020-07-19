@@ -1240,13 +1240,6 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
 	return c, ok
 }
 
-// storeChunkToCache stores a chunk at a position passed to the chunk cache.
-func (w *World) storeChunkToCache(pos ChunkPos, c *chunkData) {
-	w.chunkMu.Lock()
-	w.chunks[pos] = c
-	w.chunkMu.Unlock()
-}
-
 // showEntity shows an entity to a viewer of the world. It makes sure everything of the entity, including the
 // items held, is shown.
 func showEntity(e Entity, viewer Viewer) {
@@ -1305,16 +1298,12 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		w.generator().GenerateChunk(pos, c)
 		return newChunkData(c), nil
 	}
+	data := newChunkData(c)
 	entities, err := w.provider().LoadEntities(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
 	}
-	data := newChunkData(c)
-	if len(entities) != 0 {
-		for _, e := range entities {
-			data.entities = append(data.entities, e)
-		}
-	}
+	data.entities = entities
 	blockEntities, err := w.provider().LoadBlockNBT(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
