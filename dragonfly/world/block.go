@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/brentp/intintmap"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
@@ -99,7 +100,7 @@ func RegisterBlock(states ...Block) {
 		}
 		rid := uint32(len(registeredStates))
 
-		runtimeIDsHashes[state.Hash()] = rid
+		runtimeIDsHashes.Put(int64(state.Hash()), int64(rid))
 		registeredStates = append(registeredStates, state)
 
 		if diffuser, ok := state.(lightDiffuser); ok {
@@ -182,7 +183,7 @@ func init() {
 
 var registeredStates []Block
 var blocksHash = map[keyStruct]Block{}
-var runtimeIDsHashes = map[uint64]uint32{}
+var runtimeIDsHashes = intintmap.New(8000, 0.95)
 
 type keyStruct struct {
 	name  string
@@ -195,8 +196,8 @@ func BlockRuntimeID(state Block) (uint32, bool) {
 	if state == nil {
 		return 0, true
 	}
-	runtimeID, ok := runtimeIDsHashes[state.Hash()]
-	return runtimeID, ok
+	runtimeID, ok := runtimeIDsHashes.Get(int64(state.Hash()))
+	return uint32(runtimeID), ok
 }
 
 // blockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
