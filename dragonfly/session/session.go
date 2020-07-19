@@ -208,6 +208,13 @@ func (s *Session) Ping() {
 func (s *Session) handlePackets() {
 	c := make(chan struct{})
 	defer func() {
+		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
+		// server to freeze without printing the actual panic message.
+		// Instead, we check if there is a panic to recover, and just propagate the panic if this does happen
+		// to be the case.
+		if err := recover(); err != nil {
+			panic(err)
+		}
 		c <- struct{}{}
 		_ = s.Close()
 	}()
