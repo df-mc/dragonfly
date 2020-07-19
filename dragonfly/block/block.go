@@ -99,3 +99,19 @@ func boolByte(b bool) uint8 {
 	}
 	return 0
 }
+
+// noNBT may be embedded by blocks that have no NBT.
+type noNBT struct{}
+
+// HasNBT ...
+func (noNBT) HasNBT() bool {
+	return false
+}
+
+// nbt may be embedded by blocks that do have NBT.
+type nbt struct{}
+
+// HasNBT ...
+func (nbt) HasNBT() bool {
+	return true
+}

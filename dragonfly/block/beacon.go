@@ -6,7 +6,7 @@ import (
 
 // Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump
 // Boost, Haste, Regeneration, Resistance, or Strength to nearby players.
-type Beacon struct{}
+type Beacon struct{ nbt }
 
 // TODO: Implement beacons properly.
 

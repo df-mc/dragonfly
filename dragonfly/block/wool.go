@@ -8,6 +8,7 @@ import (
 
 // Wool is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
 type Wool struct {
+	noNBT
 	Colour colour.Colour
 }
 

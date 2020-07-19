@@ -5,7 +5,7 @@ import (
 )
 
 // Glass is a decorative, fully transparent solid block that can be dyed into stained glass.
-type Glass struct{}
+type Glass struct{ noNBT }
 
 // BreakInfo ...
 func (g Glass) BreakInfo() BreakInfo {

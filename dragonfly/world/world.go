@@ -110,21 +110,31 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos BlockPos) Block {
-	if pos.OutOfBounds() {
+	y := pos[1]
+	if y > 255 || y < 0 {
 		// Fast way out.
 		return air()
 	}
-	chunkPos := chunkPosFromBlockPos(pos)
+	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	c, err := w.chunk(chunkPos)
 	if err != nil {
+		w.log.Errorf("error getting block: %v", err)
 		return air()
 	}
-	b, err := w.blockInChunk(c, pos)
+	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
-	if err != nil {
-		w.log.Errorf("error getting block: %v", err)
+
+	state := registeredStates[rid]
+	if state.HasNBT() {
+		if _, ok := state.(NBTer); ok {
+			// The block was also a block entity, so we look it up in the block entity map.
+			b, ok := c.e[pos]
+			if ok {
+				return b
+			}
+		}
 	}
-	return b
+	return state
 }
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
@@ -195,21 +205,24 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 	if err != nil {
 		return
 	}
-	if err := w.setBlock(c, pos, b); err != nil {
-		w.log.Errorf("error setting block: %v", err)
+	runtimeID, ok := runtimeIDsHashes.Get(int64(b.Hash()))
+	if !ok {
+		w.log.Errorf("runtime ID of block state %+v not found", b)
+		return
 	}
+	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
 	c.Unlock()
-}
 
-// setBlock sets a block at a position in a chunk to a given block. It does not lock the chunk passed, and
-// assumes that is already done or that the chunk is otherwise inaccessible.
-// Nil may be passed as the block to set the block to air.
-func (w *World) setBlock(c *chunkData, pos BlockPos, b Block) error {
-	err := w.setBlockInChunk(c, pos, b)
+	if b.HasNBT() {
+		if _, hasNBT := b.(NBTer); hasNBT {
+			c.e[pos] = b
+		}
+	} else {
+		delete(c.e, pos)
+	}
 	for _, viewer := range c.v {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
-	return err
 }
 
 // setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk

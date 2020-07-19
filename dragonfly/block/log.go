@@ -11,6 +11,7 @@ import (
 // species: oak, spruce, birch, jungle, acacia, and dark oak.
 // Stripped log is a variant obtained by using an axe on a log.
 type Log struct {
+	noNBT
 	// Wood is the type of wood of the log. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood

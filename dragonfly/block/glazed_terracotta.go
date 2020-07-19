@@ -9,6 +9,7 @@ import (
 
 // GlazedTerracotta is a vibrant solid block that comes in the 16 regular dye colours.
 type GlazedTerracotta struct {
+	noNBT
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 	// Facing specifies the face of the block.

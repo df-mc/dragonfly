@@ -10,6 +10,7 @@ import (
 
 // WoodStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
 type WoodStairs struct {
+	noNBT
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood

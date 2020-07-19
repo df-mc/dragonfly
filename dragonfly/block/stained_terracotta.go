@@ -9,6 +9,7 @@ import (
 // StainedTerracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. In contrast
 // to Terracotta, t can be coloured in the same 16 colours that wool can be dyed, but more dulled and earthen.
 type StainedTerracotta struct {
+	noNBT
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 }

@@ -18,6 +18,7 @@ import (
 // single container.
 // The empty value of Chest is not valid. It must be created using item.NewChest().
 type Chest struct {
+	nbt
 	// Facing is the direction that the chest is facing.
 	Facing world.Direction
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may

@@ -28,6 +28,9 @@ type Block interface {
 	// Hash returns a unique hash of the block including the block properties. No two different blocks must
 	// return the same hash.
 	Hash() uint64
+	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
+	// entity. If true is returned, Block must implemented the NBTer interface.
+	HasNBT() bool
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -309,6 +312,11 @@ func (u unimplementedBlock) EncodeBlock() (name string, properties map[string]in
 // Hash ...
 func (u unimplementedBlock) Hash() uint64 {
 	return xxhash.Sum64String(u.Block.Name + hashProperties(u.Block.Properties))
+}
+
+// HasNBT ...
+func (unimplementedBlock) HasNBT() bool {
+	return false
 }
 
 //noinspection SpellCheckingInspection

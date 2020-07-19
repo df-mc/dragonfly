@@ -6,7 +6,7 @@ import (
 )
 
 // Air is the block present in otherwise empty space.
-type Air struct{}
+type Air struct{ noNBT }
 
 // CanDisplace ...
 func (Air) CanDisplace(world.Liquid) bool {

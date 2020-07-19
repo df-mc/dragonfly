@@ -4,6 +4,7 @@ import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // Light is an invisible block that can produce any light level.
 type Light struct {
+	noNBT
 	// Level is the light level that the light block produces. It is a number from 0-15, where 15 is the
 	// brightest and 0 is no light at all.
 	Level int
