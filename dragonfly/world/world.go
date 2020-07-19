@@ -205,7 +205,11 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 	if err != nil {
 		return
 	}
-	runtimeID, ok := runtimeIDsHashes.Get(int64(b.Hash()))
+	var h int64
+	if b != nil {
+		h = int64(b.Hash())
+	}
+	runtimeID, ok := runtimeIDsHashes.Get(h)
 	if !ok {
 		w.log.Errorf("runtime ID of block state %+v not found", b)
 		return
@@ -213,7 +217,11 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
 	c.Unlock()
 
-	if b.HasNBT() {
+	var hasNBT bool
+	if b != nil {
+		hasNBT = b.HasNBT()
+	}
+	if hasNBT {
 		if _, hasNBT := b.(NBTer); hasNBT {
 			c.e[pos] = b
 		}
@@ -1393,12 +1401,12 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interf
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
 	// We allocate a new map for all block entities.
-	m := make(map[[3]int]map[string]interface{}, len(c.e))
+	m := make([]map[string]interface{}, 0, len(c.e))
 	for pos, b := range c.e {
 		// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
 		data := b.(NBTer).EncodeNBT()
 		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		m[pos] = data
+		m = append(m, data)
 	}
 	if !w.rdonly.Load() {
 		c.Compact()

@@ -41,7 +41,7 @@ type Provider interface {
 	LoadBlockNBT(position ChunkPos) ([]map[string]interface{}, error)
 	// SaveBlockNBT saves block NBT, or block entities, to a specific chunk position. If the NBT cannot be
 	// stored, SaveBlockNBT returns a non-nil error.
-	SaveBlockNBT(position ChunkPos, data map[[3]int]map[string]interface{}) error
+	SaveBlockNBT(position ChunkPos, data []map[string]interface{}) error
 	// LoadTime loads the time of the world.
 	LoadTime() int64
 	// SaveTime saves the time of the world.
@@ -113,7 +113,7 @@ func (NoIOProvider) LoadBlockNBT(ChunkPos) ([]map[string]interface{}, error) {
 }
 
 // SaveBlockNBT ...
-func (NoIOProvider) SaveBlockNBT(ChunkPos, map[[3]int]map[string]interface{}) error {
+func (NoIOProvider) SaveBlockNBT(ChunkPos, []map[string]interface{}) error {
 	return nil
 }
 
