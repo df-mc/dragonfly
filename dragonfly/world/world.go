@@ -1269,9 +1269,10 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 
 	w.chunkMu.Lock()
 	if pos == w.lastPos && w.lastChunk != nil {
+		c := w.lastChunk
 		w.chunkMu.Unlock()
-		w.lastChunk.Lock()
-		return w.lastChunk, nil
+		c.Lock()
+		return c, nil
 	}
 	c, ok := w.chunks[pos]
 	if !ok {
@@ -1327,12 +1328,13 @@ func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
 	chunk.FillLight(c)
 	c.Unlock()
 
+	w.chunkMu.RLock()
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
 			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
 			// now exist because of this one.
 			centrePos := ChunkPos{pos[0] + x, pos[1] + z}
-			neighbour, ok := w.chunkFromCache(centrePos)
+			neighbour, ok := w.chunks[centrePos]
 			if !ok {
 				continue
 			}
@@ -1345,6 +1347,7 @@ func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
 	// If the chunk loaded happened to be in the middle of a bunch of other chunks, we are able to spread it
 	// right away, so we try to do that.
 	w.spreadLight(c, pos)
+	w.chunkMu.RUnlock()
 }
 
 // spreadLight spreads the light from the chunk passed at the position passed to all neighbours if each of
@@ -1353,7 +1356,7 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 	neighbours, allPresent := make([]*chunk.Chunk, 0, 8), true
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
-			neighbour, ok := w.chunkFromCache(ChunkPos{pos[0] + x, pos[1] + z})
+			neighbour, ok := w.chunks[ChunkPos{pos[0] + x, pos[1] + z}]
 			if !ok {
 				allPresent = false
 				break

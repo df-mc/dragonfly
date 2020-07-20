@@ -57,12 +57,7 @@ type Session struct {
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
 	openedWindow, openedPos        atomic.Value
-
-	swingingArm atomic.Bool
-
-	pingID atomic.Int64
-	pingMu sync.Mutex
-	pings  map[int64]chan struct{}
+	swingingArm                    atomic.Bool
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
@@ -103,7 +98,6 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
-		pings:                  map[int64]chan struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
@@ -182,25 +176,9 @@ func (s *Session) CloseConnection() {
 	_ = s.conn.Close()
 }
 
-// Ping sends a ping packet to the client and returns once a response is received.
-func (s *Session) Ping() {
-	// The client for some reason clears out the lowest 3 numbers, so we just multiply by 1000.
-	id := s.pingID.Add(1) * 1000
-	s.writePacket(&packet.NetworkStackLatency{
-		Timestamp:     id,
-		NeedsResponse: true,
-	})
-	c := make(chan struct{}, 1)
-	s.pingMu.Lock()
-	s.pings[id] = c
-	s.pingMu.Unlock()
-
-	select {
-	case <-c:
-	case <-time.After(time.Second * 15):
-		s.log.Debugf("player %v has too much latency: disconnecting player", s.c.Name())
-		_ = s.c.Close()
-	}
+// Latency returns the latency of the connection.
+func (s *Session) Latency() time.Duration {
+	return s.conn.Latency()
 }
 
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
@@ -298,7 +276,6 @@ func (s *Session) registerHandlers() {
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,
-		packet.IDNetworkStackLatency:   &NetworkStackLatencyHandler{},
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},

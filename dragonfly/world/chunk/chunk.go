@@ -84,7 +84,7 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 		// Don't do anything with this, just return.
 		return
 	}
-	sub.SetRuntimeID(x, y, z, layer, runtimeID)
+	sub.Layer(layer).SetRuntimeID(x, y, z, runtimeID)
 }
 
 // HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the
