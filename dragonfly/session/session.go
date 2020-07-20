@@ -32,7 +32,7 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	scoreboardObj atomic.Value
+	scoreboardObj atomic.String
 
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
@@ -106,7 +106,6 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		currentEntityRuntimeID: *atomic.NewUint64(1),
 		heldSlot:               atomic.NewUint32(0),
 	}
-	s.scoreboardObj.Store("")
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(world.BlockPos{})
 
