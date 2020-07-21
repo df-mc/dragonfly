@@ -187,6 +187,26 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 	return nil, false
 }
 
+// GetPlayer returns a player is the name passed matches part of a name of an online player: (in-case sensitive)
+func (server *Server) GetPlayer(name string) (*player.Player, bool) {
+	for p := range server.players {
+		if strings.HasPrefix(strings.ToLower(p.Name()), strings.ToLower(name)) {
+			return p, true
+		}
+	}
+	return nil, false
+}
+
+// GetPlayerExact returns a player if the name passed matches an online players name: (in-case sensitive)
+func (server *Server) GetPlayerExact(name string) (*player.Player, bool) {
+	for p := range server.players {
+		if strings.ToLower(p.Name()) == strings.ToLower(name) {
+			return p, true
+		}
+	}
+	return nil, false
+}
+
 // SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprintf.
 func (server *Server) SetNamef(format string, a ...interface{}) {
