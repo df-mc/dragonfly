@@ -104,7 +104,6 @@ func (s *Session) Disconnect(message string) {
 			Message:                 message,
 		})
 		_ = s.conn.Flush()
-		_ = s.conn.Close()
 	}
 }
 
