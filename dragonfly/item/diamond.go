@@ -1,6 +1,6 @@
 package item
 
-// TODO: Documentation
+// Diamond is a rare mineral obtained from diamond ore or loot chests.
 type Diamond struct{}
 
 // EncodeItem ...
