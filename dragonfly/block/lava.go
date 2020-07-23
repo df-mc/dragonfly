@@ -10,6 +10,7 @@ import (
 
 // Lava is a light-emitting fluid block that causes fire damage.
 type Lava struct {
+	noNBT
 	// Still makes the lava not spread whenever it is updated. Still lava cannot be acquired in the game
 	// without world editing.
 	Still bool
@@ -151,6 +152,11 @@ func (l Lava) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:lava", map[string]interface{}{"liquid_depth": int32(v)}
 	}
 	return "minecraft:flowing_lava", map[string]interface{}{"liquid_depth": int32(v)}
+}
+
+// Hash ...
+func (l Lava) Hash() uint64 {
+	return hashLava | (uint64(boolByte(l.Falling)) << 32) | (uint64(boolByte(l.Still)) << 33) | (uint64(l.Depth) << 34)
 }
 
 // allLava returns a list of all lava states.

@@ -9,6 +9,7 @@ import (
 // Concrete is a solid block which comes in the 16 regular dye colors, created by placing concrete powder
 // adjacent to water.
 type Concrete struct {
+	noNBT
 	// Colour is the colour of the concrete block.
 	Colour colour.Colour
 }
@@ -31,6 +32,11 @@ func (c Concrete) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (c Concrete) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:concrete", map[string]interface{}{"color": c.Colour.String()}
+}
+
+// Hash ...
+func (c Concrete) Hash() uint64 {
+	return hashConcrete | (uint64(c.Colour.Uint8()) << 32)
 }
 
 // allConcrete returns concrete blocks with all possible colours.

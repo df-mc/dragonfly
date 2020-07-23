@@ -11,6 +11,7 @@ import (
 
 // WoodSlab is a half block that allows entities to walk up blocks without jumping.
 type WoodSlab struct {
+	noNBT
 	// Wood is the type of wood of the slabs. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -136,6 +137,11 @@ func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{})
 		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
 	}
 	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
+}
+
+// Hash ...
+func (s WoodSlab) Hash() uint64 {
+	return hashWoodSlab | (uint64(boolByte(s.UpsideDown)) << 32) | (uint64(boolByte(s.Double)) << 33) | (uint64(s.Wood.Uint8()) << 34)
 }
 
 // CanDisplace ...

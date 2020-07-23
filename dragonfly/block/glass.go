@@ -5,7 +5,7 @@ import (
 )
 
 // Glass is a decorative, fully transparent solid block that can be dyed into stained glass.
-type Glass struct{}
+type Glass struct{ noNBT }
 
 // BreakInfo ...
 func (g Glass) BreakInfo() BreakInfo {
@@ -27,4 +27,9 @@ func (g Glass) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (g Glass) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:glass", nil
+}
+
+// Hash ...
+func (Glass) Hash() uint64 {
+	return hashGlass
 }

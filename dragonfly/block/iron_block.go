@@ -6,7 +6,7 @@ import (
 )
 
 // IronBlock is a precious metal block made from 9 iron ingots.
-type IronBlock struct{}
+type IronBlock struct{ noNBT }
 
 // BreakInfo ...
 func (i IronBlock) BreakInfo() BreakInfo {
@@ -33,4 +33,9 @@ func (IronBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (IronBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:iron_block", nil
+}
+
+// Hash ...
+func (IronBlock) Hash() uint64 {
+	return hashIronBlock
 }

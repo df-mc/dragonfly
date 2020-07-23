@@ -8,6 +8,7 @@ import (
 
 // Grass blocks generate abundantly across the surface of the world.
 type Grass struct {
+	noNBT
 	// Path specifies if the grass was made into a path or not. If true, the block will have only 15/16th of
 	// the height of a full block.
 	Path bool
@@ -80,4 +81,9 @@ func (g Grass) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:grass_path", nil
 	}
 	return "minecraft:grass", nil
+}
+
+// Hash ...
+func (g Grass) Hash() uint64 {
+	return hashGrass | (uint64(boolByte(g.Path)) << 32)
 }

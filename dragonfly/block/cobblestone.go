@@ -4,6 +4,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // Cobblestone is a common block, obtained from mining stone.
 type Cobblestone struct {
+	noNBT
 	// Mossy specifies if the cobblestone is mossy. This variant of cobblestone is typically found in
 	// dungeons or in small clusters in the giant tree taiga biome.
 	Mossy bool
@@ -33,4 +34,9 @@ func (c Cobblestone) EncodeBlock() (name string, properties map[string]interface
 		return "minecraft:mossy_cobblestone", nil
 	}
 	return "minecraft:cobblestone", nil
+}
+
+// Hash ...
+func (c Cobblestone) Hash() uint64 {
+	return hashCobblestone | (uint64(boolByte(c.Mossy)) << 32)
 }

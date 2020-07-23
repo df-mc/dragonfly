@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/brentp/intintmap"
+	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -23,6 +25,12 @@ type Block interface {
 	// block, for example 'minecraft:stone' and the block properties (also referred to as states) that the
 	// block holds.
 	EncodeBlock() (name string, properties map[string]interface{})
+	// Hash returns a unique hash of the block including the block properties. No two different blocks must
+	// return the same hash.
+	Hash() uint64
+	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
+	// entity. If true is returned, Block must implemented the NBTer interface.
+	HasNBT() bool
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -95,7 +103,7 @@ func RegisterBlock(states ...Block) {
 		}
 		rid := uint32(len(registeredStates))
 
-		runtimeIDs[key] = rid
+		runtimeIDsHashes.Put(int64(state.Hash()), int64(rid))
 		registeredStates = append(registeredStates, state)
 
 		if diffuser, ok := state.(lightDiffuser); ok {
@@ -121,8 +129,8 @@ type replaceableBlock interface {
 }
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *World, c *chunk.Chunk, pos BlockPos, with Block, chunkPos ChunkPos) bool {
-	b, _ := w.blockInChunk(c, pos, chunkPos)
+func replaceable(w *World, c *chunkData, pos BlockPos, with Block) bool {
+	b, _ := w.blockInChunk(c, pos)
 	if replaceable, ok := b.(replaceableBlock); ok {
 		return replaceable.ReplaceableBy(with)
 	}
@@ -177,8 +185,8 @@ func init() {
 }
 
 var registeredStates []Block
-var runtimeIDs = map[keyStruct]uint32{}
 var blocksHash = map[keyStruct]Block{}
+var runtimeIDsHashes = intintmap.New(8000, 0.95)
 
 type keyStruct struct {
 	name  string
@@ -191,9 +199,8 @@ func BlockRuntimeID(state Block) (uint32, bool) {
 	if state == nil {
 		return 0, true
 	}
-	name, props := state.EncodeBlock()
-	runtimeID, ok := runtimeIDs[keyStruct{name: name, pHash: hashProperties(props)}]
-	return runtimeID, ok
+	runtimeID, ok := runtimeIDsHashes.Get(int64(state.Hash()))
+	return uint32(runtimeID), ok
 }
 
 // blockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
@@ -292,12 +299,24 @@ type unimplementedBlock struct {
 	ID int16 `nbt:"id"`
 }
 
+// Name ...
 func (u unimplementedBlock) Name() string {
 	return u.Block.Name
 }
 
+// EncodeBlock ...
 func (u unimplementedBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return u.Block.Name, u.Block.Properties
+}
+
+// Hash ...
+func (u unimplementedBlock) Hash() uint64 {
+	return xxhash.Sum64String(u.Block.Name + hashProperties(u.Block.Properties))
+}
+
+// HasNBT ...
+func (unimplementedBlock) HasNBT() bool {
+	return false
 }
 
 //noinspection SpellCheckingInspection

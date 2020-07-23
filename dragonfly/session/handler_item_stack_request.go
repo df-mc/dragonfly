@@ -7,6 +7,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
+	"time"
 )
 
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
@@ -14,12 +15,21 @@ import (
 type ItemStackRequestHandler struct {
 	currentRequest  int32
 	changes         map[byte]map[byte]protocol.StackResponseSlotInfo
-	responseChanges map[int32]map[byte]map[byte]int32
+	responseChanges map[int32]map[byte]map[byte]responseChange
+	current         time.Time
+}
+
+// responseChange represents a change in a specific item stack response. It holds the timestamp of the
+// response which is used to get rid of changes that the client will have received.
+type responseChange struct {
+	id        int32
+	timestamp time.Time
 }
 
 // Handle ...
 func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ItemStackRequest)
+	h.current = time.Now()
 
 	s.inTransaction.Store(true)
 	defer s.inTransaction.Store(false)
@@ -210,7 +220,7 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v with container %v and slot %v, but that slot was not changed in the request", slot.StackNetworkID, slot.ContainerID, slot.Slot)
 	}
-	return actual, nil
+	return actual.id, nil
 }
 
 // tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
@@ -219,8 +229,8 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
 	for requestID, containerChanges := range h.responseChanges {
 		for containerID, changes := range containerChanges {
-			for slotIndex := range changes {
-				if slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID {
+			for slotIndex, val := range changes {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
 					delete(changes, slotIndex)
 				}
 			}
@@ -264,12 +274,15 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	h.changes[slot.ContainerID][slot.Slot] = respSlot
 
 	if h.responseChanges[h.currentRequest] == nil {
-		h.responseChanges[h.currentRequest] = map[byte]map[byte]int32{}
+		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
 	}
 	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
-		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]int32{}
+		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
 	}
-	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = respSlot.StackNetworkID
+	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+		id:        respSlot.StackNetworkID,
+		timestamp: h.current,
+	}
 }
 
 // resolve resolves the request with the ID passed.

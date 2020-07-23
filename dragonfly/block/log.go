@@ -11,6 +11,7 @@ import (
 // species: oak, spruce, birch, jungle, acacia, and dark oak.
 // Stripped log is a variant obtained by using an axe on a log.
 type Log struct {
+	noNBT
 	// Wood is the type of wood of the log. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -104,6 +105,11 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:stripped_dark_oak_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
 	}
 	panic("invalid wood type")
+}
+
+// Hash ...
+func (l Log) Hash() uint64 {
+	return hashLog | (uint64(boolByte(l.Stripped)) << 32) | (uint64(l.Axis) << 33) | (uint64(l.Wood.Uint8()) << 35)
 }
 
 // allLogs returns a list of all possible log states.

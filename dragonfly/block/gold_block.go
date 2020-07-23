@@ -6,7 +6,7 @@ import (
 )
 
 // GoldBlock is a precious metal block crafted from 9 gold ingots.
-type GoldBlock struct{}
+type GoldBlock struct{ noNBT }
 
 // BreakInfo ...
 func (g GoldBlock) BreakInfo() BreakInfo {
@@ -33,4 +33,9 @@ func (GoldBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (GoldBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:gold_block", nil
+}
+
+// Hash ...
+func (GoldBlock) Hash() uint64 {
+	return hashGoldBlock
 }

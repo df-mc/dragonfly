@@ -312,6 +312,9 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
+	if p, ok := server.Player(id); ok {
+		p.Disconnect("Logged in from another location.")
+	}
 	server.players <- server.createPlayer(id, conn)
 }
 

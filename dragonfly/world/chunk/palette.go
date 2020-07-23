@@ -9,6 +9,8 @@ type Palette struct {
 	size paletteSize
 	// blockRuntimeIDs is a map of runtime IDs. The block storages point to the index to this runtime ID.
 	blockRuntimeIDs []uint32
+	last            uint32
+	lastIndex       int
 }
 
 // newPalette returns a new palette with size and a slice of added runtime IDs.
@@ -39,8 +41,13 @@ func (palette *Palette) Replace(f func(runtimeID uint32) uint32) {
 // Index loops through the runtime IDs of the palette and looks for the index of the given runtime ID. If the
 // runtime ID can not be found, -1 is returned.
 func (palette *Palette) Index(runtimeID uint32) int {
+	if runtimeID == palette.last {
+		return palette.lastIndex
+	}
 	for i, id := range palette.blockRuntimeIDs {
 		if id == runtimeID {
+			palette.last = runtimeID
+			palette.lastIndex = i
 			return i
 		}
 	}

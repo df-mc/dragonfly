@@ -10,6 +10,7 @@ import (
 
 // Water is a natural fluid that generates abundantly in the world.
 type Water struct {
+	noNBT
 	// Still makes the water appear as if it is not flowing.
 	Still bool
 	// Depth is the depth of the water. This is a number from 1-8, where 8 is a source block and 1 is the
@@ -139,6 +140,11 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:water", map[string]interface{}{"liquid_depth": int32(v)}
 	}
 	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
+}
+
+// Hash ...
+func (w Water) Hash() uint64 {
+	return hashWater | (uint64(boolByte(w.Falling)) << 32) | (uint64(boolByte(w.Still)) << 33) | (uint64(w.Depth) << 34)
 }
 
 // allWater returns a list of all water states.

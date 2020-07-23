@@ -6,7 +6,7 @@ import "sync"
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	sync.RWMutex
+	sync.Mutex
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub [16]*SubChunk
@@ -84,7 +84,7 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 		// Don't do anything with this, just return.
 		return
 	}
-	sub.SetRuntimeID(x, y, z, layer, runtimeID)
+	sub.Layer(layer).SetRuntimeID(x, y, z, runtimeID)
 }
 
 // HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the

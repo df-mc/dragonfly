@@ -6,7 +6,7 @@ import (
 )
 
 // Air is the block present in otherwise empty space.
-type Air struct{}
+type Air struct{ noNBT }
 
 // CanDisplace ...
 func (Air) CanDisplace(world.Liquid) bool {
@@ -31,6 +31,11 @@ func (Air) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (Air) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:air", nil
+}
+
+// Hash ...
+func (Air) Hash() uint64 {
+	return hashAir
 }
 
 // AABB returns an empty Axis Aligned Bounding Box (as nothing can collide with air).

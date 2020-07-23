@@ -104,7 +104,6 @@ func (s *Session) Disconnect(message string) {
 			Message:                 message,
 		})
 		_ = s.conn.Flush()
-		_ = s.conn.Close()
 	}
 }
 
@@ -417,6 +416,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		CapeID:            uuid.New().String(),
 		FullSkinID:        uuid.New().String(),
 		Animations:        animations,
+		Trusted:           true,
 	}
 }
 

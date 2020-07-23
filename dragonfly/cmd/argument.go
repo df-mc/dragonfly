@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // Line represents a command line holding command arguments that were passed upon the execution of the
@@ -70,6 +71,8 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 		err = p.bool(line, v)
 	case mgl64.Vec3:
 		err = p.vec3(line, v)
+	case Varargs:
+		err = p.varargs(line, v)
 	default:
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
@@ -188,3 +191,13 @@ func (p parser) vec3(line *Line, v reflect.Value) error {
 	}
 	return p.float(line, v.Index(2))
 }
+
+// varargs ...
+func (p parser) varargs(line *Line, v reflect.Value) error {
+	v.SetString(strings.Join(line.Leftover(), " "))
+	return nil
+}
+
+// Varargs is an argument type that may be used to capture all arguments that follow. This is useful for,
+// for example, messages and names.
+type Varargs string

@@ -10,6 +10,7 @@ import (
 
 // WoodStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
 type WoodStairs struct {
+	noNBT
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -127,6 +128,11 @@ func (s WoodStairs) EncodeBlock() (name string, properties map[string]interface{
 		return "minecraft:dark_oak_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	panic("invalid wood type")
+}
+
+// Hash ...
+func (s WoodStairs) Hash() uint64 {
+	return hashWoodStairs | (uint64(boolByte(s.UpsideDown)) << 32) | (uint64(s.Facing) << 33) | (uint64(s.Wood.Uint8()) << 35)
 }
 
 // toStairDirection converts a facing to a stairs direction for Minecraft.

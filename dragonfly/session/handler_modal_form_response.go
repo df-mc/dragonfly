@@ -17,7 +17,7 @@ type ModalFormResponseHandler struct {
 }
 
 // nullBytes contains the word 'null' converted to a byte slice.
-var nullBytes = []byte("null")
+var nullBytes = []byte("null\n")
 
 // Handle ...
 func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {

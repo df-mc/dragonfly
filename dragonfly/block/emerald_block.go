@@ -6,7 +6,7 @@ import (
 )
 
 // EmeraldBlock is a precious mineral block crafted using 9 emeralds.
-type EmeraldBlock struct{}
+type EmeraldBlock struct{ noNBT }
 
 // BreakInfo ...
 func (e EmeraldBlock) BreakInfo() BreakInfo {
@@ -33,4 +33,9 @@ func (EmeraldBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (EmeraldBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:emerald_block", nil
+}
+
+// Hash ...
+func (EmeraldBlock) Hash() uint64 {
+	return hashEmeraldBlock
 }

@@ -13,6 +13,7 @@ import (
 // Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump
 // Boost, Haste, Regeneration, Resistance, or Strength to nearby players.
 type Beacon struct {
+  nbt
 	// level is the amount of the pyramid's levels, it is defined by the mineral blocks which build up the
 	// pyramid, and can be 0-4.
 	level int
@@ -209,6 +210,11 @@ func (Beacon) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (Beacon) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:beacon", nil
+}
+
+// Hash ...
+func (Beacon) Hash() uint64 {
+	return hashBeacon
 }
 
 //go:linkname effect_effectByID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID

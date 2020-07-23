@@ -11,6 +11,7 @@ import (
 
 // Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
 type Carpet struct {
+	noNBT
 	Colour colour.Colour
 }
 
@@ -48,6 +49,11 @@ func (c Carpet) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (c Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:carpet", map[string]interface{}{"color": c.Colour.String()}
+}
+
+// Hash ...
+func (c Carpet) Hash() uint64 {
+	return hashCarpet | (uint64(c.Colour.Uint8()) << 32)
 }
 
 // HasLiquidDrops ...

@@ -89,20 +89,15 @@ func (l *Loader) Load(n int) error {
 			break
 		}
 		pos := l.loadQueue[0]
-		c, err := l.w.chunk(pos, true)
+		c, err := l.w.chunk(pos)
 		if err != nil {
 			l.mu.Unlock()
 			return err
 		}
-		l.w.blockMu.RLock()
-		l.viewer.ViewChunk(pos, c, l.w.entityBlocks[pos])
-		l.w.blockMu.RUnlock()
+		l.viewer.ViewChunk(pos, c.Chunk, c.e)
+		l.w.addViewer(c, l.viewer)
 
-		c.RUnlock()
-
-		l.w.addViewer(pos, l.viewer)
-
-		l.loaded[pos] = c
+		l.loaded[pos] = c.Chunk
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.

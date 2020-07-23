@@ -4,6 +4,7 @@ import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // Light is an invisible block that can produce any light level.
 type Light struct {
+	noNBT
 	// Level is the light level that the light block produces. It is a number from 0-15, where 15 is the
 	// brightest and 0 is no light at all.
 	Level int
@@ -32,6 +33,11 @@ func (l Light) LightDiffusionLevel() uint8 {
 // EncodeBlock ...
 func (l Light) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:light_block", map[string]interface{}{"block_light_level": int32(l.Level)}
+}
+
+// Hash ...
+func (l Light) Hash() uint64 {
+	return hashLight | (uint64(l.Level) << 32)
 }
 
 // allLight returns all possible light blocks.

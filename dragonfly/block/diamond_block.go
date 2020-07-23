@@ -6,7 +6,7 @@ import (
 )
 
 // DiamondBlock is a block which can only be gained by crafting it.
-type DiamondBlock struct{}
+type DiamondBlock struct{ noNBT }
 
 // BreakInfo ...
 func (d DiamondBlock) BreakInfo() BreakInfo {
@@ -33,4 +33,9 @@ func (DiamondBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (DiamondBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:diamond_block", nil
+}
+
+// Hash ...
+func (d DiamondBlock) Hash() uint64 {
+	return hashDiamondBlock
 }

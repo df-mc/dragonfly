@@ -11,7 +11,7 @@ import (
 
 // Kelp is an underwater block which can grow on top of solids underwater.
 type Kelp struct {
-
+	noNBT
 	// Age is the age of the kelp block which can be 0-15. If age is 15, kelp won't grow any further.
 	Age int
 }
@@ -35,6 +35,11 @@ func (Kelp) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (k Kelp) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:kelp", map[string]interface{}{"age": int32(k.Age)}
+}
+
+// Hash ...
+func (k Kelp) Hash() uint64 {
+	return hashKelp | (uint64(k.Age) << 32)
 }
 
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.
@@ -87,6 +92,10 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 
 // NeighbourUpdateTick ...
 func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
+	if _, ok := w.Liquid(pos); !ok {
+		w.BreakBlock(pos)
+		return
+	}
 	if changed.Y()-1 == pos.Y() {
 		// When a kelp block is broken above, the kelp block underneath it gets a new random age.
 		w.PlaceBlock(pos, k.withRandomAge())
@@ -101,6 +110,10 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 
 // ScheduledTick ...
 func (Kelp) ScheduledTick(pos world.BlockPos, w *world.World) {
+	if _, ok := w.Liquid(pos); !ok {
+		w.BreakBlock(pos)
+		return
+	}
 	// Kelp blocks can only exist on top of a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
 	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
 	// As of now, the breaking logic has to be in here as well to avoid issues.

@@ -8,6 +8,7 @@ import (
 
 // Wool is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
 type Wool struct {
+	noNBT
 	Colour colour.Colour
 }
 
@@ -29,6 +30,11 @@ func (w Wool) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (w Wool) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:wool", map[string]interface{}{"color": w.Colour.String()}
+}
+
+// Hash ...
+func (w Wool) Hash() uint64 {
+	return hashWool | (uint64(w.Colour.Uint8()) << 32)
 }
 
 // allWool returns wool blocks with all possible colours.

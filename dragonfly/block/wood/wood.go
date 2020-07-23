@@ -40,6 +40,11 @@ func DarkOak() Wood {
 
 type wood uint8
 
+// Uint8 returns the wood as a uint8.
+func (w wood) Uint8() uint8 {
+	return uint8(w)
+}
+
 // Name ...
 func (w wood) Name() string {
 	switch w {
