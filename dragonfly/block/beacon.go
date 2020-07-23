@@ -154,18 +154,18 @@ func (b Beacon) obstructed(pos world.BlockPos, w *world.World) bool {
 // beaconAffected get their according effect(s).
 func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 	// Finding entities in range.
-	halfRange := 10 + ((b.level - 1) * 5)
+	r := 10 + (b.level * 10)
 	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
-		mgl64.Vec3{
-			float64(pos.X() - halfRange), float64(pos.Y() - halfRange), float64(pos.Z() - halfRange),
-		},
-		mgl64.Vec3{
-			float64(pos.X() + halfRange), float64(pos.Y() + halfRange), float64(pos.Z() + halfRange),
-		}),
-	)
+		mgl64.Vec3{float64(pos.X() - r), 0, float64(pos.Z() - r)},
+		mgl64.Vec3{float64(pos.X() + r), 256, float64(pos.Z() + r)},
+	))
 
 	var effs []entity.Effect
-	dur := int64(9+(b.level*2)) * time.Second.Nanoseconds()
+	dur := int64(9+(b.level*2)) * int64(time.Second)
+	if b.level == 4 {
+		// A level of 4 only adds one second of duration over a level of 3.
+		dur -= int64(time.Second)
+	}
 
 	// Determining whether the primary power is set.
 	if b.Primary != nil {
