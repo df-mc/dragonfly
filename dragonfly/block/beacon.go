@@ -3,6 +3,8 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
+	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -13,17 +15,13 @@ import (
 // Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump
 // Boost, Haste, Regeneration, Resistance, or Strength to nearby players.
 type Beacon struct {
-  nbt
+	nbt
+	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
+	// beacon.
+	Primary, Secondary entity.Effect
 	// level is the amount of the pyramid's levels, it is defined by the mineral blocks which build up the
 	// pyramid, and can be 0-4.
 	level int
-	// Primary and Secondary powers, in other words, effects of the beacon.
-	Primary, Secondary entity.Effect
-	// Active is a bool which indicates whether the beacon is currently properly powered.
-	Active bool
-	// tick is the beacon's current tick, this can be 0-80. This value is incremented every tick, and when
-	// it reaches 80, the state of the beacon pyramid is recalculated and nearby players get beacon's powers.
-	tick int
 }
 
 // BreakInfo ...
@@ -47,6 +45,13 @@ func (b Beacon) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 	return placed(ctx)
 }
 
+// Activate manages the opening of a beacon by activating it.
+func (b Beacon) Activate(pos world.BlockPos, _ world.Face, _ *world.World, u item.User) {
+	if opener, ok := u.(ContainerOpener); ok {
+		opener.OpenBlockContainer(pos)
+	}
+}
+
 // DecodeNBT ...
 func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
 	b.level = readInt(data, "Levels")
@@ -62,13 +67,13 @@ func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT ...
 func (b Beacon) EncodeNBT() map[string]interface{} {
 	m := map[string]interface{}{
-		"Levels": b.level,
+		"Levels": int32(b.level),
 	}
 	if primary, ok := effect_idByEffect(b.Primary); ok {
-		m["Primary"] = primary
+		m["Primary"] = int32(primary)
 	}
 	if secondary, ok := effect_idByEffect(b.Secondary); ok {
-		m["Secondary"] = secondary
+		m["Secondary"] = int32(secondary)
 	}
 	return m
 }
@@ -83,7 +88,7 @@ func (b Beacon) CanDisplace(l world.Liquid) bool {
 }
 
 // SideClosed ...
-func (b Beacon) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (b Beacon) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
@@ -100,57 +105,54 @@ func (b Beacon) Level() int {
 // Tick recalculates level, recalculates the active state of the beacon, and powers players,
 // once every 80 ticks (4 seconds).
 func (b Beacon) Tick(currentTick int64, pos world.BlockPos, w *world.World) {
-	b.tick++
-
-	// Recalculating pyramid level and powering up players in range once every 4 seconds.
-	if b.tick == 80 {
-		b.tick = 0
-		b.recalculateLevel(pos, w)
-		b.recalculateActive(pos, w)
-		if b.Active {
-			b.preparePowerPlayers(pos, w)
+	if currentTick%80 == 0 {
+		before := b.level
+		// Recalculating pyramid level and powering up players in range once every 4 seconds.
+		b.level = b.recalculateLevel(pos, w)
+		if before != b.level {
+			w.SetBlock(pos, b)
+		}
+		if !b.obstructed(pos, w) {
+			b.broadcastBeaconEffects(pos, w)
 		}
 	}
 }
 
-// recalculateLevel recalculates the level of the beacon's pyramid. The level can be 0-4.
-func (b Beacon) recalculateLevel(pos world.BlockPos, w *world.World) {
-	newLevel := 0
+// recalculateLevel recalculates the level of the beacon's pyramid and returns it. The level can be 0-4.
+func (b Beacon) recalculateLevel(pos world.BlockPos, w *world.World) int {
+	var lvl int
 	iter := 1
 	// This loop goes over all 4 possible pyramid levels.
-	for y := pos.Y() - 1; y > pos.Y()-4; y-- {
+	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if _, ok := w.Block(world.BlockPos{x, y, z}).(BeaconSource); !ok {
-					b.level = newLevel
-					return
+				if src, ok := world_internal.BeaconSource[block_internal.World_runtimeID(w, world.BlockPos{x, y, z})]; !ok || !src {
+					return lvl
 				}
 			}
 		}
 		iter++
-		newLevel++
+		lvl++
 	}
-	b.level = newLevel
+	return lvl
 }
 
-// recalculateActive determines whether the beacon can power up nearby players at the moment.
-func (b Beacon) recalculateActive(pos world.BlockPos, w *world.World) {
-	obstructed := true
+// obstructed determines whether the beacon is currently obstructed.
+func (b Beacon) obstructed(pos world.BlockPos, w *world.World) bool {
 	// Fast obstructed light calculation.
 	if w.SkyLight(pos.Add(world.BlockPos{0, 1})) == 15 {
-		obstructed = false
+		return false
 		// Slow obstructed light calculation, if the fast way out failed.
-	} else if world_highestLightBlocker(w, pos.X(), pos.Z()) == uint8(pos.Y()) {
-		obstructed = false
+	} else if world_highestLightBlocker(w, pos.X(), pos.Z()) <= uint8(pos.Y()) {
+		return false
 	}
-
-	b.Active = b.level > 0 && !obstructed && b.Primary != nil
+	return true
 }
 
-// preparePowerPlayers determines the entities in range which could receive the beacon's powers,
-// and determines the powers (effects) that these entities could get. Afterwards, the entities
-// in range that are beaconAffected get their according power(s).
-func (b Beacon) preparePowerPlayers(pos world.BlockPos, w *world.World) {
+// broadcastBeaconEffects determines the entities in range which could receive the beacon's powers, and
+// determines the powers (effects) that these entities could get. Afterwards, the entities in range that are
+// beaconAffected get their according effect(s).
+func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 	// Finding entities in range.
 	halfRange := 10 + ((b.level - 1) * 5)
 	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
@@ -185,17 +187,9 @@ func (b Beacon) preparePowerPlayers(pos world.BlockPos, w *world.World) {
 			effs = append(effs, secondary)
 		}
 	}
-
-	b.powerPlayers(entitiesInRange, effs)
-}
-
-// powerPlayers gives beacon powers to any beaconAffected entity in the entities array passed.
-// Usually the only beaconAffected entity is a player. The effects array passed holds the
-// beacon's power(s).
-func (Beacon) powerPlayers(entities []world.Entity, effects []entity.Effect) {
-	for _, e := range entities {
+	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
-			for _, eff := range effects {
+			for _, eff := range effs {
 				p.AddEffect(eff)
 			}
 		}

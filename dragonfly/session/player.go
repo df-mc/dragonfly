@@ -60,15 +60,16 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 const (
-	containerArmour               = 6
-	containerChest                = 7
-	containerInventoryChestOpened = 12
-	containerCraftingGrid         = 13
-	containerHotbar               = 27
-	containerInventory            = 28
-	containerOffHand              = 33
-	containerCursor               = 58
-	containerCreativeOutput       = 59
+	containerArmour         = 6
+	containerChest          = 7
+	containerBeacon         = 8
+	containerFullInventory  = 12
+	containerCraftingGrid   = 13
+	containerHotbar         = 27
+	containerInventory      = 28
+	containerOffHand        = 33
+	containerCursor         = 58
+	containerCreativeOutput = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -78,7 +79,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerCraftingGrid, containerCreativeOutput, containerCursor:
 		// UI inventory.
 		return s.ui, true
-	case containerHotbar, containerInventory, containerInventoryChestOpened:
+	case containerHotbar, containerInventory, containerFullInventory:
 		// Hotbar 'inventory', rest of inventory, inventory when container is opened.
 		return s.inv, true
 	case containerOffHand:
@@ -89,7 +90,17 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			return s.openedWindow.Load().(*inventory.Inventory), true
+			b := s.c.World().Block(s.openedPos.Load().(world.BlockPos))
+			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load().(*inventory.Inventory), true
+			}
+		}
+	case containerBeacon:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load().(world.BlockPos))
+			if _, beacon := b.(block.Beacon); beacon {
+				return s.ui, true
+			}
 		}
 	}
 	return nil, false
@@ -524,9 +535,10 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(item.CreativeItems()))
 	for index, i := range item.CreativeItems() {
+		v := stackFromItem(i)
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  stackFromItem(i),
+			Item:                  v,
 		})
 	}
 	return it

@@ -164,11 +164,11 @@ func runtimeID(w *World, pos BlockPos) uint32 {
 		// Fast way out.
 		return 0
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
+	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if err != nil {
 		return 0
 	}
-	rid := c.RuntimeID(uint8(pos[0]&0xf), uint8(pos[1]), uint8(pos[2]&0xf), 0)
+	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
 
 	return rid

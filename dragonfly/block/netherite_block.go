@@ -6,7 +6,7 @@ import (
 )
 
 // NetheriteBlock is a precious mineral block made from 9 netherite ingots.
-type NetheriteBlock struct{}
+type NetheriteBlock struct{ noNBT }
 
 // BreakInfo ...
 func (n NetheriteBlock) BreakInfo() BreakInfo {
@@ -33,4 +33,9 @@ func (NetheriteBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (NetheriteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:netherite_block", nil
+}
+
+// Hash ...
+func (NetheriteBlock) Hash() uint64 {
+	return hashNetheriteBlock
 }

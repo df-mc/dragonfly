@@ -6,7 +6,7 @@ import (
 )
 
 // CoalBlock is a precious mineral block made from 9 coal.
-type CoalBlock struct{}
+type CoalBlock struct{ noNBT }
 
 // BreakInfo ...
 func (c CoalBlock) BreakInfo() BreakInfo {
@@ -28,4 +28,9 @@ func (CoalBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (CoalBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:coal_block", nil
+}
+
+// Hash ...
+func (CoalBlock) Hash() uint64 {
+	return hashCoalBlock
 }
