@@ -23,9 +23,9 @@ func (s Speed) End(e entity.Living) {
 	e.SetSpeed(e.Speed() / speed)
 }
 
-// WithDuration ...
-func (s Speed) WithDuration(d time.Duration) entity.Effect {
-	return Speed{s.withDuration(d)}
+// WithDurationAndLevel ...
+func (s Speed) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return Speed{s.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...

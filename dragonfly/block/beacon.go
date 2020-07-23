@@ -54,11 +54,11 @@ func (b Beacon) Activate(pos world.BlockPos, _ world.Face, _ *world.World, u ite
 
 // DecodeNBT ...
 func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
-	b.level = readInt(data, "Levels")
-	if primary, ok := effect_effectByID(readInt(data, "Primary")); ok {
+	b.level = int(readInt32(data, "Levels"))
+	if primary, ok := effect_effectByID(int(readInt32(data, "Primary"))); ok {
 		b.Primary = primary
 	}
-	if secondary, ok := effect_effectByID(readInt(data, "Secondary")); ok {
+	if secondary, ok := effect_effectByID(int(readInt32(data, "Secondary"))); ok {
 		b.Secondary = secondary
 	}
 	return b
@@ -77,9 +77,6 @@ func (b Beacon) EncodeNBT() map[string]interface{} {
 	}
 	return m
 }
-
-// TODO: Beacon UI.
-// TODO: Assigning Primary & Secondary powers via Beacon UI handling.
 
 // CanDisplace ...
 func (b Beacon) CanDisplace(l world.Liquid) bool {
@@ -161,15 +158,15 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 	))
 
 	var effs []entity.Effect
-	dur := int64(9+(b.level*2)) * int64(time.Second)
+	dur := time.Duration(9+(b.level*2)) * time.Second
 	if b.level == 4 {
 		// A level of 4 only adds one second of duration over a level of 3.
-		dur -= int64(time.Second)
+		dur -= time.Second
 	}
 
 	// Determining whether the primary power is set.
 	if b.Primary != nil {
-		primary := b.Primary.WithDuration(time.Duration(dur))
+		primary := b.Primary.WithDurationAndLevel(dur, 1)
 		var secondary entity.Effect = nil
 		// Secondary power can only be set if the primary power is set.
 		if b.Secondary != nil {
@@ -177,9 +174,9 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 			pId, pOk := effect_idByEffect(b.Primary)
 			sId, sOk := effect_idByEffect(b.Secondary)
 			if pOk && sOk && pId == sId {
-				// TODO: Increment primary effect level by 1
+				primary = primary.WithDurationAndLevel(dur, 2)
 			} else {
-				secondary = b.Secondary.WithDuration(time.Duration(dur))
+				secondary = b.Secondary.WithDurationAndLevel(dur, 1)
 			}
 		}
 		effs = append(effs, primary)

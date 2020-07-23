@@ -32,9 +32,9 @@ func (Invisibility) End(e entity.Living) {
 	}
 }
 
-// WithDuration ...
-func (i Invisibility) WithDuration(d time.Duration) entity.Effect {
-	return Invisibility{i.withDuration(d)}
+// WithDurationAndLevel ...
+func (i Invisibility) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return Invisibility{i.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...

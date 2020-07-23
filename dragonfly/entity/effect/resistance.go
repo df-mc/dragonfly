@@ -26,9 +26,9 @@ func (r Resistance) Multiplier(e damage.Source) float64 {
 	return v
 }
 
-// WithDuration ...
-func (r Resistance) WithDuration(d time.Duration) entity.Effect {
-	return Resistance{r.withDuration(d)}
+// WithDurationAndLevel ...
+func (r Resistance) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return Resistance{r.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...

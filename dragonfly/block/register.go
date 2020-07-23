@@ -177,11 +177,11 @@ func readString(m map[string]interface{}, key string) string {
 	return b
 }
 
-// readInt reads an integer from a map at the key passed.
+// readInt32 reads an int32 from a map at the key passed.
 //noinspection GoCommentLeadingSpace
-func readInt(m map[string]interface{}, key string) int {
+func readInt32(m map[string]interface{}, key string) int32 {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
-	b, _ := v.(int)
+	b, _ := v.(int32)
 	return b
 }

@@ -90,8 +90,9 @@ func (l lastingEffect) AmbientSource() bool {
 }
 
 // withDuration returns the lastingEffect with the duration passed.
-func (l lastingEffect) withDuration(d time.Duration) lastingEffect {
+func (l lastingEffect) withDurationAndLevel(d time.Duration, level int) lastingEffect {
 	l.Dur = d
+	l.Lvl = level
 	return l
 }
 

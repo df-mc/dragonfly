@@ -26,7 +26,7 @@ func (i InstantDamage) Apply(e entity.Living) {
 	e.Hurt(float64(base)*i.Potency, damage.SourceInstantDamageEffect{})
 }
 
-// WithDuration ...
-func (i InstantDamage) WithDuration(d time.Duration) entity.Effect {
+// WithDurationAndLevel ...
+func (i InstantDamage) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
 	return i
 }

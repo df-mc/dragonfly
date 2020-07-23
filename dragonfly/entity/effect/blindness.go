@@ -11,9 +11,9 @@ type Blindness struct {
 	lastingEffect
 }
 
-// WithDuration ...
-func (b Blindness) WithDuration(d time.Duration) entity.Effect {
-	return Blindness{b.withDuration(d)}
+// WithDurationAndLevel ...
+func (b Blindness) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return Blindness{b.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...

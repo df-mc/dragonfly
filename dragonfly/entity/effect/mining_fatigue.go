@@ -18,9 +18,9 @@ func (m MiningFatigue) Multiplier() float64 {
 	return math.Pow(3, float64(m.Lvl))
 }
 
-// WithDuration ...
-func (m MiningFatigue) WithDuration(d time.Duration) entity.Effect {
-	return MiningFatigue{m.withDuration(d)}
+// WithDurationAndLevel ...
+func (m MiningFatigue) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return MiningFatigue{m.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...

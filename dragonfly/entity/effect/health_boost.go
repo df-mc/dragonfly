@@ -21,9 +21,9 @@ func (h HealthBoost) End(e entity.Living) {
 	e.SetMaxHealth(e.MaxHealth() - 4*float64(h.Lvl))
 }
 
-// WithDuration ...
-func (h HealthBoost) WithDuration(d time.Duration) entity.Effect {
-	return HealthBoost{h.withDuration(d)}
+// WithDurationAndLevel ...
+func (h HealthBoost) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return HealthBoost{h.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...

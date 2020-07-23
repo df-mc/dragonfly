@@ -20,8 +20,8 @@ type Effect interface {
 	Level() int
 	// Duration returns the leftover duration of the effect.
 	Duration() time.Duration
-	// WithDuration returns the effect with a duration passed.
-	WithDuration(d time.Duration) Effect
+	// WithDurationAndLevel returns the effect with a duration and level passed.
+	WithDurationAndLevel(d time.Duration, level int) Effect
 	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
 	// together to form a new colour.
 	RGBA() color.RGBA
@@ -75,6 +75,7 @@ func (m *EffectManager) Add(e Effect, entity Living) {
 	if existing.Level() > e.Level() || (existing.Level() == e.Level() && existing.Duration() > e.Duration()) {
 		return
 	}
+	existing.End(entity)
 	m.effects[t] = e
 	e.Start(entity)
 }
@@ -112,7 +113,7 @@ func (m *EffectManager) Tick(entity Living) {
 	for i, effect := range m.effects {
 		e = append(e, effect)
 
-		m.effects[i] = effect.WithDuration(effect.Duration() - time.Second/20)
+		m.effects[i] = effect.WithDurationAndLevel(effect.Duration()-time.Second/20, effect.Level())
 		if m.expired(effect) {
 			delete(m.effects, i)
 			effect.End(entity)

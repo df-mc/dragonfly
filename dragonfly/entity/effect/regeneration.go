@@ -21,9 +21,9 @@ func (r Regeneration) Apply(e entity.Living) {
 	}
 }
 
-// WithDuration ...
-func (r Regeneration) WithDuration(d time.Duration) entity.Effect {
-	return Regeneration{r.withDuration(d)}
+// WithDurationAndLevel ...
+func (r Regeneration) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+	return Regeneration{r.withDurationAndLevel(d, level)}
 }
 
 // RGBA ...
