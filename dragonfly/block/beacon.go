@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"time"
 	_ "unsafe" // For compiler directives.
 )
@@ -153,8 +154,8 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 	// Finding entities in range.
 	r := 10 + (b.level * 10)
 	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
-		mgl64.Vec3{float64(pos.X() - r), 0, float64(pos.Z() - r)},
-		mgl64.Vec3{float64(pos.X() + r), 256, float64(pos.Z() + r)},
+		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
+		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
 	))
 
 	var effs []entity.Effect
