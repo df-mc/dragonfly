@@ -105,3 +105,9 @@ type Carrier interface {
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
 }
+
+// BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast
+// to surrounding players.
+type BeaconPayment interface {
+	PayableForBeacon() bool
+}

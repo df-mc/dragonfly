@@ -558,3 +558,7 @@ func item_id(s item.Stack) int32
 //go:linkname effect_idByEffect github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
 //noinspection ALL
 func effect_idByEffect(entity.Effect) (int, bool)
+
+//go:linkname effect_byID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
+//noinspection ALL
+func effect_byID(int) (entity.Effect, bool)
