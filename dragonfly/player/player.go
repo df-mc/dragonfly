@@ -332,7 +332,7 @@ func (p *Player) SetNameTag(name string) {
 // obtain.
 func (p *Player) SetSpeed(speed float64) {
 	p.speed.Store(speed)
-	p.s.SendSpeed(speed)
+	p.session().SendSpeed(speed)
 }
 
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
