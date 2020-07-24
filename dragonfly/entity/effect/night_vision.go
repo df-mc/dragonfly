@@ -12,9 +12,9 @@ type NightVision struct {
 	lastingEffect
 }
 
-// WithDurationAndLevel ...
-func (n NightVision) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return NightVision{n.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (n NightVision) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return NightVision{n.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

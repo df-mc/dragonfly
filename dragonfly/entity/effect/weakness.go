@@ -20,9 +20,9 @@ func (w Weakness) Multiplier() float64 {
 	return v
 }
 
-// WithDurationAndLevel ...
-func (w Weakness) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Weakness{w.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (w Weakness) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Weakness{w.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

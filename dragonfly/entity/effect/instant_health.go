@@ -27,7 +27,8 @@ func (i InstantHealth) Apply(e entity.Living) {
 	e.Heal(float64(base)*i.Potency, healing.SourceInstantHealthEffect{})
 }
 
-// WithDurationAndLevel ...
-func (i InstantHealth) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
+// WithSettings ...
+func (i InstantHealth) WithSettings(_ time.Duration, level int, _ bool) entity.Effect {
+	i.Lvl = level
 	return i
 }

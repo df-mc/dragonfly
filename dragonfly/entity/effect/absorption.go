@@ -40,9 +40,9 @@ func (a Absorption) Stop(e entity.Living) {
 	}
 }
 
-// WithDurationAndLevel ...
-func (a Absorption) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Absorption{a.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (a Absorption) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Absorption{a.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

@@ -21,9 +21,9 @@ func (h Hunger) Apply(e entity.Living) {
 	}
 }
 
-// WithDurationAndLevel ...
-func (h Hunger) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Hunger{h.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (h Hunger) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Hunger{h.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

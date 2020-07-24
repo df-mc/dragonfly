@@ -30,9 +30,9 @@ func (s Slowness) Stop(e entity.Living) {
 	e.SetSpeed(e.Speed() / slowness)
 }
 
-// WithDurationAndLevel ...
-func (s Slowness) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Slowness{s.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (s Slowness) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Slowness{s.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

@@ -21,9 +21,9 @@ func (w Wither) Apply(e entity.Living) {
 	}
 }
 
-// WithDurationAndLevel ...
-func (w Wither) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Wither{w.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (w Wither) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Wither{w.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

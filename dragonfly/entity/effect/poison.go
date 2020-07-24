@@ -21,9 +21,9 @@ func (p Poison) Apply(e entity.Living) {
 	}
 }
 
-// WithDurationAndLevel ...
-func (p Poison) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Poison{p.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (p Poison) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Poison{p.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

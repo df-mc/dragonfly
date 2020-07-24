@@ -110,6 +110,9 @@ func (b Beacon) Tick(currentTick int64, pos world.BlockPos, w *world.World) {
 		if before != b.level {
 			w.SetBlock(pos, b)
 		}
+		if b.level == 0 {
+			return
+		}
 		if !b.obstructed(pos, w) {
 			b.broadcastBeaconEffects(pos, w)
 		}
@@ -167,7 +170,7 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 
 	// Determining whether the primary power is set.
 	if b.Primary != nil {
-		primary := b.Primary.WithDurationAndLevel(dur, 1)
+		primary := b.Primary.WithSettings(dur, 1, true)
 		var secondary entity.Effect = nil
 		// Secondary power can only be set if the primary power is set.
 		if b.Secondary != nil {
@@ -175,9 +178,9 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 			pId, pOk := effect_idByEffect(b.Primary)
 			sId, sOk := effect_idByEffect(b.Secondary)
 			if pOk && sOk && pId == sId {
-				primary = primary.WithDurationAndLevel(dur, 2)
+				primary = primary.WithSettings(dur, 2, true)
 			} else {
-				secondary = b.Secondary.WithDurationAndLevel(dur, 1)
+				secondary = b.Secondary.WithSettings(dur, 1, true)
 			}
 		}
 		effs = append(effs, primary)

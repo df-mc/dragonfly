@@ -11,9 +11,9 @@ type Nausea struct {
 	lastingEffect
 }
 
-// WithDurationAndLevel ...
-func (n Nausea) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Nausea{n.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (n Nausea) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Nausea{n.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

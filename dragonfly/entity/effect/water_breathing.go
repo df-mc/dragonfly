@@ -12,9 +12,9 @@ type WaterBreathing struct {
 	lastingEffect
 }
 
-// WithDurationAndLevel ...
-func (w WaterBreathing) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return WaterBreathing{w.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (w WaterBreathing) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return WaterBreathing{w.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

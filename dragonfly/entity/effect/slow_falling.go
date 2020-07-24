@@ -11,9 +11,9 @@ type SlowFalling struct {
 	lastingEffect
 }
 
-// WithDurationAndLevel ...
-func (s SlowFalling) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return SlowFalling{s.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (s SlowFalling) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return SlowFalling{s.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

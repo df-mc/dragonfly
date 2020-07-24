@@ -16,9 +16,9 @@ func (s Strength) Multiplier() float64 {
 	return 0.3 * float64(s.Lvl)
 }
 
-// WithDurationAndLevel ...
-func (s Strength) WithDurationAndLevel(d time.Duration, level int) entity.Effect {
-	return Strength{s.withDurationAndLevel(d, level)}
+// WithSettings ...
+func (s Strength) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Strength{s.withSettings(d, level, ambient)}
 }
 
 // RGBA ...
