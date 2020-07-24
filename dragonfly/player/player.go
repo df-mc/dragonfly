@@ -561,6 +561,11 @@ func (p *Player) Effects() []entity.Effect {
 	return p.effects.Effects()
 }
 
+// BeaconAffected ...
+func (*Player) BeaconAffected() bool {
+	return true
+}
+
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
 // exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
 func (p *Player) Exhaust(points float64) {

@@ -12,9 +12,9 @@ type JumpBoost struct {
 	lastingEffect
 }
 
-// WithDuration ...
-func (j JumpBoost) WithDuration(d time.Duration) entity.Effect {
-	return JumpBoost{j.withDuration(d)}
+// WithSettings ...
+func (j JumpBoost) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return JumpBoost{j.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

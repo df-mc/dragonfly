@@ -6,6 +6,7 @@ const (
 	hashBedrock
 	hashCarpet
 	hashChest
+	hashCoalBlock
 	hashCobblestone
 	hashConcrete
 	hashDiamondBlock
@@ -21,6 +22,7 @@ const (
 	hashLeaves
 	hashLight
 	hashLog
+	hashNetheriteBlock
 	hashObsidian
 	hashPlanks
 	hashSponge

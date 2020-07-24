@@ -166,10 +166,10 @@ func (s Stack) AttackDamage() float64 {
 // according to the rules of fmt.Sprintln.
 func (s Stack) WithCustomName(a ...interface{}) Stack {
 	s.customName = format(a)
-	if !strings.HasPrefix(s.customName, "§r") {
+	if !strings.HasPrefix(s.customName, "§r§f") {
 		// We always reset it if it's not already done, because Vanilla makes custom names in italic, which
 		// servers generally just don't want.
-		s.customName = "§r" + s.customName
+		s.customName = "§r§f" + s.customName
 	}
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)

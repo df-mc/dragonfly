@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -39,6 +40,22 @@ type LightDiffuser interface {
 type Replaceable interface {
 	// ReplaceableBy returns a bool which indicates if the block is replaceable by another block.
 	ReplaceableBy(b world.Block) bool
+}
+
+// BeaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type BeaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
+// beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
+type beaconAffected interface {
+	// AddEffect adds a specific effect to the entity that implements this interface.
+	AddEffect(e entity.Effect)
+
+	// BeaconAffected returns whether this entity can be powered by a beacon.
+	BeaconAffected() bool
 }
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.

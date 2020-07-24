@@ -20,13 +20,18 @@ func (i IronBlock) BreakInfo() BreakInfo {
 	}
 }
 
+// PowersBeacon ...
+func (IronBlock) PowersBeacon() bool {
+	return true
+}
+
 // EncodeItem ...
-func (i IronBlock) EncodeItem() (id int32, meta int16) {
+func (IronBlock) EncodeItem() (id int32, meta int16) {
 	return 42, 0
 }
 
 // EncodeBlock ...
-func (i IronBlock) EncodeBlock() (name string, properties map[string]interface{}) {
+func (IronBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:iron_block", nil
 }
 

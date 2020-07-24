@@ -496,11 +496,33 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 	s.closeCurrentContainer()
 
-	b, ok := s.c.World().Block(pos).(block.Container)
-	if !ok {
-		// The block was no container.
+	b := s.c.World().Block(pos)
+	container, ok := b.(block.Container)
+	if ok {
+		s.openNormalContainer(container, pos)
 		return
 	}
+	// We hit a special kind of window like beacons, which are not actually opened server-side.
+	nextID := s.nextWindowID()
+	s.containerOpened.Store(true)
+	s.openedWindow.Store(inventory.New(1, nil))
+	s.openedPos.Store(pos)
+
+	var containerType byte
+	switch b.(type) {
+	case block.Beacon:
+		containerType = 13
+	}
+	s.writePacket(&packet.ContainerOpen{
+		WindowID:                nextID,
+		ContainerType:           containerType,
+		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		ContainerEntityUniqueID: -1,
+	})
+}
+
+// openNormalContainer opens a normal container that can hold items in it server-side.
+func (s *Session) openNormalContainer(b block.Container, pos world.BlockPos) {
 	b.AddViewer(s, s.c.World(), pos)
 
 	nextID := s.nextWindowID()

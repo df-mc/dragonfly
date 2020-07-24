@@ -21,6 +21,13 @@ type NBTer interface {
 	EncodeNBT() map[string]interface{}
 }
 
+// TickerBlock is an implementation of NBTer with an additional Tick method that is called on every world
+// tick for loaded blocks that implement this interface.
+type TickerBlock interface {
+	NBTer
+	Tick(currentTick int64, pos BlockPos, w *World)
+}
+
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
 // ID and metadata value using itemByID().
 // If an item with the ID and meta passed already exists, RegisterItem panics.
