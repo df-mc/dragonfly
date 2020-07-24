@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
@@ -154,44 +155,59 @@ func (b Beacon) obstructed(pos world.BlockPos, w *world.World) bool {
 // determines the powers (effects) that these entities could get. Afterwards, the entities in range that are
 // beaconAffected get their according effect(s).
 func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
-	// Finding entities in range.
-	r := 10 + (b.level * 10)
-	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
-		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
-		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
-	))
-
-	var effs []entity.Effect
 	dur := time.Duration(9+(b.level*2)) * time.Second
 	if b.level == 4 {
 		// A level of 4 only adds one second of duration over a level of 3.
 		dur -= time.Second
 	}
 
+	// Establishing what effects are active with the current amount of beacon levels.
+	primary, secondary := b.Primary, entity.Effect(nil)
+	switch b.level {
+	case 0:
+		primary = nil
+	case 1:
+		switch primary.(type) {
+		case effect.Resistance, effect.JumpBoost, effect.Strength:
+			primary = nil
+		}
+	case 2:
+		if _, ok := primary.(effect.Strength); ok {
+			primary = nil
+		}
+	case 3:
+	default:
+		secondary = b.Secondary
+	}
 	// Determining whether the primary power is set.
-	if b.Primary != nil {
-		primary := b.Primary.WithSettings(dur, 1, true)
-		var secondary entity.Effect = nil
+	if primary != nil {
+		primary = primary.WithSettings(dur, 1, true)
 		// Secondary power can only be set if the primary power is set.
-		if b.Secondary != nil {
+		if secondary != nil {
 			// It is possible to select 2 primary powers if the beacon's level is 4.
-			pId, pOk := effect_idByEffect(b.Primary)
-			sId, sOk := effect_idByEffect(b.Secondary)
+			pId, pOk := effect_idByEffect(primary)
+			sId, sOk := effect_idByEffect(secondary)
 			if pOk && sOk && pId == sId {
 				primary = primary.WithSettings(dur, 2, true)
 			} else {
-				secondary = b.Secondary.WithSettings(dur, 1, true)
+				secondary = secondary.WithSettings(dur, 1, true)
 			}
 		}
-		effs = append(effs, primary)
-		if secondary != nil {
-			effs = append(effs, secondary)
-		}
 	}
+
+	// Finding entities in range.
+	r := 10 + (b.level * 10)
+	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
+		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
+		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
+	))
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
-			for _, eff := range effs {
-				p.AddEffect(eff)
+			if primary != nil {
+				p.AddEffect(primary)
+			}
+			if secondary != nil {
+				p.AddEffect(secondary)
 			}
 		}
 	}
