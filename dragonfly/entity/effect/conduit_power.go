@@ -21,9 +21,9 @@ func (c ConduitPower) Multiplier() float64 {
 	return v
 }
 
-// WithDuration ...
-func (c ConduitPower) WithDuration(d time.Duration) entity.Effect {
-	return ConduitPower{c.withDuration(d)}
+// WithSettings ...
+func (c ConduitPower) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return ConduitPower{c.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

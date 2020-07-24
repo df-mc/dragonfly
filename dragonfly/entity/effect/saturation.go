@@ -20,9 +20,9 @@ func (s Saturation) Apply(e entity.Living) {
 	}
 }
 
-// WithDuration ...
-func (s Saturation) WithDuration(d time.Duration) entity.Effect {
-	return Saturation{s.withDuration(d)}
+// WithSettings ...
+func (s Saturation) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Saturation{s.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

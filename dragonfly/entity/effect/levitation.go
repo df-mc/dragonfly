@@ -12,9 +12,9 @@ type Levitation struct {
 	lastingEffect
 }
 
-// WithDuration ...
-func (l Levitation) WithDuration(d time.Duration) entity.Effect {
-	return Levitation{l.withDuration(d)}
+// WithSettings ...
+func (l Levitation) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Levitation{l.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

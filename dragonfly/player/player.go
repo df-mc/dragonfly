@@ -543,8 +543,7 @@ func (p *Player) sendFood() {
 // AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 // if the effects' levels are equal and the new effect has a longer duration.
 func (p *Player) AddEffect(e entity.Effect) {
-	p.effects.Add(e, p)
-	p.session().SendEffect(e)
+	p.session().SendEffect(p.effects.Add(e, p))
 	p.updateState()
 }
 
@@ -559,6 +558,11 @@ func (p *Player) RemoveEffect(e entity.Effect) {
 // expired when returned.
 func (p *Player) Effects() []entity.Effect {
 	return p.effects.Effects()
+}
+
+// BeaconAffected ...
+func (*Player) BeaconAffected() bool {
+	return true
 }
 
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total

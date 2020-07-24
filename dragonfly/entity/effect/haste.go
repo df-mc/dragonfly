@@ -20,9 +20,9 @@ func (h Haste) Multiplier() float64 {
 	return v
 }
 
-// WithDuration ...
-func (h Haste) WithDuration(d time.Duration) entity.Effect {
-	return Haste{h.withDuration(d)}
+// WithSettings ...
+func (h Haste) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+	return Haste{h.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

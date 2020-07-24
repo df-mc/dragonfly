@@ -20,8 +20,8 @@ type Effect interface {
 	Level() int
 	// Duration returns the leftover duration of the effect.
 	Duration() time.Duration
-	// WithDuration returns the effect with a duration passed.
-	WithDuration(d time.Duration) Effect
+	// WithSettings returns the effect with a duration and level passed.
+	WithSettings(d time.Duration, level int, ambient bool) Effect
 	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
 	// together to form a new colour.
 	RGBA() color.RGBA
@@ -53,30 +53,34 @@ func NewEffectManager() *EffectManager {
 // immediately. If not, the effect is added to the EffectManager and is applied to the entity every time the
 // Tick method is called.
 // Effect levels of 0 or below will not do anything.
-func (m *EffectManager) Add(e Effect, entity Living) {
+// Effect returns the final effect it added to the entity. That might be the effect passed or an effect with
+// a higher level/duration than the one passed.
+func (m *EffectManager) Add(e Effect, entity Living) Effect {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if e.Level() <= 0 {
-		return
+		return e
 	}
 
 	if e.Instant() {
 		e.Apply(entity)
-		return
+		return e
 	}
 	t := reflect.TypeOf(e)
 	existing, ok := m.effects[t]
 	if !ok {
 		m.effects[t] = e
 		e.Start(entity)
-		return
+		return e
 	}
 	if existing.Level() > e.Level() || (existing.Level() == e.Level() && existing.Duration() > e.Duration()) {
-		return
+		return existing
 	}
+	existing.End(entity)
 	m.effects[t] = e
 	e.Start(entity)
+	return e
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
@@ -112,7 +116,7 @@ func (m *EffectManager) Tick(entity Living) {
 	for i, effect := range m.effects {
 		e = append(e, effect)
 
-		m.effects[i] = effect.WithDuration(effect.Duration() - time.Second/20)
+		m.effects[i] = effect.WithSettings(effect.Duration()-time.Second/20, effect.Level(), effect.AmbientSource())
 		if m.expired(effect) {
 			delete(m.effects, i)
 			effect.End(entity)

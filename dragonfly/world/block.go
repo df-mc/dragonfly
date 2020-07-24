@@ -72,6 +72,13 @@ type liquidRemovable interface {
 	HasLiquidDrops() bool
 }
 
+// beaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type beaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without
 // fully removing the liquid.
 type LiquidDisplacer interface {
@@ -114,6 +121,9 @@ func RegisterBlock(states ...Block) {
 		}
 		if removable, ok := state.(liquidRemovable); ok {
 			world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
+		}
+		if source, ok := state.(beaconSource); ok {
+			world_internal.BeaconSource[rid] = source.PowersBeacon()
 		}
 
 		blocksHash[key] = state

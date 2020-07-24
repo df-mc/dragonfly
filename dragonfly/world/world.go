@@ -66,9 +66,10 @@ type World struct {
 	blockUpdates    map[BlockPos]int64
 	updatePositions []BlockPos
 
-	toTick         []toTick
-	positionCache  []ChunkPos
-	entitiesToTick []TickerEntity
+	toTick              []toTick
+	blockEntitiesToTick []blockEntityToTick
+	positionCache       []ChunkPos
+	entitiesToTick      []TickerEntity
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -164,11 +165,11 @@ func runtimeID(w *World, pos BlockPos) uint32 {
 		// Fast way out.
 		return 0
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
+	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if err != nil {
 		return 0
 	}
-	rid := c.RuntimeID(uint8(pos[0]&0xf), uint8(pos[1]), uint8(pos[2]&0xf), 0)
+	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
 
 	return rid
@@ -954,7 +955,7 @@ func (w *World) tick() {
 		}
 	}
 	w.tickEntities(tick)
-	w.tickRandomBlocks(viewers)
+	w.tickRandomBlocks(viewers, tick)
 	w.tickScheduledBlocks(tick)
 }
 
@@ -990,9 +991,16 @@ type toTick struct {
 	pos BlockPos
 }
 
+// blockEntityToTick is a struct used to keep track of block entities that need to be ticked upon a normal
+// world tick.
+type blockEntityToTick struct {
+	b   TickerBlock
+	pos BlockPos
+}
+
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered from the viewers passed.
-func (w *World) tickRandomBlocks(viewers []Viewer) {
+func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 	if w.simDistSq == 0 {
 		// NOP if the simulation distance is 0.
 		return
@@ -1028,6 +1036,15 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 			continue
 		}
 		c.Lock()
+		for pos, b := range c.e {
+			if ticker, ok := b.(TickerBlock); ok {
+				w.blockEntitiesToTick = append(w.blockEntitiesToTick, blockEntityToTick{
+					b:   ticker,
+					pos: pos,
+				})
+			}
+		}
+
 		subChunks := c.Sub()
 		// In total we generate 3 random blocks per sub chunk.
 		for j := uint32(0); j < tickSpeed; j++ {
@@ -1068,7 +1085,11 @@ func (w *World) tickRandomBlocks(viewers []Viewer) {
 	for _, a := range w.toTick {
 		a.b.RandomTick(a.pos, w, w.r)
 	}
+	for _, b := range w.blockEntitiesToTick {
+		b.b.Tick(tick, b.pos, w)
+	}
 	w.toTick = w.toTick[:0]
+	w.blockEntitiesToTick = w.blockEntitiesToTick[:0]
 	w.positionCache = w.positionCache[:0]
 }
 

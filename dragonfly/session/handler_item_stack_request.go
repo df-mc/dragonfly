@@ -2,7 +2,9 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -17,6 +19,7 @@ type ItemStackRequestHandler struct {
 	changes         map[byte]map[byte]protocol.StackResponseSlotInfo
 	responseChanges map[int32]map[byte]map[byte]responseChange
 	current         time.Time
+	ignoreDestroy   bool
 }
 
 // responseChange represents a change in a specific item stack response. It holds the timestamp of the
@@ -54,6 +57,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			return
 		}
 		h.resolve(req.RequestID, s)
+		h.ignoreDestroy = false
 	}()
 
 	for _, action := range req.Actions {
@@ -66,6 +70,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleSwap(a, s)
 		case *protocol.DestroyStackRequestAction:
 			err = h.handleDestroy(a, s)
+		case *protocol.BeaconPaymentStackRequestAction:
+			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.CraftResultsDeprecatedStackRequestAction:
@@ -127,6 +133,9 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 
 // handleDestroy handles the destroying of an item by moving it into the creative inventory.
 func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestAction, s *Session) error {
+	if h.ignoreDestroy {
+		return nil
+	}
 	if (s.c.GameMode() != gamemode.Creative{} && s.c.GameMode() != gamemode.Spectator{}) {
 		return fmt.Errorf("can only destroy items in gamemode creative/spectator")
 	}
@@ -140,6 +149,65 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 
 	h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
 	return nil
+}
+
+// handleBeaconPayment handles the selection of effects in a beacon and the removal of the item used to pay
+// for those effects.
+func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
+	slot := protocol.StackRequestSlotInfo{
+		ContainerID: containerBeacon,
+		Slot:        0x1b,
+	}
+	// First check if there actually is a beacon opened.
+	if !s.containerOpened.Load() {
+		return fmt.Errorf("no beacon container opened")
+	}
+	pos := s.openedPos.Load().(world.BlockPos)
+	beacon, ok := s.c.World().Block(pos).(block.Beacon)
+	if !ok {
+		return fmt.Errorf("no beacon container opened")
+	}
+
+	// Check if the item present in the beacon slot is valid.
+	payment, _ := h.itemInSlot(slot, s)
+	if payable, ok := payment.Item().(item.BeaconPayment); !ok || !payable.PayableForBeacon() {
+		return fmt.Errorf("item %#v in beacon slot cannot be used as payment", payment)
+	}
+
+	// Check if the effects are valid and allowed for the beacon's level.
+	if !h.validBeaconEffect(a.PrimaryEffect, beacon) {
+		return fmt.Errorf("primary effect selected is not allowed: %v for level %v", a.PrimaryEffect, beacon.Level())
+	} else if !h.validBeaconEffect(a.SecondaryEffect, beacon) || (beacon.Level() < 4 && a.SecondaryEffect != 0) {
+		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
+	}
+
+	beacon.Primary, _ = effect_byID(int(a.PrimaryEffect))
+	beacon.Secondary, _ = effect_byID(int(a.SecondaryEffect))
+	s.c.World().SetBlock(pos, beacon)
+
+	// The client will send a Destroy action after this action, but we can't rely on that because the client
+	// could just not send it.
+	// We just ignore the next Destroy action and set the item to air here.
+	h.setItemInSlot(slot, item.NewStack(block.Air{}, 0), s)
+	h.ignoreDestroy = true
+	return nil
+}
+
+// validBeaconEffect checks if the ID passed is a valid beacon effect.
+func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beacon) bool {
+	switch id {
+	case 1, 3:
+		return beacon.Level() >= 1
+	case 8, 11:
+		return beacon.Level() >= 2
+	case 5:
+		return beacon.Level() >= 3
+	case 10:
+		return beacon.Level() >= 4
+	case 0:
+		return true
+	}
+	return false
 }
 
 // handleTransfer handles the transferring of x count from a source slot to a destination slot.
