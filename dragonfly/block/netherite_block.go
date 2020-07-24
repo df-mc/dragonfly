@@ -27,7 +27,7 @@ func (NetheriteBlock) PowersBeacon() bool {
 
 // EncodeItem ...
 func (NetheriteBlock) EncodeItem() (id int32, meta int16) {
-	return 525, 0
+	return -270, 0
 }
 
 // EncodeBlock ...
