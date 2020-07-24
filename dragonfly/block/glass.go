@@ -19,6 +19,11 @@ func (g Glass) BreakInfo() BreakInfo {
 	}
 }
 
+// LightDiffusionLevel ...
+func (Glass) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // EncodeItem ...
 func (g Glass) EncodeItem() (id int32, meta int16) {
 	return 20, 0

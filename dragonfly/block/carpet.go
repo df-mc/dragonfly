@@ -61,6 +61,11 @@ func (Carpet) HasLiquidDrops() bool {
 	return true
 }
 
+// LightDiffusionLevel ...
+func (Carpet) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // NeighbourUpdateTick ...
 func (Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {

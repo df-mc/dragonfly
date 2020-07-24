@@ -42,6 +42,11 @@ func (k Kelp) Hash() uint64 {
 	return hashKelp | (uint64(k.Age) << 32)
 }
 
+// LightDiffusionLevel ...
+func (Kelp) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.
 func (Kelp) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)

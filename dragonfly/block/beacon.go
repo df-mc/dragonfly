@@ -91,6 +91,11 @@ func (b Beacon) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
+// LightDiffusionLevel ...
+func (Beacon) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // LightEmissionLevel ...
 func (Beacon) LightEmissionLevel() uint8 {
 	return 15
