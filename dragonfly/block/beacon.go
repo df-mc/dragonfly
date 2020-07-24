@@ -155,11 +155,11 @@ func (b Beacon) obstructed(pos world.BlockPos, w *world.World) bool {
 // determines the powers (effects) that these entities could get. Afterwards, the entities in range that are
 // beaconAffected get their according effect(s).
 func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
-	dur := time.Duration(9+(b.level*2)) * time.Second
+	seconds := 9 + b.level*2
 	if b.level == 4 {
-		// A level of 4 only adds one second of duration over a level of 3.
-		dur -= time.Second
+		seconds--
 	}
+	dur := time.Duration(seconds) * time.Second
 
 	// Establishing what effects are active with the current amount of beacon levels.
 	primary, secondary := b.Primary, entity.Effect(nil)
@@ -189,6 +189,7 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 			sId, sOk := effect_idByEffect(secondary)
 			if pOk && sOk && pId == sId {
 				primary = primary.WithSettings(dur, 2, true)
+				secondary = nil
 			} else {
 				secondary = secondary.WithSettings(dur, 1, true)
 			}
