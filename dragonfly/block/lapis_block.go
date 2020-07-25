@@ -6,7 +6,7 @@ import (
 )
 
 // LapisBlock is a decorative mineral block that is crafted from lapis lazuli.
-type LapisBlock struct{}
+type LapisBlock struct{ noNBT }
 
 // BreakInfo ...
 func (l LapisBlock) BreakInfo() BreakInfo{
