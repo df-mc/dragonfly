@@ -26,7 +26,13 @@ type Trapdoor struct {
 
 //AABB ...
 func (t Trapdoor) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing), -0.8125)}
+	if t.Open {
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing.Face()), -0.8125)}
+	}
+	if t.Top {
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(world.FaceDown), -0.8125)}
+	}
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(world.FaceUp), -0.8125)}
 }
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
