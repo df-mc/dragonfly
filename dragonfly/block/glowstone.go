@@ -13,7 +13,7 @@ func (g Glowstone) BreakInfo() BreakInfo {
 		Hardness:    0.3,
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(Glowstone{}, 1)),
+		Drops:       simpleDrops(item.NewStack(item.GlowstoneDust{}, 1)),
 	}
 }
 

@@ -129,7 +129,6 @@ func init() {
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
 	world.RegisterItem("minecraft:glowstone", Glowstone{})
-	world.RegisterItem("minecraft:glowstone_dust", GlowstoneDust{})
 	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
 	world.RegisterItem("minecraft:netherite_block", NetheriteBlock{})
 	world.RegisterItem("minecraft:gold_block", GoldBlock{})
