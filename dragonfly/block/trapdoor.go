@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
@@ -58,6 +59,7 @@ func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 func (t Trapdoor) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
 	t.Open = !t.Open
 	w.SetBlock(pos, t)
+	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 }
 
 // BreakInfo ...
