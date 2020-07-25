@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
-// A lapis lazuli block is a decorative mineral block that is crafted from lapis lazuli
+// LapisBlock is a decorative mineral block that is crafted from lapis lazuli
 type LapisBlock struct{}
 
 // BreakInfo ...
