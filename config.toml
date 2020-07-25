@@ -14,6 +14,8 @@
   # The message shown to players when the server is shutting down. The message may be left empty to direct
   # players to the server list directly.
   ShutdownMessage = "Server closed."
+  # AuthEnabled controls whether or not players must be connected to Xbox Live in order to join the server.
+  AuthEnabled = false
 
 [World]
   # The name of the world of the server. The name will show up at the top of the player list in the in-game
