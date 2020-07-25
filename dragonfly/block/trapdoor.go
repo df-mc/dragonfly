@@ -31,11 +31,10 @@ type Trapdoor struct {
 func (t Trapdoor) AABB(world.BlockPos, *world.World) []physics.AABB {
 	if t.Open {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing.Face()), -0.8125)}
+	} else if t.Top {
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.8125}, mgl64.Vec3{1, 1, 1})}
 	}
-	if t.Top {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(world.FaceDown), -0.8125)}
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(world.FaceUp), -0.8125)}
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.1875, 1})}
 }
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
@@ -53,7 +52,7 @@ func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 }
 
 // Activate ...
-func (t Trapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, u item.User) {
+func (t Trapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
 	t.Open = !t.Open
 	w.SetBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})

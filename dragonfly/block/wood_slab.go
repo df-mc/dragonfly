@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -21,6 +22,11 @@ type WoodSlab struct {
 	// Double specifies if the slab is a double slab. These double slabs can be made by placing another slab
 	// on an existing slab.
 	Double bool
+}
+
+// Model ...
+func (s WoodSlab) Model() model.Model {
+	return model.Slab{Double: s.Double, Top: s.Top}
 }
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
