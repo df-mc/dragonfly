@@ -14,6 +14,8 @@ import (
 type Trapdoor struct {
 	noNBT
 
+	transparent
+
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -25,13 +27,8 @@ type Trapdoor struct {
 	Top bool
 }
 
-// LightDiffusionLevel ...
-func (t Trapdoor) LightDiffusionLevel() uint8 {
-	return 0
-}
-
 // AABB ...
-func (t Trapdoor) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
+func (t Trapdoor) AABB(world.BlockPos, *world.World) []physics.AABB {
 	if t.Open {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing.Face()), -0.8125)}
 	}
@@ -56,7 +53,7 @@ func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 }
 
 // Activate ...
-func (t Trapdoor) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
+func (t Trapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, u item.User) {
 	t.Open = !t.Open
 	w.SetBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
@@ -79,7 +76,7 @@ func (t Trapdoor) CanDisplace(l world.Liquid) bool {
 }
 
 // SideClosed ...
-func (t Trapdoor) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (t Trapdoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
