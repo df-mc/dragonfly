@@ -9,22 +9,22 @@ import (
 	"math"
 )
 
-//Trapdoor is a block that can be used as an openable 1x1 barrier
+// Trapdoor is a block that can be used as an openable 1x1 barrier
 type Trapdoor struct {
 	noNBT
 
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
-	//Facing is the direction the trapdoor is facing
+	// Facing is the direction the trapdoor is facing
 	Facing world.Direction
-	//Open is whether or not the trapdoor is open
+	// Open is whether or not the trapdoor is open
 	Open bool
-	//Top is whether the trapdoor occupies the top or bottom part of a block
+	// Top is whether the trapdoor occupies the top or bottom part of a block
 	Top bool
 }
 
-//AABB ...
+// AABB ...
 func (t Trapdoor) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	if t.Open {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing.Face()), -0.8125)}
@@ -49,7 +49,7 @@ func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 	return placed(ctx)
 }
 
-//Activate ...
+// Activate ...
 func (t Trapdoor) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
 	t.Open = !t.Open
 	w.SetBlock(pos, t)
@@ -71,7 +71,7 @@ func (t Trapdoor) CanDisplace(l world.Liquid) bool {
 	return water
 }
 
-//EncodeItem ...
+// EncodeItem ...
 func (t Trapdoor) EncodeItem() (id int32, meta int16) {
 	switch t.Wood {
 	case wood.Oak():
@@ -90,7 +90,7 @@ func (t Trapdoor) EncodeItem() (id int32, meta int16) {
 	panic("invalid wood type")
 }
 
-//EncodeBlock ...
+// EncodeBlock ...
 func (t Trapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch t.Wood {
 	case wood.Oak():
