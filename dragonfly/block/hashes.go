@@ -18,6 +18,7 @@ const (
 	hashGrass
 	hashIronBlock
 	hashKelp
+	hashLapisBlock
 	hashLava
 	hashLeaves
 	hashLight
