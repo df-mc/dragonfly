@@ -6,7 +6,7 @@ import (
 )
 
 // Glowstone is commonly found on the ceiling of the nether dimension.
-type Glowstone struct{ noNBT }
+type Glowstone struct { noNBT }
 
 // BreakInfo ...
 func (g Glowstone) BreakInfo() BreakInfo {
@@ -33,6 +33,7 @@ func (Glowstone) LightEmissionLevel() uint8 {
 	return 15
 }
 
+// Hash ...
 func (Glowstone) Hash() uint64 {
 	return hashGlowstone
 }
