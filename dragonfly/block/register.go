@@ -48,6 +48,7 @@ func init() {
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
+	world.RegisterBlock(allTrapdoors()...)
 }
 
 func init() {
@@ -135,6 +136,12 @@ func init() {
 	world.RegisterItem("minecraft:sponge", Sponge{})
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
+	world.RegisterItem("minecraft:wooden_trapdoor", Trapdoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_trapdoor", Trapdoor{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_trapdoor", Trapdoor{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_trapdoor", Trapdoor{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_trapdoor", Trapdoor{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_trapdoor", Trapdoor{Wood: wood.DarkOak()})
 }
 
 func init() {

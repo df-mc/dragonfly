@@ -32,8 +32,8 @@ const (
 	hashGranite
 	hashDiorite
 	hashAndesite
-	hasAndesite
 	hashTerracotta
+	hashTrapdoor
 	hashWater
 	hashWoodSlab
 	hashWoodStairs
