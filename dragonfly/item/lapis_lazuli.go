@@ -1,6 +1,6 @@
 package item
 
-// Lapis lazuli is a mineral used for enchanting and decoration
+// LapisLazuli is a mineral used for enchanting and decoration.
 type LapisLazuli struct{}
 
 // EncodeItem ...
