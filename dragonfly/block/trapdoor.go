@@ -24,6 +24,11 @@ type Trapdoor struct {
 	Top bool
 }
 
+// LightDiffusionLevel ...
+func (t Trapdoor) LightDiffusionLevel() uint8 {
+	return 0
+}
+
 // AABB ...
 func (t Trapdoor) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	if t.Open {
