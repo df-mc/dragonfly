@@ -16,11 +16,11 @@ type Trapdoor struct {
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
-	// Facing is the direction the trapdoor is facing
+	// Facing is the direction the trapdoor is facing.
 	Facing world.Direction
-	// Open is whether or not the trapdoor is open
+	// Open is whether or not the trapdoor is open.
 	Open bool
-	// Top is whether the trapdoor occupies the top or bottom part of a block
+	// Top is whether the trapdoor occupies the top or bottom part of a block.
 	Top bool
 }
 
@@ -69,6 +69,11 @@ func (t Trapdoor) BreakInfo() BreakInfo {
 func (t Trapdoor) CanDisplace(l world.Liquid) bool {
 	_, water := l.(Water)
 	return water
+}
+
+// SideClosed ...
+func (t Trapdoor) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+	return false
 }
 
 // EncodeItem ...
