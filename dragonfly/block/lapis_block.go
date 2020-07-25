@@ -5,8 +5,10 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
-type LapisBlock struct{ noNBT }
+// A lapis lazuli block is a decorative mineral block that is crafted from lapis lazuli
+type LapisBlock struct{}
 
+// BreakInfo ...
 func (l LapisBlock) BreakInfo() BreakInfo{
 	return BreakInfo{
 		Hardness:    3,
@@ -18,14 +20,17 @@ func (l LapisBlock) BreakInfo() BreakInfo{
 	}
 }
 
+// EncodeItem ...
 func (LapisBlock) EncodeItem() (id int32, meta int16) {
 	return 22, 0
 }
 
+// EncodeBlock ...
 func (LapisBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:lapis_block", nil
 }
 
+// Hash ...
 func (l LapisBlock) Hash() uint64 {
 	return hashLapisBlock
 }
