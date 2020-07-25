@@ -38,7 +38,7 @@ func main() {
 	}
 
 	w := server.World()
-	w.SetDefaultGameMode(gamemode.Survival{})
+	w.SetDefaultGameMode(gamemode.Creative{})
 
 	for {
 		if _, err := server.Accept(); err != nil {
