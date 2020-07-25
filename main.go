@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly"
 	"github.com/df-mc/dragonfly/dragonfly/player/chat"
+	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -35,6 +36,9 @@ func main() {
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
 	}
+
+	w := server.World()
+	w.SetDefaultGameMode(gamemode.Creative{})
 
 	for {
 		if _, err := server.Accept(); err != nil {
