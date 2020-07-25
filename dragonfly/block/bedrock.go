@@ -3,6 +3,8 @@ package block
 // Bedrock is a block that is indestructible in survival.
 type Bedrock struct {
 	noNBT
+	solid
+	transparent
 	// InfiniteBurning specifies if the bedrock block is set aflame and will burn forever. This is the case
 	// for bedrock found under end crystals on top of the end pillars.
 	InfiniteBurning bool

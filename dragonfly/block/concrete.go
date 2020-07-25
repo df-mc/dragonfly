@@ -10,6 +10,7 @@ import (
 // adjacent to water.
 type Concrete struct {
 	noNBT
+	solid
 	// Colour is the colour of the concrete block.
 	Colour colour.Colour
 }

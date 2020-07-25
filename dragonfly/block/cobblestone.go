@@ -5,6 +5,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 // Cobblestone is a common block, obtained from mining stone.
 type Cobblestone struct {
 	noNBT
+	solid
 	// Mossy specifies if the cobblestone is mossy. This variant of cobblestone is typically found in
 	// dungeons or in small clusters in the giant tree taiga biome.
 	Mossy bool

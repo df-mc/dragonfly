@@ -19,6 +19,8 @@ import (
 // The empty value of Chest is not valid. It must be created using item.NewChest().
 type Chest struct {
 	nbt
+
+	transparent
 	// Facing is the direction that the chest is facing.
 	Facing world.Direction
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
@@ -185,11 +187,6 @@ func (c Chest) EncodeNBT() map[string]interface{} {
 		m["CustomName"] = c.CustomName
 	}
 	return m
-}
-
-// LightDiffusionLevel ...
-func (Chest) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // EncodeItem ...

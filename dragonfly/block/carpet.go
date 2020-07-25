@@ -12,6 +12,8 @@ import (
 // Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
 type Carpet struct {
 	noNBT
+
+	transparent
 	Colour colour.Colour
 }
 
@@ -59,11 +61,6 @@ func (c Carpet) Hash() uint64 {
 // HasLiquidDrops ...
 func (Carpet) HasLiquidDrops() bool {
 	return true
-}
-
-// LightDiffusionLevel ...
-func (Carpet) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // NeighbourUpdateTick ...

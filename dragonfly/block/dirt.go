@@ -6,6 +6,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 // world.
 type Dirt struct {
 	noNBT
+	solid
 	// Coarse specifies if the dirt should be off the coarse dirt variant. Grass blocks won't spread on
 	// the block if set to true.
 	Coarse bool

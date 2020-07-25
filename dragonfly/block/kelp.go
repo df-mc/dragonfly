@@ -12,6 +12,9 @@ import (
 // Kelp is an underwater block which can grow on top of solids underwater.
 type Kelp struct {
 	noNBT
+	empty
+	transparent
+
 	// Age is the age of the kelp block which can be 0-15. If age is 15, kelp won't grow any further.
 	Age int
 }
@@ -40,11 +43,6 @@ func (k Kelp) EncodeBlock() (name string, properties map[string]interface{}) {
 // Hash ...
 func (k Kelp) Hash() uint64 {
 	return hashKelp | (uint64(k.Age) << 32)
-}
-
-// LightDiffusionLevel ...
-func (Kelp) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.

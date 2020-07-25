@@ -11,6 +11,8 @@ import (
 // WoodStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
 type WoodStairs struct {
 	noNBT
+
+	transparent
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -45,11 +47,6 @@ func (s WoodStairs) BreakInfo() BreakInfo {
 		Effective:   axeEffective,
 		Drops:       simpleDrops(item.NewStack(s, 1)),
 	}
-}
-
-// LightDiffusionLevel always returns 0.
-func (WoodStairs) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // AABB ...

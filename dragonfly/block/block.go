@@ -30,15 +30,15 @@ type LightEmitter interface {
 // through these blocks.
 type LightDiffuser interface {
 	// LightDiffusionLevel returns the amount of light levels that is subtracted when light passes through
-	// this block. Some locks, such as leaves, have this behaviour. A diffusion level of 15 means that all
-	// light will be completely blocked when light passes through the block.
+	// this block. Some blocks, such as leaves, have this behaviour. A diffusion level of 15 means that all
+	// light will be completely blocked when it passes through the block.
 	LightDiffusionLevel() uint8
 }
 
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {
-	// ReplaceableBy returns a bool which indicates if the block is replaceable by another block.
+	// ReplaceableBy returns a bool which indicates if the block is replaceableWith by another block.
 	ReplaceableBy(b world.Block) bool
 }
 
@@ -58,8 +58,8 @@ type beaconAffected interface {
 	BeaconAffected() bool
 }
 
-// replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *world.World, pos world.BlockPos, with world.Block) bool {
+// replaceableWith checks if the block at the position passed is replaceable with the block passed.
+func replaceableWith(w *world.World, pos world.BlockPos, with world.Block) bool {
 	if pos.OutOfBounds() {
 		return false
 	}
@@ -74,13 +74,13 @@ func replaceable(w *world.World, pos world.BlockPos, with world.Block) bool {
 // clicking on the position and face passed.
 // If none can be found, the bool returned is false.
 func firstReplaceable(w *world.World, pos world.BlockPos, face world.Face, with world.Block) (world.BlockPos, world.Face, bool) {
-	if replaceable(w, pos, with) {
-		// A replaceable block was clicked, so we can replace it. This will then be assumed to be placed on
+	if replaceableWith(w, pos, with) {
+		// A replaceableWith block was clicked, so we can replace it. This will then be assumed to be placed on
 		// the top face. (Torches, for example, will get attached to the floor when clicking tall grass.)
 		return pos, world.FaceUp, true
 	}
 	side := pos.Side(face)
-	if replaceable(w, side, with) {
+	if replaceableWith(w, side, with) {
 		return side, face, true
 	}
 	return pos, face, false
@@ -131,4 +131,21 @@ type nbt struct{}
 // HasNBT ...
 func (nbt) HasNBT() bool {
 	return true
+}
+
+// replaceable is a struct that may be embedded to make a block replaceable by any other block.
+type replaceable struct{}
+
+// ReplaceableBy ...
+func (replaceable) ReplaceableBy(world.Block) bool {
+	return true
+}
+
+// transparent is a struct that may be embedded to make a block transparent to light. Light will be able to
+// pass through this block freely.
+type transparent struct{}
+
+// LightDiffusionLevel ...
+func (transparent) LightDiffusionLevel() uint8 {
+	return 0
 }

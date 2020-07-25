@@ -6,7 +6,10 @@ import (
 )
 
 // CoalBlock is a precious mineral block made from 9 coal.
-type CoalBlock struct{ noNBT }
+type CoalBlock struct {
+	noNBT
+	solid
+}
 
 // BreakInfo ...
 func (c CoalBlock) BreakInfo() BreakInfo {
