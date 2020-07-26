@@ -31,5 +31,5 @@ func (t Thin) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 
 // FaceSolid ...
 func (t Thin) FaceSolid(_ world.BlockPos, face world.Face, _ *world.World) bool {
-	return face < 2
+	return face == world.FaceDown
 }

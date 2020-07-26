@@ -141,10 +141,3 @@ type transparent struct{}
 func (transparent) LightDiffusionLevel() uint8 {
 	return 0
 }
-
-// PartiallySolid represents a block that is not fully solid on every side or to every kind of block.
-type PartiallySolid interface {
-	// FaceSolidTo determines whether the block is solid to the specified world.Face or world.Block.
-	// The world.Face is relative to the PartiallySolid's position.
-	FaceSolidTo(pos world.BlockPos, face world.Face, other world.Block) bool
-}
