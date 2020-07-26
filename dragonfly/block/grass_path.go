@@ -14,7 +14,8 @@ type GrassPath struct {
 
 // NeighbourUpdateTick handles the turning from grass path into dirt if a block is placed on top of it.
 func (p GrassPath) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if w.Block(pos.Add(world.BlockPos{0, 1})).Model().FaceSolid(pos, world.FaceDown, w) {
+	up := pos.Add(world.BlockPos{0, 1})
+	if w.Block(up).Model().FaceSolid(up, world.FaceDown, w) {
 		// A block with a solid side at the bottom was placed onto this one.
 		w.SetBlock(pos, Dirt{})
 	}
