@@ -1,0 +1,31 @@
+
+[Network]
+  # The address of the server, including the port. The server will be listening on this address. If another
+  # server is already running on this port, please select a different port.
+  Address = ":19132"
+
+[Server]
+  # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the
+  # name of the server.
+  Name = "Dragonfly Server"
+  # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
+  # player count will increase as more players join.
+  MaximumPlayers = 0
+  # The message shown to players when the server is shutting down. The message may be left empty to direct
+  # players to the server list directly.
+  ShutdownMessage = "Server closed."
+
+[World]
+  # The name of the world of the server. The name will show up at the top of the player list in the in-game
+  # pause menu. It has no functionality beyond that.
+  Name = "World"
+  # The folder that the world files (will) reside in, relative to the working directory. If not currently
+  # present, the folder will be made.
+  Folder = "world"
+  # The  maximum chunk radius that players may set in their settings. If they try to set it above this number,
+  # it will be capped and set to the max.
+  MaximumChunkRadius = 32
+  # SimulationDistance is the maximum distance in chunks that a chunk must be to a player in order for
+  # it to receive random ticks. This field may be set to 0 to disable random block updates altogether.
+  SimulationDistance = 8
+
