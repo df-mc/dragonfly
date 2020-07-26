@@ -10,6 +10,7 @@ import (
 // CoralBlock is a solid block that comes in 5 variants
 type CoralBlock struct {
 	noNBT
+	solid
 
 	// Type is the type of coral of the block.
 	Type coral.Corals
