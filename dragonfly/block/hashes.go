@@ -4,14 +4,17 @@ const (
 	hashAir uint64 = iota
 	hashBeacon
 	hashBedrock
+	hashBoneBlock
 	hashCarpet
 	hashChest
+	hashClay
 	hashCoalBlock
 	hashCobblestone
 	hashConcrete
 	hashDiamondBlock
 	hashDirt
 	hashEmeraldBlock
+	hashEndstone
 	hashGlass
 	hashGlazedTerracotta
 	hashGoldBlock
@@ -23,6 +26,7 @@ const (
 	hashLight
 	hashLog
 	hashNetheriteBlock
+	hashNetherrack
 	hashObsidian
 	hashPlanks
 	hashSponge
