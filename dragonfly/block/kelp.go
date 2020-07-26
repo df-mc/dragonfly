@@ -69,10 +69,12 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 		return
 	}
 
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// Kelp blocks must be placed on a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	case Air, Water:
-		return false
+	below := pos.Add(world.BlockPos{0, -1})
+	belowBlock := w.Block(below)
+	if _, kelp := belowBlock.(Kelp); !kelp {
+		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+			return false
+		}
 	}
 
 	liquid, ok := w.Liquid(pos)
@@ -98,24 +100,12 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 		w.PlaceBlock(pos, k.withRandomAge())
 	}
 
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// Kelp blocks can only exist on top of a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	case Air, Water:
-		w.ScheduleBlockUpdate(pos, time.Second/20)
-	}
-}
-
-// ScheduledTick ...
-func (Kelp) ScheduledTick(pos world.BlockPos, w *world.World) {
-	if _, ok := w.Liquid(pos); !ok {
-		w.BreakBlock(pos)
-		return
-	}
-	// Kelp blocks can only exist on top of a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// As of now, the breaking logic has to be in here as well to avoid issues.
-	case Air, Water:
-		w.BreakBlock(pos)
+	below := pos.Add(world.BlockPos{0, -1})
+	belowBlock := w.Block(below)
+	if _, kelp := belowBlock.(Kelp); !kelp {
+		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+			w.BreakBlock(pos)
+		}
 	}
 }
 

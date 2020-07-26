@@ -49,6 +49,7 @@ func init() {
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
+	world.RegisterBlock(allCoralBlocks()...)
 	world.RegisterBlock(Endstone{})
 	world.RegisterBlock(Netherrack{})
 	world.RegisterBlock(Clay{})
@@ -147,12 +148,16 @@ func init() {
 	world.RegisterItem("minecraft:jungle_trapdoor", Trapdoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_trapdoor", Trapdoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_trapdoor", Trapdoor{Wood: wood.DarkOak()})
+	for _, c := range allCoralBlocks() {
+		world.RegisterItem("minecraft:coral_block", c.(world.Item))
+	}
 	world.RegisterItem("minecraft:endstone", Endstone{})
 	world.RegisterItem("minecraft:netherrack", Netherrack{})
 	world.RegisterItem("minecraft:clay", Clay{})
 	world.RegisterItem("minecraft:bone_block", BoneBlock{})
 	world.RegisterItem("minecraft:lantern", Lantern{})
 	world.RegisterItem("minecraft:soul_lantern", Lantern{Soul: true})
+
 }
 
 func init() {
