@@ -42,7 +42,7 @@ func (c CoralBlock) ScheduledTick(pos world.BlockPos, w *world.World) {
 	})
 	if !adjacentWater {
 		c.Dead = true
-		w.SetBlock(pos, c)
+		w.PlaceBlock(pos, c)
 	}
 }
 
