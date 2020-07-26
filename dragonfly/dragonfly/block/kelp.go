@@ -104,21 +104,6 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
-			w.ScheduleBlockUpdate(pos, time.Second/20)
-		}
-	}
-}
-
-// ScheduledTick ...
-func (Kelp) ScheduledTick(pos world.BlockPos, w *world.World) {
-	if _, ok := w.Liquid(pos); !ok {
-		w.BreakBlock(pos)
-		return
-	}
-	below := pos.Add(world.BlockPos{0, -1})
-	belowBlock := w.Block(below)
-	if _, kelp := belowBlock.(Kelp); !kelp {
-		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
 			w.BreakBlock(pos)
 		}
 	}
