@@ -9,8 +9,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Door is a block that can be used as an openable 1x2 barrier.
-type Door struct {
+// WoodDoor is a block that can be used as an openable 1x2 barrier.
+type WoodDoor struct {
 	noNBT
 	transparent
 
@@ -28,27 +28,27 @@ type Door struct {
 }
 
 // Model ...
-func (d Door) Model() world.BlockModel {
+func (d WoodDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
 }
 
 // NeighbourUpdateTick ...
-func (d Door) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
+func (d WoodDoor) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if d.Top {
-		if _, ok := w.Block(pos.Side(world.FaceDown)).(Door); !ok {
+		if _, ok := w.Block(pos.Side(world.FaceDown)).(WoodDoor); !ok {
 			w.BreakBlock(pos)
 		}
 	} else {
 		if solid := w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w); !solid {
 			w.BreakBlock(pos)
-		} else if _, ok := w.Block(pos.Side(world.FaceUp)).(Door); !ok {
+		} else if _, ok := w.Block(pos.Side(world.FaceUp)).(WoodDoor); !ok {
 			w.BreakBlock(pos)
 		}
 	}
 }
 
 // UseOnBlock handles the directional placing of doors
-func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (d WoodDoor) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, d)
 	if !used {
 		return false
@@ -65,7 +65,7 @@ func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec
 	d.Facing = user.Facing()
 	left := w.Block(pos.Side(d.Facing.Rotate90().Opposite().Face()))
 	right := w.Block(pos.Side(d.Facing.Rotate90().Face()))
-	if door, ok := left.(Door); ok {
+	if door, ok := left.(WoodDoor); ok {
 		if door.Wood == d.Wood {
 			d.Right = true
 		}
@@ -79,19 +79,20 @@ func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec
 		}
 	}
 
+	ctx.IgnoreAABB = true
 	place(w, pos, d, user, ctx)
-	place(w, pos.Side(world.FaceUp), Door{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	place(w, pos.Side(world.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	return placed(ctx)
 }
 
 // Activate ...
-func (d Door) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
+func (d WoodDoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
 	d.Open = !d.Open
 	w.PlaceBlock(pos, d)
 
 	otherPos := pos.Side(world.Face(boolByte(!d.Top)))
 	other := w.Block(otherPos)
-	if door, ok := other.(Door); ok {
+	if door, ok := other.(WoodDoor); ok {
 		door.Open = d.Open
 		w.PlaceBlock(otherPos, door)
 	}
@@ -100,7 +101,7 @@ func (d Door) Activate(pos world.BlockPos, clickedFace world.Face, w *world.Worl
 }
 
 // BreakInfo ...
-func (d Door) BreakInfo() BreakInfo {
+func (d WoodDoor) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    3,
 		Harvestable: alwaysHarvestable,
@@ -110,18 +111,18 @@ func (d Door) BreakInfo() BreakInfo {
 }
 
 // CanDisplace ...
-func (d Door) CanDisplace(l world.Liquid) bool {
+func (d WoodDoor) CanDisplace(l world.Liquid) bool {
 	_, water := l.(Water)
 	return water
 }
 
 // SideClosed ...
-func (d Door) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (d WoodDoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
 // EncodeItem ...
-func (d Door) EncodeItem() (id int32, meta int16) {
+func (d WoodDoor) EncodeItem() (id int32, meta int16) {
 	switch d.Wood {
 	case wood.Oak():
 		return 324, 0
@@ -140,7 +141,7 @@ func (d Door) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (d Door) EncodeBlock() (name string, properties map[string]interface{}) {
+func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{}) {
 	direction := 3
 	switch d.Facing {
 	case world.South:
@@ -169,7 +170,7 @@ func (d Door) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // Hash ...
-func (d Door) Hash() uint64 {
+func (d WoodDoor) Hash() uint64 {
 	return hashDoor | (uint64(d.Facing) << 32) | (uint64(boolByte(d.Right)) << 35) | (uint64(boolByte(d.Open)) << 36) | (uint64(boolByte(d.Top)) << 37) | (uint64(d.Wood.Uint8()) << 38)
 }
 
@@ -184,14 +185,14 @@ func allDoors() (doors []world.Block) {
 		wood.DarkOak(),
 	} {
 		for i := world.Direction(0); i <= 3; i++ {
-			doors = append(doors, Door{Wood: w, Facing: i, Open: false, Top: false, Right: false})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: false, Top: true, Right: false})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: true, Top: true, Right: false})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: true, Top: false, Right: false})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: false, Top: false, Right: true})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: false, Top: true, Right: true})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: true, Top: true, Right: true})
-			doors = append(doors, Door{Wood: w, Facing: i, Open: true, Top: false, Right: true})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: false})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: true, Right: false})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: false, Right: false})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: true})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: true})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: true, Right: true})
+			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: false, Right: true})
 		}
 	}
 	return

@@ -10,8 +10,8 @@ import (
 	"math"
 )
 
-// Trapdoor is a block that can be used as an openable 1x1 barrier
-type Trapdoor struct {
+// WoodTrapdoor is a block that can be used as an openable 1x1 barrier
+type WoodTrapdoor struct {
 	noNBT
 
 	transparent
@@ -28,13 +28,13 @@ type Trapdoor struct {
 }
 
 // Model ...
-func (t Trapdoor) Model() world.BlockModel {
+func (t WoodTrapdoor) Model() world.BlockModel {
 	return model.Trapdoor{Facing: t.Facing, Top: t.Top, Open: t.Open}
 }
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
-func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (t WoodTrapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, t)
 	if !used {
 		return false
@@ -47,14 +47,14 @@ func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 }
 
 // Activate ...
-func (t Trapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
+func (t WoodTrapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
 	t.Open = !t.Open
 	w.SetBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 }
 
 // BreakInfo ...
-func (t Trapdoor) BreakInfo() BreakInfo {
+func (t WoodTrapdoor) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    3,
 		Harvestable: alwaysHarvestable,
@@ -64,18 +64,18 @@ func (t Trapdoor) BreakInfo() BreakInfo {
 }
 
 // CanDisplace ...
-func (t Trapdoor) CanDisplace(l world.Liquid) bool {
+func (t WoodTrapdoor) CanDisplace(l world.Liquid) bool {
 	_, water := l.(Water)
 	return water
 }
 
 // SideClosed ...
-func (t Trapdoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (t WoodTrapdoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
 // EncodeItem ...
-func (t Trapdoor) EncodeItem() (id int32, meta int16) {
+func (t WoodTrapdoor) EncodeItem() (id int32, meta int16) {
 	switch t.Wood {
 	case wood.Oak():
 		return 96, 0
@@ -94,7 +94,7 @@ func (t Trapdoor) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (t Trapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
+func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch t.Wood {
 	case wood.Oak():
 		return "minecraft:trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
@@ -113,7 +113,7 @@ func (t Trapdoor) EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // Hash ...
-func (t Trapdoor) Hash() uint64 {
+func (t WoodTrapdoor) Hash() uint64 {
 	return hashTrapdoor | (uint64(t.Facing) << 32) | (uint64(boolByte(t.Open)) << 34) | (uint64(boolByte(t.Top)) << 35) | (uint64(t.Wood.Uint8()) << 36)
 }
 
@@ -128,10 +128,10 @@ func allTrapdoors() (trapdoors []world.Block) {
 		wood.DarkOak(),
 	} {
 		for i := world.Direction(0); i <= 3; i++ {
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: false, Top: false})
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: false, Top: true})
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: true, Top: true})
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: true, Top: false})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: true})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: false})
 		}
 	}
 	return
