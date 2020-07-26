@@ -50,6 +50,7 @@ func init() {
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
+	world.RegisterBlock(allCoralBlocks()...)
 }
 
 func init() {
@@ -149,6 +150,9 @@ func init() {
 	world.RegisterItem("minecraft:jungle_door", Door{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_door", Door{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_door", Door{Wood: wood.DarkOak()})
+	for _, c := range allCoralBlocks() {
+		world.RegisterItem("minecraft:coral_block", c.(world.Item))
+	}
 }
 
 func init() {
