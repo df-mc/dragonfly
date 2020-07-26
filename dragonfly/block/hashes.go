@@ -40,4 +40,7 @@ const (
 	hashWoodSlab
 	hashWoodStairs
 	hashWool
+	hashGlassPane
+	hashStainedGlassPane
+	hashStainedGlass
 )

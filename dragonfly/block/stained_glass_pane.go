@@ -2,13 +2,17 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // StainedGlassPane is a transparent block that can be used as a more efficient alternative to glass blocks.
 type StainedGlassPane struct {
+	noNBT
+	transparent
+	thin
+
+	// Colour specifies the colour of the block.
 	Colour colour.Colour
 }
 
@@ -39,6 +43,11 @@ func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]inte
 	return "minecraft:stained_glass_pane", map[string]interface{}{"color": colourName}
 }
 
+// Hash() ...
+func (p StainedGlassPane) Hash() uint64 {
+	return hashStainedGlassPane | uint64(p.Colour.Uint8())<<34
+}
+
 // allStainedGlassPane returns stained glass panes with all possible colours.
 func allStainedGlassPane() []world.Block {
 	b := make([]world.Block, 0, 16)
@@ -46,9 +55,4 @@ func allStainedGlassPane() []world.Block {
 		b = append(b, StainedGlassPane{Colour: c})
 	}
 	return b
-}
-
-// AABB adjusts bounding box of the glass pane.
-func (p StainedGlassPane) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
-	return calculateThinBounds(pos, w)
 }
