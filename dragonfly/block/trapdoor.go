@@ -27,6 +27,11 @@ type Trapdoor struct {
 	Top bool
 }
 
+// Model ...
+func (t Trapdoor) Model() world.BlockModel {
+	return model.Trapdoor{Facing: t.Facing, Top: t.Top, Open: t.Open}
+}
+
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
 func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
