@@ -18,7 +18,7 @@ type Lantern struct {
 	Soul bool
 }
 
-// Model
+// Model ...
 func (l Lantern) Model() world.BlockModel {
 	return model.Lantern{}
 }
@@ -80,7 +80,7 @@ func (l Lantern) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
 	if l.Soul {
-		return "minecraft:soul_Lantern", map[string]interface{}{"hanging": l.Hanging}
+		return "minecraft:soul_lantern", map[string]interface{}{"hanging": l.Hanging}
 	}
 	return "minecraft:lantern", map[string]interface{}{"hanging": l.Hanging}
 }
