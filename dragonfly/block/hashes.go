@@ -12,6 +12,7 @@ const (
 	hashCoralBlock
 	hashDiamondBlock
 	hashDirt
+	hashDoor
 	hashEmeraldBlock
 	hashGlass
 	hashGlazedTerracotta
