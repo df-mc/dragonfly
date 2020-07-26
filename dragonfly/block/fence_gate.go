@@ -9,7 +9,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// FenceGate is a block that can be used as an openable 1x1 barrier
+// FenceGate is a block that can be used as an openable 1x1 barrier.
 type FenceGate struct {
 	noNBT
 	transparent
@@ -17,11 +17,11 @@ type FenceGate struct {
 	// Wood is the type of wood of the fence gate. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
-	// Facing is the direction the fence gate swings open
+	// Facing is the direction the fence gate swings open.
 	Facing world.Direction
-	// Open is whether the fence gate is open
+	// Open is whether the fence gate is open.
 	Open bool
-	// InWall lowers the fence gate by 3 pixels if placed next to wall blocks
+	// InWall lowers the fence gate by 3 pixels if placed next to wall blocks.
 	InWall bool
 }
 
@@ -114,7 +114,7 @@ func (f FenceGate) Model() world.BlockModel {
 	return model.FenceGate{Facing: f.Facing, Open: f.Open, InWall: f.InWall}
 }
 
-// allFenceGates returns a list of all trapdoor types
+// allFenceGates returns a list of all trapdoor types.
 func allFenceGates() (trapdoors []world.Block) {
 	for _, w := range []wood.Wood{
 		wood.Oak(),

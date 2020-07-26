@@ -96,8 +96,8 @@ func (aabb AABB) ExtendTowards(d int, x float64) AABB {
 func (aabb AABB) Stretch(a int, x float64) AABB {
 	switch a {
 	case 0:
-		aabb.max[1] += x
 		aabb.min[1] -= x
+		aabb.max[1] += x
 	case 1:
 		aabb.min[2] -= x
 		aabb.max[2] += x
