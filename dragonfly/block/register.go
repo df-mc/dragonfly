@@ -181,6 +181,10 @@ func init() {
 		l.Stripped = true
 		return l
 	}
+	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
+		p, ok := b.(Pumpkin)
+		return ok && p.Carved
+	}
 	item_internal.IsUncarvedPumpkin = func(b world.Block) bool {
 		p, ok := b.(Pumpkin)
 		return ok && !p.Carved

@@ -22,6 +22,9 @@ var IsUnstrippedLog func(b world.Block) bool
 // StripLog is a function used to convert a log block to a stripped log block.
 var StripLog func(b world.Block) world.Block
 
+// IsCarvedPumpkin is a function set to check if an item is a wearable carved pumpkin
+var IsCarvedPumpkin func(i world.Item) bool
+
 // IsUncarvedPumpkin is a function set to check if a block is an uncarved pumpkin.
 var IsUncarvedPumpkin func(b world.Block) bool
 
