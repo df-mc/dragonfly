@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -11,14 +12,21 @@ import (
 
 // WoodSlab is a half block that allows entities to walk up blocks without jumping.
 type WoodSlab struct {
+	noNBT
+
 	// Wood is the type of wood of the slabs. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
-	// UpsideDown specifies if the slabs are upside down.
-	UpsideDown bool
+	// Top specifies if the slab is in the top part of the block.
+	Top bool
 	// Double specifies if the slab is a double slab. These double slabs can be made by placing another slab
 	// on an existing slab.
 	Double bool
+}
+
+// Model ...
+func (s WoodSlab) Model() world.BlockModel {
+	return model.Slab{Double: s.Double, Top: s.Top}
 }
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
@@ -26,8 +34,8 @@ type WoodSlab struct {
 func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	clickedBlock := w.Block(pos)
 	if clickedSlab, ok := clickedBlock.(WoodSlab); ok && !s.Double {
-		if (face == world.FaceUp && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.UpsideDown) ||
-			(face == world.FaceDown && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.UpsideDown) {
+		if (face == world.FaceUp && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.Top) ||
+			(face == world.FaceDown && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.Top) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
 
@@ -35,8 +43,8 @@ func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 			return placed(ctx)
 		}
 	}
-	if sideSlab, ok := w.Block(pos.Side(face)).(WoodSlab); ok && !replaceable(w, pos, s) && !s.Double {
-		// The block on the side of the one clicked was a slab and the block clicked was not replaceable, so
+	if sideSlab, ok := w.Block(pos.Side(face)).(WoodSlab); ok && !replaceableWith(w, pos, s) && !s.Double {
+		// The block on the side of the one clicked was a slab and the block clicked was not replaceableWith, so
 		// the slab on the side must've been half and may now be filled if the wood types are the same.
 		if !sideSlab.Double && sideSlab.Wood == s.Wood {
 			sideSlab.Double = true
@@ -50,7 +58,7 @@ func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 		return
 	}
 	if face == world.FaceDown || (clickPos[1] > 0.5 && face != world.FaceUp) {
-		s.UpsideDown = true
+		s.Top = true
 	}
 
 	place(w, pos, s, user, ctx)
@@ -87,7 +95,7 @@ func (s WoodSlab) AABB(world.BlockPos, *world.World) []physics.AABB {
 	if s.Double {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 	}
-	if s.UpsideDown {
+	if s.Top {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})}
 	}
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
@@ -133,9 +141,14 @@ func (s WoodSlab) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Double {
-		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
+		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 	}
-	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.UpsideDown, "wood_type": s.Wood.String()}
+	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+}
+
+// Hash ...
+func (s WoodSlab) Hash() uint64 {
+	return hashWoodSlab | (uint64(boolByte(s.Top)) << 32) | (uint64(boolByte(s.Double)) << 33) | (uint64(s.Wood.Uint8()) << 34)
 }
 
 // CanDisplace ...
@@ -147,7 +160,7 @@ func (s WoodSlab) CanDisplace(b world.Liquid) bool {
 // SideClosed ...
 func (s WoodSlab) SideClosed(pos, side world.BlockPos, w *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
-	return !s.UpsideDown && side[1] == pos[1]-1
+	return !s.Top && side[1] == pos[1]-1
 }
 
 // FaceSolidTo ...
@@ -158,12 +171,12 @@ func (s WoodSlab) FaceSolidTo(_ world.BlockPos, _ world.Face, _ world.Block) boo
 // allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Oak()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Spruce()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Birch()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Jungle()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.Acacia()})
-		slabs = append(slabs, WoodSlab{Double: double, UpsideDown: upsideDown, Wood: wood.DarkOak()})
+		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Oak()})
+		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Spruce()})
+		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Birch()})
+		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Jungle()})
+		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Acacia()})
+		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.DarkOak()})
 	}
 	f(false, false)
 	f(false, true)

@@ -33,6 +33,22 @@ func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
 	return l
 }
 
+// World returns the World that the Loader is in.
+func (l *Loader) World() *World {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.w
+}
+
+// ChangeWorld changes the World of the Loader. The currently loaded chunks are reset and any future loading
+// is done from the new World.
+func (l *Loader) ChangeWorld(new *World) {
+	l.mu.Lock()
+	l.reset()
+	l.w = new
+	l.mu.Unlock()
+}
+
 // ChangeRadius changes the maximum chunk radius of the Loader.
 func (l *Loader) ChangeRadius(new int) {
 	l.mu.Lock()
@@ -70,21 +86,18 @@ func (l *Loader) Load(n int) error {
 	}
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
-			l.mu.Unlock()
-			return nil
+			break
 		}
 		pos := l.loadQueue[0]
-		c, err := l.w.chunk(pos, true)
+		c, err := l.w.chunk(pos)
 		if err != nil {
 			l.mu.Unlock()
 			return err
 		}
-		l.viewer.ViewChunk(pos, c)
-		c.RUnlock()
+		l.viewer.ViewChunk(pos, c.Chunk, c.e)
+		l.w.addViewer(c, l.viewer)
 
-		l.w.addViewer(pos, l.viewer)
-
-		l.loaded[pos] = c
+		l.loaded[pos] = c.Chunk
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
@@ -98,14 +111,20 @@ func (l *Loader) Load(n int) error {
 // are currently shown to it.
 func (l *Loader) Close() error {
 	l.mu.Lock()
-	for pos := range l.loaded {
-		l.w.removeViewer(pos, l.viewer)
-	}
-	l.loaded = map[ChunkPos]*chunk.Chunk{}
+	l.reset()
 	l.closed = true
 	l.viewer = nil
 	l.mu.Unlock()
 	return nil
+}
+
+// reset clears the Loader so that it may be used as if it was created again with NewLoader.
+func (l *Loader) reset() {
+	for pos := range l.loaded {
+		l.w.removeViewer(pos, l.viewer)
+	}
+	l.loaded = map[ChunkPos]*chunk.Chunk{}
+	l.populateLoadQueue()
 }
 
 // evictUnused gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,

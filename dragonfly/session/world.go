@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
@@ -16,23 +17,23 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"sync/atomic"
 )
 
 // ViewChunk ...
-func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
+func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
 	if !s.conn.ClientCacheEnabled() {
-		s.sendNetworkChunk(pos, c)
+		s.sendNetworkChunk(pos, c, blockEntities)
 		return
 	}
-	s.sendBlobHashes(pos, c)
+	s.sendBlobHashes(pos, c, blockEntities)
 }
 
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
-func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
+func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
 	data := chunk.DiskEncode(c, true)
 
 	count := byte(0)
@@ -50,7 +51,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
 		}
 		blobs = append(blobs, data.SubChunks[y])
 	}
-	blobs = append(blobs, data.Data2D)
+	blobs = append(blobs, data.Data2D[512:])
 
 	m := make(map[uint64]struct{}, len(blobs))
 	hashes := make([]uint64, len(blobs))
@@ -73,18 +74,26 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 	s.blobMu.Unlock()
 
+	raw := bytes.NewBuffer(make([]byte, 1, 32))
+	enc := nbt.NewEncoderWithEncoding(raw, nbt.NetworkLittleEndian)
+	for pos, b := range blockEntities {
+		data := b.(world.NBTer).EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		_ = enc.Encode(enc)
+	}
+
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
 		ChunkZ:        pos[1],
 		SubChunkCount: uint32(count),
 		CacheEnabled:  true,
 		BlobHashes:    hashes,
-		RawPayload:    append([]byte{0}, data.BlockNBT...),
+		RawPayload:    raw.Bytes(),
 	})
 }
 
 // sendNetworkChunk sends a network encoded chunk to the client.
-func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk) {
+func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
 	data := chunk.NetworkEncode(c)
 
 	count := byte(0)
@@ -105,6 +114,13 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 	_, _ = s.chunkBuf.Write(data.Data2D)
 	_, _ = s.chunkBuf.Write(data.BlockNBT)
+
+	enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
+	for pos, b := range blockEntities {
+		data := b.(world.NBTer).EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		_ = enc.Encode(enc)
+	}
 
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
@@ -128,7 +144,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	if id, ok := s.entityRuntimeIDs[e]; ok && controllable {
 		runtimeID = id
 	} else {
-		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
+		runtimeID = s.currentEntityRuntimeID.Add(1)
 		s.entityRuntimeIDs[e] = runtimeID
 		s.entities[runtimeID] = e
 	}
@@ -325,6 +341,11 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.BlockForceField:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleBlockForceField,
+			Position:  vec64To32(pos),
+		})
 	case particle.BlockBreak:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleDestroy,
@@ -348,6 +369,14 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.Door:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundDoor,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.Deny:
+		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
 		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.blockRuntimeID(so.Block))
 	case sound.ChestClose:
@@ -393,10 +422,10 @@ func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block, layer int) 
 		Flags:             packet.BlockUpdateNetwork,
 		Layer:             uint32(layer),
 	})
-	if nbt, ok := b.(world.NBTer); ok {
+	if v, ok := b.(world.NBTer); ok {
 		s.writePacket(&packet.BlockActorData{
 			Position: blockPos,
-			NBTData:  nbt.EncodeNBT(),
+			NBTData:  v.EncodeNBT(),
 		})
 	}
 }
@@ -406,7 +435,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 	switch act := a.(type) {
 	case action.SwingArm:
 		if _, ok := e.(Controllable); ok {
-			if s.entityRuntimeID(e) == selfEntityRuntimeID && atomic.LoadUint32(s.swingingArm) != 0 {
+			if s.entityRuntimeID(e) == selfEntityRuntimeID && s.swingingArm.Load() {
 				return
 			}
 			s.writePacket(&packet.Animate{
@@ -454,6 +483,13 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
 		case state.Named:
 			m[dataKeyNameTag] = st.NameTag
+		case state.EffectBearing:
+			m[dataKeyPotionColour] = (int32(st.ParticleColour.A) << 24) | (int32(st.ParticleColour.R) << 16) | (int32(st.ParticleColour.G) << 8) | int32(st.ParticleColour.B)
+			if st.Ambient {
+				m[dataKeyPotionAmbient] = byte(1)
+			} else {
+				m[dataKeyPotionAmbient] = byte(0)
+			}
 		}
 	}
 	s.writePacket(&packet.SetActorData{
@@ -466,15 +502,37 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 	s.closeCurrentContainer()
 
-	b, ok := s.c.World().Block(pos).(block.Container)
-	if !ok {
-		// The block was no container.
+	b := s.c.World().Block(pos)
+	container, ok := b.(block.Container)
+	if ok {
+		s.openNormalContainer(container, pos)
 		return
 	}
+	// We hit a special kind of window like beacons, which are not actually opened server-side.
+	nextID := s.nextWindowID()
+	s.containerOpened.Store(true)
+	s.openedWindow.Store(inventory.New(1, nil))
+	s.openedPos.Store(pos)
+
+	var containerType byte
+	switch b.(type) {
+	case block.Beacon:
+		containerType = 13
+	}
+	s.writePacket(&packet.ContainerOpen{
+		WindowID:                nextID,
+		ContainerType:           containerType,
+		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		ContainerEntityUniqueID: -1,
+	})
+}
+
+// openNormalContainer opens a normal container that can hold items in it server-side.
+func (s *Session) openNormalContainer(b block.Container, pos world.BlockPos) {
 	b.AddViewer(s, s.c.World(), pos)
 
 	nextID := s.nextWindowID()
-	atomic.StoreUint32(s.containerOpened, 1)
+	s.containerOpened.Store(true)
 	s.openedWindow.Store(b.Inventory())
 	s.openedPos.Store(pos)
 
@@ -493,15 +551,15 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 
 // ViewSlotChange ...
 func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
-	if atomic.LoadUint32(s.containerOpened) == 0 {
+	if !s.containerOpened.Load() {
 		return
 	}
-	if atomic.LoadUint32(s.inTransaction) == 1 {
+	if s.inTransaction.Load() {
 		// Don't send slot changes to the player itself.
 		return
 	}
 	s.writePacket(&packet.InventorySlot{
-		WindowID: atomic.LoadUint32(s.openedWindowID),
+		WindowID: s.openedWindowID.Load(),
 		Slot:     uint32(slot),
 		NewItem:  instanceFromItem(newItem),
 	})
@@ -534,6 +592,12 @@ func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
 			Position:  vec64To32(pos.Vec3()),
 			EventData: 0,
 		})
+	case blockAction.ContinueCrack:
+		s.writePacket(&packet.LevelEvent{
+			EventType: 3602,
+			Position:  vec64To32(pos.Vec3()),
+			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
+		})
 	}
 }
 
@@ -548,21 +612,20 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
-	if atomic.LoadUint32(s.openedWindowID) == 99 {
-		atomic.StoreUint32(s.openedWindowID, 1)
+	if s.openedWindowID.CAS(99, 1) {
 		return 1
 	}
-	return byte(atomic.AddUint32(s.openedWindowID, 1))
+	return byte(s.openedWindowID.Add(1))
 }
 
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
 func (s *Session) closeWindow() {
-	if !atomic.CompareAndSwapUint32(s.containerOpened, 1, 0) {
+	if !s.containerOpened.CAS(true, false) {
 		return
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
-	s.writePacket(&packet.ContainerClose{WindowID: byte(atomic.LoadUint32(s.openedWindowID))})
+	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 
 // blockRuntimeID returns the runtime ID of the block passed.

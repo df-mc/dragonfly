@@ -21,6 +21,14 @@ type StartCrack struct {
 	BreakTime time.Duration
 }
 
+// ContinueCrack is an action sent every so often to continue the cracking process of the block. It is only
+// ever sent after a StartCrack action, and may have an altered break time if the player is not on the ground,
+// submerged or is using a different item than at first.
+type ContinueCrack struct {
+	action
+	BreakTime time.Duration
+}
+
 // StopCrack is an action to make the cracks forming in a block stop and disappear.
 type StopCrack struct{ action }
 

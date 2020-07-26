@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -29,20 +29,39 @@ type LightEmitter interface {
 // through these blocks.
 type LightDiffuser interface {
 	// LightDiffusionLevel returns the amount of light levels that is subtracted when light passes through
-	// this block. Some locks, such as leaves, have this behaviour. A diffusion level of 15 means that all
-	// light will be completely blocked when light passes through the block.
+	// this block. Some blocks, such as leaves, have this behaviour. A diffusion level of 15 means that all
+	// light will be completely blocked when it passes through the block.
 	LightDiffusionLevel() uint8
 }
 
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {
-	// ReplaceableBy returns a bool which indicates if the block is replaceable by another block.
+	// ReplaceableBy returns a bool which indicates if the block is replaceableWith by another block.
 	ReplaceableBy(b world.Block) bool
 }
 
-// replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *world.World, pos world.BlockPos, with world.Block) bool {
+// BeaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type BeaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
+// beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
+type beaconAffected interface {
+	// AddEffect adds a specific effect to the entity that implements this interface.
+	AddEffect(e entity.Effect)
+
+	// BeaconAffected returns whether this entity can be powered by a beacon.
+	BeaconAffected() bool
+}
+
+// replaceableWith checks if the block at the position passed is replaceable with the block passed.
+func replaceableWith(w *world.World, pos world.BlockPos, with world.Block) bool {
+	if pos.OutOfBounds() {
+		return false
+	}
 	b := w.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
 		return replaceable.ReplaceableBy(with)
@@ -54,13 +73,13 @@ func replaceable(w *world.World, pos world.BlockPos, with world.Block) bool {
 // clicking on the position and face passed.
 // If none can be found, the bool returned is false.
 func firstReplaceable(w *world.World, pos world.BlockPos, face world.Face, with world.Block) (world.BlockPos, world.Face, bool) {
-	if replaceable(w, pos, with) {
-		// A replaceable block was clicked, so we can replace it. This will then be assumed to be placed on
+	if replaceableWith(w, pos, with) {
+		// A replaceableWith block was clicked, so we can replace it. This will then be assumed to be placed on
 		// the top face. (Torches, for example, will get attached to the floor when clicking tall grass.)
 		return pos, world.FaceUp, true
 	}
 	side := pos.Side(face)
-	if replaceable(w, side, with) {
+	if replaceableWith(w, side, with) {
 		return side, face, true
 	}
 	return pos, face, false
@@ -82,11 +101,45 @@ func placed(ctx *item.UseContext) bool {
 	return ctx.CountSub > 0
 }
 
-// AABBer represents a block that has one or multiple specific Axis Aligned Bounding Boxes. These boxes are
-// used to calculate collision.
-type AABBer interface {
-	// AABB returns all the axis aligned bounding boxes of the block.
-	AABB(pos world.BlockPos, w *world.World) []physics.AABB
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// noNBT may be embedded by blocks that have no NBT.
+type noNBT struct{}
+
+// HasNBT ...
+func (noNBT) HasNBT() bool {
+	return false
+}
+
+// nbt may be embedded by blocks that do have NBT.
+type nbt struct{}
+
+// HasNBT ...
+func (nbt) HasNBT() bool {
+	return true
+}
+
+// replaceable is a struct that may be embedded to make a block replaceable by any other block.
+type replaceable struct{}
+
+// ReplaceableBy ...
+func (replaceable) ReplaceableBy(world.Block) bool {
+	return true
+}
+
+// transparent is a struct that may be embedded to make a block transparent to light. Light will be able to
+// pass through this block freely.
+type transparent struct{}
+
+// LightDiffusionLevel ...
+func (transparent) LightDiffusionLevel() uint8 {
+	return 0
 }
 
 // PartiallySolid represents a block that is not fully solid on every side or to every kind of block.

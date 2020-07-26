@@ -292,7 +292,7 @@ func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]interface
 }
 
 // SaveBlockNBT saves all block NBT data to the chunk position passed.
-func (p *Provider) SaveBlockNBT(position world.ChunkPos, data map[[3]int]map[string]interface{}) error {
+func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]interface{}) error {
 	if len(data) == 0 {
 		return p.db.Delete(append(index(position), keyBlockEntities), nil)
 	}

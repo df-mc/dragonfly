@@ -54,12 +54,16 @@ func (it *Item) World() *world.World {
 }
 
 // Tick ticks the entity, performing movement.
-func (it *Item) Tick() {
-	it.pos.Store(it.tickMovement(it))
+func (it *Item) Tick(current int64) {
+	if it.Position()[1] < 0 && current%10 == 0 {
+		_ = it.Close()
+		return
+	}
 	if it.age++; it.age > 6000 {
 		_ = it.Close()
 		return
 	}
+	it.pos.Store(it.tickMovement(it))
 	it.checkNearby()
 }
 

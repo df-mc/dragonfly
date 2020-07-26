@@ -14,8 +14,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -32,7 +32,7 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	scoreboardObj atomic.Value
+	scoreboardObj atomic.String
 
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
@@ -43,25 +43,21 @@ type Session struct {
 
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
-	currentEntityRuntimeID uint64
+	currentEntityRuntimeID atomic.Uint64
 	entityMutex            sync.RWMutex
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot         *uint32
+	heldSlot         *atomic.Uint32
 	inv, offHand, ui *inventory.Inventory
 	armour           *inventory.Armour
 
-	inTransaction, containerOpened, openedWindowID *uint32
-	openedWindow, openedPos                        atomic.Value
-
-	swingingArm *uint32
-
-	pingID *int64
-	pingMu sync.Mutex
-	pings  map[int64]chan struct{}
+	openedWindowID                 atomic.Uint32
+	inTransaction, containerOpened atomic.Bool
+	openedWindow, openedPos        atomic.Value
+	swingingArm                    atomic.Bool
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
@@ -102,21 +98,14 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
-		pings:                  map[int64]chan struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
-		pingID:                 new(int64),
-		heldSlot:               new(uint32),
-		inTransaction:          new(uint32),
-		containerOpened:        new(uint32),
-		openedWindowID:         new(uint32),
-		swingingArm:            new(uint32),
 		conn:                   conn,
 		log:                    log,
-		currentEntityRuntimeID: 1,
+		currentEntityRuntimeID: *atomic.NewUint64(1),
+		heldSlot:               atomic.NewUint32(0),
 	}
-	s.scoreboardObj.Store("")
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(world.BlockPos{})
 
@@ -163,10 +152,10 @@ func (s *Session) Close() error {
 	yellow := text.Yellow()
 	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
 
+	s.c.World().RemoveEntity(s.c)
+
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
-
-	s.c.World().RemoveEntity(s.c)
 
 	s.entityMutex.Lock()
 	s.entityRuntimeIDs = map[world.Entity]uint64{}
@@ -186,25 +175,9 @@ func (s *Session) CloseConnection() {
 	_ = s.conn.Close()
 }
 
-// Ping sends a ping packet to the client and returns once a response is received.
-func (s *Session) Ping() {
-	// The client for some reason clears out the lowest 3 numbers, so we just multiply by 1000.
-	id := atomic.AddInt64(s.pingID, 1) * 1000
-	s.writePacket(&packet.NetworkStackLatency{
-		Timestamp:     id,
-		NeedsResponse: true,
-	})
-	c := make(chan struct{}, 1)
-	s.pingMu.Lock()
-	s.pings[id] = c
-	s.pingMu.Unlock()
-
-	select {
-	case <-c:
-	case <-time.After(time.Second * 15):
-		s.log.Debugf("player %v has too much latency: disconnecting player", s.c.Name())
-		_ = s.c.Close()
-	}
+// Latency returns the latency of the connection.
+func (s *Session) Latency() time.Duration {
+	return s.conn.Latency()
 }
 
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
@@ -212,6 +185,13 @@ func (s *Session) Ping() {
 func (s *Session) handlePackets() {
 	c := make(chan struct{})
 	defer func() {
+		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
+		// server to freeze without printing the actual panic message.
+		// Instead, we check if there is a panic to recover, and just propagate the panic if this does happen
+		// to be the case.
+		if err := recover(); err != nil {
+			panic(err)
+		}
 		c <- struct{}{}
 		_ = s.Close()
 	}()
@@ -238,6 +218,9 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 	for {
 		select {
 		case <-t.C:
+			if s.chunkLoader.World() != s.c.World() {
+				s.chunkLoader.ChangeWorld(s.c.World())
+			}
 			s.blobMu.Lock()
 			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 			s.blobMu.Unlock()
@@ -287,12 +270,11 @@ func (s *Session) registerHandlers() {
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo)},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       nil,
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
-		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form), currentID: new(uint32)},
+		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,
-		packet.IDNetworkStackLatency:   &NetworkStackLatencyHandler{},
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},

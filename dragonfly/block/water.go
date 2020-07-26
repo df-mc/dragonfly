@@ -9,6 +9,9 @@ import (
 
 // Water is a natural fluid that generates abundantly in the world.
 type Water struct {
+	noNBT
+	empty
+	replaceable
 	// Still makes the water appear as if it is not flowing.
 	Still bool
 	// Depth is the depth of the water. This is a number from 1-8, where 8 is a source block and 1 is the
@@ -47,11 +50,6 @@ func (Water) HasLiquidDrops() bool {
 	return false
 }
 
-// ReplaceableBy ...
-func (Water) ReplaceableBy(world.Block) bool {
-	return true
-}
-
 // LightDiffusionLevel ...
 func (Water) LightDiffusionLevel() uint8 {
 	return 2
@@ -73,10 +71,8 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 		})
 		if count >= 2 {
 			func() {
-				if liquid, ok := wo.Liquid(pos.Side(world.FaceDown)); ok {
-					if waterBelow, ok := liquid.(Water); ok && waterBelow.Falling {
-						return
-					}
+				if canFlowInto(w, wo, pos.Side(world.FaceDown), true) {
+					return
 				}
 				// Only form a new source block if there either is no water below this block, or if the water
 				// below this is not falling (full source block).
@@ -137,9 +133,9 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
 }
 
-// FaceSolidTo ...
-func (Water) FaceSolidTo(pos world.BlockPos, _ world.Face, _ world.Block) bool {
-	return false
+// Hash ...
+func (w Water) Hash() uint64 {
+	return hashWater | (uint64(boolByte(w.Falling)) << 32) | (uint64(boolByte(w.Still)) << 33) | (uint64(w.Depth) << 34)
 }
 
 // allWater returns a list of all water states.

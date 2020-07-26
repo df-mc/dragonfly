@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/brentp/intintmap"
+	"github.com/cespare/xxhash"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/yourbasic/radix"
 	"math/rand"
@@ -23,6 +27,14 @@ type Block interface {
 	// block, for example 'minecraft:stone' and the block properties (also referred to as states) that the
 	// block holds.
 	EncodeBlock() (name string, properties map[string]interface{})
+	// Hash returns a unique hash of the block including the block properties. No two different blocks must
+	// return the same hash.
+	Hash() uint64
+	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
+	// entity. If true is returned, Block must implemented the NBTer interface.
+	HasNBT() bool
+	// Model returns the BlockModel of the Block.
+	Model() BlockModel
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -64,6 +76,13 @@ type liquidRemovable interface {
 	HasLiquidDrops() bool
 }
 
+// beaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type beaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without
 // fully removing the liquid.
 type LiquidDisplacer interface {
@@ -95,7 +114,7 @@ func RegisterBlock(states ...Block) {
 		}
 		rid := uint32(len(registeredStates))
 
-		runtimeIDs[key] = rid
+		runtimeIDsHashes.Put(int64(state.Hash()), int64(rid))
 		registeredStates = append(registeredStates, state)
 
 		if diffuser, ok := state.(lightDiffuser); ok {
@@ -106,6 +125,9 @@ func RegisterBlock(states ...Block) {
 		}
 		if removable, ok := state.(liquidRemovable); ok {
 			world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
+		}
+		if source, ok := state.(beaconSource); ok {
+			world_internal.BeaconSource[rid] = source.PowersBeacon()
 		}
 
 		blocksHash[key] = state
@@ -121,8 +143,8 @@ type replaceableBlock interface {
 }
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *World, c *chunk.Chunk, pos BlockPos, with Block) bool {
-	b, _ := w.block(c, pos)
+func replaceable(w *World, c *chunkData, pos BlockPos, with Block) bool {
+	b, _ := w.blockInChunk(c, pos)
 	if replaceable, ok := b.(replaceableBlock); ok {
 		return replaceable.ReplaceableBy(with)
 	}
@@ -177,8 +199,8 @@ func init() {
 }
 
 var registeredStates []Block
-var runtimeIDs = map[keyStruct]uint32{}
 var blocksHash = map[keyStruct]Block{}
+var runtimeIDsHashes = intintmap.New(8000, 0.95)
 
 type keyStruct struct {
 	name  string
@@ -191,9 +213,8 @@ func BlockRuntimeID(state Block) (uint32, bool) {
 	if state == nil {
 		return 0, true
 	}
-	name, props := state.EncodeBlock()
-	runtimeID, ok := runtimeIDs[keyStruct{name: name, pHash: hashProperties(props)}]
-	return runtimeID, ok
+	runtimeID, ok := runtimeIDsHashes.Get(int64(state.Hash()))
+	return uint32(runtimeID), ok
 }
 
 // blockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
@@ -292,12 +313,42 @@ type unimplementedBlock struct {
 	ID int16 `nbt:"id"`
 }
 
+// Name ...
 func (u unimplementedBlock) Name() string {
 	return u.Block.Name
 }
 
+// EncodeBlock ...
 func (u unimplementedBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return u.Block.Name, u.Block.Properties
+}
+
+// Hash ...
+func (u unimplementedBlock) Hash() uint64 {
+	return xxhash.Sum64String(u.Block.Name + hashProperties(u.Block.Properties))
+}
+
+// HasNBT ...
+func (unimplementedBlock) HasNBT() bool {
+	return false
+}
+
+// Model ...
+func (unimplementedBlock) Model() BlockModel {
+	return unimplementedModel{}
+}
+
+// unimplementedModel is the model used for unimplementedBlocks. It is the equivalent of a fully solid model.
+type unimplementedModel struct{}
+
+// AABB ...
+func (u unimplementedModel) AABB(BlockPos, *World) []physics.AABB {
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+}
+
+// FaceSolid ...
+func (u unimplementedModel) FaceSolid(BlockPos, Face, *World) bool {
+	return true
 }
 
 //noinspection SpellCheckingInspection

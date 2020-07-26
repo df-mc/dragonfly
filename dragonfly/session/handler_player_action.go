@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"sync/atomic"
 )
 
 // PlayerActionHandler handles the PlayerAction packet.
@@ -42,8 +41,8 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 	case packet.PlayerActionStopSwimming:
 		s.c.StopSwimming()
 	case packet.PlayerActionStartBreak:
-		atomic.StoreUint32(s.swingingArm, 1)
-		defer atomic.StoreUint32(s.swingingArm, 0)
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
 
 		s.c.StartBreaking(world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])})
 	case packet.PlayerActionAbortBreak:
@@ -51,8 +50,8 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 	case packet.PlayerActionStopBreak:
 		s.c.FinishBreaking()
 	case packet.PlayerActionContinueBreak:
-		atomic.StoreUint32(s.swingingArm, 1)
-		defer atomic.StoreUint32(s.swingingArm, 0)
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
 
 		s.c.ContinueBreaking(world.Face(pk.BlockFace))
 	case packet.PlayerActionStartBuildingBlock:

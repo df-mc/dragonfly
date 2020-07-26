@@ -2,28 +2,43 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
-	"sync/atomic"
+	"time"
 )
 
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
 // inventory.
 type ItemStackRequestHandler struct {
-	changes map[byte]map[byte]protocol.StackResponseSlotInfo
+	currentRequest  int32
+	changes         map[byte]map[byte]protocol.StackResponseSlotInfo
+	responseChanges map[int32]map[byte]map[byte]responseChange
+	current         time.Time
+	ignoreDestroy   bool
+}
+
+// responseChange represents a change in a specific item stack response. It holds the timestamp of the
+// response which is used to get rid of changes that the client will have received.
+type responseChange struct {
+	id        int32
+	timestamp time.Time
 }
 
 // Handle ...
 func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ItemStackRequest)
+	h.current = time.Now()
 
-	atomic.StoreUint32(s.inTransaction, 1)
-	defer atomic.StoreUint32(s.inTransaction, 0)
+	s.inTransaction.Store(true)
+	defer s.inTransaction.Store(false)
 
 	for _, req := range pk.Requests {
+		h.currentRequest = req.RequestID
 		if err := h.handleRequest(req, s); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
@@ -42,6 +57,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			return
 		}
 		h.resolve(req.RequestID, s)
+		h.ignoreDestroy = false
 	}()
 
 	for _, action := range req.Actions {
@@ -54,6 +70,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleSwap(a, s)
 		case *protocol.DestroyStackRequestAction:
 			err = h.handleDestroy(a, s)
+		case *protocol.BeaconPaymentStackRequestAction:
+			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.CraftResultsDeprecatedStackRequestAction:
@@ -103,11 +121,10 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 		return fmt.Errorf("creative item with network ID %v does not exist", index)
 	}
 	it := item.CreativeItems()[index]
-	it = it.Grow(it.MaxCount())
+	it = it.Grow(it.MaxCount() - 1)
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		// This seems to be the creative inventory output slot.
-		ContainerID:    59,
+		ContainerID:    containerCreativeOutput,
 		Slot:           50,
 		StackNetworkID: item_id(it),
 	}, it, s)
@@ -116,6 +133,9 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 
 // handleDestroy handles the destroying of an item by moving it into the creative inventory.
 func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestAction, s *Session) error {
+	if h.ignoreDestroy {
+		return nil
+	}
 	if (s.c.GameMode() != gamemode.Creative{} && s.c.GameMode() != gamemode.Spectator{}) {
 		return fmt.Errorf("can only destroy items in gamemode creative/spectator")
 	}
@@ -129,6 +149,65 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 
 	h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
 	return nil
+}
+
+// handleBeaconPayment handles the selection of effects in a beacon and the removal of the item used to pay
+// for those effects.
+func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
+	slot := protocol.StackRequestSlotInfo{
+		ContainerID: containerBeacon,
+		Slot:        0x1b,
+	}
+	// First check if there actually is a beacon opened.
+	if !s.containerOpened.Load() {
+		return fmt.Errorf("no beacon container opened")
+	}
+	pos := s.openedPos.Load().(world.BlockPos)
+	beacon, ok := s.c.World().Block(pos).(block.Beacon)
+	if !ok {
+		return fmt.Errorf("no beacon container opened")
+	}
+
+	// Check if the item present in the beacon slot is valid.
+	payment, _ := h.itemInSlot(slot, s)
+	if payable, ok := payment.Item().(item.BeaconPayment); !ok || !payable.PayableForBeacon() {
+		return fmt.Errorf("item %#v in beacon slot cannot be used as payment", payment)
+	}
+
+	// Check if the effects are valid and allowed for the beacon's level.
+	if !h.validBeaconEffect(a.PrimaryEffect, beacon) {
+		return fmt.Errorf("primary effect selected is not allowed: %v for level %v", a.PrimaryEffect, beacon.Level())
+	} else if !h.validBeaconEffect(a.SecondaryEffect, beacon) || (beacon.Level() < 4 && a.SecondaryEffect != 0) {
+		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
+	}
+
+	beacon.Primary, _ = effect_byID(int(a.PrimaryEffect))
+	beacon.Secondary, _ = effect_byID(int(a.SecondaryEffect))
+	s.c.World().SetBlock(pos, beacon)
+
+	// The client will send a Destroy action after this action, but we can't rely on that because the client
+	// could just not send it.
+	// We just ignore the next Destroy action and set the item to air here.
+	h.setItemInSlot(slot, item.NewStack(block.Air{}, 0), s)
+	h.ignoreDestroy = true
+	return nil
+}
+
+// validBeaconEffect checks if the ID passed is a valid beacon effect.
+func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beacon) bool {
+	switch id {
+	case 1, 3:
+		return beacon.Level() >= 1
+	case 8, 11:
+		return beacon.Level() >= 2
+	case 5:
+		return beacon.Level() >= 3
+	case 10:
+		return beacon.Level() >= 4
+	case 0:
+		return true
+	}
+	return false
 }
 
 // handleTransfer handles the transferring of x count from a source slot to a destination slot.
@@ -169,16 +248,68 @@ func (h *ItemStackRequestHandler) verifySlots(s *Session, slots ...protocol.Stac
 
 // verifySlot checks if the slot passed by the client is the same as that expected by the server.
 func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo, s *Session) error {
+	h.tryAcknowledgeChanges(slot)
+	if len(h.responseChanges) > 256 {
+		return fmt.Errorf("too many unacknowledged request slot changes")
+	}
+
 	i, err := h.itemInSlot(slot, s)
+	if err != nil {
+		return err
+	}
+	clientID, err := h.resolveID(slot)
 	if err != nil {
 		return err
 	}
 	// The client seems to send negative stack network IDs for predictions, which we can ignore. We'll simply
 	// override this network ID later.
-	if id := item_id(i); id != slot.StackNetworkID && slot.StackNetworkID > 0 {
-		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", slot.StackNetworkID, id)
+	if id := item_id(i); id != clientID {
+		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
 	return nil
+}
+
+// resolveID resolves the stack network ID in the slot passed. If it is negative, it points to an earlier
+// request, in which case it will look it up in the changes of an earlier response to a request to find the
+// actual stack network ID in the slot. If it is positive, the ID will be returned again.
+func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) (int32, error) {
+	if slot.StackNetworkID >= 0 {
+		return slot.StackNetworkID, nil
+	}
+	containerChanges, ok := h.responseChanges[slot.StackNetworkID]
+	if !ok {
+		return 0, fmt.Errorf("slot pointed to stack request %v, but request could not be found", slot.StackNetworkID)
+	}
+	changes, ok := containerChanges[slot.ContainerID]
+	if !ok {
+		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.ContainerID)
+	}
+	actual, ok := changes[slot.Slot]
+	if !ok {
+		return 0, fmt.Errorf("slot pointed to stack request %v with container %v and slot %v, but that slot was not changed in the request", slot.StackNetworkID, slot.ContainerID, slot.Slot)
+	}
+	return actual.id, nil
+}
+
+// tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
+// info passed from the client has the right stack network ID in any of the stored slots. If this is the case,
+// that entry is removed, so that the maps are cleaned up eventually.
+func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
+	for requestID, containerChanges := range h.responseChanges {
+		for containerID, changes := range containerChanges {
+			for slotIndex, val := range changes {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
+					delete(changes, slotIndex)
+				}
+			}
+			if len(changes) == 0 {
+				delete(containerChanges, containerID)
+			}
+		}
+		if len(containerChanges) == 0 {
+			delete(h.responseChanges, requestID)
+		}
+	}
 }
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
@@ -202,11 +333,23 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	if h.changes[slot.ContainerID] == nil {
 		h.changes[slot.ContainerID] = map[byte]protocol.StackResponseSlotInfo{}
 	}
-	h.changes[slot.ContainerID][slot.Slot] = protocol.StackResponseSlotInfo{
+	respSlot := protocol.StackResponseSlotInfo{
 		Slot:           slot.Slot,
 		HotbarSlot:     slot.Slot,
 		Count:          byte(i.Count()),
 		StackNetworkID: item_id(i),
+	}
+	h.changes[slot.ContainerID][slot.Slot] = respSlot
+
+	if h.responseChanges[h.currentRequest] == nil {
+		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
+	}
+	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
+		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
+	}
+	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+		id:        respSlot.StackNetworkID,
+		timestamp: h.current,
 	}
 }
 

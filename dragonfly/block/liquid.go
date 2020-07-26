@@ -126,6 +126,12 @@ func flowInto(b world.Liquid, src, pos world.BlockPos, w *world.World, falling b
 		existingLiquid.Harden(pos, w, &src)
 		return false
 	}
+	if _, ok := existing.(world.LiquidDisplacer); ok {
+		if _, ok := w.Liquid(pos); ok {
+			// We've got a liquid displacer and it's got a liquid within it, so we can't flow into this.
+			return false
+		}
+	}
 	removable, ok := existing.(LiquidRemovable)
 	if !ok {
 		// Can't flow into this block.
@@ -237,7 +243,7 @@ func canFlowInto(b world.Liquid, w *world.World, pos world.BlockPos, sideways bo
 	}
 	_, ok := world_internal.LiquidRemovable[rid]
 	if ok && sideways {
-		if liq, ok := w.Block(pos).(world.Liquid); ok && (liq.LiquidDepth() == 8 || liq.LiquidType() != b.LiquidType()) {
+		if liq, ok := w.Block(pos).(world.Liquid); ok && ((liq.LiquidDepth() == 8 && !liq.LiquidFalling()) || liq.LiquidType() != b.LiquidType()) {
 			return false
 		}
 	}

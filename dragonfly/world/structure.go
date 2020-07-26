@@ -13,4 +13,9 @@ type Structure interface {
 	// specific position. In scope of At(), structures should use this over World.Block(), due to the way
 	// chunks are locked.
 	At(x, y, z int, blockAt func(x, y, z int) Block) Block
+	// AdditionalLiquidAt returns additional liquid blocks at a specific location in the structure. Most
+	// structures will not need to properly implement this method, but structures may implement it to provide
+	// waterlogged blocks when needed.
+	// Structures that do not need this should return nil.
+	AdditionalLiquidAt(x, y, z int) Liquid
 }

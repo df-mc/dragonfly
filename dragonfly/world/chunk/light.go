@@ -299,7 +299,7 @@ func insertSkyLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Chun
 					if z != 0 && z != 15 && x != 0 && x != 15 {
 						break
 					}
-					l := sub.skyLightAt(x, y, z)
+					l := sub.SkyLightAt(x, y, z)
 					if l <= 1 {
 						// The light level was either 0 or 1, meaning it cannot propagate either way.
 						continue
@@ -307,23 +307,23 @@ func insertSkyLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Chun
 					nodeNeeded := false
 					if x == 0 {
 						subNeighbour := neighbours[1].sub[i]
-						if subNeighbour != nil && subNeighbour.skyLightAt(15, y, z) < l {
+						if subNeighbour != nil && subNeighbour.SkyLightAt(15, y, z) < l {
 							nodeNeeded = true
 						}
 					} else if x == 15 {
 						subNeighbour := neighbours[6].sub[i]
-						if subNeighbour != nil && subNeighbour.skyLightAt(0, y, z) < l {
+						if subNeighbour != nil && subNeighbour.SkyLightAt(0, y, z) < l {
 							nodeNeeded = true
 						}
 					}
 					if z == 0 {
 						subNeighbour := neighbours[3].sub[i]
-						if subNeighbour != nil && subNeighbour.skyLightAt(x, y, 15) < l {
+						if subNeighbour != nil && subNeighbour.SkyLightAt(x, y, 15) < l {
 							nodeNeeded = true
 						}
 					} else if z == 15 {
 						subNeighbour := neighbours[4].sub[i]
-						if subNeighbour != nil && subNeighbour.skyLightAt(x, y, 0) < l {
+						if subNeighbour != nil && subNeighbour.SkyLightAt(x, y, 0) < l {
 							nodeNeeded = true
 						}
 					}
@@ -413,7 +413,7 @@ func spreadPropagate(queue *nodeQueue, c *Chunk, neighbourChunks []*Chunk, skyli
 				return
 			}
 			node.level -= filter
-			if sub.skyLightAt(x, y&0xf, z) >= node.level {
+			if sub.SkyLightAt(x, y&0xf, z) >= node.level {
 				// This neighbour already had either as high of a level as what we're updating it to, or
 				// higher already, so spreading it further is pointless as that will already have been done.
 				return
@@ -450,7 +450,7 @@ func fillPropagate(queue *nodeQueue, c *Chunk, skyLight bool) {
 	sub := subByY(y, c)
 
 	if skyLight {
-		if sub.skyLightAt(x, yLocal, z) >= node.level {
+		if sub.SkyLightAt(x, yLocal, z) >= node.level {
 			// This neighbour already had either as high of a level as what we're updating it to, or
 			// higher already, so spreading it further is pointless as that will already have been done.
 			return

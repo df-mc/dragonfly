@@ -19,11 +19,11 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
@@ -32,7 +32,8 @@ import (
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
 // trying to join the server.
 type Server struct {
-	started *uint32
+	started atomic.Bool
+	name    atomic.String
 
 	c        Config
 	log      *logrus.Logger
@@ -63,12 +64,12 @@ func New(c *Config, log *logrus.Logger) *Server {
 		c = &conf
 	}
 	s := &Server{
-		started: new(uint32),
 		c:       *c,
 		log:     log,
 		players: make(chan *player.Player),
 		world:   world.New(log, c.World.SimulationDistance),
 		p:       make(map[uuid.UUID]*player.Player),
+		name:    *atomic.NewString(c.Server.Name),
 	}
 	return s
 }
@@ -98,7 +99,7 @@ func (server *Server) World() *world.World {
 // the server on a different goroutine, use (*Server).Start() instead.
 // After a call to Run, calls to Server.Accept() may be made to accept players into the server.
 func (server *Server) Run() error {
-	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
+	if !server.started.CAS(false, true) {
 		panic("server already running")
 	}
 
@@ -107,6 +108,8 @@ func (server *Server) Run() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
 	server.run()
 	return nil
 }
@@ -115,7 +118,7 @@ func (server *Server) Run() error {
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // One started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
-	if !atomic.CompareAndSwapUint32(server.started, 0, 1) {
+	if !server.started.CAS(false, true) {
 		panic("server already running")
 	}
 
@@ -124,6 +127,8 @@ func (server *Server) Start() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
 	go server.run()
 	return nil
 }
@@ -182,6 +187,18 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 	return nil, false
 }
 
+// SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
+// The formatting of the name passed follows the rules of fmt.Sprintf.
+func (server *Server) SetNamef(format string, a ...interface{}) {
+	server.name.Store(fmt.Sprintf(format, a...))
+}
+
+// SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
+// The formatting of the name passed follows the rules of fmt.Sprint.
+func (server *Server) SetName(a ...interface{}) {
+	server.name.Store(fmt.Sprint(a...))
+}
+
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	if !server.running() {
@@ -222,7 +239,7 @@ func (server *Server) CloseOnProgramEnd() {
 
 // running checks if the server is currently running.
 func (server *Server) running() bool {
-	return atomic.LoadUint32(server.started) == 1
+	return server.started.Load()
 }
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
@@ -237,15 +254,16 @@ func (server *Server) startListening() error {
 	server.listener = &minecraft.Listener{
 		// We wrap a log.Logger around our Logrus logger so that it will print in the same format as the
 		// normal Logrus logger would.
-		ErrorLog:       log.New(w, "", 0),
-		ServerName:     server.c.Server.Name,
-		MaximumPlayers: server.c.Server.MaximumPlayers,
+		ErrorLog:               log.New(w, "", 0),
+		ServerName:             server.c.Server.Name,
+		MaximumPlayers:         server.c.Server.MaximumPlayers,
+		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 	}
-
 	//noinspection SpellCheckingInspection
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
 		return fmt.Errorf("listening on address failed: %w", err)
 	}
+	server.listener.StatusProvider(statusProvider{s: server})
 
 	server.log.Infof("Server running on %v.\n", server.listener.Addr())
 	return nil
@@ -255,9 +273,6 @@ func (server *Server) startListening() error {
 // closed by a call to Close.
 func (server *Server) run() {
 	server.World().Generator(generator.Flat{})
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
-
 	for {
 		c, err := server.listener.Accept()
 		if err != nil {
@@ -297,6 +312,9 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		_ = conn.Close()
 		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
+	}
+	if p, ok := server.Player(id); ok {
+		p.Disconnect("Logged in from another location.")
 	}
 	server.players <- server.createPlayer(id, conn)
 }

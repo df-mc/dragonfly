@@ -83,6 +83,32 @@ func (m *hungerManager) exhaust(points float64) {
 	}
 }
 
+// saturate saturates the player's food and saturation by the amount of points passed. Note that the total
+// saturation will never exceed the total food value.
+func (m *hungerManager) saturate(food int, saturation float64) {
+	m.mu.Lock()
+
+	level := m.foodLevel + food
+	if level < 0 {
+		level = 0
+	} else if level > 20 {
+		level = 20
+	}
+	m.foodLevel = level
+
+	sat := m.saturationLevel + saturation
+	if sat < 0 {
+		sat = 0
+	} else if sat > 20 {
+		sat = 20
+	}
+	if sat > float64(m.foodLevel) {
+		sat = float64(m.foodLevel)
+	}
+	m.saturationLevel = sat
+	m.mu.Unlock()
+}
+
 // desaturate removes one saturation point from the player. If the saturation level of the player is already
 // 0, a point will be subtracted from the food level instead. If that level, too, is already 0, nothing will
 // happen.

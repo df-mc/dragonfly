@@ -40,7 +40,7 @@ func (sub *SubChunk) SetRuntimeID(x, y, z byte, layer uint8, runtimeID uint32) {
 
 // Light returns the light level at a specific position in the sub chunk. It is max(block light, sky light).
 func (sub *SubChunk) Light(x, y, z byte) uint8 {
-	skyLight := sub.skyLightAt(x, y, z)
+	skyLight := sub.SkyLightAt(x, y, z)
 	if skyLight == 15 {
 		// The sky light was already on the maximum value, so return it with checking block light.
 		return 15
@@ -79,8 +79,8 @@ func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
 	sub.skyLight[i] = ((0xF << uint(bit<<2)) & sub.skyLight[i]) | ((level & 0xf) << uint((1^bit)<<2))
 }
 
-// skyLightAt returns the sky light value at a specific value at a specific position in the sub chunk.
-func (sub *SubChunk) skyLightAt(x, y, z byte) uint8 {
+// SkyLightAt returns the sky light value at a specific value at a specific position in the sub chunk.
+func (sub *SubChunk) SkyLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 	i := index >> 1
 	if index&1 == 0 {

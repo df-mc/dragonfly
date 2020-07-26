@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -10,10 +9,7 @@ import (
 
 // boxes returns the axis aligned bounding box of a block.
 func boxes(b world.Block, pos world.BlockPos, w *world.World) []physics.AABB {
-	if aabb, ok := b.(block.AABBer); ok {
-		return aabb.AABB(pos, w)
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+	return b.Model().AABB(pos, w)
 }
 
 // movementComputer is used to compute movement of an entity. When constructed, the gravity of the entity

@@ -6,7 +6,10 @@ import (
 
 type (
 	// Stone is a block found underground in the world or on mountains.
-	Stone struct{}
+	Stone struct {
+		noNBT
+		solid
+	}
 
 	// Granite is a type of igneous rock.
 	Granite polishable
@@ -17,6 +20,8 @@ type (
 
 	// polishable forms the base of blocks that may be polished.
 	polishable struct {
+		noNBT
+		solid
 		// Polished specifies if the block is polished or not. When set to true, the block will represent its
 		// polished variant, for example polished andesite.
 		Polished bool
@@ -90,12 +95,22 @@ func (Stone) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:stone", map[string]interface{}{"stone_type": "stone"}
 }
 
+// Hash ...
+func (Stone) Hash() uint64 {
+	return hashStone
+}
+
 // EncodeBlock ...
 func (a Andesite) EncodeBlock() (name string, properties map[string]interface{}) {
 	if a.Polished {
 		return "minecraft:stone", map[string]interface{}{"stone_type": "andesite_smooth"}
 	}
 	return "minecraft:stone", map[string]interface{}{"stone_type": "andesite"}
+}
+
+// Hash ...
+func (a Andesite) Hash() uint64 {
+	return hashAndesite | (uint64(boolByte(a.Polished)) << 32)
 }
 
 // EncodeBlock ...
@@ -106,10 +121,20 @@ func (d Diorite) EncodeBlock() (name string, properties map[string]interface{}) 
 	return "minecraft:stone", map[string]interface{}{"stone_type": "diorite"}
 }
 
+// Hash ...
+func (d Diorite) Hash() uint64 {
+	return hashDiorite | (uint64(boolByte(d.Polished)) << 32)
+}
+
 // EncodeBlock ...
 func (g Granite) EncodeBlock() (name string, properties map[string]interface{}) {
 	if g.Polished {
 		return "minecraft:stone", map[string]interface{}{"stone_type": "granite_smooth"}
 	}
 	return "minecraft:stone", map[string]interface{}{"stone_type": "granite"}
+}
+
+// Hash ...
+func (g Granite) Hash() uint64 {
+	return hashGranite | (uint64(boolByte(g.Polished)) << 32)
 }

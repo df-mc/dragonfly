@@ -28,7 +28,7 @@ type Viewer interface {
 	ViewEntityTeleport(e Entity, position mgl64.Vec3)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
-	ViewChunk(pos ChunkPos, c *chunk.Chunk)
+	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockNBT map[BlockPos]Block)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
 	ViewTime(time int)

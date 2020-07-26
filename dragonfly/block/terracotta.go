@@ -6,7 +6,10 @@ import (
 
 // Terracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. For colouring it,
 // take a look at StainedTerracotta.
-type Terracotta struct{}
+type Terracotta struct {
+	noNBT
+	solid
+}
 
 // BreakInfo ...
 func (t Terracotta) BreakInfo() BreakInfo {
@@ -26,4 +29,9 @@ func (t Terracotta) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (t Terracotta) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:hardened_clay", map[string]interface{}{}
+}
+
+// Hash ...
+func (t Terracotta) Hash() uint64 {
+	return hashTerracotta
 }
