@@ -9,8 +9,10 @@ const (
 	hashCoalBlock
 	hashCobblestone
 	hashConcrete
+	hashCoralBlock
 	hashDiamondBlock
 	hashDirt
+	hashDoor
 	hashEmeraldBlock
 	hashEndBricks
 	hashEndBrickStairs
@@ -18,6 +20,7 @@ const (
 	hashGlazedTerracotta
 	hashGoldBlock
 	hashGrass
+	hashGrassPath
 	hashIronBlock
 	hashKelp
 	hashLava

@@ -6,7 +6,10 @@ import (
 )
 
 // DiamondBlock is a block which can only be gained by crafting it.
-type DiamondBlock struct{ noNBT }
+type DiamondBlock struct {
+	noNBT
+	solid
+}
 
 // BreakInfo ...
 func (d DiamondBlock) BreakInfo() BreakInfo {

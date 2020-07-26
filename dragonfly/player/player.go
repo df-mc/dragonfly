@@ -1122,10 +1122,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
 // This returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
-	blockBoxes := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-	if aabb, ok := b.(block.AABBer); ok {
-		blockBoxes = aabb.AABB(pos, p.World())
-	}
+	blockBoxes := b.Model().AABB(pos, p.World())
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
@@ -1420,10 +1417,7 @@ func (p *Player) checkOnGround() bool {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
 				bPos := world.BlockPosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
-				aabbList := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-				if aabb, ok := b.(block.AABBer); ok {
-					aabbList = aabb.AABB(bPos, p.World())
-				}
+				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
 					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 						return true
@@ -1618,9 +1612,9 @@ func (p *Player) close() {
 	_ = p.armour.Close()
 	p.sMutex.Unlock()
 
-	if p.xuid == "" {
+	if s == nil {
 		p.World().RemoveEntity(p)
-	} else if s != nil {
+	} else {
 		s.CloseConnection()
 	}
 }

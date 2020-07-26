@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/brentp/intintmap"
 	"github.com/cespare/xxhash"
+	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/yourbasic/radix"
 	"math/rand"
@@ -31,6 +33,8 @@ type Block interface {
 	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
 	// entity. If true is returned, Block must implemented the NBTer interface.
 	HasNBT() bool
+	// Model returns the BlockModel of the Block.
+	Model() BlockModel
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -327,6 +331,24 @@ func (u unimplementedBlock) Hash() uint64 {
 // HasNBT ...
 func (unimplementedBlock) HasNBT() bool {
 	return false
+}
+
+// Model ...
+func (unimplementedBlock) Model() BlockModel {
+	return unimplementedModel{}
+}
+
+// unimplementedModel is the model used for unimplementedBlocks. It is the equivalent of a fully solid model.
+type unimplementedModel struct{}
+
+// AABB ...
+func (u unimplementedModel) AABB(BlockPos, *World) []physics.AABB {
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+}
+
+// FaceSolid ...
+func (u unimplementedModel) FaceSolid(BlockPos, Face, *World) bool {
+	return true
 }
 
 //noinspection SpellCheckingInspection
