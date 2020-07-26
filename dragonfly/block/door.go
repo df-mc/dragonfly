@@ -84,7 +84,7 @@ func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec
 // Activate ...
 func (d Door) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
 	d.Open = !d.Open
-	w.SetBlock(pos, d)
+	w.PlaceBlock(pos, d)
 
 	otherPos := pos.Side(world.Face(boolByte(!d.Top)))
 	other := w.Block(otherPos)
