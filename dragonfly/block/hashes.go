@@ -9,6 +9,7 @@ const (
 	hashCoalBlock
 	hashCobblestone
 	hashConcrete
+	hashCoral
 	hashCoralBlock
 	hashDiamondBlock
 	hashDirt
