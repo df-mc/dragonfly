@@ -988,7 +988,6 @@ func (w *World) tickScheduledBlocks(tick int64) {
 		}
 	}
 	for _, update := range w.neighbourUpdatesSync {
-		fmt.Println("Hello")
 		pos, changedNeighbour := update.pos, update.neighbour
 		if ticker, ok := w.Block(pos).(NeighbourUpdateTicker); ok {
 			ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
