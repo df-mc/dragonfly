@@ -53,6 +53,7 @@ func init() {
 	world.RegisterBlock(Netherrack{})
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
+	world.RegisterBlock(Lantern{}, Lantern{Hanging: true}, Lantern{Soul: true}, Lantern{Soul: true, Hanging: true})
 }
 
 func init() {
@@ -150,6 +151,8 @@ func init() {
 	world.RegisterItem("minecraft:netherrack", Netherrack{})
 	world.RegisterItem("minecraft:clay", Clay{})
 	world.RegisterItem("minecraft:bone_block", BoneBlock{})
+	world.RegisterItem("minecraft:lantern", Lantern{})
+	world.RegisterItem("minecraft:soul_lantern", Lantern{Soul: true})
 }
 
 func init() {
