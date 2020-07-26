@@ -1,8 +1,8 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -13,6 +13,7 @@ import (
 // Door is a block that can be used as an openable 1x2 barrier
 type Door struct {
 	noNBT
+	transparent
 
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
@@ -27,12 +28,23 @@ type Door struct {
 	Right bool
 }
 
+// Model ...
+func (d Door) Model() world.BlockModel {
+	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
+}
+
 // ScheduledTick ...
 func (d Door) ScheduledTick(pos world.BlockPos, w *world.World) {
-	otherPos := pos.Side(world.Face(boolByte(!d.Top)))
-	other := w.Block(otherPos)
-	if _, ok := other.(Door); !ok {
-		w.SetBlock(pos, nil)
+	if d.Top {
+		if _, ok := w.Block(pos.Side(world.FaceDown)).(Door); !ok {
+			w.SetBlock(pos, nil)
+		}
+	} else {
+		if solid := w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w); !solid {
+			w.SetBlock(pos, nil)
+		} else if _, ok := w.Block(pos.Side(world.FaceUp)).(Door); !ok {
+			w.SetBlock(pos, nil)
+		}
 	}
 }
 
@@ -46,17 +58,6 @@ func (d Door) LightDiffusionLevel() uint8 {
 	return 0
 }
 
-// AABB ...
-func (d Door) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
-	if d.Open {
-		if d.Right {
-			return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(d.Facing.Rotate90().Face()), -0.8125)}
-		}
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(d.Facing.Rotate90().Opposite().Face()), -0.8125)}
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(d.Facing.Face()), -0.8125)}
-}
-
 // UseOnBlock handles the directional placing of doors
 func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, d)
@@ -66,7 +67,7 @@ func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec
 	if face != world.FaceUp {
 		return false
 	}
-	if diffuser, ok := w.Block(pos.Side(world.FaceDown)).(LightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
+	if solid := w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w); !solid {
 		return false
 	}
 	if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); !ok {
