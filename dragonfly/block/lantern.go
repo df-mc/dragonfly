@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -9,11 +10,16 @@ import (
 // Lantern is a light emitting block.
 type Lantern struct {
 	noNBT
+	transparent
 
 	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
 	// Soul determines whether it is a normal lantern or soul lantern.
 	Soul bool
+}
+
+func (l Lantern) Model() world.BlockModel {
+	return model.Lantern{}
 }
 
 // NeighbourUpdateTick ...
@@ -22,12 +28,9 @@ func (l Lantern) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *wo
 		if _, air := w.Block(pos.Side(world.FaceUp)).(Air); air {
 			w.BreakBlock(pos)
 		}
+	} else if _, air := w.Block(pos.Side(world.FaceDown)).(Air); air {
+		w.BreakBlock(pos)
 	}
-}
-
-// LightDiffusionLevel ...
-func (l Lantern) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // LightEmissionLevel ...

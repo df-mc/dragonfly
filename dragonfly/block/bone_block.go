@@ -9,6 +9,7 @@ import (
 // BoneBlock is a decorative block that can face different directions.
 type BoneBlock struct {
 	noNBT
+	solid
 
 	// Axis is the axis which the bone block faces.
 	Axis world.Axis
