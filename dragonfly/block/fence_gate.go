@@ -27,7 +27,7 @@ type FenceGate struct {
 
 // UseOnBlock ...
 func (f FenceGate) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, f)
+	pos, _, used := firstReplaceable(w, pos, face, f)
 	if !used {
 		return false
 	}
