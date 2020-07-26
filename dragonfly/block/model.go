@@ -53,3 +53,11 @@ type leaves struct{}
 func (leaves) Model() world.BlockModel {
 	return model.Leaves{}
 }
+
+// thin represents a thin, partial block such as a glass pane or an iron bar, that connects to nearby solid faces.
+type thin struct{}
+
+// Model ...
+func (thin) Model() world.BlockModel {
+	return model.Thin{}
+}
