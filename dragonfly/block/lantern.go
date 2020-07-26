@@ -16,63 +16,72 @@ type Lantern struct {
 	Soul bool
 }
 
+// NeighbourUpdateTick ...
+func (l Lantern) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
+	if l.Hanging {
+		if _, air := w.Block(pos.Side(world.FaceUp)).(Air); air {
+			w.BreakBlock(pos)
+		}
+	}
+}
+
 // LightDiffusionLevel ...
-func (n Lantern) LightDiffusionLevel() uint8 {
+func (l Lantern) LightDiffusionLevel() uint8 {
 	return 0
 }
 
 // LightEmissionLevel ...
-func (n Lantern) LightEmissionLevel() uint8 {
-	if n.Soul {
+func (l Lantern) LightEmissionLevel() uint8 {
+	if l.Soul {
 		return 10
 	}
 	return 15
 }
 
 // UseOnBlock ...
-func (n Lantern) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, n)
+func (l Lantern) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(w, pos, face, l)
 	if !used {
 		return false
 	}
-	n.Hanging = face == world.FaceDown
+	l.Hanging = face == world.FaceDown
 
-	place(w, pos, n, user, ctx)
+	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // HasLiquidDrops ...
-func (n Lantern) HasLiquidDrops() bool {
+func (l Lantern) HasLiquidDrops() bool {
 	return true
 }
 
 // BreakInfo ...
-func (n Lantern) BreakInfo() BreakInfo {
+func (l Lantern) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    3.5,
 		Harvestable: pickaxeHarvestable,
 		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(n, 1)),
+		Drops:       simpleDrops(item.NewStack(l, 1)),
 	}
 }
 
 // EncodeItem ...
-func (n Lantern) EncodeItem() (id int32, meta int16) {
-	if n.Soul {
+func (l Lantern) EncodeItem() (id int32, meta int16) {
+	if l.Soul {
 		return -269, 0
 	}
 	return -208, 0
 }
 
 // EncodeBlock ...
-func (n Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
-	if n.Soul {
-		return "minecraft:soul_Lantern", map[string]interface{}{"hanging": n.Hanging}
+func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
+	if l.Soul {
+		return "minecraft:soul_Lantern", map[string]interface{}{"hanging": l.Hanging}
 	}
-	return "minecraft:lantern", map[string]interface{}{"hanging": n.Hanging}
+	return "minecraft:lantern", map[string]interface{}{"hanging": l.Hanging}
 }
 
 // Hash ...
-func (n Lantern) Hash() uint64 {
-	return hashLantern | (uint64(boolByte(n.Hanging)) << 32) | (uint64(boolByte(n.Soul)) << 33)
+func (l Lantern) Hash() uint64 {
+	return hashLantern | (uint64(boolByte(l.Hanging)) << 32) | (uint64(boolByte(l.Soul)) << 33)
 }
