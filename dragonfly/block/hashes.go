@@ -16,6 +16,7 @@ const (
 	hashGlazedTerracotta
 	hashGoldBlock
 	hashGrass
+	hashGrassPath
 	hashIronBlock
 	hashKelp
 	hashLava

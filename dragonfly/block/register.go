@@ -17,7 +17,7 @@ func init() {
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
-	world.RegisterBlock(Grass{}, Grass{Path: true})
+	world.RegisterBlock(Grass{}, GrassPath{})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
 	world.RegisterBlock(allKelp()...)
@@ -61,7 +61,7 @@ func init() {
 	world.RegisterItem("minecraft:stone", Andesite{})
 	world.RegisterItem("minecraft:stone", Andesite{Polished: true})
 	world.RegisterItem("minecraft:grass", Grass{})
-	world.RegisterItem("minecraft:grass_path", Grass{Path: true})
+	world.RegisterItem("minecraft:grass_path", GrassPath{})
 	world.RegisterItem("minecraft:dirt", Dirt{})
 	world.RegisterItem("minecraft:dirt", Dirt{Coarse: true})
 	world.RegisterItem("minecraft:cobblestone", Cobblestone{})
@@ -147,7 +147,7 @@ func init() {
 func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
-	item_internal.GrassPath = Grass{Path: true}
+	item_internal.GrassPath = GrassPath{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)
 		return ok && !l.Stripped
@@ -163,7 +163,7 @@ func init() {
 		_, ok := b.(Water)
 		return ok
 	}
-	item_internal.Replaceable = replaceable
+	item_internal.Replaceable = replaceableWith
 }
 
 // readSlice reads an interface slice from a map at the key passed.

@@ -10,6 +10,7 @@ import (
 // to Terracotta, t can be coloured in the same 16 colours that wool can be dyed, but more dulled and earthen.
 type StainedTerracotta struct {
 	noNBT
+	solid
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 }
