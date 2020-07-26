@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -52,13 +51,8 @@ func (Kelp) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed will always return false since kelp doesn't close any side.
-func (Kelp) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (Kelp) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
-}
-
-// AABB will always return nil, since Kelp can be placed even if someone is standing on its placement position.
-func (Kelp) AABB(world.BlockPos, *world.World) []physics.AABB {
-	return nil
 }
 
 // withRandomAge returns a new Kelp block with its age value randomized between 0 and 14.

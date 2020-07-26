@@ -1,8 +1,8 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -25,16 +25,6 @@ type Trapdoor struct {
 	Open bool
 	// Top is whether the trapdoor occupies the top or bottom part of a block.
 	Top bool
-}
-
-// AABB ...
-func (t Trapdoor) AABB(world.BlockPos, *world.World) []physics.AABB {
-	if t.Open {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing.Face()), -0.8125)}
-	} else if t.Top {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.8125}, mgl64.Vec3{1, 1, 1})}
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.1875, 1})}
 }
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down

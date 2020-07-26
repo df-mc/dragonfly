@@ -11,6 +11,7 @@ import (
 type GlazedTerracotta struct {
 	noNBT
 	solid
+
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 	// Facing specifies the face of the block.

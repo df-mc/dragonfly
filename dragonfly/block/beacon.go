@@ -20,6 +20,7 @@ type Beacon struct {
 	nbt
 	solid
 	transparent
+
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
 	Primary, Secondary entity.Effect

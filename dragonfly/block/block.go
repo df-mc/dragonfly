@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -100,13 +99,6 @@ func place(w *world.World, pos world.BlockPos, b world.Block, user item.User, ct
 // placed checks if an item was placed with the use context passed.
 func placed(ctx *item.UseContext) bool {
 	return ctx.CountSub > 0
-}
-
-// AABBer represents a block that has one or multiple specific Axis Aligned Bounding Boxes. These boxes are
-// used to calculate collision.
-type AABBer interface {
-	// AABB returns all the axis aligned bounding boxes of the block.
-	AABB(pos world.BlockPos, w *world.World) []physics.AABB
 }
 
 // boolByte returns 1 if the bool passed is true, or 0 if it is false.

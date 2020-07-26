@@ -1,8 +1,8 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -39,6 +39,11 @@ func (s WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl
 	return placed(ctx)
 }
 
+// Model ...
+func (s WoodStairs) Model() world.BlockModel {
+	return model.Stair{Facing: s.Facing, UpsideDown: s.UpsideDown}
+}
+
 // BreakInfo ...
 func (s WoodStairs) BreakInfo() BreakInfo {
 	return BreakInfo{
@@ -47,46 +52,6 @@ func (s WoodStairs) BreakInfo() BreakInfo {
 		Effective:   axeEffective,
 		Drops:       simpleDrops(item.NewStack(s, 1)),
 	}
-}
-
-// AABB ...
-func (s WoodStairs) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
-	b := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
-	if s.UpsideDown {
-		b[0] = physics.NewAABB(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})
-	}
-	t := s.cornerType(pos, w)
-
-	if t == noCorner || t == cornerRightInner || t == cornerRightOuter {
-		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90()), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90().Opposite()), 0.5))
-	}
-	if t == cornerRightOuter {
-		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90().Opposite()), 0.5))
-	} else if t == cornerLeftOuter {
-		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90()), 0.5))
-	} else if t == cornerRightInner {
-		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing.Opposite()), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90().Opposite()), 0.5))
-	} else if t == cornerLeftInner {
-		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing.Opposite()), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90()), 0.5))
-	}
-
-	if s.UpsideDown {
-		for i := range b[1:] {
-			b[i] = b[i].Translate(mgl64.Vec3{0, -0.5})
-		}
-	}
-	return b
 }
 
 // EncodeItem ...
@@ -145,61 +110,7 @@ func (WoodStairs) CanDisplace(b world.Liquid) bool {
 
 // SideClosed ...
 func (s WoodStairs) SideClosed(pos, side world.BlockPos, w *world.World) bool {
-	if !s.UpsideDown && side[1] == pos[1]-1 {
-		// Non-upside down stairs have a closed side at the bottom.
-		return true
-	}
-	t := s.cornerType(pos, w)
-	if t == cornerRightOuter || t == cornerLeftOuter {
-		// Small corner blocks, they do not block water flowing out horizontally.
-		return false
-	} else if t == noCorner {
-		// Not a corner, so only block directly behind the stairs.
-		return pos.Side(s.Facing.Face()) == side
-	}
-	if t == cornerRightInner {
-		return side == pos.Side(s.Facing.Rotate90().Face()) || side == pos.Side(s.Facing.Face())
-	}
-	return side == pos.Side(s.Facing.Rotate90().Opposite().Face()) || side == pos.Side(s.Facing.Face())
-}
-
-const (
-	noCorner = iota
-	cornerRightInner
-	cornerLeftInner
-	cornerRightOuter
-	cornerLeftOuter
-)
-
-// cornerType returns the type of the corner that the stairs form, or 0 if it does not form a corner with any
-// other stairs.
-func (s WoodStairs) cornerType(pos world.BlockPos, w *world.World) uint8 {
-	// TODO: Make stairs of all types curve.
-	rotatedFacing := s.Facing.Rotate90()
-	if closedSide, ok := w.Block(pos.Side(s.Facing.Face())).(WoodStairs); ok && closedSide.UpsideDown == s.UpsideDown {
-		if closedSide.Facing == rotatedFacing {
-			return cornerLeftOuter
-		} else if closedSide.Facing == rotatedFacing.Opposite() {
-			// This will only form a corner if there is not a stair on the right of this one with the same
-			// direction.
-			if side, ok := w.Block(pos.Side(s.Facing.Rotate90().Face())).(WoodStairs); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
-				return cornerRightOuter
-			}
-			return noCorner
-		}
-	}
-	if openSide, ok := w.Block(pos.Side(s.Facing.Opposite().Face())).(WoodStairs); ok && openSide.UpsideDown == s.UpsideDown {
-		if openSide.Facing == rotatedFacing {
-			// This will only form a corner if there is not a stair on the right of this one with the same
-			// direction.
-			if side, ok := w.Block(pos.Side(s.Facing.Rotate90().Face())).(WoodStairs); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
-				return cornerRightInner
-			}
-		} else if openSide.Facing == rotatedFacing.Opposite() {
-			return cornerLeftInner
-		}
-	}
-	return noCorner
+	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
 
 // allWoodStairs returns all states of wood stairs.

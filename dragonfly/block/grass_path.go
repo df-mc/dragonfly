@@ -8,15 +8,14 @@ import (
 // GrassPath is a decorative block that can be created by using a shovel on a grass block.
 type GrassPath struct {
 	noNBT
-
+	tilledGrass
 	transparent
 }
 
 // NeighbourUpdateTick handles the turning from grass path into dirt if a block is placed on top of it.
 func (p GrassPath) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if _, air := w.Block(pos.Add(world.BlockPos{0, 1})).(Air); !air {
-		// Technically vanilla doesn't always turn grass paths into dirt when a block is placed above it,
-		// for example torches, but the logic doesn't make sense.
+	if w.Block(pos.Add(world.BlockPos{0, 1})).Model().FaceSolid(pos, world.FaceDown, w) {
+		// A block with a solid side at the bottom was placed onto this one.
 		w.SetBlock(pos, Dirt{})
 	}
 }

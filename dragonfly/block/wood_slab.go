@@ -25,7 +25,7 @@ type WoodSlab struct {
 }
 
 // Model ...
-func (s WoodSlab) Model() model.Model {
+func (s WoodSlab) Model() world.BlockModel {
 	return model.Slab{Double: s.Double, Top: s.Top}
 }
 

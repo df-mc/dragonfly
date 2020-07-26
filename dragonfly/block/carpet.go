@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,8 +11,10 @@ import (
 // Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
 type Carpet struct {
 	noNBT
-
+	carpet
 	transparent
+
+	// Colour is the colour of the carpet.
 	Colour colour.Colour
 }
 
@@ -26,11 +27,6 @@ func (Carpet) CanDisplace(b world.Liquid) bool {
 // SideClosed ...
 func (Carpet) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
-}
-
-// AABB ...
-func (Carpet) AABB(world.BlockPos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.0625, 1})}
 }
 
 // BreakInfo ...
@@ -64,7 +60,7 @@ func (Carpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (Carpet) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
+func (Carpet) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
 		w.ScheduleBlockUpdate(pos, time.Second/20)
 	}
@@ -78,17 +74,17 @@ func (Carpet) ScheduledTick(pos world.BlockPos, w *world.World) {
 }
 
 // UseOnBlock handles not placing carpets on top of air blocks.
-func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, wrld *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(wrld, pos, face, c)
+func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
 
-	if _, ok := wrld.Block((world.BlockPos{pos.X(), pos.Y() - 1, pos.Z()})).(Air); ok {
+	if _, ok := w.Block((world.BlockPos{pos.X(), pos.Y() - 1, pos.Z()})).(Air); ok {
 		return
 	}
 
-	place(wrld, pos, c, user, ctx)
+	place(w, pos, c, user, ctx)
 	return placed(ctx)
 }
 
