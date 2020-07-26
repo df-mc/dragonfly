@@ -71,4 +71,8 @@ func init() {
 
 	world.RegisterItem("minecraft:diamond", Diamond{})
 	world.RegisterItem("minecraft:dye", LapisLazuli{})
+	world.RegisterItem("minecraft:emerald", Emerald{})
+	world.RegisterItem("minecraft:gold_ingot", GoldIngot{})
+	world.RegisterItem("minecraft:iron_ingot", IronIngot{})
+	world.RegisterItem("minecraft:netherite_ingot", NetheriteIngot{})
 }
