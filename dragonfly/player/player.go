@@ -1612,9 +1612,9 @@ func (p *Player) close() {
 	_ = p.armour.Close()
 	p.sMutex.Unlock()
 
-	if p.xuid == "" {
+	if s == nil {
 		p.World().RemoveEntity(p)
-	} else if s != nil {
+	} else {
 		s.CloseConnection()
 	}
 }
