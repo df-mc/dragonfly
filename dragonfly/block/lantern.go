@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -14,8 +15,8 @@ type Lantern struct {
 
 	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
-	// Soul determines whether it is a normal lantern or soul lantern.
-	Soul bool
+	// Type of fire lighting the lantern
+	Type fire.Fire
 }
 
 // Model ...
@@ -36,10 +37,7 @@ func (l Lantern) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *wo
 
 // LightEmissionLevel ...
 func (l Lantern) LightEmissionLevel() uint8 {
-	if l.Soul {
-		return 10
-	}
-	return 15
+	return l.Type.Light
 }
 
 // UseOnBlock ...
@@ -71,21 +69,27 @@ func (l Lantern) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (l Lantern) EncodeItem() (id int32, meta int16) {
-	if l.Soul {
+	switch l.Type {
+	case fire.Normal():
+		return -208, 0
+	case fire.Soul():
 		return -269, 0
 	}
-	return -208, 0
+	panic("invalid fire type")
 }
 
 // EncodeBlock ...
 func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
-	if l.Soul {
+	switch l.Type {
+	case fire.Normal():
+		return "minecraft:lantern", map[string]interface{}{"hanging": l.Hanging}
+	case fire.Soul():
 		return "minecraft:soul_lantern", map[string]interface{}{"hanging": l.Hanging}
 	}
-	return "minecraft:lantern", map[string]interface{}{"hanging": l.Hanging}
+	panic("invalid fire type")
 }
 
 // Hash ...
 func (l Lantern) Hash() uint64 {
-	return hashLantern | (uint64(boolByte(l.Hanging)) << 32) | (uint64(boolByte(l.Soul)) << 33)
+	return hashLantern | (uint64(boolByte(l.Hanging)) << 32) | (uint64(l.Type.Uint8()) << 33)
 }
