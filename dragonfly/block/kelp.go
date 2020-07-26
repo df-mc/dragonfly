@@ -69,10 +69,12 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 		return
 	}
 
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// Kelp blocks must be placed on a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	case Air, Water:
-		return false
+	below := pos.Add(world.BlockPos{0, -1})
+	belowBlock := w.Block(below)
+	if _, kelp := belowBlock.(Kelp); !kelp {
+		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+			return false
+		}
 	}
 
 	liquid, ok := w.Liquid(pos)
