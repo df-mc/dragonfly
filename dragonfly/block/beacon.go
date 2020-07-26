@@ -18,6 +18,9 @@ import (
 // Boost, Haste, Regeneration, Resistance, or Strength to nearby players.
 type Beacon struct {
 	nbt
+	solid
+	transparent
+
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
 	Primary, Secondary entity.Effect
@@ -89,11 +92,6 @@ func (b Beacon) CanDisplace(l world.Liquid) bool {
 // SideClosed ...
 func (b Beacon) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
-}
-
-// LightDiffusionLevel ...
-func (Beacon) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // LightEmissionLevel ...
