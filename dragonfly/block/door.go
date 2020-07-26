@@ -53,11 +53,6 @@ func (d Door) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world
 	w.ScheduleBlockUpdate(pos, time.Second/20)
 }
 
-// LightDiffusionLevel ...
-func (d Door) LightDiffusionLevel() uint8 {
-	return 0
-}
-
 // UseOnBlock handles the directional placing of doors
 func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, d)
