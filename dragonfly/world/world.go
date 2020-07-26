@@ -216,7 +216,6 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 		return
 	}
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
-	c.Unlock()
 
 	var hasNBT bool
 	if b != nil {
@@ -229,6 +228,7 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 	} else {
 		delete(c.e, pos)
 	}
+	c.Unlock()
 	for _, viewer := range c.v {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
