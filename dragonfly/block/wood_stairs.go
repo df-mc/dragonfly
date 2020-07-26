@@ -113,12 +113,6 @@ func (s WoodStairs) SideClosed(pos, side world.BlockPos, w *world.World) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
 
-// FaceSolidTo ...
-func (s WoodStairs) FaceSolidTo(_ world.BlockPos, face world.Face, _ world.Block) bool {
-	// TODO(lhochbaum): Deal with curving :/.
-	return s.Facing.Face() == face.Opposite()
-}
-
 // allWoodStairs returns all states of wood stairs.
 func allWoodStairs() (stairs []world.Block) {
 	f := func(facing world.Direction, upsideDown bool) {

@@ -20,7 +20,9 @@ func (t Thin) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	for i := world.Face(2); i < 6; i++ {
 		pos := pos.Side(i)
 		block := w.Block(pos)
-		if block.Model().FaceSolid(pos, i.Opposite(), w) {
+
+		// TODO(lhochbaum): Do the same check for walls as soon as they're implemented.
+		if _, isThin := block.Model().(Thin); isThin || block.Model().FaceSolid(pos, i.Opposite(), w) {
 			boxes = append(boxes, mainBox.ExtendTowards(int(i), offset))
 		}
 	}
@@ -28,6 +30,6 @@ func (t Thin) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 }
 
 // FaceSolid ...
-func (t Thin) FaceSolid(_ world.BlockPos, _ world.Face, _ *world.World) bool {
-	return false
+func (t Thin) FaceSolid(_ world.BlockPos, face world.Face, _ *world.World) bool {
+	return face < 2
 }

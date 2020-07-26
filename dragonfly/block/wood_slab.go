@@ -158,14 +158,9 @@ func (s WoodSlab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s WoodSlab) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (s WoodSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
-}
-
-// FaceSolidTo ...
-func (s WoodSlab) FaceSolidTo(_ world.BlockPos, _ world.Face, _ world.Block) bool {
-	return s.Double
 }
 
 // allWoodSlabs returns all states of wood slabs.
