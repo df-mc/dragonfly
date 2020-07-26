@@ -10,6 +10,8 @@ import (
 // GlazedTerracotta is a vibrant solid block that comes in the 16 regular dye colours.
 type GlazedTerracotta struct {
 	noNBT
+	solid
+
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 	// Facing specifies the face of the block.
@@ -44,7 +46,7 @@ func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]inte
 
 // Hash ...
 func (t GlazedTerracotta) Hash() uint64 {
-	return hashGlazedTerracotta | (uint64(t.Colour.Uint8()) << 32)
+	return hashGlazedTerracotta | (uint64(t.Facing) << 32) | (uint64(t.Colour.Uint8()) << 34)
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.
@@ -60,10 +62,11 @@ func (t GlazedTerracotta) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl6
 }
 
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
-func allGlazedTerracotta() []world.Block {
-	b := make([]world.Block, 0, 16)
-	for _, c := range colour.All() {
-		b = append(b, GlazedTerracotta{Colour: c})
+func allGlazedTerracotta() (b []world.Block) {
+	for dir := world.Direction(0); dir < 4; dir++ {
+		for _, c := range colour.All() {
+			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
+		}
 	}
 	return b
 }

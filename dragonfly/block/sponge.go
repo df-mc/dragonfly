@@ -11,6 +11,7 @@ import (
 // process.
 type Sponge struct {
 	noNBT
+	solid
 	// Wet specifies whether the dry or the wet variant of the block is used.
 	Wet bool
 }

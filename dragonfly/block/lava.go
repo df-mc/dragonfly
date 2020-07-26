@@ -11,6 +11,8 @@ import (
 // Lava is a light-emitting fluid block that causes fire damage.
 type Lava struct {
 	noNBT
+	empty
+	replaceable
 	// Still makes the lava not spread whenever it is updated. Still lava cannot be acquired in the game
 	// without world editing.
 	Still bool
@@ -25,11 +27,6 @@ type Lava struct {
 // AABB returns no boxes.
 func (Lava) AABB(world.BlockPos, *world.World) []physics.AABB {
 	return nil
-}
-
-// ReplaceableBy ...
-func (Lava) ReplaceableBy(world.Block) bool {
-	return true
 }
 
 // HasLiquidDrops ...

@@ -6,7 +6,14 @@ import (
 )
 
 // NetheriteBlock is a precious mineral block made from 9 netherite ingots.
+<<<<<<< HEAD
 type NetheriteBlock struct{ noNBT }
+=======
+type NetheriteBlock struct {
+	noNBT
+	solid
+}
+>>>>>>> upstream/master
 
 // BreakInfo ...
 func (n NetheriteBlock) BreakInfo() BreakInfo {
@@ -27,7 +34,11 @@ func (NetheriteBlock) PowersBeacon() bool {
 
 // EncodeItem ...
 func (NetheriteBlock) EncodeItem() (id int32, meta int16) {
+<<<<<<< HEAD
 	return 525, 0
+=======
+	return -270, 0
+>>>>>>> upstream/master
 }
 
 // EncodeBlock ...

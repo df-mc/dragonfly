@@ -332,7 +332,7 @@ func (p *Player) SetNameTag(name string) {
 // obtain.
 func (p *Player) SetSpeed(speed float64) {
 	p.speed.Store(speed)
-	p.s.SendSpeed(speed)
+	p.session().SendSpeed(speed)
 }
 
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
@@ -543,8 +543,7 @@ func (p *Player) sendFood() {
 // AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 // if the effects' levels are equal and the new effect has a longer duration.
 func (p *Player) AddEffect(e entity.Effect) {
-	p.effects.Add(e, p)
-	p.session().SendEffect(e)
+	p.session().SendEffect(p.effects.Add(e, p))
 	p.updateState()
 }
 
@@ -1123,10 +1122,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
 // This returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
-	blockBoxes := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-	if aabb, ok := b.(block.AABBer); ok {
-		blockBoxes = aabb.AABB(pos, p.World())
-	}
+	blockBoxes := b.Model().AABB(pos, p.World())
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
@@ -1421,10 +1417,7 @@ func (p *Player) checkOnGround() bool {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
 				bPos := world.BlockPosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
-				aabbList := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-				if aabb, ok := b.(block.AABBer); ok {
-					aabbList = aabb.AABB(bPos, p.World())
-				}
+				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
 					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 						return true

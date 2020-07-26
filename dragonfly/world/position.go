@@ -71,6 +71,26 @@ func (p BlockPos) Side(face Face) BlockPos {
 	return p
 }
 
+// Face returns the face that the other BlockPos was on compared to the current BlockPos. The other BlockPos
+// is assumed to be a direct neighbour of the current BlockPos.
+func (p BlockPos) Face(other BlockPos) Face {
+	switch {
+	case p.Add(BlockPos{0, 1}) == other:
+		return FaceUp
+	case p.Add(BlockPos{0, -1}) == other:
+		return FaceDown
+	case p.Add(BlockPos{0, 0, -1}) == other:
+		return FaceNorth
+	case p.Add(BlockPos{0, 0, 1}) == other:
+		return FaceSouth
+	case p.Add(BlockPos{-1, 0, 0}) == other:
+		return FaceWest
+	case p.Add(BlockPos{1, 0, 0}) == other:
+		return FaceEast
+	}
+	return FaceUp
+}
+
 // Neighbours calls the function passed for each of the block position's neighbours. If the Y value is below
 // 0 or above 255, the function will not be called for that position.
 func (p BlockPos) Neighbours(f func(neighbour BlockPos)) {

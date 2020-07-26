@@ -16,6 +16,7 @@ const (
 	hashGlazedTerracotta
 	hashGoldBlock
 	hashGrass
+	hashGrassPath
 	hashIronBlock
 	hashKelp
 	hashLava
@@ -31,8 +32,8 @@ const (
 	hashGranite
 	hashDiorite
 	hashAndesite
-	hasAndesite
 	hashTerracotta
+	hashTrapdoor
 	hashWater
 	hashWoodSlab
 	hashWoodStairs
