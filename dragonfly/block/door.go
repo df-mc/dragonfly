@@ -7,10 +7,9 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
-// Door is a block that can be used as an openable 1x2 barrier
+// Door is a block that can be used as an openable 1x2 barrier.
 type Door struct {
 	noNBT
 	transparent
@@ -33,8 +32,8 @@ func (d Door) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
 }
 
-// ScheduledTick ...
-func (d Door) ScheduledTick(pos world.BlockPos, w *world.World) {
+// NeighbourUpdateTick ...
+func (d Door) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
 	if d.Top {
 		if _, ok := w.Block(pos.Side(world.FaceDown)).(Door); !ok {
 			w.SetBlock(pos, nil)
@@ -46,11 +45,6 @@ func (d Door) ScheduledTick(pos world.BlockPos, w *world.World) {
 			w.SetBlock(pos, nil)
 		}
 	}
-}
-
-// NeighbourUpdateTick ...
-func (d Door) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
-	w.ScheduleBlockUpdate(pos, time.Second/20)
 }
 
 // UseOnBlock handles the directional placing of doors

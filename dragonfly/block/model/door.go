@@ -14,6 +14,7 @@ type Door struct {
 	Right  bool
 }
 
+// AABB ...
 func (d Door) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	if d.Open {
 		if d.Right {
@@ -24,6 +25,7 @@ func (d Door) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(d.Facing.Face()), -0.8125)}
 }
 
+// FaceSolid ...
 func (d Door) FaceSolid(pos world.BlockPos, face world.Face, w *world.World) bool {
 	return false
 }
