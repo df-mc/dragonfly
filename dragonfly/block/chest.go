@@ -3,7 +3,6 @@ package block
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block/action"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -19,6 +18,9 @@ import (
 // The empty value of Chest is not valid. It must be created using item.NewChest().
 type Chest struct {
 	nbt
+	chest
+	transparent
+
 	// Facing is the direction that the chest is facing.
 	Facing world.Direction
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
@@ -57,11 +59,6 @@ func (c Chest) Inventory() *inventory.Inventory {
 func (c Chest) WithName(a ...interface{}) world.Item {
 	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return c
-}
-
-// AABB ...
-func (c Chest) AABB(world.BlockPos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
 // CanDisplace ...
@@ -185,11 +182,6 @@ func (c Chest) EncodeNBT() map[string]interface{} {
 		m["CustomName"] = c.CustomName
 	}
 	return m
-}
-
-// LightDiffusionLevel ...
-func (Chest) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // EncodeItem ...
