@@ -5,35 +5,35 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 )
 
-// Corals represents a type of coral of a block. Corals, coral fans, and coral blocks carry one of these types.
-type Corals struct {
+// Coral represents a type of coral of a block. Coral, coral fans, and coral blocks carry one of these types.
+type Coral struct {
 	coral
 	Colour colour.Colour
 }
 
 // Tube returns the tube coral variant
-func Tube() Corals {
-	return Corals{coral(0), colour.Blue()}
+func Tube() Coral {
+	return Coral{coral(0), colour.Blue()}
 }
 
 // Brain returns the brain coral variant
-func Brain() Corals {
-	return Corals{coral(1), colour.Pink()}
+func Brain() Coral {
+	return Coral{coral(1), colour.Pink()}
 }
 
 // Bubble returns the bubble coral variant
-func Bubble() Corals {
-	return Corals{coral(2), colour.Purple()}
+func Bubble() Coral {
+	return Coral{coral(2), colour.Purple()}
 }
 
 // Fire returns the fire coral variant
-func Fire() Corals {
-	return Corals{coral(3), colour.Red()}
+func Fire() Coral {
+	return Coral{coral(3), colour.Red()}
 }
 
 // Horn returns the horn coral variant
-func Horn() Corals {
-	return Corals{coral(4), colour.Yellow()}
+func Horn() Coral {
+	return Coral{coral(4), colour.Yellow()}
 }
 
 type coral uint8
@@ -64,15 +64,15 @@ func (c coral) Name() string {
 func (c coral) FromString(s string) (interface{}, error) {
 	switch s {
 	case "tube":
-		return Corals{coral(0), colour.Blue()}, nil
+		return Coral{coral(0), colour.Blue()}, nil
 	case "brain":
-		return Corals{coral(1), colour.Pink()}, nil
+		return Coral{coral(1), colour.Pink()}, nil
 	case "bubble":
-		return Corals{coral(2), colour.Purple()}, nil
+		return Coral{coral(2), colour.Purple()}, nil
 	case "fire":
-		return Corals{coral(3), colour.Red()}, nil
+		return Coral{coral(3), colour.Red()}, nil
 	case "horn":
-		return Corals{coral(4), colour.Yellow()}, nil
+		return Coral{coral(4), colour.Yellow()}, nil
 	}
 	return nil, fmt.Errorf("unexpected coral type '%v', expecting one of 'tube', 'brain', 'bubble', 'fire', or 'horn'", s)
 }

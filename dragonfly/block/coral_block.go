@@ -7,17 +7,18 @@ import (
 	"time"
 )
 
-// CoralBlock is a solid block that comes in 5 variants
+// CoralBlock is a solid block that comes in 5 variants.
 type CoralBlock struct {
 	noNBT
 	solid
 
 	// Type is the type of coral of the block.
-	Type coral.Corals
+	Type coral.Coral
 	// Dead is whether the coral block is dead.
 	Dead bool
 }
 
+// NeighbourUpdateTick ...
 func (c CoralBlock) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
 	if c.Dead {
 		return
@@ -25,18 +26,22 @@ func (c CoralBlock) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w 
 	w.ScheduleBlockUpdate(pos, time.Second*5/2)
 }
 
+// ScheduledTick ...
 func (c CoralBlock) ScheduledTick(pos world.BlockPos, w *world.World) {
 	if c.Dead {
 		return
 	}
-	for i := world.Face(0); i <= 5; i++ {
-		block := w.Block(pos.Side(i))
-		if _, water := block.(Water); water {
-			return
+
+	adjacentWater := false
+	pos.Neighbours(func(neighbor world.BlockPos) {
+		if _, water := w.Block(neighbor).(Water); water {
+			adjacentWater = true
 		}
+	})
+	if !adjacentWater {
+		c.Dead = true
+		w.SetBlock(pos, c)
 	}
-	c.Dead = true
-	w.SetBlock(pos, c)
 }
 
 // BreakInfo ...
