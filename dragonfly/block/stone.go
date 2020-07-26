@@ -6,7 +6,10 @@ import (
 
 type (
 	// Stone is a block found underground in the world or on mountains.
-	Stone struct{ noNBT }
+	Stone struct {
+		noNBT
+		solid
+	}
 
 	// Granite is a type of igneous rock.
 	Granite polishable
@@ -18,6 +21,7 @@ type (
 	// polishable forms the base of blocks that may be polished.
 	polishable struct {
 		noNBT
+		solid
 		// Polished specifies if the block is polished or not. When set to true, the block will represent its
 		// polished variant, for example polished andesite.
 		Polished bool

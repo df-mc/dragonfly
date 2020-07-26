@@ -17,7 +17,7 @@ func init() {
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
-	world.RegisterBlock(Grass{}, Grass{Path: true})
+	world.RegisterBlock(Grass{}, GrassPath{})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
 	world.RegisterBlock(allKelp()...)
@@ -36,8 +36,8 @@ func init() {
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
 	world.RegisterBlock(EmeraldBlock{})
-	world.RegisterBlock(NetheriteBlock{})
 	world.RegisterBlock(GoldBlock{})
+	world.RegisterBlock(NetheriteBlock{})
 	world.RegisterBlock(IronBlock{})
 	world.RegisterBlock(CoalBlock{})
 	world.RegisterBlock(Beacon{})
@@ -47,9 +47,14 @@ func init() {
 	world.RegisterBlock(allStainedTerracotta()...)
 	world.RegisterBlock(allGlazedTerracotta()...)
 	world.RegisterBlock(Terracotta{})
+	world.RegisterBlock(allStainedGlass()...)
+	world.RegisterBlock(allStainedGlassPane()...)
+	world.RegisterBlock(GlassPane{})
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
+	world.RegisterBlock(allDoors()...)
+	world.RegisterBlock(allCoralBlocks()...)
 }
 
 func init() {
@@ -62,7 +67,7 @@ func init() {
 	world.RegisterItem("minecraft:stone", Andesite{})
 	world.RegisterItem("minecraft:stone", Andesite{Polished: true})
 	world.RegisterItem("minecraft:grass", Grass{})
-	world.RegisterItem("minecraft:grass_path", Grass{Path: true})
+	world.RegisterItem("minecraft:grass_path", GrassPath{})
 	world.RegisterItem("minecraft:dirt", Dirt{})
 	world.RegisterItem("minecraft:dirt", Dirt{Coarse: true})
 	world.RegisterItem("minecraft:cobblestone", Cobblestone{})
@@ -93,6 +98,8 @@ func init() {
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
 		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:wool", Wool{Colour: c})
+		world.RegisterItem("minecraft:stained_glass", StainedGlass{Colour: c})
+		world.RegisterItem("minecraft:stained_glass_pane", StainedGlassPane{Colour: c})
 
 		colourName := c.String()
 		if c == colour.LightGrey() {
@@ -138,18 +145,28 @@ func init() {
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
 	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
-	world.RegisterItem("minecraft:wooden_trapdoor", Trapdoor{Wood: wood.Oak()})
-	world.RegisterItem("minecraft:spruce_trapdoor", Trapdoor{Wood: wood.Spruce()})
-	world.RegisterItem("minecraft:birch_trapdoor", Trapdoor{Wood: wood.Birch()})
-	world.RegisterItem("minecraft:jungle_trapdoor", Trapdoor{Wood: wood.Jungle()})
-	world.RegisterItem("minecraft:acacia_trapdoor", Trapdoor{Wood: wood.Acacia()})
-	world.RegisterItem("minecraft:dark_oak_trapdoor", Trapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:glass_pane", GlassPane{})
+	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_trapdoor", WoodTrapdoor{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_trapdoor", WoodTrapdoor{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_trapdoor", WoodTrapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:wooden_door", WoodDoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_door", WoodDoor{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_door", WoodDoor{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_door", WoodDoor{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_door", WoodDoor{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_door", WoodDoor{Wood: wood.DarkOak()})
+	for _, c := range allCoralBlocks() {
+		world.RegisterItem("minecraft:coral_block", c.(world.Item))
+	}
 }
 
 func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
-	item_internal.GrassPath = Grass{Path: true}
+	item_internal.GrassPath = GrassPath{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)
 		return ok && !l.Stripped
@@ -165,7 +182,7 @@ func init() {
 		_, ok := b.(Water)
 		return ok
 	}
-	item_internal.Replaceable = replaceable
+	item_internal.Replaceable = replaceableWith
 }
 
 // readSlice reads an interface slice from a map at the key passed.
