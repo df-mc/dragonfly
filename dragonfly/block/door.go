@@ -36,13 +36,13 @@ func (d Door) Model() world.BlockModel {
 func (d Door) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
 	if d.Top {
 		if _, ok := w.Block(pos.Side(world.FaceDown)).(Door); !ok {
-			w.SetBlock(pos, nil)
+			w.BreakBlock(pos)
 		}
 	} else {
 		if solid := w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w); !solid {
-			w.SetBlock(pos, nil)
+			w.BreakBlock(pos)
 		} else if _, ok := w.Block(pos.Side(world.FaceUp)).(Door); !ok {
-			w.SetBlock(pos, nil)
+			w.BreakBlock(pos)
 		}
 	}
 }
@@ -90,7 +90,7 @@ func (d Door) Activate(pos world.BlockPos, clickedFace world.Face, w *world.Worl
 	other := w.Block(otherPos)
 	if door, ok := other.(Door); ok {
 		door.Open = d.Open
-		w.SetBlock(otherPos, door)
+		w.PlaceBlock(otherPos, door)
 	}
 
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
