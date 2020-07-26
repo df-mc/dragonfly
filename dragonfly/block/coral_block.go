@@ -33,9 +33,11 @@ func (c CoralBlock) ScheduledTick(pos world.BlockPos, w *world.World) {
 	}
 
 	adjacentWater := false
-	pos.Neighbours(func(neighbor world.BlockPos) {
-		if _, water := w.Block(neighbor).(Water); water {
-			adjacentWater = true
+	pos.Neighbours(func(neighbour world.BlockPos) {
+		if liquid, ok := w.Liquid(neighbour); ok {
+			if _, ok := liquid.(Water); ok {
+				adjacentWater = true
+			}
 		}
 	})
 	if !adjacentWater {
