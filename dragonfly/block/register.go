@@ -136,7 +136,7 @@ func init() {
 	world.RegisterItem("minecraft:beacon", Beacon{})
 	world.RegisterItem("minecraft:sponge", Sponge{})
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
-	world.RegisterItem("minecraft:lapis_block",LapisBlock{})
+	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
 	world.RegisterItem("minecraft:wooden_trapdoor", Trapdoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_trapdoor", Trapdoor{Wood: wood.Spruce()})
