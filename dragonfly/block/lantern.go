@@ -6,16 +6,22 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Lantern is a light emitting block
+// Lantern is a light emitting block.
 type Lantern struct {
 	noNBT
 
-	// Hanging determines if a lantern is hanging off a block
+	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
-	// Soul determines whether it is a normal lantern or soul lantern
+	// Soul determines whether it is a normal lantern or soul lantern.
 	Soul bool
 }
 
+// LightDiffusionLevel ...
+func (n Lantern) LightDiffusionLevel() uint8 {
+	return 0
+}
+
+// LightEmissionLevel ...
 func (n Lantern) LightEmissionLevel() uint8 {
 	if n.Soul {
 		return 10
@@ -23,6 +29,7 @@ func (n Lantern) LightEmissionLevel() uint8 {
 	return 15
 }
 
+// UseOnBlock ...
 func (n Lantern) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, n)
 	if !used {
@@ -34,10 +41,12 @@ func (n Lantern) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.
 	return placed(ctx)
 }
 
+// HasLiquidDrops ...
 func (n Lantern) HasLiquidDrops() bool {
 	return true
 }
 
+// BreakInfo ...
 func (n Lantern) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    3.5,
@@ -47,6 +56,7 @@ func (n Lantern) BreakInfo() BreakInfo {
 	}
 }
 
+// EncodeItem ...
 func (n Lantern) EncodeItem() (id int32, meta int16) {
 	if n.Soul {
 		return -269, 0
@@ -54,6 +64,7 @@ func (n Lantern) EncodeItem() (id int32, meta int16) {
 	return -208, 0
 }
 
+// EncodeBlock ...
 func (n Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
 	if n.Soul {
 		return "minecraft:soul_Lantern", map[string]interface{}{"hanging": n.Hanging}
@@ -61,6 +72,7 @@ func (n Lantern) EncodeBlock() (name string, properties map[string]interface{}) 
 	return "minecraft:lantern", map[string]interface{}{"hanging": n.Hanging}
 }
 
+// Hash ...
 func (n Lantern) Hash() uint64 {
 	return hashLantern | (uint64(boolByte(n.Hanging)) << 32) | (uint64(boolByte(n.Soul)) << 33)
 }

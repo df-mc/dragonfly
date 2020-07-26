@@ -6,7 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// BoneBlock is a decorative block that can face different directions
+// BoneBlock is a decorative block that can face different directions.
 type BoneBlock struct {
 	noNBT
 

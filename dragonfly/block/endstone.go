@@ -2,7 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
-// Endstone is a block found in The End
+// Endstone is a block found in The End.
 type Endstone struct {
 	noNBT
 }

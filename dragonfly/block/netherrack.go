@@ -2,7 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
-// Netherrack is a block found in The Nether
+// Netherrack is a block found in The Nether.
 type Netherrack struct {
 	noNBT
 }
