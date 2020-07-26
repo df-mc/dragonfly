@@ -18,6 +18,7 @@ type Lantern struct {
 	Soul bool
 }
 
+// Model
 func (l Lantern) Model() world.BlockModel {
 	return model.Lantern{}
 }

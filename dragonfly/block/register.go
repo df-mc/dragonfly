@@ -50,7 +50,7 @@ func init() {
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allCoralBlocks()...)
-	world.RegisterBlock(Endstone{})
+	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(Netherrack{})
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
@@ -151,7 +151,7 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem("minecraft:coral_block", c.(world.Item))
 	}
-	world.RegisterItem("minecraft:endstone", Endstone{})
+	world.RegisterItem("minecraft:endstone", EndStone{})
 	world.RegisterItem("minecraft:netherrack", Netherrack{})
 	world.RegisterItem("minecraft:clay", Clay{})
 	world.RegisterItem("minecraft:bone_block", BoneBlock{})

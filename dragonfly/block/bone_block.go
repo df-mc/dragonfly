@@ -15,7 +15,7 @@ type BoneBlock struct {
 	Axis world.Axis
 }
 
-// UseOnBlock handles the rotational placing of bone blocks
+// UseOnBlock handles the rotational placing of bone blocks.
 func (b BoneBlock) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, b)
 	if !used {

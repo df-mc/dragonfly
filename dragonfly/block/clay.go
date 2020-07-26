@@ -2,7 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
-// Clay is a block that can be found underwater
+// Clay is a block that can be found underwater.
 type Clay struct {
 	noNBT
 	solid

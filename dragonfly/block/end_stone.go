@@ -2,14 +2,14 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item"
 
-// Endstone is a block found in The End.
-type Endstone struct {
+// EndStone is a block found in The End.
+type EndStone struct {
 	noNBT
 	solid
 }
 
 // BreakInfo ...
-func (e Endstone) BreakInfo() BreakInfo {
+func (e EndStone) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    3,
 		Harvestable: pickaxeHarvestable,
@@ -19,16 +19,16 @@ func (e Endstone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (e Endstone) EncodeItem() (id int32, meta int16) {
+func (e EndStone) EncodeItem() (id int32, meta int16) {
 	return 121, 0
 }
 
 // EncodeBlock ...
-func (e Endstone) EncodeBlock() (name string, properties map[string]interface{}) {
+func (e EndStone) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:end_stone", nil
 }
 
 // Hash ...
-func (e Endstone) Hash() uint64 {
+func (e EndStone) Hash() uint64 {
 	return hashEndstone
 }
