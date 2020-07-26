@@ -70,6 +70,9 @@ func (d Door) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec
 			d.Right = true
 		}
 	}
+	// The side the door hinge is on can be affected by the blocks to the left and right of the door. In particular,
+	// opaque blocks on the right side of the door with transparent blocks on the left side result in a right sided
+	// door hinge.
 	if diffuser, ok := right.(LightDiffuser); !ok || diffuser.LightDiffusionLevel() != 0 {
 		if diffuser, ok := left.(LightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
 			d.Right = true
