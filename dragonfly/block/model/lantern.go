@@ -7,10 +7,15 @@ import (
 )
 
 // Lantern is a model for the lantern block.
-type Lantern struct{}
+type Lantern struct {
+	Hanging bool
+}
 
 // AABB ...
 func (l Lantern) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
+	if l.Hanging {
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.125}, mgl64.Vec3{0.375, 0.625, 0.375})}
+	}
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{0.375, 0.5, 0.375})}
 }
 

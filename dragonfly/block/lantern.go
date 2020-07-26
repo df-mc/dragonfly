@@ -21,7 +21,7 @@ type Lantern struct {
 
 // Model ...
 func (l Lantern) Model() world.BlockModel {
-	return model.Lantern{}
+	return model.Lantern{Hanging: l.Hanging}
 }
 
 // NeighbourUpdateTick ...
