@@ -49,7 +49,7 @@ func (t WoodTrapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos m
 // Activate ...
 func (t WoodTrapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
 	t.Open = !t.Open
-	w.SetBlock(pos, t)
+	w.PlaceBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 }
 

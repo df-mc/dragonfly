@@ -19,6 +19,7 @@ const (
 	hashGoldBlock
 	hashGrass
 	hashGrassPath
+	hashFenceGate
 	hashIronBlock
 	hashKelp
 	hashLapisBlock
