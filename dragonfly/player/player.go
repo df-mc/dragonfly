@@ -147,7 +147,8 @@ func (p *Player) UUID() uuid.UUID {
 // and will not change in the lifetime of an account.
 // The XUID is a number that can be parsed as an int64. No more information on what it represents is
 // available, and the UUID should be preferred.
-// The XUID returned is empty if the Player is not connected to a network session.
+// The XUID returned is empty if the Player is not connected to a network session or if the Player is not
+// authenticated with XBOX Live.
 func (p *Player) XUID() string {
 	return p.xuid
 }
@@ -882,7 +883,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				replacedPos = pos.Side(face)
 			}
 			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds() {
-				if p.placeBlock(replacedPos, b) && p.survival() {
+				if p.placeBlock(replacedPos, b, false) && p.survival() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
@@ -1082,14 +1083,16 @@ func (p *Player) ContinueBreaking(face world.Face) {
 // A use context may be passed to obtain information on if the block placement was successful. (SubCount will
 // be incremented). Nil may also be passed for the context parameter.
 func (p *Player) PlaceBlock(pos world.BlockPos, b world.Block, ctx *item.UseContext) {
-	if p.placeBlock(pos, b) {
-		ctx.CountSub++
+	if p.placeBlock(pos, b, ctx.IgnoreAABB) {
+		if ctx != nil {
+			ctx.CountSub++
+		}
 	}
 }
 
 // placeBlock makes the player place the block passed at the position passed, granted it is within the range
 // of the player. A bool is returned indicating if a block was placed successfully.
-func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
+func (p *Player) placeBlock(pos world.BlockPos, b world.Block, ignoreAABB bool) (success bool) {
 	defer func() {
 		if !success {
 			p.World().SetBlock(pos, p.World().Block(pos))
@@ -1098,8 +1101,10 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
 		return false
 	}
-	if p.obstructedPos(pos, b) {
-		return false
+	if !ignoreAABB {
+		if p.obstructedPos(pos, b) {
+			return false
+		}
 	}
 
 	ctx := event.C()
@@ -1611,6 +1616,10 @@ func (p *Player) close() {
 	_ = p.offHand.Close()
 	_ = p.armour.Close()
 	p.sMutex.Unlock()
+
+	if p.World() == nil {
+		return
+	}
 
 	if s == nil {
 		p.World().RemoveEntity(p)

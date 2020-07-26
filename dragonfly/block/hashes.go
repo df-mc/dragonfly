@@ -25,6 +25,7 @@ const (
 	hashIronBlock
 	hashKelp
 	hashLantern
+	hashLapisBlock
 	hashLava
 	hashLeaves
 	hashLight
@@ -45,4 +46,7 @@ const (
 	hashWoodSlab
 	hashWoodStairs
 	hashWool
+	hashGlassPane
+	hashStainedGlassPane
+	hashStainedGlass
 )

@@ -254,9 +254,10 @@ func (server *Server) startListening() error {
 	server.listener = &minecraft.Listener{
 		// We wrap a log.Logger around our Logrus logger so that it will print in the same format as the
 		// normal Logrus logger would.
-		ErrorLog:       log.New(w, "", 0),
-		ServerName:     server.c.Server.Name,
-		MaximumPlayers: server.c.Server.MaximumPlayers,
+		ErrorLog:               log.New(w, "", 0),
+		ServerName:             server.c.Server.Name,
+		MaximumPlayers:         server.c.Server.MaximumPlayers,
+		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 	}
 	//noinspection SpellCheckingInspection
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
