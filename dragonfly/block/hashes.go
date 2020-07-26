@@ -14,6 +14,7 @@ const (
 	hashCoralBlock
 	hashDiamondBlock
 	hashDirt
+	hashDoor
 	hashEmeraldBlock
 	hashEndstone
 	hashGlass
