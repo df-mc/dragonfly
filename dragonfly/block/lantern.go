@@ -15,7 +15,7 @@ type Lantern struct {
 
 	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
-	// Type of fire lighting the lantern
+	// Type of fire lighting the lantern.
 	Type fire.Fire
 }
 
@@ -37,7 +37,7 @@ func (l Lantern) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *wo
 
 // LightEmissionLevel ...
 func (l Lantern) LightEmissionLevel() uint8 {
-	return l.Type.Light
+	return l.Type.LightLevel
 }
 
 // UseOnBlock ...

@@ -2,9 +2,10 @@ package fire
 
 import "fmt"
 
+// Fire represents a type of fire. Used by flaming blocks such as torches, lanterns, fire, and campfires.
 type Fire struct {
 	fire
-	Light uint8
+	LightLevel uint8
 }
 
 type fire uint8
