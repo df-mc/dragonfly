@@ -49,6 +49,7 @@ func init() {
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
+	world.RegisterBlock(allDoors()...)
 }
 
 func init() {
@@ -142,6 +143,12 @@ func init() {
 	world.RegisterItem("minecraft:jungle_trapdoor", Trapdoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_trapdoor", Trapdoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_trapdoor", Trapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:wooden_door", Door{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_door", Door{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_door", Door{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_door", Door{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_door", Door{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_door", Door{Wood: wood.DarkOak()})
 }
 
 func init() {

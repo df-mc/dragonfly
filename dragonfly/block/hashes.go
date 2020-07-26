@@ -11,6 +11,7 @@ const (
 	hashConcrete
 	hashDiamondBlock
 	hashDirt
+	hashDoor
 	hashEmeraldBlock
 	hashGlass
 	hashGlazedTerracotta
