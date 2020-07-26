@@ -22,6 +22,12 @@ var IsUnstrippedLog func(b world.Block) bool
 // StripLog is a function used to convert a log block to a stripped log block.
 var StripLog func(b world.Block) world.Block
 
+// IsUncarvedPumpkin is a function set to check if a block is an uncarved pumpkin.
+var IsUncarvedPumpkin func(b world.Block) bool
+
+// CarvePumpkin is a function used to convert a pumpkin block to a carved pumpkin block.
+var CarvePumpkin func(b world.Block) world.Block
+
 // IsWater is a function used to check if a liquid is water.
 var IsWater func(b world.Liquid) bool
 

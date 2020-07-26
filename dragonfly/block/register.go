@@ -49,6 +49,8 @@ func init() {
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
+	world.RegisterBlock(allPumpkins()...)
+	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
 }
 
 func init() {
@@ -142,6 +144,9 @@ func init() {
 	world.RegisterItem("minecraft:jungle_trapdoor", Trapdoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_trapdoor", Trapdoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_trapdoor", Trapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:pumpkin", Pumpkin{})
+	world.RegisterItem("minecraft:lit_pumpkin", LitPumpkin{})
+	world.RegisterItem("minecraft:carved_pumpkin", Pumpkin{Carved: true})
 }
 
 func init() {
@@ -156,6 +161,15 @@ func init() {
 		l := b.(Log)
 		l.Stripped = true
 		return l
+	}
+	item_internal.IsUncarvedPumpkin = func(b world.Block) bool {
+		p, ok := b.(Pumpkin)
+		return ok && !p.Carved
+	}
+	item_internal.CarvePumpkin = func(b world.Block) world.Block {
+		p := b.(Pumpkin)
+		p.Carved = true
+		return p
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}

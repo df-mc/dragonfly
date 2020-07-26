@@ -69,5 +69,7 @@ func init() {
 	world.RegisterItem("minecraft:bucket", Bucket{Content: bucket.Water()})
 	world.RegisterItem("minecraft:bucket", Bucket{Content: bucket.Lava()})
 
+	world.RegisterItem("minecraft:shears", Shear{})
+
 	world.RegisterItem("minecraft:diamond", Diamond{})
 }

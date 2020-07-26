@@ -21,10 +21,12 @@ const (
 	hashLava
 	hashLeaves
 	hashLight
+	hashLitPumpkin
 	hashLog
 	hashNetheriteBlock
 	hashObsidian
 	hashPlanks
+	hashPumpkin
 	hashSponge
 	hashStainedTerracotta
 	hashStone
