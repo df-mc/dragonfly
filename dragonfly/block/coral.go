@@ -22,7 +22,7 @@ type Coral struct {
 
 // UseOnBlock ...
 func (c Coral) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, c)
+	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
