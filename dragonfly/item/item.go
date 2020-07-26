@@ -45,8 +45,9 @@ type Usable interface {
 // UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
 // after the action is complete.
 type UseContext struct {
-	Damage   int
-	CountSub int
+	Damage     int
+	CountSub   int
+	IgnoreAABB bool
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack
