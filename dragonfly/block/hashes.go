@@ -21,6 +21,7 @@ const (
 	hashGrassPath
 	hashIronBlock
 	hashKelp
+	hashLapisBlock
 	hashLava
 	hashLeaves
 	hashLight
