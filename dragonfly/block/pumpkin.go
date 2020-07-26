@@ -6,7 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Pumpkins are a crop block. Interacting with shears results in the carved variant.
+// Pumpkin is a crop block. Interacting with shears results in the carved variant.
 type Pumpkin struct {
 	noNBT
 
