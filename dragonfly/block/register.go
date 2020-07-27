@@ -55,6 +55,13 @@ func init() {
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
 	world.RegisterBlock(allCoralBlocks()...)
+	world.RegisterBlock(AncientDebris{})
+	world.RegisterBlock(EmeraldOre{})
+	world.RegisterBlock(DiamondOre{})
+	world.RegisterBlock(LapisOre{})
+	world.RegisterBlock(NetherGoldOre{})
+	world.RegisterBlock(GoldOre{})
+	world.RegisterBlock(IronOre{})
 }
 
 func init() {
@@ -161,6 +168,13 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem("minecraft:coral_block", c.(world.Item))
 	}
+	world.RegisterItem("minecraft:ancient_debris", AncientDebris{})
+	world.RegisterItem("minecraft:emerald_ore", EmeraldOre{})
+	world.RegisterItem("minecraft:diamond_ore", DiamondOre{})
+	world.RegisterItem("minecraft:lapis_ore", LapisOre{})
+	world.RegisterItem("minecraft:nether_gold_ore", NetherGoldOre{})
+	world.RegisterItem("minecraft:gold_ore", GoldOre{})
+	world.RegisterItem("minecraft:iron_ore", IronOre{})
 }
 
 func init() {
