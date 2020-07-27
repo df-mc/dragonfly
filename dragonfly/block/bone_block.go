@@ -44,7 +44,7 @@ func (b BoneBlock) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (b BoneBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:bone_block", map[string]interface{}{"pillar_axis": b.Axis.String()}
+	return "minecraft:bone_block", map[string]interface{}{"pillar_axis": b.Axis.String(), "deprecated": int32(0)}
 }
 
 // Hash ...
