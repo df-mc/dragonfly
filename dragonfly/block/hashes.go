@@ -16,6 +16,7 @@ const (
 	hashEmeraldBlock
 	hashGlass
 	hashGlazedTerracotta
+	hashGlowstone
 	hashGoldBlock
 	hashGrass
 	hashGrassPath
