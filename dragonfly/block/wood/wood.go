@@ -38,6 +38,11 @@ func DarkOak() Wood {
 	return Wood{wood(5)}
 }
 
+// All returns a list of all wood types
+func All() []Wood {
+	return []Wood{Oak(), Spruce(), Birch(), Jungle(), Acacia(), DarkOak()}
+}
+
 type wood uint8
 
 // Uint8 returns the wood as a uint8.

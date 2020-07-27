@@ -10,7 +10,7 @@ import (
 	"math"
 )
 
-// WoodTrapdoor is a block that can be used as an openable 1x1 barrier
+// WoodTrapdoor is a block that can be used as an openable 1x1 barrier.
 type WoodTrapdoor struct {
 	noNBT
 	transparent
@@ -48,7 +48,7 @@ func (t WoodTrapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos m
 // Activate ...
 func (t WoodTrapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
 	t.Open = !t.Open
-	w.SetBlock(pos, t)
+	w.PlaceBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 }
 
@@ -118,14 +118,7 @@ func (t WoodTrapdoor) Hash() uint64 {
 
 // allTrapdoors returns a list of all trapdoor types
 func allTrapdoors() (trapdoors []world.Block) {
-	for _, w := range []wood.Wood{
-		wood.Oak(),
-		wood.Spruce(),
-		wood.Birch(),
-		wood.Jungle(),
-		wood.Acacia(),
-		wood.DarkOak(),
-	} {
+	for _, w := range wood.All() {
 		for i := world.Direction(0); i <= 3; i++ {
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})
