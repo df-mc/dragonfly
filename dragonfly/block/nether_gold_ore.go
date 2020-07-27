@@ -18,6 +18,7 @@ func (n NetherGoldOre) BreakInfo() BreakInfo {
 		Harvestable: pickaxeHarvestable,
 		Effective:   pickaxeEffective,
 		Drops:       simpleDrops(item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)), //TODO: Silk Touch
+		XPDrops:     XPDropRange{0, 1},
 	}
 }
 

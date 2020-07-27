@@ -17,6 +17,7 @@ func (c CoalOre) BreakInfo() BreakInfo {
 		Harvestable: pickaxeHarvestable,
 		Effective:   pickaxeEffective,
 		Drops:       simpleDrops(item.NewStack(item.Coal{}, 1)), //TODO: Silk Touch
+		XPDrops:     XPDropRange{0, 2},
 	}
 }
 

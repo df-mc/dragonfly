@@ -1,7 +1,7 @@
 package item
 
 // Coal is an item used as fuel & crafting torches.
-type Coal struct{}
+type Coal struct{} //TODO: Fuel
 
 // EncodeItem ...
 func (Coal) EncodeItem() (id int32, meta int16) {

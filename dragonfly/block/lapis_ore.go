@@ -21,6 +21,7 @@ func (l LapisOre) BreakInfo() BreakInfo {
 		},
 		Effective: pickaxeEffective,
 		Drops:     simpleDrops(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4)), //TODO: Silk Touch
+		XPDrops:   XPDropRange{2, 5},
 	}
 }
 

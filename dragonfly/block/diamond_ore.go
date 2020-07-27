@@ -20,6 +20,7 @@ func (d DiamondOre) BreakInfo() BreakInfo {
 		},
 		Effective: pickaxeEffective,
 		Drops:     simpleDrops(item.NewStack(item.Diamond{}, 1)), //TODO: Silk Touch
+		XPDrops:   XPDropRange{3, 7},
 	}
 }
 
