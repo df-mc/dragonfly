@@ -1080,7 +1080,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					// No layers present, so skip it right away.
 					continue
 				}
-				x, y, z := ra>>i&0xf, rb>>i&0xf, rc>>i&0xf
+				x, y, z := (ra>>i)&0xf, (rb>>i)&0xf, (rc>>i)&0xf
 
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
@@ -1092,7 +1092,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 
 				if randomTicker, ok := registeredStates[rid].(RandomTicker); ok {
-					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: BlockPos{int(pos[0]<<4) + x, y + i>>2, int(pos[1]<<4) + z}})
+					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: BlockPos{int(pos[0]<<4) + x, y + i<<2, int(pos[1]<<4) + z}})
 				}
 			}
 		}
