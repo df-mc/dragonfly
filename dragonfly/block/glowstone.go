@@ -6,7 +6,10 @@ import (
 )
 
 // Glowstone is commonly found on the ceiling of the nether dimension.
-type Glowstone struct { noNBT }
+type Glowstone struct {
+	noNBT
+	solid
+}
 
 // BreakInfo ...
 func (g Glowstone) BreakInfo() BreakInfo {
@@ -14,7 +17,7 @@ func (g Glowstone) BreakInfo() BreakInfo {
 		Hardness:    0.3,
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(item.GlowstoneDust{}, rand.Intn(3) + 2)),
+		Drops:       simpleDrops(item.NewStack(item.GlowstoneDust{}, rand.Intn(3)+2)),
 	}
 }
 
