@@ -1,8 +1,8 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -10,9 +10,11 @@ import (
 	"math"
 )
 
-// Trapdoor is a block that can be used as an openable 1x1 barrier
-type Trapdoor struct {
+// WoodTrapdoor is a block that can be used as an openable 1x1 barrier
+type WoodTrapdoor struct {
 	noNBT
+
+	transparent
 
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
@@ -25,25 +27,14 @@ type Trapdoor struct {
 	Top bool
 }
 
-// LightDiffusionLevel ...
-func (t Trapdoor) LightDiffusionLevel() uint8 {
-	return 0
-}
-
-// AABB ...
-func (t Trapdoor) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
-	if t.Open {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(t.Facing.Face()), -0.8125)}
-	}
-	if t.Top {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(world.FaceDown), -0.8125)}
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(int(world.FaceUp), -0.8125)}
+// Model ...
+func (t WoodTrapdoor) Model() world.BlockModel {
+	return model.Trapdoor{Facing: t.Facing, Top: t.Top, Open: t.Open}
 }
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
-func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (t WoodTrapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, t)
 	if !used {
 		return false
@@ -56,14 +47,14 @@ func (t Trapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 }
 
 // Activate ...
-func (t Trapdoor) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
+func (t WoodTrapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
 	t.Open = !t.Open
 	w.SetBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 }
 
 // BreakInfo ...
-func (t Trapdoor) BreakInfo() BreakInfo {
+func (t WoodTrapdoor) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    3,
 		Harvestable: alwaysHarvestable,
@@ -73,18 +64,18 @@ func (t Trapdoor) BreakInfo() BreakInfo {
 }
 
 // CanDisplace ...
-func (t Trapdoor) CanDisplace(l world.Liquid) bool {
+func (t WoodTrapdoor) CanDisplace(l world.Liquid) bool {
 	_, water := l.(Water)
 	return water
 }
 
 // SideClosed ...
-func (t Trapdoor) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (t WoodTrapdoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
 // EncodeItem ...
-func (t Trapdoor) EncodeItem() (id int32, meta int16) {
+func (t WoodTrapdoor) EncodeItem() (id int32, meta int16) {
 	switch t.Wood {
 	case wood.Oak():
 		return 96, 0
@@ -103,7 +94,7 @@ func (t Trapdoor) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (t Trapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
+func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch t.Wood {
 	case wood.Oak():
 		return "minecraft:trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
@@ -122,7 +113,7 @@ func (t Trapdoor) EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // Hash ...
-func (t Trapdoor) Hash() uint64 {
+func (t WoodTrapdoor) Hash() uint64 {
 	return hashTrapdoor | (uint64(t.Facing) << 32) | (uint64(boolByte(t.Open)) << 34) | (uint64(boolByte(t.Top)) << 35) | (uint64(t.Wood.Uint8()) << 36)
 }
 
@@ -137,10 +128,10 @@ func allTrapdoors() (trapdoors []world.Block) {
 		wood.DarkOak(),
 	} {
 		for i := world.Direction(0); i <= 3; i++ {
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: false, Top: false})
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: false, Top: true})
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: true, Top: true})
-			trapdoors = append(trapdoors, Trapdoor{Wood: w, Facing: i, Open: true, Top: false})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: true})
+			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: false})
 		}
 	}
 	return

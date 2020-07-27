@@ -5,14 +5,13 @@ import "github.com/df-mc/dragonfly/dragonfly/world"
 // Light is an invisible block that can produce any light level.
 type Light struct {
 	noNBT
+	empty
+	replaceable
+	transparent
+
 	// Level is the light level that the light block produces. It is a number from 0-15, where 15 is the
 	// brightest and 0 is no light at all.
 	Level int
-}
-
-// ReplaceableBy ...
-func (l Light) ReplaceableBy(world.Block) bool {
-	return true
 }
 
 // EncodeItem ...
@@ -23,11 +22,6 @@ func (l Light) EncodeItem() (id int32, meta int16) {
 // LightEmissionLevel ...
 func (l Light) LightEmissionLevel() uint8 {
 	return uint8(l.Level)
-}
-
-// LightDiffusionLevel ...
-func (l Light) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // EncodeBlock ...

@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,6 +11,9 @@ import (
 // Kelp is an underwater block which can grow on top of solids underwater.
 type Kelp struct {
 	noNBT
+	empty
+	transparent
+
 	// Age is the age of the kelp block which can be 0-15. If age is 15, kelp won't grow any further.
 	Age int
 }
@@ -42,11 +44,6 @@ func (k Kelp) Hash() uint64 {
 	return hashKelp | (uint64(k.Age) << 32)
 }
 
-// LightDiffusionLevel ...
-func (Kelp) LightDiffusionLevel() uint8 {
-	return 0
-}
-
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.
 func (Kelp) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)
@@ -54,13 +51,8 @@ func (Kelp) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed will always return false since kelp doesn't close any side.
-func (Kelp) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (Kelp) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
-}
-
-// AABB will always return nil, since Kelp can be placed even if someone is standing on its placement position.
-func (Kelp) AABB(world.BlockPos, *world.World) []physics.AABB {
-	return nil
 }
 
 // withRandomAge returns a new Kelp block with its age value randomized between 0 and 14.
@@ -77,10 +69,12 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 		return
 	}
 
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// Kelp blocks must be placed on a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	case Air, Water:
-		return false
+	below := pos.Add(world.BlockPos{0, -1})
+	belowBlock := w.Block(below)
+	if _, kelp := belowBlock.(Kelp); !kelp {
+		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+			return false
+		}
 	}
 
 	liquid, ok := w.Liquid(pos)
@@ -106,24 +100,12 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 		w.PlaceBlock(pos, k.withRandomAge())
 	}
 
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// Kelp blocks can only exist on top of a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	case Air, Water:
-		w.ScheduleBlockUpdate(pos, time.Second/20)
-	}
-}
-
-// ScheduledTick ...
-func (Kelp) ScheduledTick(pos world.BlockPos, w *world.World) {
-	if _, ok := w.Liquid(pos); !ok {
-		w.BreakBlock(pos)
-		return
-	}
-	// Kelp blocks can only exist on top of a solid or another kelp block, TODO: Replace this to check for a solid in the future when a Solid interface exists.
-	switch w.Block(pos.Add(world.BlockPos{0, -1})).(type) {
-	// As of now, the breaking logic has to be in here as well to avoid issues.
-	case Air, Water:
-		w.BreakBlock(pos)
+	below := pos.Add(world.BlockPos{0, -1})
+	belowBlock := w.Block(below)
+	if _, kelp := belowBlock.(Kelp); !kelp {
+		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+			w.BreakBlock(pos)
+		}
 	}
 }
 

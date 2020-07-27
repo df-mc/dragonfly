@@ -6,7 +6,10 @@ import (
 )
 
 // IronBlock is a precious metal block made from 9 iron ingots.
-type IronBlock struct{ noNBT }
+type IronBlock struct {
+	noNBT
+	solid
+}
 
 // BreakInfo ...
 func (i IronBlock) BreakInfo() BreakInfo {

@@ -63,8 +63,10 @@ type World struct {
 	// blockUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
-	blockUpdates    map[BlockPos]int64
-	updatePositions []BlockPos
+	blockUpdates             map[BlockPos]int64
+	updatePositions          []BlockPos
+	neighbourUpdatePositions []neighbourUpdate
+	neighbourUpdatesSync     []neighbourUpdate
 
 	toTick              []toTick
 	blockEntitiesToTick []blockEntityToTick
@@ -216,7 +218,6 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 		return
 	}
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
-	c.Unlock()
 
 	var hasNBT bool
 	if b != nil {
@@ -229,6 +230,7 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 	} else {
 		delete(c.e, pos)
 	}
+	c.Unlock()
 	for _, viewer := range c.v {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
@@ -792,22 +794,24 @@ func (w *World) doBlockUpdatesAround(pos BlockPos) {
 	}
 
 	changed := pos
+
+	w.updateMu.Lock()
 	w.updateNeighbour(pos, changed)
 	pos.Neighbours(func(pos BlockPos) {
 		w.updateNeighbour(pos, changed)
 	})
+	w.updateMu.Unlock()
+}
+
+// neighbourUpdate represents a position that needs to be updated because of a neighbour that changed.
+type neighbourUpdate struct {
+	pos, neighbour BlockPos
 }
 
 // updateNeighbour ticks the position passed as a result of the neighbour passed being updated.
 func (w *World) updateNeighbour(pos, changedNeighbour BlockPos) {
-	if ticker, ok := w.Block(pos).(NeighbourUpdateTicker); ok {
-		ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
-	}
-	if liquid, ok := w.additionalLiquid(pos); ok {
-		if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
-			ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
-		}
-	}
+	w.neighbourUpdatePositions = append(w.neighbourUpdatePositions, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
+
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
@@ -969,6 +973,8 @@ func (w *World) tickScheduledBlocks(tick int64) {
 			delete(w.blockUpdates, pos)
 		}
 	}
+	w.neighbourUpdatesSync = append(w.neighbourUpdatesSync, w.neighbourUpdatePositions...)
+	w.neighbourUpdatePositions = w.neighbourUpdatePositions[:0]
 	w.updateMu.Unlock()
 
 	for _, pos := range w.updatePositions {
@@ -981,8 +987,20 @@ func (w *World) tickScheduledBlocks(tick int64) {
 			}
 		}
 	}
+	for _, update := range w.neighbourUpdatesSync {
+		pos, changedNeighbour := update.pos, update.neighbour
+		if ticker, ok := w.Block(pos).(NeighbourUpdateTicker); ok {
+			ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
+		}
+		if liquid, ok := w.additionalLiquid(pos); ok {
+			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
+				ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
+			}
+		}
+	}
 
 	w.updatePositions = w.updatePositions[:0]
+	w.neighbourUpdatesSync = w.neighbourUpdatesSync[:0]
 }
 
 // toTick is a struct used to keep track of blocks that need to be ticked upon a random tick.

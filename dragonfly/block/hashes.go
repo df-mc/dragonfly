@@ -9,16 +9,20 @@ const (
 	hashCoalBlock
 	hashCobblestone
 	hashConcrete
+	hashCoralBlock
 	hashDiamondBlock
 	hashDirt
+	hashDoor
 	hashEmeraldBlock
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone
 	hashGoldBlock
 	hashGrass
+	hashGrassPath
 	hashIronBlock
 	hashKelp
+	hashLapisBlock
 	hashLava
 	hashLeaves
 	hashLight
@@ -38,4 +42,7 @@ const (
 	hashWoodSlab
 	hashWoodStairs
 	hashWool
+	hashGlassPane
+	hashStainedGlassPane
+	hashStainedGlass
 )
