@@ -8,7 +8,7 @@ type StoneSlab3 struct {
 	stoneSlab3
 }
 
-// SmoothStone returns smooth stone slab material.
+// EndStoneBrick returns smooth stone slab material.
 func EndStoneBrick() StoneSlab3 {
 	return StoneSlab3{stoneSlab3(0)}
 }
