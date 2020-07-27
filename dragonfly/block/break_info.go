@@ -81,11 +81,8 @@ type BreakInfo struct {
 	XPDrops XPDropRange
 }
 
-// XPDropRange is a struct holding the min & max XP drop amounts of blocks.
-type XPDropRange struct {
-	Min,
-	Max int
-}
+// XPDropRange holds the min & max XP drop amounts of blocks.
+type XPDropRange [2]int
 
 // neverEffective is a convenience function for blocks that are mined the same by all tools.
 var neverEffective = func(t tool.Tool) bool {
