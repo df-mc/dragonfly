@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -35,6 +36,7 @@ func init() {
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
+	world.RegisterBlock(Glowstone{})
 	world.RegisterBlock(EmeraldBlock{})
 	world.RegisterBlock(GoldBlock{})
 	world.RegisterBlock(NetheriteBlock{})
@@ -57,6 +59,11 @@ func init() {
 	world.RegisterBlock(allCoralBlocks()...)
 	world.RegisterBlock(allPumpkins()...)
 	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
+	world.RegisterBlock(EndStone{})
+	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(Clay{})
+	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
+	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
 }
 
 func init() {
@@ -137,6 +144,7 @@ func init() {
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
+	world.RegisterItem("minecraft:glowstone", Glowstone{})
 	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
 	world.RegisterItem("minecraft:netherite_block", NetheriteBlock{})
 	world.RegisterItem("minecraft:gold_block", GoldBlock{})
@@ -166,6 +174,12 @@ func init() {
 	world.RegisterItem("minecraft:pumpkin", Pumpkin{})
 	world.RegisterItem("minecraft:lit_pumpkin", LitPumpkin{})
 	world.RegisterItem("minecraft:carved_pumpkin", Pumpkin{Carved: true})
+	world.RegisterItem("minecraft:end_stone", EndStone{})
+	world.RegisterItem("minecraft:netherrack", Netherrack{})
+	world.RegisterItem("minecraft:clay", Clay{})
+	world.RegisterItem("minecraft:bone_block", BoneBlock{})
+	world.RegisterItem("minecraft:lantern", Lantern{Type: fire.Normal()})
+	world.RegisterItem("minecraft:soul_lantern", Lantern{Type: fire.Soul()})
 }
 
 func init() {
