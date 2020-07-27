@@ -114,7 +114,7 @@ func (f WoodFenceGate) Hash() uint64 {
 
 // Model ...
 func (f WoodFenceGate) Model() world.BlockModel {
-	return model.FenceGate{Facing: f.Facing, Open: f.Open, InWall: f.Lowered}
+	return model.FenceGate{Facing: f.Facing, Open: f.Open}
 }
 
 // allFenceGates returns a list of all trapdoor types.
