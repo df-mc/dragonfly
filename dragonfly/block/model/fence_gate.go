@@ -10,7 +10,6 @@ import (
 type FenceGate struct {
 	Facing world.Direction
 	Open   bool
-	InWall bool
 }
 
 // AABB ...
