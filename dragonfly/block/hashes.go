@@ -8,6 +8,7 @@ const (
 	hashCarpet
 	hashChest
 	hashCoalBlock
+	hashCoalOre
 	hashCobblestone
 	hashConcrete
 	hashCoralBlock
