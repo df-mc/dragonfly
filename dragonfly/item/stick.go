@@ -1,6 +1,6 @@
 package item
 
-// Sticks are one of the most abundant resources used for crafting many tools and items.
+// Stick is one of the most abundant resources used for crafting many tools and items.
 type Stick struct {}
 
 // EncodeItem ...
