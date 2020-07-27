@@ -10,7 +10,7 @@ import (
 type StainedGlass struct {
 	noNBT
 	transparent
-	thin
+	solid
 
 	// Colour specifies the colour of the block.
 	Colour colour.Colour

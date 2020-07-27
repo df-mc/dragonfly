@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -35,7 +36,10 @@ func init() {
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
+	world.RegisterBlock(Glowstone{})
 	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(EndBricks{})
+	world.RegisterBlock(allEndBrickStairs()...)
 	world.RegisterBlock(GoldBlock{})
 	world.RegisterBlock(NetheriteBlock{})
 	world.RegisterBlock(IronBlock{})
@@ -52,9 +56,26 @@ func init() {
 	world.RegisterBlock(GlassPane{})
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
+	world.RegisterBlock(allFenceGates()...)
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
+	world.RegisterBlock(allCoral()...)
 	world.RegisterBlock(allCoralBlocks()...)
+	world.RegisterBlock(allPumpkins()...)
+	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
+	world.RegisterBlock(EndStone{})
+	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(Clay{})
+	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
+	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
+	world.RegisterBlock(AncientDebris{})
+	world.RegisterBlock(EmeraldOre{})
+	world.RegisterBlock(DiamondOre{})
+	world.RegisterBlock(LapisOre{})
+	world.RegisterBlock(NetherGoldOre{})
+	world.RegisterBlock(GoldOre{})
+	world.RegisterBlock(IronOre{})
+	world.RegisterBlock(CoalOre{})
 }
 
 func init() {
@@ -135,7 +156,10 @@ func init() {
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
+	world.RegisterItem("minecraft:glowstone", Glowstone{})
 	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
+	world.RegisterItem("minecraft:end_bricks", EndBricks{})
+	world.RegisterItem("minecraft:end_brick_stairs", EndBrickStairs{})
 	world.RegisterItem("minecraft:netherite_block", NetheriteBlock{})
 	world.RegisterItem("minecraft:gold_block", GoldBlock{})
 	world.RegisterItem("minecraft:iron_block", IronBlock{})
@@ -146,6 +170,12 @@ func init() {
 	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
 	world.RegisterItem("minecraft:glass_pane", GlassPane{})
+	world.RegisterItem("minecraft:fence_gate", WoodFenceGate{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_fence_gate", WoodFenceGate{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_fence_gate", WoodFenceGate{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_fence_gate", WoodFenceGate{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_fence_gate", WoodFenceGate{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_fence_gate", WoodFenceGate{Wood: wood.DarkOak()})
 	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
@@ -158,9 +188,29 @@ func init() {
 	world.RegisterItem("minecraft:jungle_door", WoodDoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_door", WoodDoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_door", WoodDoor{Wood: wood.DarkOak()})
+	for _, c := range allCoral() {
+		world.RegisterItem("minecraft:coral", c.(world.Item))
+	}
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem("minecraft:coral_block", c.(world.Item))
 	}
+	world.RegisterItem("minecraft:pumpkin", Pumpkin{})
+	world.RegisterItem("minecraft:lit_pumpkin", LitPumpkin{})
+	world.RegisterItem("minecraft:carved_pumpkin", Pumpkin{Carved: true})
+	world.RegisterItem("minecraft:end_stone", EndStone{})
+	world.RegisterItem("minecraft:netherrack", Netherrack{})
+	world.RegisterItem("minecraft:clay", Clay{})
+	world.RegisterItem("minecraft:bone_block", BoneBlock{})
+	world.RegisterItem("minecraft:lantern", Lantern{Type: fire.Normal()})
+	world.RegisterItem("minecraft:soul_lantern", Lantern{Type: fire.Soul()})
+	world.RegisterItem("minecraft:ancient_debris", AncientDebris{})
+	world.RegisterItem("minecraft:emerald_ore", EmeraldOre{})
+	world.RegisterItem("minecraft:diamond_ore", DiamondOre{})
+	world.RegisterItem("minecraft:lapis_ore", LapisOre{})
+	world.RegisterItem("minecraft:nether_gold_ore", NetherGoldOre{})
+	world.RegisterItem("minecraft:gold_ore", GoldOre{})
+	world.RegisterItem("minecraft:iron_ore", IronOre{})
+	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 }
 
 func init() {
@@ -175,6 +225,19 @@ func init() {
 		l := b.(Log)
 		l.Stripped = true
 		return l
+	}
+	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
+		p, ok := b.(Pumpkin)
+		return ok && p.Carved
+	}
+	item_internal.IsUncarvedPumpkin = func(b world.Block) bool {
+		p, ok := b.(Pumpkin)
+		return ok && !p.Carved
+	}
+	item_internal.CarvePumpkin = func(b world.Block) world.Block {
+		p := b.(Pumpkin)
+		p.Carved = true
+		return p
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}

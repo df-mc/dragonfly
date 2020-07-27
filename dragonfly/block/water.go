@@ -12,6 +12,7 @@ type Water struct {
 	noNBT
 	empty
 	replaceable
+
 	// Still makes the water appear as if it is not flowing.
 	Still bool
 	// Depth is the depth of the water. This is a number from 1-8, where 8 is a source block and 1 is the

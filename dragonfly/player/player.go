@@ -179,6 +179,13 @@ func (p *Player) Message(a ...interface{}) {
 	p.session().SendMessage(format(a))
 }
 
+// Messagef sends a formatted message using a specific format to the player. The message is formatted
+// according to the fmt.Sprintf formatting rules.
+func (p *Player) Messagef(f string, a ...interface{}) {
+	msg := fmt.Sprintf(f, a...)
+	p.session().SendMessage(msg)
+}
+
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
 // overwrites/is overwritten by the name of the item equipped.
 // The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
