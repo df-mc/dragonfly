@@ -32,6 +32,10 @@ const (
 	hashSponge
 	hashStainedTerracotta
 	hashStone
+	hashStoneSlab
+	hashStoneSlab2
+	hashStoneSlab3
+	hashStoneSlab4
 	hashGranite
 	hashDiorite
 	hashAndesite
