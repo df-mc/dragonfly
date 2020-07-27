@@ -76,6 +76,7 @@ func init() {
 	world.RegisterBlock(GoldOre{})
 	world.RegisterBlock(IronOre{})
 	world.RegisterBlock(CoalOre{})
+	world.RegisterBlock(Bricks{})
 }
 
 func init() {
@@ -211,6 +212,7 @@ func init() {
 	world.RegisterItem("minecraft:gold_ore", GoldOre{})
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
+	world.RegisterItem("minecraft:brick_block", Bricks{})
 }
 
 func init() {

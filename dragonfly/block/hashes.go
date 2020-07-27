@@ -64,4 +64,5 @@ const (
 	hashGlassPane
 	hashStainedGlassPane
 	hashStainedGlass
+	hashBricks
 )
