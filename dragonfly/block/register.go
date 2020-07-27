@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -56,6 +57,11 @@ func init() {
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
 	world.RegisterBlock(allCoralBlocks()...)
+	world.RegisterBlock(EndStone{})
+	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(Clay{})
+	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
+	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
 }
 
 func init() {
@@ -163,6 +169,13 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem("minecraft:coral_block", c.(world.Item))
 	}
+	world.RegisterItem("minecraft:end_stone", EndStone{})
+	world.RegisterItem("minecraft:netherrack", Netherrack{})
+	world.RegisterItem("minecraft:clay", Clay{})
+	world.RegisterItem("minecraft:bone_block", BoneBlock{})
+	world.RegisterItem("minecraft:lantern", Lantern{Type: fire.Normal()})
+	world.RegisterItem("minecraft:soul_lantern", Lantern{Type: fire.Soul()})
+
 }
 
 func init() {
