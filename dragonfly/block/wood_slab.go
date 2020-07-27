@@ -158,7 +158,7 @@ func (s WoodSlab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s WoodSlab) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (s WoodSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
 }

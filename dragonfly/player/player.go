@@ -147,7 +147,8 @@ func (p *Player) UUID() uuid.UUID {
 // and will not change in the lifetime of an account.
 // The XUID is a number that can be parsed as an int64. No more information on what it represents is
 // available, and the UUID should be preferred.
-// The XUID returned is empty if the Player is not connected to a network session.
+// The XUID returned is empty if the Player is not connected to a network session or if the Player is not
+// authenticated with XBOX Live.
 func (p *Player) XUID() string {
 	return p.xuid
 }
@@ -176,6 +177,13 @@ func (p *Player) Handle(h Handler) {
 // fmt.Sprintln, however the newline at the end is not written.
 func (p *Player) Message(a ...interface{}) {
 	p.session().SendMessage(format(a))
+}
+
+// Messagef sends a formatted message using a specific format to the player. The message is formatted
+// according to the fmt.Sprintf formatting rules.
+func (p *Player) Messagef(f string, a ...interface{}) {
+	msg := fmt.Sprintf(f, a...)
+	p.session().SendMessage(msg)
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
