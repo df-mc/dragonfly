@@ -77,7 +77,12 @@ type BreakInfo struct {
 	// Drops is a function called to get the drops of the block if it is broken using the tool passed. If the
 	// item used to break the block is not a tool, a tool.None is passed.
 	Drops func(t tool.Tool) []item.Stack
+	// XPDrops is the range of XP a block can drop when broken.
+	XPDrops XPDropRange
 }
+
+// XPDropRange holds the min & max XP drop amounts of blocks.
+type XPDropRange [2]int
 
 // neverEffective is a convenience function for blocks that are mined the same by all tools.
 var neverEffective = func(t tool.Tool) bool {

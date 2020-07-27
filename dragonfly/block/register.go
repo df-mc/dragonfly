@@ -68,6 +68,14 @@ func init() {
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
 	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
+	world.RegisterBlock(AncientDebris{})
+	world.RegisterBlock(EmeraldOre{})
+	world.RegisterBlock(DiamondOre{})
+	world.RegisterBlock(LapisOre{})
+	world.RegisterBlock(NetherGoldOre{})
+	world.RegisterBlock(GoldOre{})
+	world.RegisterBlock(IronOre{})
+	world.RegisterBlock(CoalOre{})
 }
 
 func init() {
@@ -195,6 +203,14 @@ func init() {
 	world.RegisterItem("minecraft:bone_block", BoneBlock{})
 	world.RegisterItem("minecraft:lantern", Lantern{Type: fire.Normal()})
 	world.RegisterItem("minecraft:soul_lantern", Lantern{Type: fire.Soul()})
+	world.RegisterItem("minecraft:ancient_debris", AncientDebris{})
+	world.RegisterItem("minecraft:emerald_ore", EmeraldOre{})
+	world.RegisterItem("minecraft:diamond_ore", DiamondOre{})
+	world.RegisterItem("minecraft:lapis_ore", LapisOre{})
+	world.RegisterItem("minecraft:nether_gold_ore", NetherGoldOre{})
+	world.RegisterItem("minecraft:gold_ore", GoldOre{})
+	world.RegisterItem("minecraft:iron_ore", IronOre{})
+	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 }
 
 func init() {

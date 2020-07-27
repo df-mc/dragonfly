@@ -2,6 +2,7 @@ package block
 
 const (
 	hashAir uint64 = iota
+	hashAncientDebris
 	hashBeacon
 	hashBedrock
 	hashBoneBlock
@@ -9,14 +10,17 @@ const (
 	hashChest
 	hashClay
 	hashCoalBlock
+	hashCoalOre
 	hashCobblestone
 	hashConcrete
 	hashCoral
 	hashCoralBlock
 	hashDiamondBlock
+	hashDiamondOre
 	hashDirt
 	hashDoor
 	hashEmeraldBlock
+	hashEmeraldOre
 	hashEndBricks
 	hashEndBrickStairs
 	hashEndStone
@@ -24,18 +28,22 @@ const (
 	hashGlazedTerracotta
 	hashGlowstone
 	hashGoldBlock
+	hashGoldOre
 	hashGrass
 	hashGrassPath
 	hashFenceGate
 	hashIronBlock
+	hashIronOre
 	hashKelp
 	hashLantern
 	hashLapisBlock
+	hashLapisOre
 	hashLava
 	hashLeaves
 	hashLight
 	hashLitPumpkin
 	hashLog
+	hashNetherGoldOre
 	hashNetheriteBlock
 	hashNetherrack
 	hashObsidian
