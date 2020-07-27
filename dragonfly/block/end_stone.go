@@ -30,5 +30,5 @@ func (e EndStone) EncodeBlock() (name string, properties map[string]interface{})
 
 // Hash ...
 func (e EndStone) Hash() uint64 {
-	return hashEndstone
+	return hashEndStone
 }

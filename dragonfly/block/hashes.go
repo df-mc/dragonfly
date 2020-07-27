@@ -18,7 +18,7 @@ const (
 	hashEmeraldBlock
 	hashEndBricks
 	hashEndBrickStairs
-	hashEndstone
+	hashEndStone
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone

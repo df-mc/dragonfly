@@ -13,7 +13,6 @@ import (
 // WoodTrapdoor is a block that can be used as an openable 1x1 barrier
 type WoodTrapdoor struct {
 	noNBT
-
 	transparent
 
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
