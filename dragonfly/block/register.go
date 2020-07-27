@@ -57,6 +57,8 @@ func init() {
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
 	world.RegisterBlock(allCoralBlocks()...)
+	world.RegisterBlock(allPumpkins()...)
+	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(Netherrack{})
 	world.RegisterBlock(Clay{})
@@ -169,13 +171,15 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem("minecraft:coral_block", c.(world.Item))
 	}
+	world.RegisterItem("minecraft:pumpkin", Pumpkin{})
+	world.RegisterItem("minecraft:lit_pumpkin", LitPumpkin{})
+	world.RegisterItem("minecraft:carved_pumpkin", Pumpkin{Carved: true})
 	world.RegisterItem("minecraft:end_stone", EndStone{})
 	world.RegisterItem("minecraft:netherrack", Netherrack{})
 	world.RegisterItem("minecraft:clay", Clay{})
 	world.RegisterItem("minecraft:bone_block", BoneBlock{})
 	world.RegisterItem("minecraft:lantern", Lantern{Type: fire.Normal()})
 	world.RegisterItem("minecraft:soul_lantern", Lantern{Type: fire.Soul()})
-
 }
 
 func init() {
@@ -190,6 +194,19 @@ func init() {
 		l := b.(Log)
 		l.Stripped = true
 		return l
+	}
+	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
+		p, ok := b.(Pumpkin)
+		return ok && p.Carved
+	}
+	item_internal.IsUncarvedPumpkin = func(b world.Block) bool {
+		p, ok := b.(Pumpkin)
+		return ok && !p.Carved
+	}
+	item_internal.CarvePumpkin = func(b world.Block) world.Block {
+		p := b.(Pumpkin)
+		p.Carved = true
+		return p
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}

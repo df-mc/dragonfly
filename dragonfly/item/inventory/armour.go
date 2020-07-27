@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 )
 
@@ -31,7 +32,10 @@ func canAddArmour(s item.Stack, slot int) bool {
 	switch slot {
 	case 0:
 		_, ok = i.(item.Helmet)
-		// TODO: Allow turtle helmets, pumpkins and mob skulls here.
+		if !ok {
+			ok = item_internal.IsCarvedPumpkin(i)
+		}
+		// TODO: Allow turtle helmets and mob skulls here.
 	case 1:
 		_, ok = i.(item.Chestplate)
 		// TODO: Allow elytra here.

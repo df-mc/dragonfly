@@ -30,11 +30,13 @@ const (
 	hashLava
 	hashLeaves
 	hashLight
+	hashLitPumpkin
 	hashLog
 	hashNetheriteBlock
 	hashNetherrack
 	hashObsidian
 	hashPlanks
+	hashPumpkin
 	hashSponge
 	hashStainedTerracotta
 	hashStone
