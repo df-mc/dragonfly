@@ -13,6 +13,7 @@ type Lava struct {
 	noNBT
 	empty
 	replaceable
+
 	// Still makes the lava not spread whenever it is updated. Still lava cannot be acquired in the game
 	// without world editing.
 	Still bool

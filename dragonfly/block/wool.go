@@ -10,6 +10,7 @@ import (
 type Wool struct {
 	noNBT
 	solid
+
 	// Colour is the colour of the wool.
 	Colour colour.Colour
 }
