@@ -16,6 +16,8 @@ const (
 	hashDirt
 	hashDoor
 	hashEmeraldBlock
+	hashEndBricks
+	hashEndBrickStairs
 	hashEndstone
 	hashGlass
 	hashGlazedTerracotta
