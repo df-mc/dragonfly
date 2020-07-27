@@ -118,14 +118,7 @@ func (t WoodTrapdoor) Hash() uint64 {
 
 // allTrapdoors returns a list of all trapdoor types
 func allTrapdoors() (trapdoors []world.Block) {
-	for _, w := range []wood.Wood{
-		wood.Oak(),
-		wood.Spruce(),
-		wood.Birch(),
-		wood.Jungle(),
-		wood.Acacia(),
-		wood.DarkOak(),
-	} {
+	for _, w := range wood.All() {
 		for i := world.Direction(0); i <= 3; i++ {
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})

@@ -142,26 +142,29 @@ func (d WoodDoor) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{}) {
-	directions := map[world.Direction]int32{
-		world.North: 3,
-		world.South: 1,
-		world.West:  2,
-		world.East:  0,
+	direction := 3
+	switch d.Facing {
+	case world.South:
+		direction = 1
+	case world.West:
+		direction = 2
+	case world.East:
+		direction = 0
 	}
 
 	switch d.Wood {
 	case wood.Oak():
-		return "minecraft:wooden_door", map[string]interface{}{"direction": directions[d.Facing], "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:wooden_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	case wood.Spruce():
-		return "minecraft:spruce_door", map[string]interface{}{"direction": directions[d.Facing], "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:spruce_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	case wood.Birch():
-		return "minecraft:birch_door", map[string]interface{}{"direction": directions[d.Facing], "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:birch_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	case wood.Jungle():
-		return "minecraft:jungle_door", map[string]interface{}{"direction": directions[d.Facing], "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:jungle_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	case wood.Acacia():
-		return "minecraft:acacia_door", map[string]interface{}{"direction": directions[d.Facing], "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:acacia_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	case wood.DarkOak():
-		return "minecraft:dark_oak_door", map[string]interface{}{"direction": directions[d.Facing], "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:dark_oak_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
 	panic("invalid wood type")
 }
@@ -173,14 +176,7 @@ func (d WoodDoor) Hash() uint64 {
 
 // allDoors returns a list of all door types
 func allDoors() (doors []world.Block) {
-	for _, w := range []wood.Wood{
-		wood.Oak(),
-		wood.Spruce(),
-		wood.Birch(),
-		wood.Jungle(),
-		wood.Acacia(),
-		wood.DarkOak(),
-	} {
+	for _, w := range wood.All() {
 		for i := world.Direction(0); i <= 3; i++ {
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: false})
