@@ -58,6 +58,7 @@ func init() {
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
+	world.RegisterBlock(allCoral()...)
 	world.RegisterBlock(allCoralBlocks()...)
 	world.RegisterBlock(allPumpkins()...)
 	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
@@ -172,6 +173,9 @@ func init() {
 	world.RegisterItem("minecraft:jungle_door", WoodDoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_door", WoodDoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_door", WoodDoor{Wood: wood.DarkOak()})
+	for _, c := range allCoral() {
+		world.RegisterItem("minecraft:coral", c.(world.Item))
+	}
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem("minecraft:coral_block", c.(world.Item))
 	}
