@@ -5,6 +5,12 @@ import "fmt"
 // Face represents the face of a block or entity.
 type Face int
 
+// Direction converts the Face to a Direction and returns it, assuming the Face is horizontal and not FaceUp
+// or FaceDown.
+func (f Face) Direction() Direction {
+	return Direction(f - 2)
+}
+
 // FromString returns a Face by a string.
 func (f Face) FromString(s string) (interface{}, error) {
 	switch s {

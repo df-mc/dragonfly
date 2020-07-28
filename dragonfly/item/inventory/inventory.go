@@ -273,7 +273,6 @@ func (inv *Inventory) Size() int {
 // that may currently be in the inventory.
 // The returned error is always nil.
 func (inv *Inventory) Close() error {
-	inv.Clear()
 	inv.mu.Lock()
 	inv.f = func(int, item.Stack) {}
 	inv.mu.Unlock()

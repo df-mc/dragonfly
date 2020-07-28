@@ -8,14 +8,18 @@ import (
 )
 
 // Shears is a tool used to shear sheep, mine a few types of blocks, and carve pumpkins.
-type Shears struct {
-}
+type Shears struct{}
 
 // UseOnBlock ...
-func (s Shears) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
+func (s Shears) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+	if face == world.FaceUp || face == world.FaceDown {
+		// Pumpkins can only be carved when once of the horizontal faces is clicked.
+		return false
+	}
 	if b := w.Block(pos); item_internal.IsUncarvedPumpkin(b) {
-		carvedPumpkin := item_internal.CarvePumpkin(b)
-		w.SetBlock(pos, carvedPumpkin)
+		// TODO: Drop pumpkin seeds.
+		carvedPumpkin := item_internal.CarvePumpkin(b, face)
+		w.PlaceBlock(pos, carvedPumpkin)
 
 		ctx.DamageItem(1)
 		return true

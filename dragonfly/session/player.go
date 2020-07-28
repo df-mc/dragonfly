@@ -471,10 +471,12 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			viewer.ViewEntityItems(s.c)
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
+			i, _ := s.offHand.Item(1)
+			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
+				Content: []protocol.ItemInstance{
+					instanceFromItem(i),
+				},
 			})
 		}
 	})

@@ -234,10 +234,8 @@ func init() {
 		p, ok := b.(Pumpkin)
 		return ok && !p.Carved
 	}
-	item_internal.CarvePumpkin = func(b world.Block) world.Block {
-		p := b.(Pumpkin)
-		p.Carved = true
-		return p
+	item_internal.CarvePumpkin = func(b world.Block, face world.Face) world.Block {
+		return Pumpkin{Carved: true, Facing: face.Direction()}
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}
