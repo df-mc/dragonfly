@@ -1617,12 +1617,12 @@ func (p *Player) close() {
 	p.sMutex.Lock()
 	s := p.s
 	p.s = nil
+	p.sMutex.Unlock()
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = p.inv.Close()
 	_ = p.offHand.Close()
 	_ = p.armour.Close()
-	p.sMutex.Unlock()
 
 	if p.World() == nil {
 		return
