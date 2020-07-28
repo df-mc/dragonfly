@@ -215,6 +215,7 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 	runtimeID, ok := runtimeIDsHashes.Get(h)
 	if !ok {
 		w.log.Errorf("runtime ID of block state %+v not found", b)
+		c.Unlock()
 		return
 	}
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
