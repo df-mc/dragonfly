@@ -83,8 +83,8 @@ func (inv *Inventory) All() []item.Stack {
 
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
-	for slot, it := range inv.Contents() {
-		if it.Comparable(item) {
+	for slot, it := range inv.All() {
+		if !it.Empty() && it.Comparable(item) {
 			return slot, true
 		}
 	}
