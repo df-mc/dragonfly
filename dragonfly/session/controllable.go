@@ -46,6 +46,9 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	Immobile() bool
+	SetImmobile()
+	SetMobile()
 
 	StartBreaking(pos world.BlockPos)
 	ContinueBreaking(face world.Face)

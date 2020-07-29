@@ -41,7 +41,9 @@ func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
 
 	_, submergedBefore := s.c.World().Liquid(world.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
 
-	s.c.Move(deltaPos)
+	if !s.c.Immobile() {
+		s.c.Move(deltaPos)
+	}
 	s.c.Rotate(deltaYaw, deltaPitch)
 
 	_, submergedAfter := s.c.World().Liquid(world.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
