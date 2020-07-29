@@ -10,7 +10,7 @@ import (
 	"math/rand"
 )
 
-// CocoaBean are a crop block found in Jungle biomes.
+// CocoaBean is a crop block found in Jungle biomes.
 type CocoaBean struct {
 	noNBT
 
