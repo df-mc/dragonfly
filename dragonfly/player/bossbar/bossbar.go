@@ -14,7 +14,7 @@ type BossBar struct {
 
 // New creates a new boss bar with the text passed. The text is formatted according to the rules of
 // fmt.Sprintln.
-// By default, the boss bar will have a full health bar. To change this, use BossBar.SetHealthPercentage().
+// By default, the boss bar will have a full health bar. To change this, use BossBar.WithHealthPercentage().
 func New(text ...interface{}) BossBar {
 	return BossBar{text: format(text), health: 1}
 }
@@ -25,7 +25,7 @@ func (bar BossBar) Text() string {
 }
 
 // WithHealthPercentage sets the health percentage of the boss bar. The value passed must be between 0 and 1.
-// If a value out of that range is passed, SetHealthPercentage panics.
+// If a value out of that range is passed, WithHealthPercentage panics.
 // The new BossBar with the changed health percentage is returned.
 func (bar BossBar) WithHealthPercentage(v float64) BossBar {
 	if v < 0 || v > 1 {
