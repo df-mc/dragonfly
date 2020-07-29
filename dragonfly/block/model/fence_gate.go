@@ -17,7 +17,7 @@ func (f FenceGate) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	if f.Open {
 		return nil
 	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1.5, 1}).Stretch(int(f.Facing.Face().Axis()), 0.375)}
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1.5, 1}).Stretch(int(f.Facing.Face().Axis()), -0.375)}
 }
 
 // FaceSolid ...
