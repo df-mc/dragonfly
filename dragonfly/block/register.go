@@ -212,7 +212,7 @@ func init() {
 	world.RegisterItem("minecraft:gold_ore", GoldOre{})
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
-	world.RegisterItem("minecraft:dye", Cocoa{})
+	world.RegisterItem("minecraft:dye", CocoaBean{})
 }
 
 func init() {

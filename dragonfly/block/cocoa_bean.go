@@ -10,8 +10,8 @@ import (
 	"math/rand"
 )
 
-// Cocoa are a crop block found in Jungle biomes.
-type Cocoa struct {
+// CocoaBean are a crop block found in Jungle biomes.
+type CocoaBean struct {
 	noNBT
 
 	// Facing is the direction from the cocoa bean to the log.
@@ -21,12 +21,12 @@ type Cocoa struct {
 }
 
 // HasLiquidDrops ...
-func (c Cocoa) HasLiquidDrops() bool {
+func (c CocoaBean) HasLiquidDrops() bool {
 	return true
 }
 
 // NeighbourUpdateTick ...
-func (c Cocoa) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
+func (c CocoaBean) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
 	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); ok {
 		if log.Wood == wood.Jungle() && !log.Stripped {
 			return
@@ -36,7 +36,7 @@ func (c Cocoa) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *worl
 }
 
 // UseOnBlock ...
-func (c Cocoa) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c CocoaBean) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
@@ -59,7 +59,7 @@ func (c Cocoa) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Ve
 }
 
 // RandomTick ...
-func (c Cocoa) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (c CocoaBean) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	if c.Age < 2 && rand.Intn(5) == 0 {
 		c.Age++
 		w.PlaceBlock(pos, c)
@@ -67,14 +67,14 @@ func (c Cocoa) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 }
 
 // BreakInfo ...
-func (c Cocoa) BreakInfo() BreakInfo {
+func (c CocoaBean) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0.2,
 		Harvestable: alwaysHarvestable,
 		Effective:   axeEffective,
 		Drops: func(t tool.Tool) []item.Stack {
 			if c.Age == 3 {
-				return []item.Stack{item.NewStack(c, rand.Intn(1)+2)}
+				return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 			}
 			return []item.Stack{item.NewStack(c, 1)}
 		},
@@ -82,12 +82,12 @@ func (c Cocoa) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Cocoa) EncodeItem() (id int32, meta int16) {
+func (c CocoaBean) EncodeItem() (id int32, meta int16) {
 	return 351, 3
 }
 
 // EncodeBlock ...
-func (c Cocoa) EncodeBlock() (name string, properties map[string]interface{}) {
+func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}) {
 	direction := 2
 	switch c.Facing {
 	case world.South:
@@ -102,21 +102,21 @@ func (c Cocoa) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // Hash ...
-func (c Cocoa) Hash() uint64 {
+func (c CocoaBean) Hash() uint64 {
 	return hashCocoa | (uint64(c.Age) << 32) | (uint64(c.Facing) << 34)
 }
 
 // Model ...
-func (c Cocoa) Model() world.BlockModel {
-	return model.Cocoa{Facing: c.Facing, Age: c.Age}
+func (c CocoaBean) Model() world.BlockModel {
+	return model.CocoaBean{Facing: c.Facing, Age: c.Age}
 }
 
 // allCocoaBeans ...
 func allCocoaBeans() (cocoa []world.Block) {
 	for i := world.Direction(0); i <= 3; i++ {
-		cocoa = append(cocoa, Cocoa{Facing: i, Age: 0})
-		cocoa = append(cocoa, Cocoa{Facing: i, Age: 1})
-		cocoa = append(cocoa, Cocoa{Facing: i, Age: 2})
+		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 0})
+		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 1})
+		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 2})
 	}
 	return
 }
