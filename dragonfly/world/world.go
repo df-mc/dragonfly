@@ -1304,7 +1304,6 @@ func showEntity(e Entity, viewer Viewer) {
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
 func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
-	var needsLight bool
 	var err error
 
 	w.chunkMu.Lock()
@@ -1322,14 +1321,11 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 			return nil, err
 		}
 		w.chunks[pos] = c
-		needsLight = true
+		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos
 	w.chunkMu.Unlock()
 
-	if needsLight {
-		w.calculateLight(c.Chunk, pos)
-	}
 	c.Lock()
 	return c, nil
 }
@@ -1364,11 +1360,8 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 // calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
 // neighbours if they have all chunks loaded around it as a result of the one passed.
 func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
-	c.Lock()
 	chunk.FillLight(c)
-	c.Unlock()
 
-	w.chunkMu.RLock()
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
 			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
@@ -1387,7 +1380,6 @@ func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
 	// If the chunk loaded happened to be in the middle of a bunch of other chunks, we are able to spread it
 	// right away, so we try to do that.
 	w.spreadLight(c, pos)
-	w.chunkMu.RUnlock()
 }
 
 // spreadLight spreads the light from the chunk passed at the position passed to all neighbours if each of
@@ -1401,7 +1393,7 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 				allPresent = false
 				break
 			}
-			if !(x == 0 && z == 0) {
+			if x != 0 || z != 0 {
 				neighbours = append(neighbours, neighbour.Chunk)
 			}
 		}
