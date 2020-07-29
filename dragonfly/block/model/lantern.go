@@ -14,9 +14,9 @@ type Lantern struct {
 // AABB ...
 func (l Lantern) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	if l.Hanging {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.125}, mgl64.Vec3{0.375, 0.625, 0.375})}
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.375, 0.125, 0.3125}, mgl64.Vec3{0.6875, 0.625, 0.6875})}
 	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{0.375, 0.5, 0.375})}
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.3125, 0, 0.3125}, mgl64.Vec3{0.6875, 0.5, 0.6875})}
 }
 
 // FaceSolid ...
