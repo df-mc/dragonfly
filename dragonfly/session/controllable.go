@@ -32,7 +32,7 @@ type Controllable interface {
 	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity)
 	BreakBlock(pos world.BlockPos)
-	PickBlock(pos world.BlockPos, addNBT bool)
+	PickBlock(pos world.BlockPos)
 	AttackEntity(e world.Entity)
 
 	Respawn()

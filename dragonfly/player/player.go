@@ -1226,10 +1226,9 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
 // pick the block, the method returns immediately.
-func (p *Player) PickBlock(pos world.BlockPos, addNBT bool) {
+func (p *Player) PickBlock(pos world.BlockPos) {
 	block := p.World().Block(pos)
 	copiedItem := item.NewStack(block.(world.Item), 1)
-	//TODO: Copy NBT if addNBT == true
 
 	slot, found := p.Inventory().First(copiedItem)
 

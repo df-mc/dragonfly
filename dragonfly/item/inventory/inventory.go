@@ -81,7 +81,7 @@ func (inv *Inventory) All() []item.Stack {
 	return r
 }
 
-// First returns the first slot with an item if found.
+// First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
 	for slot, it := range inv.Contents() {
 		if it.Comparable(item) {
@@ -91,7 +91,7 @@ func (inv *Inventory) First(item item.Stack) (int, bool) {
 	return -1, false
 }
 
-// FirstEmpty returns the first empty slot if found.
+// FirstEmpty returns the first empty slot if found. Second return value describes whether an empty slot was found.
 func (inv *Inventory) FirstEmpty() (int, bool) {
 	for slot, it := range inv.All() {
 		if it.Empty() {
@@ -101,7 +101,7 @@ func (inv *Inventory) FirstEmpty() (int, bool) {
 	return -1, false
 }
 
-// Swap swaps the items between two slots.
+// Swap swaps the items between two slots. Returns an error if either slot A or B are invalid.
 func (inv *Inventory) Swap(slotA, slotB int) error {
 	inv.check()
 	if !inv.validSlot(slotA) || !inv.validSlot(slotB) {
