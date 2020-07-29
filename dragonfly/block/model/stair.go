@@ -21,33 +21,32 @@ func (s Stair) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 	}
 	t := s.cornerType(pos, w)
 
-	if t == noCorner || t == cornerRightInner || t == cornerRightOuter {
+	face, oppositeFace := s.Facing.Face(), s.Facing.Opposite().Face()
+	if t == noCorner || t == cornerRightInner || t == cornerLeftInner {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90()), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90().Opposite()), 0.5))
+			ExtendTowards(int(face), 0.5).
+			Stretch(int(s.Facing.Rotate90().Face().Axis()), 0.5))
 	}
 	if t == cornerRightOuter {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90().Opposite()), 0.5))
+			ExtendTowards(int(face), 0.5).
+			ExtendTowards(int(s.Facing.Rotate90().Opposite().Face()), 0.5))
 	} else if t == cornerLeftOuter {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90()), 0.5))
+			ExtendTowards(int(face), 0.5).
+			ExtendTowards(int(s.Facing.Rotate90().Face()), 0.5))
 	} else if t == cornerRightInner {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing.Opposite()), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90().Opposite()), 0.5))
+			ExtendTowards(int(oppositeFace), 0.5).
+			ExtendTowards(int(s.Facing.Rotate90().Face()), 0.5))
 	} else if t == cornerLeftInner {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
-			ExtendTowards(int(s.Facing.Opposite()), 0.5).
-			ExtendTowards(int(s.Facing.Rotate90()), 0.5))
+			ExtendTowards(int(oppositeFace), 0.5).
+			ExtendTowards(int(s.Facing.Rotate90().Opposite().Face()), 0.5))
 	}
-
 	if s.UpsideDown {
 		for i := range b[1:] {
-			b[i] = b[i].Translate(mgl64.Vec3{0, -0.5})
+			b[i+1] = b[i+1].Translate(mgl64.Vec3{0, -0.5})
 		}
 	}
 	return b
@@ -57,6 +56,9 @@ func (s Stair) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
 func (s Stair) FaceSolid(pos world.BlockPos, face world.Face, w *world.World) bool {
 	if !s.UpsideDown && face == world.FaceDown {
 		// Non-upside down stairs have a closed side at the bottom.
+		return true
+	} else if s.UpsideDown && face == world.FaceUp {
+		// Upside down stairs always have a closed side at the top.
 		return true
 	}
 	t := s.cornerType(pos, w)
