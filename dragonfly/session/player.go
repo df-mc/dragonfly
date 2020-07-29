@@ -495,6 +495,28 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 	return s.inv, s.offHand, s.armour, s.heldSlot
 }
 
+// SetHeldSlot sets the currently held hotbar slot.
+func (s *Session) SetHeldSlot(slot int) error {
+	if slot > 8 {
+		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+
+	s.heldSlot.Store(uint32(slot))
+
+	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+		viewer.ViewEntityItems(s.c)
+	}
+
+	mainHand, _ := s.c.HeldItems()
+	s.writePacket(&packet.MobEquipment{
+		EntityRuntimeID: selfEntityRuntimeID,
+		NewItem:         stackFromItem(mainHand),
+		InventorySlot:   byte(slot),
+		HotBarSlot:      byte(slot),
+	})
+	return nil
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {

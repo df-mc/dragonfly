@@ -1224,6 +1224,50 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	return drops
 }
 
+// PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
+// pick the block, the method returns immediately.
+func (p *Player) PickBlock(pos world.BlockPos) {
+	if !p.canReach(pos.Vec3()) {
+		return
+	}
+
+	block := p.World().Block(pos)
+	copiedItem := item.NewStack(block.(world.Item), 1)
+
+	slot, found := p.Inventory().First(copiedItem)
+
+	if (!found && p.GameMode() != gamemode.Creative{}) {
+		return
+	}
+
+	ctx := event.C()
+	p.handler().HandleBlockPick(ctx, pos, block)
+
+	ctx.Continue(func() {
+		_, offhand := p.HeldItems()
+
+		if found {
+			if slot < 9 {
+				p.session().SetHeldSlot(slot)
+			} else {
+				p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+			}
+		} else {
+			firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+
+			if !emptyFound {
+				p.SetHeldItems(copiedItem, offhand)
+			} else if firstEmpty < 8 {
+				p.session().SetHeldSlot(firstEmpty)
+				p.Inventory().SetItem(firstEmpty, copiedItem)
+			} else {
+				p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+				p.SetHeldItems(copiedItem, offhand)
+			}
+		}
+	})
+}
+
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
