@@ -767,7 +767,7 @@ func (p *Player) SetVisible() {
 	p.updateState()
 }
 
-// SetImmobile prevents the player from moving around, but still allows them to look around still.
+// SetImmobile prevents the player from moving around, but still allows them to look around.
 func (p *Player) SetImmobile() {
 	if !p.immobile.CAS(false, true) {
 		return
