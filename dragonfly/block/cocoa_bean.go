@@ -73,7 +73,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 		Harvestable: alwaysHarvestable,
 		Effective:   axeEffective,
 		Drops: func(t tool.Tool) []item.Stack {
-			if c.Age == 3 {
+			if c.Age == 2 {
 				return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 			}
 			return []item.Stack{item.NewStack(c, 1)}
