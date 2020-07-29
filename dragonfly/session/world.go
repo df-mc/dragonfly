@@ -479,6 +479,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagBreathing)
 		case state.Invisible:
 			m.setFlag(dataKeyFlags, dataFlagInvisible)
+		case state.Immobile:
+			m.setFlag(dataKeyFlags, dataFlagNoAI)
 		case state.Swimming:
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
 		case state.Named:
