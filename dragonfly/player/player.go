@@ -1310,7 +1310,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
 // position of the player.
 func (p *Player) Move(deltaPos mgl64.Vec3) {
-	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+	if p.Dead() || p.immobile.Load() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
 
