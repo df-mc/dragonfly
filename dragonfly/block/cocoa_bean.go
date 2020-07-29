@@ -13,6 +13,7 @@ import (
 // CocoaBean is a crop block found in Jungle biomes.
 type CocoaBean struct {
 	noNBT
+	transparent
 
 	// Facing is the direction from the cocoa bean to the log.
 	Facing world.Direction
@@ -26,17 +27,14 @@ func (c CocoaBean) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (c CocoaBean) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
-	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); ok {
-		if log.Wood == wood.Jungle() && !log.Stripped {
-			return
-		}
+func (c CocoaBean) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != wood.Jungle() || log.Stripped {
+		w.BreakBlock(pos)
 	}
-	w.BreakBlock(pos)
 }
 
 // UseOnBlock ...
-func (c CocoaBean) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c CocoaBean) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
@@ -60,7 +58,7 @@ func (c CocoaBean) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl6
 
 // RandomTick ...
 func (c CocoaBean) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
-	if c.Age < 2 && rand.Intn(5) == 0 {
+	if c.Age < 2 && r.Intn(5) == 0 {
 		c.Age++
 		w.PlaceBlock(pos, c)
 	}
