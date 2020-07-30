@@ -81,6 +81,42 @@ func (inv *Inventory) All() []item.Stack {
 	return r
 }
 
+// First returns the first slot with an item if found. Second return value describes whether the item was found.
+func (inv *Inventory) First(item item.Stack) (int, bool) {
+	for slot, it := range inv.Contents() {
+		if it.Comparable(item) {
+			return slot, true
+		}
+	}
+	return -1, false
+}
+
+// FirstEmpty returns the first empty slot if found. Second return value describes whether an empty slot was found.
+func (inv *Inventory) FirstEmpty() (int, bool) {
+	for slot, it := range inv.All() {
+		if it.Empty() {
+			return slot, true
+		}
+	}
+	return -1, false
+}
+
+// Swap swaps the items between two slots. Returns an error if either slot A or B are invalid.
+func (inv *Inventory) Swap(slotA, slotB int) error {
+	inv.check()
+	if !inv.validSlot(slotA) || !inv.validSlot(slotB) {
+		return ErrSlotOutOfRange
+	}
+
+	itemA, _ := inv.Item(slotA)
+	itemB, _ := inv.Item(slotB)
+
+	inv.SetItem(slotA, itemB)
+	inv.SetItem(slotB, itemA)
+
+	return nil
+}
+
 // AddItem attempts to add an item to the inventory. It does so in a couple of steps: It first iterates over
 // the inventory to make sure no existing stacks of the same type exist. If these stacks do exist, the item
 // added is first added on top of those stacks to make sure they are fully filled.
@@ -237,7 +273,6 @@ func (inv *Inventory) Size() int {
 // that may currently be in the inventory.
 // The returned error is always nil.
 func (inv *Inventory) Close() error {
-	inv.Clear()
 	inv.mu.Lock()
 	inv.f = func(int, item.Stack) {}
 	inv.mu.Unlock()

@@ -92,6 +92,22 @@ func (aabb AABB) ExtendTowards(d int, x float64) AABB {
 	return aabb
 }
 
+// Stretch stretches the bounding box by x in a given axis.
+func (aabb AABB) Stretch(a int, x float64) AABB {
+	switch a {
+	case 0:
+		aabb.min[1] -= x
+		aabb.max[1] += x
+	case 1:
+		aabb.min[2] -= x
+		aabb.max[2] += x
+	case 2:
+		aabb.min[0] -= x
+		aabb.max[0] += x
+	}
+	return aabb
+}
+
 // Translate moves the entire AABB with the Vec3 given. The (minimum and maximum) x, y and z coordinates are
 // moved by those in the Vec3 passed.
 func (aabb AABB) Translate(vec mgl64.Vec3) AABB {
