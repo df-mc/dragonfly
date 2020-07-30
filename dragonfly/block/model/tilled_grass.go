@@ -12,7 +12,8 @@ type TilledGrass struct {
 
 // AABB ...
 func (TilledGrass) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.9375, 1})}
+	// TODO: Make the max Y value 0.9375 once https://bugs.mojang.com/browse/MCPE-12109 gets fixed.
+	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
 // FaceSolid ...
