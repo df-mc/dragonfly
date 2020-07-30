@@ -71,7 +71,7 @@ func (it *Item) Tick(current int64) {
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby() {
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.Position()).Grow(0.75)) {
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.Position()).GrowVec3(mgl64.Vec3{1, 0.5, 1})) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
@@ -166,6 +166,8 @@ func (it *Item) State() []state.State {
 
 // Close closes the item, removing it from the world that it is currently in.
 func (it *Item) Close() error {
-	it.World().RemoveEntity(it)
+	if it.World() != nil {
+		it.World().RemoveEntity(it)
+	}
 	return nil
 }

@@ -27,6 +27,12 @@ func (aabb AABB) GrowVertically(x float64) AABB {
 	return AABB{min: aabb.min.Sub(add), max: aabb.max.Add(add)}
 }
 
+// GrowVec3 grows the AABB on all axes as represented by the Vec3 passed. The vec values are subtracted from
+// the minimum values of the AABB and added to the maximum values of the AABB.
+func (aabb AABB) GrowVec3(vec mgl64.Vec3) AABB {
+	return AABB{min: aabb.min.Sub(vec), max: aabb.max.Add(vec)}
+}
+
 // Min returns the minimum coordinate of the bounding box.
 func (aabb AABB) Min() mgl64.Vec3 {
 	return aabb.min

@@ -239,6 +239,14 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 	}
 }
 
+// ViewEntityVelocity ...
+func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
+	s.writePacket(&packet.SetActorMotion{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		Velocity:        vec64To32(velocity),
+	})
+}
+
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) float64 {
 	switch e.(type) {

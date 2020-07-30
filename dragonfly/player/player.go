@@ -1475,7 +1475,7 @@ func (p *Player) checkOnGround() bool {
 				b := p.World().Block(bPos)
 				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
-					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 						return true
 					}
 				}
