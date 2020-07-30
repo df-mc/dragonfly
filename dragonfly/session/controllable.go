@@ -35,7 +35,7 @@ type Controllable interface {
 	BreakBlock(pos world.BlockPos)
 	PickBlock(pos world.BlockPos)
 	AttackEntity(e world.Entity)
-	Drop(s item.Stack)
+	Drop(s item.Stack) (n int)
 
 	Respawn()
 

@@ -164,8 +164,11 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
 	}
 
-	h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
-	s.c.Drop(i.Grow(int(a.Count) - i.Count()))
+	if s.c.Drop(i.Grow(int(a.Count)-i.Count())) != 0 {
+		h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
+	} else {
+		h.setItemInSlot(a.Source, i, s)
+	}
 	return nil
 }
 

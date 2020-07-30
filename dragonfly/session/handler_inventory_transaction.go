@@ -45,6 +45,8 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 	for _, action := range pk.Actions {
 		switch action.SourceType {
 		case protocol.InventoryActionSourceWorld:
+			// Item dropping using Q in the hotbar still uses the old inventory transaction system, so we need
+			// to account for that.
 			if action.OldItem.Count != 0 || action.OldItem.NetworkID != 0 || action.OldItem.MetadataValue != 0 {
 				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
 			}
@@ -58,8 +60,9 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			}
 			// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
 			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
-			s.c.Drop(actual.Grow(newItem.Count() - actual.Count()))
-			s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			if s.c.Drop(actual.Grow(newItem.Count()-actual.Count())) != 0 {
+				s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			}
 		default:
 			// Ignore inventory actions we don't explicitly handle.
 		}
