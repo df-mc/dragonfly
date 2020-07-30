@@ -53,10 +53,38 @@ const (
 	hashSponge
 	hashStainedTerracotta
 	hashStone
+	hashSmoothStoneSlab
+	hashSandstoneSlab
+	hashWoodenSlab
+	hashCobblestoneSlab
+	hashBrickSlab
+	hashStoneBrickSlab
+	hashQuartzSlab
+	hashNetherBrickSlab
+	hashRedSandstoneSlab
+	hashPurpurSlab
+	hashPrismarineRoughSlab
+	hashPrismarineDarkSlab
+	hashPrismarineBrickSlab
+	hashMossyCobblestoneSlab
+	hashSmoothSandstoneSlab
+	hashRedNetherBrickSlab
+	hashEndStoneBrickSlab
+	hashSmoothRedSandstoneSlab
+	hashPolishedAndesiteSlab
+	hashAndesiteSlab
+	hashDioriteSlab
+	hashPolishedDioriteSlab
+	hashGraniteSlab
+	hashPolishedGraniteSlab
+	hashMossyStoneBrickSlab
+	hashSmoothQuartzSlab
 	hashStoneSlab
-	hashStoneSlab2
-	hashStoneSlab3
-	hashStoneSlab4
+	hashCutSandstoneSlab
+	hashCutRedSandstoneSlab
+	hashBlackstoneSlab
+	hashPolishedBlackstoneSlab
+	hashPolishedBlackstoneBrickSlab
 	hashGranite
 	hashDiorite
 	hashAndesite

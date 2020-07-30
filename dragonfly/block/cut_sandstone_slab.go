@@ -9,8 +9,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// StoneSlab is a half block that allows entities to walk up blocks without jumping.
-type StoneSlab struct {
+// CutSandstoneSlab is a half block that allows entities to walk up blocks without jumping.
+type CutSandstoneSlab struct {
 	noNBT
 
 	// Top specifies if the slab is in the top part of the block.
@@ -21,15 +21,15 @@ type StoneSlab struct {
 }
 
 // Model ...
-func (s StoneSlab) Model() world.BlockModel {
+func (s CutSandstoneSlab) Model() world.BlockModel {
 	return model.Slab{Double: s.Double, Top: s.Top}
 }
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
 // being turned into double slabs.
-func (s StoneSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s CutSandstoneSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	clickedBlock := w.Block(pos)
-	if clickedSlab, ok := clickedBlock.(StoneSlab); ok && !s.Double {
+	if clickedSlab, ok := clickedBlock.(CutSandstoneSlab); ok && !s.Double {
 		if (face == world.FaceUp && !clickedSlab.Double && !clickedSlab.Top) ||
 			(face == world.FaceDown && !clickedSlab.Double && clickedSlab.Top) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
@@ -39,7 +39,7 @@ func (s StoneSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl6
 			return placed(ctx)
 		}
 	}
-	if sideSlab, ok := w.Block(pos.Side(face)).(StoneSlab); ok && !replaceableWith(w, pos, s) && !s.Double {
+	if sideSlab, ok := w.Block(pos.Side(face)).(CutSandstoneSlab); ok && !replaceableWith(w, pos, s) && !s.Double {
 		// The block on the side of the one clicked was a slab and the block clicked was not replaceableWith, so
 		// the slab on the side must've been half and may now be filled if the wood types are the same.
 		if !sideSlab.Double {
@@ -62,7 +62,7 @@ func (s StoneSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl6
 }
 
 // BreakInfo ...
-func (s StoneSlab) BreakInfo() BreakInfo {
+func (s CutSandstoneSlab) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    2,
 		Harvestable: pickaxeHarvestable,
@@ -79,7 +79,7 @@ func (s StoneSlab) BreakInfo() BreakInfo {
 }
 
 // LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.
-func (s StoneSlab) LightDiffusionLevel() uint8 {
+func (s CutSandstoneSlab) LightDiffusionLevel() uint8 {
 	if s.Double {
 		return 15
 	}
@@ -87,7 +87,7 @@ func (s StoneSlab) LightDiffusionLevel() uint8 {
 }
 
 // AABB ...
-func (s StoneSlab) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (s CutSandstoneSlab) AABB(world.BlockPos, *world.World) []physics.AABB {
 	if s.Double {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 	}
@@ -98,42 +98,42 @@ func (s StoneSlab) AABB(world.BlockPos, *world.World) []physics.AABB {
 }
 
 // EncodeItem ...
-func (s StoneSlab) EncodeItem() (id int32, meta int16) {
+func (s CutSandstoneSlab) EncodeItem() (id int32, meta int16) {
 	if s.Double {
-		return -168, 2
+		return -168, 3
 	}
-	return -166, 2
+	return -166, 3
 }
 
 // EncodeBlock ...
-func (s StoneSlab) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s CutSandstoneSlab) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Double {
-		return "minecraft:double_stone_slab4", map[string]interface{}{"top_slot_bit": s.Top, "stone_slab_type_4": "stone"}
+		return "minecraft:double_stone_slab4", map[string]interface{}{"top_slot_bit": s.Top, "stone_slab_type_4": "cut_sandstone"}
 	}
-	return "minecraft:stone_slab4", map[string]interface{}{"top_slot_bit": s.Top, "stone_slab_type_4": "stone"}
+	return "minecraft:stone_slab4", map[string]interface{}{"top_slot_bit": s.Top, "stone_slab_type_4": "cut_sandstone"}
 }
 
 // Hash ...
-func (s StoneSlab) Hash() uint64 {
-	return hashStoneSlab | (uint64(boolByte(s.Top)) << 32) | (uint64(boolByte(s.Double)) << 33)
+func (s CutSandstoneSlab) Hash() uint64 {
+	return hashCutSandstoneSlab | (uint64(boolByte(s.Top)) << 32) | (uint64(boolByte(s.Double)) << 33)
 }
 
 // CanDisplace ...
-func (s StoneSlab) CanDisplace(b world.Liquid) bool {
+func (s CutSandstoneSlab) CanDisplace(b world.Liquid) bool {
 	_, ok := b.(Water)
 	return !s.Double && ok
 }
 
 // SideClosed ...
-func (s StoneSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
+func (s CutSandstoneSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
 }
 
-// allStoneSlabs returns all states of smooth stone slabs.
-func allStoneSlabs() (slabs []world.Block) {
+// allCutSandstoneSlabs returns all states of cut sandstone slabs.
+func allCutSandstoneSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
-		slabs = append(slabs, StoneSlab{Double: double, Top: upsideDown})
+		slabs = append(slabs, CutSandstoneSlab{Double: double, Top: upsideDown})
 	}
 	f(false, false)
 	f(false, true)
