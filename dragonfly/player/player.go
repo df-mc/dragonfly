@@ -1390,6 +1390,26 @@ func (p *Player) Collect(s item.Stack) (n int) {
 	return
 }
 
+// Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
+// ground.
+// The dropped item entity has a pickup delay of 2 seconds.
+// The number of items that was dropped in the end is returned. It is generally the count of the stack passed
+// or 0 if dropping the item.Stack was cancelled.
+func (p *Player) Drop(s item.Stack) (n int) {
+	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
+	e.SetVelocity(entity.DirectionVector(p).Mul(0.4))
+	e.SetPickupDelay(time.Second * 2)
+
+	ctx := event.C()
+	p.handler().HandleItemDrop(ctx, e)
+
+	ctx.Continue(func() {
+		p.World().AddEntity(e)
+		n = s.Count()
+	})
+	return
+}
+
 // OpenBlockContainer opens a block container, such as a chest, at the position passed. If no container was
 // present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.

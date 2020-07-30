@@ -7,15 +7,17 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"sync/atomic"
+	"time"
 )
 
 // Item represents an item entity which may be added to the world. Players and several humanoid entities such
 // as zombies are able to pick up these entities so that the items are added to their inventory.
 type Item struct {
-	age           int
-	i             item.Stack
-	velocity, pos atomic.Value
+	age, pickupDelay int
+	i                item.Stack
+	velocity, pos    atomic.Value
 
 	*movementComputer
 }
@@ -31,6 +33,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 		gravity:           0.04,
 		dragBeforeGravity: true,
 	}}
+	it.SetPickupDelay(time.Second / 2)
 	it.pos.Store(pos)
 	it.velocity.Store(mgl64.Vec3{})
 
@@ -40,6 +43,16 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 // Item returns the item stack that the item entity holds.
 func (it *Item) Item() item.Stack {
 	return it.i
+}
+
+// SetPickupDelay sets a delay passed until the item can be picked up. If d is negative or d.Seconds()*20
+// higher than math.MaxInt16, the item will never be able to be picked up.
+func (it *Item) SetPickupDelay(d time.Duration) {
+	ticks := int(d.Seconds() * 20)
+	if ticks < 0 || ticks >= math.MaxInt16 {
+		ticks = math.MaxInt16
+	}
+	it.pickupDelay = ticks
 }
 
 // Position returns the current position of the item entity.
@@ -64,26 +77,34 @@ func (it *Item) Tick(current int64) {
 		return
 	}
 	it.pos.Store(it.tickMovement(it))
-	it.checkNearby()
+
+	if it.pickupDelay == 0 {
+		it.checkNearby()
+	} else if it.pickupDelay != math.MaxInt16 {
+		it.pickupDelay--
+	}
 }
 
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby() {
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.Position()).GrowVec3(mgl64.Vec3{1, 0.5, 1})) {
+	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(it.Position())
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.Position()).Grow(2)) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
 		}
-		if collector, ok := e.(item.Collector); ok {
-			// A collector was within range to pick up the entity.
-			it.collect(collector)
-			return
-		} else if other, ok := e.(*Item); ok {
-			// Another item entity was in range to merge with.
-			if it.merge(other) {
+		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
+			if collector, ok := e.(item.Collector); ok {
+				// A collector was within range to pick up the entity.
+				it.collect(collector)
 				return
+			} else if other, ok := e.(*Item); ok {
+				// Another item entity was in range to merge with.
+				if it.merge(other) {
+					return
+				}
 			}
 		}
 	}
