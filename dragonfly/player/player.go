@@ -69,7 +69,7 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible, onGround atomic.Bool
+	sneaking, sprinting, swimming, invisible, immobile, onGround atomic.Bool
 
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
@@ -767,6 +767,22 @@ func (p *Player) SetVisible() {
 	p.updateState()
 }
 
+// SetImmobile prevents the player from moving around, but still allows them to look around.
+func (p *Player) SetImmobile() {
+	if !p.immobile.CAS(false, true) {
+		return
+	}
+	p.updateState()
+}
+
+// SetMobile allows the player to freely move around again after being immobile.
+func (p *Player) SetMobile() {
+	if !p.immobile.CAS(true, false) {
+		return
+	}
+	p.updateState()
+}
+
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
 // the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
 func (p *Player) Inventory() *inventory.Inventory {
@@ -1296,7 +1312,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
 // position of the player.
 func (p *Player) Move(deltaPos mgl64.Vec3) {
-	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+	if p.Dead() || p.immobile.Load() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
 
@@ -1538,6 +1554,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if p.invisible.Load() {
 		s = append(s, state.Invisible{})
+	}
+	if p.immobile.Load() {
+		s = append(s, state.Immobile{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {
