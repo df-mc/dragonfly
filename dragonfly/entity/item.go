@@ -117,12 +117,12 @@ func (it *Item) merge(other *Item) bool {
 
 // collect makes a collector collect the item (or at least part of it).
 func (it *Item) collect(collector item.Collector) {
-	for _, viewer := range it.World().Viewers(it.Position()) {
-		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
-	}
 	n := collector.Collect(it.i)
 	if n == 0 {
 		return
+	}
+	for _, viewer := range it.World().Viewers(it.Position()) {
+		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
 	}
 
 	if n == it.i.Count() {
