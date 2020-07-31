@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -183,6 +184,17 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 
 	if p, ok := server.p[uuid]; ok {
 		return p, true
+	}
+	return nil, false
+}
+
+// PlayerByName looks for a player on the server with the name passed. If found, the player is returned and the bool
+// returns holds a true value. If not, the bool is false and the player is nil
+func (server *Server) PlayerByName(name string) (*player.Player, bool) {
+	for _, p := range server.Players() {
+		if strings.ToLower(p.Name()) == strings.ToLower(name) {
+			return p, true
+		}
 	}
 	return nil, false
 }
