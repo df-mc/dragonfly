@@ -24,6 +24,9 @@ type Breathing struct{}
 // Invisible makes an entity invisible, so that other players won't be able to see it.
 type Invisible struct{}
 
+// Immobile makes the entity able to look around but they are not able to move from their position.
+type Immobile struct{}
+
 // EffectBearing makes an entity show up as if it is bearing effects. Coloured particles will be shown around
 // the player.
 type EffectBearing struct {
@@ -46,5 +49,6 @@ func (Swimming) __()      {}
 func (Breathing) __()     {}
 func (Sprinting) __()     {}
 func (Invisible) __()     {}
+func (Immobile) __()      {}
 func (Named) __()         {}
 func (EffectBearing) __() {}

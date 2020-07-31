@@ -19,7 +19,7 @@ type Axe struct {
 func (a Axe) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if b := w.Block(pos); item_internal.IsUnstrippedLog(b) {
 		strippedLog := item_internal.StripLog(b)
-		w.SetBlock(pos, strippedLog)
+		w.PlaceBlock(pos, strippedLog)
 		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: strippedLog})
 
 		ctx.DamageItem(1)

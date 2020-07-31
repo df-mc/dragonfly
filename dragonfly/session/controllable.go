@@ -17,6 +17,7 @@ type Controllable interface {
 	world.Entity
 	item.Carrier
 	form.Submitter
+	SetHeldItems(right, left item.Stack)
 
 	Move(deltaPos mgl64.Vec3)
 	Speed() float64
@@ -32,7 +33,9 @@ type Controllable interface {
 	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity)
 	BreakBlock(pos world.BlockPos)
+	PickBlock(pos world.BlockPos)
 	AttackEntity(e world.Entity)
+	Drop(s item.Stack) (n int)
 
 	Respawn()
 

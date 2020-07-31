@@ -13,6 +13,7 @@ import (
 type Coral struct {
 	noNBT
 	empty
+	transparent
 
 	// Type is the type of coral of the block.
 	Type coral.Coral

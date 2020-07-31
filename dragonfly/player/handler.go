@@ -2,6 +2,7 @@ package player
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
 	"github.com/df-mc/dragonfly/dragonfly/event"
@@ -48,6 +49,9 @@ type Handler interface {
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *event.Context, pos world.BlockPos, b world.Block)
+	// HandleBlockPick handles the player picking a specific block at a position in its world. ctx.Cancel()
+	// may be called to cancel the block being picked.
+	HandleBlockPick(ctx *event.Context, pos world.BlockPos, b world.Block)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -79,6 +83,10 @@ type Handler interface {
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *event.Context, i item.Stack)
+	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
+	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
+	// e.Item() may be called to obtain the item stack dropped.
+	HandleItemDrop(ctx *event.Context, e *entity.Item)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -97,6 +105,9 @@ type NopHandler struct{}
 
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = (*NopHandler)(nil)
+
+// HandleItemDrop ...
+func (NopHandler) HandleItemDrop(*event.Context, *entity.Item) {}
 
 // HandleMove ...
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
@@ -121,6 +132,9 @@ func (NopHandler) HandleBlockBreak(*event.Context, world.BlockPos) {}
 
 // HandleBlockPlace ...
 func (NopHandler) HandleBlockPlace(*event.Context, world.BlockPos, world.Block) {}
+
+// HandleBlockPick ...
+func (NopHandler) HandleBlockPick(ctx *event.Context, pos world.BlockPos, b world.Block) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}

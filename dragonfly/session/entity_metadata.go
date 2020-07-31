@@ -19,6 +19,7 @@ func defaultEntityMetadata(e world.Entity) entityMetadata {
 	m[dataKeyBoundingBoxHeight] = float32(bb.Height())
 	m[dataKeyPotionColour] = int32(0)
 	m[dataKeyPotionAmbient] = byte(0)
+	m[dataKeyColour] = byte(0)
 
 	return m
 }

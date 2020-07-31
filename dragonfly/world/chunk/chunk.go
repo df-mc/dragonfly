@@ -1,6 +1,9 @@
 package chunk
 
-import "sync"
+import (
+	"bytes"
+	"sync"
+)
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
@@ -68,6 +71,11 @@ func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 
 // fullSkyLight is used to copy full light to newly created sub chunks.
 var fullSkyLight [2048]byte
+
+func init() {
+	b := bytes.Repeat([]byte{0xff}, 2048)
+	copy(fullSkyLight[:], b)
+}
 
 // SetRuntimeID sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
 // SubChunk exists at the given y, a new SubChunk is created and the block is set.

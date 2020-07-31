@@ -12,6 +12,7 @@ const (
 	hashCoalBlock
 	hashCoalOre
 	hashCobblestone
+	hashCocoa
 	hashConcrete
 	hashCoral
 	hashCoralBlock
