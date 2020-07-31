@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"image"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -10,6 +11,18 @@ type Item interface {
 	// EncodeItem encodes the item to its Minecraft representation, which consists of a numerical ID and a
 	// metadata value.
 	EncodeItem() (id int32, meta int16)
+}
+
+// Custom represents an item that is non-vanilla and requires a resource pack and extra steps to show it to
+// the client.
+type Custom interface {
+	Item
+	// Name is the name that will be displayed on the item to all clients.
+	Name() string
+	// Texture is the Image of the texture for this item.
+	Texture() image.Image
+	// Category is the category the item will be listed under in the creative inventory.
+	Category() string
 }
 
 // NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
@@ -40,11 +53,22 @@ func RegisterItem(name string, item Item) {
 	items[k] = item
 	itemsNames[name] = id
 	names[id] = name
+	if custom, ok := item.(Custom); ok {
+		registerCustomItem(name, custom)
+	}
+}
+
+func registerCustomItem(name string, item Custom) {
+	id, _ := item.EncodeItem()
+	customItems[name] = item
+	customItemLegacyIDs[name] = id
 }
 
 var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
+var customItems = map[string]Custom{}
+var customItemLegacyIDs = map[string]int32{}
 
 // itemByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
 // returned and the bool true.
@@ -75,4 +99,18 @@ func itemByName(name string, meta int16) (Item, bool) {
 func itemToName(it Item) (name string, meta int16) {
 	id, meta := it.EncodeItem()
 	return names[id], meta
+}
+
+// allCustomItems returns all of the custom items that have been registered.
+//lint:ignore U1000 is used using compiler directives.
+//noinspection GoUnusedFunction
+func allCustomItems() map[string]Custom {
+	return customItems
+}
+
+// allCustomItemLegacyIDs returns the legacy IDs of custom items indexed by their string identifier.
+//lint:ignore U1000 is used using compiler directives.
+//noinspection GoUnusedFunction
+func allCustomItemLegacyIDs() map[string]int32 {
+	return customItemLegacyIDs
 }

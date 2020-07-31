@@ -83,4 +83,5 @@ func init() {
 	world.RegisterItem("minecraft:clay_ball", ClayBall{})
 
 	world.RegisterItem("minecraft:stick", Stick{})
+	world.RegisterItem("dragonfly:strawberry", Strawberry{})
 }

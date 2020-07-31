@@ -2,6 +2,7 @@ package dragonfly
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
@@ -17,12 +18,17 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
+	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
+	"image/png"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -47,6 +53,8 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
+
+	resourcePackGenerated bool
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -77,6 +85,10 @@ func New(c *Config, log *logrus.Logger) *Server {
 // Accept accepts an incoming player into the server. It blocks until a player connects to the server.
 // Accept returns an error if the Server is closed using a call to Close.
 func (server *Server) Accept() (*player.Player, error) {
+	if !server.resourcePackGenerated {
+		server.generateResourcePack()
+	}
+
 	p, ok := <-server.players
 	if !ok {
 		return nil, errors.New("server closed")
@@ -291,13 +303,14 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
+		Items:          server.itemEntries(),
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre()),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
 		Time:                         int64(server.world.Time()),
-		GameRules:                    map[string]interface{}{"naturalregeneration": false},
+		GameRules:                    map[string]interface{}{"naturalregeneration": false, "experimentalgameplay": true},
 		Difficulty:                   2,
 		ServerAuthoritativeMovement:  true,
 		ServerAuthoritativeInventory: true,
@@ -397,6 +410,119 @@ func (server *Server) blockEntries() (entries []interface{}) {
 	return
 }
 
+// itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
+// packet.
+func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
+	for name, legacyID := range world_allCustomItemLegacyIDs() {
+		entries = append(entries, protocol.ItemEntry{
+			Name:     name,
+			LegacyID: int16(legacyID),
+		})
+	}
+	return
+}
+
+// generateResourcePack generates a resource pack to send textures and item data for custom items etc.
+func (server *Server) generateResourcePack() {
+	if !server.resourcePackGenerated {
+		items := world_allCustomItems()
+		// We only want to generate a resource pack if there is content to put inside of it.
+		if len(items) > 0 {
+			dir, err := ioutil.TempDir("", "dragonfly_resource_pack-*")
+			if err != nil {
+				panic(err)
+			}
+			defer os.RemoveAll(dir)
+
+			m, err := json.MarshalIndent(resource.Manifest{
+				FormatVersion: 2,
+				Header: resource.Header{
+					Name:               "dragonfly auto-generated resource pack",
+					Description:        "This resource pack contains auto-generated content from dragonfly",
+					UUID:               uuid.New().String(),
+					Version:            [3]int{0, 0, 1},
+					MinimumGameVersion: [3]int{1, 16, 0},
+				},
+				Modules: []resource.Module{
+					{
+						UUID:        uuid.New().String(),
+						Description: "This resource pack contains auto-generated content from dragonfly",
+						Type:        "resources",
+						Version:     [3]int{0, 0, 1},
+					},
+				},
+			}, "", "\t")
+			if err := ioutil.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
+				panic(err)
+			}
+
+			if err := os.Mkdir(filepath.Join(dir, "items"), os.ModePerm); err != nil {
+				panic(err)
+			}
+			if err := os.MkdirAll(filepath.Join(dir, "textures/items"), os.ModePerm); err != nil {
+				panic(err)
+			}
+
+			itemTexture := map[string]interface{}{
+				"resource_pack_name": "vanilla",
+				"texture_name":       "atlas.items",
+				"texture_data":       make(map[string]interface{}),
+			}
+			for identifier, it := range items {
+				name := strings.ToLower(strings.ReplaceAll(it.Name(), " ", "_"))
+
+				data := map[string]string{"textures": fmt.Sprintf("textures/items/%s.png", name)}
+				itemTexture["texture_data"].(map[string]interface{})[name] = data
+
+				texture, err := os.Create(filepath.Join(dir, "textures/items", fmt.Sprintf("%s.png", name)))
+				if err != nil {
+					panic(err)
+				}
+				if err := png.Encode(texture, it.Texture()); err != nil {
+					_ = texture.Close()
+					panic(err)
+				}
+				if err := texture.Close(); err != nil {
+					panic(err)
+				}
+
+				itemData, err := json.MarshalIndent(map[string]interface{}{
+					"format_version": "1.12.0",
+					"minecraft:item": map[string]interface{}{
+						"description": map[string]interface{}{
+							"identifier": identifier,
+							"category":   it.Category(),
+						},
+						"components": map[string]interface{}{
+							"minecraft:icon":           name,
+							"minecraft:render_offsets": "tools",
+						},
+					},
+				}, "", "\t")
+				if err != nil {
+					panic(err)
+				}
+				if err := ioutil.WriteFile(filepath.Join(dir, "items", fmt.Sprintf("%s.json", name)), itemData, 0666); err != nil {
+					panic(err)
+				}
+			}
+			it, err := json.MarshalIndent(itemTexture, "", "\t")
+			if err != nil {
+				panic(err)
+			}
+			if err := ioutil.WriteFile(filepath.Join(dir, "textures/item_texture.json"), it, 0666); err != nil {
+				panic(err)
+			}
+
+			pack := resource.MustCompile(dir)
+			fmt.Println(pack.Len())
+			server.listener.ResourcePacks = append(server.listener.ResourcePacks, pack)
+		}
+
+		server.resourcePackGenerated = true
+	}
+}
+
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
@@ -413,3 +539,11 @@ func item_registerVanillaCreativeItems()
 //go:linkname world_allBlocks github.com/df-mc/dragonfly/dragonfly/world.allBlocks
 //noinspection ALL
 func world_allBlocks() []world.Block
+
+//go:linkname world_allCustomItemLegacyIDs github.com/df-mc/dragonfly/dragonfly/world.allCustomItemLegacyIDs
+//noinspection ALL
+func world_allCustomItemLegacyIDs() map[string]int32
+
+//go:linkname world_allCustomItems github.com/df-mc/dragonfly/dragonfly/world.allCustomItems
+//noinspection ALL
+func world_allCustomItems() map[string]world.Custom
