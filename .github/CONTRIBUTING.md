@@ -4,7 +4,7 @@ First of all, thank you for your interest in contributing to Dragonfly. :+1:
 
 The following is a set of guidelines for contributing to Dragonfly. These are guidelines and in
 general it is recommended to stick to them when contributing, but you should use your best
-judgement when contributing. Feel free to propose changes to this document in our Discord.
+judgement. Feel free to propose changes to this document in our Discord.
 
 ### Pull Requests
 In general, it is recommended to discuss any changes you would like to make in our Discord to
