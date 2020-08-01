@@ -77,4 +77,4 @@ func world_itemByID(id int32, meta int16) (world.Item, bool)
 
 //go:linkname world_allCustomItems github.com/df-mc/dragonfly/dragonfly/world.allCustomItems
 //noinspection ALL
-func world_allCustomItems() map[string]world.Custom
+func world_allCustomItems() map[string]world.CustomItem

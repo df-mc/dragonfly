@@ -56,7 +56,7 @@ func buildItemTexture(dir, name string, img image.Image) {
 	}
 }
 
-func buildItem(dir, identifier, name string, item world.Custom) {
+func buildItem(dir, identifier, name string, item world.CustomItem) {
 	itemData, err := json.Marshal(map[string]interface{}{
 		"format_version": "1.16.0",
 		"minecraft:item": map[string]interface{}{
@@ -90,4 +90,4 @@ func buildItemAtlas(dir string, atlas map[string]interface{}) {
 
 //go:linkname world_allCustomItems github.com/df-mc/dragonfly/dragonfly/world.allCustomItems
 //noinspection ALL
-func world_allCustomItems() map[string]world.Custom
+func world_allCustomItems() map[string]world.CustomItem

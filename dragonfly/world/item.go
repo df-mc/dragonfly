@@ -13,9 +13,9 @@ type Item interface {
 	EncodeItem() (id int32, meta int16)
 }
 
-// Custom represents an item that is non-vanilla and requires a resource pack and extra steps to show it to
-// the client.
-type Custom interface {
+// CustomItem represents an item that is non-vanilla and requires a resource pack and extra steps to show it
+// to the client.
+type CustomItem interface {
 	Item
 	// Name is the name that will be displayed on the item to all clients.
 	Name() string
@@ -53,12 +53,12 @@ func RegisterItem(name string, item Item) {
 	items[k] = item
 	itemsNames[name] = id
 	names[id] = name
-	if custom, ok := item.(Custom); ok {
+	if custom, ok := item.(CustomItem); ok {
 		registerCustomItem(name, custom)
 	}
 }
 
-func registerCustomItem(name string, item Custom) {
+func registerCustomItem(name string, item CustomItem) {
 	id, _ := item.EncodeItem()
 	customItems[name] = item
 	customItemLegacyIDs[name] = id
@@ -67,7 +67,7 @@ func registerCustomItem(name string, item Custom) {
 var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
-var customItems = map[string]Custom{}
+var customItems = map[string]CustomItem{}
 var customItemLegacyIDs = map[string]int32{}
 
 // itemByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
@@ -104,7 +104,7 @@ func itemToName(it Item) (name string, meta int16) {
 // allCustomItems returns all of the custom items that have been registered.
 //lint:ignore U1000 is used using compiler directives.
 //noinspection GoUnusedFunction
-func allCustomItems() map[string]Custom {
+func allCustomItems() map[string]CustomItem {
 	return customItems
 }
 
