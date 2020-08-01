@@ -6,12 +6,14 @@ const (
 	hashBeacon
 	hashBedrock
 	hashBoneBlock
+	hashBricks
 	hashCarpet
 	hashChest
 	hashClay
 	hashCoalBlock
 	hashCoalOre
 	hashCobblestone
+	hashCocoa
 	hashConcrete
 	hashCoral
 	hashCoralBlock
@@ -32,6 +34,7 @@ const (
 	hashGrass
 	hashGrassPath
 	hashFenceGate
+	hashIronBars
 	hashIronBlock
 	hashIronOre
 	hashKelp
@@ -64,5 +67,4 @@ const (
 	hashGlassPane
 	hashStainedGlassPane
 	hashStainedGlass
-	hashBricks
 )

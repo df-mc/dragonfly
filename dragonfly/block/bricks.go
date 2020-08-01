@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
 
 // Bricks are decorative building blocks.
@@ -15,9 +14,7 @@ type Bricks struct {
 func (b Bricks) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness: 2,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe
-		},
+		Harvestable: pickaxeHarvestable,
 		Effective: pickaxeEffective,
 		Drops: simpleDrops(item.NewStack(b, 1)),
 	}

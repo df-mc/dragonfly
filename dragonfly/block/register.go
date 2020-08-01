@@ -54,6 +54,7 @@ func init() {
 	world.RegisterBlock(allStainedGlass()...)
 	world.RegisterBlock(allStainedGlassPane()...)
 	world.RegisterBlock(GlassPane{})
+	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
 	world.RegisterBlock(allFenceGates()...)
@@ -76,6 +77,7 @@ func init() {
 	world.RegisterBlock(GoldOre{})
 	world.RegisterBlock(IronOre{})
 	world.RegisterBlock(CoalOre{})
+	world.RegisterBlock(allCocoaBeans()...)
 	world.RegisterBlock(Bricks{})
 }
 
@@ -171,6 +173,7 @@ func init() {
 	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
 	world.RegisterItem("minecraft:glass_pane", GlassPane{})
+	world.RegisterItem("minecraft:iron_bars", IronBars{})
 	world.RegisterItem("minecraft:fence_gate", WoodFenceGate{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_fence_gate", WoodFenceGate{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_fence_gate", WoodFenceGate{Wood: wood.Birch()})
@@ -212,6 +215,7 @@ func init() {
 	world.RegisterItem("minecraft:gold_ore", GoldOre{})
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
+	world.RegisterItem("minecraft:dye", CocoaBean{})
 	world.RegisterItem("minecraft:brick_block", Bricks{})
 }
 
@@ -236,10 +240,8 @@ func init() {
 		p, ok := b.(Pumpkin)
 		return ok && !p.Carved
 	}
-	item_internal.CarvePumpkin = func(b world.Block) world.Block {
-		p := b.(Pumpkin)
-		p.Carved = true
-		return p
+	item_internal.CarvePumpkin = func(b world.Block, face world.Face) world.Block {
+		return Pumpkin{Carved: true, Facing: face.Direction()}
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}

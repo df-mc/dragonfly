@@ -13,6 +13,7 @@ import (
 type Coral struct {
 	noNBT
 	empty
+	transparent
 
 	// Type is the type of coral of the block.
 	Type coral.Coral
@@ -96,7 +97,7 @@ func (c Coral) BreakInfo() BreakInfo {
 		Harvestable: func(t tool.Tool) bool {
 			return false //TODO: Silk touch
 		},
-		Effective: neverEffective,
+		Effective: nothingEffective,
 		Drops:     simpleDrops(),
 	}
 }

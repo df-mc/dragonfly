@@ -69,7 +69,7 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible, onGround atomic.Bool
+	sneaking, sprinting, swimming, invisible, immobile, onGround atomic.Bool
 
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
@@ -767,6 +767,22 @@ func (p *Player) SetVisible() {
 	p.updateState()
 }
 
+// SetImmobile prevents the player from moving around, but still allows them to look around.
+func (p *Player) SetImmobile() {
+	if !p.immobile.CAS(false, true) {
+		return
+	}
+	p.updateState()
+}
+
+// SetMobile allows the player to freely move around again after being immobile.
+func (p *Player) SetMobile() {
+	if !p.immobile.CAS(true, false) {
+		return
+	}
+	p.updateState()
+}
+
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
 // the inventory and the hotbar. It also includes the item in the main hand as returned by Player.HeldItems().
 func (p *Player) Inventory() *inventory.Inventory {
@@ -1224,6 +1240,52 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	return drops
 }
 
+// PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
+// pick the block, the method returns immediately.
+func (p *Player) PickBlock(pos world.BlockPos) {
+	if !p.canReach(pos.Vec3()) {
+		return
+	}
+
+	block := p.World().Block(pos)
+	if i, ok := block.(world.Item); ok {
+		copiedItem := item.NewStack(i, 1)
+
+		slot, found := p.Inventory().First(copiedItem)
+
+		if (!found && p.GameMode() != gamemode.Creative{}) {
+			return
+		}
+
+		ctx := event.C()
+		p.handler().HandleBlockPick(ctx, pos, block)
+
+		ctx.Continue(func() {
+			_, offhand := p.HeldItems()
+
+			if found {
+				if slot < 9 {
+					p.session().SetHeldSlot(slot)
+				} else {
+					p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+				}
+			} else {
+				firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+
+				if !emptyFound {
+					p.SetHeldItems(copiedItem, offhand)
+				} else if firstEmpty < 8 {
+					p.session().SetHeldSlot(firstEmpty)
+					p.Inventory().SetItem(firstEmpty, copiedItem)
+				} else {
+					p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+					p.SetHeldItems(copiedItem, offhand)
+				}
+			}
+		})
+	}
+}
+
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
@@ -1250,7 +1312,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
 // position of the player.
 func (p *Player) Move(deltaPos mgl64.Vec3) {
-	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+	if p.Dead() || p.immobile.Load() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
 
@@ -1324,6 +1386,26 @@ func (p *Player) Collect(s item.Stack) (n int) {
 	p.handler().HandleItemPickup(ctx, s)
 	ctx.Continue(func() {
 		n, _ = p.Inventory().AddItem(s)
+	})
+	return
+}
+
+// Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
+// ground.
+// The dropped item entity has a pickup delay of 2 seconds.
+// The number of items that was dropped in the end is returned. It is generally the count of the stack passed
+// or 0 if dropping the item.Stack was cancelled.
+func (p *Player) Drop(s item.Stack) (n int) {
+	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
+	e.SetVelocity(entity.DirectionVector(p).Mul(0.4))
+	e.SetPickupDelay(time.Second * 2)
+
+	ctx := event.C()
+	p.handler().HandleItemDrop(ctx, e)
+
+	ctx.Continue(func() {
+		p.World().AddEntity(e)
+		n = s.Count()
 	})
 	return
 }
@@ -1431,7 +1513,7 @@ func (p *Player) checkOnGround() bool {
 				b := p.World().Block(bPos)
 				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
-					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 						return true
 					}
 				}
@@ -1492,6 +1574,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if p.invisible.Load() {
 		s = append(s, state.Invisible{})
+	}
+	if p.immobile.Load() {
+		s = append(s, state.Immobile{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {
@@ -1617,12 +1702,12 @@ func (p *Player) close() {
 	p.sMutex.Lock()
 	s := p.s
 	p.s = nil
+	p.sMutex.Unlock()
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = p.inv.Close()
 	_ = p.offHand.Close()
 	_ = p.armour.Close()
-	p.sMutex.Unlock()
 
 	if p.World() == nil {
 		return

@@ -54,9 +54,8 @@ func (Kelp) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 	return false
 }
 
-// withRandomAge returns a new Kelp block with its age value randomized between 0 and 14.
+// withRandomAge returns a new Kelp block with its age value randomized between 0 and 24.
 func (k Kelp) withRandomAge() Kelp {
-	// In Java Edition, Kelp's age value can be up to 25, but MCPE limits it to 15.
 	k.Age = rand.Intn(25)
 	return k
 }
@@ -83,7 +82,7 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 		return false
 	}
 
-	// When first placed, kelp gets a random age between 0 and 14 in MCBE.
+	// When first placed, kelp gets a random age between 0 and 24.
 	place(w, pos, k.withRandomAge(), user, ctx)
 	return placed(ctx)
 }
@@ -110,8 +109,8 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 
 // RandomTick ...
 func (k Kelp) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.Intn(100) < 15 && k.Age < 25 {
-		// Every random tick, there's a 14% chance for Kelp to grow if its age is below 15.
 		abovePos := pos.Add(world.BlockPos{0, 1})
 
 		liquid, ok := w.Liquid(abovePos)
@@ -134,7 +133,7 @@ func (k Kelp) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 
 // allKelp returns all possible states of a kelp block.
 func allKelp() (b []world.Block) {
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 26; i++ {
 		b = append(b, Kelp{Age: i})
 	}
 	return

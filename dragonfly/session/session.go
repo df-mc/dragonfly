@@ -264,6 +264,7 @@ func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorFall:             nil,
 		packet.IDAnimate:               nil,
+		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},

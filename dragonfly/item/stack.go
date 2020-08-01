@@ -291,11 +291,16 @@ func (s Stack) Comparable(s2 Stack) bool {
 	if id != id2 || meta != meta2 || s.damage != s2.damage {
 		return false
 	}
-	if s.customName != s2.customName || len(s.lore) != len(s2.lore) {
+	if s.customName != s2.customName || len(s.lore) != len(s2.lore) || len(s.enchantments) != len(s2.enchantments) {
 		return false
 	}
 	for i := range s.lore {
 		if s.lore[i] != s2.lore[i] {
+			return false
+		}
+	}
+	for i := range s.enchantments {
+		if s.enchantments[i] != s2.enchantments[i] {
 			return false
 		}
 	}
