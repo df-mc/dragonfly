@@ -97,7 +97,7 @@ func (c Coral) BreakInfo() BreakInfo {
 		Harvestable: func(t tool.Tool) bool {
 			return false //TODO: Silk touch
 		},
-		Effective: neverEffective,
+		Effective: nothingEffective,
 		Drops:     simpleDrops(),
 	}
 }
