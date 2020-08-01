@@ -14,10 +14,10 @@ type IronBars struct {
 // BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness: 5,
+		Hardness:    5,
 		Harvestable: pickaxeHarvestable,
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(i, 1)),
+		Effective:   pickaxeEffective,
+		Drops:       simpleDrops(item.NewStack(i, 1)),
 	}
 }
 
@@ -32,6 +32,6 @@ func (i IronBars) EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // Hash ...
-func (i IronBars) Hash() uint64{
+func (i IronBars) Hash() uint64 {
 	return hashIronBars
 }
