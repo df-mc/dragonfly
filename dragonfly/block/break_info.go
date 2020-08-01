@@ -84,11 +84,6 @@ type BreakInfo struct {
 // XPDropRange holds the min & max XP drop amounts of blocks.
 type XPDropRange [2]int
 
-// neverEffective is a convenience function for blocks that are mined the same by all tools.
-var neverEffective = func(t tool.Tool) bool {
-	return true
-}
-
 // pickaxeEffective is a convenience function for blocks that are effectively mined with a pickaxe.
 var pickaxeEffective = func(t tool.Tool) bool {
 	return t.ToolType() == tool.TypePickaxe
