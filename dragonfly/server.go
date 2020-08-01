@@ -428,7 +428,7 @@ func (server *Server) generateResourcePack() {
 		items := world_allCustomItems()
 		// We only want to generate a resource pack if there is content to put inside of it.
 		if len(items) > 0 {
-			dir, err := ioutil.TempDir("", "dragonfly_resource_pack-*")
+			dir, err := ioutil.TempDir("", "dragonfly_resource_pack-")
 			if err != nil {
 				panic(err)
 			}
