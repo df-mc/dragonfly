@@ -434,7 +434,7 @@ func (server *Server) generateResourcePack() {
 			}
 			defer os.RemoveAll(dir)
 
-			m, err := json.MarshalIndent(resource.Manifest{
+			m, err := json.Marshal(resource.Manifest{
 				FormatVersion: 2,
 				Header: resource.Header{
 					Name:               "dragonfly auto-generated resource pack",
@@ -451,8 +451,16 @@ func (server *Server) generateResourcePack() {
 						Version:     [3]int{0, 0, 1},
 					},
 				},
-			}, "", "\t")
+			})
 			if err := ioutil.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
+				panic(err)
+			}
+
+			if err := os.Mkdir(filepath.Join(dir, "texts"), os.ModePerm); err != nil {
+				panic(err)
+			}
+			lang, err := os.Create(filepath.Join(dir, "texts/en_US.lang"))
+			if err != nil {
 				panic(err)
 			}
 
@@ -469,6 +477,10 @@ func (server *Server) generateResourcePack() {
 				"texture_data":       make(map[string]interface{}),
 			}
 			for identifier, it := range items {
+				if _, err := lang.WriteString(fmt.Sprintf("item.%s.name=%s\n", identifier, it.Name())); err != nil {
+					panic(err)
+				}
+
 				name := strings.ToLower(strings.ReplaceAll(it.Name(), " ", "_"))
 
 				data := map[string]string{"textures": fmt.Sprintf("textures/items/%s.png", name)}
@@ -486,8 +498,8 @@ func (server *Server) generateResourcePack() {
 					panic(err)
 				}
 
-				itemData, err := json.MarshalIndent(map[string]interface{}{
-					"format_version": "1.12.0",
+				itemData, err := json.Marshal(map[string]interface{}{
+					"format_version": "1.16.0",
 					"minecraft:item": map[string]interface{}{
 						"description": map[string]interface{}{
 							"identifier": identifier,
@@ -498,7 +510,7 @@ func (server *Server) generateResourcePack() {
 							"minecraft:render_offsets": "tools",
 						},
 					},
-				}, "", "\t")
+				})
 				if err != nil {
 					panic(err)
 				}
@@ -506,7 +518,11 @@ func (server *Server) generateResourcePack() {
 					panic(err)
 				}
 			}
-			it, err := json.MarshalIndent(itemTexture, "", "\t")
+			if err := lang.Close(); err != nil {
+				panic(err)
+			}
+
+			it, err := json.Marshal(itemTexture)
 			if err != nil {
 				panic(err)
 			}
@@ -514,9 +530,8 @@ func (server *Server) generateResourcePack() {
 				panic(err)
 			}
 
-			pack := resource.MustCompile(dir)
-			fmt.Println(pack.Len())
-			server.listener.ResourcePacks = append(server.listener.ResourcePacks, pack)
+			server.listener.ResourcePacks = append(server.listener.ResourcePacks, resource.MustCompile(dir))
+			server.listener.TexturePacksRequired = true
 		}
 
 		server.resourcePackGenerated = true
