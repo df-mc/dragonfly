@@ -2,9 +2,9 @@ package dragonfly
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/internal/pack_builder"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
@@ -18,17 +18,12 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
-	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
-	"image/png"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -86,7 +81,12 @@ func New(c *Config, log *logrus.Logger) *Server {
 // Accept returns an error if the Server is closed using a call to Close.
 func (server *Server) Accept() (*player.Player, error) {
 	if !server.resourcePackGenerated {
-		server.generateResourcePack()
+		pack := pack_builder.BuildResourcePack()
+		if pack != nil {
+			server.listener.ResourcePacks = append(server.listener.ResourcePacks, pack)
+			server.listener.TexturePacksRequired = true
+		}
+		server.resourcePackGenerated = true
 	}
 
 	p, ok := <-server.players
@@ -422,122 +422,6 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	return
 }
 
-// generateResourcePack generates a resource pack to send textures and item data for custom items etc.
-func (server *Server) generateResourcePack() {
-	if !server.resourcePackGenerated {
-		items := world_allCustomItems()
-		// We only want to generate a resource pack if there is content to put inside of it.
-		if len(items) > 0 {
-			dir, err := ioutil.TempDir("", "dragonfly_resource_pack-")
-			if err != nil {
-				panic(err)
-			}
-			defer os.RemoveAll(dir)
-
-			m, err := json.Marshal(resource.Manifest{
-				FormatVersion: 2,
-				Header: resource.Header{
-					Name:               "dragonfly auto-generated resource pack",
-					Description:        "This resource pack contains auto-generated content from dragonfly",
-					UUID:               uuid.New().String(),
-					Version:            [3]int{0, 0, 1},
-					MinimumGameVersion: [3]int{1, 16, 0},
-				},
-				Modules: []resource.Module{
-					{
-						UUID:        uuid.New().String(),
-						Description: "This resource pack contains auto-generated content from dragonfly",
-						Type:        "resources",
-						Version:     [3]int{0, 0, 1},
-					},
-				},
-			})
-			if err := ioutil.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
-				panic(err)
-			}
-
-			if err := os.Mkdir(filepath.Join(dir, "texts"), os.ModePerm); err != nil {
-				panic(err)
-			}
-			lang, err := os.Create(filepath.Join(dir, "texts/en_US.lang"))
-			if err != nil {
-				panic(err)
-			}
-
-			if err := os.Mkdir(filepath.Join(dir, "items"), os.ModePerm); err != nil {
-				panic(err)
-			}
-			if err := os.MkdirAll(filepath.Join(dir, "textures/items"), os.ModePerm); err != nil {
-				panic(err)
-			}
-
-			itemTexture := map[string]interface{}{
-				"resource_pack_name": "vanilla",
-				"texture_name":       "atlas.items",
-				"texture_data":       make(map[string]interface{}),
-			}
-			for identifier, it := range items {
-				if _, err := lang.WriteString(fmt.Sprintf("item.%s.name=%s\n", identifier, it.Name())); err != nil {
-					panic(err)
-				}
-
-				name := strings.ToLower(strings.ReplaceAll(it.Name(), " ", "_"))
-
-				data := map[string]string{"textures": fmt.Sprintf("textures/items/%s.png", name)}
-				itemTexture["texture_data"].(map[string]interface{})[name] = data
-
-				texture, err := os.Create(filepath.Join(dir, "textures/items", fmt.Sprintf("%s.png", name)))
-				if err != nil {
-					panic(err)
-				}
-				if err := png.Encode(texture, it.Texture()); err != nil {
-					_ = texture.Close()
-					panic(err)
-				}
-				if err := texture.Close(); err != nil {
-					panic(err)
-				}
-
-				itemData, err := json.Marshal(map[string]interface{}{
-					"format_version": "1.16.0",
-					"minecraft:item": map[string]interface{}{
-						"description": map[string]interface{}{
-							"identifier": identifier,
-							"category":   it.Category(),
-						},
-						"components": map[string]interface{}{
-							"minecraft:icon":           name,
-							"minecraft:render_offsets": "tools",
-						},
-					},
-				})
-				if err != nil {
-					panic(err)
-				}
-				if err := ioutil.WriteFile(filepath.Join(dir, "items", fmt.Sprintf("%s.json", name)), itemData, 0666); err != nil {
-					panic(err)
-				}
-			}
-			if err := lang.Close(); err != nil {
-				panic(err)
-			}
-
-			it, err := json.Marshal(itemTexture)
-			if err != nil {
-				panic(err)
-			}
-			if err := ioutil.WriteFile(filepath.Join(dir, "textures/item_texture.json"), it, 0666); err != nil {
-				panic(err)
-			}
-
-			server.listener.ResourcePacks = append(server.listener.ResourcePacks, resource.MustCompile(dir))
-			server.listener.TexturePacksRequired = true
-		}
-
-		server.resourcePackGenerated = true
-	}
-}
-
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
@@ -558,7 +442,3 @@ func world_allBlocks() []world.Block
 //go:linkname world_allCustomItemLegacyIDs github.com/df-mc/dragonfly/dragonfly/world.allCustomItemLegacyIDs
 //noinspection ALL
 func world_allCustomItemLegacyIDs() map[string]int32
-
-//go:linkname world_allCustomItems github.com/df-mc/dragonfly/dragonfly/world.allCustomItems
-//noinspection ALL
-func world_allCustomItems() map[string]world.Custom
