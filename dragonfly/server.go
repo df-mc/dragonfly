@@ -76,7 +76,7 @@ func New(c *Config, log *logrus.Logger) *Server {
 
 // Accept accepts an incoming player into the server. It blocks until a player connects to the server.
 // Accept returns an error if the Server is closed using a call to Close.
-func (server *Server) Accept() (*player.Player, error) {
+func (server *Server) Accept()(*player.Player, error){
 	p, ok := <-server.players
 	if !ok {
 		return nil, errors.New("server closed")
