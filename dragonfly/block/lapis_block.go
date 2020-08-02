@@ -12,14 +12,14 @@ type LapisBlock struct {
 }
 
 // BreakInfo ...
-func (l LapisBlock) BreakInfo() BreakInfo{
+func (l LapisBlock) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness:    3,
+		Hardness: 3,
 		Harvestable: func(t tool.Tool) bool {
 			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
 		},
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(l, 1)),
+		Effective: pickaxeEffective,
+		Drops:     simpleDrops(item.NewStack(l, 1)),
 	}
 }
 
