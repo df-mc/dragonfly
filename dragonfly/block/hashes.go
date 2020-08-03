@@ -67,4 +67,5 @@ const (
 	hashGlassPane
 	hashStainedGlassPane
 	hashStainedGlass
+	hashWheat
 )

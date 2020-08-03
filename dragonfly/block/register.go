@@ -13,6 +13,7 @@ import (
 func init() {
 	// Always register Air first so we can use 0 runtime IDs as air.
 	world.RegisterBlock(Air{})
+
 	world.RegisterBlock(Stone{})
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
@@ -78,6 +79,7 @@ func init() {
 	world.RegisterBlock(IronOre{})
 	world.RegisterBlock(CoalOre{})
 	world.RegisterBlock(allCocoaBeans()...)
+	world.RegisterBlock(allWheat()...)
 }
 
 func init() {
@@ -215,13 +217,14 @@ func init() {
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
+	world.RegisterItem("minecraft:wheat_seeds", Wheat{})
 }
 
 func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = GrassPath{}
-	item_internal.FarmLand = Farmland{Hydration: 7}
+	item_internal.FarmLand = Farmland{Hydration: 0}
 	item_internal.Dirt = Dirt{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)
