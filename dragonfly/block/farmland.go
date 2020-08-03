@@ -28,43 +28,34 @@ func (f Farmland) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 }
 
 // RandomTick ...
-func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
-	// Calculate the Hydration of the farmland block.
-	f.Hydrate(pos, w)
-
-	// Check if there is a crop on the farmland block.
-	if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop && f.Hydration == 0 {
-		// If no crop exists and the Hydration level is 0, turn the block into dirt.
-		w.SetBlock(pos, Dirt{})
+func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+	if !f.CanHydrate(pos, w) {
+		if f.Hydration > 0 {
+			f.Hydration--
+			w.PlaceBlock(pos, f)
+		} else {
+			w.SetBlock(pos, Dirt{})
+		}
+	} else {
+		f.Hydration = 7
+		w.PlaceBlock(pos, f)
 	}
 }
 
-// Hydrate determines the Hydration or moisture of a block by scanning a 4 block box
-// around the Farmland block in each direction for water source blocks.
-// This also takes into account water source blocks one block higher than the farmland.
-func (f Farmland) Hydrate(pos world.BlockPos, w *world.World) {
-	// Start on the original Y level of the farmland block and make 9x9 with the center being the farmland block.
-	// If any water source blocks are found, return max hydration.
+// CanHydrate checks for water within 4 blocks in each direction from the farmland.
+func (f Farmland) CanHydrate(pos world.BlockPos, w *world.World) bool {
 	for y := 0; y <= 1; y++ {
 		for x := -4; x <= 4; x++ {
 			for z := -4; z <= 4; z++ {
 				if liquid, ok := w.Liquid(world.BlockPos{pos.X() + x, pos.Y() + y, pos.Z() + z}); ok {
 					if _, ok := liquid.(Water); ok {
-						// If the blocks Hydration wasn't 7 before, then replace the block.
-						if f.Hydration < 7 {
-							w.SetBlock(pos, Farmland{Hydration: 7})
-						}
-						return
+						return true
 					}
 				}
 			}
 		}
 	}
-	// Checks if the farmland block was previously hydrated.
-	if f.Hydration > 0 {
-		// No water blocks are found, meaning the block is now a dehydrated farmland block.
-		w.SetBlock(pos, Farmland{Hydration: f.Hydration - 1})
-	}
+	return false
 }
 
 // BreakInfo ...
