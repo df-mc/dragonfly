@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/item/category"
 	"image"
 )
 
@@ -22,7 +23,7 @@ type CustomItem interface {
 	// Texture is the Image of the texture for this item.
 	Texture() image.Image
 	// Category is the category the item will be listed under in the creative inventory.
-	Category() string
+	Category() category.Category
 }
 
 // NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically

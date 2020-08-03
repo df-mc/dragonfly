@@ -62,7 +62,7 @@ func buildItem(dir, identifier, name string, item world.CustomItem) {
 		"minecraft:item": map[string]interface{}{
 			"description": map[string]interface{}{
 				"identifier": identifier,
-				"category":   item.Category(),
+				"category":   item.Category().String(),
 			},
 			"components": map[string]interface{}{
 				"minecraft:icon":           name,

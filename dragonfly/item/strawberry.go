@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/item/category"
 	"image"
 	"image/png"
 	"os"
@@ -29,6 +30,6 @@ func (Strawberry) Texture() image.Image {
 	return img
 }
 
-func (Strawberry) Category() string {
-	return "Nature"
+func (Strawberry) Category() category.Category {
+	return category.Nature()
 }
