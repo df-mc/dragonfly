@@ -21,7 +21,7 @@ type Farmland struct {
 }
 
 // NeighbourUpdateTick ...
-func (f Farmland) NeighbourUpdateTick(pos, block world.BlockPos, w *world.World) {
+func (f Farmland) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if solid := w.Block(pos.Side(world.FaceUp)).Model().FaceSolid(pos.Side(world.FaceUp), world.FaceDown, w); solid {
 		if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop {
 			w.SetBlock(pos, Dirt{})
@@ -35,9 +35,7 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	f.Hydrate(pos, w)
 
 	// Check if there is a crop on the farmland block.
-	if _, isCrop := w.Block(pos.Add(world.BlockPos{0, 1})).(Crop); isCrop {
-		return
-	} else if f.Hydration <= 0 {
+	if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop && f.Hydration <= 0 {
 		// If no crop exists and the Hydration level is 0, turn the block into dirt.
 		w.SetBlock(pos, Dirt{})
 	}
@@ -49,10 +47,10 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 func (f Farmland) Hydrate(pos world.BlockPos, w *world.World) {
 	// Start on the original Y level of the farmland block and make 9x9 with the center being the farmland block.
 	// If any water source blocks are found, return max hydration.
-	for yLevel := 0; yLevel <= 1; yLevel++ {
-		for xLevel := -4; xLevel <= 4; xLevel++ {
-			for zLevel := -4; zLevel <= 4; zLevel++ {
-				if water, isWater := w.Block(world.BlockPos{pos.X() + xLevel, pos.Y() + yLevel, pos.Z() + zLevel}).(Water); isWater && water.Depth == 8 {
+	for y := 0; y <= 1; y++ {
+		for x := -4; x <= 4; x++ {
+			for z := -4; z <= 4; z++ {
+				if _, isWater := w.Block(world.BlockPos{pos.X() + x, pos.Y() + y, pos.Z() + z}).(Water); isWater {
 					// If the blocks Hydration wasn't 7 before, then replace the block.
 					if f.Hydration < 7 {
 						w.SetBlock(pos, Farmland{Hydration: 7})
