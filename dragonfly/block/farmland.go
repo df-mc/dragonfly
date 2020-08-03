@@ -23,9 +23,7 @@ type Farmland struct {
 // NeighbourUpdateTick ...
 func (f Farmland) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if solid := w.Block(pos.Side(world.FaceUp)).Model().FaceSolid(pos.Side(world.FaceUp), world.FaceDown, w); solid {
-		if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop {
-			w.SetBlock(pos, Dirt{})
-		}
+		w.SetBlock(pos, Dirt{})
 	}
 }
 
@@ -35,7 +33,7 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	f.Hydrate(pos, w)
 
 	// Check if there is a crop on the farmland block.
-	if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop && f.Hydration <= 0 {
+	if _, isCrop := w.Block(pos.Side(world.FaceUp)).(Crop); !isCrop && f.Hydration == 0 {
 		// If no crop exists and the Hydration level is 0, turn the block into dirt.
 		w.SetBlock(pos, Dirt{})
 	}
