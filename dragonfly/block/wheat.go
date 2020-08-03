@@ -27,7 +27,7 @@ func (s Wheat) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 
 // UseOnBlock ...
 func (s Wheat) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, s)
+	pos, _, used := firstReplaceable(w, pos, face, s)
 	if !used {
 		return false
 	}
@@ -60,7 +60,7 @@ func (s Wheat) EncodeItem() (id int32, meta int16) {
 	return 295, 0
 }
 
-// HasLiquidDrops...
+// HasLiquidDrops ...
 func (s Wheat) HasLiquidDrops() bool {
 	return true
 }
