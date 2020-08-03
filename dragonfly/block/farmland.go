@@ -50,12 +50,14 @@ func (f Farmland) Hydrate(pos world.BlockPos, w *world.World) {
 	for y := 0; y <= 1; y++ {
 		for x := -4; x <= 4; x++ {
 			for z := -4; z <= 4; z++ {
-				if _, isWater := w.Block(world.BlockPos{pos.X() + x, pos.Y() + y, pos.Z() + z}).(Water); isWater {
-					// If the blocks Hydration wasn't 7 before, then replace the block.
-					if f.Hydration < 7 {
-						w.SetBlock(pos, Farmland{Hydration: 7})
+				if liquid, ok := w.Liquid(world.BlockPos{pos.X() + x, pos.Y() + y, pos.Z() + z}); ok {
+					if _, ok := liquid.(Water); ok {
+						// If the blocks Hydration wasn't 7 before, then replace the block.
+						if f.Hydration < 7 {
+							w.SetBlock(pos, Farmland{Hydration: 7})
+						}
+						return
 					}
-					return
 				}
 			}
 		}
