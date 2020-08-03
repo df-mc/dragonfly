@@ -166,10 +166,10 @@ func (s Stack) AttackDamage() float64 {
 // according to the rules of fmt.Sprintln.
 func (s Stack) WithCustomName(a ...interface{}) Stack {
 	s.customName = format(a)
-	if !strings.HasPrefix(s.customName, "§r") {
+	if !strings.HasPrefix(s.customName, "§r§f") {
 		// We always reset it if it's not already done, because Vanilla makes custom names in italic, which
 		// servers generally just don't want.
-		s.customName = "§r" + s.customName
+		s.customName = "§r§f" + s.customName
 	}
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)
@@ -291,11 +291,16 @@ func (s Stack) Comparable(s2 Stack) bool {
 	if id != id2 || meta != meta2 || s.damage != s2.damage {
 		return false
 	}
-	if s.customName != s2.customName || len(s.lore) != len(s2.lore) {
+	if s.customName != s2.customName || len(s.lore) != len(s2.lore) || len(s.enchantments) != len(s2.enchantments) {
 		return false
 	}
 	for i := range s.lore {
 		if s.lore[i] != s2.lore[i] {
+			return false
+		}
+	}
+	for i := range s.enchantments {
+		if s.enchantments[i] != s2.enchantments[i] {
 			return false
 		}
 	}

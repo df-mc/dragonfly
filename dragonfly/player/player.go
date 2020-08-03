@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
@@ -31,21 +32,24 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"go.uber.org/atomic"
+	"image/color"
 	"math/rand"
 	"net"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                               string
-	uuid                               uuid.UUID
-	xuid                               string
-	pos, velocity, yaw, pitch, nameTag atomic.Value
+	name                         string
+	uuid                         uuid.UUID
+	xuid                         string
+	pos, velocity                atomic.Value
+	nameTag                      atomic.String
+	yaw, pitch, absorptionHealth atomic.Float64
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -63,19 +67,20 @@ type Player struct {
 
 	inv, offHand *inventory.Inventory
 	armour       *inventory.Armour
-	heldSlot     *uint32
+	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible, onGround *uint32
+	sneaking, sprinting, swimming, invisible, immobile, onGround atomic.Bool
 
-	speed    atomic.Value
+	speed    atomic.Float64
 	health   *entity_internal.HealthManager
+	effects  *entity.EffectManager
 	immunity atomic.Value
 
-	breaking          *uint32
+	breaking          atomic.Bool
 	breakingPos       atomic.Value
 	lastBreakDuration time.Duration
 
-	breakParticleCounter *uint32
+	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
 }
@@ -86,36 +91,28 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
 		inv: inventory.New(36, func(slot int, item item.Stack) {
-			if slot == int(atomic.LoadUint32(p.heldSlot)) {
+			if slot == int(p.heldSlot.Load()) {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:                 uuid.New(),
-		offHand:              inventory.New(2, p.broadcastItems),
-		armour:               inventory.NewArmour(p.broadcastArmour),
-		hunger:               newHungerManager(),
-		health:               entity_internal.NewHealthManager(),
-		gameMode:             gamemode.Adventure{},
-		h:                    NopHandler{},
-		heldSlot:             new(uint32),
-		breaking:             new(uint32),
-		breakParticleCounter: new(uint32),
-		sneaking:             new(uint32),
-		sprinting:            new(uint32),
-		swimming:             new(uint32),
-		invisible:            new(uint32),
-		onGround:             new(uint32),
-		name:                 name,
-		skin:                 skin,
+		uuid:     uuid.New(),
+		offHand:  inventory.New(2, p.broadcastItems),
+		armour:   inventory.NewArmour(p.broadcastArmour),
+		hunger:   newHungerManager(),
+		health:   entity_internal.NewHealthManager(),
+		effects:  entity.NewEffectManager(),
+		gameMode: gamemode.Adventure{},
+		h:        NopHandler{},
+		name:     name,
+		skin:     skin,
+		speed:    *atomic.NewFloat64(0.1),
+		nameTag:  *atomic.NewString(name),
+		heldSlot: atomic.NewUint32(0),
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
-	p.yaw.Store(0.0)
-	p.pitch.Store(0.0)
-	p.speed.Store(0.1)
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(world.BlockPos{})
-	p.nameTag.Store(name)
 	return p
 }
 
@@ -150,7 +147,8 @@ func (p *Player) UUID() uuid.UUID {
 // and will not change in the lifetime of an account.
 // The XUID is a number that can be parsed as an int64. No more information on what it represents is
 // available, and the UUID should be preferred.
-// The XUID returned is empty if the Player is not connected to a network session.
+// The XUID returned is empty if the Player is not connected to a network session or if the Player is not
+// authenticated with XBOX Live.
 func (p *Player) XUID() string {
 	return p.xuid
 }
@@ -179,6 +177,13 @@ func (p *Player) Handle(h Handler) {
 // fmt.Sprintln, however the newline at the end is not written.
 func (p *Player) Message(a ...interface{}) {
 	p.session().SendMessage(format(a))
+}
+
+// Messagef sends a formatted message using a specific format to the player. The message is formatted
+// according to the fmt.Sprintf formatting rules.
+func (p *Player) Messagef(f string, a ...interface{}) {
+	msg := fmt.Sprintf(f, a...)
+	p.session().SendMessage(msg)
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
@@ -335,13 +340,13 @@ func (p *Player) SetNameTag(name string) {
 // obtain.
 func (p *Player) SetSpeed(speed float64) {
 	p.speed.Store(speed)
-	p.s.SendSpeed(speed)
+	p.session().SendSpeed(speed)
 }
 
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
 // speed of a player is 0.1.
 func (p *Player) Speed() float64 {
-	return p.speed.Load().(float64)
+	return p.speed.Load()
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
@@ -401,7 +406,20 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
-		p.addHealth(-p.resolveFinalDamage(dmg, source))
+		finalDamage := p.FinalDamageFrom(dmg, source)
+
+		a := p.absorption()
+		if a > 0 && (effect.Absorption{}).Absorbs(source) {
+			if finalDamage > a {
+				finalDamage -= a
+				p.SetAbsorption(0)
+				p.effects.Remove(effect.Absorption{}, p)
+			} else {
+				p.SetAbsorption(a - finalDamage)
+				finalDamage = 0
+			}
+		}
+		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.World().Viewers(p.Position()) {
 			viewer.ViewEntityAction(p, action.Hurt{})
@@ -413,11 +431,11 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 	})
 }
 
-// resolveFinalDamage resolves the final damage received by the player if it is attacked by the source passed
-// with the damage passed. resolveFinalDamage takes into account things such as the armour worn and the
+// FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
+// with the damage passed. FinalDamageFrom takes into account things such as the armour worn and the
 // enchantments on the individual pieces.
 // The damage returned will be at the least 0.
-func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
+func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
 		defencePoints, damageToArmour := 0.0, int(dmg/4)
 		if damageToArmour == 0 {
@@ -436,12 +454,32 @@ func (p *Player) resolveFinalDamage(dmg float64, src damage.Source) float64 {
 		// has, with a maximum of 4*20=80%
 		dmg -= dmg * 0.04 * defencePoints
 	}
+	for _, e := range p.Effects() {
+		if resistance, ok := e.(effect.Resistance); ok {
+			dmg *= resistance.Multiplier(src)
+		}
+	}
 	// TODO: Account for enchantments.
 	if dmg < 0 {
 		dmg = 0
 	}
-
 	return dmg
+}
+
+// SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
+// actually increase the maximum health. Once the hearts are lost, they will not regenerate.
+// Nothing happens if a negative number is passed.
+func (p *Player) SetAbsorption(health float64) {
+	if health < 0 {
+		return
+	}
+	p.absorptionHealth.Store(health)
+	p.session().SendAbsorption(health)
+}
+
+// absorption returns the absorption health that the player has.
+func (p *Player) absorption() float64 {
+	return p.absorptionHealth.Load()
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
@@ -494,6 +532,47 @@ func (p *Player) AddFood(points int) {
 	p.sendFood()
 }
 
+// Saturate saturates the player's food bar with the amount of food points and saturation points passed. The
+// total saturation of the player will never exceed its total food level.
+func (p *Player) Saturate(food int, saturation float64) {
+	p.hunger.saturate(food, saturation)
+	p.sendFood()
+}
+
+// sendFood sends the current food properties to the client.
+func (p *Player) sendFood() {
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
+}
+
+// AddEffect adds an entity.Effect to the Player. If the effect is instant, it is applied to the Player
+// immediately. If not, the effect is applied to the player every time the Tick method is called.
+// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
+// if the effects' levels are equal and the new effect has a longer duration.
+func (p *Player) AddEffect(e entity.Effect) {
+	p.session().SendEffect(p.effects.Add(e, p))
+	p.updateState()
+}
+
+// RemoveEffect removes any effect that might currently be active on the Player.
+func (p *Player) RemoveEffect(e entity.Effect) {
+	p.effects.Remove(e, p)
+	p.session().SendEffectRemoval(e)
+	p.updateState()
+}
+
+// Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
+// expired when returned.
+func (p *Player) Effects() []entity.Effect {
+	return p.effects.Effects()
+}
+
+// BeaconAffected ...
+func (*Player) BeaconAffected() bool {
+	return true
+}
+
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
 // exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
 func (p *Player) Exhaust(points float64) {
@@ -520,13 +599,6 @@ func (p *Player) Exhaust(points float64) {
 		})
 	}
 	p.sendFood()
-}
-
-// sendFood sends the current food properties to the client.
-func (p *Player) sendFood() {
-	p.hunger.mu.RLock()
-	defer p.hunger.mu.RUnlock()
-	p.session().SendFood(p.hunger.foodLevel, p.hunger.saturationLevel, p.hunger.exhaustionLevel)
 }
 
 // survival checks if the player is considered to be survival, meaning either adventure or survival game mode.
@@ -557,6 +629,9 @@ func (p *Player) kill(src damage.Source) {
 	p.inv.Clear()
 	p.armour.Clear()
 	p.offHand.Clear()
+	for _, e := range p.Effects() {
+		p.RemoveEffect(e)
+	}
 
 	p.handler().HandleDeath(src)
 
@@ -600,7 +675,7 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !atomic.CompareAndSwapUint32(p.sprinting, 0, 1) {
+	if !p.sprinting.CAS(false, true) {
 		return
 	}
 	if !p.hunger.canSprint() {
@@ -614,12 +689,12 @@ func (p *Player) StartSprinting() {
 
 // Sprinting checks if the player is currently sprinting.
 func (p *Player) Sprinting() bool {
-	return atomic.LoadUint32(p.sprinting) == 1
+	return p.sprinting.Load()
 }
 
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
 func (p *Player) StopSprinting() {
-	if !atomic.CompareAndSwapUint32(p.sprinting, 1, 0) {
+	if !p.sprinting.CAS(true, false) {
 		return
 	}
 	p.SetSpeed(p.Speed() / 1.3)
@@ -631,7 +706,7 @@ func (p *Player) StopSprinting() {
 // anything.
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
-	if !atomic.CompareAndSwapUint32(p.sneaking, 0, 1) {
+	if !p.sneaking.CAS(false, true) {
 		return
 	}
 	p.StopSprinting()
@@ -640,13 +715,13 @@ func (p *Player) StartSneaking() {
 
 // Sneaking checks if the player is currently sneaking.
 func (p *Player) Sneaking() bool {
-	return atomic.LoadUint32(p.sneaking) == 1
+	return p.sneaking.Load()
 }
 
 // StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
 // will not do anything.
 func (p *Player) StopSneaking() {
-	if !atomic.CompareAndSwapUint32(p.sneaking, 1, 0) {
+	if !p.sneaking.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -655,7 +730,7 @@ func (p *Player) StopSneaking() {
 // StartSwimming makes the player start swimming if it is not currently doing so. If the player is sneaking
 // while StartSwimming is called, the sneaking is stopped.
 func (p *Player) StartSwimming() {
-	if !atomic.CompareAndSwapUint32(p.swimming, 0, 1) {
+	if !p.swimming.CAS(false, true) {
 		return
 	}
 	p.StopSneaking()
@@ -664,12 +739,12 @@ func (p *Player) StartSwimming() {
 
 // Swimming checks if the player is currently swimming.
 func (p *Player) Swimming() bool {
-	return atomic.LoadUint32(p.swimming) == 1
+	return p.swimming.Load()
 }
 
 // StopSwimming makes the player stop swimming if it is currently doing so.
 func (p *Player) StopSwimming() {
-	if !atomic.CompareAndSwapUint32(p.swimming, 1, 0) {
+	if !p.swimming.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -677,7 +752,7 @@ func (p *Player) StopSwimming() {
 
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
-	if !atomic.CompareAndSwapUint32(p.invisible, 0, 1) {
+	if !p.invisible.CAS(false, true) {
 		return
 	}
 	p.updateState()
@@ -686,7 +761,23 @@ func (p *Player) SetInvisible() {
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, nothing happens.
 func (p *Player) SetVisible() {
-	if !atomic.CompareAndSwapUint32(p.invisible, 1, 0) {
+	if !p.invisible.CAS(true, false) {
+		return
+	}
+	p.updateState()
+}
+
+// SetImmobile prevents the player from moving around, but still allows them to look around.
+func (p *Player) SetImmobile() {
+	if !p.immobile.CAS(false, true) {
+		return
+	}
+	p.updateState()
+}
+
+// SetMobile allows the player to freely move around again after being immobile.
+func (p *Player) SetMobile() {
+	if !p.immobile.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -710,14 +801,14 @@ func (p *Player) Armour() item.ArmourContainer {
 // the hand held anything.
 func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 	offHand, _ = p.offHand.Item(1)
-	mainHand, _ = p.inv.Item(int(atomic.LoadUint32(p.heldSlot)))
+	mainHand, _ = p.inv.Item(int(p.heldSlot.Load()))
 	return mainHand, offHand
 }
 
 // SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
 // (Stack.Empty()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
-	_ = p.inv.SetItem(int(atomic.LoadUint32(p.heldSlot)), mainHand)
+	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(1, offHand)
 }
 
@@ -800,7 +891,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			ctx := &item.UseContext{NewItem: i}
+			ctx := &item.UseContext{}
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.swingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -814,19 +905,21 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				// The block clicked was either not replaceable, or not replaceable using the block passed.
 				replacedPos = pos.Side(face)
 			}
-			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) {
-				if p.placeBlock(replacedPos, b) && p.survival() {
+			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds() {
+				if p.placeBlock(replacedPos, b, false) && p.survival() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
 		}
 	})
 	ctx.Stop(func() {
-		if _, ok := i.Item().(world.Block); ok {
-			placedPos := pos.Side(face)
-			existing := p.World().Block(placedPos)
-			// Always put back the block so that the client sees it there again.
-			p.World().SetBlock(placedPos, existing)
+		p.World().SetBlock(pos, p.World().Block(pos))
+		p.World().SetBlock(pos.Side(face), p.World().Block(pos.Side(face)))
+		if liq, ok := p.World().Liquid(pos); ok {
+			p.World().SetLiquid(pos, liq)
+		}
+		if liq, ok := p.World().Liquid(pos.Side(face)); ok {
+			p.World().SetLiquid(pos.Side(face), liq)
 		}
 	})
 }
@@ -845,7 +938,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
-			ctx := &item.UseContext{NewItem: i}
+			ctx := &item.UseContext{}
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.swingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -877,8 +970,19 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if living.AttackImmune() {
 			return
 		}
+		p.StopSprinting()
+
 		healthBefore := living.Health()
-		living.Hurt(i.AttackDamage(), damage.SourceEntityAttack{Attacker: p})
+		damageDealt := i.AttackDamage()
+		for _, e := range p.Effects() {
+			if strength, ok := e.(effect.Strength); ok {
+				damageDealt += damageDealt * strength.Multiplier()
+			} else if weakness, ok := e.(effect.Weakness); ok {
+				damageDealt += damageDealt * weakness.Multiplier()
+			}
+		}
+
+		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
 		living.KnockBack(p.Position(), 0.45, 0.3608)
 
 		if mgl64.FloatEqual(healthBefore, living.Health()) {
@@ -908,19 +1012,12 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 	ctx := event.C()
 	p.handler().HandleStartBreak(ctx, pos)
 	ctx.Continue(func() {
-		atomic.StoreUint32(p.breaking, 1)
+		p.breaking.Store(true)
 		p.breakingPos.Store(pos)
 
 		p.swingArm()
 
-		held, _ := p.HeldItems()
-		breakTime := block.BreakDuration(p.World().Block(pos), held)
-		if !p.OnGround() {
-			breakTime *= 5
-		}
-		if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
-			breakTime *= 5
-		}
+		breakTime := p.breakTime(pos)
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
@@ -928,11 +1025,34 @@ func (p *Player) StartBreaking(pos world.BlockPos) {
 	})
 }
 
+// breakTime returns the time needed to break a block at the position passed, taking into account the item
+// held, if the player is on the ground/underwater and if the player has any effects.
+func (p *Player) breakTime(pos world.BlockPos) time.Duration {
+	held, _ := p.HeldItems()
+	breakTime := block.BreakDuration(p.World().Block(pos), held)
+	if !p.OnGround() {
+		breakTime *= 5
+	}
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+		breakTime *= 5
+	}
+	for _, e := range p.Effects() {
+		if haste, ok := e.(effect.Haste); ok {
+			breakTime = time.Duration(float64(breakTime) * haste.Multiplier())
+		} else if fatigue, ok := e.(effect.MiningFatigue); ok {
+			breakTime = time.Duration(float64(breakTime) * fatigue.Multiplier())
+		} else if conduitPower, ok := e.(effect.ConduitPower); ok {
+			breakTime = time.Duration(float64(breakTime) * conduitPower.Multiplier())
+		}
+	}
+	return breakTime
+}
+
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
 // if the player isn't breaking anything.
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
-	if atomic.LoadUint32(p.breaking) == 0 {
+	if !p.breaking.Load() {
 		return
 	}
 	p.AbortBreaking()
@@ -943,11 +1063,10 @@ func (p *Player) FinishBreaking() {
 // if the player isn't breaking anything.
 // Unlike FinishBreaking, AbortBreaking does not stop the animation.
 func (p *Player) AbortBreaking() {
-	if !atomic.CompareAndSwapUint32(p.breaking, 1, 0) {
+	if !p.breaking.CAS(true, false) {
 		return
 	}
-	atomic.StoreUint32(p.breakParticleCounter, 0)
-
+	p.breakParticleCounter.Store(0)
 	pos := p.breakingPos.Load().(world.BlockPos)
 	for _, viewer := range p.World().Viewers(pos.Vec3()) {
 		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
@@ -958,7 +1077,7 @@ func (p *Player) AbortBreaking() {
 // Player.StartBreaking().
 // The face passed is used to display particles on the side of the block broken.
 func (p *Player) ContinueBreaking(face world.Face) {
-	if atomic.LoadUint32(p.breaking) == 0 {
+	if !p.breaking.Load() {
 		return
 	}
 	pos := p.breakingPos.Load().(world.BlockPos)
@@ -968,20 +1087,12 @@ func (p *Player) ContinueBreaking(face world.Face) {
 	b := p.World().Block(pos)
 	p.World().AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
-	if atomic.AddUint32(p.breakParticleCounter, 1)%5 == 0 {
+	if p.breakParticleCounter.Add(1)%5 == 0 {
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
 		p.World().PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.World().Block(pos)})
 	}
-	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(b, held)
-
-	if !p.OnGround() {
-		breakTime *= 5
-	}
-	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
-		breakTime *= 5
-	}
+	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
 			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
@@ -995,14 +1106,16 @@ func (p *Player) ContinueBreaking(face world.Face) {
 // A use context may be passed to obtain information on if the block placement was successful. (SubCount will
 // be incremented). Nil may also be passed for the context parameter.
 func (p *Player) PlaceBlock(pos world.BlockPos, b world.Block, ctx *item.UseContext) {
-	if p.placeBlock(pos, b) {
-		ctx.CountSub++
+	if p.placeBlock(pos, b, ctx.IgnoreAABB) {
+		if ctx != nil {
+			ctx.CountSub++
+		}
 	}
 }
 
 // placeBlock makes the player place the block passed at the position passed, granted it is within the range
 // of the player. A bool is returned indicating if a block was placed successfully.
-func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
+func (p *Player) placeBlock(pos world.BlockPos, b world.Block, ignoreAABB bool) (success bool) {
 	defer func() {
 		if !success {
 			p.World().SetBlock(pos, p.World().Block(pos))
@@ -1011,8 +1124,10 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
 		return false
 	}
-	if p.obstructedPos(pos, b) {
-		return false
+	if !ignoreAABB {
+		if p.obstructedPos(pos, b) {
+			return false
+		}
 	}
 
 	ctx := event.C()
@@ -1023,16 +1138,19 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block) (success bool) {
 		p.swingArm()
 		success = true
 	})
+	ctx.Stop(func() {
+		pos.Neighbours(func(neighbour world.BlockPos) {
+			p.World().SetBlock(neighbour, p.World().Block(neighbour))
+		})
+		p.World().SetBlock(pos, p.World().Block(pos))
+	})
 	return
 }
 
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
 // This returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
-	blockBoxes := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-	if aabb, ok := b.(block.AABBer); ok {
-		blockBoxes = aabb.AABB(pos, p.World())
-	}
+	blockBoxes := b.Model().AABB(pos, p.World())
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
@@ -1122,6 +1240,52 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	return drops
 }
 
+// PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
+// pick the block, the method returns immediately.
+func (p *Player) PickBlock(pos world.BlockPos) {
+	if !p.canReach(pos.Vec3()) {
+		return
+	}
+
+	block := p.World().Block(pos)
+	if i, ok := block.(world.Item); ok {
+		copiedItem := item.NewStack(i, 1)
+
+		slot, found := p.Inventory().First(copiedItem)
+
+		if (!found && p.GameMode() != gamemode.Creative{}) {
+			return
+		}
+
+		ctx := event.C()
+		p.handler().HandleBlockPick(ctx, pos, block)
+
+		ctx.Continue(func() {
+			_, offhand := p.HeldItems()
+
+			if found {
+				if slot < 9 {
+					p.session().SetHeldSlot(slot)
+				} else {
+					p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+				}
+			} else {
+				firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+
+				if !emptyFound {
+					p.SetHeldItems(copiedItem, offhand)
+				} else if firstEmpty < 8 {
+					p.session().SetHeldSlot(firstEmpty)
+					p.Inventory().SetItem(firstEmpty, copiedItem)
+				} else {
+					p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+					p.SetHeldItems(copiedItem, offhand)
+				}
+			}
+		})
+	}
+}
+
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
@@ -1138,6 +1302,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
+	p.session().ViewEntityTeleport(p, pos)
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityTeleport(p, pos)
 	}
@@ -1147,7 +1312,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
 // position of the player.
 func (p *Player) Move(deltaPos mgl64.Vec3) {
-	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+	if p.Dead() || p.immobile.Load() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
 
@@ -1206,13 +1371,13 @@ func (p *Player) Position() mgl64.Vec3 {
 // Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
 // is 0 when the entity faces forward.
 func (p *Player) Yaw() float64 {
-	return p.yaw.Load().(float64)
+	return p.yaw.Load()
 }
 
 // Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
 // and is 0 when the entity faces forward.
 func (p *Player) Pitch() float64 {
-	return p.pitch.Load().(float64)
+	return p.pitch.Load()
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
@@ -1221,6 +1386,26 @@ func (p *Player) Collect(s item.Stack) (n int) {
 	p.handler().HandleItemPickup(ctx, s)
 	ctx.Continue(func() {
 		n, _ = p.Inventory().AddItem(s)
+	})
+	return
+}
+
+// Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
+// ground.
+// The dropped item entity has a pickup delay of 2 seconds.
+// The number of items that was dropped in the end is returned. It is generally the count of the stack passed
+// or 0 if dropping the item.Stack was cancelled.
+func (p *Player) Drop(s item.Stack) (n int) {
+	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
+	e.SetVelocity(entity.DirectionVector(p).Mul(0.4))
+	e.SetPickupDelay(time.Second * 2)
+
+	ctx := event.C()
+	p.handler().HandleItemDrop(ctx, e)
+
+	ctx.Continue(func() {
+		p.World().AddEntity(e)
+		n = s.Count()
 	})
 	return
 }
@@ -1235,39 +1420,35 @@ func (p *Player) OpenBlockContainer(pos world.BlockPos) {
 	p.session().OpenBlockContainer(pos)
 }
 
-// Ping sends a ping to the player. The method blocks the caller until a response from the client is received,
-// after which the RTT (time from server -> client -> server) will be returned. Because of the blocking nature
-// of this method, this should be called on another goroutine. The latency may be calculated by dividing the
-// RTT returned by 2.
-// If the Player is not connected to a client, the duration returned will be 0.
-// If the player's latency is too high (15 seconds to reply to the ping and above), the player will be
-// disconnected.
-// The latency returned by this method is generally higher than the actual network latency, due to the
-// overhead of the Minecraft layer. The actual network latency is generally roughly 20-30 ms lower.
-func (p *Player) Ping() time.Duration {
+// Latency returns a rolling average of latency between the sending and the receiving end of the connection of
+// the player.
+// The latency returned is updated continuously and is half the round trip time (RTT).
+// If the Player does not have a session associated with it, Latency returns 0.
+func (p *Player) Latency() time.Duration {
 	if p.session() == session.Nop {
 		return 0
 	}
-	before := time.Now()
-	p.session().Ping()
-	return time.Since(before)
+	return p.session().Latency()
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick() {
+func (p *Player) Tick(current int64) {
 	if p.Dead() {
 		return
 	}
-	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); !ok {
+	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 	}
-
 	if p.checkOnGround() {
-		atomic.StoreUint32(p.onGround, 1)
+		p.onGround.Store(true)
 	} else {
-		atomic.StoreUint32(p.onGround, 0)
+		p.onGround.Store(false)
 	}
 	p.tickFood()
+	p.effects.Tick(p)
+	if p.Position()[1] < 0 && p.survival() && current%10 == 0 {
+		p.Hurt(4, damage.SourceVoid{})
+	}
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
@@ -1330,12 +1511,9 @@ func (p *Player) checkOnGround() bool {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
 				bPos := world.BlockPosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
-				aabbList := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-				if aabb, ok := b.(block.AABBer); ok {
-					aabbList = aabb.AABB(bPos, p.World())
-				}
+				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
-					if aabb.GrowVertically(0.05).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 						return true
 					}
 				}
@@ -1371,7 +1549,7 @@ func (p *Player) AABB() physics.AABB {
 
 // OnGround checks if the player is considered to be on the ground.
 func (p *Player) OnGround() bool {
-	return atomic.LoadUint32(p.onGround) == 1
+	return p.onGround.Load()
 }
 
 // EyeHeight returns the eye height of the player: 1.62.
@@ -1391,12 +1569,20 @@ func (p *Player) State() (s []state.State) {
 	if p.Swimming() {
 		s = append(s, state.Swimming{})
 	}
-	if atomic.LoadUint32(p.invisible) == 1 {
+	if p.canBreathe() || !p.survival() {
+		s = append(s, state.Breathing{})
+	}
+	if p.invisible.Load() {
 		s = append(s, state.Invisible{})
 	}
-	s = append(s, state.Named{NameTag: p.nameTag.Load().(string)})
-	// TODO: Only set the player as breathing when it is above water.
-	s = append(s, state.Breathing{})
+	if p.immobile.Load() {
+		s = append(s, state.Immobile{})
+	}
+	colour, ambient := effect.ResultingColour(p.Effects())
+	if (colour != color.RGBA{}) {
+		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
+	}
+	s = append(s, state.Named{NameTag: p.nameTag.Load()})
 	return
 }
 
@@ -1405,6 +1591,21 @@ func (p *Player) updateState() {
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityState(p, p.State())
 	}
+}
+
+// canBreathe checks if the player is currently able to breathe. If it's underwater and the player does not
+// have the water breathing or conduit power effect, this returns false.
+func (p *Player) canBreathe() bool {
+	for _, e := range p.Effects() {
+		if _, waterBreathing := e.(effect.WaterBreathing); waterBreathing {
+			return true
+		}
+		if _, conduitPower := e.(effect.ConduitPower); conduitPower {
+			return true
+		}
+	}
+	_, submerged := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
+	return !submerged
 }
 
 // swingArm makes the player swing its arm.
@@ -1467,8 +1668,11 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		p.SetHeldItems(ctx.NewItem, left)
 		return
 	}
-	// TODO: Drop item entities when inventory is full.
-	_, _ = p.Inventory().AddItem(ctx.NewItem)
+	n, err := p.Inventory().AddItem(ctx.NewItem)
+	if err != nil {
+		// Not all items could be added to the inventory, so drop the rest.
+		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
+	}
 }
 
 // canReach checks if a player can reach a position with its current range. The range depends on if the player
@@ -1501,16 +1705,20 @@ func (p *Player) close() {
 	p.sMutex.Lock()
 	s := p.s
 	p.s = nil
+	p.sMutex.Unlock()
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = p.inv.Close()
 	_ = p.offHand.Close()
 	_ = p.armour.Close()
-	p.sMutex.Unlock()
 
-	if p.xuid == "" {
+	if p.World() == nil {
+		return
+	}
+
+	if s == nil {
 		p.World().RemoveEntity(p)
-	} else if s != nil {
+	} else {
 		s.CloseConnection()
 	}
 }

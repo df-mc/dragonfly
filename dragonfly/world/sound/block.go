@@ -33,6 +33,12 @@ type ChestOpen struct{ sound }
 // ChestClose is played when a chest is closed.
 type ChestClose struct{ sound }
 
+// Deny is a sound played when a block is placed or broken above a 'Deny' block from Education edition.
+type Deny struct{ sound }
+
+// Door is a sound played when a (trap)door is opened or closed.
+type Door struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

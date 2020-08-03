@@ -2,12 +2,14 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
-	"sync/atomic"
+	"time"
 )
 
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
@@ -15,22 +17,32 @@ import (
 type ItemStackRequestHandler struct {
 	currentRequest  int32
 	changes         map[byte]map[byte]protocol.StackResponseSlotInfo
-	responseChanges map[int32]map[byte]map[byte]int32
+	responseChanges map[int32]map[byte]map[byte]responseChange
+	current         time.Time
+	ignoreDestroy   bool
+}
+
+// responseChange represents a change in a specific item stack response. It holds the timestamp of the
+// response which is used to get rid of changes that the client will have received.
+type responseChange struct {
+	id        int32
+	timestamp time.Time
 }
 
 // Handle ...
 func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ItemStackRequest)
+	h.current = time.Now()
 
-	atomic.StoreUint32(s.inTransaction, 1)
-	defer atomic.StoreUint32(s.inTransaction, 0)
+	s.inTransaction.Store(true)
+	defer s.inTransaction.Store(false)
 
 	for _, req := range pk.Requests {
 		h.currentRequest = req.RequestID
 		if err := h.handleRequest(req, s); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
-			s.log.Debugf("error resolving item stack request: %v", err)
+			s.log.Debugf("failed processing packet from %v (%v): ItemStackRequest: error resolving item stack request: %v", s.conn.RemoteAddr(), s.c.Name(), err)
 			return nil
 		}
 	}
@@ -45,6 +57,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			return
 		}
 		h.resolve(req.RequestID, s)
+		h.ignoreDestroy = false
 	}()
 
 	for _, action := range req.Actions {
@@ -57,6 +70,10 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleSwap(a, s)
 		case *protocol.DestroyStackRequestAction:
 			err = h.handleDestroy(a, s)
+		case *protocol.DropStackRequestAction:
+			err = h.handleDrop(a, s)
+		case *protocol.BeaconPaymentStackRequestAction:
+			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.CraftResultsDeprecatedStackRequestAction:
@@ -118,6 +135,9 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 
 // handleDestroy handles the destroying of an item by moving it into the creative inventory.
 func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestAction, s *Session) error {
+	if h.ignoreDestroy {
+		return nil
+	}
 	if (s.c.GameMode() != gamemode.Creative{} && s.c.GameMode() != gamemode.Spectator{}) {
 		return fmt.Errorf("can only destroy items in gamemode creative/spectator")
 	}
@@ -131,6 +151,84 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 
 	h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
 	return nil
+}
+
+// handleDrop handles the dropping of an item by moving it outside of the inventory while having the
+// inventory opened.
+func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction, s *Session) error {
+	if err := h.verifySlot(a.Source, s); err != nil {
+		return fmt.Errorf("source slot out of sync: %w", err)
+	}
+	i, _ := h.itemInSlot(a.Source, s)
+	if i.Count() < int(a.Count) {
+		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
+	}
+
+	if s.c.Drop(i.Grow(int(a.Count)-i.Count())) != 0 {
+		h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
+	} else {
+		h.setItemInSlot(a.Source, i, s)
+	}
+	return nil
+}
+
+// handleBeaconPayment handles the selection of effects in a beacon and the removal of the item used to pay
+// for those effects.
+func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
+	slot := protocol.StackRequestSlotInfo{
+		ContainerID: containerBeacon,
+		Slot:        0x1b,
+	}
+	// First check if there actually is a beacon opened.
+	if !s.containerOpened.Load() {
+		return fmt.Errorf("no beacon container opened")
+	}
+	pos := s.openedPos.Load().(world.BlockPos)
+	beacon, ok := s.c.World().Block(pos).(block.Beacon)
+	if !ok {
+		return fmt.Errorf("no beacon container opened")
+	}
+
+	// Check if the item present in the beacon slot is valid.
+	payment, _ := h.itemInSlot(slot, s)
+	if payable, ok := payment.Item().(item.BeaconPayment); !ok || !payable.PayableForBeacon() {
+		return fmt.Errorf("item %#v in beacon slot cannot be used as payment", payment)
+	}
+
+	// Check if the effects are valid and allowed for the beacon's level.
+	if !h.validBeaconEffect(a.PrimaryEffect, beacon) {
+		return fmt.Errorf("primary effect selected is not allowed: %v for level %v", a.PrimaryEffect, beacon.Level())
+	} else if !h.validBeaconEffect(a.SecondaryEffect, beacon) || (beacon.Level() < 4 && a.SecondaryEffect != 0) {
+		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
+	}
+
+	beacon.Primary, _ = effect_byID(int(a.PrimaryEffect))
+	beacon.Secondary, _ = effect_byID(int(a.SecondaryEffect))
+	s.c.World().SetBlock(pos, beacon)
+
+	// The client will send a Destroy action after this action, but we can't rely on that because the client
+	// could just not send it.
+	// We just ignore the next Destroy action and set the item to air here.
+	h.setItemInSlot(slot, item.NewStack(block.Air{}, 0), s)
+	h.ignoreDestroy = true
+	return nil
+}
+
+// validBeaconEffect checks if the ID passed is a valid beacon effect.
+func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beacon) bool {
+	switch id {
+	case 1, 3:
+		return beacon.Level() >= 1
+	case 8, 11:
+		return beacon.Level() >= 2
+	case 5:
+		return beacon.Level() >= 3
+	case 10:
+		return beacon.Level() >= 4
+	case 0:
+		return true
+	}
+	return false
 }
 
 // handleTransfer handles the transferring of x count from a source slot to a destination slot.
@@ -211,7 +309,7 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v with container %v and slot %v, but that slot was not changed in the request", slot.StackNetworkID, slot.ContainerID, slot.Slot)
 	}
-	return actual, nil
+	return actual.id, nil
 }
 
 // tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
@@ -220,8 +318,8 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
 	for requestID, containerChanges := range h.responseChanges {
 		for containerID, changes := range containerChanges {
-			for slotIndex := range changes {
-				if slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID {
+			for slotIndex, val := range changes {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
 					delete(changes, slotIndex)
 				}
 			}
@@ -265,12 +363,15 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	h.changes[slot.ContainerID][slot.Slot] = respSlot
 
 	if h.responseChanges[h.currentRequest] == nil {
-		h.responseChanges[h.currentRequest] = map[byte]map[byte]int32{}
+		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
 	}
 	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
-		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]int32{}
+		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
 	}
-	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = respSlot.StackNetworkID
+	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+		id:        respSlot.StackNetworkID,
+		timestamp: h.current,
+	}
 }
 
 // resolve resolves the request with the ID passed.

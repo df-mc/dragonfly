@@ -8,6 +8,9 @@ import (
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
 type Leaves struct {
+	noNBT
+	leaves
+
 	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -75,6 +78,11 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
 	}
 	panic("invalid wood type")
+}
+
+// Hash ...
+func (l Leaves) Hash() uint64 {
+	return hashLeaves | (uint64(boolByte(l.Persistent)) << 32) | (uint64(boolByte(l.shouldUpdate)) << 33) | (uint64(l.Wood.Uint8()) << 34)
 }
 
 // allLogs returns a list of all possible leaves states.

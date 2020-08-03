@@ -10,6 +10,9 @@ import (
 // Sponge is a block that can be used to remove water around itself when placed, turning into a wet sponge in the
 // process.
 type Sponge struct {
+	noNBT
+	solid
+
 	// Wet specifies whether the dry or the wet variant of the block is used.
 	Wet bool
 }
@@ -39,6 +42,11 @@ func (s Sponge) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:sponge", map[string]interface{}{"sponge_type": "wet"}
 	}
 	return "minecraft:sponge", map[string]interface{}{"sponge_type": "dry"}
+}
+
+// Hash ...
+func (s Sponge) Hash() uint64 {
+	return hashSponge | (uint64(boolByte(s.Wet)) << 32)
 }
 
 // UseOnBlock places the sponge, absorbs nearby water if it's still dry and flags it as wet if any water has been

@@ -23,8 +23,14 @@ type PunchBlock struct {
 	Face world.Face
 }
 
+// BlockForceField is a particle that shows up as a block that turns invisible from an opaque black colour.
+type BlockForceField struct{}
+
 // Spawn ...
 func (PunchBlock) Spawn(*world.World, mgl64.Vec3) {}
 
 // Spawn ...
 func (BlockBreak) Spawn(*world.World, mgl64.Vec3) {}
+
+// Spawn ...
+func (BlockForceField) Spawn(*world.World, mgl64.Vec3) {}

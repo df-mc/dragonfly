@@ -8,6 +8,9 @@ import (
 
 // Planks are common blocks used in crafting recipes. They are made by crafting logs into planks.
 type Planks struct {
+	noNBT
+	solid
+
 	// Wood is the type of wood of the planks. This field must have one of the values found in the material
 	// package.
 	Wood wood.Wood
@@ -45,6 +48,11 @@ func (p Planks) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
+}
+
+// Hash ...
+func (p Planks) Hash() uint64 {
+	return hashPlanks | (uint64(p.Wood.Uint8()) << 32)
 }
 
 // allPlanks returns all planks types.

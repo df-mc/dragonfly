@@ -1,12 +1,16 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Air is the block present in otherwise empty space.
-type Air struct{}
+type Air struct {
+	noNBT
+	empty
+	replaceable
+	transparent
+}
 
 // CanDisplace ...
 func (Air) CanDisplace(world.Liquid) bool {
@@ -16,11 +20,6 @@ func (Air) CanDisplace(world.Liquid) bool {
 // HasLiquidDrops ...
 func (Air) HasLiquidDrops() bool {
 	return false
-}
-
-// LightDiffusionLevel ...
-func (Air) LightDiffusionLevel() uint8 {
-	return 0
 }
 
 // EncodeItem ...
@@ -33,12 +32,7 @@ func (Air) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:air", nil
 }
 
-// AABB returns an empty Axis Aligned Bounding Box (as nothing can collide with air).
-func (Air) AABB(world.BlockPos, *world.World) []physics.AABB {
-	return nil
-}
-
-// ReplaceableBy always returns true.
-func (Air) ReplaceableBy(world.Block) bool {
-	return true
+// Hash ...
+func (Air) Hash() uint64 {
+	return hashAir
 }

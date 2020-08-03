@@ -18,6 +18,8 @@ type Config struct {
 		// ShutdownMessage is the message shown to players when the server shuts down. If empty, players will
 		// be directed to the menu screen right away.
 		ShutdownMessage string
+		// AuthEnabled controls whether or not players must be connected to Xbox Live in order to join the server.
+		AuthEnabled bool
 	}
 	World struct {
 		// Name is the name of the world that the server holds. A world with this name will be loaded and
@@ -40,6 +42,7 @@ func DefaultConfig() Config {
 	c.Network.Address = ":19132"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.ShutdownMessage = "Server closed."
+	c.Server.AuthEnabled = true
 	c.World.Name = "World"
 	c.World.Folder = "world"
 	c.World.MaximumChunkRadius = 32

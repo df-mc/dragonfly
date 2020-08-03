@@ -9,6 +9,9 @@ import (
 // StainedTerracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. In contrast
 // to Terracotta, t can be coloured in the same 16 colours that wool can be dyed, but more dulled and earthen.
 type StainedTerracotta struct {
+	noNBT
+	solid
+
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 }
@@ -36,6 +39,11 @@ func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]int
 		colourName = "silver"
 	}
 	return "minecraft:stained_hardened_clay", map[string]interface{}{"color": colourName}
+}
+
+// Hash ...
+func (t StainedTerracotta) Hash() uint64 {
+	return hashStainedTerracotta | (uint64(t.Colour.Uint8()) << 32)
 }
 
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.

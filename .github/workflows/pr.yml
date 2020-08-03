@@ -27,6 +27,9 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Formatting
+        run: test -z $(go fmt ./...)
+
       - name: Staticcheck
         run: |
           GOBIN=$PWD/bin go install honnef.co/go/tools/cmd/staticcheck

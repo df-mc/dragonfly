@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/player/form"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"go.uber.org/atomic"
 	"sync"
 )
 
@@ -12,11 +13,11 @@ import (
 type ModalFormResponseHandler struct {
 	mu        sync.Mutex
 	forms     map[uint32]form.Form
-	currentID *uint32
+	currentID atomic.Uint32
 }
 
 // nullBytes contains the word 'null' converted to a byte slice.
-var nullBytes = []byte("null")
+var nullBytes = []byte("null\n")
 
 // Handle ...
 func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {

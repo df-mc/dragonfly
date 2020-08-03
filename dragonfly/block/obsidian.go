@@ -7,7 +7,10 @@ import (
 
 // Obsidian is a dark purple block known for its high blast resistance and strength, most commonly found when
 // water flows over lava.
-type Obsidian struct{}
+type Obsidian struct {
+	noNBT
+	solid
+}
 
 // EncodeItem ...
 func (Obsidian) EncodeItem() (id int32, meta int16) {
@@ -17,6 +20,11 @@ func (Obsidian) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (Obsidian) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:obsidian", nil
+}
+
+// Hash ...
+func (Obsidian) Hash() uint64 {
+	return hashObsidian
 }
 
 // BreakInfo ...

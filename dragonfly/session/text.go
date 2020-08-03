@@ -18,7 +18,7 @@ func (s *Session) SendMessage(message string) {
 // SendTip ...
 func (s *Session) SendTip(message string) {
 	s.writePacket(&packet.Text{
-		TextType: packet.TextTypePopup,
+		TextType: packet.TextTypeTip,
 		Message:  message,
 	})
 }
@@ -49,7 +49,7 @@ func (s *Session) SendJukeboxPopup(message string) {
 
 // SendScoreboard ...
 func (s *Session) SendScoreboard(displayName string) {
-	if s.scoreboardObj.Load().(string) != "" {
+	if s.scoreboardObj.Load() != "" {
 		s.RemoveScoreboard()
 	}
 	obj := uuid.New().String()
@@ -66,7 +66,7 @@ func (s *Session) SendScoreboard(displayName string) {
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
 	s.writePacket(&packet.RemoveObjective{
-		ObjectiveName: s.scoreboardObj.Load().(string),
+		ObjectiveName: s.scoreboardObj.Load(),
 	})
 }
 
@@ -79,7 +79,7 @@ func (s *Session) SendScoreboardLines(v []string) {
 	for k, line := range v {
 		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
 			EntryID:       int64(k),
-			ObjectiveName: s.scoreboardObj.Load().(string),
+			ObjectiveName: s.scoreboardObj.Load(),
 			Score:         int32(k),
 			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
 			DisplayName:   line,

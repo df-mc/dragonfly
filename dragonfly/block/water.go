@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -10,6 +9,10 @@ import (
 
 // Water is a natural fluid that generates abundantly in the world.
 type Water struct {
+	noNBT
+	empty
+	replaceable
+
 	// Still makes the water appear as if it is not flowing.
 	Still bool
 	// Depth is the depth of the water. This is a number from 1-8, where 8 is a source block and 1 is the
@@ -18,11 +21,6 @@ type Water struct {
 	// Falling specifies if the water is falling. Falling water will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
-}
-
-// AABB returns no boxes.
-func (Water) AABB(world.BlockPos, *world.World) []physics.AABB {
-	return nil
 }
 
 // LiquidDepth returns the depth of the water.
@@ -51,11 +49,6 @@ func (w Water) LiquidFalling() bool {
 // HasLiquidDrops ...
 func (Water) HasLiquidDrops() bool {
 	return false
-}
-
-// ReplaceableBy ...
-func (Water) ReplaceableBy(world.Block) bool {
-	return true
 }
 
 // LightDiffusionLevel ...
@@ -139,6 +132,11 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 		return "minecraft:water", map[string]interface{}{"liquid_depth": int32(v)}
 	}
 	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
+}
+
+// Hash ...
+func (w Water) Hash() uint64 {
+	return hashWater | (uint64(boolByte(w.Falling)) << 32) | (uint64(boolByte(w.Still)) << 33) | (uint64(w.Depth) << 34)
 }
 
 // allWater returns a list of all water states.

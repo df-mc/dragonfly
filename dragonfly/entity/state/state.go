@@ -1,5 +1,7 @@
 package state
 
+import "image/color"
+
 // State represents a part of the state of an entity. Entities may hold a combination of these to indicate
 // things such as whether it is sprinting or on fire.
 type State interface {
@@ -22,6 +24,19 @@ type Breathing struct{}
 // Invisible makes an entity invisible, so that other players won't be able to see it.
 type Invisible struct{}
 
+// Immobile makes the entity able to look around but they are not able to move from their position.
+type Immobile struct{}
+
+// EffectBearing makes an entity show up as if it is bearing effects. Coloured particles will be shown around
+// the player.
+type EffectBearing struct {
+	// ParticleColour holds the colour of the particles that are displayed around the entity.
+	ParticleColour color.RGBA
+	// Ambient specifies if the effects are ambient. If true, the particles will be shown less frequently
+	// around the entity.
+	Ambient bool
+}
+
 // Named makes an entity show a specific name tag above it.
 type Named struct {
 	// NameTag is the name displayed. This name may have colour codes, newlines etc in it, much like a normal
@@ -29,9 +44,11 @@ type Named struct {
 	NameTag string
 }
 
-func (Sneaking) __()  {}
-func (Swimming) __()  {}
-func (Breathing) __() {}
-func (Sprinting) __() {}
-func (Invisible) __() {}
-func (Named) __()     {}
+func (Sneaking) __()      {}
+func (Swimming) __()      {}
+func (Breathing) __()     {}
+func (Sprinting) __()     {}
+func (Invisible) __()     {}
+func (Immobile) __()      {}
+func (Named) __()         {}
+func (EffectBearing) __() {}

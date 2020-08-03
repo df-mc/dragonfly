@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -16,10 +17,11 @@ func init() {
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
-	world.RegisterBlock(Grass{}, Grass{Path: true})
+	world.RegisterBlock(Grass{}, GrassPath{})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
 	world.RegisterBlock(allFarmland()...)
+	world.RegisterBlock(allKelp()...)
 	world.RegisterBlock(allLogs()...)
 	world.RegisterBlock(allLeaves()...)
 	world.RegisterBlock(Bedrock{}, Bedrock{InfiniteBurning: true})
@@ -34,17 +36,48 @@ func init() {
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
+	world.RegisterBlock(Glowstone{})
 	world.RegisterBlock(EmeraldBlock{})
+	world.RegisterBlock(EndBricks{})
+	world.RegisterBlock(allEndBrickStairs()...)
 	world.RegisterBlock(GoldBlock{})
+	world.RegisterBlock(NetheriteBlock{})
 	world.RegisterBlock(IronBlock{})
+	world.RegisterBlock(CoalBlock{})
 	world.RegisterBlock(Beacon{})
 	world.RegisterBlock(Sponge{})
 	world.RegisterBlock(Sponge{Wet: true})
+	world.RegisterBlock(LapisBlock{})
 	world.RegisterBlock(allStainedTerracotta()...)
 	world.RegisterBlock(allGlazedTerracotta()...)
 	world.RegisterBlock(Terracotta{})
+	world.RegisterBlock(allStainedGlass()...)
+	world.RegisterBlock(allStainedGlassPane()...)
+	world.RegisterBlock(GlassPane{})
+	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
+	world.RegisterBlock(allFenceGates()...)
+	world.RegisterBlock(allTrapdoors()...)
+	world.RegisterBlock(allDoors()...)
+	world.RegisterBlock(allCoral()...)
+	world.RegisterBlock(allCoralBlocks()...)
+	world.RegisterBlock(allPumpkins()...)
+	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
+	world.RegisterBlock(EndStone{})
+	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(Clay{})
+	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
+	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
+	world.RegisterBlock(AncientDebris{})
+	world.RegisterBlock(EmeraldOre{})
+	world.RegisterBlock(DiamondOre{})
+	world.RegisterBlock(LapisOre{})
+	world.RegisterBlock(NetherGoldOre{})
+	world.RegisterBlock(GoldOre{})
+	world.RegisterBlock(IronOre{})
+	world.RegisterBlock(CoalOre{})
+	world.RegisterBlock(allCocoaBeans()...)
 }
 
 func init() {
@@ -57,11 +90,12 @@ func init() {
 	world.RegisterItem("minecraft:stone", Andesite{})
 	world.RegisterItem("minecraft:stone", Andesite{Polished: true})
 	world.RegisterItem("minecraft:grass", Grass{})
-	world.RegisterItem("minecraft:grass_path", Grass{Path: true})
+	world.RegisterItem("minecraft:grass_path", GrassPath{})
 	world.RegisterItem("minecraft:dirt", Dirt{})
 	world.RegisterItem("minecraft:dirt", Dirt{Coarse: true})
 	world.RegisterItem("minecraft:cobblestone", Cobblestone{})
 	world.RegisterItem("minecraft:bedrock", Bedrock{})
+	world.RegisterItem("minecraft:kelp", Kelp{})
 	world.RegisterItem("minecraft:log", Log{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:log", Log{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:log", Log{Wood: wood.Birch()})
@@ -85,6 +119,10 @@ func init() {
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
+		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
+		world.RegisterItem("minecraft:wool", Wool{Colour: c})
+		world.RegisterItem("minecraft:stained_glass", StainedGlass{Colour: c})
+		world.RegisterItem("minecraft:stained_glass_pane", StainedGlassPane{Colour: c})
 
 		colourName := c.String()
 		if c == colour.LightGrey() {
@@ -120,19 +158,69 @@ func init() {
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
+	world.RegisterItem("minecraft:glowstone", Glowstone{})
 	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
+	world.RegisterItem("minecraft:end_bricks", EndBricks{})
+	world.RegisterItem("minecraft:end_brick_stairs", EndBrickStairs{})
+	world.RegisterItem("minecraft:netherite_block", NetheriteBlock{})
 	world.RegisterItem("minecraft:gold_block", GoldBlock{})
 	world.RegisterItem("minecraft:iron_block", IronBlock{})
+	world.RegisterItem("minecraft:coal_block", CoalBlock{})
 	world.RegisterItem("minecraft:beacon", Beacon{})
 	world.RegisterItem("minecraft:sponge", Sponge{})
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
+	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
+	world.RegisterItem("minecraft:glass_pane", GlassPane{})
+	world.RegisterItem("minecraft:iron_bars", IronBars{})
+	world.RegisterItem("minecraft:fence_gate", WoodFenceGate{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_fence_gate", WoodFenceGate{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_fence_gate", WoodFenceGate{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_fence_gate", WoodFenceGate{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_fence_gate", WoodFenceGate{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_fence_gate", WoodFenceGate{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_trapdoor", WoodTrapdoor{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_trapdoor", WoodTrapdoor{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_trapdoor", WoodTrapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:wooden_door", WoodDoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:spruce_door", WoodDoor{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:birch_door", WoodDoor{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:jungle_door", WoodDoor{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:acacia_door", WoodDoor{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:dark_oak_door", WoodDoor{Wood: wood.DarkOak()})
+	for _, c := range allCoral() {
+		world.RegisterItem("minecraft:coral", c.(world.Item))
+	}
+	for _, c := range allCoralBlocks() {
+		world.RegisterItem("minecraft:coral_block", c.(world.Item))
+	}
+	world.RegisterItem("minecraft:pumpkin", Pumpkin{})
+	world.RegisterItem("minecraft:lit_pumpkin", LitPumpkin{})
+	world.RegisterItem("minecraft:carved_pumpkin", Pumpkin{Carved: true})
+	world.RegisterItem("minecraft:end_stone", EndStone{})
+	world.RegisterItem("minecraft:netherrack", Netherrack{})
+	world.RegisterItem("minecraft:clay", Clay{})
+	world.RegisterItem("minecraft:bone_block", BoneBlock{})
+	world.RegisterItem("minecraft:lantern", Lantern{Type: fire.Normal()})
+	world.RegisterItem("minecraft:soul_lantern", Lantern{Type: fire.Soul()})
+	world.RegisterItem("minecraft:ancient_debris", AncientDebris{})
+	world.RegisterItem("minecraft:emerald_ore", EmeraldOre{})
+	world.RegisterItem("minecraft:diamond_ore", DiamondOre{})
+	world.RegisterItem("minecraft:lapis_ore", LapisOre{})
+	world.RegisterItem("minecraft:nether_gold_ore", NetherGoldOre{})
+	world.RegisterItem("minecraft:gold_ore", GoldOre{})
+	world.RegisterItem("minecraft:iron_ore", IronOre{})
+	world.RegisterItem("minecraft:coal_ore", CoalOre{})
+	world.RegisterItem("minecraft:dye", CocoaBean{})
 }
 
 func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
-	item_internal.GrassPath = Grass{Path: true}
+	item_internal.GrassPath = GrassPath{}
 	item_internal.FarmLand = Farmland{Hydration: 7}
 	item_internal.IsFarmland = func(b world.Block) bool {
 		_, ok := b.(Farmland)
@@ -148,13 +236,24 @@ func init() {
 		l.Stripped = true
 		return l
 	}
+	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
+		p, ok := b.(Pumpkin)
+		return ok && p.Carved
+	}
+	item_internal.IsUncarvedPumpkin = func(b world.Block) bool {
+		p, ok := b.(Pumpkin)
+		return ok && !p.Carved
+	}
+	item_internal.CarvePumpkin = func(b world.Block, face world.Face) world.Block {
+		return Pumpkin{Carved: true, Facing: face.Direction()}
+	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}
 	item_internal.IsWater = func(b world.Liquid) bool {
 		_, ok := b.(Water)
 		return ok
 	}
-	item_internal.Replaceable = replaceable
+	item_internal.Replaceable = replaceableWith
 }
 
 // readSlice reads an interface slice from a map at the key passed.
@@ -172,5 +271,14 @@ func readString(m map[string]interface{}, key string) string {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
 	b, _ := v.(string)
+	return b
+}
+
+// readInt32 reads an int32 from a map at the key passed.
+//noinspection GoCommentLeadingSpace
+func readInt32(m map[string]interface{}, key string) int32 {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	v, _ := m[key]
+	b, _ := v.(int32)
 	return b
 }

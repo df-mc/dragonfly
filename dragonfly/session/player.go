@@ -2,7 +2,10 @@ package session
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/entity"
+	_ "github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -15,16 +18,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"go.uber.org/atomic"
 	"math"
 	"net"
 	"strings"
-	"sync/atomic"
+	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
 
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
-	if atomic.LoadUint32(s.containerOpened) == 0 {
+	if !s.containerOpened.Load() {
 		return
 	}
 	s.closeWindow()
@@ -56,15 +60,16 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 const (
-	containerArmour               = 6
-	containerChest                = 7
-	containerInventoryChestOpened = 12
-	containerCraftingGrid         = 13
-	containerHotbar               = 27
-	containerInventory            = 28
-	containerOffHand              = 33
-	containerCursor               = 58
-	containerCreativeOutput       = 59
+	containerArmour         = 6
+	containerChest          = 7
+	containerBeacon         = 8
+	containerFullInventory  = 12
+	containerCraftingGrid   = 13
+	containerHotbar         = 27
+	containerInventory      = 28
+	containerOffHand        = 33
+	containerCursor         = 58
+	containerCreativeOutput = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -74,7 +79,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerCraftingGrid, containerCreativeOutput, containerCursor:
 		// UI inventory.
 		return s.ui, true
-	case containerHotbar, containerInventory, containerInventoryChestOpened:
+	case containerHotbar, containerInventory, containerFullInventory:
 		// Hotbar 'inventory', rest of inventory, inventory when container is opened.
 		return s.inv, true
 	case containerOffHand:
@@ -84,8 +89,18 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.armour.Inv(), true
 	case containerChest:
 		// Chests, potentially other containers too.
-		if atomic.LoadUint32(s.containerOpened) == 1 {
-			return s.openedWindow.Load().(*inventory.Inventory), true
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load().(world.BlockPos))
+			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load().(*inventory.Inventory), true
+			}
+		}
+	case containerBeacon:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load().(world.BlockPos))
+			if _, beacon := b.(block.Beacon); beacon {
+				return s.ui, true
+			}
 		}
 	}
 	return nil, false
@@ -100,7 +115,6 @@ func (s *Session) Disconnect(message string) {
 			Message:                 message,
 		})
 		_ = s.conn.Flush()
-		_ = s.conn.Close()
 	}
 }
 
@@ -185,7 +199,7 @@ func (s *Session) SendForm(f form.Form) {
 	b, _ := json.Marshal(m)
 
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
-	id := atomic.AddUint32(h.currentID, 1)
+	id := h.currentID.Add(1)
 
 	h.mu.Lock()
 	if len(h.forms) > 10 {
@@ -296,6 +310,49 @@ func (s *Session) SendHealth(health *entity_internal.HealthManager) {
 	})
 }
 
+// SendAbsorption sends the absorption value passed to the player.
+func (s *Session) SendAbsorption(value float64) {
+	max := value
+	if math.Mod(value, 2) != 0 {
+		max = value + 1
+	}
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{{
+			Name:  "minecraft:absorption",
+			Value: float32(math.Ceil(value)),
+			Max:   float32(math.Ceil(max)),
+		}},
+	})
+}
+
+// SendEffect sends an effects passed to the player.
+func (s *Session) SendEffect(e entity.Effect) {
+	s.SendEffectRemoval(e)
+	id, _ := effect_idByEffect(e)
+	s.writePacket(&packet.MobEffect{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Operation:       packet.MobEffectAdd,
+		EffectType:      int32(id),
+		Amplifier:       int32(e.Level() - 1),
+		Particles:       e.ShowParticles(),
+		Duration:        int32(e.Duration() / (time.Second / 20)),
+	})
+}
+
+// SendEffectRemoval sends the removal of an effect passed.
+func (s *Session) SendEffectRemoval(e entity.Effect) {
+	id, ok := effect_idByEffect(e)
+	if !ok {
+		panic(fmt.Sprintf("unregistered effect type %T", e))
+	}
+	s.writePacket(&packet.MobEffect{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Operation:       packet.MobEffectRemove,
+		EffectType:      int32(id),
+	})
+}
+
 // SendGameRules sends all the provided game rules to the player. Once sent, they will be immediately updated
 // on the client if they are valid.
 func (s *Session) sendGameRules(gameRules map[string]interface{}) {
@@ -316,7 +373,7 @@ func (s *Session) addToPlayerList(session *Session) {
 	s.entityMutex.Lock()
 	runtimeID := uint64(1)
 	if session != s {
-		runtimeID = atomic.AddUint64(&s.currentEntityRuntimeID, 1)
+		runtimeID = s.currentEntityRuntimeID.Add(1)
 	}
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entities[runtimeID] = c
@@ -370,6 +427,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		CapeID:            uuid.New().String(),
 		FullSkinID:        uuid.New().String(),
 		Animations:        animations,
+		Trusted:           true,
 	}
 }
 
@@ -393,14 +451,14 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
+func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
-		if slot == int(atomic.LoadUint32(s.heldSlot)) {
+		if slot == int(s.heldSlot.Load()) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
 			}
 		}
-		if atomic.LoadUint32(s.inTransaction) == 0 {
+		if !s.inTransaction.Load() {
 			s.writePacket(&packet.InventorySlot{
 				WindowID: protocol.WindowIDInventory,
 				Slot:     uint32(slot),
@@ -412,11 +470,13 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
 		}
-		if atomic.LoadUint32(s.inTransaction) == 0 {
-			s.writePacket(&packet.InventorySlot{
+		if !s.inTransaction.Load() {
+			i, _ := s.offHand.Item(1)
+			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
+				Content: []protocol.ItemInstance{
+					instanceFromItem(i),
+				},
 			})
 		}
 	})
@@ -424,7 +484,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
 		}
-		if atomic.LoadUint32(s.inTransaction) == 0 {
+		if !s.inTransaction.Load() {
 			s.writePacket(&packet.InventorySlot{
 				WindowID: protocol.WindowIDArmour,
 				Slot:     uint32(slot),
@@ -433,6 +493,28 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	return s.inv, s.offHand, s.armour, s.heldSlot
+}
+
+// SetHeldSlot sets the currently held hotbar slot.
+func (s *Session) SetHeldSlot(slot int) error {
+	if slot > 8 {
+		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+
+	s.heldSlot.Store(uint32(slot))
+
+	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+		viewer.ViewEntityItems(s.c)
+	}
+
+	mainHand, _ := s.c.HeldItems()
+	s.writePacket(&packet.MobEquipment{
+		EntityRuntimeID: selfEntityRuntimeID,
+		NewItem:         stackFromItem(mainHand),
+		InventorySlot:   byte(slot),
+		HotBarSlot:      byte(slot),
+	})
+	return nil
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
@@ -477,9 +559,11 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(item.CreativeItems()))
 	for index, i := range item.CreativeItems() {
+		v := stackFromItem(i)
+		delete(v.NBTData, "Damage")
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  stackFromItem(i),
+			Item:                  v,
 		})
 	}
 	return it
@@ -495,3 +579,11 @@ func world_itemByID(id int32, meta int16) (world.Item, bool)
 //go:linkname item_id github.com/df-mc/dragonfly/dragonfly/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
+
+//go:linkname effect_idByEffect github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
+//noinspection ALL
+func effect_idByEffect(entity.Effect) (int, bool)
+
+//go:linkname effect_byID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
+//noinspection ALL
+func effect_byID(int) (entity.Effect, bool)

@@ -8,8 +8,5 @@ type statusProvider struct {
 
 // ServerStatus provides the server status to the minecraft.Listener.
 func (s statusProvider) ServerStatus() (name string, onlinePlayers, maxPlayers int) {
-	s.s.nameMu.Lock()
-	defer s.s.nameMu.Unlock()
-
-	return s.s.name, s.s.PlayerCount(), s.s.MaxPlayerCount()
+	return s.s.name.Load(), s.s.PlayerCount(), s.s.MaxPlayerCount()
 }

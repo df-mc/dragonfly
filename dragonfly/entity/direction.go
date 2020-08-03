@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -37,31 +36,6 @@ func DirectionVector(e world.Entity) mgl64.Vec3 {
 		-math.Sin(pitch),
 		m * math.Cos(yaw),
 	}.Normalize()
-}
-
-// TargetBlock finds the target block of the entity passed. The block position returned will be at most
-// maxDistance away from the entity. If no block can be found there, the block position returned will be
-// that of an air block.
-func TargetBlock(e world.Entity, maxDistance float64) world.BlockPos {
-	// TODO: Implement accurate ray tracing for this.
-	directionVector := DirectionVector(e)
-	current := e.Position()
-	if eyed, ok := e.(Eyed); ok {
-		current = current.Add(mgl64.Vec3{0, eyed.EyeHeight()})
-	}
-
-	step := 0.5
-	for i := 0.0; i < maxDistance; i += step {
-		current = current.Add(directionVector.Mul(step))
-		pos := world.BlockPosFromVec3(current)
-
-		b := e.World().Block(pos)
-		if _, ok := b.(block.Air); !ok {
-			// We hit a block that isn't air.
-			return pos
-		}
-	}
-	return world.BlockPosFromVec3(current)
 }
 
 // Eyed represents an entity that has eyes.

@@ -21,10 +21,10 @@ func (aabb AABB) Grow(x float64) AABB {
 	return AABB{min: aabb.min.Sub(add), max: aabb.max.Add(add)}
 }
 
-// GrowVertically grows the bounding box by x on the vertical axis and returns the new bounding box.
-func (aabb AABB) GrowVertically(x float64) AABB {
-	add := mgl64.Vec3{0, x}
-	return AABB{min: aabb.min.Sub(add), max: aabb.max.Add(add)}
+// GrowVec3 grows the AABB on all axes as represented by the Vec3 passed. The vec values are subtracted from
+// the minimum values of the AABB and added to the maximum values of the AABB.
+func (aabb AABB) GrowVec3(vec mgl64.Vec3) AABB {
+	return AABB{min: aabb.min.Sub(vec), max: aabb.max.Add(vec)}
 }
 
 // Min returns the minimum coordinate of the bounding box.
@@ -87,6 +87,22 @@ func (aabb AABB) ExtendTowards(d int, x float64) AABB {
 	case 4:
 		aabb.min[0] -= x
 	case 5:
+		aabb.max[0] += x
+	}
+	return aabb
+}
+
+// Stretch stretches the bounding box by x in a given axis.
+func (aabb AABB) Stretch(a int, x float64) AABB {
+	switch a {
+	case 0:
+		aabb.min[1] -= x
+		aabb.max[1] += x
+	case 1:
+		aabb.min[2] -= x
+		aabb.max[2] += x
+	case 2:
+		aabb.min[0] -= x
 		aabb.max[0] += x
 	}
 	return aabb

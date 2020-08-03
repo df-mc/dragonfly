@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -10,10 +9,7 @@ import (
 
 // boxes returns the axis aligned bounding box of a block.
 func boxes(b world.Block, pos world.BlockPos, w *world.World) []physics.AABB {
-	if aabb, ok := b.(block.AABBer); ok {
-		return aabb.AABB(pos, w)
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+	return b.Model().AABB(pos, w)
 }
 
 // movementComputer is used to compute movement of an entity. When constructed, the gravity of the entity
@@ -28,9 +24,16 @@ type movementComputer struct {
 // of its drag and gravity.
 // The new position of the entity after movement is returned.
 func (c *movementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
+	viewers := e.World().Viewers(e.Position())
+	if !e.Velocity().ApproxEqualThreshold(mgl64.Vec3{}, 0.001) {
+		for _, v := range viewers {
+			v.ViewEntityVelocity(e, e.Velocity())
+		}
+	}
+
 	toMove, velocity := c.handleCollision(e)
 	e.SetVelocity(velocity)
-	v := c.move(e, toMove)
+	v := c.move(e, toMove, viewers)
 	e.SetVelocity(c.applyGravity(e))
 	e.SetVelocity(c.applyFriction(e))
 	return v
@@ -64,12 +67,12 @@ func (c *movementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
 }
 
 // move moves the entity so that all viewers in the world can see it, adding the velocity to the position.
-func (c *movementComputer) move(e world.Entity, deltaPos mgl64.Vec3) mgl64.Vec3 {
+func (c *movementComputer) move(e world.Entity, deltaPos mgl64.Vec3, viewers []world.Viewer) mgl64.Vec3 {
 	if deltaPos.ApproxEqualThreshold(mgl64.Vec3{}, 0.01) {
 		return e.Position()
 	}
-	for _, v := range e.World().Viewers(e.Position()) {
-		v.ViewEntityMovement(e, deltaPos.Add(mgl64.Vec3{0, 0.125, 0}), 0, 0)
+	for _, v := range viewers {
+		v.ViewEntityMovement(e, deltaPos, 0, 0)
 	}
 	return e.Position().Add(deltaPos)
 }
