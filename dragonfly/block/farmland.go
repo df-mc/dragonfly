@@ -34,7 +34,7 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 			f.Hydration--
 			w.PlaceBlock(pos, f)
 		} else {
-			w.SetBlock(pos, Dirt{})
+			w.PlaceBlock(pos, Dirt{})
 		}
 	} else {
 		f.Hydration = 7
