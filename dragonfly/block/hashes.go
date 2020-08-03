@@ -25,6 +25,7 @@ const (
 	hashEndBricks
 	hashEndBrickStairs
 	hashEndStone
+	hashFarmland
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone
