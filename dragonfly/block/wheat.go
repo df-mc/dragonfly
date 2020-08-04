@@ -24,13 +24,6 @@ func (s Wheat) Bonemeal(pos world.BlockPos, w *world.World) bool {
 	return true
 }
 
-// NeighbourUpdateTick ...
-func (s Wheat) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
-		w.BreakBlock(pos)
-	}
-}
-
 // UseOnBlock ...
 func (s Wheat) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, s)
@@ -56,7 +49,7 @@ func (s Wheat) BreakInfo() BreakInfo {
 			if s.Growth < 7 {
 				return []item.Stack{item.NewStack(s, 1)}
 			}
-			return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.Intn(4))}
+			return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.Intn(4)+1)}
 		},
 	}
 }
@@ -66,14 +59,9 @@ func (s Wheat) EncodeItem() (id int32, meta int16) {
 	return 295, 0
 }
 
-// HasLiquidDrops ...
-func (s Wheat) HasLiquidDrops() bool {
-	return true
-}
-
 // RandomTick ...
-func (s Wheat) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
-	if s.Growth < 7 && rand.Float64() <= s.CalculateGrowthChance(s, pos, w) {
+func (s Wheat) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+	if s.Growth < 7 && rand.Float64() <= s.CalculateGrowthChance(pos, w) {
 		s.Growth++
 		w.PlaceBlock(pos, s)
 	}
