@@ -10,10 +10,10 @@ import (
 type Bonemeal struct{}
 
 // UseOnBlock ...
-func (b Bonemeal) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, _ *UseContext) bool {
+func (b Bonemeal) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ok := item_internal.Bonemeal(pos, w)
 	if ok {
-		//TODO: Reduce item count
+		ctx.CountSub = 1
 	}
 	return ok
 }
