@@ -93,6 +93,7 @@ func init() {
 
 	world.RegisterItem("minecraft:dye", Bonemeal{})
 	world.RegisterItem("minecraft:wheat", Wheat{})
+	world.RegisterItem("minecraft:beetroot", Beetroot{})
 
 	world.RegisterItem("minecraft:apple", Apple{})
 }

@@ -51,8 +51,7 @@ func (b Beetroot) BreakInfo() BreakInfo {
 			if b.Growth < 7 {
 				return []item.Stack{item.NewStack(b, 1)}
 			}
-			//TODO: Beetroot item
-			return []item.Stack{item.NewStack(b, rand.Intn(4))}
+			return []item.Stack{item.NewStack(item.Beetroot{}, 1), item.NewStack(b, rand.Intn(4))}
 		},
 	}
 }
@@ -64,7 +63,9 @@ func (b Beetroot) EncodeItem() (id int32, meta int16) {
 
 // RandomTick ...
 func (b Beetroot) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
-	if b.Growth < 7 && rand.Float64() <= b.CalculateGrowthChance(pos, w) {
+	if w.Light(pos) < 8 {
+		w.BreakBlock(pos)
+	} else if b.Growth < 7 && rand.Float64() <= b.CalculateGrowthChance(pos, w) {
 		b.Growth++
 		w.PlaceBlock(pos, b)
 	}

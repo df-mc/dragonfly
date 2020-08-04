@@ -34,7 +34,7 @@ func (p PumpkinStem) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand
 		if p.Growth < 7 {
 			p.Growth++
 			w.PlaceBlock(pos, p)
-		} else if w.Light(pos) >= 10 {
+		} else if w.Light(pos) >= 8 {
 			directions := []world.Direction{world.North, world.South, world.West, world.East}
 			for _, i := range directions {
 				if _, ok := w.Block(pos.Side(i.Face())).(Pumpkin); ok {
