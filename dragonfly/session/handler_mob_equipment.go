@@ -32,6 +32,9 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
+	// The user swapped changed held slots so stop using item right away.
+	s.c.ReleaseItem()
+
 	clientSideItem := stackToItem(pk.NewItem)
 	actual, _ := s.inv.Item(int(pk.InventorySlot))
 

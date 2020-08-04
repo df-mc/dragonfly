@@ -30,6 +30,7 @@ type Controllable interface {
 	SetGameMode(mode gamemode.GameMode)
 
 	UseItem()
+	ReleaseItem()
 	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity)
 	BreakBlock(pos world.BlockPos)

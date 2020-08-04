@@ -17,6 +17,10 @@ type Hurt struct{ action }
 // watching it.
 type Death struct{ action }
 
+// Eat makes an entity display the eating particles at its mouth to viewers with the item in its hand being
+// eaten.
+type Eat struct{ action }
+
 // PickedUp makes an item get picked up by a collector. After this animation, the item disappears from viewers
 // watching it.
 type PickedUp struct {
