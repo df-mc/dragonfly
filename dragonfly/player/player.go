@@ -69,7 +69,9 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible, immobile, onGround atomic.Bool
+	sneaking, sprinting, swimming, invisible,
+	immobile, onGround, usingItem atomic.Bool
+	usingSince atomic.Int64
 
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
@@ -843,21 +845,65 @@ func (p *Player) UseItem() {
 	p.handler().HandleItemUse(ctx)
 
 	ctx.Continue(func() {
-		usable, ok := i.Item().(item.Usable)
-		if !ok {
-			// The item wasn't usable, so we can stop doing anything right away.
-			return
-		}
-		ctx := &item.UseContext{}
-		if usable.Use(p.World(), p, ctx) {
-			// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
-			// reason to swing the arm.
-			p.swingArm()
+		switch usable := i.Item().(type) {
+		case item.Usable:
+			ctx := &item.UseContext{}
+			if usable.Use(p.World(), p, ctx) {
+				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
+				// reason to swing the arm.
+				p.swingArm()
 
-			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
-			p.addNewItem(ctx)
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+				p.addNewItem(ctx)
+			}
+		case item.Consumable:
+			if !usable.AlwaysConsumable() && (p.GameMode() != gamemode.Creative{}) && p.Food() >= 20 {
+				// The item.Consumable is not always consumable, the player is not in creative mode and the
+				// food bar is filled: The item cannot be consumed.
+				return
+			}
+			if !p.usingItem.CAS(false, true) {
+				// The player is still using the item held, so keep trying.
+				return
+			}
+			p.usingSince.Store(time.Now().UnixNano())
+			p.updateState()
 		}
 	})
+}
+
+// ReleaseItem makes the Player release the item it is currently using. This is only applicable for items that
+// implement the item.Consumable interface.
+// If the Player is not currently using any item, ReleaseItem returns immediately.
+// ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
+// the item started being used.
+func (p *Player) ReleaseItem() {
+	if p.usingItem.CAS(true, false) {
+		p.releaseItem()
+	}
+}
+
+// releaseItem makes the Player release the item it is currently using if that can be done successfully.
+func (p *Player) releaseItem() {
+	duration := time.Duration(time.Now().UnixNano() - p.usingSince.Load())
+	// Due to the network overhead and latency, the duration might sometimes be a little off. We slightly
+	// increase the duration to combat this.
+	duration += time.Second / 10
+
+	held, left := p.HeldItems()
+	switch i := held.Item().(type) {
+	case item.Consumable:
+		if duration < i.ConsumeDuration() {
+			// The required duration for consuming this item was not met, so we don't consume it.
+			return
+		}
+		p.usingItem.Store(false)
+		p.updateState()
+
+		p.SetHeldItems(held.Grow(-1), left)
+		p.addNewItem(&item.UseContext{NewItem: i.Consume(p.World(), p)})
+		p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+	}
 }
 
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
@@ -1449,6 +1495,19 @@ func (p *Player) Tick(current int64) {
 	if p.Position()[1] < 0 && p.survival() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
+
+	if p.usingItem.Load() {
+		p.releaseItem()
+	}
+	if current%4 == 0 && p.usingItem.Load() {
+		held, _ := p.HeldItems()
+		if _, ok := held.Item().(item.Consumable); ok {
+			// Eating particles seem to happen roughly ever 5 ticks.
+			for _, v := range p.World().Viewers(p.Position()) {
+				v.ViewEntityAction(p, action.Eat{})
+			}
+		}
+	}
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
@@ -1577,6 +1636,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if p.immobile.Load() {
 		s = append(s, state.Immobile{})
+	}
+	if p.usingItem.Load() {
+		s = append(s, state.UsingItem{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {

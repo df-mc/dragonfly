@@ -28,6 +28,8 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		return h.handleUseItemTransaction(data, s)
+	case *protocol.ReleaseItemTransactionData:
+		return h.handleReleaseItemTransaction(data, s)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -112,5 +114,11 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
 	}
+	return nil
+}
+
+// handleReleaseItemTransaction ...
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(data *protocol.ReleaseItemTransactionData, s *Session) error {
+	s.c.ReleaseItem()
 	return nil
 }

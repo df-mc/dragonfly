@@ -44,6 +44,9 @@ type Named struct {
 	NameTag string
 }
 
+// UsingItem makes an entity show itself as using the item held in its hand.
+type UsingItem struct{}
+
 func (Sneaking) __()      {}
 func (Swimming) __()      {}
 func (Breathing) __()     {}
@@ -52,3 +55,4 @@ func (Invisible) __()     {}
 func (Immobile) __()      {}
 func (Named) __()         {}
 func (EffectBearing) __() {}
+func (UsingItem) __()     {}
