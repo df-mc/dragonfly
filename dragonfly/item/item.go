@@ -66,9 +66,9 @@ type Consumer interface {
 	Saturate(food int, saturation float64)
 }
 
-// defaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
+// DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
 // time to be consumed.
-const defaultConsumeDuration = (time.Second * 161) / 100
+const DefaultConsumeDuration = (time.Second * 161) / 100
 
 // UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
 // after the action is complete.

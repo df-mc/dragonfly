@@ -52,6 +52,7 @@ const (
 	hashNetherrack
 	hashObsidian
 	hashPlanks
+	hashPotato
 	hashPumpkin
 	hashPumpkinStem
 	hashSponge

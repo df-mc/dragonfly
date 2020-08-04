@@ -15,11 +15,11 @@ func (b Beetroot) AlwaysConsumable() bool {
 
 // ConsumeDuration ...
 func (b Beetroot) ConsumeDuration() time.Duration {
-	return defaultConsumeDuration
+	return DefaultConsumeDuration
 }
 
 // Consume ...
-func (b Beetroot) Consume(w *world.World, c Consumer) Stack {
+func (b Beetroot) Consume(_ *world.World, c Consumer) Stack {
 	c.Saturate(1, 1.2)
 	return Stack{}
 }
