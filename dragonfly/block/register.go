@@ -80,6 +80,7 @@ func init() {
 	world.RegisterBlock(CoalOre{})
 	world.RegisterBlock(allCocoaBeans()...)
 	world.RegisterBlock(allWheat()...)
+	world.RegisterBlock(allBeetroot()...)
 }
 
 func init() {
@@ -218,6 +219,7 @@ func init() {
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
 	world.RegisterItem("minecraft:wheat_seeds", Wheat{})
+	world.RegisterItem("minecraft:beetroot_seeds", Beetroot{})
 }
 
 func init() {

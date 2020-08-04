@@ -5,6 +5,7 @@ const (
 	hashAncientDebris
 	hashBeacon
 	hashBedrock
+	hashBeetroot
 	hashBoneBlock
 	hashCarpet
 	hashChest
