@@ -8,6 +8,7 @@ const (
 	hashBeetroot
 	hashBoneBlock
 	hashCarpet
+	hashCarrot
 	hashChest
 	hashClay
 	hashCoalBlock
