@@ -8,3 +8,6 @@ type Attack struct {
 
 	sound
 }
+
+// Burp is a sound played when a player finishes eating an item.
+type Burp struct{ sound }

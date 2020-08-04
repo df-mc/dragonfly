@@ -377,6 +377,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.Burp:
+		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundDoor,
@@ -471,6 +473,16 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			ItemEntityRuntimeID:  s.entityRuntimeID(e),
 			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector.(world.Entity)),
 		})
+	case action.Eat:
+		if user, ok := e.(item.User); ok {
+			held, _ := user.HeldItems()
+			id, meta := held.Item().(world.Item).EncodeItem()
+			s.writePacket(&packet.ActorEvent{
+				EntityRuntimeID: s.entityRuntimeID(e),
+				EventType:       packet.ActorEventEatingItem,
+				EventData:       (id << 16) | int32(meta),
+			})
+		}
 	}
 }
 
@@ -491,6 +503,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagNoAI)
 		case state.Swimming:
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
+		case state.UsingItem:
+			m.setFlag(dataKeyFlags, dataFlagUsingItem)
 		case state.Named:
 			m[dataKeyNameTag] = st.NameTag
 		case state.EffectBearing:

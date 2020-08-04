@@ -56,7 +56,7 @@ const (
 	dataFlagSneaking
 	dataFlagRiding
 	dataFlagSprinting
-	dataFlagAction
+	dataFlagUsingItem
 	dataFlagInvisible
 	dataFlagNoAI              = 16
 	dataFlagBreathing         = 35
