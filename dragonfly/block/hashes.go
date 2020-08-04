@@ -53,6 +53,7 @@ const (
 	hashObsidian
 	hashPlanks
 	hashPumpkin
+	hashPumpkinStem
 	hashSponge
 	hashStainedTerracotta
 	hashStone
