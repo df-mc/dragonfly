@@ -5,12 +5,23 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"math/rand"
 )
 
 // Wheat is a crop that can be harvested to craft bread, cake, & cookies.
 type Wheat struct {
 	crop
+}
+
+// Bonemeal ...
+func (s Wheat) Bonemeal(pos world.BlockPos, w *world.World) bool {
+	if s.Growth == 7 {
+		return false
+	}
+	s.Growth = int(math.Min(float64(s.Growth+rand.Intn(4)+2), 7))
+	w.PlaceBlock(pos, s)
+	return true
 }
 
 // NeighbourUpdateTick ...

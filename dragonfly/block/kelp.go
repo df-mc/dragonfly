@@ -17,6 +17,21 @@ type Kelp struct {
 	Age int
 }
 
+// Bonemeal ...
+func (k Kelp) Bonemeal(pos world.BlockPos, w *world.World) bool {
+	if k.Age == 25 {
+		return false
+	}
+	above := pos.Side(world.FaceUp)
+	if liquid, ok := w.Liquid(above); ok {
+		if water, ok := liquid.(Water); ok && water.Depth == 8 {
+			w.PlaceBlock(above, Kelp{Age: k.Age + 1})
+			return true
+		}
+	}
+	return false
+}
+
 // BreakInfo ...
 func (k Kelp) BreakInfo() BreakInfo {
 	// Kelp can be instantly destroyed.

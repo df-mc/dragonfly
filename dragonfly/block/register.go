@@ -252,6 +252,13 @@ func init() {
 		_, ok := b.(Water)
 		return ok
 	}
+	item_internal.Bonemeal = func(pos world.BlockPos, w *world.World) bool {
+		b := w.Block(pos)
+		if bonemealAffected, ok := b.(BonemealAffected); ok {
+			return bonemealAffected.Bonemeal(pos, w)
+		}
+		return false
+	}
 	item_internal.Replaceable = replaceableWith
 }
 

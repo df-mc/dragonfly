@@ -91,5 +91,6 @@ func init() {
 
 	world.RegisterItem("minecraft:stick", Stick{})
 
+	world.RegisterItem("minecraft:dye", Bonemeal{})
 	world.RegisterItem("minecraft:wheat", Wheat{})
 }
