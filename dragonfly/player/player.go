@@ -879,12 +879,12 @@ func (p *Player) UseItem() {
 // the item started being used.
 func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
-		p.releaseItem()
+		p.tryReleaseItem()
 	}
 }
 
-// releaseItem makes the Player release the item it is currently using if that can be done successfully.
-func (p *Player) releaseItem() {
+// tryReleaseItem makes the Player release the item it is currently using if that can be done successfully.
+func (p *Player) tryReleaseItem() {
 	duration := time.Duration(time.Now().UnixNano() - p.usingSince.Load())
 	// Due to the network overhead and latency, the duration might sometimes be a little off. We slightly
 	// increase the duration to combat this.
@@ -1497,7 +1497,7 @@ func (p *Player) Tick(current int64) {
 	}
 
 	if p.usingItem.Load() {
-		p.releaseItem()
+		p.tryReleaseItem()
 	}
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
