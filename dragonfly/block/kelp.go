@@ -19,15 +19,20 @@ type Kelp struct {
 
 // Bonemeal ...
 func (k Kelp) Bonemeal(pos world.BlockPos, w *world.World) bool {
-	if k.Age == 25 {
-		return false
-	}
-	above := pos.Side(world.FaceUp)
-	if liquid, ok := w.Liquid(above); ok {
-		if water, ok := liquid.(Water); ok && water.Depth == 8 {
-			w.PlaceBlock(above, Kelp{Age: k.Age + 1})
+	for y := pos.Y(); y < 255; y++ {
+		currentPos := world.BlockPos{pos.X(), y, pos.Z()}
+		block := w.Block(currentPos)
+		if kelp, ok := block.(Kelp); ok {
+			if kelp.Age == 25 {
+				break
+			}
+			continue
+		}
+		if water, ok := block.(Water); ok && water.Depth == 8 {
+			w.PlaceBlock(currentPos, Kelp{Age: k.Age + 1})
 			return true
 		}
+		break
 	}
 	return false
 }
