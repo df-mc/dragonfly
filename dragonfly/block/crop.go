@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"math"
 )
 
 // Crop is an interface for all crops that are grown on farmland. A crop has a random chance to grow during random ticks.
@@ -50,6 +49,6 @@ func (c crop) CalculateGrowthChance(crop Crop, pos world.BlockPos, w *world.Worl
 		}
 	}
 
-	chance := 1 / (math.Floor(float64(25/points)) + 1)
+	chance := 1 / (float64(25/points) + 1)
 	return chance
 }
