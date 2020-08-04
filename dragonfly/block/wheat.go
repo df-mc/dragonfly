@@ -10,12 +10,7 @@ import (
 
 // Wheat is a crop that can be harvested to craft bread, cake, & cookies.
 type Wheat struct {
-	noNBT
-	transparent
-	empty
-
-	// Growth is the current stage of growth. Max is 7.
-	Growth int
+	crop
 }
 
 // NeighbourUpdateTick ...
@@ -67,15 +62,10 @@ func (s Wheat) HasLiquidDrops() bool {
 
 // RandomTick ...
 func (s Wheat) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
-	if s.Growth < 7 && r.Intn(2) == 0 {
+	if s.Growth < 7 && rand.Float64() <= s.CalculateGrowthChance(s, pos, w) {
 		s.Growth++
 		w.PlaceBlock(pos, s)
 	}
-}
-
-// GrowthStage ...
-func (s Wheat) GrowthStage() int {
-	return s.Growth
 }
 
 // EncodeBlock ...
@@ -91,7 +81,7 @@ func (s Wheat) Hash() uint64 {
 // allWheat ...
 func allWheat() (wheat []world.Block) {
 	for i := 0; i <= 7; i++ {
-		wheat = append(wheat, Wheat{Growth: i})
+		wheat = append(wheat, Wheat{crop{Growth: i}})
 	}
 	return
 }
