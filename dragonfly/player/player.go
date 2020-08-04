@@ -1370,6 +1370,8 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 		}
 		p.pos.Store(p.Position().Add(deltaPos))
 
+		// The vertical axis isn't relevant for calculation of exhaustion points.
+		deltaPos[1] = 0
 		if p.Swimming() {
 			p.Exhaust(0.01 * deltaPos.Len())
 		} else if p.Sprinting() {
