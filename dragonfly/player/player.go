@@ -900,7 +900,7 @@ func (p *Player) releaseItem() {
 		p.usingItem.Store(false)
 		p.updateState()
 
-		p.SetHeldItems(held.Grow(-1), left)
+		p.SetHeldItems(p.subtractItem(held, 1), left)
 		p.addNewItem(&item.UseContext{NewItem: i.Consume(p.World(), p)})
 		p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
