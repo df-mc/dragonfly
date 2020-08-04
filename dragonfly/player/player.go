@@ -1668,8 +1668,11 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		p.SetHeldItems(ctx.NewItem, left)
 		return
 	}
-	// TODO: Drop item entities when inventory is full.
-	_, _ = p.Inventory().AddItem(ctx.NewItem)
+	n, err := p.Inventory().AddItem(ctx.NewItem)
+	if err != nil {
+		// Not all items could be added to the inventory, so drop the rest.
+		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
+	}
 }
 
 // canReach checks if a player can reach a position with its current range. The range depends on if the player

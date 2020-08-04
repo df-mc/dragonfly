@@ -1,7 +1,7 @@
 package item
 
 // GlowstoneDust is dropped when breaking the glowstone block.
-type GlowstoneDust struct {}
+type GlowstoneDust struct{}
 
 // EncodeItem ...
 func (g GlowstoneDust) EncodeItem() (id int32, meta int16) {

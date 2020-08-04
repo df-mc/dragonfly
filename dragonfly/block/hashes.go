@@ -33,6 +33,7 @@ const (
 	hashGrass
 	hashGrassPath
 	hashFenceGate
+	hashIronBars
 	hashIronBlock
 	hashIronOre
 	hashKelp
