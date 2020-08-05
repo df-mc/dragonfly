@@ -860,11 +860,25 @@ func (p *Player) UseItem() {
 			if !usable.AlwaysConsumable() && (p.GameMode() != gamemode.Creative{}) && p.Food() >= 20 {
 				// The item.Consumable is not always consumable, the player is not in creative mode and the
 				// food bar is filled: The item cannot be consumed.
+				p.usingItem.Store(false)
+				p.updateState()
 				return
 			}
 			if !p.usingItem.CAS(false, true) {
-				// The player is still using the item held, so keep trying.
-				return
+				// The player is currently using the item held. This is a signal the item was consumed, so we
+				// consume it and start using it again.
+				// Due to the network overhead and latency, the duration might sometimes be a little off. We
+				// slightly increase the duration to combat this.
+				duration := time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
+
+				held, left := p.HeldItems()
+				if duration < usable.ConsumeDuration() {
+					// The required duration for consuming this item was not met, so we don't consume it.
+					return
+				}
+				p.SetHeldItems(p.subtractItem(held, 1), left)
+				p.addNewItem(&item.UseContext{NewItem: usable.Consume(p.World(), p)})
+				p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()
@@ -879,30 +893,9 @@ func (p *Player) UseItem() {
 // the item started being used.
 func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
-		p.tryReleaseItem()
-	}
-}
-
-// tryReleaseItem makes the Player release the item it is currently using if that can be done successfully.
-func (p *Player) tryReleaseItem() {
-	duration := time.Duration(time.Now().UnixNano() - p.usingSince.Load())
-	// Due to the network overhead and latency, the duration might sometimes be a little off. We slightly
-	// increase the duration to combat this.
-	duration += time.Second / 10
-
-	held, left := p.HeldItems()
-	switch i := held.Item().(type) {
-	case item.Consumable:
-		if duration < i.ConsumeDuration() {
-			// The required duration for consuming this item was not met, so we don't consume it.
-			return
-		}
-		p.usingItem.Store(false)
 		p.updateState()
 
-		p.SetHeldItems(p.subtractItem(held, 1), left)
-		p.addNewItem(&item.UseContext{NewItem: i.Consume(p.World(), p)})
-		p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+		// TODO: Release items such as bows.
 	}
 }
 
@@ -1498,9 +1491,6 @@ func (p *Player) Tick(current int64) {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
-	if p.usingItem.Load() {
-		p.tryReleaseItem()
-	}
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
