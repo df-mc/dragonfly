@@ -16,7 +16,6 @@ type InventoryTransactionHandler struct {
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.InventoryTransaction)
-	fmt.Printf("%T\n", pk.TransactionData)
 
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
@@ -35,7 +34,6 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
-		fmt.Println(data.ActionType)
 		held, _ := s.c.HeldItems()
 		if !held.Equal(stackToItem(data.HeldItem)) {
 			return nil
