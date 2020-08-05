@@ -6,17 +6,15 @@ import (
 	"math/rand"
 )
 
-// Farmland is a block that crops are grown on. Farmland is created by interacting with a grass block using a hoe.
-// Farmland takes into consideration its distance from a water source block to increase its efficiency and hold its hydration state
+// Farmland is a block that crops are grown on. Farmland is created by interacting with a grass or dirt block using a
+// hoe. Farmland can be hydrated by nearby water, with no hydration resulting in it turning into a dirt block.
 type Farmland struct {
 	noNBT
 	tilledGrass
 
-	// Hydration is how much moisture a block has. The max and default hydration is 7, with its lowest
-	// hydration being 0, which is essentially dirt with a crop on it.
-	// This is calculated by checking if there is a water source block 4 blocks away in any direction from
-	// the farmland that is either 1 block above or on the same level as the farmland block.
-	// If there isn't, we then count down the hydration level by one until it eventually dries up and turns back into dirt.
+	// Hydration is how much moisture the farmland block has. Hydration starts at 0 & caps at 7. During a random tick
+	// update, if there is water within 4 blocks from the farmland block, hydration is set to 7. Otherwise, it
+	// decrements until it turns into dirt.
 	Hydration int
 }
 
