@@ -860,11 +860,11 @@ func (p *Player) UseItem() {
 			if !usable.AlwaysConsumable() && (p.GameMode() != gamemode.Creative{}) && p.Food() >= 20 {
 				// The item.Consumable is not always consumable, the player is not in creative mode and the
 				// food bar is filled: The item cannot be consumed.
-				p.usingItem.Store(false)
-				p.updateState()
+				p.ReleaseItem()
 				return
 			}
 			if !p.usingItem.CAS(false, true) {
+				p.ReleaseItem()
 				// The player is currently using the item held. This is a signal the item was consumed, so we
 				// consume it and start using it again.
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
@@ -879,6 +879,7 @@ func (p *Player) UseItem() {
 				p.SetHeldItems(p.subtractItem(held, 1), left)
 				p.addNewItem(&item.UseContext{NewItem: usable.Consume(p.World(), p)})
 				p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+				return
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()
