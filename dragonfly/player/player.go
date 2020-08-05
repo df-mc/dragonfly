@@ -677,10 +677,10 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !p.sprinting.CAS(false, true) {
+	if !p.hunger.canSprint() && (p.GameMode() != gamemode.Creative{}) {
 		return
 	}
-	if !p.hunger.canSprint() {
+	if !p.sprinting.CAS(false, true) {
 		return
 	}
 	p.StopSneaking()
@@ -928,7 +928,6 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		if i.Empty() {
 			return
 		}
-
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
 			ctx := &item.UseContext{}
@@ -937,7 +936,6 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
-
 		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
 			// The item IS a block, meaning it is being placed.
 			replacedPos := pos
