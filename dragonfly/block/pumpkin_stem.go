@@ -30,11 +30,11 @@ func (p PumpkinStem) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) 
 
 // RandomTick ...
 func (p PumpkinStem) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
-	if rand.Float64() <= p.CalculateGrowthChance(pos, w) {
+	if rand.Float64() <= p.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if p.Growth < 7 {
 			p.Growth++
 			w.PlaceBlock(pos, p)
-		} else if w.Light(pos) >= 8 {
+		} else {
 			directions := []world.Direction{world.North, world.South, world.West, world.East}
 			for _, i := range directions {
 				if _, ok := w.Block(pos.Side(i.Face())).(Pumpkin); ok {

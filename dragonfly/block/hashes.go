@@ -48,6 +48,8 @@ const (
 	hashLight
 	hashLitPumpkin
 	hashLog
+	hashMelon
+	hashMelonStem
 	hashNetherGoldOre
 	hashNetheriteBlock
 	hashNetherrack
