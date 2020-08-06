@@ -26,7 +26,6 @@ func NewEffectManager() *EffectManager {
 // Effect returns the final effect it added to the entity. That might be the effect passed or an effect with
 // a higher level/duration than the one passed.
 func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
-	m.mu.Lock()
 	if e.Level() <= 0 {
 		return e
 	}
@@ -37,6 +36,8 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		return e
 	}
 	t := reflect.TypeOf(e)
+
+	m.mu.Lock()
 	existing, ok := m.effects[t]
 	if !ok {
 		m.effects[t] = e
@@ -46,6 +47,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		return e
 	}
 	if existing.Level() > e.Level() || (existing.Level() == e.Level() && existing.Duration() > e.Duration()) {
+		m.mu.Unlock()
 		return existing
 	}
 	m.effects[t] = e
