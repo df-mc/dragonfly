@@ -81,7 +81,7 @@ func (c crop) CalculateGrowthChance(pos world.BlockPos, w *world.World) float64 
 		}
 	}
 
-	chance := 1 / ((25 / points) + 1)
+	chance := 1 / (25/points + 1)
 	return chance
 }
 
