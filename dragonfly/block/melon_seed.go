@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 	"math/rand"
 )
 
@@ -62,7 +61,7 @@ func (m MelonSeed) Bonemeal(pos world.BlockPos, w *world.World) bool {
 	if m.Growth == 7 {
 		return false
 	}
-	m.Growth = int(math.Min(float64(m.Growth+rand.Intn(4)+2), 7))
+	m.Growth = min(m.Growth+rand.Intn(4)+2, 7)
 	w.PlaceBlock(pos, m)
 	return true
 }

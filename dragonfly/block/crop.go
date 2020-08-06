@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"math"
 	"reflect"
 )
 
@@ -95,6 +94,10 @@ func sameCrop(cropA, cropB world.Block) bool {
 	return false
 }
 
+// min returns the smaller of the two integers passed.
 func min(a, b int) int {
-	return int(math.Min(float64(a), float64(b)))
+	if a < b {
+		return a
+	}
+	return b
 }
