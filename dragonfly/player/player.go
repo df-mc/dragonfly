@@ -864,7 +864,6 @@ func (p *Player) UseItem() {
 				return
 			}
 			if !p.usingItem.CAS(false, true) {
-				p.ReleaseItem()
 				// The player is currently using the item held. This is a signal the item was consumed, so we
 				// consume it and start using it again.
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
