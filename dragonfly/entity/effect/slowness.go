@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -13,25 +13,29 @@ type Slowness struct {
 }
 
 // Start ...
-func (s Slowness) Start(e entity.Living) {
+func (s Slowness) Start(e world.Entity) {
 	slowness := 1 - float64(s.Lvl)*0.15
 	if slowness <= 0 {
 		slowness = 0.00001
 	}
-	e.SetSpeed(e.Speed() * slowness)
+	if living, ok := e.(living); ok {
+		living.SetSpeed(living.Speed() * slowness)
+	}
 }
 
 // Stop ...
-func (s Slowness) Stop(e entity.Living) {
+func (s Slowness) Stop(e world.Entity) {
 	slowness := 1 - float64(s.Lvl)*0.15
 	if slowness <= 0 {
 		slowness = 0.00001
 	}
-	e.SetSpeed(e.Speed() / slowness)
+	if living, ok := e.(living); ok {
+		living.SetSpeed(living.Speed() / slowness)
+	}
 }
 
 // WithSettings ...
-func (s Slowness) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (s Slowness) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Slowness{s.withSettings(d, level, ambient)}
 }
 

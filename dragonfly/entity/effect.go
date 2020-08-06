@@ -1,52 +1,22 @@
 package entity
 
 import (
-	"image/color"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"reflect"
 	"sync"
 	"time"
 )
 
-// Effect represents an effect that may be added to a living entity. Effects may either be instant or last
-// for a specific duration.
-type Effect interface {
-	// Instant checks if the effect is instance. If it is instant, the effect will only be ticked a single
-	// time when added to an entity.
-	Instant() bool
-	// Apply applies the effect to an entity. For instant effects, this method applies the effect once, such
-	// as healing the Living entity for instant health.
-	Apply(e Living)
-	// Level returns the level of the effect. A higher level generally means a more powerful effect.
-	Level() int
-	// Duration returns the leftover duration of the effect.
-	Duration() time.Duration
-	// WithSettings returns the effect with a duration and level passed.
-	WithSettings(d time.Duration, level int, ambient bool) Effect
-	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
-	// together to form a new colour.
-	RGBA() color.RGBA
-	// ShowParticles checks if the particle should show particles. If not, entities that have the effect
-	// will not display particles around them.
-	ShowParticles() bool
-	// AmbientSource specifies if the effect came from an ambient source, such as a beacon or conduit. The
-	// particles will be less visible when this is true.
-	AmbientSource() bool
-	// Start is called for lasting events. It is sent the first time the effect is applied to an entity.
-	Start(e Living)
-	// End is called for lasting events. It is sent the moment the effect expires.
-	End(e Living)
-}
-
 // EffectManager manages the effects of an entity. The effect manager will only store effects that last for
 // a specific duration. Instant effects are applied instantly and not stored.
 type EffectManager struct {
 	mu      sync.Mutex
-	effects map[reflect.Type]Effect
+	effects map[reflect.Type]effect.Effect
 }
 
 // NewEffectManager creates and returns a new initialised EffectManager.
 func NewEffectManager() *EffectManager {
-	return &EffectManager{effects: map[reflect.Type]Effect{}}
+	return &EffectManager{effects: map[reflect.Type]effect.Effect{}}
 }
 
 // Add adds an effect to the manager. If the effect is instant, it is applied to the Living entity passed
@@ -55,7 +25,7 @@ func NewEffectManager() *EffectManager {
 // Effect levels of 0 or below will not do anything.
 // Effect returns the final effect it added to the entity. That might be the effect passed or an effect with
 // a higher level/duration than the one passed.
-func (m *EffectManager) Add(e Effect, entity Living) Effect {
+func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -84,7 +54,7 @@ func (m *EffectManager) Add(e Effect, entity Living) Effect {
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
-func (m *EffectManager) Remove(e Effect, entity Living) {
+func (m *EffectManager) Remove(e effect.Effect, entity Living) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -97,11 +67,11 @@ func (m *EffectManager) Remove(e Effect, entity Living) {
 
 // Effects returns a list of all effects currently present in the effect manager. This will never include
 // effects that have expired.
-func (m *EffectManager) Effects() []Effect {
+func (m *EffectManager) Effects() []effect.Effect {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	e := make([]Effect, 0, len(m.effects))
+	e := make([]effect.Effect, 0, len(m.effects))
 	for _, effect := range m.effects {
 		e = append(e, effect)
 	}
@@ -112,7 +82,7 @@ func (m *EffectManager) Effects() []Effect {
 // removing expired effects.
 func (m *EffectManager) Tick(entity Living) {
 	m.mu.Lock()
-	e := make([]Effect, 0, len(m.effects))
+	e := make([]effect.Effect, 0, len(m.effects))
 	for i, effect := range m.effects {
 		e = append(e, effect)
 
@@ -131,6 +101,6 @@ func (m *EffectManager) Tick(entity Living) {
 }
 
 // expired checks if an Effect has expired.
-func (m *EffectManager) expired(e Effect) bool {
+func (m *EffectManager) expired(e effect.Effect) bool {
 	return e.Duration() <= 0
 }

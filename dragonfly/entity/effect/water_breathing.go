@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"image/color"
 	"time"
 )
@@ -13,7 +12,7 @@ type WaterBreathing struct {
 }
 
 // WithSettings ...
-func (w WaterBreathing) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (w WaterBreathing) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return WaterBreathing{w.withSettings(d, level, ambient)}
 }
 

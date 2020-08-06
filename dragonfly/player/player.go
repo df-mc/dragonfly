@@ -552,13 +552,13 @@ func (p *Player) sendFood() {
 // immediately. If not, the effect is applied to the player every time the Tick method is called.
 // AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 // if the effects' levels are equal and the new effect has a longer duration.
-func (p *Player) AddEffect(e entity.Effect) {
+func (p *Player) AddEffect(e effect.Effect) {
 	p.session().SendEffect(p.effects.Add(e, p))
 	p.updateState()
 }
 
 // RemoveEffect removes any effect that might currently be active on the Player.
-func (p *Player) RemoveEffect(e entity.Effect) {
+func (p *Player) RemoveEffect(e effect.Effect) {
 	p.effects.Remove(e, p)
 	p.session().SendEffectRemoval(e)
 	p.updateState()
@@ -566,7 +566,7 @@ func (p *Player) RemoveEffect(e entity.Effect) {
 
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
 // expired when returned.
-func (p *Player) Effects() []entity.Effect {
+func (p *Player) Effects() []effect.Effect {
 	return p.effects.Effects()
 }
 

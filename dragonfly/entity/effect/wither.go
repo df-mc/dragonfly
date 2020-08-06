@@ -1,8 +1,8 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -14,15 +14,17 @@ type Wither struct {
 }
 
 // Apply ...
-func (w Wither) Apply(e entity.Living) {
+func (w Wither) Apply(e world.Entity) {
 	interval := 80 >> w.Lvl
 	if tickDuration(w.Dur)%interval == 0 {
-		e.Hurt(1, damage.SourceWitherEffect{})
+		if living, ok := e.(living); ok {
+			living.Hurt(1, damage.SourceWitherEffect{})
+		}
 	}
 }
 
 // WithSettings ...
-func (w Wither) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (w Wither) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Wither{w.withSettings(d, level, ambient)}
 }
 
