@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Potions are consumable items that grant effects.
+// Potion is a consumable item that grant effects.
 type Potion struct {
 	// Type is the type of potion.
 	Type potion.Potion
