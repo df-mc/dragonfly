@@ -18,7 +18,7 @@ func (b Beetroot) Bonemeal(pos world.BlockPos, w *world.World) bool {
 	if b.Growth == 7 {
 		return false
 	}
-	if rand.Intn(100) < 75 {
+	if rand.Float64() < 0.75 {
 		b.Growth++
 		w.PlaceBlock(pos, b)
 		return true
@@ -65,7 +65,7 @@ func (b Beetroot) EncodeItem() (id int32, meta int16) {
 func (b Beetroot) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 	if w.Light(pos) < 8 {
 		w.BreakBlock(pos)
-	} else if b.Growth < 7 && rand.Float64() <= b.CalculateGrowthChance(pos, w) {
+	} else if b.Growth < 7 && rand.Intn(3) > 0 && rand.Float64() <= b.CalculateGrowthChance(pos, w) {
 		b.Growth++
 		w.PlaceBlock(pos, b)
 	}

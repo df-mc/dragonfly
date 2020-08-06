@@ -236,7 +236,7 @@ func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = GrassPath{}
-	item_internal.FarmLand = Farmland{Hydration: 0}
+	item_internal.Farmland = Farmland{Hydration: 0}
 	item_internal.Dirt = Dirt{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)

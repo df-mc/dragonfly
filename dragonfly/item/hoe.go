@@ -8,7 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Hoe is a tool generally used to till dirt and grass blocks into FarmLand blocks for planting crops.
+// Hoe is a tool generally used to till dirt and grass blocks into farmland blocks for planting crops.
 // Additionally a Hoe can be used to break certain types of blocks such as Crimson and Hay Blocks.
 type Hoe struct {
 	Tier tool.Tier
@@ -26,8 +26,8 @@ func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3
 			// Tilled land can only be created if air is above the grass block.
 			return false
 		}
-		w.SetBlock(pos, item_internal.FarmLand)
-		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: item_internal.FarmLand})
+		w.SetBlock(pos, item_internal.Farmland)
+		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: item_internal.Farmland})
 		ctx.DamageItem(1)
 		return true
 	}

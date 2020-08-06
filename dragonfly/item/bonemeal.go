@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -14,6 +15,7 @@ func (b Bonemeal) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *
 	ok := item_internal.Bonemeal(pos, w)
 	if ok {
 		ctx.CountSub = 1
+		w.AddParticle(pos.Vec3(), particle.Bonemeal{})
 	}
 	return ok
 }
