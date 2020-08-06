@@ -14,6 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
+	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/armour"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -552,13 +553,13 @@ func (p *Player) sendFood() {
 // immediately. If not, the effect is applied to the player every time the Tick method is called.
 // AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 // if the effects' levels are equal and the new effect has a longer duration.
-func (p *Player) AddEffect(e entity.Effect) {
+func (p *Player) AddEffect(e effect.Effect) {
 	p.session().SendEffect(p.effects.Add(e, p))
 	p.updateState()
 }
 
 // RemoveEffect removes any effect that might currently be active on the Player.
-func (p *Player) RemoveEffect(e entity.Effect) {
+func (p *Player) RemoveEffect(e effect.Effect) {
 	p.effects.Remove(e, p)
 	p.session().SendEffectRemoval(e)
 	p.updateState()
@@ -566,7 +567,7 @@ func (p *Player) RemoveEffect(e entity.Effect) {
 
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
 // expired when returned.
-func (p *Player) Effects() []entity.Effect {
+func (p *Player) Effects() []effect.Effect {
 	return p.effects.Effects()
 }
 
@@ -864,7 +865,6 @@ func (p *Player) UseItem() {
 				return
 			}
 			if !p.usingItem.CAS(false, true) {
-				p.ReleaseItem()
 				// The player is currently using the item held. This is a signal the item was consumed, so we
 				// consume it and start using it again.
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
@@ -1285,9 +1285,10 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		return
 	}
 
-	block := p.World().Block(pos)
-	if i, ok := block.(world.Item); ok {
+	b := p.World().Block(pos)
+	if i, ok := b.(world.Item); ok {
 		copiedItem := item.NewStack(i, 1)
+		copiedItem = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(copiedItem, false), nil)
 
 		slot, found := p.Inventory().First(copiedItem)
 
@@ -1296,16 +1297,16 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		}
 
 		ctx := event.C()
-		p.handler().HandleBlockPick(ctx, pos, block)
+		p.handler().HandleBlockPick(ctx, pos, b)
 
 		ctx.Continue(func() {
 			_, offhand := p.HeldItems()
 
 			if found {
 				if slot < 9 {
-					p.session().SetHeldSlot(slot)
+					_ = p.session().SetHeldSlot(slot)
 				} else {
-					p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+					_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
 				}
 			} else {
 				firstEmpty, emptyFound := p.Inventory().FirstEmpty()
@@ -1313,10 +1314,10 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 				if !emptyFound {
 					p.SetHeldItems(copiedItem, offhand)
 				} else if firstEmpty < 8 {
-					p.session().SetHeldSlot(firstEmpty)
-					p.Inventory().SetItem(firstEmpty, copiedItem)
+					_ = p.session().SetHeldSlot(firstEmpty)
+					_ = p.Inventory().SetItem(firstEmpty, copiedItem)
 				} else {
-					p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+					_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
 					p.SetHeldItems(copiedItem, offhand)
 				}
 			}

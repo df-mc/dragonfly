@@ -117,7 +117,12 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
-		h.lastUseItemOnBlock = time.Now()
+		if name, _ := s.c.World().Block(pos).EncodeBlock(); name == "minecraft:farmland" {
+			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
+			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
+			// UseItem action, so we just release immediately after if that happens to be the case.
+			h.lastUseItemOnBlock = time.Now()
+		}
 
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
@@ -126,7 +131,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
 		if time.Since(h.lastUseItemOnBlock) < time.Second/20 {
-			// This is a bit of a hack to prevent infinite eating. The client sends a UseItem action after a
+			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
 			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
 			// UseItem action, so we just release immediately after if that happens to be the case.
 			s.c.ReleaseItem()

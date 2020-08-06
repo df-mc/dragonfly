@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
@@ -23,7 +22,7 @@ type Beacon struct {
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
-	Primary, Secondary entity.Effect
+	Primary, Secondary effect.Effect
 	// level is the amount of the pyramid's levels, it is defined by the mineral blocks which build up the
 	// pyramid, and can be 0-4.
 	level int
@@ -165,7 +164,7 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 	dur := time.Duration(seconds) * time.Second
 
 	// Establishing what effects are active with the current amount of beacon levels.
-	primary, secondary := b.Primary, entity.Effect(nil)
+	primary, secondary := b.Primary, effect.Effect(nil)
 	switch b.level {
 	case 0:
 		primary = nil
@@ -234,11 +233,11 @@ func (Beacon) Hash() uint64 {
 
 //go:linkname effect_effectByID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
 //noinspection ALL
-func effect_effectByID(id int) (entity.Effect, bool)
+func effect_effectByID(id int) (effect.Effect, bool)
 
 //go:linkname effect_idByEffect github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
 //noinspection ALL
-func effect_idByEffect(e entity.Effect) (int, bool)
+func effect_idByEffect(e effect.Effect) (int, bool)
 
 //go:linkname world_highestLightBlocker github.com/df-mc/dragonfly/dragonfly/world.highestLightBlocker
 //noinspection ALL

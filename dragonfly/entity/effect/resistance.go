@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"image/color"
 	"time"
@@ -27,7 +26,7 @@ func (r Resistance) Multiplier(e damage.Source) float64 {
 }
 
 // WithSettings ...
-func (r Resistance) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (r Resistance) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Resistance{r.withSettings(d, level, ambient)}
 }
 

@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -57,7 +57,7 @@ type BonemealAffected interface {
 // beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
 type beaconAffected interface {
 	// AddEffect adds a specific effect to the entity that implements this interface.
-	AddEffect(e entity.Effect)
+	AddEffect(e effect.Effect)
 
 	// BeaconAffected returns whether this entity can be powered by a beacon.
 	BeaconAffected() bool

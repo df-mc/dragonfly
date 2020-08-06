@@ -1,8 +1,8 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"time"
 )
 
@@ -16,19 +16,21 @@ type InstantHealth struct {
 	Potency float64
 }
 
-// Apply instantly heals the entity.Living passed for a bit of health, depending on the effect level and
+// Apply instantly heals the world.Entity passed for a bit of health, depending on the effect level and
 // potency.
-func (i InstantHealth) Apply(e entity.Living) {
+func (i InstantHealth) Apply(e world.Entity) {
 	if i.Potency == 0 {
 		// Potency of 1 by default.
 		i.Potency = 1
 	}
 	base := 2 << i.Lvl
-	e.Heal(float64(base)*i.Potency, healing.SourceInstantHealthEffect{})
+	if living, ok := e.(living); ok {
+		living.Heal(float64(base)*i.Potency, healing.SourceInstantHealthEffect{})
+	}
 }
 
 // WithSettings ...
-func (i InstantHealth) WithSettings(_ time.Duration, level int, _ bool) entity.Effect {
+func (i InstantHealth) WithSettings(_ time.Duration, level int, _ bool) Effect {
 	i.Lvl = level
 	return i
 }
