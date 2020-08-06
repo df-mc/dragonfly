@@ -33,7 +33,7 @@ type TickerBlock interface {
 // If an item with the ID and meta passed already exists, RegisterItem panics.
 func RegisterItem(name string, item Item) {
 	id, meta := item.EncodeItem()
-	k := (id << 4) | int32(meta)
+	k := (id << 16) | int32(meta)
 	if _, ok := items[k]; ok {
 		panic(fmt.Sprintf("item registered with ID %v and meta %v already exists", id, meta))
 	}
