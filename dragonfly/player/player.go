@@ -14,6 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
+	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/armour"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -1284,9 +1285,10 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		return
 	}
 
-	block := p.World().Block(pos)
-	if i, ok := block.(world.Item); ok {
+	b := p.World().Block(pos)
+	if i, ok := b.(world.Item); ok {
 		copiedItem := item.NewStack(i, 1)
+		copiedItem = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(copiedItem, false), nil)
 
 		slot, found := p.Inventory().First(copiedItem)
 
@@ -1295,16 +1297,16 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		}
 
 		ctx := event.C()
-		p.handler().HandleBlockPick(ctx, pos, block)
+		p.handler().HandleBlockPick(ctx, pos, b)
 
 		ctx.Continue(func() {
 			_, offhand := p.HeldItems()
 
 			if found {
 				if slot < 9 {
-					p.session().SetHeldSlot(slot)
+					_ = p.session().SetHeldSlot(slot)
 				} else {
-					p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+					_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
 				}
 			} else {
 				firstEmpty, emptyFound := p.Inventory().FirstEmpty()
@@ -1312,10 +1314,10 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 				if !emptyFound {
 					p.SetHeldItems(copiedItem, offhand)
 				} else if firstEmpty < 8 {
-					p.session().SetHeldSlot(firstEmpty)
-					p.Inventory().SetItem(firstEmpty, copiedItem)
+					_ = p.session().SetHeldSlot(firstEmpty)
+					_ = p.Inventory().SetItem(firstEmpty, copiedItem)
 				} else {
-					p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+					_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
 					p.SetHeldItems(copiedItem, offhand)
 				}
 			}
