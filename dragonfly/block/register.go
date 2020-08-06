@@ -223,12 +223,12 @@ func init() {
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
-	world.RegisterItem("minecraft:wheat_seeds", Wheat{})
-	world.RegisterItem("minecraft:beetroot_seeds", Beetroot{})
+	world.RegisterItem("minecraft:wheat_seeds", WheatSeed{})
+	world.RegisterItem("minecraft:beetroot_seeds", BeetrootSeed{})
 	world.RegisterItem("minecraft:potato", Potato{})
 	world.RegisterItem("minecraft:carrot", Carrot{})
-	world.RegisterItem("minecraft:pumpkin_seeds", PumpkinStem{})
-	world.RegisterItem("minecraft:melon_seeds", MelonStem{})
+	world.RegisterItem("minecraft:pumpkin_seeds", PumpkinSeed{})
+	world.RegisterItem("minecraft:melon_seeds", MelonSeed{})
 	world.RegisterItem("minecraft:melon_block", Melon{})
 }
 

@@ -8,13 +8,13 @@ import (
 	"math/rand"
 )
 
-// Beetroot is a crop that can be harvested to craft soup or red dye.
-type Beetroot struct {
+// BeetrootSeed is a crop that can be harvested to craft soup or red dye.
+type BeetrootSeed struct {
 	crop
 }
 
 // Bonemeal ...
-func (b Beetroot) Bonemeal(pos world.BlockPos, w *world.World) bool {
+func (b BeetrootSeed) Bonemeal(pos world.BlockPos, w *world.World) bool {
 	if b.Growth == 7 {
 		return false
 	}
@@ -27,7 +27,7 @@ func (b Beetroot) Bonemeal(pos world.BlockPos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (b Beetroot) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (b BeetrootSeed) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, b)
 	if !used {
 		return false
@@ -42,7 +42,7 @@ func (b Beetroot) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, 
 }
 
 // BreakInfo ...
-func (b Beetroot) BreakInfo() BreakInfo {
+func (b BeetrootSeed) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0,
 		Harvestable: alwaysHarvestable,
@@ -57,12 +57,12 @@ func (b Beetroot) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (b Beetroot) EncodeItem() (id int32, meta int16) {
+func (b BeetrootSeed) EncodeItem() (id int32, meta int16) {
 	return 458, 0
 }
 
 // RandomTick ...
-func (b Beetroot) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+func (b BeetrootSeed) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 	if w.Light(pos) < 8 {
 		w.BreakBlock(pos)
 	} else if b.Growth < 7 && rand.Intn(3) > 0 && rand.Float64() <= b.CalculateGrowthChance(pos, w) {
@@ -72,19 +72,19 @@ func (b Beetroot) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 }
 
 // EncodeBlock ...
-func (b Beetroot) EncodeBlock() (name string, properties map[string]interface{}) {
+func (b BeetrootSeed) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:beetroot", map[string]interface{}{"growth": int32(b.Growth)}
 }
 
 // Hash ...
-func (b Beetroot) Hash() uint64 {
+func (b BeetrootSeed) Hash() uint64 {
 	return hashBeetroot | (uint64(b.Growth) << 32)
 }
 
 // allBeetroot ...
 func allBeetroot() (beetroot []world.Block) {
 	for i := 0; i <= 7; i++ {
-		beetroot = append(beetroot, Beetroot{crop{Growth: i}})
+		beetroot = append(beetroot, BeetrootSeed{crop{Growth: i}})
 	}
 	return
 }

@@ -8,8 +8,8 @@ import (
 	"math/rand"
 )
 
-// MelonStem grow melon blocks.
-type MelonStem struct {
+// MelonSeed grow melon blocks.
+type MelonSeed struct {
 	crop
 
 	// Direction is the direction from the stem to the melon.
@@ -17,7 +17,7 @@ type MelonStem struct {
 }
 
 // NeighbourUpdateTick ...
-func (m MelonStem) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (m MelonSeed) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
 		w.BreakBlock(pos)
 	} else if m.Direction != world.FaceDown {
@@ -29,7 +29,7 @@ func (m MelonStem) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 }
 
 // RandomTick ...
-func (m MelonStem) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (m MelonSeed) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	if rand.Float64() <= m.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if m.Growth < 7 {
 			m.Growth++
@@ -58,7 +58,7 @@ func (m MelonStem) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) 
 }
 
 // Bonemeal ...
-func (m MelonStem) Bonemeal(pos world.BlockPos, w *world.World) bool {
+func (m MelonSeed) Bonemeal(pos world.BlockPos, w *world.World) bool {
 	if m.Growth == 7 {
 		return false
 	}
@@ -68,7 +68,7 @@ func (m MelonStem) Bonemeal(pos world.BlockPos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (m MelonStem) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (m MelonSeed) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, m)
 	if !used {
 		return false
@@ -83,7 +83,7 @@ func (m MelonStem) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3,
 }
 
 // BreakInfo ...
-func (m MelonStem) BreakInfo() BreakInfo {
+func (m MelonSeed) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0,
 		Harvestable: alwaysHarvestable,
@@ -93,17 +93,17 @@ func (m MelonStem) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (m MelonStem) EncodeItem() (id int32, meta int16) {
+func (m MelonSeed) EncodeItem() (id int32, meta int16) {
 	return 362, 0
 }
 
 // EncodeBlock ...
-func (m MelonStem) EncodeBlock() (name string, properties map[string]interface{}) {
+func (m MelonSeed) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:melon_stem", map[string]interface{}{"facing_direction": int32(m.Direction), "growth": int32(m.Growth)}
 }
 
 // Hash ...
-func (m MelonStem) Hash() uint64 {
+func (m MelonSeed) Hash() uint64 {
 	return hashMelonStem | (uint64(m.Growth) << 32) | (uint64(m.Direction) << 35)
 }
 
@@ -111,7 +111,7 @@ func (m MelonStem) Hash() uint64 {
 func allMelonStems() (stems []world.Block) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
-			stems = append(stems, MelonStem{Direction: j, crop: crop{Growth: i}})
+			stems = append(stems, MelonSeed{Direction: j, crop: crop{Growth: i}})
 		}
 	}
 	return

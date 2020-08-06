@@ -8,8 +8,8 @@ import (
 	"math/rand"
 )
 
-// PumpkinStem grow pumpkin blocks.
-type PumpkinStem struct {
+// PumpkinSeed grow pumpkin blocks.
+type PumpkinSeed struct {
 	crop
 
 	// Direction is the direction from the stem to the pumpkin.
@@ -17,7 +17,7 @@ type PumpkinStem struct {
 }
 
 // NeighbourUpdateTick ...
-func (p PumpkinStem) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (p PumpkinSeed) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
 		w.BreakBlock(pos)
 	} else if p.Direction != world.FaceDown {
@@ -29,7 +29,7 @@ func (p PumpkinStem) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) 
 }
 
 // RandomTick ...
-func (p PumpkinStem) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (p PumpkinSeed) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	if rand.Float64() <= p.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if p.Growth < 7 {
 			p.Growth++
@@ -58,7 +58,7 @@ func (p PumpkinStem) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand
 }
 
 // Bonemeal ...
-func (p PumpkinStem) Bonemeal(pos world.BlockPos, w *world.World) bool {
+func (p PumpkinSeed) Bonemeal(pos world.BlockPos, w *world.World) bool {
 	if p.Growth == 7 {
 		return false
 	}
@@ -68,7 +68,7 @@ func (p PumpkinStem) Bonemeal(pos world.BlockPos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (p PumpkinStem) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (p PumpkinSeed) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, p)
 	if !used {
 		return false
@@ -83,7 +83,7 @@ func (p PumpkinStem) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec
 }
 
 // BreakInfo ...
-func (p PumpkinStem) BreakInfo() BreakInfo {
+func (p PumpkinSeed) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    0,
 		Harvestable: alwaysHarvestable,
@@ -93,17 +93,17 @@ func (p PumpkinStem) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (p PumpkinStem) EncodeItem() (id int32, meta int16) {
+func (p PumpkinSeed) EncodeItem() (id int32, meta int16) {
 	return 361, 0
 }
 
 // EncodeBlock ...
-func (p PumpkinStem) EncodeBlock() (name string, properties map[string]interface{}) {
+func (p PumpkinSeed) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:pumpkin_stem", map[string]interface{}{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
 }
 
 // Hash ...
-func (p PumpkinStem) Hash() uint64 {
+func (p PumpkinSeed) Hash() uint64 {
 	return hashPumpkinStem | (uint64(p.Growth) << 32) | (uint64(p.Direction) << 35)
 }
 
@@ -111,7 +111,7 @@ func (p PumpkinStem) Hash() uint64 {
 func allPumpkinStems() (stems []world.Block) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
-			stems = append(stems, PumpkinStem{Direction: j, crop: crop{Growth: i}})
+			stems = append(stems, PumpkinSeed{Direction: j, crop: crop{Growth: i}})
 		}
 	}
 	return
