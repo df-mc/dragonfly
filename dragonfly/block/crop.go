@@ -2,12 +2,13 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"math"
 	"reflect"
 )
 
 // Crop is an interface for all crops that are grown on farmland. A crop has a random chance to grow during random ticks.
 type Crop interface {
-	// GrowthStage returns the crop's current stage of growth.
+	// GrowthStage returns the crop's current stage of growth. The max value is 7.
 	GrowthStage() int
 }
 
@@ -17,7 +18,7 @@ type crop struct {
 	transparent
 	empty
 
-	// Growth is the current stage of growth.
+	// Growth is the current stage of growth. The max value is 7.
 	Growth int
 }
 
@@ -40,7 +41,7 @@ func (c crop) GrowthStage() int {
 
 // CalculateGrowthChance calculates the chance the crop will grow during a random tick.
 func (c crop) CalculateGrowthChance(pos world.BlockPos, w *world.World) float64 {
-	points := 0
+	points := 0.0
 
 	block := w.Block(pos)
 	under := pos.Side(world.FaceDown)
@@ -49,7 +50,7 @@ func (c crop) CalculateGrowthChance(pos world.BlockPos, w *world.World) float64 
 		for z := -1; z <= 1; z++ {
 			block := w.Block(under.Add(world.BlockPos{x, 0, z}))
 			if farmland, ok := block.(Farmland); ok {
-				farmlandPoints := 0
+				farmlandPoints := 0.0
 				if farmland.Hydration > 0 {
 					farmlandPoints = 4
 				} else {
@@ -66,30 +67,34 @@ func (c crop) CalculateGrowthChance(pos world.BlockPos, w *world.World) float64 
 	north := pos.Side(world.FaceNorth)
 	south := pos.Side(world.FaceSouth)
 
-	northSouth := isSameCrop(block, w.Block(north)) || isSameCrop(block, w.Block(south))
-	westEast := isSameCrop(block, w.Block(pos.Side(world.FaceWest))) || isSameCrop(block, w.Block(pos.Side(world.FaceEast)))
+	northSouth := sameCrop(block, w.Block(north)) || sameCrop(block, w.Block(south))
+	westEast := sameCrop(block, w.Block(pos.Side(world.FaceWest))) || sameCrop(block, w.Block(pos.Side(world.FaceEast)))
 	if northSouth && westEast {
 		points /= 2
 	} else {
-		diagonal := isSameCrop(block, w.Block(north.Side(world.FaceWest))) ||
-			isSameCrop(block, w.Block(north.Side(world.FaceEast))) ||
-			isSameCrop(block, w.Block(south.Side(world.FaceWest))) ||
-			isSameCrop(block, w.Block(south.Side(world.FaceEast)))
+		diagonal := sameCrop(block, w.Block(north.Side(world.FaceWest))) ||
+			sameCrop(block, w.Block(north.Side(world.FaceEast))) ||
+			sameCrop(block, w.Block(south.Side(world.FaceWest))) ||
+			sameCrop(block, w.Block(south.Side(world.FaceEast)))
 		if diagonal {
 			points /= 2
 		}
 	}
 
-	chance := 1 / (float64(25/points) + 1)
+	chance := 1 / ((25 / points) + 1)
 	return chance
 }
 
-// isSameCrop checks if both blocks are crops and that they are the same type.
-func isSameCrop(cropA, cropB world.Block) bool {
+// sameCrop checks if both blocks are crops and that they are the same type.
+func sameCrop(cropA, cropB world.Block) bool {
 	if cropA, ok := cropA.(Crop); ok {
 		if cropB, ok := cropB.(Crop); ok {
 			return reflect.TypeOf(cropA) == reflect.TypeOf(cropB)
 		}
 	}
 	return false
+}
+
+func min(a, b int) int {
+	return int(math.Min(float64(a), float64(b)))
 }

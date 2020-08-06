@@ -27,7 +27,7 @@ func (f Farmland) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 
 // RandomTick ...
 func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
-	if !f.CanHydrate(pos, w) {
+	if !f.hydrated(pos, w) {
 		if f.Hydration > 0 {
 			f.Hydration--
 			w.PlaceBlock(pos, f)
@@ -43,8 +43,8 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 	}
 }
 
-// CanHydrate checks for water within 4 blocks in each direction from the farmland.
-func (f Farmland) CanHydrate(pos world.BlockPos, w *world.World) bool {
+// hydrated checks for water within 4 blocks in each direction from the farmland.
+func (f Farmland) hydrated(pos world.BlockPos, w *world.World) bool {
 	for y := 0; y <= 1; y++ {
 		for x := -4; x <= 4; x++ {
 			for z := -4; z <= 4; z++ {
@@ -74,6 +74,7 @@ func (f Farmland) EncodeBlock() (name string, properties map[string]interface{})
 	return "minecraft:farmland", map[string]interface{}{"moisturized_amount": int32(f.Hydration)}
 }
 
+// Hash ...
 func (f Farmland) Hash() uint64 {
 	return hashFarmland | (uint64(f.Hydration) << 32)
 }

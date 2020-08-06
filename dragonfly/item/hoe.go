@@ -16,7 +16,6 @@ type Hoe struct {
 
 // UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
 func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
-
 	if grass := w.Block(pos); grass == item_internal.Grass || grass == item_internal.Dirt {
 		if face == world.FaceDown {
 			// Tilled land isn't created when the bottom face is clicked.
@@ -26,7 +25,7 @@ func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3
 			// Tilled land can only be created if air is above the grass block.
 			return false
 		}
-		w.SetBlock(pos, item_internal.Farmland)
+		w.PlaceBlock(pos, item_internal.Farmland)
 		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: item_internal.Farmland})
 		ctx.DamageItem(1)
 		return true

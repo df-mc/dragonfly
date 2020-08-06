@@ -17,7 +17,7 @@ func (m Melon) BreakInfo() BreakInfo {
 		Hardness:    1,
 		Harvestable: alwaysHarvestable,
 		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(item.Melon{}, rand.Intn(5)+3)), //TODO: Silk Touch
+		Drops:       simpleDrops(item.NewStack(item.MelonSlice{}, rand.Intn(5)+3)), //TODO: Silk Touch
 	}
 }
 

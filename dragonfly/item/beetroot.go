@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Beetroot is a food & dye ingredient.
+// Beetroot is a food and dye ingredient.
 type Beetroot struct{}
 
 // AlwaysConsumable ...
