@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
-	_ "github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
