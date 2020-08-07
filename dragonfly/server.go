@@ -192,7 +192,7 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 // returns holds a true value. If not, the bool is false and the player is nil
 func (server *Server) PlayerByName(name string) (*player.Player, bool) {
 	for _, p := range server.Players() {
-		if strings.EqualFold(p.Name(), name) {
+		if p.Name() == name {
 			return p, true
 		}
 	}
