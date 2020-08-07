@@ -69,8 +69,11 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			}
 			newItem := stackToItem(action.NewItem)
 			actual, offHand := s.c.HeldItems()
-			if !newItem.Equal(actual) {
-				return fmt.Errorf("different item stack thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
+			if !newItem.Comparable(actual) {
+				return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
+			}
+			if newItem.Count() > actual.Count() {
+				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())
 			}
 			// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
 			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
