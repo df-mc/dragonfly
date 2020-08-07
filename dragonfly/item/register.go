@@ -82,6 +82,7 @@ func init() {
 	world.RegisterItem("minecraft:netherite_ingot", NetheriteIngot{})
 	world.RegisterItem("minecraft:clay_ball", ClayBall{})
 	world.RegisterItem("minecraft:quartz", NetherQuartz{})
+	world.RegisterItem("minecraft:flint", Flint{})
 
 	world.RegisterItem("minecraft:stick", Stick{})
 
