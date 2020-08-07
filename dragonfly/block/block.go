@@ -1,10 +1,12 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -140,4 +142,31 @@ type transparent struct{}
 // LightDiffusionLevel ...
 func (transparent) LightDiffusionLevel() uint8 {
 	return 0
+}
+
+// GravityAffected represents blocks affected by gravity.
+type GravityAffected interface {
+	// CanSolidify returns whether the falling block can return back to a normal block without being on the ground.
+	CanSolidify(pos world.BlockPos, w *world.World) bool
+}
+
+// gravityAffected is a struct that may be embedded for blocks affected by gravity.
+type gravityAffected struct{}
+
+// CanSolidify ...
+func (g gravityAffected) CanSolidify(world.BlockPos, *world.World) bool {
+	return false
+}
+
+// fall spawns a falling block entity at the given position.
+func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World) {
+	_, air := w.Block(pos.Side(world.FaceDown)).(Air)
+	_, liquid := w.Liquid(pos.Side(world.FaceDown))
+	if air || liquid {
+		w.BreakBlock(pos)
+
+		e := entity.NewFallingBlock(b, pos.Vec3())
+		e.SetVelocity(mgl64.Vec3{})
+		w.AddEntity(e)
+	}
 }

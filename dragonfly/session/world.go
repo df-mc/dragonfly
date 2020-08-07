@@ -173,6 +173,16 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Item:            stackFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
 		})
+	case *entity.FallingBlock:
+		s.writePacket(&packet.AddActor{
+			EntityUniqueID:  int64(runtimeID),
+			EntityRuntimeID: runtimeID,
+			EntityType:      "minecraft:falling_block",
+			Position:        vec64To32(e.Position()),
+			Pitch:           float32(e.Pitch()),
+			Yaw:             float32(e.Yaw()),
+			HeadYaw:         float32(e.Yaw()),
+		})
 	default:
 		s.writePacket(&packet.AddActor{
 			EntityUniqueID:  int64(runtimeID),
@@ -219,7 +229,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
 			Pitch:           float32(e.Pitch() + deltaPitch),
 			Yaw:             float32(e.Yaw() + deltaYaw),
 			HeadYaw:         float32(e.Yaw() + deltaYaw),
@@ -232,7 +242,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 		}
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
 			Rotation:        vec64To32(mgl64.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw}),
 			Flags:           flags,
 		})
@@ -248,14 +258,16 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 }
 
 // entityOffset returns the offset that entities have client-side.
-func entityOffset(e world.Entity) float64 {
+func entityOffset(e world.Entity) mgl64.Vec3 {
 	switch e.(type) {
 	case Controllable:
-		return 1.62
+		return mgl64.Vec3{0, 1.62}
 	case *entity.Item:
-		return 0.125
+		return mgl64.Vec3{0, 0.125}
+	case *entity.FallingBlock:
+		return mgl64.Vec3{0.5, 0.49, 0.5}
 	}
-	return 0
+	return mgl64.Vec3{}
 }
 
 // ViewTime ...
@@ -279,7 +291,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(position.Add(entityOffset(e))),
 			Pitch:           float32(e.Pitch()),
 			Yaw:             float32(e.Yaw()),
 			HeadYaw:         float32(e.Yaw()),
@@ -288,7 +300,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	default:
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(position.Add(entityOffset(e))),
 			Rotation:        vec64To32(mgl64.Vec3{e.Pitch(), e.Yaw()}),
 			Flags:           packet.MoveFlagTeleport,
 		})
@@ -514,6 +526,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			} else {
 				m[dataKeyPotionAmbient] = byte(0)
 			}
+		case state.Varied:
+			m[dataKeyVariant] = int32(st.Variant)
 		}
 	}
 	s.writePacket(&packet.SetActorData{

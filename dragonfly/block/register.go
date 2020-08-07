@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
+	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	_ "unsafe" // Imported for compiler directives.
@@ -78,6 +79,9 @@ func init() {
 	world.RegisterBlock(IronOre{})
 	world.RegisterBlock(CoalOre{})
 	world.RegisterBlock(allCocoaBeans()...)
+	world.RegisterBlock(Sand{}, Sand{Red: true})
+	world.RegisterBlock(Gravel{})
+	world.RegisterBlock(allConcretePowder()...)
 }
 
 func init() {
@@ -118,6 +122,7 @@ func init() {
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: wood.Oak(), Stripped: true})
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
+		world.RegisterItem("minecraft:concretepowder", ConcretePowder{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
 		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:wool", Wool{Colour: c})
@@ -215,6 +220,9 @@ func init() {
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
+	world.RegisterItem("minecraft:sand", Sand{})
+	world.RegisterItem("minecraft:sand", Sand{Red: true})
+	world.RegisterItem("minecraft:gravel", Gravel{})
 }
 
 func init() {
@@ -248,6 +256,13 @@ func init() {
 		return ok
 	}
 	item_internal.Replaceable = replaceableWith
+	entity_internal.CanSolidify = func(b world.Block, pos world.BlockPos, w *world.World) bool {
+		gravity, ok := b.(GravityAffected)
+		if !ok {
+			return false
+		}
+		return gravity.CanSolidify(pos, w)
+	}
 }
 
 // readSlice reads an interface slice from a map at the key passed.
