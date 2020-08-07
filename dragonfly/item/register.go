@@ -102,7 +102,7 @@ func init() {
 	world.RegisterItem("minecraft:apple", Apple{})
 
 	world.RegisterItem("minecraft:glass_bottle", GlassBottle{})
-	world.RegisterItem("minecraft:brick", Brick{})
+	world.RegisterItem("minecraft:bricks", Brick{})
 	for _, potion := range potion.All() {
 		world.RegisterItem("minecraft:potion", Potion{Type: potion})
 	}
