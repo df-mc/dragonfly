@@ -262,9 +262,13 @@ func init() {
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}
-	item_internal.IsWater = func(b world.Liquid) bool {
+	item_internal.IsWater = func(b world.Block) bool {
 		_, ok := b.(Water)
 		return ok
+	}
+	item_internal.IsWaterSource = func(b world.Block) bool {
+		water, ok := b.(Water)
+		return ok && water.Depth == 8
 	}
 	item_internal.Replaceable = replaceableWith
 	entity_internal.CanSolidify = func(b world.Block, pos world.BlockPos, w *world.World) bool {

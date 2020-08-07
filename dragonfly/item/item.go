@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
@@ -64,6 +65,11 @@ type Consumer interface {
 	// Saturate saturates the Consumer's food bar by the amount of food points passed and the saturation by
 	// up to as many saturation points as passed. The final saturation will never exceed the final food level.
 	Saturate(food int, saturation float64)
+	// AddEffect adds an effect.Effect to the Consumer. If the effect is instant, it is applied to the Consumer
+	// immediately. If not, the effect is applied to the consumer every time the Tick method is called.
+	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
+	// if the effects' levels are equal and the new effect has a longer duration.
+	AddEffect(e effect.Effect)
 }
 
 // defaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
@@ -79,6 +85,8 @@ type UseContext struct {
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack
+	// NewItemSurvivalOnly will add any new items only in survival mode.
+	NewItemSurvivalOnly bool
 }
 
 // DamageItem damages the item used by d points.

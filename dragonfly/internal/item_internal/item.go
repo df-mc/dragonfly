@@ -32,7 +32,10 @@ var IsUncarvedPumpkin func(b world.Block) bool
 var CarvePumpkin func(b world.Block, face world.Face) world.Block
 
 // IsWater is a function used to check if a liquid is water.
-var IsWater func(b world.Liquid) bool
+var IsWater func(b world.Block) bool
+
+// IsWaterSource is a function used to check if a block is a water source.
+var IsWaterSource func(b world.Block) bool
 
 // Replaceable is a function used to check if a block is replaceable.
 var Replaceable func(w *world.World, pos world.BlockPos, with world.Block) bool
