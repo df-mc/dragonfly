@@ -362,6 +362,11 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.Bonemeal:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleCropGrowth,
+			Position:  vec64To32(pos),
+		})
 	case particle.BlockForceField:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleBlockForceField,

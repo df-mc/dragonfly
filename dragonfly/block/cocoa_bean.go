@@ -21,6 +21,16 @@ type CocoaBean struct {
 	Age int
 }
 
+// Bonemeal ...
+func (c CocoaBean) Bonemeal(pos world.BlockPos, w *world.World) bool {
+	if c.Age == 2 {
+		return false
+	}
+	c.Age++
+	w.PlaceBlock(pos, c)
+	return true
+}
+
 // HasLiquidDrops ...
 func (c CocoaBean) HasLiquidDrops() bool {
 	return true

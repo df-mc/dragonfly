@@ -26,6 +26,9 @@ type PunchBlock struct {
 // BlockForceField is a particle that shows up as a block that turns invisible from an opaque black colour.
 type BlockForceField struct{}
 
+// Bonemeal is a particle that shows up on bonemeal usage.
+type Bonemeal struct{}
+
 // Spawn ...
 func (PunchBlock) Spawn(*world.World, mgl64.Vec3) {}
 
@@ -34,3 +37,6 @@ func (BlockBreak) Spawn(*world.World, mgl64.Vec3) {}
 
 // Spawn ...
 func (BlockForceField) Spawn(*world.World, mgl64.Vec3) {}
+
+// Spawn ...
+func (Bonemeal) Spawn(*world.World, mgl64.Vec3) {}

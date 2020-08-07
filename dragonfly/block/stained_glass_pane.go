@@ -16,6 +16,17 @@ type StainedGlassPane struct {
 	Colour colour.Colour
 }
 
+// CanDisplace ...
+func (p StainedGlassPane) CanDisplace(b world.Liquid) bool {
+	_, water := b.(Water)
+	return water
+}
+
+// SideClosed ...
+func (p StainedGlassPane) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+	return false
+}
+
 // BreakInfo ...
 func (p StainedGlassPane) BreakInfo() BreakInfo {
 	return BreakInfo{

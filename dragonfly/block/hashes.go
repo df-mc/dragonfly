@@ -5,8 +5,10 @@ const (
 	hashAncientDebris
 	hashBeacon
 	hashBedrock
+	hashBeetroot
 	hashBoneBlock
 	hashCarpet
+	hashCarrot
 	hashChest
 	hashClay
 	hashCoalBlock
@@ -26,6 +28,7 @@ const (
 	hashEndBricks
 	hashEndBrickStairs
 	hashEndStone
+	hashFarmland
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone
@@ -47,12 +50,16 @@ const (
 	hashLight
 	hashLitPumpkin
 	hashLog
+	hashMelon
+	hashMelonStem
 	hashNetherGoldOre
 	hashNetheriteBlock
 	hashNetherrack
 	hashObsidian
 	hashPlanks
+	hashPotato
 	hashPumpkin
+	hashPumpkinStem
 	hashQuartzOre
 	hashQuartz
 	hashChiseledQuartz
@@ -74,4 +81,5 @@ const (
 	hashGlassPane
 	hashStainedGlassPane
 	hashStainedGlass
+	hashWheat
 )
