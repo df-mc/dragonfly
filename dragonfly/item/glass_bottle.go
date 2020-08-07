@@ -11,7 +11,7 @@ import (
 type GlassBottle struct{}
 
 // UseOnBlock ...
-func (g GlassBottle) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
+func (g GlassBottle) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if liquid, ok := w.Liquid(pos); ok {
 		if item_internal.IsWater(liquid) && liquid.LiquidDepth() == 8 {
 			if liquid == w.Block(pos) {
