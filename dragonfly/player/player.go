@@ -1714,7 +1714,7 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // addNewItem adds the new item of the context passed to the inventory.
 func (p *Player) addNewItem(ctx *item.UseContext) {
-	if (ctx.SurvivalDedicatedItem && !p.survival()) || ctx.NewItem.Empty() {
+	if (ctx.NewItemSurvivalOnly && !p.survival()) || ctx.NewItem.Empty() {
 		return
 	}
 	held, left := p.HeldItems()

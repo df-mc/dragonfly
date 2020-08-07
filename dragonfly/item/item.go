@@ -85,8 +85,8 @@ type UseContext struct {
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack
-	// SurvivalDedicatedItem will add any new items only in survival mode.
-	SurvivalDedicatedItem bool
+	// NewItemSurvivalOnly will add any new items only in survival mode.
+	NewItemSurvivalOnly bool
 }
 
 // DamageItem damages the item used by d points.
