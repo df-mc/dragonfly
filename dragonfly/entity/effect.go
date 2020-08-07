@@ -30,8 +30,6 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		return e
 	}
 	if e.Instant() {
-		m.mu.Unlock()
-
 		e.Apply(entity)
 		return e
 	}
