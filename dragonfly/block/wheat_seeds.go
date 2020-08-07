@@ -8,7 +8,7 @@ import (
 	"math/rand"
 )
 
-// WheatSeeds is a crop that can be harvested to craft bread, cake, & cookies.
+// WheatSeeds are a crop that can be harvested to craft bread, cake, & cookies.
 type WheatSeeds struct {
 	crop
 }

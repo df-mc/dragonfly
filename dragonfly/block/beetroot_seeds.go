@@ -8,7 +8,7 @@ import (
 	"math/rand"
 )
 
-// BeetrootSeeds is a crop that can be harvested to craft soup or red dye.
+// BeetrootSeeds are a crop that can be harvested to craft soup or red dye.
 type BeetrootSeeds struct {
 	crop
 }
