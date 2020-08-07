@@ -178,6 +178,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
 			EntityType:      "minecraft:falling_block",
+			EntityMetadata:  map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))},
 			Position:        vec64To32(e.Position()),
 			Pitch:           float32(e.Pitch()),
 			Yaw:             float32(e.Yaw()),
@@ -526,8 +527,6 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			} else {
 				m[dataKeyPotionAmbient] = byte(0)
 			}
-		case state.Varied:
-			m[dataKeyVariant] = int32(st.Variant)
 		}
 	}
 	s.writePacket(&packet.SetActorData{

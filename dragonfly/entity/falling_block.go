@@ -13,7 +13,7 @@ import (
 
 // FallingBlock is the entity form of a block that appears when a gravity-affected block loses its support.
 type FallingBlock struct {
-	Block         world.Block
+	block         world.Block
 	velocity, pos atomic.Value
 
 	*movementComputer
@@ -21,10 +21,15 @@ type FallingBlock struct {
 
 // NewFallingBlock ...
 func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
-	f := &FallingBlock{Block: block, movementComputer: &movementComputer{gravity: 0.04, dragBeforeGravity: true}}
+	f := &FallingBlock{block: block, movementComputer: &movementComputer{gravity: 0.04, dragBeforeGravity: true}}
 	f.pos.Store(pos)
 	f.velocity.Store(mgl64.Vec3{})
 	return f
+}
+
+// Block ...
+func (f *FallingBlock) Block() world.Block {
+	return f.block
 }
 
 // Tick ...
@@ -32,11 +37,11 @@ func (f *FallingBlock) Tick(_ int64) {
 	f.pos.Store(f.tickMovement(f))
 
 	pos := world.BlockPosFromVec3(f.Position())
-	if f.OnGround() || entity_internal.CanSolidify(f.Block, pos, f.World()) {
-		if item_internal.Replaceable(f.World(), pos, f.Block) {
-			f.World().PlaceBlock(pos, f.Block)
+	if f.OnGround() || entity_internal.CanSolidify(f.block, pos, f.World()) {
+		if item_internal.Replaceable(f.World(), pos, f.block) {
+			f.World().PlaceBlock(pos, f.block)
 		} else {
-			if i, ok := f.Block.(world.Item); ok {
+			if i, ok := f.block.(world.Item); ok {
 				itemEntity := NewItem(item.NewStack(i, 1), f.Position())
 				itemEntity.SetVelocity(mgl64.Vec3{})
 				f.World().AddEntity(itemEntity)
@@ -65,7 +70,7 @@ func (f *FallingBlock) Position() mgl64.Vec3 {
 	return f.pos.Load().(mgl64.Vec3)
 }
 
-// World
+// World ...
 func (f *FallingBlock) World() *world.World {
 	w, _ := world.OfEntity(f)
 	return w
@@ -83,8 +88,7 @@ func (f *FallingBlock) Pitch() float64 {
 
 // State ...
 func (f *FallingBlock) State() []state.State {
-	id, _ := world.BlockRuntimeID(f.Block)
-	return []state.State{state.Varied{Variant: int(id)}}
+	return nil
 }
 
 // Velocity ...

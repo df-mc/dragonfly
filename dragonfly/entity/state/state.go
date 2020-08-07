@@ -47,12 +47,6 @@ type Named struct {
 // UsingItem makes an entity show itself as using the item held in its hand.
 type UsingItem struct{}
 
-// Varied specifies a variant of an entity.
-type Varied struct {
-	// Variant is the variant displayed. For falling sand, this is the block's runtime id.
-	Variant int
-}
-
 func (Sneaking) __()      {}
 func (Swimming) __()      {}
 func (Breathing) __()     {}
@@ -62,4 +56,3 @@ func (Immobile) __()      {}
 func (Named) __()         {}
 func (EffectBearing) __() {}
 func (UsingItem) __()     {}
-func (Varied) __()        {}

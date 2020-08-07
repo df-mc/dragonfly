@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -166,7 +165,6 @@ func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World)
 		w.BreakBlock(pos)
 
 		e := entity.NewFallingBlock(b, pos.Vec3())
-		e.SetVelocity(mgl64.Vec3{})
 		w.AddEntity(e)
 	}
 }

@@ -23,7 +23,7 @@ func (c ConcretePowder) CanSolidify(pos world.BlockPos, w *world.World) bool {
 	return water
 }
 
-// NeighbourUpdateTick
+// NeighbourUpdateTick ...
 func (c ConcretePowder) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	for i := world.Face(0); i < 6; i++ {
 		if _, ok := w.Block(pos.Side(i)).(Water); ok {
