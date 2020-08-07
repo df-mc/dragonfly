@@ -232,7 +232,7 @@ func LongSlowFalling() Potion {
 
 // StrongSlowness ...
 func StrongSlowness() Potion {
-	return Potion{42, []effect.Effect{effect.Slowness{}.WithSettings(time.Duration(20)*time.Second, 3, false)}}
+	return Potion{42, []effect.Effect{effect.Slowness{}.WithSettings(time.Duration(20)*time.Second, 4, false)}}
 }
 
 type potion uint8
