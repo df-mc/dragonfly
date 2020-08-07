@@ -66,6 +66,10 @@ func init() {
 	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(Quartz{}, Quartz{Smooth: true})
+	world.RegisterBlock(ChiseledQuartz{})
+	world.RegisterBlock(QuartzPillar{Axis: world.X}, QuartzPillar{Axis: world.Y}, QuartzPillar{Axis: world.Z})
+	world.RegisterBlock(QuartzBricks{})
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
 	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
@@ -77,6 +81,7 @@ func init() {
 	world.RegisterBlock(GoldOre{})
 	world.RegisterBlock(IronOre{})
 	world.RegisterBlock(CoalOre{})
+	world.RegisterBlock(NetherQuartzOre{})
 	world.RegisterBlock(allCocoaBeans()...)
 }
 
@@ -171,6 +176,11 @@ func init() {
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
 	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
+	world.RegisterItem("minecraft:quartz_block", Quartz{})
+	world.RegisterItem("minecraft:quartz_block", Quartz{Smooth: true})
+	world.RegisterItem("minecraft:quartz_block", ChiseledQuartz{})
+	world.RegisterItem("minecraft:quartz_block", QuartzPillar{})
+	world.RegisterItem("minecraft:quartz_bricks", QuartzBricks{})
 	world.RegisterItem("minecraft:glass_pane", GlassPane{})
 	world.RegisterItem("minecraft:iron_bars", IronBars{})
 	world.RegisterItem("minecraft:fence_gate", WoodFenceGate{Wood: wood.Oak()})
@@ -214,6 +224,7 @@ func init() {
 	world.RegisterItem("minecraft:gold_ore", GoldOre{})
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
+	world.RegisterItem("minecraft:quartz_ore", NetherQuartzOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
 }
 
