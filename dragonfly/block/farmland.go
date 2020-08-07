@@ -18,6 +18,8 @@ type Farmland struct {
 	Hydration int
 }
 
+//TODO: Add crop trampling
+
 // NeighbourUpdateTick ...
 func (f Farmland) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if solid := w.Block(pos.Side(world.FaceUp)).Model().FaceSolid(pos.Side(world.FaceUp), world.FaceDown, w); solid {

@@ -24,7 +24,7 @@ func (p Potion) AlwaysConsumable() bool {
 
 // ConsumeDuration ...
 func (p Potion) ConsumeDuration() time.Duration {
-	return defaultConsumeDuration
+	return DefaultConsumeDuration
 }
 
 // Consume ...
