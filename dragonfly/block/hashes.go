@@ -53,6 +53,11 @@ const (
 	hashObsidian
 	hashPlanks
 	hashPumpkin
+	hashQuartzOre
+	hashQuartz
+	hashChiseledQuartz
+	hashQuartzPillar
+	hashQuartzBricks
 	hashSand
 	hashSponge
 	hashStainedTerracotta
