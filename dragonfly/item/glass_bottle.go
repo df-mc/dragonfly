@@ -12,12 +12,10 @@ type GlassBottle struct{}
 
 // UseOnBlock ...
 func (g GlassBottle) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if liquid, ok := w.Liquid(pos); ok {
-		if item_internal.IsWater(w.Block(pos)) && liquid.LiquidDepth() == 8 {
-			ctx.CountSub = 1
-			ctx.NewItem = NewStack(Potion{Type: potion.Water()}, 1)
-			return true
-		}
+	if item_internal.IsWaterSource(w.Block(pos)) {
+		ctx.CountSub = 1
+		ctx.NewItem = NewStack(Potion{Type: potion.Water()}, 1)
+		return true
 	}
 	return false
 }
