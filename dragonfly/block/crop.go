@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"reflect"
 )
 
 // Crop is an interface for all crops that are grown on farmland. A crop has a random chance to grow during random ticks.
@@ -85,10 +84,12 @@ func (c crop) CalculateGrowthChance(pos world.BlockPos, w *world.World) float64 
 }
 
 // sameCrop checks if both blocks are crops and that they are the same type.
-func sameCrop(cropA, cropB world.Block) bool {
-	if cropA, ok := cropA.(Crop); ok {
-		if cropB, ok := cropB.(Crop); ok {
-			return reflect.TypeOf(cropA) == reflect.TypeOf(cropB)
+func sameCrop(blockA, blockB world.Block) bool {
+	if _, ok := blockA.(Crop); ok {
+		if _, ok := blockB.(Crop); ok {
+			nameA, _ := blockA.EncodeBlock()
+			nameB, _ := blockB.EncodeBlock()
+			return nameA == nameB
 		}
 	}
 	return false
