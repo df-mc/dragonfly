@@ -73,12 +73,12 @@ func StrongLeaping() Potion {
 
 // FireResistance ...
 func FireResistance() Potion {
-	return Potion{potion: 12} //TODO
+	return Potion{potion: 12} //TODO: Implement fire resistance
 }
 
 // LongFireResistance ...
 func LongFireResistance() Potion {
-	return Potion{potion: 13} //TODO
+	return Potion{potion: 13} //TODO: Implement fire resistance
 }
 
 // Swiftness ...
