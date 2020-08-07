@@ -26,43 +26,50 @@ func NewEffectManager() *EffectManager {
 // Effect returns the final effect it added to the entity. That might be the effect passed or an effect with
 // a higher level/duration than the one passed.
 func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if e.Level() <= 0 {
 		return e
 	}
-
 	if e.Instant() {
+		m.mu.Unlock()
+
 		e.Apply(entity)
 		return e
 	}
 	t := reflect.TypeOf(e)
+
+	m.mu.Lock()
 	existing, ok := m.effects[t]
 	if !ok {
 		m.effects[t] = e
+		m.mu.Unlock()
+
 		e.Start(entity)
 		return e
 	}
 	if existing.Level() > e.Level() || (existing.Level() == e.Level() && existing.Duration() > e.Duration()) {
+		m.mu.Unlock()
 		return existing
 	}
-	existing.End(entity)
 	m.effects[t] = e
+	m.mu.Unlock()
+
+	existing.End(entity)
 	e.Start(entity)
 	return e
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
 func (m *EffectManager) Remove(e effect.Effect, entity Living) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	t := reflect.TypeOf(e)
-	if existing, ok := m.effects[t]; ok {
+
+	m.mu.Lock()
+	existing, ok := m.effects[t]
+	delete(m.effects, t)
+	m.mu.Unlock()
+
+	if ok {
 		existing.End(entity)
 	}
-	delete(m.effects, t)
 }
 
 // Effects returns a list of all effects currently present in the effect manager. This will never include
@@ -72,8 +79,8 @@ func (m *EffectManager) Effects() []effect.Effect {
 	defer m.mu.Unlock()
 
 	e := make([]effect.Effect, 0, len(m.effects))
-	for _, effect := range m.effects {
-		e = append(e, effect)
+	for _, eff := range m.effects {
+		e = append(e, eff)
 	}
 	return e
 }
@@ -83,20 +90,24 @@ func (m *EffectManager) Effects() []effect.Effect {
 func (m *EffectManager) Tick(entity Living) {
 	m.mu.Lock()
 	e := make([]effect.Effect, 0, len(m.effects))
-	for i, effect := range m.effects {
-		e = append(e, effect)
+	var toEnd []effect.Effect
 
-		m.effects[i] = effect.WithSettings(effect.Duration()-time.Second/20, effect.Level(), effect.AmbientSource())
-		if m.expired(effect) {
+	for i, eff := range m.effects {
+		e = append(e, eff)
+
+		m.effects[i] = eff.WithSettings(eff.Duration()-time.Second/20, eff.Level(), eff.AmbientSource())
+		if m.expired(eff) {
 			delete(m.effects, i)
-			effect.End(entity)
-			continue
+			toEnd = append(toEnd, eff)
 		}
 	}
 	m.mu.Unlock()
 
-	for _, effect := range e {
-		effect.Apply(entity)
+	for _, eff := range e {
+		eff.Apply(entity)
+	}
+	for _, eff := range toEnd {
+		eff.End(entity)
 	}
 }
 

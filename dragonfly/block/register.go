@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
+	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	_ "unsafe" // Imported for compiler directives.
@@ -67,6 +68,10 @@ func init() {
 	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(Quartz{}, Quartz{Smooth: true})
+	world.RegisterBlock(ChiseledQuartz{})
+	world.RegisterBlock(QuartzPillar{Axis: world.X}, QuartzPillar{Axis: world.Y}, QuartzPillar{Axis: world.Z})
+	world.RegisterBlock(QuartzBricks{})
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
 	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})
@@ -78,6 +83,7 @@ func init() {
 	world.RegisterBlock(GoldOre{})
 	world.RegisterBlock(IronOre{})
 	world.RegisterBlock(CoalOre{})
+	world.RegisterBlock(NetherQuartzOre{})
 	world.RegisterBlock(allCocoaBeans()...)
 	world.RegisterBlock(allWheat()...)
 	world.RegisterBlock(allBeetroot()...)
@@ -86,6 +92,9 @@ func init() {
 	world.RegisterBlock(allPumpkinStems()...)
 	world.RegisterBlock(allMelonStems()...)
 	world.RegisterBlock(Melon{})
+	world.RegisterBlock(Sand{}, Sand{Red: true})
+	world.RegisterBlock(Gravel{})
+	world.RegisterBlock(allConcretePowder()...)
 }
 
 func init() {
@@ -126,6 +135,7 @@ func init() {
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: wood.Oak(), Stripped: true})
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
+		world.RegisterItem("minecraft:concretepowder", ConcretePowder{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
 		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:wool", Wool{Colour: c})
@@ -179,6 +189,11 @@ func init() {
 	world.RegisterItem("minecraft:wet_sponge", Sponge{Wet: true})
 	world.RegisterItem("minecraft:lapis_block", LapisBlock{})
 	world.RegisterItem("minecraft:hardened_clay", Terracotta{})
+	world.RegisterItem("minecraft:quartz_block", Quartz{})
+	world.RegisterItem("minecraft:quartz_block", Quartz{Smooth: true})
+	world.RegisterItem("minecraft:quartz_block", ChiseledQuartz{})
+	world.RegisterItem("minecraft:quartz_block", QuartzPillar{})
+	world.RegisterItem("minecraft:quartz_bricks", QuartzBricks{})
 	world.RegisterItem("minecraft:glass_pane", GlassPane{})
 	world.RegisterItem("minecraft:iron_bars", IronBars{})
 	world.RegisterItem("minecraft:fence_gate", WoodFenceGate{Wood: wood.Oak()})
@@ -222,6 +237,7 @@ func init() {
 	world.RegisterItem("minecraft:gold_ore", GoldOre{})
 	world.RegisterItem("minecraft:iron_ore", IronOre{})
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
+	world.RegisterItem("minecraft:quartz_ore", NetherQuartzOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
 	world.RegisterItem("minecraft:wheat_seeds", WheatSeed{})
 	world.RegisterItem("minecraft:beetroot_seeds", BeetrootSeed{})
@@ -230,6 +246,9 @@ func init() {
 	world.RegisterItem("minecraft:pumpkin_seeds", PumpkinSeed{})
 	world.RegisterItem("minecraft:melon_seeds", MelonSeed{})
 	world.RegisterItem("minecraft:melon_block", Melon{})
+	world.RegisterItem("minecraft:sand", Sand{})
+	world.RegisterItem("minecraft:sand", Sand{Red: true})
+	world.RegisterItem("minecraft:gravel", Gravel{})
 }
 
 func init() {
@@ -260,9 +279,13 @@ func init() {
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}
-	item_internal.IsWater = func(b world.Liquid) bool {
+	item_internal.IsWater = func(b world.Block) bool {
 		_, ok := b.(Water)
 		return ok
+	}
+	item_internal.IsWaterSource = func(b world.Block) bool {
+		water, ok := b.(Water)
+		return ok && water.Depth == 8
 	}
 	item_internal.Bonemeal = func(pos world.BlockPos, w *world.World) bool {
 		b := w.Block(pos)
@@ -272,6 +295,13 @@ func init() {
 		return false
 	}
 	item_internal.Replaceable = replaceableWith
+	entity_internal.CanSolidify = func(b world.Block, pos world.BlockPos, w *world.World) bool {
+		gravity, ok := b.(GravityAffected)
+		if !ok {
+			return false
+		}
+		return gravity.CanSolidify(pos, w)
+	}
 }
 
 // readSlice reads an interface slice from a map at the key passed.

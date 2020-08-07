@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item/armour"
 	"github.com/df-mc/dragonfly/dragonfly/item/bucket"
+	"github.com/df-mc/dragonfly/dragonfly/item/potion"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -88,6 +89,8 @@ func init() {
 	world.RegisterItem("minecraft:coal", Coal{})
 	world.RegisterItem("minecraft:netherite_ingot", NetheriteIngot{})
 	world.RegisterItem("minecraft:clay_ball", ClayBall{})
+	world.RegisterItem("minecraft:quartz", NetherQuartz{})
+	world.RegisterItem("minecraft:flint", Flint{})
 
 	world.RegisterItem("minecraft:stick", Stick{})
 
@@ -97,4 +100,9 @@ func init() {
 	world.RegisterItem("minecraft:melon", MelonSlice{})
 
 	world.RegisterItem("minecraft:apple", Apple{})
+
+	world.RegisterItem("minecraft:glass_bottle", GlassBottle{})
+	for _, potion := range potion.All() {
+		world.RegisterItem("minecraft:potion", Potion{Type: potion})
+	}
 }

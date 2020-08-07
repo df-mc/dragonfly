@@ -16,6 +16,7 @@ const (
 	hashCobblestone
 	hashCocoa
 	hashConcrete
+	hashConcretePowder
 	hashCoral
 	hashCoralBlock
 	hashDiamondBlock
@@ -35,6 +36,7 @@ const (
 	hashGoldOre
 	hashGrass
 	hashGrassPath
+	hashGravel
 	hashFenceGate
 	hashIronBars
 	hashIronBlock
@@ -58,6 +60,12 @@ const (
 	hashPotato
 	hashPumpkin
 	hashPumpkinStem
+	hashQuartzOre
+	hashQuartz
+	hashChiseledQuartz
+	hashQuartzPillar
+	hashQuartzBricks
+	hashSand
 	hashSponge
 	hashStainedTerracotta
 	hashStone

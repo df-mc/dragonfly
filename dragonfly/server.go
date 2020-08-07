@@ -187,6 +187,17 @@ func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 	return nil, false
 }
 
+// PlayerByName looks for a player on the server with the name passed. If found, the player is returned and the bool
+// returns holds a true value. If not, the bool is false and the player is nil
+func (server *Server) PlayerByName(name string) (*player.Player, bool) {
+	for _, p := range server.Players() {
+		if p.Name() == name {
+			return p, true
+		}
+	}
+	return nil, false
+}
+
 // SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprintf.
 func (server *Server) SetNamef(format string, a ...interface{}) {
