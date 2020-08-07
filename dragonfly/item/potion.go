@@ -12,6 +12,11 @@ type Potion struct {
 	Type potion.Potion
 }
 
+// MaxCount ...
+func (p Potion) MaxCount() int {
+	return 1
+}
+
 // AlwaysConsumable ...
 func (p Potion) AlwaysConsumable() bool {
 	return true
