@@ -88,9 +88,9 @@ func (q QuartzPillar) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (q Quartz) EncodeBlock() (name string, properties map[string]interface{}) {
 	if q.Smooth {
-		return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "smooth"}
+		return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "smooth", "pillar_axis": "x"}
 	}
-	return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "default"}
+	return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "default", "pillar_axis": "x"}
 }
 
 // Hash ...
@@ -100,7 +100,7 @@ func (q Quartz) Hash() uint64 {
 
 // EncodeBlock ...
 func (ChiseledQuartz) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "chiseled"}
+	return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "chiseled", "pillar_axis": "x"}
 }
 
 // Hash ...

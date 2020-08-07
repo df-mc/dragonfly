@@ -26,7 +26,7 @@ func (NetherQuartzOre) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (NetherQuartzOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "miencraft:quartz_ore", nil
+	return "minecraft:quartz_ore", nil
 }
 
 // Hash ...
