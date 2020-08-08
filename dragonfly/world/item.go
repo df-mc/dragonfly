@@ -33,7 +33,7 @@ type TickerBlock interface {
 // If an item with the ID and meta passed already exists, RegisterItem panics.
 func RegisterItem(name string, item Item) {
 	id, meta := item.EncodeItem()
-	k := (id << 4) | int32(meta)
+	k := (id << 16) | int32(meta)
 	if _, ok := items[k]; ok {
 		panic(fmt.Sprintf("item registered with ID %v and meta %v already exists", id, meta))
 	}
@@ -50,10 +50,10 @@ var names = map[int32]string{}
 // returned and the bool true.
 //lint:ignore U1000 Function is used using compiler directives.
 func itemByID(id int32, meta int16) (Item, bool) {
-	it, ok := items[(id<<4)|int32(meta)]
+	it, ok := items[(id<<16)|int32(meta)]
 	if !ok {
 		// Also try obtaining the item with a metadata value of 0, for cases with durability.
-		it, ok = items[(id<<4)|int32(0)]
+		it, ok = items[(id<<16)|int32(0)]
 	}
 	return it, ok
 }

@@ -1,8 +1,10 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
@@ -42,6 +44,38 @@ type Usable interface {
 	Use(w *world.World, user User, ctx *UseContext) bool
 }
 
+// Consumable represents an item that may consumed by a player. If an item implements this interface, a player
+// may use and hold the item to consume it.
+type Consumable interface {
+	// AlwaysConsumable specifies if the item is always consumable. Normal food can generally only be consumed
+	// when the food bar is not full or when in creative mode. Returning true here means the item can always
+	// be consumed, like golden apples or potions.
+	AlwaysConsumable() bool
+	// ConsumeDuration is the duration consuming the item takes. If the player is using the item for at least
+	// this duration, the item will be consumed and have its Consume method called.
+	ConsumeDuration() time.Duration
+	// Consume consumes one item of the Stack that the Consumable is in. The Stack returned is added back to
+	// the inventory after consuming the item. For potions, for example, an empty bottle is returned.
+	Consume(w *world.World, c Consumer) Stack
+}
+
+// Consumer represents a User that is able to consume Consumable items.
+type Consumer interface {
+	User
+	// Saturate saturates the Consumer's food bar by the amount of food points passed and the saturation by
+	// up to as many saturation points as passed. The final saturation will never exceed the final food level.
+	Saturate(food int, saturation float64)
+	// AddEffect adds an effect.Effect to the Consumer. If the effect is instant, it is applied to the Consumer
+	// immediately. If not, the effect is applied to the consumer every time the Tick method is called.
+	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
+	// if the effects' levels are equal and the new effect has a longer duration.
+	AddEffect(e effect.Effect)
+}
+
+// DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
+// time to be consumed.
+const DefaultConsumeDuration = (time.Second * 161) / 100
+
 // UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
 // after the action is complete.
 type UseContext struct {
@@ -51,6 +85,8 @@ type UseContext struct {
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack
+	// NewItemSurvivalOnly will add any new items only in survival mode.
+	NewItemSurvivalOnly bool
 }
 
 // DamageItem damages the item used by d points.

@@ -1,14 +1,13 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"reflect"
 )
 
-// Register registers an entity.Effect with a specific ID to translate from and to on disk and network. An
-// entity.Effect instance may be created by creating a struct instance in this package like
+// Register registers an Effect with a specific ID to translate from and to on disk and network. An Effect
+// instance may be created by creating a struct instance in this package like
 // effect.Regeneration{}.
-func Register(id int, e entity.Effect) {
+func Register(id int, e Effect) {
 	effects[id] = e
 	effectIds[reflect.TypeOf(e)] = id
 }
@@ -47,7 +46,7 @@ func init() {
 }
 
 var (
-	effects   = map[int]entity.Effect{}
+	effects   = map[int]Effect{}
 	effectIds = map[reflect.Type]int{}
 )
 
@@ -55,7 +54,7 @@ var (
 // is returned and the bool true.
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
-func effectByID(id int) (entity.Effect, bool) {
+func effectByID(id int) (Effect, bool) {
 	effect, ok := effects[id]
 	return effect, ok
 }
@@ -64,7 +63,7 @@ func effectByID(id int) (entity.Effect, bool) {
 // the bool true.
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
-func idByEffect(e entity.Effect) (int, bool) {
+func idByEffect(e Effect) (int, bool) {
 	id, ok := effectIds[reflect.TypeOf(e)]
 	return id, ok
 }

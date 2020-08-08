@@ -173,6 +173,17 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Item:            stackFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
 		})
+	case *entity.FallingBlock:
+		s.writePacket(&packet.AddActor{
+			EntityUniqueID:  int64(runtimeID),
+			EntityRuntimeID: runtimeID,
+			EntityType:      "minecraft:falling_block",
+			EntityMetadata:  map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))},
+			Position:        vec64To32(e.Position()),
+			Pitch:           float32(e.Pitch()),
+			Yaw:             float32(e.Yaw()),
+			HeadYaw:         float32(e.Yaw()),
+		})
 	default:
 		s.writePacket(&packet.AddActor{
 			EntityUniqueID:  int64(runtimeID),
@@ -219,7 +230,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
 			Pitch:           float32(e.Pitch() + deltaPitch),
 			Yaw:             float32(e.Yaw() + deltaYaw),
 			HeadYaw:         float32(e.Yaw() + deltaYaw),
@@ -232,7 +243,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 		}
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
 			Rotation:        vec64To32(mgl64.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw}),
 			Flags:           flags,
 		})
@@ -248,14 +259,16 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 }
 
 // entityOffset returns the offset that entities have client-side.
-func entityOffset(e world.Entity) float64 {
+func entityOffset(e world.Entity) mgl64.Vec3 {
 	switch e.(type) {
 	case Controllable:
-		return 1.62
+		return mgl64.Vec3{0, 1.62}
 	case *entity.Item:
-		return 0.125
+		return mgl64.Vec3{0, 0.125}
+	case *entity.FallingBlock:
+		return mgl64.Vec3{0.5, 0.49, 0.5}
 	}
-	return 0
+	return mgl64.Vec3{}
 }
 
 // ViewTime ...
@@ -279,7 +292,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(position.Add(entityOffset(e))),
 			Pitch:           float32(e.Pitch()),
 			Yaw:             float32(e.Yaw()),
 			HeadYaw:         float32(e.Yaw()),
@@ -288,7 +301,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	default:
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(mgl64.Vec3{0, entityOffset(e)})),
+			Position:        vec64To32(position.Add(entityOffset(e))),
 			Rotation:        vec64To32(mgl64.Vec3{e.Pitch(), e.Yaw()}),
 			Flags:           packet.MoveFlagTeleport,
 		})
@@ -349,6 +362,11 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.Bonemeal:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleCropGrowth,
+			Position:  vec64To32(pos),
+		})
 	case particle.BlockForceField:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleBlockForceField,
@@ -377,6 +395,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.Burp:
+		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundDoor,
@@ -471,6 +491,16 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			ItemEntityRuntimeID:  s.entityRuntimeID(e),
 			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector.(world.Entity)),
 		})
+	case action.Eat:
+		if user, ok := e.(item.User); ok {
+			held, _ := user.HeldItems()
+			id, meta := held.Item().(world.Item).EncodeItem()
+			s.writePacket(&packet.ActorEvent{
+				EntityRuntimeID: s.entityRuntimeID(e),
+				EventType:       packet.ActorEventEatingItem,
+				EventData:       (id << 16) | int32(meta),
+			})
+		}
 	}
 }
 
@@ -491,6 +521,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagNoAI)
 		case state.Swimming:
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
+		case state.UsingItem:
+			m.setFlag(dataKeyFlags, dataFlagUsingItem)
 		case state.Named:
 			m[dataKeyNameTag] = st.NameTag
 		case state.EffectBearing:

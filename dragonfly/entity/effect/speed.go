@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -12,19 +12,23 @@ type Speed struct {
 }
 
 // Start ...
-func (s Speed) Start(e entity.Living) {
+func (s Speed) Start(e world.Entity) {
 	speed := 1 + float64(s.Lvl)*0.2
-	e.SetSpeed(e.Speed() * speed)
+	if living, ok := e.(living); ok {
+		living.SetSpeed(living.Speed() * speed)
+	}
 }
 
 // End ...
-func (s Speed) End(e entity.Living) {
+func (s Speed) End(e world.Entity) {
 	speed := 1 + float64(s.Lvl)*0.2
-	e.SetSpeed(e.Speed() / speed)
+	if living, ok := e.(living); ok {
+		living.SetSpeed(living.Speed() / speed)
+	}
 }
 
 // WithSettings ...
-func (s Speed) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (s Speed) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Speed{s.withSettings(d, level, ambient)}
 }
 

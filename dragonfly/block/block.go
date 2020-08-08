@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -48,10 +49,16 @@ type BeaconSource interface {
 	PowersBeacon() bool
 }
 
+// BonemealAffected represents a block that is affected when bonemeal is used on it.
+type BonemealAffected interface {
+	// Bonemeal attempts to affect the block.
+	Bonemeal(pos world.BlockPos, w *world.World) bool
+}
+
 // beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
 type beaconAffected interface {
 	// AddEffect adds a specific effect to the entity that implements this interface.
-	AddEffect(e entity.Effect)
+	AddEffect(e effect.Effect)
 
 	// BeaconAffected returns whether this entity can be powered by a beacon.
 	BeaconAffected() bool
@@ -140,4 +147,30 @@ type transparent struct{}
 // LightDiffusionLevel ...
 func (transparent) LightDiffusionLevel() uint8 {
 	return 0
+}
+
+// GravityAffected represents blocks affected by gravity.
+type GravityAffected interface {
+	// CanSolidify returns whether the falling block can return back to a normal block without being on the ground.
+	CanSolidify(pos world.BlockPos, w *world.World) bool
+}
+
+// gravityAffected is a struct that may be embedded for blocks affected by gravity.
+type gravityAffected struct{}
+
+// CanSolidify ...
+func (g gravityAffected) CanSolidify(world.BlockPos, *world.World) bool {
+	return false
+}
+
+// fall spawns a falling block entity at the given position.
+func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World) {
+	_, air := w.Block(pos.Side(world.FaceDown)).(Air)
+	_, liquid := w.Liquid(pos.Side(world.FaceDown))
+	if air || liquid {
+		w.BreakBlock(pos)
+
+		e := entity.NewFallingBlock(b, pos.Vec3())
+		w.AddEntity(e)
+	}
 }

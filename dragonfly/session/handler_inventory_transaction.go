@@ -5,10 +5,13 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"time"
 )
 
 // InventoryTransactionHandler handles the InventoryTransaction packet.
-type InventoryTransactionHandler struct{}
+type InventoryTransactionHandler struct {
+	lastUseItemOnBlock time.Time
+}
 
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
@@ -18,16 +21,30 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	case *protocol.NormalTransactionData:
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions so we're best off making sure the client and server stay in sync.
-		h.resendInventories(s)
 		if err := h.handleNormalTransaction(pk, s); err != nil {
 			s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: failed verifying actions in Normal transaction: %w\n", s.conn.RemoteAddr(), s.c.Name(), err)
 			return nil
 		}
+		h.resendInventories(s)
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
+		held, _ := s.c.HeldItems()
+		if !held.Equal(stackToItem(data.HeldItem)) {
+			return nil
+		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
+		held, _ := s.c.HeldItems()
+		if !held.Equal(stackToItem(data.HeldItem)) {
+			return nil
+		}
 		return h.handleUseItemTransaction(data, s)
+	case *protocol.ReleaseItemTransactionData:
+		held, _ := s.c.HeldItems()
+		if !held.Equal(stackToItem(data.HeldItem)) {
+			return nil
+		}
+		return h.handleReleaseItemTransaction(data, s)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -103,14 +120,33 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
+		if name, _ := s.c.World().Block(pos).EncodeBlock(); name == "minecraft:farmland" {
+			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
+			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
+			// UseItem action, so we just release immediately after if that happens to be the case.
+			h.lastUseItemOnBlock = time.Now()
+		}
+
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
 		s.sendInv(s.inv, protocol.WindowIDInventory)
 		s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
+		if time.Since(h.lastUseItemOnBlock) < time.Second/20 {
+			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
+			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
+			// UseItem action, so we just release immediately after if that happens to be the case.
+			s.c.ReleaseItem()
+		}
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
 	}
+	return nil
+}
+
+// handleReleaseItemTransaction ...
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(data *protocol.ReleaseItemTransactionData, s *Session) error {
+	s.c.ReleaseItem()
 	return nil
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
+	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/armour"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -69,7 +70,9 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible, immobile, onGround atomic.Bool
+	sneaking, sprinting, swimming, invisible,
+	immobile, onGround, usingItem atomic.Bool
+	usingSince atomic.Int64
 
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
@@ -550,13 +553,13 @@ func (p *Player) sendFood() {
 // immediately. If not, the effect is applied to the player every time the Tick method is called.
 // AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 // if the effects' levels are equal and the new effect has a longer duration.
-func (p *Player) AddEffect(e entity.Effect) {
+func (p *Player) AddEffect(e effect.Effect) {
 	p.session().SendEffect(p.effects.Add(e, p))
 	p.updateState()
 }
 
 // RemoveEffect removes any effect that might currently be active on the Player.
-func (p *Player) RemoveEffect(e entity.Effect) {
+func (p *Player) RemoveEffect(e effect.Effect) {
 	p.effects.Remove(e, p)
 	p.session().SendEffectRemoval(e)
 	p.updateState()
@@ -564,7 +567,7 @@ func (p *Player) RemoveEffect(e entity.Effect) {
 
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
 // expired when returned.
-func (p *Player) Effects() []entity.Effect {
+func (p *Player) Effects() []effect.Effect {
 	return p.effects.Effects()
 }
 
@@ -675,10 +678,10 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !p.sprinting.CAS(false, true) {
+	if !p.hunger.canSprint() && (p.GameMode() != gamemode.Creative{}) {
 		return
 	}
-	if !p.hunger.canSprint() {
+	if !p.sprinting.CAS(false, true) {
 		return
 	}
 	p.StopSneaking()
@@ -843,21 +846,58 @@ func (p *Player) UseItem() {
 	p.handler().HandleItemUse(ctx)
 
 	ctx.Continue(func() {
-		usable, ok := i.Item().(item.Usable)
-		if !ok {
-			// The item wasn't usable, so we can stop doing anything right away.
-			return
-		}
-		ctx := &item.UseContext{}
-		if usable.Use(p.World(), p, ctx) {
-			// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
-			// reason to swing the arm.
-			p.swingArm()
+		switch usable := i.Item().(type) {
+		case item.Usable:
+			ctx := &item.UseContext{}
+			if usable.Use(p.World(), p, ctx) {
+				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
+				// reason to swing the arm.
+				p.swingArm()
 
-			p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
-			p.addNewItem(ctx)
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+				p.addNewItem(ctx)
+			}
+		case item.Consumable:
+			if !usable.AlwaysConsumable() && (p.GameMode() != gamemode.Creative{}) && p.Food() >= 20 {
+				// The item.Consumable is not always consumable, the player is not in creative mode and the
+				// food bar is filled: The item cannot be consumed.
+				p.ReleaseItem()
+				return
+			}
+			if !p.usingItem.CAS(false, true) {
+				// The player is currently using the item held. This is a signal the item was consumed, so we
+				// consume it and start using it again.
+				// Due to the network overhead and latency, the duration might sometimes be a little off. We
+				// slightly increase the duration to combat this.
+				duration := time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
+
+				held, left := p.HeldItems()
+				if duration < usable.ConsumeDuration() {
+					// The required duration for consuming this item was not met, so we don't consume it.
+					return
+				}
+				p.SetHeldItems(p.subtractItem(held, 1), left)
+				p.addNewItem(&item.UseContext{NewItem: usable.Consume(p.World(), p)})
+				p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+				return
+			}
+			p.usingSince.Store(time.Now().UnixNano())
+			p.updateState()
 		}
 	})
+}
+
+// ReleaseItem makes the Player release the item it is currently using. This is only applicable for items that
+// implement the item.Consumable interface.
+// If the Player is not currently using any item, ReleaseItem returns immediately.
+// ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
+// the item started being used.
+func (p *Player) ReleaseItem() {
+	if p.usingItem.CAS(true, false) {
+		p.updateState()
+
+		// TODO: Release items such as bows.
+	}
 }
 
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
@@ -888,7 +928,6 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 		if i.Empty() {
 			return
 		}
-
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
 			ctx := &item.UseContext{}
@@ -897,7 +936,6 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
-
 		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
 			// The item IS a block, meaning it is being placed.
 			replacedPos := pos
@@ -1247,9 +1285,10 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		return
 	}
 
-	block := p.World().Block(pos)
-	if i, ok := block.(world.Item); ok {
+	b := p.World().Block(pos)
+	if i, ok := b.(world.Item); ok {
 		copiedItem := item.NewStack(i, 1)
+		copiedItem = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(copiedItem, false), nil)
 
 		slot, found := p.Inventory().First(copiedItem)
 
@@ -1258,16 +1297,16 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		}
 
 		ctx := event.C()
-		p.handler().HandleBlockPick(ctx, pos, block)
+		p.handler().HandleBlockPick(ctx, pos, b)
 
 		ctx.Continue(func() {
 			_, offhand := p.HeldItems()
 
 			if found {
 				if slot < 9 {
-					p.session().SetHeldSlot(slot)
+					_ = p.session().SetHeldSlot(slot)
 				} else {
-					p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+					_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
 				}
 			} else {
 				firstEmpty, emptyFound := p.Inventory().FirstEmpty()
@@ -1275,10 +1314,10 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 				if !emptyFound {
 					p.SetHeldItems(copiedItem, offhand)
 				} else if firstEmpty < 8 {
-					p.session().SetHeldSlot(firstEmpty)
-					p.Inventory().SetItem(firstEmpty, copiedItem)
+					_ = p.session().SetHeldSlot(firstEmpty)
+					_ = p.Inventory().SetItem(firstEmpty, copiedItem)
 				} else {
-					p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+					_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
 					p.SetHeldItems(copiedItem, offhand)
 				}
 			}
@@ -1324,6 +1363,8 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 		}
 		p.pos.Store(p.Position().Add(deltaPos))
 
+		// The vertical axis isn't relevant for calculation of exhaustion points.
+		deltaPos[1] = 0
 		if p.Swimming() {
 			p.Exhaust(0.01 * deltaPos.Len())
 		} else if p.Sprinting() {
@@ -1448,6 +1489,16 @@ func (p *Player) Tick(current int64) {
 	p.effects.Tick(p)
 	if p.Position()[1] < 0 && p.survival() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
+	}
+
+	if current%4 == 0 && p.usingItem.Load() {
+		held, _ := p.HeldItems()
+		if _, ok := held.Item().(item.Consumable); ok {
+			// Eating particles seem to happen roughly ever 5 ticks.
+			for _, v := range p.World().Viewers(p.Position()) {
+				v.ViewEntityAction(p, action.Eat{})
+			}
+		}
 	}
 }
 
@@ -1578,6 +1629,9 @@ func (p *Player) State() (s []state.State) {
 	if p.immobile.Load() {
 		s = append(s, state.Immobile{})
 	}
+	if p.usingItem.Load() {
+		s = append(s, state.UsingItem{})
+	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {
 		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
@@ -1660,7 +1714,7 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // addNewItem adds the new item of the context passed to the inventory.
 func (p *Player) addNewItem(ctx *item.UseContext) {
-	if !p.survival() || ctx.NewItem.Empty() {
+	if (ctx.NewItemSurvivalOnly && !p.survival()) || ctx.NewItem.Empty() {
 		return
 	}
 	held, left := p.HeldItems()
@@ -1668,8 +1722,11 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		p.SetHeldItems(ctx.NewItem, left)
 		return
 	}
-	// TODO: Drop item entities when inventory is full.
-	_, _ = p.Inventory().AddItem(ctx.NewItem)
+	n, err := p.Inventory().AddItem(ctx.NewItem)
+	if err != nil {
+		// Not all items could be added to the inventory, so drop the rest.
+		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
+	}
 }
 
 // canReach checks if a player can reach a position with its current range. The range depends on if the player

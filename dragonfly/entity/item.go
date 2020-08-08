@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
+	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -29,6 +30,8 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.Count() - i.MaxCount())
 	}
+	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
+
 	it := &Item{i: i, movementComputer: &movementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,

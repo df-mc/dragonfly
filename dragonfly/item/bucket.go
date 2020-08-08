@@ -73,6 +73,7 @@ func (b Bucket) fillFrom(pos world.BlockPos, w *world.World, ctx *UseContext) bo
 	} else {
 		ctx.NewItem = NewStack(Bucket{Content: bucket.Lava()}, 1)
 	}
+	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true
 }

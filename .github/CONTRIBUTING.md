@@ -4,7 +4,7 @@ First of all, thank you for your interest in contributing to Dragonfly. :+1:
 
 The following is a set of guidelines for contributing to Dragonfly. These are guidelines and in
 general it is recommended to stick to them when contributing, but you should use your best
-judgement when contributing. Feel free to propose changes to this document in our Discord.
+judgement. Feel free to propose changes to this document in our Discord.
 
 ### Pull Requests
 In general, it is recommended to discuss any changes you would like to make in our Discord to
@@ -38,6 +38,9 @@ opening a pull request:
   you should attempt to do so to the extent that you can. Specific smaller features part of the
   pull request that cannot be implemented yet should be marked with a `// TODO: ...` comment so
   that we can implement these once the required functionality is present.
+* When you open a PR, we assume you have tested your code and made sure it is working as intended.
+  As a general recommendation, you should enable the Minecraft Content Log in the Profile settings
+  so that it becomes obvious when invalid data is sent to the client.
   
 If you run into a problem or otherwise need help with your pull request, please feel free to reach
 out to us on Discord, so we can work towards a complete pull request together.

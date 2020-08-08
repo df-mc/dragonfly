@@ -279,6 +279,12 @@ func (s Stack) AddStack(s2 Stack) (a, b Stack) {
 	return s, s2
 }
 
+// Equal checks if the two stacks are equal. Equal is equivalent to a Stack.Comparable check while also
+// checking the count.
+func (s Stack) Equal(s2 Stack) bool {
+	return s.Comparable(s2) && s.count == s2.count
+}
+
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
 // equal item type and have equal enchantments, lore and custom names, or if one of the stacks is empty.
 func (s Stack) Comparable(s2 Stack) bool {

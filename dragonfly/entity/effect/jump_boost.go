@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"image/color"
 	"time"
 )
@@ -13,7 +12,7 @@ type JumpBoost struct {
 }
 
 // WithSettings ...
-func (j JumpBoost) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (j JumpBoost) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return JumpBoost{j.withSettings(d, level, ambient)}
 }
 
