@@ -6,6 +6,7 @@ package mcdb
 //noinspection SpellCheckingInspection
 type data struct {
 	BaseGameVersion                string `nbt:"baseGameVersion"`
+	BiomeOverride                  string
 	ConfirmedPlatformLockedContent bool
 	CenterMapsToOrigin             bool
 	Difficulty                     int32
@@ -22,6 +23,8 @@ type data struct {
 	LimitedWorldOriginX            int32
 	LimitedWorldOriginY            int32
 	LimitedWorldOriginZ            int32
+	LimitedWorldDepth              int32 `nbt:"limitedWorldDepth"`
+	LimitedWorldWidth              int32 `nbt:"limitedWorldWidth"`
 	MinimumCompatibleClientVersion []int32
 	MultiPlayerGame                bool `nbt:"MultiplayerGame"`
 	MultiPlayerGameIntent          bool `nbt:"MultiplayerGameIntent"`
@@ -31,6 +34,7 @@ type data struct {
 	PlatformBroadcastIntent        int32
 	RandomSeed                     int64
 	ShowTags                       bool `nbt:"showtags"`
+	SingleUseWorld                 bool `nbt:"isSingleUseWorld"`
 	SpawnX, SpawnY, SpawnZ         int32
 	SpawnV1Villagers               bool
 	StorageVersion                 int32
