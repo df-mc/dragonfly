@@ -301,6 +301,7 @@ func (server *Server) run() {
 func (server *Server) handleConn(conn *minecraft.Conn) {
 	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
+		Yaw:            90,
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre()),
