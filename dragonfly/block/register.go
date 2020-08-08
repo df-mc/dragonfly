@@ -22,6 +22,7 @@ func init() {
 	world.RegisterBlock(Grass{}, GrassPath{})
 	world.RegisterBlock(Dirt{}, Dirt{Coarse: true})
 	world.RegisterBlock(Cobblestone{}, Cobblestone{Mossy: true})
+	world.RegisterBlock(allFarmland()...)
 	world.RegisterBlock(allKelp()...)
 	world.RegisterBlock(allLogs()...)
 	world.RegisterBlock(allLeaves()...)
@@ -84,6 +85,13 @@ func init() {
 	world.RegisterBlock(CoalOre{})
 	world.RegisterBlock(NetherQuartzOre{})
 	world.RegisterBlock(allCocoaBeans()...)
+	world.RegisterBlock(allWheat()...)
+	world.RegisterBlock(allBeetroot()...)
+	world.RegisterBlock(allPotato()...)
+	world.RegisterBlock(allCarrot()...)
+	world.RegisterBlock(allPumpkinStems()...)
+	world.RegisterBlock(allMelonStems()...)
+	world.RegisterBlock(Melon{})
 	world.RegisterBlock(Sand{}, Sand{Red: true})
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(allConcretePowder()...)
@@ -231,6 +239,13 @@ func init() {
 	world.RegisterItem("minecraft:coal_ore", CoalOre{})
 	world.RegisterItem("minecraft:quartz_ore", NetherQuartzOre{})
 	world.RegisterItem("minecraft:dye", CocoaBean{})
+	world.RegisterItem("minecraft:wheat_seeds", WheatSeeds{})
+	world.RegisterItem("minecraft:beetroot_seeds", BeetrootSeeds{})
+	world.RegisterItem("minecraft:potato", Potato{})
+	world.RegisterItem("minecraft:carrot", Carrot{})
+	world.RegisterItem("minecraft:pumpkin_seeds", PumpkinSeeds{})
+	world.RegisterItem("minecraft:melon_seeds", MelonSeeds{})
+	world.RegisterItem("minecraft:melon_block", Melon{})
 	world.RegisterItem("minecraft:sand", Sand{})
 	world.RegisterItem("minecraft:sand", Sand{Red: true})
 	world.RegisterItem("minecraft:gravel", Gravel{})
@@ -240,6 +255,8 @@ func init() {
 	item_internal.Air = Air{}
 	item_internal.Grass = Grass{}
 	item_internal.GrassPath = GrassPath{}
+	item_internal.Farmland = Farmland{Hydration: 0}
+	item_internal.Dirt = Dirt{}
 	item_internal.IsUnstrippedLog = func(b world.Block) bool {
 		l, ok := b.(Log)
 		return ok && !l.Stripped
@@ -269,6 +286,13 @@ func init() {
 	item_internal.IsWaterSource = func(b world.Block) bool {
 		water, ok := b.(Water)
 		return ok && water.Depth == 8
+	}
+	item_internal.Bonemeal = func(pos world.BlockPos, w *world.World) bool {
+		b := w.Block(pos)
+		if bonemealAffected, ok := b.(BonemealAffected); ok {
+			return bonemealAffected.Bonemeal(pos, w)
+		}
+		return false
 	}
 	item_internal.Replaceable = replaceableWith
 	entity_internal.CanSolidify = func(b world.Block, pos world.BlockPos, w *world.World) bool {

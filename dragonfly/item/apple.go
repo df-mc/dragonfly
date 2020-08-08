@@ -15,7 +15,7 @@ func (a Apple) AlwaysConsumable() bool {
 
 // ConsumeDuration ...
 func (a Apple) ConsumeDuration() time.Duration {
-	return defaultConsumeDuration
+	return DefaultConsumeDuration
 }
 
 // Consume ...

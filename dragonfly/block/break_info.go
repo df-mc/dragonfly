@@ -99,7 +99,7 @@ var shearsEffective = func(t tool.Tool) bool {
 	return t.ToolType() == tool.TypeShears
 }
 
-// shovelEffective is a convenience function for blocks that are effectively mined with an axe.
+// shovelEffective is a convenience function for blocks that are effectively mined with a shovel.
 var shovelEffective = func(t tool.Tool) bool {
 	return t.ToolType() == tool.TypeShovel
 }

@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // GlassPane is a transparent block that can be used as a more efficient alternative to glass blocks.
@@ -9,6 +10,17 @@ type GlassPane struct {
 	noNBT
 	transparent
 	thin
+}
+
+// CanDisplace ...
+func (p GlassPane) CanDisplace(b world.Liquid) bool {
+	_, water := b.(Water)
+	return water
+}
+
+// SideClosed ...
+func (p GlassPane) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+	return false
 }
 
 // BreakInfo ...
