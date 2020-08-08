@@ -13,15 +13,15 @@ type Bricks struct {
 // BreakInfo ...
 func (b Bricks) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness: 2,
+		Hardness:    2,
 		Harvestable: pickaxeHarvestable,
-		Effective: pickaxeEffective,
-		Drops: simpleDrops(item.NewStack(b, 1)),
+		Effective:   pickaxeEffective,
+		Drops:       simpleDrops(item.NewStack(b, 1)),
 	}
 }
 
 // EncodeItem ...
-func (Bricks) EncodeItem() (id int32, meta int16){
+func (Bricks) EncodeItem() (id int32, meta int16) {
 	return 45, 0
 }
 
