@@ -105,6 +105,7 @@ func (server *Server) Run() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
+	server.World().Generator(generator.Flat{})
 	if err := server.startListening(); err != nil {
 		return err
 	}
@@ -124,6 +125,7 @@ func (server *Server) Start() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
+	server.World().Generator(generator.Flat{})
 	if err := server.startListening(); err != nil {
 		return err
 	}
@@ -283,7 +285,6 @@ func (server *Server) startListening() error {
 // run runs the server, continuously accepting new connections from players. It returns when the server is
 // closed by a call to Close.
 func (server *Server) run() {
-	server.World().Generator(generator.Flat{})
 	for {
 		c, err := server.listener.Accept()
 		if err != nil {
