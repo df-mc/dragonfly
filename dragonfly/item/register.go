@@ -100,7 +100,6 @@ func init() {
 	world.RegisterItem("minecraft:melon", MelonSlice{})
 
 	world.RegisterItem("minecraft:apple", Apple{})
-
 	world.RegisterItem("minecraft:bricks", Brick{})
 
 	world.RegisterItem("minecraft:glass_bottle", GlassBottle{})
