@@ -1438,10 +1438,12 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	// We allocate a new map for all block entities.
 	m := make([]map[string]interface{}, 0, len(c.e))
 	for pos, b := range c.e {
-		// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
-		data := b.(NBTer).EncodeNBT()
-		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		m = append(m, data)
+		if n, ok := b.(NBTer); ok {
+			// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
+			data := n.EncodeNBT()
+			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+			m = append(m, data)
+		}
 	}
 	if !w.rdonly.Load() {
 		c.Compact()

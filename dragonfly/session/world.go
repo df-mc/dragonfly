@@ -77,9 +77,11 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	raw := bytes.NewBuffer(make([]byte, 1, 32))
 	enc := nbt.NewEncoderWithEncoding(raw, nbt.NetworkLittleEndian)
 	for pos, b := range blockEntities {
-		data := b.(world.NBTer).EncodeNBT()
-		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		_ = enc.Encode(enc)
+		if n, ok := b.(world.NBTer); ok {
+			data := n.EncodeNBT()
+			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+			_ = enc.Encode(enc)
+		}
 	}
 
 	s.writePacket(&packet.LevelChunk{
@@ -117,9 +119,11 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 
 	enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
 	for pos, b := range blockEntities {
-		data := b.(world.NBTer).EncodeNBT()
-		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		_ = enc.Encode(enc)
+		if n, ok := b.(world.NBTer); ok {
+			data := n.EncodeNBT()
+			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+			_ = enc.Encode(enc)
+		}
 	}
 
 	s.writePacket(&packet.LevelChunk{
