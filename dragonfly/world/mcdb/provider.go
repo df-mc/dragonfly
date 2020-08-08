@@ -70,7 +70,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.LevelName = "World"
 	p.d.SpawnY = 128
-	p.d.GameType = 2
+	p.d.GameType = 1
 	p.d.StorageVersion = 8
 	p.d.Generator = 1
 	p.d.NetworkVersion = protocol.CurrentProtocol
