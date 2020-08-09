@@ -19,13 +19,13 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
+		h.resendInventories(s)
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s); err != nil {
 			s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: failed verifying actions in Normal transaction: %w\n", s.conn.RemoteAddr(), s.c.Name(), err)
 			return nil
 		}
-		h.resendInventories(s)
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
 		held, _ := s.c.HeldItems()
@@ -75,10 +75,11 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if newItem.Count() > actual.Count() {
 				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())
 			}
-			// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
-			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
-			if s.c.Drop(actual.Grow(newItem.Count()-actual.Count())) != 0 {
-				s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			if newHeld, _ := s.c.HeldItems(); newHeld.Equal(actual.Grow(-newItem.Count())) {
+				// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
+				// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
+				s.c.Drop(actual.Grow(newItem.Count() - actual.Count()))
 			}
 		default:
 			// Ignore inventory actions we don't explicitly handle.
