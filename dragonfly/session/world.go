@@ -80,7 +80,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 		if n, ok := b.(world.NBTer); ok {
 			data := n.EncodeNBT()
 			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-			_ = enc.Encode(enc)
+			_ = enc.Encode(data)
 		}
 	}
 
@@ -122,7 +122,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 		if n, ok := b.(world.NBTer); ok {
 			data := n.EncodeNBT()
 			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-			_ = enc.Encode(enc)
+			_ = enc.Encode(data)
 		}
 	}
 
