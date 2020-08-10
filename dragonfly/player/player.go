@@ -762,8 +762,11 @@ func (p *Player) SetInvisible() {
 }
 
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
-// visible, nothing happens.
+// visible, or if the player is in spectator mode, nothing happens.
 func (p *Player) SetVisible() {
+	if (p.GameMode() == gamemode.Spectator{}) {
+		return
+	}
 	if !p.invisible.CAS(true, false) {
 		return
 	}
@@ -819,9 +822,22 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 // with the world that it is in.
 func (p *Player) SetGameMode(mode gamemode.GameMode) {
 	p.gameModeMu.Lock()
+	previous := p.gameMode
 	p.gameMode = mode
 	p.gameModeMu.Unlock()
+
 	p.session().SendGameMode(mode)
+
+	if (mode == gamemode.Spectator{}) {
+		p.SetInvisible()
+	} else if (mode != gamemode.Spectator{}) && (previous == gamemode.Spectator{}) {
+		for _, eff := range p.Effects() {
+			if _, ok := eff.(effect.Invisibility); ok {
+				return
+			}
+		}
+		p.SetVisible()
+	}
 }
 
 // GameMode returns the current game mode assigned to the player. If not changed, the game mode returned will
