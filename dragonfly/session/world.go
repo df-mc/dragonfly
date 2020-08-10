@@ -399,6 +399,16 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.Click:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundClick,
+			Position:  vec64To32(pos),
+		})
+	case sound.Pop:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundPop,
+			Position:  vec64To32(pos),
+		})
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:

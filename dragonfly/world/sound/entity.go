@@ -11,3 +11,6 @@ type Attack struct {
 
 // Burp is a sound played when a player finishes eating an item.
 type Burp struct{ sound }
+
+// Pop is a sound played when a chicken lays an egg.
+type Pop struct{ sound }

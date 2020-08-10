@@ -1608,6 +1608,12 @@ func (p *Player) EyeHeight() float64 {
 	return 1.62
 }
 
+// PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
+// to players around it.
+func (p *Player) PlaySound(sound world.Sound) {
+	p.session().ViewSound(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}), sound)
+}
+
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {
