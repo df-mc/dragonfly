@@ -30,9 +30,10 @@ type World struct {
 	lastPos   ChunkPos
 	lastChunk *chunkData
 
-	stopTick    context.Context
-	cancelTick  context.CancelFunc
-	doneTicking chan struct{}
+	stopTick         context.Context
+	cancelTick       context.CancelFunc
+	stopCacheJanitor chan struct{}
+	doneTicking      chan struct{}
 
 	gameModeMu      sync.RWMutex
 	defaultGameMode gamemode.GameMode
@@ -80,21 +81,22 @@ type World struct {
 func New(log *logrus.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		r:               rand.New(rand.NewSource(time.Now().Unix())),
-		blockUpdates:    map[BlockPos]int64{},
-		defaultGameMode: gamemode.Survival{},
-		difficulty:      difficulty.Normal{},
-		prov:            NoIOProvider{},
-		gen:             NopGenerator{},
-		handler:         NopHandler{},
-		doneTicking:     make(chan struct{}),
-		simDistSq:       int32(simulationDistance * simulationDistance),
-		randomTickSpeed: *atomic.NewUint32(3),
-		unixTime:        *atomic.NewInt64(time.Now().Unix()),
-		log:             log,
-		stopTick:        ctx,
-		cancelTick:      cancel,
-		name:            *atomic.NewString("World"),
+		r:                rand.New(rand.NewSource(time.Now().Unix())),
+		blockUpdates:     map[BlockPos]int64{},
+		defaultGameMode:  gamemode.Survival{},
+		difficulty:       difficulty.Normal{},
+		prov:             NoIOProvider{},
+		gen:              NopGenerator{},
+		handler:          NopHandler{},
+		doneTicking:      make(chan struct{}),
+		stopCacheJanitor: make(chan struct{}),
+		simDistSq:        int32(simulationDistance * simulationDistance),
+		randomTickSpeed:  *atomic.NewUint32(3),
+		unixTime:         *atomic.NewInt64(time.Now().Unix()),
+		log:              log,
+		stopTick:         ctx,
+		cancelTick:       cancel,
+		name:             *atomic.NewString("World"),
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -1473,6 +1475,14 @@ func (w *World) initChunkCache() {
 	w.chunkMu.Unlock()
 }
 
+// CloseChunkCacheJanitor closes the chunk cache janitor of the world. Calling this method will prevent chunks
+// from unloading until the World is closed, preventing entities from despawning. As a result, this could leak
+// to a memory leak if the size of the world can grow. This method should therefore only be used in places
+// where the movement of players is limited to a confined space such as a hub.
+func (w *World) CloseChunkCacheJanitor() {
+	close(w.stopCacheJanitor)
+}
+
 // chunkCacheJanitor runs until the world is closed, cleaning chunks that are no longer in use from the cache.
 func (w *World) chunkCacheJanitor() {
 	t := time.NewTicker(time.Minute * 5)
@@ -1496,6 +1506,8 @@ func (w *World) chunkCacheJanitor() {
 				delete(chunksToRemove, pos)
 			}
 		case <-w.stopTick.Done():
+			return
+		case <-w.stopCacheJanitor:
 			return
 		}
 	}
