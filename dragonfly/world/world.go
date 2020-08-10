@@ -55,6 +55,11 @@ type World struct {
 	// of not being used.
 	chunks map[ChunkPos]*chunkData
 
+	ePosMu sync.Mutex
+	// lastEntityPositions holds a map of the last ChunkPos that an Entity was in. These are tracked so that
+	// a call to RemoveEntity can find the correct entity.
+	lastEntityPositions map[Entity]ChunkPos
+
 	r         *rand.Rand
 	simDistSq int32
 
@@ -81,22 +86,23 @@ type World struct {
 func New(log *logrus.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		r:                rand.New(rand.NewSource(time.Now().Unix())),
-		blockUpdates:     map[BlockPos]int64{},
-		defaultGameMode:  gamemode.Survival{},
-		difficulty:       difficulty.Normal{},
-		prov:             NoIOProvider{},
-		gen:              NopGenerator{},
-		handler:          NopHandler{},
-		doneTicking:      make(chan struct{}),
-		stopCacheJanitor: make(chan struct{}),
-		simDistSq:        int32(simulationDistance * simulationDistance),
-		randomTickSpeed:  *atomic.NewUint32(3),
-		unixTime:         *atomic.NewInt64(time.Now().Unix()),
-		log:              log,
-		stopTick:         ctx,
-		cancelTick:       cancel,
-		name:             *atomic.NewString("World"),
+		r:                   rand.New(rand.NewSource(time.Now().Unix())),
+		blockUpdates:        map[BlockPos]int64{},
+		lastEntityPositions: map[Entity]ChunkPos{},
+		defaultGameMode:     gamemode.Survival{},
+		difficulty:          difficulty.Normal{},
+		prov:                NoIOProvider{},
+		gen:                 NopGenerator{},
+		handler:             NopHandler{},
+		doneTicking:         make(chan struct{}),
+		stopCacheJanitor:    make(chan struct{}),
+		simDistSq:           int32(simulationDistance * simulationDistance),
+		randomTickSpeed:     *atomic.NewUint32(3),
+		unixTime:            *atomic.NewInt64(time.Now().Unix()),
+		log:                 log,
+		stopTick:            ctx,
+		cancelTick:          cancel,
+		name:                *atomic.NewString("World"),
 	}
 	w.initChunkCache()
 	go w.startTicking()
@@ -659,7 +665,14 @@ func (w *World) AddEntity(e Entity) {
 // RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
 func (w *World) RemoveEntity(e Entity) {
-	chunkPos := chunkPosFromVec3(e.Position())
+	w.ePosMu.Lock()
+	chunkPos, found := w.lastEntityPositions[e]
+	w.ePosMu.Unlock()
+	if !found {
+		chunkPos = chunkPosFromVec3(e.Position())
+	} else {
+		delete(w.lastEntityPositions, e)
+	}
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
@@ -1143,6 +1156,9 @@ func (w *World) tickEntities(tick int64) {
 				if !ok {
 					continue
 				}
+				w.ePosMu.Lock()
+				w.lastEntityPositions[entity] = newChunkPos
+				w.ePosMu.Unlock()
 				entitiesToMove = append(entitiesToMove, entityToMove{e: entity, viewersBefore: append([]Viewer(nil), c.v...), after: newC})
 				continue
 			}
