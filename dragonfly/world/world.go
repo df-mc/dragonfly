@@ -1476,7 +1476,7 @@ func (w *World) initChunkCache() {
 }
 
 // CloseChunkCacheJanitor closes the chunk cache janitor of the world. Calling this method will prevent chunks
-// from unloading until the World is closed, preventing entities from despawning. As a result, this could leak
+// from unloading until the World is closed, preventing entities from despawning. As a result, this could lead
 // to a memory leak if the size of the world can grow. This method should therefore only be used in places
 // where the movement of players is limited to a confined space such as a hub.
 func (w *World) CloseChunkCacheJanitor() {
