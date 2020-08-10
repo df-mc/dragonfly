@@ -23,7 +23,7 @@ type crop struct {
 // NeighbourUpdateTick ...
 func (c crop) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
-		w.BreakBlock(pos)
+		w.BreakBlockWithoutParticles(pos)
 	}
 }
 

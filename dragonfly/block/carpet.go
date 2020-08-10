@@ -17,6 +17,16 @@ type Carpet struct {
 	Colour colour.Colour
 }
 
+// FlameEncouragement ...
+func (c Carpet) FlameEncouragement() int {
+	return 30
+}
+
+// Flammability ...
+func (c Carpet) Flammability() int {
+	return 60
+}
+
 // CanDisplace ...
 func (Carpet) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)
@@ -61,7 +71,7 @@ func (Carpet) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (Carpet) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
-		w.BreakBlock(pos)
+		w.BreakBlockWithoutParticles(pos)
 	}
 }
 

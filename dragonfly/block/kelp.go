@@ -110,7 +110,7 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 // NeighbourUpdateTick ...
 func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	if _, ok := w.Liquid(pos); !ok {
-		w.BreakBlock(pos)
+		w.BreakBlockWithoutParticles(pos)
 		return
 	}
 	if changed.Y()-1 == pos.Y() {
@@ -122,7 +122,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
-			w.BreakBlock(pos)
+			w.BreakBlockWithoutParticles(pos)
 		}
 	}
 }

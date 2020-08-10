@@ -29,12 +29,12 @@ func (l Lantern) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if l.Hanging {
 		up := pos.Side(world.FaceUp)
 		if !w.Block(up).Model().FaceSolid(up, world.FaceDown, w) {
-			w.BreakBlock(pos)
+			w.BreakBlockWithoutParticles(pos)
 		}
 	} else {
 		down := pos.Side(world.FaceDown)
 		if !w.Block(down).Model().FaceSolid(down, world.FaceUp, w) {
-			w.BreakBlock(pos)
+			w.BreakBlockWithoutParticles(pos)
 		}
 	}
 }

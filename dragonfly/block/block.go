@@ -168,7 +168,7 @@ func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World)
 	_, air := w.Block(pos.Side(world.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(world.FaceDown))
 	if air || liquid {
-		w.BreakBlock(pos)
+		w.BreakBlockWithoutParticles(pos)
 
 		e := entity.NewFallingBlock(b, pos.Vec3())
 		w.AddEntity(e)
