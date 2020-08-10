@@ -39,6 +39,9 @@ type Deny struct{ sound }
 // Door is a sound played when a (trap)door is opened or closed.
 type Door struct{ sound }
 
+// Ignite is a sound played when using a flint & steel.
+type Ignite struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

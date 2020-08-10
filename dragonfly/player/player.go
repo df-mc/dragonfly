@@ -1041,10 +1041,14 @@ func (p *Player) AttackEntity(e world.Entity) {
 // If no block is present at the position, or if the block is out of range, StartBreaking will return
 // immediately and the block will not be broken. StartBreaking will stop the breaking of any block that the
 // player might be breaking before this method is called.
-func (p *Player) StartBreaking(pos world.BlockPos) {
+func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 	p.AbortBreaking()
 	if _, air := p.World().Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
+		return
+	}
+	if _, ok := p.World().Block(pos.Side(face)).(block.Fire); ok {
+		p.World().BreakBlockWithoutParticles(pos.Side(face))
 		return
 	}
 	ctx := event.C()

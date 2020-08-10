@@ -44,7 +44,7 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.StartBreaking(world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])})
+		s.c.StartBreaking(world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])}, world.Face(pk.BlockFace))
 	case packet.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
 	case packet.PlayerActionStopBreak:

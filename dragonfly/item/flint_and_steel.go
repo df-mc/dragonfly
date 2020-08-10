@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -27,6 +28,7 @@ func (f FlintAndSteel) UseOnBlock(pos world.BlockPos, face world.Face, clickPos 
 	if item_internal.Replaceable(w, pos.Side(face), item_internal.Fire) {
 		ctx.DamageItem(1)
 		w.PlaceBlock(pos.Side(face), item_internal.Fire)
+		w.PlaySound(pos.Vec3(), sound.Ignite{})
 		return true
 	}
 	return false
