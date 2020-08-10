@@ -174,3 +174,11 @@ func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World)
 		w.AddEntity(e)
 	}
 }
+
+// Flammable is an interface for blocks that can catch on fire.
+type Flammable interface {
+	// FlameEncouragement is the chance a block will catch on fire during attempted fire spread.
+	FlameEncouragement() int
+	// Flammability is the chance a block will burn away during a fire block tick.
+	Flammability() int
+}

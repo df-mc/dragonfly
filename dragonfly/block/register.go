@@ -95,6 +95,7 @@ func init() {
 	world.RegisterBlock(Sand{}, Sand{Red: true})
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(allConcretePowder()...)
+	world.RegisterBlock(allFire()...)
 }
 
 func init() {
@@ -302,6 +303,7 @@ func init() {
 		}
 		return gravity.CanSolidify(pos, w)
 	}
+	item_internal.Fire = Fire{}
 }
 
 // readSlice reads an interface slice from a map at the key passed.

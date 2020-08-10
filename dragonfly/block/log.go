@@ -23,6 +23,16 @@ type Log struct {
 	Axis world.Axis
 }
 
+// FlameEncouragement ...
+func (l Log) FlameEncouragement() int {
+	return 5
+}
+
+// Flammability ...
+func (l Log) Flammability() int {
+	return 5
+}
+
 // UseOnBlock handles the rotational placing of logs.
 func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, l)

@@ -24,6 +24,16 @@ type WoodSlab struct {
 	Double bool
 }
 
+// FlameEncouragement ...
+func (s WoodSlab) FlameEncouragement() int {
+	return 5
+}
+
+// Flammability ...
+func (s WoodSlab) Flammability() int {
+	return 20
+}
+
 // Model ...
 func (s WoodSlab) Model() world.BlockModel {
 	return model.Slab{Double: s.Double, Top: s.Top}

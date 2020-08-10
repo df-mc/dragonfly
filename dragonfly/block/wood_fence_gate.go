@@ -25,6 +25,16 @@ type WoodFenceGate struct {
 	Lowered bool
 }
 
+// FlameEncouragement ...
+func (f WoodFenceGate) FlameEncouragement() int {
+	return 5
+}
+
+// Flammability ...
+func (f WoodFenceGate) Flammability() int {
+	return 20
+}
+
 // UseOnBlock ...
 func (f WoodFenceGate) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, f)

@@ -21,6 +21,16 @@ type Leaves struct {
 	shouldUpdate bool
 }
 
+// FlameEncouragement ...
+func (l Leaves) FlameEncouragement() int {
+	return 30
+}
+
+// Flammability ...
+func (l Leaves) Flammability() int {
+	return 60
+}
+
 // BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
 	return BreakInfo{

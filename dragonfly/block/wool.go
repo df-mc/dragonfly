@@ -15,6 +15,16 @@ type Wool struct {
 	Colour colour.Colour
 }
 
+// FlameEncouragement ...
+func (w Wool) FlameEncouragement() int {
+	return 30
+}
+
+// Flammability ...
+func (w Wool) Flammability() int {
+	return 60
+}
+
 // BreakInfo ...
 func (w Wool) BreakInfo() BreakInfo {
 	return BreakInfo{

@@ -48,3 +48,6 @@ var Bonemeal func(pos world.BlockPos, w *world.World) bool
 
 // Replaceable is a function used to check if a block is replaceable.
 var Replaceable func(w *world.World, pos world.BlockPos, with world.Block) bool
+
+// Fire holds a fire block.
+var Fire world.Block
