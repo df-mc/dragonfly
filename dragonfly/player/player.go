@@ -762,8 +762,11 @@ func (p *Player) SetInvisible() {
 }
 
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
-// visible, nothing happens.
+// visible, or if the player is in spectator mode, nothing happens.
 func (p *Player) SetVisible() {
+	if (p.GameMode() == gamemode.Spectator{}) {
+		return
+	}
 	if !p.invisible.CAS(true, false) {
 		return
 	}
@@ -819,9 +822,22 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 // with the world that it is in.
 func (p *Player) SetGameMode(mode gamemode.GameMode) {
 	p.gameModeMu.Lock()
+	previous := p.gameMode
 	p.gameMode = mode
 	p.gameModeMu.Unlock()
+
 	p.session().SendGameMode(mode)
+
+	if (mode == gamemode.Spectator{}) {
+		p.SetInvisible()
+	} else if (mode != gamemode.Spectator{}) && (previous == gamemode.Spectator{}) {
+		for _, eff := range p.Effects() {
+			if _, ok := eff.(effect.Invisibility); ok {
+				return
+			}
+		}
+		p.SetVisible()
+	}
 }
 
 // GameMode returns the current game mode assigned to the player. If not changed, the game mode returned will
@@ -1610,6 +1626,12 @@ func (p *Player) OnGround() bool {
 // EyeHeight returns the eye height of the player: 1.62.
 func (p *Player) EyeHeight() float64 {
 	return 1.62
+}
+
+// PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
+// to players around it.
+func (p *Player) PlaySound(sound world.Sound) {
+	p.session().ViewSound(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}), sound)
 }
 
 // State returns the current state of the player. Types from the `entity/state` package are returned
