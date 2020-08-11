@@ -21,7 +21,6 @@ type Fire struct {
 }
 
 //TODO: Fire Damage
-//TODO: Soul Fire when placed on Soul Soil/Sand
 
 // max ...
 func max(a, b int) int {
@@ -73,7 +72,6 @@ func (f Fire) burn(pos world.BlockPos, w *world.World, chanceBound int) {
 
 // tick ...
 func (f Fire) tick(pos world.BlockPos, w *world.World) {
-	//TODO: For soul fire, check if bottom is soul sand or soil
 	if f.Type == fire.Normal() {
 		infinitelyBurns := infinitelyBurning(pos, w)
 
@@ -159,9 +157,17 @@ func (f Fire) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos, world.FaceUp, w) && !neighbourFlammable(pos, w) {
+	below := w.Block(pos.Side(world.FaceDown))
+	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!neighbourFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
+		if _, ok := below.(SoulSand); ok {
+			f.Type = fire.Soul()
+			w.PlaceBlock(pos, f)
+		} else if f.Type == fire.Soul() {
+			w.BreakBlockWithoutParticles(pos)
+			return
+		}
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 	}
 }

@@ -67,6 +67,7 @@ const (
 	hashQuartzPillar
 	hashQuartzBricks
 	hashSand
+	hashSoulSand
 	hashSponge
 	hashStainedTerracotta
 	hashStone

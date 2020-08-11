@@ -96,6 +96,7 @@ func init() {
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(allConcretePowder()...)
 	world.RegisterBlock(allFire()...)
+	world.RegisterBlock(SoulSand{})
 }
 
 func init() {
@@ -250,6 +251,7 @@ func init() {
 	world.RegisterItem("minecraft:sand", Sand{})
 	world.RegisterItem("minecraft:sand", Sand{Red: true})
 	world.RegisterItem("minecraft:gravel", Gravel{})
+	world.RegisterItem("minecraft:soul_sand", SoulSand{})
 }
 
 func init() {
