@@ -8,6 +8,7 @@ import (
 // BlockBreak is a particle sent when a block is broken. It represents a bunch of particles that are textured
 // like the block that the particle holds.
 type BlockBreak struct {
+	particle
 	// Block is the block of which particles should be shown. The particles will change depending on what
 	// block is held.
 	Block world.Block
@@ -16,6 +17,7 @@ type BlockBreak struct {
 // PunchBlock is a particle shown when a player is punching a block. It shows particles of a specific block
 // type at a particular face of a block.
 type PunchBlock struct {
+	particle
 	// Block is the block of which particles should be shown. The particles will change depending on what
 	// block is punched.
 	Block world.Block
@@ -24,19 +26,13 @@ type PunchBlock struct {
 }
 
 // BlockForceField is a particle that shows up as a block that turns invisible from an opaque black colour.
-type BlockForceField struct{}
+type BlockForceField struct{ particle }
 
 // Bonemeal is a particle that shows up on bonemeal usage.
-type Bonemeal struct{}
+type Bonemeal struct{ particle }
+
+// particle serves as a base for all particles in this package.
+type particle struct{}
 
 // Spawn ...
-func (PunchBlock) Spawn(*world.World, mgl64.Vec3) {}
-
-// Spawn ...
-func (BlockBreak) Spawn(*world.World, mgl64.Vec3) {}
-
-// Spawn ...
-func (BlockForceField) Spawn(*world.World, mgl64.Vec3) {}
-
-// Spawn ...
-func (Bonemeal) Spawn(*world.World, mgl64.Vec3) {}
+func (particle) Spawn(*world.World, mgl64.Vec3) {}

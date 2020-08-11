@@ -366,6 +366,11 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.HugeExplosion:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleExplosion,
+			Position:  vec64To32(pos),
+		})
 	case particle.Bonemeal:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleCropGrowth,
@@ -399,6 +404,13 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		ExtraData:  -1,
 	}
 	switch so := soundType.(type) {
+	case sound.DoorCrash:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundDoorCrash,
+			Position:  vec64To32(pos),
+		})
+	case sound.Explosion:
+		pk.SoundType = packet.SoundEventExplode
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundClick,

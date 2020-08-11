@@ -14,3 +14,6 @@ type Burp struct{ sound }
 
 // Pop is a sound played when a chicken lays an egg.
 type Pop struct{ sound }
+
+// Explosion is a sound played when an explosion happens, such as from a creeper or TNT.
+type Explosion struct{ sound }
