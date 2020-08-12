@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
+	"math/rand"
 	"time"
 )
 
@@ -23,6 +24,30 @@ type Lava struct {
 	// Falling specifies if the lava is falling. Falling lava will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// RandomTick ...
+func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+	i := r.Intn(3)
+	if i > 0 {
+		for j := 0; j < i; j++ {
+			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
+			if _, ok := w.Block(pos).(Air); ok {
+				if NeighbourFlammable(pos, w) {
+					w.PlaceBlock(pos, Fire{})
+				}
+			}
+		}
+	} else {
+		for j := 0; j < 3; j++ {
+			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
+			if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); ok {
+				if _, ok := w.Block(pos).(Flammable); ok {
+					w.PlaceBlock(pos, Fire{})
+				}
+			}
+		}
+	}
 }
 
 // AABB returns no boxes.
