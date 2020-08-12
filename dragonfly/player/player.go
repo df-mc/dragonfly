@@ -1065,6 +1065,7 @@ func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 	}
 	if _, ok := p.World().Block(pos.Side(face)).(block.Fire); ok {
 		p.World().BreakBlockWithoutParticles(pos.Side(face))
+		p.World().PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
 	ctx := event.C()

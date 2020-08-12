@@ -421,6 +421,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundPop,
 			Position:  vec64To32(pos),
 		})
+	case sound.FireExtinguish:
+		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
 		pk.SoundType = packet.SoundEventIgnite
 	case sound.Burp:
