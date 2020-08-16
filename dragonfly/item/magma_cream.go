@@ -1,6 +1,6 @@
 package item
 
-// Magma cream is an item used in brewing to create potions of Fire Resistance, and to build magma blocks.
+// MagmaCream is an item used in brewing to create potions of Fire Resistance, and to build magma blocks.
 type MagmaCream struct{}
 
 // EncodeItem ...
