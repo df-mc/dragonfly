@@ -1496,11 +1496,7 @@ func (p *Player) Tick(current int64) {
 	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 	}
-	if p.checkOnGround() {
-		p.onGround.Store(true)
-	} else {
-		p.onGround.Store(false)
-	}
+	p.onGround.Store(p.checkOnGround())
 	p.tickFood()
 	p.effects.Tick(p)
 	if p.Position()[1] < 0 && p.survival() && current%10 == 0 {
