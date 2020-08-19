@@ -42,6 +42,9 @@ type SourceFire struct{}
 // SourceFireTick is used for damage caused by being on fire.
 type SourceFireTick struct{}
 
+// SourceFireTick is used for damage caused by being in lava.
+type SourceLava struct{}
+
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
@@ -88,5 +91,10 @@ func (SourceFire) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceFireTick) ReducedByArmour() bool {
+	return false
+}
+
+// ReducedByArmour ...
+func (SourceLava) ReducedByArmour() bool {
 	return false
 }

@@ -803,6 +803,13 @@ func (p *Player) FireDamage(amount float64) {
 	}
 }
 
+// LavaDamage ...
+func (p *Player) LavaDamage(amount float64) {
+	if !p.AttackImmune() {
+		p.Hurt(amount, damage.SourceLava{})
+	}
+}
+
 // FireTicks ...
 func (p *Player) FireTicks() int {
 	return int(p.fireTicks.Load())

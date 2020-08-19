@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -24,6 +25,14 @@ type Lava struct {
 	// Falling specifies if the lava is falling. Falling lava will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// EntityCollide ...
+func (l Lava) EntityCollide(e world.Entity) {
+	if flammable, ok := e.(entity.Flammable); ok {
+		flammable.LavaDamage(4)
+		flammable.SetFireTicks(300)
+	}
 }
 
 // RandomTick ...
