@@ -668,6 +668,7 @@ func (p *Player) Respawn() {
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
+	p.SetFireTicks(0)
 
 	p.World().AddEntity(p)
 	p.SetVisible()
