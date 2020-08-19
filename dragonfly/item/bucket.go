@@ -50,6 +50,7 @@ func (b Bucket) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: liq})
 	ctx.NewItem = NewStack(Bucket{}, 1)
+	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true
 }

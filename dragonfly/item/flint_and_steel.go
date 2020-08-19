@@ -24,11 +24,11 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 }
 
 // UseOnBlock ...
-func (f FlintAndSteel) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
-	if item_internal.Replaceable(w, pos.Side(face), item_internal.Fire) {
-		ctx.DamageItem(1)
+func (f FlintAndSteel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+	ctx.DamageItem(1)
+	w.PlaySound(pos.Vec3(), sound.Ignite{})
+	if w.Block(pos.Side(face)) == item_internal.Air {
 		w.PlaceBlock(pos.Side(face), item_internal.Fire)
-		w.PlaySound(pos.Vec3(), sound.Ignite{})
 		return true
 	}
 	return false

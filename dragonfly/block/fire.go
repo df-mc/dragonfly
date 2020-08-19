@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"math/rand"
 	"time"
 )
@@ -39,6 +40,21 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// difficultyOffset ...
+func difficultyOffset(d difficulty.Difficulty) int {
+	switch d.(type) {
+	case difficulty.Peaceful:
+		return 0
+	case difficulty.Easy:
+		return 7
+	case difficulty.Normal:
+		return 14
+	case difficulty.Hard:
+		return 21
+	}
+	panic("unknown difficulty")
 }
 
 // infinitelyBurning returns true if fire can infinitely burn at the specified position.
@@ -125,9 +141,9 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 								}
 							})
 							if encouragement > 0 {
-								//TODO: Add difficulty level * 7
-								maxChance := (encouragement + 40) / (f.Age + 30)
 								//TODO: Divide chance by 2 in high humidity
+								maxChance := (encouragement + 40 + difficultyOffset(w.Difficulty())) / (f.Age + 30)
+
 								//TODO: Check if exposed to rain
 								if maxChance > 0 && rand.Intn(randomBound) <= maxChance {
 									age := f.Age + rand.Intn(5)/4
@@ -161,6 +177,7 @@ func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!NeighbourFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
+		//TODO: Soul Soil
 		if _, ok := below.(SoulSand); ok {
 			f.Type = fire.Soul()
 			w.PlaceBlock(pos, f)
