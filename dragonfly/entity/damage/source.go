@@ -42,7 +42,7 @@ type SourceFire struct{}
 // SourceFireTick is used for damage caused by being on fire.
 type SourceFireTick struct{}
 
-// SourceFireTick is used for damage caused by being in lava.
+// SourceLava is used for damage caused by being in lava.
 type SourceLava struct{}
 
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
