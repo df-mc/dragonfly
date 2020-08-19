@@ -74,6 +74,8 @@ type Player struct {
 	immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	fireTicks atomic.Int64
+
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
 	effects  *entity.EffectManager
@@ -786,6 +788,29 @@ func (p *Player) SetMobile() {
 	if !p.immobile.CAS(true, false) {
 		return
 	}
+	p.updateState()
+}
+
+// FireProof ...
+func (p *Player) FireProof() bool {
+	return p.GameMode() != gamemode.Survival{} && p.GameMode() != gamemode.Adventure{}
+}
+
+// FireDamage ...
+func (p *Player) FireDamage(amount float64) {
+	if !p.AttackImmune() {
+		p.Hurt(amount, damage.SourceFire{})
+	}
+}
+
+// FireTicks ...
+func (p *Player) FireTicks() int {
+	return int(p.fireTicks.Load())
+}
+
+// SetFireTicks ...
+func (p *Player) SetFireTicks(ticks int) {
+	p.fireTicks.Store(int64(ticks))
 	p.updateState()
 }
 
@@ -1508,6 +1533,28 @@ func (p *Player) Tick(current int64) {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
+	if p.FireTicks() > 0 {
+		if p.FireProof() {
+			p.SetFireTicks(0)
+		} else {
+			p.SetFireTicks(p.FireTicks() - 1)
+		}
+		if p.FireTicks()%20 == 0 && !p.AttackImmune() {
+			p.Hurt(1, damage.SourceFireTick{})
+		}
+	}
+
+	aabb := p.AABB().Translate(p.Position())
+	for x := int(aabb.Min().X()); x <= int(aabb.Max().X()); x++ {
+		for y := int(aabb.Min().Y()); y <= int(aabb.Max().Y()); y++ {
+			for z := int(aabb.Min().Z()); z <= int(aabb.Max().Z()); z++ {
+				if collide, ok := p.World().Block(world.BlockPos{x, y, z}).(block.EntityColliding); ok {
+					collide.EntityCollide(p)
+				}
+			}
+		}
+	}
+
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
@@ -1654,6 +1701,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if p.usingItem.Load() {
 		s = append(s, state.UsingItem{})
+	}
+	if p.FireTicks() > 0 {
+		s = append(s, state.OnFire{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {

@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"math/rand"
@@ -20,8 +21,6 @@ type Fire struct {
 	// each block tick.
 	Age int
 }
-
-//TODO: Fire Damage
 
 // NeighbourFlammable returns true if one a block adjacent to the passed position is flammable.
 func NeighbourFlammable(pos world.BlockPos, w *world.World) bool {
@@ -158,6 +157,14 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 				}
 			}
 		}
+	}
+}
+
+// EntityCollide ...
+func (f Fire) EntityCollide(e world.Entity) {
+	if flammable, ok := e.(entity.Flammable); ok {
+		flammable.FireDamage(1)
+		flammable.SetFireTicks(160)
 	}
 }
 

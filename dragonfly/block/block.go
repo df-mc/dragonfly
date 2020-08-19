@@ -182,3 +182,9 @@ type Flammable interface {
 	// Flammability is the chance a block will burn away during a fire block tick.
 	Flammability() int
 }
+
+// EntityColliding is an interface for blocks with special behaviors on entity collision.
+type EntityColliding interface {
+	// EntityCollide is called on entity collision.
+	EntityCollide(e world.Entity)
+}
