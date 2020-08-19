@@ -93,6 +93,7 @@ func init() {
 	world.RegisterItem("minecraft:flint", Flint{})
 
 	world.RegisterItem("minecraft:stick", Stick{})
+	world.RegisterItem("minecraft:magma_cream", MagmaCream{})
 
 	world.RegisterItem("minecraft:dye", Bonemeal{})
 	world.RegisterItem("minecraft:wheat", Wheat{})
@@ -101,9 +102,11 @@ func init() {
 
 	world.RegisterItem("minecraft:apple", Apple{})
 
+	world.RegisterItem("minecraft:brick", Brick{})
+
 	world.RegisterItem("minecraft:glass_bottle", GlassBottle{})
-	for _, potion := range potion.All() {
-		world.RegisterItem("minecraft:potion", Potion{Type: potion})
+	for _, p := range potion.All() {
+		world.RegisterItem("minecraft:potion", Potion{Type: p})
 	}
 
 	world.RegisterItem("minecraft:flint_and_steel", FlintAndSteel{})

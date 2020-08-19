@@ -115,6 +115,25 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) uint8 {
 	return 0
 }
 
+// HighestBlock iterates from the highest non-empty sub chunk downwards to find the Y value of the highest
+// non-air block at an x and z. If no blocks are present in the column, 0 is returned.
+func (chunk *Chunk) HighestBlock(x, z uint8) uint8 {
+	for subY := 15; subY >= 0; subY-- {
+		sub := chunk.sub[subY]
+		if sub == nil || len(sub.storages) == 0 {
+			continue
+		}
+		for y := 15; y >= 0; y-- {
+			totalY := uint8(y | (subY << 4))
+			rid := sub.storages[0].RuntimeID(x, totalY, z)
+			if rid != 0 {
+				return totalY
+			}
+		}
+	}
+	return 0
+}
+
 // SetBlockNBT sets block NBT data to a given position in the chunk. If the data passed is nil, the block NBT
 // currently present will be cleared.
 func (chunk *Chunk) SetBlockNBT(pos [3]int, data map[string]interface{}) {

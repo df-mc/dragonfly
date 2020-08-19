@@ -6,6 +6,7 @@ const (
 	hashBeacon
 	hashBedrock
 	hashBeetroot
+	hashBricks
 	hashBoneBlock
 	hashCarpet
 	hashCarrot
