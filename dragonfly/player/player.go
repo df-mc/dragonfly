@@ -403,6 +403,11 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 	if p.Dead() || dmg < 0 || !p.survival() {
 		return
 	}
+	for _, e := range p.Effects() {
+		if _, ok := e.(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+			return
+		}
+	}
 
 	ctx := event.C()
 	p.handler().HandleHurt(ctx, &dmg, source)
