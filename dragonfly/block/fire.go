@@ -12,6 +12,7 @@ import (
 // Fire is a non-solid block that can spread to nearby flammable blocks.
 type Fire struct {
 	noNBT
+	replaceable
 	transparent
 	empty
 
