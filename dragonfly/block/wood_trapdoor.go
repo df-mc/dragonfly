@@ -88,6 +88,10 @@ func (t WoodTrapdoor) EncodeItem() (id int32, meta int16) {
 		return -145, 0
 	case wood.DarkOak():
 		return -147, 0
+	case wood.Crimson():
+		return -246, 0
+	case wood.Warped():
+		return -247, 0
 	}
 	panic("invalid wood type")
 }
@@ -97,16 +101,8 @@ func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interfac
 	switch t.Wood {
 	case wood.Oak():
 		return "minecraft:trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	case wood.Spruce():
-		return "minecraft:spruce_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	case wood.Birch():
-		return "minecraft:birch_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	case wood.Jungle():
-		return "minecraft:jungle_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	case wood.Acacia():
-		return "minecraft:acacia_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	case wood.DarkOak():
-		return "minecraft:dark_oak_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
+	default:
+		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	}
 	panic("invalid wood type")
 }

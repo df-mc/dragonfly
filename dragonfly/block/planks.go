@@ -18,11 +18,17 @@ type Planks struct {
 
 // FlameEncouragement ...
 func (p Planks) FlameEncouragement() int {
+	if !p.Wood.Flammable {
+		return 0
+	}
 	return 5
 }
 
 // Flammability ...
 func (p Planks) Flammability() int {
+	if !p.Wood.Flammable {
+		return 0
+	}
 	return 20
 }
 
@@ -51,13 +57,25 @@ func (p Planks) EncodeItem() (id int32, meta int16) {
 		return 5, 4
 	case wood.DarkOak():
 		return 5, 5
+	case wood.Crimson():
+		return -242, 0
+	case wood.Warped():
+		return -243, 0
 	}
 	panic("invalid wood type")
 }
 
 // EncodeBlock ...
 func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
+	switch p.Wood {
+	case wood.Crimson():
+		return "minecraft:crimson_planks", nil
+	case wood.Warped():
+		return "minecraft:warped_planks", nil
+	default:
+		return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
+	}
+	panic("invalid wood type")
 }
 
 // Hash ...
@@ -66,13 +84,9 @@ func (p Planks) Hash() uint64 {
 }
 
 // allPlanks returns all planks types.
-func allPlanks() []world.Block {
-	return []world.Block{
-		Planks{Wood: wood.Oak()},
-		Planks{Wood: wood.Spruce()},
-		Planks{Wood: wood.Birch()},
-		Planks{Wood: wood.Jungle()},
-		Planks{Wood: wood.Acacia()},
-		Planks{Wood: wood.DarkOak()},
+func allPlanks() (planks []world.Block) {
+	for _, w := range wood.All() {
+		planks = append(planks, Planks{Wood: w})
 	}
+	return
 }

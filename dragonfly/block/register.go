@@ -155,8 +155,12 @@ func init() {
 	for _, b := range allLight() {
 		world.RegisterItem("minecraft:light_block", b.(world.Item))
 	}
-	for _, b := range allPlanks() {
-		world.RegisterItem("minecraft:planks", b.(world.Item))
+	for _, w := range wood.All() {
+		if w == wood.Crimson() || w == wood.Warped() {
+			world.RegisterItem("minecraft:"+w.String()+"_planks", Planks{Wood: w})
+		} else {
+			world.RegisterItem("minecraft:planks", Planks{Wood: w})
+		}
 	}
 	world.RegisterItem("minecraft:oak_stairs", WoodStairs{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_stairs", WoodStairs{Wood: wood.Spruce()})
@@ -164,18 +168,24 @@ func init() {
 	world.RegisterItem("minecraft:jungle_stairs", WoodStairs{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_stairs", WoodStairs{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_stairs", WoodStairs{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_stairs", WoodStairs{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_stairs", WoodStairs{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_slab", WoodSlab{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_slab", WoodSlab{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Oak(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Spruce(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Birch(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Jungle(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Acacia(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
+	world.RegisterItem("minecraft:crimson_double_slab", WoodSlab{Wood: wood.Crimson(), Double: true})
+	world.RegisterItem("minecraft:warped_double_slab", WoodSlab{Wood: wood.Warped(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
@@ -205,18 +215,24 @@ func init() {
 	world.RegisterItem("minecraft:jungle_fence_gate", WoodFenceGate{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_fence_gate", WoodFenceGate{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_fence_gate", WoodFenceGate{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_fence_gate", WoodFenceGate{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_fence_gate", WoodFenceGate{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:jungle_trapdoor", WoodTrapdoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_trapdoor", WoodTrapdoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_trapdoor", WoodTrapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_trapdoor", WoodTrapdoor{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_trapdoor", WoodTrapdoor{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:wooden_door", WoodDoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_door", WoodDoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_door", WoodDoor{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:jungle_door", WoodDoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_door", WoodDoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_door", WoodDoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_door", WoodDoor{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_door", WoodDoor{Wood: wood.Warped()})
 	for _, c := range allCoral() {
 		world.RegisterItem("minecraft:coral", c.(world.Item))
 	}
