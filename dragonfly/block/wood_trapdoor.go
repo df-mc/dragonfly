@@ -104,7 +104,6 @@ func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interfac
 	default:
 		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	}
-	panic("invalid wood type")
 }
 
 // Hash ...

@@ -116,7 +116,6 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interfa
 	default:
 		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	}
-	panic("invalid wood type")
 }
 
 // Hash ...

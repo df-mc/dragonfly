@@ -162,7 +162,6 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 	default:
 		return "minecraft:" + d.Wood.String() + "_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
-	panic("invalid wood type")
 }
 
 // Hash ...

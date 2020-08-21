@@ -75,7 +75,6 @@ func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 	default:
 		return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
 	}
-	panic("invalid wood type")
 }
 
 // Hash ...
