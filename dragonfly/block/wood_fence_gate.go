@@ -25,6 +25,16 @@ type WoodFenceGate struct {
 	Lowered bool
 }
 
+// BreakInfo ...
+func (f WoodFenceGate) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    2,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(item.NewStack(f, 1)),
+	}
+}
+
 // FlameEncouragement ...
 func (f WoodFenceGate) FlameEncouragement() int {
 	if !f.Wood.Flammable {

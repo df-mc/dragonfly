@@ -86,7 +86,7 @@ func (SourceWitherEffect) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceFire) ReducedByArmour() bool {
-	return false
+	return true
 }
 
 // ReducedByArmour ...
@@ -96,5 +96,5 @@ func (SourceFireTick) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceLava) ReducedByArmour() bool {
-	return false
+	return true
 }
