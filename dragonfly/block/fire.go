@@ -22,11 +22,18 @@ type Fire struct {
 	Age int
 }
 
+// FlammableBlock returns true if a block is flammable.
+func FlammableBlock(block world.Block) bool {
+	if flammable, ok := block.(Flammable); ok && flammable.FlameEncouragement() > 0 {
+		return true
+	}
+	return false
+}
+
 // NeighbourFlammable returns true if one a block adjacent to the passed position is flammable.
 func NeighbourFlammable(pos world.BlockPos, w *world.World) bool {
 	for i := world.Face(0); i < 6; i++ {
-		block := w.Block(pos.Side(i))
-		if _, ok := block.(Flammable); ok {
+		if FlammableBlock(w.Block(pos.Side(i))) {
 			return true
 		}
 	}
@@ -106,7 +113,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 				}
 				return
 			}
-			if _, ok := w.Block(pos.Side(world.FaceDown)).(Flammable); !ok && f.Age == 15 && rand.Intn(4) == 0 {
+			if !FlammableBlock(w.Block(pos.Side(world.FaceDown))) && f.Age == 15 && rand.Intn(4) == 0 {
 				w.BreakBlockWithoutParticles(pos)
 				return
 			}
