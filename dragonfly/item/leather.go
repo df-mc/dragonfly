@@ -7,4 +7,3 @@ type Leather struct{}
 func (Leather) EncodeItem() (id int32, meta int16) {
     return 334, 0
 }
-
