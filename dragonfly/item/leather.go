@@ -1,6 +1,6 @@
 package item
 
-// Leather does not have yet a Funtionality.
+// Leather is an animal skin used to make item frames, armor and books.
 type Leather struct{}
 
 // EncodeItem ...
