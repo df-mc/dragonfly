@@ -23,7 +23,7 @@ func (s SeaLantern) BreakInfo() BreakInfo {
 		Hardness:    0.3,
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(s, rand.Intn(2)+2)), //TODO: Silk Touch
+		Drops:       simpleDrops(item.NewStack(item.PrismarineCrystals{}, rand.Intn(2)+2)), //TODO: Silk Touch
 	}
 }
 
