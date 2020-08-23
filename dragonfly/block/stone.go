@@ -10,7 +10,7 @@ type (
 		noNBT
 		solid
 
-		// Smooth specifies if the stone is it's smooth variant.
+		// Smooth specifies if the stone is its smooth variant.
 		Smooth bool
 	}
 

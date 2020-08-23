@@ -11,7 +11,7 @@ type Basalt struct {
 	noNBT
 	solid
 
-	// Polished specifies if the basalt is it's polished variant.
+	// Polished specifies if the basalt is its polished variant.
 	Polished bool
 	// Axis is the axis which the basalt faces.
 	Axis world.Axis
