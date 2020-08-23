@@ -33,6 +33,7 @@ const (
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone
+	hashSealantern
 	hashGoldBlock
 	hashGoldOre
 	hashGrass
@@ -61,6 +62,7 @@ const (
 	hashPotato
 	hashPumpkin
 	hashPumpkinStem
+	hashPrismarine
 	hashQuartzOre
 	hashQuartz
 	hashChiseledQuartz

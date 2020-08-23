@@ -1,13 +1,14 @@
 package block
 
 import (
+	_ "unsafe" // Imported for compiler directives.
+
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // init registers all blocks implemented by Dragonfly.
@@ -39,6 +40,7 @@ func init() {
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
 	world.RegisterBlock(Glowstone{})
+	world.RegisterBlock(Sealantern{})
 	world.RegisterBlock(EmeraldBlock{})
 	world.RegisterBlock(EndBricks{})
 	world.RegisterBlock(allEndBrickStairs()...)
@@ -96,6 +98,7 @@ func init() {
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(allConcretePowder()...)
 	world.RegisterBlock(Bricks{})
+	world.RegisterBlock(Prismarine{})
 }
 
 func init() {
@@ -178,6 +181,7 @@ func init() {
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
 	world.RegisterItem("minecraft:glowstone", Glowstone{})
+	world.RegisterItem("minecraft:sealantern", Sealantern{})
 	world.RegisterItem("minecraft:emerald_block", EmeraldBlock{})
 	world.RegisterItem("minecraft:end_bricks", EndBricks{})
 	world.RegisterItem("minecraft:end_brick_stairs", EndBrickStairs{})
@@ -251,6 +255,7 @@ func init() {
 	world.RegisterItem("minecraft:sand", Sand{Red: true})
 	world.RegisterItem("minecraft:gravel", Gravel{})
 	world.RegisterItem("minecraft:brick_block", Bricks{})
+	world.RegisterItem("minecraft:prismarine", Prismarine{})
 }
 
 func init() {

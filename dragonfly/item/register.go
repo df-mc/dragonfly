@@ -99,12 +99,14 @@ func init() {
 	world.RegisterItem("minecraft:wheat", Wheat{})
 	world.RegisterItem("minecraft:beetroot", Beetroot{})
 	world.RegisterItem("minecraft:melon", MelonSlice{})
-
 	world.RegisterItem("minecraft:apple", Apple{})
 
 	world.RegisterItem("minecraft:brick", Brick{})
 
 	world.RegisterItem("minecraft:leather", Leather{})
+
+	world.RegisterItem("minecraft:prismarine_crystals", PrismarineCrystals{})
+	world.RegisterItem("minecraft:prismarine_shard", PrismarineShard{})
 
 	world.RegisterItem("minecraft:glass_bottle", GlassBottle{})
 	for _, p := range potion.All() {
