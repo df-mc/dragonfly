@@ -130,7 +130,7 @@ func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.Bloc
 		var water, b world.Block
 		_, soulSoilFound := w.Block(pos.Side(world.FaceDown)).(SoulSoil)
 		pos.Neighbours(func(neighbour world.BlockPos) {
-			if b != nil {
+			if b != nil || neighbour[1] == pos[1]-1 {
 				return
 			}
 			if _, ok := w.Block(neighbour).(BlueIce); ok {
