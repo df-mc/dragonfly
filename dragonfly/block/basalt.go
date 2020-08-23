@@ -6,7 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-//  Basalt is a type of igneous rock found in the Nether.
+// Basalt is a type of igneous rock found in the Nether.
 type Basalt struct {
 	noNBT
 	solid
