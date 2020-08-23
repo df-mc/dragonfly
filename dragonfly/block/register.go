@@ -98,6 +98,10 @@ func init() {
 	world.RegisterBlock(Bricks{})
 	world.RegisterBlock(allFire()...)
 	world.RegisterBlock(SoulSand{})
+	world.RegisterBlock(Barrier{})
+	world.RegisterBlock(Basalt{Axis: world.X}, Basalt{Axis: world.Y}, Basalt{Axis: world.Z})
+	world.RegisterBlock(CryingObsidian{})
+	world.RegisterBlock(SeaLantern{})
 }
 
 func init() {
@@ -270,6 +274,12 @@ func init() {
 	world.RegisterItem("minecraft:gravel", Gravel{})
 	world.RegisterItem("minecraft:brick_block", Bricks{})
 	world.RegisterItem("minecraft:soul_sand", SoulSand{})
+	world.RegisterItem("minecraft:magma", Magma{})
+	world.RegisterItem("minecraft:tnt", TNT{})
+	world.RegisterItem("minecraft:barrier", Barrier{})
+	world.RegisterItem("minecraft:basalt", Basalt{})
+	world.RegisterItem("minecraft:crying_obsidian", CryingObsidian{})
+	world.RegisterItem("minecraft:seaLantern", SeaLantern{})
 }
 
 func init() {
