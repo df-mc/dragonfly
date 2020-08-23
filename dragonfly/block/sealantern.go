@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item"
 )
 
-// Sealatern is commonly found on Ocean Monuments as Lightsource.
+// Sealantern is commonly found on Ocean Monuments as Lightsource.
 type Sealantern struct {
 	noNBT
 	solid
@@ -29,7 +29,7 @@ func (s Sealantern) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (s Sealantern) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:sealantern", nil
+	return "minecraft:seaLantern", nil
 }
 
 // LightEmissionLevel returns 15.
