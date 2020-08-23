@@ -8,6 +8,7 @@ const (
 	hashBeacon
 	hashBedrock
 	hashBeetroot
+	hashBlueIce
 	hashBricks
 	hashBoneBlock
 	hashCarpet
@@ -34,6 +35,7 @@ const (
 	hashEndStone
 	hashFarmland
 	hashFire
+	hashGildedBlackstone
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone

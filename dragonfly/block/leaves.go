@@ -2,8 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"math/rand"
 )
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
@@ -39,8 +41,17 @@ func (l Leaves) BreakInfo() BreakInfo {
 		Effective: func(t tool.Tool) bool {
 			return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
 		},
-		// TODO: Add saplings and apples and drop them here.
-		Drops: simpleDrops(),
+		Drops: func(t tool.Tool) (drops []item.Stack) {
+			if t.ToolType() == tool.TypeShears { // TODO: Silk Touch
+				drops = append(drops, item.NewStack(l, 1))
+			} else {
+				// TODO: Saplings and sticks can drop
+				if rand.Float64() < 0.005 {
+					drops = append(drops, item.NewStack(item.Apple{}, 1))
+				}
+			}
+			return
+		},
 	}
 }
 

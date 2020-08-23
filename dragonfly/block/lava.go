@@ -127,9 +127,25 @@ func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.Bloc
 	var water, b world.Block
 
 	if flownIntoBy == nil {
-		var water, b world.Block
+		var water, soulSoil, blueIce, b world.Block
 		pos.Neighbours(func(neighbour world.BlockPos) {
-			if b != nil || neighbour[1] == pos[1]-1 {
+			if b != nil {
+				return
+			}
+			if neighbour[1] == pos[1]-1 {
+				if soulSoilBlock, ok := w.Block(neighbour).(SoulSoil); ok {
+					soulSoil = soulSoilBlock
+					if blueIce != nil {
+						b = Basalt{}
+					}
+				}
+				return
+			}
+			if blueIceBlock, ok := w.Block(neighbour).(BlueIce); ok {
+				blueIce = blueIceBlock
+				if soulSoil != nil {
+					b = Basalt{}
+				}
 				return
 			}
 			if waterBlock, ok := w.Block(neighbour).(Water); ok {

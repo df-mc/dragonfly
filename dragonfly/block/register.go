@@ -103,6 +103,8 @@ func init() {
 	world.RegisterBlock(CryingObsidian{})
 	world.RegisterBlock(SeaLantern{})
 	world.RegisterBlock(SoulSoil{})
+	world.RegisterBlock(BlueIce{})
+	world.RegisterBlock(GildedBlackstone{})
 }
 
 func init() {
@@ -282,6 +284,8 @@ func init() {
 	world.RegisterItem("minecraft:crying_obsidian", CryingObsidian{})
 	world.RegisterItem("minecraft:seaLantern", SeaLantern{})
 	world.RegisterItem("minecraft:soul_soil", SoulSoil{})
+	world.RegisterItem("minecraft:blue_ice", BlueIce{})
+	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
 }
 
 func init() {
