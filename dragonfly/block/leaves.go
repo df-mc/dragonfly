@@ -46,7 +46,7 @@ func (l Leaves) BreakInfo() BreakInfo {
 				drops = append(drops, item.NewStack(l, 1))
 			} else {
 				// TODO: Saplings and sticks can drop
-				if rand.Float64() < 0.005 {
+				if (l.Wood == wood.Oak() || l.Wood == wood.DarkOak()) && rand.Float64() < 0.005 {
 					drops = append(drops, item.NewStack(item.Apple{}, 1))
 				}
 			}
