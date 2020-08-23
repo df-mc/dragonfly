@@ -274,8 +274,6 @@ func init() {
 	world.RegisterItem("minecraft:gravel", Gravel{})
 	world.RegisterItem("minecraft:brick_block", Bricks{})
 	world.RegisterItem("minecraft:soul_sand", SoulSand{})
-	world.RegisterItem("minecraft:magma", Magma{})
-	world.RegisterItem("minecraft:tnt", TNT{})
 	world.RegisterItem("minecraft:barrier", Barrier{})
 	world.RegisterItem("minecraft:basalt", Basalt{})
 	world.RegisterItem("minecraft:crying_obsidian", CryingObsidian{})
