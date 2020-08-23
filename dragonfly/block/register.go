@@ -15,7 +15,7 @@ func init() {
 	// Always register Air first so we can use 0 runtime IDs as air.
 	world.RegisterBlock(Air{})
 
-	world.RegisterBlock(Stone{})
+	world.RegisterBlock(Stone{}, Stone{Smooth: true})
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
@@ -99,14 +99,16 @@ func init() {
 	world.RegisterBlock(allFire()...)
 	world.RegisterBlock(SoulSand{})
 	world.RegisterBlock(Barrier{})
-	world.RegisterBlock(Basalt{Axis: world.X}, Basalt{Axis: world.Y}, Basalt{Axis: world.Z})
+	world.RegisterBlock(Basalt{Axis: world.X}, Basalt{Axis: world.Y}, Basalt{Axis: world.Z}, Basalt{Polished: true, Axis: world.X}, Basalt{Polished: true, Axis: world.Y}, Basalt{Polished: true, Axis: world.Z})
 	world.RegisterBlock(CryingObsidian{})
 	world.RegisterBlock(SeaLantern{})
+	world.RegisterBlock(SoulSoil{})
 }
 
 func init() {
 	world.RegisterItem("minecraft:air", Air{})
 	world.RegisterItem("minecraft:stone", Stone{})
+	world.RegisterItem("minecraft:smooth_stone", Stone{Smooth: true})
 	world.RegisterItem("minecraft:stone", Granite{})
 	world.RegisterItem("minecraft:stone", Granite{Polished: true})
 	world.RegisterItem("minecraft:stone", Diorite{})
@@ -276,8 +278,10 @@ func init() {
 	world.RegisterItem("minecraft:soul_sand", SoulSand{})
 	world.RegisterItem("minecraft:barrier", Barrier{})
 	world.RegisterItem("minecraft:basalt", Basalt{})
+	world.RegisterItem("minecraft:polished_basalt", Basalt{Polished: true})
 	world.RegisterItem("minecraft:crying_obsidian", CryingObsidian{})
 	world.RegisterItem("minecraft:seaLantern", SeaLantern{})
+	world.RegisterItem("minecraft:soul_soil", SoulSoil{})
 }
 
 func init() {

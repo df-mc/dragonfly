@@ -11,6 +11,8 @@ type Basalt struct {
 	noNBT
 	solid
 
+	// Polished specifies if the basalt is it's polished variant.
+	Polished bool
 	// Axis is the axis which the basalt faces.
 	Axis world.Axis
 }
@@ -38,16 +40,22 @@ func (b Basalt) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Basalt) EncodeItem() (id int32, meta int16) {
+func (b Basalt) EncodeItem() (id int32, meta int16) {
+	if b.Polished {
+		return -235, 0
+	}
 	return -234, 0
 }
 
 // EncodeBlock ...
 func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
+	if b.Polished {
+		return "minecraft:polished_basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
+	}
 	return "minecraft:basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
 }
 
 // Hash ...
 func (b Basalt) Hash() uint64 {
-	return hashBasalt | (uint64(b.Axis) << 32)
+	return hashBasalt | (uint64(boolByte(b.Polished)) << 32) | (uint64(b.Axis) << 33)
 }

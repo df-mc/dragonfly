@@ -192,13 +192,15 @@ func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!NeighbourFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
-		//TODO: Soul Soil
-		if _, ok := below.(SoulSand); ok {
+		switch below.(type) {
+		case SoulSand, SoulSoil:
 			f.Type = fire.Soul()
 			w.PlaceBlock(pos, f)
-		} else if f.Type == fire.Soul() {
-			w.BreakBlockWithoutParticles(pos)
-			return
+		default:
+			if f.Type == fire.Soul() {
+				w.BreakBlockWithoutParticles(pos)
+				return
+			}
 		}
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 	}

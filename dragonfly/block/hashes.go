@@ -73,6 +73,7 @@ const (
 	hashSand
 	hashSeaLantern
 	hashSoulSand
+	hashSoulSoil
 	hashSponge
 	hashStainedTerracotta
 	hashStone
