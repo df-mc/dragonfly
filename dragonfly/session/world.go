@@ -560,6 +560,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			} else {
 				m[dataKeyPotionAmbient] = byte(0)
 			}
+		case state.OnFire:
+			m.setFlag(dataKeyFlags, dataFlagOnFire)
 		}
 	}
 	s.writePacket(&packet.SetActorData{
