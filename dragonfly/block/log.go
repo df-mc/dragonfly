@@ -23,14 +23,12 @@ type Log struct {
 	Axis world.Axis
 }
 
-// FlameEncouragement ...
-func (l Log) FlameEncouragement() int {
-	return 5
-}
-
-// Flammability ...
-func (l Log) Flammability() int {
-	return 5
+// FlammabilityInfo ...
+func (l Log) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  5,
+	}
 }
 
 // UseOnBlock handles the rotational placing of logs.

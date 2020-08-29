@@ -35,20 +35,15 @@ func (f WoodFenceGate) BreakInfo() BreakInfo {
 	}
 }
 
-// FlameEncouragement ...
-func (f WoodFenceGate) FlameEncouragement() int {
+// FlammabilityInfo ...
+func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 	if !f.Wood.Flammable {
-		return 0
+		return FlammabilityInfo{}
 	}
-	return 5
-}
-
-// Flammability ...
-func (f WoodFenceGate) Flammability() int {
-	if !f.Wood.Flammable {
-		return 0
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  20,
 	}
-	return 20
 }
 
 // UseOnBlock ...

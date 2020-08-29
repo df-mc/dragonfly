@@ -11,14 +11,12 @@ type CoalBlock struct {
 	solid
 }
 
-// FlameEncouragement ...
-func (c CoalBlock) FlameEncouragement() int {
-	return 5
-}
-
-// Flammability ...
-func (c CoalBlock) Flammability() int {
-	return 5
+// FlammabilityInfo ...
+func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  5,
+	}
 }
 
 // BreakInfo ...

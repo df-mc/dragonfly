@@ -177,10 +177,16 @@ func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World)
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlameEncouragement is the chance a block will catch on fire during attempted fire spread.
-	FlameEncouragement() int
+	// FlammabilityInfo returns information about a blocks behavior involving fire.
+	FlammabilityInfo() FlammabilityInfo
+}
+
+// FlammabilityInfo contains values related to block behaviors involving fire.
+type FlammabilityInfo struct {
+	// Encouragement is the chance a block will catch on fire during attempted fire spread.
+	Encouragement,
 	// Flammability is the chance a block will burn away during a fire block tick.
-	Flammability() int
+	Flammability int
 }
 
 // EntityColliding is an interface for blocks with special behaviors on entity collision.

@@ -17,14 +17,12 @@ type Carpet struct {
 	Colour colour.Colour
 }
 
-// FlameEncouragement ...
-func (c Carpet) FlameEncouragement() int {
-	return 30
-}
-
-// Flammability ...
-func (c Carpet) Flammability() int {
-	return 60
+// FlammabilityInfo ...
+func (c Carpet) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: 30,
+		Flammability:  60,
+	}
 }
 
 // CanDisplace ...

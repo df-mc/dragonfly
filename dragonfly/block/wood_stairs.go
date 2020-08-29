@@ -23,20 +23,15 @@ type WoodStairs struct {
 	Facing world.Direction
 }
 
-// FlameEncouragement ...
-func (s WoodStairs) FlameEncouragement() int {
-	if !s.Wood.Flammable {
-		return 0
+// FlammabilityInfo ...
+func (f WoodStairs) FlammabilityInfo() FlammabilityInfo {
+	if !f.Wood.Flammable {
+		return FlammabilityInfo{}
 	}
-	return 5
-}
-
-// Flammability ...
-func (s WoodStairs) Flammability() int {
-	if !s.Wood.Flammable {
-		return 0
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  20,
 	}
-	return 20
 }
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down

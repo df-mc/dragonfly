@@ -24,20 +24,15 @@ type WoodSlab struct {
 	Double bool
 }
 
-// FlameEncouragement ...
-func (s WoodSlab) FlameEncouragement() int {
+// FlammabilityInfo ...
+func (s WoodSlab) FlammabilityInfo() FlammabilityInfo {
 	if !s.Wood.Flammable {
-		return 0
+		return FlammabilityInfo{}
 	}
-	return 5
-}
-
-// Flammability ...
-func (s WoodSlab) Flammability() int {
-	if !s.Wood.Flammable {
-		return 0
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  20,
 	}
-	return 20
 }
 
 // Model ...

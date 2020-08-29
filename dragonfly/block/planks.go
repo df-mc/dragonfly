@@ -16,20 +16,15 @@ type Planks struct {
 	Wood wood.Wood
 }
 
-// FlameEncouragement ...
-func (p Planks) FlameEncouragement() int {
+// FlammabilityInfo ...
+func (p Planks) FlammabilityInfo() FlammabilityInfo {
 	if !p.Wood.Flammable {
-		return 0
+		return FlammabilityInfo{}
 	}
-	return 5
-}
-
-// Flammability ...
-func (p Planks) Flammability() int {
-	if !p.Wood.Flammable {
-		return 0
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  20,
 	}
-	return 20
 }
 
 // BreakInfo ...
