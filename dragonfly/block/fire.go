@@ -42,8 +42,8 @@ func woodTypeFlammable(w wood.Wood) bool {
 	}
 }
 
-// neighbourFlammable returns true if one a block adjacent to the passed position is flammable.
-func neighbourFlammable(pos world.BlockPos, w *world.World) bool {
+// neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
+func neighboursFlammable(pos world.BlockPos, w *world.World) bool {
 	for i := world.Face(0); i < 6; i++ {
 		if FlammableBlock(w.Block(pos.Side(i))) {
 			return true
@@ -119,7 +119,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 
 		if !infinitelyBurns {
-			if !neighbourFlammable(pos, w) {
+			if !neighboursFlammable(pos, w) {
 				if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos, world.FaceUp, w) || f.Age > 3 {
 					w.BreakBlockWithoutParticles(pos)
 				}
@@ -204,7 +204,7 @@ func (f Fire) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	below := w.Block(pos.Side(world.FaceDown))
-	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!neighbourFlammable(pos, w) || f.Type == fire.Soul()) {
+	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
 		switch below.(type) {
