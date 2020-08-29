@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
+	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
@@ -29,6 +30,16 @@ func FlammableBlock(block world.Block) bool {
 		return true
 	}
 	return false
+}
+
+// woodTypeFlammable returns whether a type of wood is flammable.
+func woodTypeFlammable(w wood.Wood) bool {
+	switch w {
+	case wood.Crimson(), wood.Warped():
+		return false
+	default:
+		return true
+	}
 }
 
 // neighbourFlammable returns true if one a block adjacent to the passed position is flammable.

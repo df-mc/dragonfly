@@ -26,7 +26,7 @@ type WoodSlab struct {
 
 // FlammabilityInfo ...
 func (s WoodSlab) FlammabilityInfo() FlammabilityInfo {
-	if !s.Wood.Flammable {
+	if !woodTypeFlammable(s.Wood) {
 		return FlammabilityInfo{}
 	}
 	return FlammabilityInfo{

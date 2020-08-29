@@ -1,5 +1,7 @@
 package block
 
+// TODO: Slipperiness
+
 // BlueIce is a solid block similar to packed ice.
 type BlueIce struct {
 	noNBT
