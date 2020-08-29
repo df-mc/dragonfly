@@ -27,6 +27,16 @@ type Lava struct {
 	Falling bool
 }
 
+// neighboursLavaFlammable returns true if one a block adjacent to the passed position is flammable.
+func neighboursLavaFlammable(pos world.BlockPos, w *world.World) bool {
+	for i := world.Face(0); i < 6; i++ {
+		if flammable, ok := w.Block(pos.Side(i)).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable {
+			return true
+		}
+	}
+	return false
+}
+
 // EntityCollide ...
 func (l Lava) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
@@ -42,7 +52,7 @@ func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 		for j := 0; j < i; j++ {
 			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
 			if _, ok := w.Block(pos).(Air); ok {
-				if flammable, ok := w.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable {
+				if neighboursLavaFlammable(pos, w) {
 					w.PlaceBlock(pos, Fire{})
 				}
 			}
@@ -51,7 +61,7 @@ func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 		for j := 0; j < 3; j++ {
 			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
 			if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); ok {
-				if flammable, ok := w.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable {
+				if flammable, ok := w.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable && flammable.FlammabilityInfo().Encouragement > 0 {
 					w.PlaceBlock(pos, Fire{})
 				}
 			}
