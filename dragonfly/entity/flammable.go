@@ -8,8 +8,10 @@ type Flammable interface {
 	FireDamage(amount float64)
 	// LavaDamage deals lava damage to the entity.
 	LavaDamage(amount float64)
-	// FireTicks returns duration of fire in ticks.
-	FireTicks() int
-	// SetFireTicks sets the player on fire for the specified duration in ticks.
-	SetFireTicks(ticks int)
+	// OnFireDuration returns duration of fire in ticks.
+	OnFireDuration() int
+	// SetOnFire sets the entity on fire for the specified duration.
+	SetOnFire(ticks int)
+	// Extinguish extinguishes the entity.
+	Extinguish()
 }

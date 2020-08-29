@@ -187,7 +187,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 func (f Fire) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
 		flammable.FireDamage(1)
-		flammable.SetFireTicks(160)
+		flammable.SetOnFire(160)
 	}
 }
 

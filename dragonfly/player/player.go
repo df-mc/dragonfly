@@ -673,7 +673,7 @@ func (p *Player) Respawn() {
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
-	p.SetFireTicks(0)
+	p.SetOnFire(0)
 
 	p.World().AddEntity(p)
 	p.SetVisible()
@@ -816,15 +816,22 @@ func (p *Player) LavaDamage(amount float64) {
 	}
 }
 
-// FireTicks ...
-func (p *Player) FireTicks() int {
+// OnFireDuration ...
+func (p *Player) OnFireDuration() int {
 	return int(p.fireTicks.Load())
 }
 
-// SetFireTicks ...
-func (p *Player) SetFireTicks(ticks int) {
+// SetOnFire ...
+func (p *Player) SetOnFire(ticks int) {
 	p.fireTicks.Store(int64(ticks))
 	p.updateState()
+}
+
+// Extinguish ...
+func (p *Player) Extinguish() {
+	if p.OnFireDuration() > 0 {
+		p.SetOnFire(0)
+	}
 }
 
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
@@ -1546,13 +1553,13 @@ func (p *Player) Tick(current int64) {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
-	if p.FireTicks() > 0 {
+	if p.OnFireDuration() > 0 {
 		if p.FireProof() {
-			p.SetFireTicks(0)
+			p.SetOnFire(0)
 		} else {
-			p.SetFireTicks(p.FireTicks() - 1)
+			p.SetOnFire(p.OnFireDuration() - 1)
 		}
-		if p.FireTicks()%20 == 0 && !p.AttackImmune() {
+		if p.OnFireDuration()%20 == 0 && !p.AttackImmune() {
 			p.Hurt(1, damage.SourceFireTick{})
 		}
 	}
@@ -1716,7 +1723,7 @@ func (p *Player) State() (s []state.State) {
 	if p.usingItem.Load() {
 		s = append(s, state.UsingItem{})
 	}
-	if p.FireTicks() > 0 {
+	if p.OnFireDuration() > 0 {
 		s = append(s, state.OnFire{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())

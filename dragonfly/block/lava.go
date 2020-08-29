@@ -31,7 +31,7 @@ type Lava struct {
 func (l Lava) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
 		flammable.LavaDamage(4)
-		flammable.SetFireTicks(300)
+		flammable.SetOnFire(300)
 	}
 }
 

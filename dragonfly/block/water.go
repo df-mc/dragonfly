@@ -27,9 +27,7 @@ type Water struct {
 // EntityCollide ...
 func (w Water) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
-		if flammable.FireTicks() > 0 {
-			flammable.SetFireTicks(0)
-		}
+		flammable.Extinguish()
 	}
 }
 
