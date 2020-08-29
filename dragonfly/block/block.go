@@ -189,8 +189,8 @@ type FlammabilityInfo struct {
 	Flammability int
 }
 
-// EntityColliding is an interface for blocks with special behaviors on entity collision.
-type EntityColliding interface {
+// EntityCollider is an interface for blocks with special behaviors on entity collision.
+type EntityCollider interface {
 	// EntityCollide is called on entity collision.
 	EntityCollide(e world.Entity)
 }

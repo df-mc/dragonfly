@@ -1561,7 +1561,7 @@ func (p *Player) Tick(current int64) {
 	for x := int(aabb.Min().X()); x <= int(aabb.Max().X()); x++ {
 		for y := int(aabb.Min().Y()); y <= int(aabb.Max().Y()); y++ {
 			for z := int(aabb.Min().Z()); z <= int(aabb.Max().Z()); z++ {
-				if collide, ok := p.World().Block(world.BlockPos{x, y, z}).(block.EntityColliding); ok {
+				if collide, ok := p.World().Block(world.BlockPos{x, y, z}).(block.EntityCollider); ok {
 					collide.EntityCollide(p)
 				}
 			}

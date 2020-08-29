@@ -42,7 +42,7 @@ func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 		for j := 0; j < i; j++ {
 			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
 			if _, ok := w.Block(pos).(Air); ok {
-				if NeighbourFlammable(pos, w) {
+				if neighbourFlammable(pos, w) {
 					w.PlaceBlock(pos, Fire{})
 				}
 			}

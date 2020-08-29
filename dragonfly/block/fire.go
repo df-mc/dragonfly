@@ -25,14 +25,14 @@ type Fire struct {
 
 // FlammableBlock returns true if a block is flammable.
 func FlammableBlock(block world.Block) bool {
-	if flammable, ok := block.(Flammable); ok && flammable.FlameEncouragement() > 0 {
+	if flammable, ok := block.(Flammable); ok && flammable.FlammabilityInfo().Encouragement > 0 {
 		return true
 	}
 	return false
 }
 
-// NeighbourFlammable returns true if one a block adjacent to the passed position is flammable.
-func NeighbourFlammable(pos world.BlockPos, w *world.World) bool {
+// neighbourFlammable returns true if one a block adjacent to the passed position is flammable.
+func neighbourFlammable(pos world.BlockPos, w *world.World) bool {
 	for i := world.Face(0); i < 6; i++ {
 		if FlammableBlock(w.Block(pos.Side(i))) {
 			return true
@@ -78,7 +78,7 @@ func infinitelyBurning(pos world.BlockPos, w *world.World) bool {
 
 // burn attempts to burn a block.
 func (f Fire) burn(pos world.BlockPos, w *world.World, chanceBound int) {
-	if flammable, ok := w.Block(pos).(Flammable); ok && rand.Intn(chanceBound) < flammable.Flammability() {
+	if flammable, ok := w.Block(pos).(Flammable); ok && rand.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		//TODO: Check if not raining
 		if rand.Intn(f.Age+10) < 5 {
 			age := f.Age + rand.Intn(5)/4
@@ -108,7 +108,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 
 		if !infinitelyBurns {
-			if !NeighbourFlammable(pos, w) {
+			if !neighbourFlammable(pos, w) {
 				if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos, world.FaceUp, w) || f.Age > 3 {
 					w.BreakBlockWithoutParticles(pos)
 				}
@@ -144,7 +144,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 							encouragement := 0
 							blockPos.Neighbours(func(neighbour world.BlockPos) {
 								if flammable, ok := w.Block(neighbour).(Flammable); ok {
-									encouragement = max(encouragement, flammable.FlameEncouragement())
+									encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
 								}
 							})
 							if encouragement > 0 {
@@ -189,7 +189,7 @@ func (f Fire) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	below := w.Block(pos.Side(world.FaceDown))
-	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!NeighbourFlammable(pos, w) || f.Type == fire.Soul()) {
+	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!neighbourFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
 		switch below.(type) {
