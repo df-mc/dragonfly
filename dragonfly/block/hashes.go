@@ -73,6 +73,7 @@ const (
 	hashQuartzPillar
 	hashQuartzBricks
 	hashSand
+	hashShroomlight
 	hashSeaLantern
 	hashSoulSand
 	hashSoulSoil
