@@ -187,6 +187,8 @@ type FlammabilityInfo struct {
 	Encouragement,
 	// Flammability is the chance a block will burn away during a fire block tick.
 	Flammability int
+	// LavaFlammable returns whether it can catch on fire from lava.
+	LavaFlammable bool
 }
 
 // EntityCollider is an interface for blocks with special behaviors on entity collision.

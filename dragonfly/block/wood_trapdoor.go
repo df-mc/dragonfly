@@ -26,6 +26,11 @@ type WoodTrapdoor struct {
 	Top bool
 }
 
+// FlammabilityInfo ...
+func (t WoodTrapdoor) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{LavaFlammable: true}
+}
+
 // Model ...
 func (t WoodTrapdoor) Model() world.BlockModel {
 	return model.Trapdoor{Facing: t.Facing, Top: t.Top, Open: t.Open}

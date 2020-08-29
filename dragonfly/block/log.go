@@ -28,6 +28,7 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 	return FlammabilityInfo{
 		Encouragement: 5,
 		Flammability:  5,
+		LavaFlammable: true,
 	}
 }
 

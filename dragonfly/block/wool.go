@@ -20,6 +20,7 @@ func (w Wool) FlammabilityInfo() FlammabilityInfo {
 	return FlammabilityInfo{
 		Encouragement: 30,
 		Flammability:  60,
+		LavaFlammable: true,
 	}
 }
 

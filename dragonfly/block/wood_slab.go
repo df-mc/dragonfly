@@ -32,6 +32,7 @@ func (s WoodSlab) FlammabilityInfo() FlammabilityInfo {
 	return FlammabilityInfo{
 		Encouragement: 5,
 		Flammability:  20,
+		LavaFlammable: true,
 	}
 }
 
