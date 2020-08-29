@@ -1557,6 +1557,7 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
+	// TODO: Move to Move()
 	aabb := p.AABB().Translate(p.Position())
 	for x := int(aabb.Min().X()); x <= int(aabb.Max().X()); x++ {
 		for y := int(aabb.Min().Y()); y <= int(aabb.Max().Y()); y++ {

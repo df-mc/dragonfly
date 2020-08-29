@@ -151,26 +151,30 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 					if x != 0 || y != 0 || z != 0 {
 						blockPos := pos.Add(world.BlockPos{x, y, z})
 						block := w.Block(blockPos)
-						if _, ok := block.(Air); ok {
-							encouragement := 0
-							blockPos.Neighbours(func(neighbour world.BlockPos) {
-								if flammable, ok := w.Block(neighbour).(Flammable); ok {
-									encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
-								}
-							})
-							if encouragement > 0 {
-								//TODO: Divide chance by 2 in high humidity
-								maxChance := (encouragement + 40 + difficultyOffset(w.Difficulty())) / (f.Age + 30)
+						if _, ok := block.(Air); !ok {
+							continue
+						}
 
-								//TODO: Check if exposed to rain
-								if maxChance > 0 && rand.Intn(randomBound) <= maxChance {
-									age := f.Age + rand.Intn(5)/4
-									if age > 15 {
-										age = 15
-									}
-									w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
-								}
+						encouragement := 0
+						blockPos.Neighbours(func(neighbour world.BlockPos) {
+							if flammable, ok := w.Block(neighbour).(Flammable); ok {
+								encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
 							}
+						})
+						if encouragement <= 0 {
+							continue
+						}
+
+						//TODO: Divide chance by 2 in high humidity
+						maxChance := (encouragement + 40 + difficultyOffset(w.Difficulty())) / (f.Age + 30)
+
+						//TODO: Check if exposed to rain
+						if maxChance > 0 && rand.Intn(randomBound) <= maxChance {
+							age := f.Age + rand.Intn(5)/4
+							if age > 15 {
+								age = 15
+							}
+							w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
 						}
 					}
 				}
