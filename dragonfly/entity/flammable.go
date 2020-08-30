@@ -1,5 +1,7 @@
 package entity
 
+import "time"
+
 // Flammable is an interface for entities that can be set on fire.
 type Flammable interface {
 	// FireProof is whether the entity is currently fire proof.
@@ -9,9 +11,9 @@ type Flammable interface {
 	// LavaDamage deals lava damage to the entity.
 	LavaDamage(amount float64)
 	// OnFireDuration returns duration of fire in ticks.
-	OnFireDuration() int
+	OnFireDuration() time.Duration
 	// SetOnFire sets the entity on fire for the specified duration.
-	SetOnFire(ticks int)
+	SetOnFire(duration time.Duration)
 	// Extinguish extinguishes the entity.
 	Extinguish()
 }

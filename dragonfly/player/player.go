@@ -817,13 +817,13 @@ func (p *Player) LavaDamage(amount float64) {
 }
 
 // OnFireDuration ...
-func (p *Player) OnFireDuration() int {
-	return int(p.fireTicks.Load())
+func (p *Player) OnFireDuration() time.Duration {
+	return time.Duration(p.fireTicks.Load()) * time.Second / 20
 }
 
 // SetOnFire ...
-func (p *Player) SetOnFire(ticks int) {
-	p.fireTicks.Store(int64(ticks))
+func (p *Player) SetOnFire(duration time.Duration) {
+	p.fireTicks.Store(int64(duration.Seconds() * 20))
 	p.updateState()
 }
 
@@ -1557,9 +1557,9 @@ func (p *Player) Tick(current int64) {
 		if p.FireProof() {
 			p.SetOnFire(0)
 		} else {
-			p.SetOnFire(p.OnFireDuration() - 1)
+			p.SetOnFire(p.OnFireDuration() - time.Second/20)
 		}
-		if p.OnFireDuration()%20 == 0 && !p.AttackImmune() {
+		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
 			p.Hurt(1, damage.SourceFireTick{})
 		}
 	}
