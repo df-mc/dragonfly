@@ -802,20 +802,6 @@ func (p *Player) FireProof() bool {
 	return p.GameMode() != gamemode.Survival{} && p.GameMode() != gamemode.Adventure{}
 }
 
-// FireDamage ...
-func (p *Player) FireDamage(amount float64) {
-	if !p.AttackImmune() {
-		p.Hurt(amount, damage.SourceFire{})
-	}
-}
-
-// LavaDamage ...
-func (p *Player) LavaDamage(amount float64) {
-	if !p.AttackImmune() {
-		p.Hurt(amount, damage.SourceLava{})
-	}
-}
-
 // OnFireDuration ...
 func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks.Load()) * time.Second / 20

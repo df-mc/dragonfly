@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
+	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"math/rand"
@@ -40,7 +41,7 @@ func neighboursLavaFlammable(pos world.BlockPos, w *world.World) bool {
 // EntityCollide ...
 func (l Lava) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
-		flammable.LavaDamage(4)
+		block_internal.LavaDamage(e, 4)
 		flammable.SetOnFire(time.Duration(15) * time.Second)
 	}
 }

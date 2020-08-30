@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"math/rand"
@@ -176,7 +177,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 // EntityCollide ...
 func (f Fire) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
-		flammable.FireDamage(1)
+		block_internal.FireDamage(e, 1)
 		flammable.SetOnFire(time.Duration(8) * time.Second)
 	}
 }
