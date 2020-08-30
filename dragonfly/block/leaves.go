@@ -40,16 +40,16 @@ func (l Leaves) BreakInfo() BreakInfo {
 		Effective: func(t tool.Tool) bool {
 			return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
 		},
-		Drops: func(t tool.Tool) (drops []item.Stack) {
+		Drops: func(t tool.Tool) []item.Stack {
 			if t.ToolType() == tool.TypeShears { // TODO: Silk Touch
-				drops = append(drops, item.NewStack(l, 1))
-			} else {
-				// TODO: Saplings and sticks can drop
-				if (l.Wood == wood.Oak() || l.Wood == wood.DarkOak()) && rand.Float64() < 0.005 {
-					drops = append(drops, item.NewStack(item.Apple{}, 1))
-				}
+				return []item.Stack{item.NewStack(l, 1)}
 			}
-			return
+			var drops []item.Stack
+			if (l.Wood == wood.Oak() || l.Wood == wood.DarkOak()) && rand.Float64() < 0.005 {
+				drops = append(drops, item.NewStack(item.Apple{}, 1))
+			}
+			// TODO: Saplings and sticks can drop along with apples
+			return drops
 		},
 	}
 }

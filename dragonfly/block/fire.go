@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
-	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
@@ -30,16 +29,6 @@ func FlammableBlock(block world.Block) bool {
 		return true
 	}
 	return false
-}
-
-// woodTypeFlammable returns whether a type of wood is flammable.
-func woodTypeFlammable(w wood.Wood) bool {
-	switch w {
-	case wood.Crimson(), wood.Warped():
-		return false
-	default:
-		return true
-	}
 }
 
 // neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
@@ -148,34 +137,35 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 
 			for x := -1; x <= 1; x++ {
 				for z := -1; z <= 1; z++ {
-					if x != 0 || y != 0 || z != 0 {
-						blockPos := pos.Add(world.BlockPos{x, y, z})
-						block := w.Block(blockPos)
-						if _, ok := block.(Air); !ok {
-							continue
-						}
+					if x == 0 && y == 0 && z == 0 {
+						continue
+					}
+					blockPos := pos.Add(world.BlockPos{x, y, z})
+					block := w.Block(blockPos)
+					if _, ok := block.(Air); !ok {
+						continue
+					}
 
-						encouragement := 0
-						blockPos.Neighbours(func(neighbour world.BlockPos) {
-							if flammable, ok := w.Block(neighbour).(Flammable); ok {
-								encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
-							}
-						})
-						if encouragement <= 0 {
-							continue
+					encouragement := 0
+					blockPos.Neighbours(func(neighbour world.BlockPos) {
+						if flammable, ok := w.Block(neighbour).(Flammable); ok {
+							encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
 						}
+					})
+					if encouragement <= 0 {
+						continue
+					}
 
-						//TODO: Divide chance by 2 in high humidity
-						maxChance := (encouragement + 40 + difficultyOffset(w.Difficulty())) / (f.Age + 30)
+					//TODO: Divide chance by 2 in high humidity
+					maxChance := (encouragement + 40 + difficultyOffset(w.Difficulty())) / (f.Age + 30)
 
-						//TODO: Check if exposed to rain
-						if maxChance > 0 && rand.Intn(randomBound) <= maxChance {
-							age := f.Age + rand.Intn(5)/4
-							if age > 15 {
-								age = 15
-							}
-							w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
+					//TODO: Check if exposed to rain
+					if maxChance > 0 && rand.Intn(randomBound) <= maxChance {
+						age := f.Age + rand.Intn(5)/4
+						if age > 15 {
+							age = 15
 						}
+						w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
 					}
 				}
 			}

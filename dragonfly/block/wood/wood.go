@@ -128,3 +128,8 @@ func (w wood) String() string {
 	}
 	panic("unknown wood type")
 }
+
+// Flammable returns whether the wood type is flammable.
+func (w wood) Flammable() bool {
+	return w != 6 && w != 7
+}

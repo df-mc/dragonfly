@@ -37,7 +37,7 @@ func (f WoodFenceGate) BreakInfo() BreakInfo {
 
 // FlammabilityInfo ...
 func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
-	if !woodTypeFlammable(f.Wood) {
+	if !f.Wood.Flammable() {
 		return FlammabilityInfo{}
 	}
 	return FlammabilityInfo{
