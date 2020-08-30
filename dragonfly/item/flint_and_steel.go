@@ -5,6 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
+	"time"
 )
 
 // FlintAndSteel is an item used to light blocks on fire.
@@ -29,6 +31,7 @@ func (f FlintAndSteel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.V
 	w.PlaySound(pos.Vec3(), sound.Ignite{})
 	if w.Block(pos.Side(face)) == item_internal.Air {
 		w.PlaceBlock(pos.Side(face), item_internal.Fire)
+		w.ScheduleBlockUpdate(pos.Side(face), time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true
 	}
 	return false

@@ -87,6 +87,7 @@ func (f Fire) burn(pos world.BlockPos, w *world.World, chanceBound int) {
 				age = 15
 			}
 			w.PlaceBlock(pos, Fire{Type: f.Type, Age: age})
+			w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 		} else {
 			w.BreakBlockWithoutParticles(pos)
 		}
@@ -167,6 +168,7 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 							age = 15
 						}
 						w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
+						w.ScheduleBlockUpdate(blockPos, time.Duration(30+rand.Intn(10))*time.Second/20)
 					}
 				}
 			}
@@ -208,7 +210,6 @@ func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 				return
 			}
 		}
-		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 	}
 }
 
