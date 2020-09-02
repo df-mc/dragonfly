@@ -269,6 +269,8 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 		return mgl64.Vec3{0, 1.62}
 	case *entity.Item:
 		return mgl64.Vec3{0, 0.125}
+	case *entity.FallingBlock:
+		return mgl64.Vec3{0, 0.49, 0}
 	}
 	return mgl64.Vec3{}
 }
