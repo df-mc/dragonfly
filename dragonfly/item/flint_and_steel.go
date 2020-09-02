@@ -28,8 +28,8 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 // UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	w.PlaySound(pos.Vec3(), sound.Ignite{})
 	if w.Block(pos.Side(face)) == item_internal.Air {
+		w.PlaySound(pos.Vec3(), sound.Ignite{})
 		w.PlaceBlock(pos.Side(face), item_internal.Fire)
 		w.ScheduleBlockUpdate(pos.Side(face), time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true

@@ -110,6 +110,11 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 
 		if !infinitelyBurns {
+			_, waterBelow := w.Block(pos.Side(world.FaceDown)).(Water)
+			if waterBelow {
+				w.BreakBlockWithoutParticles(pos)
+				return
+			}
 			if !neighboursFlammable(pos, w) {
 				if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos, world.FaceUp, w) || f.Age > 3 {
 					w.BreakBlockWithoutParticles(pos)
@@ -195,7 +200,7 @@ func (f Fire) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (f Fire) NeighbourUpdateTick(pos, neighbour world.BlockPos, w *world.World) {
 	below := w.Block(pos.Side(world.FaceDown))
 	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
@@ -204,6 +209,10 @@ func (f Fire) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 		case SoulSand, SoulSoil:
 			f.Type = fire.Soul()
 			w.PlaceBlock(pos, f)
+		case Water:
+			if neighbour == pos {
+				w.BreakBlockWithoutParticles(pos)
+			}
 		default:
 			if f.Type == fire.Soul() {
 				w.BreakBlockWithoutParticles(pos)

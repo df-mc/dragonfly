@@ -673,7 +673,7 @@ func (p *Player) Respawn() {
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
-	p.SetOnFire(0)
+	p.Extinguish()
 
 	p.World().AddEntity(p)
 	p.SetVisible()
@@ -815,9 +815,7 @@ func (p *Player) SetOnFire(duration time.Duration) {
 
 // Extinguish ...
 func (p *Player) Extinguish() {
-	if p.OnFireDuration() > 0 {
-		p.SetOnFire(0)
-	}
+	p.SetOnFire(0)
 }
 
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
@@ -1540,10 +1538,9 @@ func (p *Player) Tick(current int64) {
 	}
 
 	if p.OnFireDuration() > 0 {
-		if p.FireProof() {
-			p.SetOnFire(0)
-		} else {
-			p.SetOnFire(p.OnFireDuration() - time.Second/20)
+		p.fireTicks.Sub(1)
+		if p.FireProof() || p.OnFireDuration() <= 0 {
+			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
 			p.Hurt(1, damage.SourceFireTick{})
