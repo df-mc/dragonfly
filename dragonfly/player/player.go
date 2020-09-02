@@ -1563,7 +1563,7 @@ func (p *Player) Tick(current int64) {
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
-			// Eating particles seem to happen roughly ever 5 ticks.
+			// Eating particles seem to happen roughly every 4 ticks.
 			for _, v := range p.World().Viewers(p.Position()) {
 				v.ViewEntityAction(p, action.Eat{})
 			}
