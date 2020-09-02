@@ -1549,9 +1549,10 @@ func (p *Player) Tick(current int64) {
 
 	// TODO: Move to Move()
 	aabb := p.AABB().Translate(p.Position())
-	for x := int(aabb.Min().X()); x <= int(aabb.Max().X()); x++ {
-		for y := int(aabb.Min().Y()); y <= int(aabb.Max().Y()); y++ {
-			for z := int(aabb.Min().Z()); z <= int(aabb.Max().Z()); z++ {
+	min, max := world.BlockPosFromVec3(aabb.Min()), world.BlockPosFromVec3(aabb.Max())
+	for x := min[0]; x <= max[0]; x++ {
+		for y := min[1]; y <= max[1]; y++ {
+			for z := min[2]; z <= max[2]; z++ {
 				if collide, ok := p.World().Block(world.BlockPos{x, y, z}).(block.EntityCollider); ok {
 					collide.EntityCollide(p)
 				}
