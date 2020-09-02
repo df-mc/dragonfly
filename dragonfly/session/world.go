@@ -269,8 +269,6 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 		return mgl64.Vec3{0, 1.62}
 	case *entity.Item:
 		return mgl64.Vec3{0, 0.125}
-	case *entity.FallingBlock:
-		return mgl64.Vec3{0.5, 0.49, 0.5}
 	}
 	return mgl64.Vec3{}
 }
@@ -421,6 +419,10 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundPop,
 			Position:  vec64To32(pos),
 		})
+	case sound.FireExtinguish:
+		pk.SoundType = packet.SoundEventExtinguishFire
+	case sound.Ignite:
+		pk.SoundType = packet.SoundEventIgnite
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:
@@ -558,6 +560,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			} else {
 				m[dataKeyPotionAmbient] = byte(0)
 			}
+		case state.OnFire:
+			m.setFlag(dataKeyFlags, dataFlagOnFire)
 		}
 	}
 	s.writePacket(&packet.SetActorData{

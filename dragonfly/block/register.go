@@ -15,7 +15,7 @@ func init() {
 	// Always register Air first so we can use 0 runtime IDs as air.
 	world.RegisterBlock(Air{})
 
-	world.RegisterBlock(Stone{})
+	world.RegisterBlock(Stone{}, Stone{Smooth: true})
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
@@ -96,11 +96,22 @@ func init() {
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(allConcretePowder()...)
 	world.RegisterBlock(Bricks{})
+	world.RegisterBlock(allFire()...)
+	world.RegisterBlock(SoulSand{})
+	world.RegisterBlock(Barrier{})
+	world.RegisterBlock(Basalt{Axis: world.X}, Basalt{Axis: world.Y}, Basalt{Axis: world.Z}, Basalt{Polished: true, Axis: world.X}, Basalt{Polished: true, Axis: world.Y}, Basalt{Polished: true, Axis: world.Z})
+	world.RegisterBlock(CryingObsidian{})
+	world.RegisterBlock(SeaLantern{})
+	world.RegisterBlock(SoulSoil{})
+	world.RegisterBlock(BlueIce{})
+	world.RegisterBlock(GildedBlackstone{})
+	world.RegisterBlock(Shroomlight{})
 }
 
 func init() {
 	world.RegisterItem("minecraft:air", Air{})
 	world.RegisterItem("minecraft:stone", Stone{})
+	world.RegisterItem("minecraft:smooth_stone", Stone{Smooth: true})
 	world.RegisterItem("minecraft:stone", Granite{})
 	world.RegisterItem("minecraft:stone", Granite{Polished: true})
 	world.RegisterItem("minecraft:stone", Diorite{})
@@ -153,8 +164,12 @@ func init() {
 	for _, b := range allLight() {
 		world.RegisterItem("minecraft:light_block", b.(world.Item))
 	}
-	for _, b := range allPlanks() {
-		world.RegisterItem("minecraft:planks", b.(world.Item))
+	for _, w := range wood.All() {
+		if w == wood.Crimson() || w == wood.Warped() {
+			world.RegisterItem("minecraft:"+w.String()+"_planks", Planks{Wood: w})
+		} else {
+			world.RegisterItem("minecraft:planks", Planks{Wood: w})
+		}
 	}
 	world.RegisterItem("minecraft:oak_stairs", WoodStairs{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_stairs", WoodStairs{Wood: wood.Spruce()})
@@ -162,18 +177,24 @@ func init() {
 	world.RegisterItem("minecraft:jungle_stairs", WoodStairs{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_stairs", WoodStairs{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_stairs", WoodStairs{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_stairs", WoodStairs{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_stairs", WoodStairs{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:wooden_slab", WoodSlab{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_slab", WoodSlab{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_slab", WoodSlab{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Oak(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Spruce(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Birch(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Jungle(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.Acacia(), Double: true})
 	world.RegisterItem("minecraft:double_wooden_slab", WoodSlab{Wood: wood.DarkOak(), Double: true})
+	world.RegisterItem("minecraft:crimson_double_slab", WoodSlab{Wood: wood.Crimson(), Double: true})
+	world.RegisterItem("minecraft:warped_double_slab", WoodSlab{Wood: wood.Warped(), Double: true})
 	world.RegisterItem("minecraft:obsidian", Obsidian{})
 	world.RegisterItem("minecraft:diamond_block", DiamondBlock{})
 	world.RegisterItem("minecraft:glass", Glass{})
@@ -203,18 +224,24 @@ func init() {
 	world.RegisterItem("minecraft:jungle_fence_gate", WoodFenceGate{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_fence_gate", WoodFenceGate{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_fence_gate", WoodFenceGate{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_fence_gate", WoodFenceGate{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_fence_gate", WoodFenceGate{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:jungle_trapdoor", WoodTrapdoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_trapdoor", WoodTrapdoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_trapdoor", WoodTrapdoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_trapdoor", WoodTrapdoor{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_trapdoor", WoodTrapdoor{Wood: wood.Warped()})
 	world.RegisterItem("minecraft:wooden_door", WoodDoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_door", WoodDoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_door", WoodDoor{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:jungle_door", WoodDoor{Wood: wood.Jungle()})
 	world.RegisterItem("minecraft:acacia_door", WoodDoor{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:dark_oak_door", WoodDoor{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_door", WoodDoor{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_door", WoodDoor{Wood: wood.Warped()})
 	for _, c := range allCoral() {
 		world.RegisterItem("minecraft:coral", c.(world.Item))
 	}
@@ -251,6 +278,16 @@ func init() {
 	world.RegisterItem("minecraft:sand", Sand{Red: true})
 	world.RegisterItem("minecraft:gravel", Gravel{})
 	world.RegisterItem("minecraft:brick_block", Bricks{})
+	world.RegisterItem("minecraft:soul_sand", SoulSand{})
+	world.RegisterItem("minecraft:barrier", Barrier{})
+	world.RegisterItem("minecraft:basalt", Basalt{})
+	world.RegisterItem("minecraft:polished_basalt", Basalt{Polished: true})
+	world.RegisterItem("minecraft:crying_obsidian", CryingObsidian{})
+	world.RegisterItem("minecraft:seaLantern", SeaLantern{})
+	world.RegisterItem("minecraft:soul_soil", SoulSoil{})
+	world.RegisterItem("minecraft:blue_ice", BlueIce{})
+	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
+	world.RegisterItem("minecraft:shroomlight", Shroomlight{})
 }
 
 func init() {
@@ -304,6 +341,7 @@ func init() {
 		}
 		return gravity.CanSolidify(pos, w)
 	}
+	item_internal.Fire = Fire{}
 }
 
 // readSlice reads an interface slice from a map at the key passed.

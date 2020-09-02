@@ -104,6 +104,11 @@ var shovelEffective = func(t tool.Tool) bool {
 	return t.ToolType() == tool.TypeShovel
 }
 
+// hoeEffective is a convenience function for blocks that are effectively mined with a hoe.
+var hoeEffective = func(t tool.Tool) bool {
+	return t.ToolType() == tool.TypeHoe
+}
+
 // nothingEffective is a convenience function for blocks that cannot be mined efficiently with any tool.
 var nothingEffective = func(tool.Tool) bool {
 	return false

@@ -291,6 +291,18 @@ func (w *World) BreakBlock(pos BlockPos) {
 	}
 }
 
+// BreakBlockWithoutParticles breaks a block at the position passed. Unlike when setting the block at that position to air,
+// BreakBlockWithoutParticles will also update blocks around the position.
+func (w *World) BreakBlockWithoutParticles(pos BlockPos) {
+	w.SetBlock(pos, nil)
+	if liq, ok := w.Liquid(pos); ok {
+		// Move the liquid down a layer.
+		w.SetLiquid(pos, liq)
+	} else {
+		w.doBlockUpdatesAround(pos)
+	}
+}
+
 // PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also schedules
 // block updates around the position.
 // If the block can displace liquids at the position placed, it will do so, and liquid source blocks will be

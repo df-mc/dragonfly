@@ -168,9 +168,31 @@ func (g gravityAffected) fall(b world.Block, pos world.BlockPos, w *world.World)
 	_, air := w.Block(pos.Side(world.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(world.FaceDown))
 	if air || liquid {
-		w.BreakBlock(pos)
+		w.BreakBlockWithoutParticles(pos)
 
-		e := entity.NewFallingBlock(b, pos.Vec3())
+		e := entity.NewFallingBlock(b, pos.Vec3Middle())
 		w.AddEntity(e)
 	}
+}
+
+// Flammable is an interface for blocks that can catch on fire.
+type Flammable interface {
+	// FlammabilityInfo returns information about a blocks behavior involving fire.
+	FlammabilityInfo() FlammabilityInfo
+}
+
+// FlammabilityInfo contains values related to block behaviors involving fire.
+type FlammabilityInfo struct {
+	// Encouragement is the chance a block will catch on fire during attempted fire spread.
+	Encouragement,
+	// Flammability is the chance a block will burn away during a fire block tick.
+	Flammability int
+	// LavaFlammable returns whether it can catch on fire from lava.
+	LavaFlammable bool
+}
+
+// EntityCollider is an interface for blocks with special behaviors on entity collision.
+type EntityCollider interface {
+	// EntityCollide is called on entity collision.
+	EntityCollide(e world.Entity)
 }

@@ -73,12 +73,12 @@ func StrongLeaping() Potion {
 
 // FireResistance ...
 func FireResistance() Potion {
-	return Potion{potion: 12} //TODO: Implement fire resistance
+	return Potion{12, []effect.Effect{effect.FireResistance{}.WithSettings(time.Duration(3)*time.Minute, 1, false)}}
 }
 
 // LongFireResistance ...
 func LongFireResistance() Potion {
-	return Potion{potion: 13} //TODO: Implement fire resistance
+	return Potion{13, []effect.Effect{effect.FireResistance{}.WithSettings(time.Duration(8)*time.Minute, 1, false)}}
 }
 
 // Swiftness ...

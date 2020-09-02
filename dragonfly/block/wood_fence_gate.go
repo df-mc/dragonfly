@@ -25,6 +25,28 @@ type WoodFenceGate struct {
 	Lowered bool
 }
 
+// BreakInfo ...
+func (f WoodFenceGate) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    2,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(item.NewStack(f, 1)),
+	}
+}
+
+// FlammabilityInfo ...
+func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
+	if !f.Wood.Flammable() {
+		return FlammabilityInfo{}
+	}
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  20,
+		LavaFlammable: true,
+	}
+}
+
 // UseOnBlock ...
 func (f WoodFenceGate) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, f)
@@ -74,6 +96,10 @@ func (f WoodFenceGate) EncodeItem() (id int32, meta int16) {
 		return 187, 0
 	case wood.DarkOak():
 		return 186, 0
+	case wood.Crimson():
+		return -258, 0
+	case wood.Warped():
+		return -259, 0
 	}
 	panic("invalid wood type")
 }
@@ -93,18 +119,9 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interfa
 	switch f.Wood {
 	case wood.Oak():
 		return "minecraft:fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	case wood.Spruce():
-		return "minecraft:spruce_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	case wood.Birch():
-		return "minecraft:birch_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	case wood.Jungle():
-		return "minecraft:jungle_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	case wood.Acacia():
-		return "minecraft:acacia_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	case wood.DarkOak():
-		return "minecraft:dark_oak_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
+	default:
+		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	}
-	panic("invalid wood type")
 }
 
 // Hash ...

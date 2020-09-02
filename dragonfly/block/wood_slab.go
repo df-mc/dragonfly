@@ -24,6 +24,18 @@ type WoodSlab struct {
 	Double bool
 }
 
+// FlammabilityInfo ...
+func (s WoodSlab) FlammabilityInfo() FlammabilityInfo {
+	if !s.Wood.Flammable() {
+		return FlammabilityInfo{}
+	}
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  20,
+		LavaFlammable: true,
+	}
+}
+
 // Model ...
 func (s WoodSlab) Model() world.BlockModel {
 	return model.Slab{Double: s.Double, Top: s.Top}
@@ -134,6 +146,16 @@ func (s WoodSlab) EncodeItem() (id int32, meta int16) {
 			return 157, 5
 		}
 		return 158, 5
+	case wood.Crimson():
+		if s.Double {
+			return -266, 0
+		}
+		return -264, 0
+	case wood.Warped():
+		if s.Double {
+			return -267, 0
+		}
+		return -265, 0
 	}
 	panic("invalid wood type")
 }
@@ -141,7 +163,13 @@ func (s WoodSlab) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Double {
+		if s.Wood == wood.Crimson() || s.Wood == wood.Warped() {
+			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]interface{}{"top_slot_bit": s.Top}
+		}
 		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+	}
+	if s.Wood == wood.Crimson() || s.Wood == wood.Warped() {
+		return "minecraft:" + s.Wood.String() + "_slab", map[string]interface{}{"top_slot_bit": s.Top}
 	}
 	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 }
@@ -166,12 +194,9 @@ func (s WoodSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
 // allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
-		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Oak()})
-		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Spruce()})
-		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Birch()})
-		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Jungle()})
-		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.Acacia()})
-		slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: wood.DarkOak()})
+		for _, w := range wood.All() {
+			slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: w})
+		}
 	}
 	f(false, false)
 	f(false, true)

@@ -74,6 +74,8 @@ type Player struct {
 	immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	fireTicks atomic.Int64
+
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
 	effects  *entity.EffectManager
@@ -401,6 +403,11 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 	if p.Dead() || dmg < 0 || !p.survival() {
 		return
 	}
+	for _, e := range p.Effects() {
+		if _, ok := e.(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+			return
+		}
+	}
 
 	ctx := event.C()
 	p.handler().HandleHurt(ctx, &dmg, source)
@@ -666,6 +673,7 @@ func (p *Player) Respawn() {
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
+	p.Extinguish()
 
 	p.World().AddEntity(p)
 	p.SetVisible()
@@ -787,6 +795,27 @@ func (p *Player) SetMobile() {
 		return
 	}
 	p.updateState()
+}
+
+// FireProof ...
+func (p *Player) FireProof() bool {
+	return p.GameMode() != gamemode.Survival{} && p.GameMode() != gamemode.Adventure{}
+}
+
+// OnFireDuration ...
+func (p *Player) OnFireDuration() time.Duration {
+	return time.Duration(p.fireTicks.Load()) * time.Second / 20
+}
+
+// SetOnFire ...
+func (p *Player) SetOnFire(duration time.Duration) {
+	p.fireTicks.Store(int64(duration.Seconds() * 20))
+	p.updateState()
+}
+
+// Extinguish ...
+func (p *Player) Extinguish() {
+	p.SetOnFire(0)
 }
 
 // Inventory returns the inventory of the player. This inventory holds the items stored in the normal part of
@@ -1057,10 +1086,15 @@ func (p *Player) AttackEntity(e world.Entity) {
 // If no block is present at the position, or if the block is out of range, StartBreaking will return
 // immediately and the block will not be broken. StartBreaking will stop the breaking of any block that the
 // player might be breaking before this method is called.
-func (p *Player) StartBreaking(pos world.BlockPos) {
+func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 	p.AbortBreaking()
 	if _, air := p.World().Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
+		return
+	}
+	if _, ok := p.World().Block(pos.Side(face)).(block.Fire); ok {
+		p.World().BreakBlockWithoutParticles(pos.Side(face))
+		p.World().PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
 	ctx := event.C()
@@ -1503,6 +1537,28 @@ func (p *Player) Tick(current int64) {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
+	if p.OnFireDuration() > 0 {
+		p.fireTicks.Sub(1)
+		if p.FireProof() || p.OnFireDuration() <= 0 {
+			p.Extinguish()
+		}
+		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
+			p.Hurt(1, damage.SourceFireTick{})
+		}
+	}
+
+	// TODO: Move to Move()
+	aabb := p.AABB().Translate(p.Position())
+	for x := int(aabb.Min().X()); x <= int(aabb.Max().X()); x++ {
+		for y := int(aabb.Min().Y()); y <= int(aabb.Max().Y()); y++ {
+			for z := int(aabb.Min().Z()); z <= int(aabb.Max().Z()); z++ {
+				if collide, ok := p.World().Block(world.BlockPos{x, y, z}).(block.EntityCollider); ok {
+					collide.EntityCollide(p)
+				}
+			}
+		}
+	}
+
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
@@ -1649,6 +1705,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if p.usingItem.Load() {
 		s = append(s, state.UsingItem{})
+	}
+	if p.OnFireDuration() > 0 {
+		s = append(s, state.OnFire{})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {

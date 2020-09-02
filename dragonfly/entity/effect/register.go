@@ -25,7 +25,7 @@ func init() {
 	Register(9, Nausea{})
 	Register(10, Regeneration{})
 	Register(11, Resistance{})
-	// TODO: (12) Fire resistance. (Requires fire/lava damage)
+	Register(12, FireResistance{})
 	Register(13, WaterBreathing{})
 	Register(14, Invisibility{})
 	Register(15, Blindness{})

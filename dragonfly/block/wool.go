@@ -15,6 +15,15 @@ type Wool struct {
 	Colour colour.Colour
 }
 
+// FlammabilityInfo ...
+func (w Wool) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: 30,
+		Flammability:  60,
+		LavaFlammable: true,
+	}
+}
+
 // BreakInfo ...
 func (w Wool) BreakInfo() BreakInfo {
 	return BreakInfo{

@@ -3,9 +3,12 @@ package block
 const (
 	hashAir uint64 = iota
 	hashAncientDebris
+	hashBarrier
+	hashBasalt
 	hashBeacon
 	hashBedrock
 	hashBeetroot
+	hashBlueIce
 	hashBricks
 	hashBoneBlock
 	hashCarpet
@@ -20,6 +23,7 @@ const (
 	hashConcretePowder
 	hashCoral
 	hashCoralBlock
+	hashCryingObsidian
 	hashDiamondBlock
 	hashDiamondOre
 	hashDirt
@@ -30,6 +34,8 @@ const (
 	hashEndBrickStairs
 	hashEndStone
 	hashFarmland
+	hashFire
+	hashGildedBlackstone
 	hashGlass
 	hashGlazedTerracotta
 	hashGlowstone
@@ -67,6 +73,10 @@ const (
 	hashQuartzPillar
 	hashQuartzBricks
 	hashSand
+	hashShroomlight
+	hashSeaLantern
+	hashSoulSand
+	hashSoulSoil
 	hashSponge
 	hashStainedTerracotta
 	hashStone

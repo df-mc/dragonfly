@@ -50,7 +50,7 @@ type Controllable interface {
 	Swimming() bool
 	StopSwimming()
 
-	StartBreaking(pos world.BlockPos)
+	StartBreaking(pos world.BlockPos, face world.Face)
 	ContinueBreaking(face world.Face)
 	FinishBreaking()
 	AbortBreaking()

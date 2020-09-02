@@ -110,4 +110,8 @@ func init() {
 	for _, p := range potion.All() {
 		world.RegisterItem("minecraft:potion", Potion{Type: p})
 	}
+
+	world.RegisterItem("minecraft:flint_and_steel", FlintAndSteel{})
+
+	world.RegisterItem("minecraft:prismarine_crystals", PrismarineCrystals{})
 }

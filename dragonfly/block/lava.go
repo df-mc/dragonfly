@@ -1,10 +1,13 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
+	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
+	"math/rand"
 	"time"
 )
 
@@ -23,6 +26,48 @@ type Lava struct {
 	// Falling specifies if the lava is falling. Falling lava will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// neighboursLavaFlammable returns true if one a block adjacent to the passed position is flammable.
+func neighboursLavaFlammable(pos world.BlockPos, w *world.World) bool {
+	for i := world.Face(0); i < 6; i++ {
+		if flammable, ok := w.Block(pos.Side(i)).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable {
+			return true
+		}
+	}
+	return false
+}
+
+// EntityCollide ...
+func (l Lava) EntityCollide(e world.Entity) {
+	if flammable, ok := e.(entity.Flammable); ok {
+		block_internal.LavaDamage(e, 4)
+		flammable.SetOnFire(time.Duration(15) * time.Second)
+	}
+}
+
+// RandomTick ...
+func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+	i := r.Intn(3)
+	if i > 0 {
+		for j := 0; j < i; j++ {
+			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
+			if _, ok := w.Block(pos).(Air); ok {
+				if neighboursLavaFlammable(pos, w) {
+					w.PlaceBlock(pos, Fire{})
+				}
+			}
+		}
+	} else {
+		for j := 0; j < 3; j++ {
+			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
+			if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); ok {
+				if flammable, ok := w.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable && flammable.FlammabilityInfo().Encouragement > 0 {
+					w.PlaceBlock(pos, Fire{})
+				}
+			}
+		}
+	}
 }
 
 // AABB returns no boxes.
@@ -94,8 +139,15 @@ func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.Bloc
 
 	if flownIntoBy == nil {
 		var water, b world.Block
+		_, soulSoilFound := w.Block(pos.Side(world.FaceDown)).(SoulSoil)
 		pos.Neighbours(func(neighbour world.BlockPos) {
 			if b != nil || neighbour[1] == pos[1]-1 {
+				return
+			}
+			if _, ok := w.Block(neighbour).(BlueIce); ok {
+				if soulSoilFound {
+					b = Basalt{}
+				}
 				return
 			}
 			if waterBlock, ok := w.Block(neighbour).(Water); ok {

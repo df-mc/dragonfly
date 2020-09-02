@@ -36,6 +36,15 @@ type SourcePoisonEffect struct {
 // SourceWitherEffect is used for damage caused by an effect.Wither applied to an entity.
 type SourceWitherEffect struct{}
 
+// SourceFire is used for damage caused by being in fire.
+type SourceFire struct{}
+
+// SourceFireTick is used for damage caused by being on fire.
+type SourceFireTick struct{}
+
+// SourceLava is used for damage caused by being in lava.
+type SourceLava struct{}
+
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
@@ -73,4 +82,19 @@ func (SourcePoisonEffect) ReducedByArmour() bool {
 // ReducedByArmour ...
 func (SourceWitherEffect) ReducedByArmour() bool {
 	return false
+}
+
+// ReducedByArmour ...
+func (SourceFire) ReducedByArmour() bool {
+	return true
+}
+
+// ReducedByArmour ...
+func (SourceFireTick) ReducedByArmour() bool {
+	return false
+}
+
+// ReducedByArmour ...
+func (SourceLava) ReducedByArmour() bool {
+	return true
 }

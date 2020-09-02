@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -21,6 +22,13 @@ type Water struct {
 	// Falling specifies if the water is falling. Falling water will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// EntityCollide ...
+func (w Water) EntityCollide(e world.Entity) {
+	if flammable, ok := e.(entity.Flammable); ok {
+		flammable.Extinguish()
+	}
 }
 
 // LiquidDepth returns the depth of the water.

@@ -38,9 +38,19 @@ func DarkOak() Wood {
 	return Wood{wood(5)}
 }
 
+// Crimson returns crimson wood material.
+func Crimson() Wood {
+	return Wood{wood(6)}
+}
+
+// Warped returns warped wood material.
+func Warped() Wood {
+	return Wood{wood(7)}
+}
+
 // All returns a list of all wood types
 func All() []Wood {
-	return []Wood{Oak(), Spruce(), Birch(), Jungle(), Acacia(), DarkOak()}
+	return []Wood{Oak(), Spruce(), Birch(), Jungle(), Acacia(), DarkOak(), Crimson(), Warped()}
 }
 
 type wood uint8
@@ -65,6 +75,10 @@ func (w wood) Name() string {
 		return "Acacia"
 	case 5:
 		return "Dark Oak"
+	case 6:
+		return "Crimson"
+	case 7:
+		return "Warped"
 	}
 	panic("unknown wood type")
 }
@@ -84,8 +98,12 @@ func (w wood) FromString(s string) (interface{}, error) {
 		return Wood{wood(4)}, nil
 	case "dark_oak":
 		return Wood{wood(5)}, nil
+	case "crimson":
+		return Wood{wood(6)}, nil
+	case "warped":
+		return Wood{wood(7)}, nil
 	}
-	return nil, fmt.Errorf("unexpected wood type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia' or 'dark_oak'", s)
+	return nil, fmt.Errorf("unexpected wood type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'crimson' or 'warped'", s)
 }
 
 // String ...
@@ -103,6 +121,15 @@ func (w wood) String() string {
 		return "acacia"
 	case 5:
 		return "dark_oak"
+	case 6:
+		return "crimson"
+	case 7:
+		return "warped"
 	}
 	panic("unknown wood type")
+}
+
+// Flammable returns whether the wood type is flammable.
+func (w wood) Flammable() bool {
+	return w != 6 && w != 7
 }
