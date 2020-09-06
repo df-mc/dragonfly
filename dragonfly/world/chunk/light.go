@@ -173,6 +173,9 @@ func fillSkyLight(c *Chunk) {
 // fillBlockLight fills the chunk passed with block light that has its source only within the bounds of the
 // chunk passed.
 func fillBlockLight(c *Chunk) {
+	if !anyBlockLight(c) {
+		return
+	}
 	queue := queuePool.Get().(*nodeQueue)
 	defer func() {
 		queue.Reset()
@@ -185,6 +188,23 @@ func fillBlockLight(c *Chunk) {
 		}
 		fillPropagate(queue, c, false)
 	}
+}
+
+// anyBlockLight checks if there are any blocks in the Chunk passed that emit light.
+func anyBlockLight(c *Chunk) bool {
+	for _, sub := range c.sub {
+		if sub == nil {
+			continue
+		}
+		for _, layer := range sub.storages {
+			for _, id := range layer.palette.blockRuntimeIDs {
+				if v, ok := LightBlocks[id]; ok && v != 0 {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
