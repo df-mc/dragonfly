@@ -1672,8 +1672,11 @@ func (p *Player) OnGround() bool {
 	return p.onGround.Load()
 }
 
-// EyeHeight returns the eye height of the player: 1.62.
+// EyeHeight returns the eye height of the player: 1.62, or 0.52 if the player is swimming.
 func (p *Player) EyeHeight() float64 {
+	if p.swimming.Load() {
+		return 0.52
+	}
 	return 1.62
 }
 
