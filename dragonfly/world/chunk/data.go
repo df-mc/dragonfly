@@ -368,7 +368,7 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 		}
 	}
 
-	palette := &Palette{blockRuntimeIDs: make([]uint32, paletteCount), size: paletteSize(blockSize)}
+	palette := newPalette(paletteSize(blockSize), make([]uint32, paletteCount))
 	for i, b := range blocks {
 		var ok bool
 		palette.blockRuntimeIDs[i], ok = StateToRuntimeID(b.Name, b.State)
