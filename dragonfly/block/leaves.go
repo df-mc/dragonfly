@@ -23,6 +23,50 @@ type Leaves struct {
 	shouldUpdate bool
 }
 
+// findLog ...
+func findLog(pos world.BlockPos, w *world.World, visited *[]world.BlockPos, distance int) bool {
+	for _, v := range *visited {
+		if v == pos {
+			return false
+		}
+	}
+	*visited = append(*visited, pos)
+
+	if log, ok := w.Block(pos).(Log); ok && !log.Stripped {
+		return true
+	}
+	if _, ok := w.Block(pos).(Leaves); !ok || distance > 6 {
+		return false
+	}
+	logFound := false
+	pos.Neighbours(func(neighbour world.BlockPos) {
+		if !logFound && findLog(neighbour, w, visited, distance) {
+			logFound = true
+		}
+	})
+	return logFound
+}
+
+// RandomTick ...
+func (l Leaves) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+	if !l.Persistent && l.shouldUpdate {
+		if findLog(pos, w, &[]world.BlockPos{}, 0) {
+			l.shouldUpdate = false
+			w.PlaceBlock(pos, l)
+		} else {
+			w.BreakBlockWithoutParticles(pos)
+		}
+	}
+}
+
+// NeighbourUpdateTick ...
+func (l Leaves) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+	if !l.Persistent && !l.shouldUpdate {
+		l.shouldUpdate = true
+		w.PlaceBlock(pos, l)
+	}
+}
+
 // FlammabilityInfo ...
 func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 	return FlammabilityInfo{
