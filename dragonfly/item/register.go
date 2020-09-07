@@ -116,4 +116,6 @@ func init() {
 	world.RegisterItem("minecraft:prismarine_crystals", PrismarineCrystals{})
 
 	world.RegisterItem("minecraft:poisonous_potato", PoisonousPotato{})
+	world.RegisterItem("minecraft:golden_apple", GoldenApple{})
+	world.RegisterItem("minecraft:appleenchanted", EnchantedApple{})
 }
