@@ -62,7 +62,9 @@ func (p Potato) BreakInfo() BreakInfo {
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
 		Drops: func(t tool.Tool) []item.Stack {
-			//TODO: Poisonous Potato has a 2% chance of dropping
+			if rand.Float64() < 0.02 {
+				return []item.Stack{item.NewStack(p, rand.Intn(5)+1), item.NewStack(item.PoisonousPotato{}, 1)}
+			}
 			return []item.Stack{item.NewStack(p, rand.Intn(5)+1)}
 		},
 	}
