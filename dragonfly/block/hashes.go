@@ -11,6 +11,7 @@ const (
 	hashBlueIce
 	hashBricks
 	hashBoneBlock
+	hashCake
 	hashCarpet
 	hashCarrot
 	hashChest
