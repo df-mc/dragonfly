@@ -281,7 +281,8 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	ctx := event.C()
 	p.handler().HandleCommandExecution(ctx, command, args[1:])
 	ctx.Continue(func() {
-		command.Execute(strings.TrimPrefix(commandLine, "/"+commandName+" "), p)
+
+		command.Execute(strings.TrimPrefix(strings.TrimPrefix(commandLine, "/"+commandName), " "), p)
 	})
 }
 
