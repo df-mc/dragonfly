@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -29,7 +28,7 @@ func (c Cake) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
 }
 
 // UseOnBlock ...
-func (c Cake) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c Cake) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
@@ -57,7 +56,7 @@ func (c Cake) Activate(pos world.BlockPos, _ world.Face, w *world.World, u item.
 		i.Saturate(2, 0.4)
 		c.Bites++
 		if c.Bites > 6 {
-			w.BreakBlock(pos)
+			w.BreakBlockWithoutParticles(pos)
 			return
 		}
 		w.PlaceBlock(pos, c)
@@ -67,12 +66,10 @@ func (c Cake) Activate(pos world.BlockPos, _ world.Face, w *world.World, u item.
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness: 0.5,
-		Harvestable: func(t tool.Tool) bool {
-			return false
-		},
-		Effective: nothingEffective,
-		Drops:     simpleDrops(),
+		Hardness:    0.5,
+		Harvestable: nothingEffective,
+		Effective:   nothingEffective,
+		Drops:       simpleDrops(),
 	}
 }
 
