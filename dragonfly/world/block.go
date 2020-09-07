@@ -118,12 +118,16 @@ func RegisterBlock(states ...Block) {
 		runtimeIDsHashes.Put(int64(state.Hash()), int64(rid))
 		registeredStates = append(registeredStates, state)
 
+		filterLevel := uint8(15)
 		if diffuser, ok := state.(lightDiffuser); ok {
-			chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
+			filterLevel = diffuser.LightDiffusionLevel()
 		}
+		chunk.FilteringBlocks = append(chunk.FilteringBlocks, filterLevel)
+		emissionLevel := uint8(0)
 		if emitter, ok := state.(lightEmitter); ok {
-			chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
+			emissionLevel = emitter.LightEmissionLevel()
 		}
+		chunk.LightBlocks = append(chunk.LightBlocks, emissionLevel)
 		if removable, ok := state.(liquidRemovable); ok {
 			world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
 		}
