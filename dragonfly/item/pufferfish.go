@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Pfferfish is a poisonous type of fish that is used to brew water breathing potions.
+// Pufferfish is a poisonous type of fish that is used to brew water breathing potions.
 type Pufferfish struct{}
 
 // AlwaysConsumable ...

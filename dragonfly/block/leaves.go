@@ -40,7 +40,7 @@ func findLog(pos world.BlockPos, w *world.World, visited *[]world.BlockPos, dist
 	}
 	logFound := false
 	pos.Neighbours(func(neighbour world.BlockPos) {
-		if !logFound && findLog(neighbour, w, visited, distance) {
+		if !logFound && findLog(neighbour, w, visited, distance+1) {
 			logFound = true
 		}
 	})
