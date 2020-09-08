@@ -213,6 +213,9 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			return arguments, err
 		}
 	}
+	if arguments.Len() != 0 {
+		return arguments, fmt.Errorf("unexpected '%v'", strings.Join(arguments.args, " "))
+	}
 
 	v.Interface().(Runnable).Run(source, output)
 	return arguments, nil
