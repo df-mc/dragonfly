@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -12,17 +12,21 @@ type HealthBoost struct {
 }
 
 // Start ...
-func (h HealthBoost) Start(e entity.Living) {
-	e.SetMaxHealth(e.MaxHealth() + 4*float64(h.Lvl))
+func (h HealthBoost) Start(e world.Entity) {
+	if living, ok := e.(living); ok {
+		living.SetMaxHealth(living.MaxHealth() + 4*float64(h.Lvl))
+	}
 }
 
 // End ...
-func (h HealthBoost) End(e entity.Living) {
-	e.SetMaxHealth(e.MaxHealth() - 4*float64(h.Lvl))
+func (h HealthBoost) End(e world.Entity) {
+	if living, ok := e.(living); ok {
+		living.SetMaxHealth(living.MaxHealth() - 4*float64(h.Lvl))
+	}
 }
 
 // WithSettings ...
-func (h HealthBoost) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (h HealthBoost) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return HealthBoost{h.withSettings(d, level, ambient)}
 }
 

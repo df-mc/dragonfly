@@ -27,6 +27,14 @@ type WoodDoor struct {
 	Right bool
 }
 
+// FlammabilityInfo ...
+func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
+	if !d.Wood.Flammable() {
+		return FlammabilityInfo{}
+	}
+	return FlammabilityInfo{LavaFlammable: true}
+}
+
 // Model ...
 func (d WoodDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
@@ -136,6 +144,10 @@ func (d WoodDoor) EncodeItem() (id int32, meta int16) {
 		return 430, 0
 	case wood.DarkOak():
 		return 431, 0
+	case wood.Crimson():
+		return 755, 0
+	case wood.Warped():
+		return 756, 0
 	}
 	panic("invalid wood type")
 }
@@ -155,18 +167,9 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 	switch d.Wood {
 	case wood.Oak():
 		return "minecraft:wooden_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	case wood.Spruce():
-		return "minecraft:spruce_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	case wood.Birch():
-		return "minecraft:birch_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	case wood.Jungle():
-		return "minecraft:jungle_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	case wood.Acacia():
-		return "minecraft:acacia_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	case wood.DarkOak():
-		return "minecraft:dark_oak_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+	default:
+		return "minecraft:" + d.Wood.String() + "_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
-	panic("invalid wood type")
 }
 
 // Hash ...

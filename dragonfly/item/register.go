@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/dragonfly/item/armour"
 	"github.com/df-mc/dragonfly/dragonfly/item/bucket"
+	"github.com/df-mc/dragonfly/dragonfly/item/potion"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -36,6 +37,13 @@ func init() {
 	world.RegisterItem("minecraft:iron_sword", Sword{Tier: tool.TierIron})
 	world.RegisterItem("minecraft:diamond_sword", Sword{Tier: tool.TierDiamond})
 	world.RegisterItem("minecraft:netherite_sword", Sword{Tier: tool.TierNetherite})
+
+	world.RegisterItem("minecraft:wooden_hoe", Hoe{Tier: tool.TierWood})
+	world.RegisterItem("minecraft:golden_hoe", Hoe{Tier: tool.TierGold})
+	world.RegisterItem("minecraft:stone_hoe", Hoe{Tier: tool.TierStone})
+	world.RegisterItem("minecraft:iron_hoe", Hoe{Tier: tool.TierIron})
+	world.RegisterItem("minecraft:diamond_hoe", Hoe{Tier: tool.TierDiamond})
+	world.RegisterItem("minecraft:netherite_hoe", Hoe{Tier: tool.TierNetherite})
 
 	world.RegisterItem("minecraft:leather_helmet", Helmet{Tier: armour.TierLeather})
 	world.RegisterItem("minecraft:golden_helmet", Helmet{Tier: armour.TierGold})
@@ -81,7 +89,30 @@ func init() {
 	world.RegisterItem("minecraft:coal", Coal{})
 	world.RegisterItem("minecraft:netherite_ingot", NetheriteIngot{})
 	world.RegisterItem("minecraft:clay_ball", ClayBall{})
+	world.RegisterItem("minecraft:quartz", NetherQuartz{})
+	world.RegisterItem("minecraft:flint", Flint{})
 
 	world.RegisterItem("minecraft:stick", Stick{})
+	world.RegisterItem("minecraft:magma_cream", MagmaCream{})
+
+	world.RegisterItem("minecraft:dye", Bonemeal{})
+	world.RegisterItem("minecraft:wheat", Wheat{})
+	world.RegisterItem("minecraft:beetroot", Beetroot{})
+	world.RegisterItem("minecraft:melon", MelonSlice{})
+
+	world.RegisterItem("minecraft:apple", Apple{})
+
+	world.RegisterItem("minecraft:brick", Brick{})
+
+	world.RegisterItem("minecraft:leather", Leather{})
+
+	world.RegisterItem("minecraft:glass_bottle", GlassBottle{})
+	for _, p := range potion.All() {
+		world.RegisterItem("minecraft:potion", Potion{Type: p})
+	}
+
+	world.RegisterItem("minecraft:flint_and_steel", FlintAndSteel{})
+
+	world.RegisterItem("minecraft:prismarine_crystals", PrismarineCrystals{})
 	world.RegisterItem("dragonfly:strawberry", Strawberry{})
 }

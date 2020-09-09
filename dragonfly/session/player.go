@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
-	"github.com/df-mc/dragonfly/dragonfly/entity"
-	_ "github.com/df-mc/dragonfly/dragonfly/entity/effect"
+	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -41,7 +40,7 @@ func (s *Session) closeCurrentContainer() {
 // SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(s.c.Position().Add(mgl64.Vec3{0, entityOffset(s.c)})),
+		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -327,7 +326,7 @@ func (s *Session) SendAbsorption(value float64) {
 }
 
 // SendEffect sends an effects passed to the player.
-func (s *Session) SendEffect(e entity.Effect) {
+func (s *Session) SendEffect(e effect.Effect) {
 	s.SendEffectRemoval(e)
 	id, _ := effect_idByEffect(e)
 	s.writePacket(&packet.MobEffect{
@@ -341,7 +340,7 @@ func (s *Session) SendEffect(e entity.Effect) {
 }
 
 // SendEffectRemoval sends the removal of an effect passed.
-func (s *Session) SendEffectRemoval(e entity.Effect) {
+func (s *Session) SendEffectRemoval(e effect.Effect) {
 	id, ok := effect_idByEffect(e)
 	if !ok {
 		panic(fmt.Sprintf("unregistered effect type %T", e))
@@ -582,8 +581,8 @@ func item_id(s item.Stack) int32
 
 //go:linkname effect_idByEffect github.com/df-mc/dragonfly/dragonfly/entity/effect.idByEffect
 //noinspection ALL
-func effect_idByEffect(entity.Effect) (int, bool)
+func effect_idByEffect(effect.Effect) (int, bool)
 
 //go:linkname effect_byID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
 //noinspection ALL
-func effect_byID(int) (entity.Effect, bool)
+func effect_byID(int) (effect.Effect, bool)

@@ -287,6 +287,10 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	if id := item_id(i); id != clientID {
 		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
+	inventory, _ := s.invByID(int32(slot.ContainerID))
+	if inventory.SlotLocked(int(slot.Slot)) {
+		return fmt.Errorf("slot in inventory was locked")
+	}
 	return nil
 }
 

@@ -11,6 +11,14 @@ type CoalBlock struct {
 	solid
 }
 
+// FlammabilityInfo ...
+func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: 5,
+		Flammability:  5,
+	}
+}
+
 // BreakInfo ...
 func (c CoalBlock) BreakInfo() BreakInfo {
 	return BreakInfo{

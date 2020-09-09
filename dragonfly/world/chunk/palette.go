@@ -1,5 +1,7 @@
 package chunk
 
+import "math"
+
 // paletteSize is the size of a palette. It indicates the amount of bits occupied per block saved.
 type paletteSize byte
 
@@ -15,7 +17,7 @@ type Palette struct {
 
 // newPalette returns a new palette with size and a slice of added runtime IDs.
 func newPalette(size paletteSize, runtimeIDs []uint32) *Palette {
-	return &Palette{size: size, blockRuntimeIDs: runtimeIDs}
+	return &Palette{size: size, blockRuntimeIDs: runtimeIDs, last: math.MaxUint32}
 }
 
 // Len returns the amount of unique block runtime IDs in the palette.

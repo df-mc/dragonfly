@@ -190,8 +190,12 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		}
 	}
 
+	var argFrags []string
+	if args != "" {
+		argFrags = strings.Split(args, " ")
+	}
 	parser := parser{}
-	arguments := &Line{strings.Split(args, " ")}
+	arguments := &Line{args: argFrags}
 
 	// We iterate over all of the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
@@ -208,6 +212,9 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
 			return arguments, err
 		}
+	}
+	if arguments.Len() != 0 {
+		return arguments, fmt.Errorf("unexpected '%v'", strings.Join(arguments.args, " "))
 	}
 
 	v.Interface().(Runnable).Run(source, output)

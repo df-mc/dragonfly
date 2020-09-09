@@ -5,10 +5,13 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"time"
 )
 
 // InventoryTransactionHandler handles the InventoryTransaction packet.
-type InventoryTransactionHandler struct{}
+type InventoryTransactionHandler struct {
+	lastUseItemOnBlock time.Time
+}
 
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
@@ -16,18 +19,32 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
+		h.resendInventories(s)
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions so we're best off making sure the client and server stay in sync.
-		h.resendInventories(s)
 		if err := h.handleNormalTransaction(pk, s); err != nil {
 			s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: failed verifying actions in Normal transaction: %w\n", s.conn.RemoteAddr(), s.c.Name(), err)
 			return nil
 		}
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
+		held, _ := s.c.HeldItems()
+		if !held.Equal(stackToItem(data.HeldItem)) {
+			return nil
+		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
+		held, _ := s.c.HeldItems()
+		if !held.Equal(stackToItem(data.HeldItem)) {
+			return nil
+		}
 		return h.handleUseItemTransaction(data, s)
+	case *protocol.ReleaseItemTransactionData:
+		held, _ := s.c.HeldItems()
+		if !held.Equal(stackToItem(data.HeldItem)) {
+			return nil
+		}
+		return h.handleReleaseItemTransaction(data, s)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -58,10 +75,11 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if newItem.Count() > actual.Count() {
 				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())
 			}
-			// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
-			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
-			if s.c.Drop(actual.Grow(newItem.Count()-actual.Count())) != 0 {
-				s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			if newHeld, _ := s.c.HeldItems(); newHeld.Equal(actual.Grow(-newItem.Count())) {
+				// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
+				// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
+				s.c.Drop(actual.Grow(newItem.Count() - actual.Count()))
 			}
 		default:
 			// Ignore inventory actions we don't explicitly handle.
@@ -103,14 +121,33 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
+		if name, _ := s.c.World().Block(pos).EncodeBlock(); name == "minecraft:farmland" {
+			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
+			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
+			// UseItem action, so we just release immediately after if that happens to be the case.
+			h.lastUseItemOnBlock = time.Now()
+		}
+
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
 		s.sendInv(s.inv, protocol.WindowIDInventory)
 		s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
+		if time.Since(h.lastUseItemOnBlock) < time.Second/20 {
+			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
+			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
+			// UseItem action, so we just release immediately after if that happens to be the case.
+			s.c.ReleaseItem()
+		}
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
 	}
+	return nil
+}
+
+// handleReleaseItemTransaction ...
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(data *protocol.ReleaseItemTransactionData, s *Session) error {
+	s.c.ReleaseItem()
 	return nil
 }

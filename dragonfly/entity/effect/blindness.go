@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"image/color"
 	"time"
 )
@@ -12,7 +11,7 @@ type Blindness struct {
 }
 
 // WithSettings ...
-func (b Blindness) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (b Blindness) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Blindness{b.withSettings(d, level, ambient)}
 }
 

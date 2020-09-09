@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -12,7 +12,7 @@ type Saturation struct {
 }
 
 // Apply ...
-func (s Saturation) Apply(e entity.Living) {
+func (s Saturation) Apply(e world.Entity) {
 	if i, ok := e.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
@@ -21,7 +21,7 @@ func (s Saturation) Apply(e entity.Living) {
 }
 
 // WithSettings ...
-func (s Saturation) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (s Saturation) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Saturation{s.withSettings(d, level, ambient)}
 }
 

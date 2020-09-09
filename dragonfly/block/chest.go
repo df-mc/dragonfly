@@ -32,6 +32,11 @@ type Chest struct {
 	viewers   *[]ContainerViewer
 }
 
+// FlammabilityInfo ...
+func (c Chest) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{LavaFlammable: true}
+}
+
 // NewChest creates a new initialised chest. The inventory is properly initialised.
 func NewChest() Chest {
 	m := new(sync.RWMutex)

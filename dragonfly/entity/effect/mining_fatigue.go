@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"image/color"
 	"math"
 	"time"
@@ -19,7 +18,7 @@ func (m MiningFatigue) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (m MiningFatigue) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (m MiningFatigue) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return MiningFatigue{m.withSettings(d, level, ambient)}
 }
 

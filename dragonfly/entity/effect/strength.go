@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"image/color"
 	"time"
 )
@@ -17,7 +16,7 @@ func (s Strength) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (s Strength) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (s Strength) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Strength{s.withSettings(d, level, ambient)}
 }
 

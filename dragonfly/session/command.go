@@ -24,8 +24,12 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 		})
 	}
 
+	h := s.handlers[packet.IDCommandRequest]
+	if h == nil { // This will be nil if the player has been disconnected
+		return
+	}
 	s.writePacket(&packet.CommandOutput{
-		CommandOrigin:  s.handlers[packet.IDCommandRequest].(*CommandRequestHandler).origin,
+		CommandOrigin:  h.(*CommandRequestHandler).origin,
 		OutputType:     3,
 		SuccessCount:   uint32(output.MessageCount()),
 		OutputMessages: messages,

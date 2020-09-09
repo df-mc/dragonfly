@@ -1,8 +1,8 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"time"
 )
 
@@ -17,17 +17,19 @@ type InstantDamage struct {
 }
 
 // Apply ...
-func (i InstantDamage) Apply(e entity.Living) {
+func (i InstantDamage) Apply(e world.Entity) {
 	if i.Potency == 0 {
 		// Potency of 1 by default.
 		i.Potency = 1
 	}
 	base := 3 << i.Lvl
-	e.Hurt(float64(base)*i.Potency, damage.SourceInstantDamageEffect{})
+	if living, ok := e.(living); ok {
+		living.Hurt(float64(base)*i.Potency, damage.SourceInstantDamageEffect{})
+	}
 }
 
 // WithSettings ...
-func (i InstantDamage) WithSettings(_ time.Duration, level int, _ bool) entity.Effect {
+func (i InstantDamage) WithSettings(_ time.Duration, level int, _ bool) Effect {
 	i.Lvl = level
 	return i
 }

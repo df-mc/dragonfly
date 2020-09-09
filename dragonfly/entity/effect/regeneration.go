@@ -1,8 +1,8 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/healing"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -13,16 +13,18 @@ type Regeneration struct {
 	lastingEffect
 }
 
-// Apply applies health to the entity.Living passed if the duration of the effect is at the right tick.
-func (r Regeneration) Apply(e entity.Living) {
+// Apply applies health to the world.Entity passed if the duration of the effect is at the right tick.
+func (r Regeneration) Apply(e world.Entity) {
 	interval := 50 >> r.Lvl
 	if tickDuration(r.Dur)%interval == 0 {
-		e.Heal(1, healing.SourceRegenerationEffect{})
+		if living, ok := e.(living); ok {
+			living.Heal(1, healing.SourceRegenerationEffect{})
+		}
 	}
 }
 
 // WithSettings ...
-func (r Regeneration) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (r Regeneration) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Regeneration{r.withSettings(d, level, ambient)}
 }
 

@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"image/color"
 	"time"
 )
@@ -13,7 +12,7 @@ type Levitation struct {
 }
 
 // WithSettings ...
-func (l Levitation) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (l Levitation) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Levitation{l.withSettings(d, level, ambient)}
 }
 

@@ -1,8 +1,8 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -14,15 +14,17 @@ type Poison struct {
 }
 
 // Apply ...
-func (p Poison) Apply(e entity.Living) {
+func (p Poison) Apply(e world.Entity) {
 	interval := 50 >> p.Lvl
 	if tickDuration(p.Dur)%interval == 0 {
-		e.Hurt(1, damage.SourcePoisonEffect{})
+		if living, ok := e.(living); ok {
+			living.Hurt(1, damage.SourcePoisonEffect{})
+		}
 	}
 }
 
 // WithSettings ...
-func (p Poison) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (p Poison) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Poison{p.withSettings(d, level, ambient)}
 }
 

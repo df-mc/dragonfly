@@ -1,8 +1,8 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -23,7 +23,7 @@ func (a Absorption) Absorbs(src damage.Source) bool {
 }
 
 // Start ...
-func (a Absorption) Start(e entity.Living) {
+func (a Absorption) Start(e world.Entity) {
 	if i, ok := e.(interface {
 		SetAbsorption(health float64)
 	}); ok {
@@ -32,7 +32,7 @@ func (a Absorption) Start(e entity.Living) {
 }
 
 // Stop ...
-func (a Absorption) Stop(e entity.Living) {
+func (a Absorption) Stop(e world.Entity) {
 	if i, ok := e.(interface {
 		SetAbsorption(health float64)
 	}); ok {
@@ -41,7 +41,7 @@ func (a Absorption) Stop(e entity.Living) {
 }
 
 // WithSettings ...
-func (a Absorption) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (a Absorption) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Absorption{a.withSettings(d, level, ambient)}
 }
 

@@ -6,11 +6,11 @@ import (
 
 // LightBlocks is a list of block light levels (0-15) indexed by block runtime IDs. The map is used to do a
 // fast lookup of block light.
-var LightBlocks = map[uint32]uint8{}
+var LightBlocks = make([]uint8, 0, 7000)
 
 // FilteringBlocks is a map for checking if a block runtime ID filters light, and if so, how many levels.
 // Light is able to propagate through these blocks, but will have its level reduced.
-var FilteringBlocks = map[uint32]uint8{}
+var FilteringBlocks = make([]uint8, 0, 7000)
 
 // lightNode is a node pushed to the queue which is used to propagate light.
 type lightNode struct {
@@ -173,6 +173,9 @@ func fillSkyLight(c *Chunk) {
 // fillBlockLight fills the chunk passed with block light that has its source only within the bounds of the
 // chunk passed.
 func fillBlockLight(c *Chunk) {
+	if !anyBlockLight(c) {
+		return
+	}
 	queue := queuePool.Get().(*nodeQueue)
 	defer func() {
 		queue.Reset()
@@ -185,6 +188,23 @@ func fillBlockLight(c *Chunk) {
 		}
 		fillPropagate(queue, c, false)
 	}
+}
+
+// anyBlockLight checks if there are any blocks in the Chunk passed that emit light.
+func anyBlockLight(c *Chunk) bool {
+	for _, sub := range c.sub {
+		if sub == nil {
+			continue
+		}
+		for _, layer := range sub.storages {
+			for _, id := range layer.palette.blockRuntimeIDs {
+				if LightBlocks[id] != 0 {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
@@ -536,22 +556,17 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 		if id == 0 {
 			return 0
 		}
-		if v, ok := LightBlocks[id]; ok {
-			return v
-		}
-		return 0
+		return LightBlocks[id]
 	}
 	if l == 2 {
 		var highest uint8
 		id := storages[0].RuntimeID(x, y, z)
 		if id != 0 {
-			if v, ok := LightBlocks[id]; ok {
-				highest = v
-			}
+			highest = LightBlocks[id]
 		}
 		id = storages[1].RuntimeID(x, y, z)
 		if id != 0 {
-			if v, ok := LightBlocks[id]; ok && v > highest {
+			if v := LightBlocks[id]; v > highest {
 				highest = v
 			}
 		}
@@ -560,8 +575,7 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 
 	var highest uint8
 	for i := range storages {
-		l, ok := LightBlocks[storages[i].RuntimeID(x, y, z)]
-		if ok && l > highest {
+		if l := LightBlocks[storages[i].RuntimeID(x, y, z)]; l > highest {
 			highest = l
 		}
 	}
@@ -582,31 +596,20 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 		if id == 0 {
 			return 0
 		}
-		if v, ok := FilteringBlocks[id]; ok {
-			return v
-		}
-		return 15
+		return FilteringBlocks[id]
 	}
 	if l == 2 {
 		var highest uint8
 
 		id := storages[0].RuntimeID(x, y, z)
 		if id != 0 {
-			if v, ok := FilteringBlocks[id]; ok {
-				highest = v
-			} else {
-				return 15
-			}
+			highest = FilteringBlocks[id]
 		}
 
 		id = storages[1].RuntimeID(x, y, z)
 		if id != 0 {
-			if v, ok := FilteringBlocks[id]; ok {
-				if v > highest {
-					highest = v
-				}
-			} else {
-				return 15
+			if v := FilteringBlocks[id]; v > highest {
+				highest = v
 			}
 		}
 		return highest
@@ -616,8 +619,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	for i := range storages {
 		id := storages[i].RuntimeID(x, y, z)
 		if id != 0 {
-			l, ok := FilteringBlocks[id]
-			if ok && l > highest {
+			if l := FilteringBlocks[id]; l > highest {
 				highest = l
 			}
 		}

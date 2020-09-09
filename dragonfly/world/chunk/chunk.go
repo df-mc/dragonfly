@@ -106,8 +106,26 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) uint8 {
 		}
 		for y := 15; y >= 0; y-- {
 			totalY := uint8(y | (subY << 4))
+			if FilteringBlocks[sub.storages[0].RuntimeID(x, totalY, z)] == 15 {
+				return totalY
+			}
+		}
+	}
+	return 0
+}
+
+// HighestBlock iterates from the highest non-empty sub chunk downwards to find the Y value of the highest
+// non-air block at an x and z. If no blocks are present in the column, 0 is returned.
+func (chunk *Chunk) HighestBlock(x, z uint8) uint8 {
+	for subY := 15; subY >= 0; subY-- {
+		sub := chunk.sub[subY]
+		if sub == nil || len(sub.storages) == 0 {
+			continue
+		}
+		for y := 15; y >= 0; y-- {
+			totalY := uint8(y | (subY << 4))
 			rid := sub.storages[0].RuntimeID(x, totalY, z)
-			if _, ok := FilteringBlocks[rid]; !ok {
+			if rid != 0 {
 				return totalY
 			}
 		}

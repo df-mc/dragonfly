@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"image/color"
 	"time"
 )
@@ -13,7 +13,7 @@ type Invisibility struct {
 }
 
 // Start ...
-func (Invisibility) Start(e entity.Living) {
+func (Invisibility) Start(e world.Entity) {
 	if i, ok := e.(interface {
 		SetInvisible()
 		SetVisible()
@@ -23,7 +23,7 @@ func (Invisibility) Start(e entity.Living) {
 }
 
 // End ...
-func (Invisibility) End(e entity.Living) {
+func (Invisibility) End(e world.Entity) {
 	if i, ok := e.(interface {
 		SetInvisible()
 		SetVisible()
@@ -33,7 +33,7 @@ func (Invisibility) End(e entity.Living) {
 }
 
 // WithSettings ...
-func (i Invisibility) WithSettings(d time.Duration, level int, ambient bool) entity.Effect {
+func (i Invisibility) WithSettings(d time.Duration, level int, ambient bool) Effect {
 	return Invisibility{i.withSettings(d, level, ambient)}
 }
 

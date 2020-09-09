@@ -9,6 +9,9 @@ type (
 	Stone struct {
 		noNBT
 		solid
+
+		// Smooth specifies if the stone is its smooth variant.
+		Smooth bool
 	}
 
 	// Granite is a type of igneous rock.
@@ -37,7 +40,12 @@ var stoneBreakInfo = BreakInfo{
 
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
-	return stoneBreakInfo
+	breakInfo := stoneBreakInfo
+	if s.Smooth {
+		breakInfo.Hardness = 2
+		breakInfo.Drops = simpleDrops(item.NewStack(s, 1))
+	}
+	return breakInfo
 }
 
 // BreakInfo ...
@@ -63,6 +71,9 @@ func (a Andesite) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (s Stone) EncodeItem() (id int32, meta int16) {
+	if s.Smooth {
+		return -183, 0
+	}
 	return 1, 0
 }
 
@@ -91,13 +102,16 @@ func (g Granite) EncodeItem() (id int32, meta int16) {
 }
 
 // EncodeBlock ...
-func (Stone) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s Stone) EncodeBlock() (name string, properties map[string]interface{}) {
+	if s.Smooth {
+		return "minecraft:smooth_stone", nil
+	}
 	return "minecraft:stone", map[string]interface{}{"stone_type": "stone"}
 }
 
 // Hash ...
-func (Stone) Hash() uint64 {
-	return hashStone
+func (s Stone) Hash() uint64 {
+	return hashStone | (uint64(boolByte(s.Smooth)) << 32)
 }
 
 // EncodeBlock ...
