@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -43,7 +44,7 @@ func buildItems(dir string) (count int, lang []string) {
 }
 
 func buildItemTexture(dir, name string, img image.Image) {
-	texture, err := os.Create(filepath.Join(dir, "textures/items", fmt.Sprintf("%s.png", name)))
+	texture, err := os.Create(filepath.Join(dir, "textures/items", name+".png"))
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +59,7 @@ func buildItemTexture(dir, name string, img image.Image) {
 
 func buildItem(dir, identifier, name string, item world.CustomItem) {
 	itemData, err := json.Marshal(map[string]interface{}{
-		"format_version": "1.16.0",
+		"format_version": protocol.CurrentVersion,
 		"minecraft:item": map[string]interface{}{
 			"description": map[string]interface{}{
 				"identifier": identifier,
