@@ -81,9 +81,8 @@ func New(c *Config, log *logrus.Logger) *Server {
 // Accept returns an error if the Server is closed using a call to Close.
 func (server *Server) Accept() (*player.Player, error) {
 	if !server.resourcePackGenerated {
-		pack := pack_builder.BuildResourcePack()
-		if pack != nil {
-			server.listener.ResourcePacks = append(server.listener.ResourcePacks, pack)
+		if pack := pack_builder.BuildResourcePack(); pack != nil {
+			server.listener.AddResourcePack(pack)
 			server.listener.TexturePacksRequired = true
 		}
 		server.resourcePackGenerated = true
