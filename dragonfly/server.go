@@ -83,7 +83,6 @@ func (server *Server) Accept() (*player.Player, error) {
 	if !server.resourcePackGenerated {
 		if pack := pack_builder.BuildResourcePack(); pack != nil {
 			server.listener.AddResourcePack(pack)
-			server.listener.TexturePacksRequired = true
 		}
 		server.resourcePackGenerated = true
 	}
@@ -282,6 +281,7 @@ func (server *Server) startListening() error {
 		ServerName:             server.c.Server.Name,
 		MaximumPlayers:         server.c.Server.MaximumPlayers,
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
+		TexturePacksRequired:   true,
 	}
 	//noinspection SpellCheckingInspection
 	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
