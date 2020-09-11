@@ -56,8 +56,8 @@ func (m MelonSeeds) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 	}
 }
 
-// Bonemeal ...
-func (m MelonSeeds) Bonemeal(pos world.BlockPos, w *world.World) bool {
+// BoneMeal ...
+func (m MelonSeeds) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	if m.Growth == 7 {
 		return false
 	}

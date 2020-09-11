@@ -13,8 +13,8 @@ type WheatSeeds struct {
 	crop
 }
 
-// Bonemeal ...
-func (s WheatSeeds) Bonemeal(pos world.BlockPos, w *world.World) bool {
+// BoneMeal ...
+func (s WheatSeeds) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	if s.Growth == 7 {
 		return false
 	}

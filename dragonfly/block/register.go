@@ -326,10 +326,10 @@ func init() {
 		water, ok := b.(Water)
 		return ok && water.Depth == 8
 	}
-	item_internal.Bonemeal = func(pos world.BlockPos, w *world.World) bool {
+	item_internal.BoneMeal = func(pos world.BlockPos, w *world.World) bool {
 		b := w.Block(pos)
-		if bonemealAffected, ok := b.(BonemealAffected); ok {
-			return bonemealAffected.Bonemeal(pos, w)
+		if bonemealAffected, ok := b.(BoneMealAffected); ok {
+			return bonemealAffected.BoneMeal(pos, w)
 		}
 		return false
 	}
