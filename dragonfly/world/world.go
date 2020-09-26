@@ -1374,6 +1374,7 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 
 // setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
 // position.
+//lint:ignore U1000 This method is explicitly present to be used using compiler directives.
 func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
 	w.chunkMu.Lock()
 	defer w.chunkMu.Unlock()
