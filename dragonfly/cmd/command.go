@@ -52,6 +52,18 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 	usages := make([]string, len(r))
 	runnableValues := make([]reflect.Value, len(r))
 
+	if len(aliases) > 0 {
+		namePresent := false
+		for _, alias := range aliases {
+			if alias == name {
+				namePresent = true
+			}
+		}
+		if !namePresent {
+			aliases = append(aliases, name)
+		}
+	}
+
 	for i, runnable := range r {
 		t := reflect.TypeOf(runnable)
 		if t.Kind() != reflect.Struct && (t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct) {
