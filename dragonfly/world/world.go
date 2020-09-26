@@ -1372,6 +1372,27 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	return c, nil
 }
 
+// setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
+// position.
+func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
+	w.chunkMu.Lock()
+	defer w.chunkMu.Unlock()
+
+	data, ok := w.chunks[pos]
+	if ok {
+		data.Chunk = c
+	} else {
+		data = newChunkData(c)
+		w.chunks[pos] = data
+	}
+	blockNBT := make([]map[string]interface{}, 0, len(c.BlockNBT()))
+	for pos, e := range c.BlockNBT() {
+		e["x"], e["y"], e["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		blockNBT = append(blockNBT, e)
+	}
+	w.loadIntoBlocks(data, blockNBT)
+}
+
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
