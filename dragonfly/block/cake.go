@@ -42,6 +42,7 @@ func (c Cake) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 	return placed(ctx)
 }
 
+// NeighbourUpdateTick ...
 func (c Cake) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, air := w.Block(pos.Side(world.FaceDown)).(Air); air {
 		w.BreakBlock(pos)
