@@ -62,6 +62,7 @@ const (
 	hashNetherGoldOre
 	hashNetheriteBlock
 	hashNetherrack
+	hashNetherWart
 	hashObsidian
 	hashPlanks
 	hashPotato

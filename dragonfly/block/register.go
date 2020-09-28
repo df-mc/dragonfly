@@ -106,6 +106,7 @@ func init() {
 	world.RegisterBlock(BlueIce{})
 	world.RegisterBlock(GildedBlackstone{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(NetherWart{}, NetherWart{Age: 1}, NetherWart{Age: 2}, NetherWart{Age: 3})
 }
 
 func init() {
@@ -288,6 +289,7 @@ func init() {
 	world.RegisterItem("minecraft:blue_ice", BlueIce{})
 	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
 	world.RegisterItem("minecraft:shroomlight", Shroomlight{})
+	world.RegisterItem("minecraft:nether_wart", NetherWart{})
 }
 
 func init() {
