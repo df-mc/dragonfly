@@ -106,6 +106,7 @@ func init() {
 	world.RegisterBlock(BlueIce{})
 	world.RegisterBlock(GildedBlackstone{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(allTorch()...)
 }
 
 func init() {
@@ -288,6 +289,8 @@ func init() {
 	world.RegisterItem("minecraft:blue_ice", BlueIce{})
 	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
 	world.RegisterItem("minecraft:shroomlight", Shroomlight{})
+	world.RegisterItem("minecraft:torch", Torch{Type: fire.Normal()})
+	world.RegisterItem("minecraft:soul_torch", Torch{Type: fire.Soul()})
 }
 
 func init() {

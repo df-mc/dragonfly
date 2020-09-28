@@ -80,6 +80,7 @@ const (
 	hashSponge
 	hashStainedTerracotta
 	hashStone
+	hashTorch
 	hashGranite
 	hashDiorite
 	hashAndesite
