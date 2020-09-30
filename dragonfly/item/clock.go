@@ -1,6 +1,6 @@
 package item
 
-// Clocks are used to measure and display in-game time.
+// Clock is used to measure and display in-game time.
 type Clock struct{}
 
 // EncodeItem ...
