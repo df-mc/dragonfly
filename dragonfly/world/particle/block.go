@@ -31,6 +31,14 @@ type BlockForceField struct{ particle }
 // Bonemeal is a particle that shows up on bonemeal usage.
 type Bonemeal struct{ particle }
 
+// DragonEggTeleport is a particle that shows up when a dragon egg teleports.
+type DragonEggTeleport struct {
+	particle
+
+	// Diff is the distance teleported by the dragon egg.
+	Diff world.BlockPos
+}
+
 // particle serves as a base for all particles in this package.
 type particle struct{}
 
