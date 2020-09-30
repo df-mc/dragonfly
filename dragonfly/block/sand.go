@@ -10,6 +10,7 @@ type Sand struct {
 	noNBT
 	gravityAffected
 	solid
+	snare
 
 	// Red toggles the red sand variant.
 	Red bool

@@ -13,6 +13,7 @@ import (
 type Log struct {
 	noNBT
 	solid
+	bass
 
 	// Wood is the type of wood of the log. This field must have one of the values found in the material
 	// package.

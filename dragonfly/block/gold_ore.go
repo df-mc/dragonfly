@@ -9,6 +9,7 @@ import (
 type GoldOre struct {
 	noNBT
 	solid
+	bassdrum
 }
 
 // BreakInfo ...

@@ -11,6 +11,7 @@ type (
 	Quartz struct {
 		noNBT
 		solid
+		bassdrum
 		// Smooth specifies if the quartz block is smooth or not.
 		Smooth bool
 	}
@@ -19,11 +20,13 @@ type (
 	ChiseledQuartz struct {
 		noNBT
 		solid
+		bassdrum
 	}
 	// QuartzPillar is a mineral block used only for decoration.
 	QuartzPillar struct {
 		noNBT
 		solid
+		bassdrum
 		// Axis is the axis which the quartz pillar block faces.
 		Axis world.Axis
 	}

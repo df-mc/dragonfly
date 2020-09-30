@@ -10,6 +10,7 @@ type SeaLantern struct {
 	noNBT
 	transparent
 	solid
+	clicksandsticks
 }
 
 // LightEmissionLevel ...

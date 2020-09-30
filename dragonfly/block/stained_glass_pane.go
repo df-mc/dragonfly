@@ -11,6 +11,7 @@ type StainedGlassPane struct {
 	noNBT
 	transparent
 	thin
+	clicksandsticks
 
 	// Colour specifies the colour of the block.
 	Colour colour.Colour

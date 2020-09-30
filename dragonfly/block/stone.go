@@ -9,6 +9,7 @@ type (
 	Stone struct {
 		noNBT
 		solid
+		bassdrum
 
 		// Smooth specifies if the stone is its smooth variant.
 		Smooth bool
@@ -25,6 +26,7 @@ type (
 	polishable struct {
 		noNBT
 		solid
+		bassdrum
 		// Polished specifies if the block is polished or not. When set to true, the block will represent its
 		// polished variant, for example polished andesite.
 		Polished bool

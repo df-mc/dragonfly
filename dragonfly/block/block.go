@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -203,4 +204,42 @@ type FlammabilityInfo struct {
 type EntityCollider interface {
 	// EntityCollide is called on entity collision.
 	EntityCollide(e world.Entity)
+}
+
+// InstrumentBlock represents a block that creates a note block sound other than the piano.
+type InstrumentBlock interface {
+	// Instrument returns the instrument used.
+	Instrument() instrument.Instrument
+}
+
+// bass is a struct that may be embedded for blocks that create a bass sound.
+type bass struct{}
+
+// Instrument ...
+func (bass) Instrument() instrument.Instrument {
+	return instrument.Bass()
+}
+
+// snare is a struct that may be embedded for blocks that create a snare drum sound.
+type snare struct{}
+
+// Instrument ...
+func (snare) Instrument() instrument.Instrument {
+	return instrument.Snare()
+}
+
+// clicksandsticks is a struct that may be embedded for blocks that create a clicks and sticks sound.
+type clicksandsticks struct{}
+
+// Instrument ...
+func (clicksandsticks) Instrument() instrument.Instrument {
+	return instrument.ClicksAndSticks()
+}
+
+// bassdrum is a struct that may be embedded for blocks that create a bass drum sound.
+type bassdrum struct{}
+
+// Instrument ...
+func (bassdrum) Instrument() instrument.Instrument {
+	return instrument.BassDrum()
 }

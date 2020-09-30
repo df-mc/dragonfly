@@ -14,6 +14,7 @@ type Coral struct {
 	noNBT
 	empty
 	transparent
+	bassdrum
 
 	// Type is the type of coral of the block.
 	Type coral.Coral
