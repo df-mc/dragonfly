@@ -16,6 +16,14 @@ type Activatable interface {
 	Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User)
 }
 
+// Punchable represents a block that may be punched by a viewer of the world. When punched, the block
+// will execute some specific logic.
+type Punchable interface {
+	// Punch punches the block at a specific block position. The face clicked is passed, as well as the
+	// world in which the block was punched and the viewer that punched it.
+	Punch(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User)
+}
+
 // LightEmitter represents a block that emits light when placed. Blocks such as torches or lanterns implement
 // this interface.
 type LightEmitter interface {
