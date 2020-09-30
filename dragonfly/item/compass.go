@@ -1,6 +1,6 @@
 package item
 
-// The compass helps to find the spawn place.
+// Compass is helps to find the spawn place.
 type Compass struct{}
 
 // EncodeItem ...
