@@ -6,9 +6,9 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
-// WoodenFence are blocks similar to Walls, which cannot normally be jumped over. Unlike walls however,
+// WoodFence are blocks similar to Walls, which cannot normally be jumped over. Unlike walls however,
 // they allow the player (but not mobs) to see through them, making for excellent barriers.
-type WoodenFence struct {
+type WoodFence struct {
 	noNBT
 	transparent
 
@@ -17,8 +17,19 @@ type WoodenFence struct {
 	Wood wood.Wood
 }
 
+// CanDisplace ...
+func (WoodFence) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return ok
+}
+
+// SideClosed ...
+func (WoodFence) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+	return false
+}
+
 // FlammabilityInfo ...
-func (w WoodenFence) FlammabilityInfo() FlammabilityInfo {
+func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
 	if w.Wood.Flammable() {
 		return FlammabilityInfo{}
 	}
@@ -30,7 +41,7 @@ func (w WoodenFence) FlammabilityInfo() FlammabilityInfo {
 }
 
 // EncodeBlock ...
-func (w WoodenFence) EncodeBlock() (name string, properties map[string]interface{}) {
+func (w WoodFence) EncodeBlock() (name string, properties map[string]interface{}) {
 	if w.Wood == wood.Crimson() || w.Wood == wood.Warped() {
 		return "minecraft:" + w.Wood.String() + "_fence", nil
 	}
@@ -38,17 +49,17 @@ func (w WoodenFence) EncodeBlock() (name string, properties map[string]interface
 }
 
 // Hash ...
-func (w WoodenFence) Hash() uint64 {
+func (w WoodFence) Hash() uint64 {
 	return hashWoodFence | (uint64(w.Wood.Uint8()) << 32)
 }
 
 // Model ...
-func (w WoodenFence) Model() world.BlockModel {
+func (w WoodFence) Model() world.BlockModel {
 	return model.Fence{Wooden: true}
 }
 
 // EncodeItem ...
-func (w WoodenFence) EncodeItem() (id int32, meta int16) {
+func (w WoodFence) EncodeItem() (id int32, meta int16) {
 	switch w.Wood {
 	case wood.Crimson():
 		return -256, 0
@@ -62,7 +73,7 @@ func (w WoodenFence) EncodeItem() (id int32, meta int16) {
 // allFence ...
 func allFence() (fence []world.Block) {
 	for _, w := range wood.All() {
-		fence = append(fence, WoodenFence{Wood: w})
+		fence = append(fence, WoodFence{Wood: w})
 	}
 	return
 }

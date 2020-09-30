@@ -11,6 +11,17 @@ type NetherBrickFence struct {
 	transparent
 }
 
+// CanDisplace ...
+func (NetherBrickFence) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return ok
+}
+
+// SideClosed ...
+func (NetherBrickFence) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+	return false
+}
+
 // EncodeBlock ...
 func (n NetherBrickFence) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:nether_brick_fence", nil
