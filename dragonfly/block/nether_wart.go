@@ -32,7 +32,7 @@ func (n NetherWart) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 
 // UseOnBlock ...
 func (n NetherWart) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, n)
+	pos, _, used := firstReplaceable(w, pos, face, n)
 	if !used {
 		return false
 	}
