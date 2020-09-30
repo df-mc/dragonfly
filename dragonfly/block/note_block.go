@@ -3,13 +3,14 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/player/chat"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 )
 
 // NoteBlock is a musical block that emits sounds when powered with redstone.
 type NoteBlock struct {
+	nbt
 	solid
 	bass
 
@@ -17,10 +18,20 @@ type NoteBlock struct {
 	Pitch int32
 }
 
+// BreakInfo ...
+func (n NoteBlock) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    0.8,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(item.NewStack(n, 1)),
+	}
+}
+
 // playNote ...
 func (n NoteBlock) playNote(pos world.BlockPos, w *world.World) {
 	w.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, w), Pitch: int(n.Pitch)})
-	//TODO: Particles
+	w.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
 // updateInstrument ...
@@ -56,7 +67,6 @@ func (n NoteBlock) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ 
 		return
 	}
 	n.Pitch = (n.Pitch + 1) % 25
-	chat.Global.Printf("pitch %v instrument %v", n.Pitch, n.instrument(pos, w).MagicNumber)
 	n.playNote(pos, w)
 	w.SetBlock(pos, n)
 }
@@ -69,11 +79,6 @@ func (n NoteBlock) EncodeItem() (id int32, meta int16) {
 // EncodeBlock ...
 func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:noteblock", nil
-}
-
-// HasNBT...
-func (n NoteBlock) HasNBT() bool {
-	return true
 }
 
 // Hash ...

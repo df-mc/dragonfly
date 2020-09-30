@@ -366,6 +366,12 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.Note:
+		s.writePacket(&packet.BlockEvent{
+			EventType: int32(pa.Instrument.MagicNumber),
+			EventData: pa.Pitch,
+			Position:  protocol.BlockPos{int32(pos.X()), int32(pos.Y()), int32(pos.Z())},
+		})
 	case particle.HugeExplosion:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleExplosion,
