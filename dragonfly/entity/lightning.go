@@ -68,6 +68,7 @@ func (li *Lightning) Close() error {
 	return nil
 }
 
+// OnGround ...
 func (Lightning) OnGround() bool {
 	return false
 }
