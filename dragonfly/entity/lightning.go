@@ -38,7 +38,7 @@ func (li *Lightning) Velocity() mgl64.Vec3 {
 }
 
 // SetVelocity ...
-func (li *Lightning) SetVelocity(v mgl64.Vec3) {}
+func (li *Lightning) SetVelocity(mgl64.Vec3) {}
 
 // Yaw always returns 0.
 func (li *Lightning) Yaw() float64 {
@@ -60,7 +60,7 @@ func (*Lightning) State() []state.State {
 	return nil
 }
 
-// Close closes the item, removing it from the world that it is currently in.
+// Close closes the lighting.
 func (li *Lightning) Close() error {
 	if li.World() != nil {
 		li.World().RemoveEntity(li)
