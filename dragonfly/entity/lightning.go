@@ -33,30 +33,30 @@ func (li *Lightning) World() *world.World {
 }
 
 // Velocity ...
-func (li *Lightning) Velocity() mgl64.Vec3 {
+func (Lightning) Velocity() mgl64.Vec3 {
 	return mgl64.Vec3{}
 }
 
 // SetVelocity ...
-func (li *Lightning) SetVelocity(mgl64.Vec3) {}
+func (Lightning) SetVelocity(mgl64.Vec3) {}
 
 // Yaw always returns 0.
-func (li *Lightning) Yaw() float64 {
+func (Lightning) Yaw() float64 {
 	return 0
 }
 
 // Pitch always returns 0.
-func (li *Lightning) Pitch() float64 {
+func (Lightning) Pitch() float64 {
 	return 0
 }
 
 // AABB ...
-func (li *Lightning) AABB() physics.AABB {
+func (Lightning) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{})
 }
 
 // State ...
-func (*Lightning) State() []state.State {
+func (Lightning) State() []state.State {
 	return nil
 }
 
@@ -65,6 +65,7 @@ func (li *Lightning) Close() error {
 	if li.World() != nil {
 		li.World().RemoveEntity(li)
 	}
+
 	return nil
 }
 
