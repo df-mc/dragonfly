@@ -5,7 +5,7 @@ type Bedrock struct {
 	noNBT
 	solid
 	transparent
-	bassdrum
+	bassDrum
 
 	// InfiniteBurning specifies if the bedrock block is set aflame and will burn forever. This is the case
 	// for bedrock found under end crystals on top of the end pillars.

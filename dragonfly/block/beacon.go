@@ -19,7 +19,7 @@ type Beacon struct {
 	nbt
 	solid
 	transparent
-	clicksandsticks
+	clicksAndSticks
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.

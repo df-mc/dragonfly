@@ -6,7 +6,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 type EndBricks struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

@@ -228,18 +228,18 @@ func (snare) Instrument() instrument.Instrument {
 	return instrument.Snare()
 }
 
-// clicksandsticks is a struct that may be embedded for blocks that create a clicks and sticks sound.
-type clicksandsticks struct{}
+// clicksAndSticks is a struct that may be embedded for blocks that create a clicks and sticks sound.
+type clicksAndSticks struct{}
 
 // Instrument ...
-func (clicksandsticks) Instrument() instrument.Instrument {
+func (clicksAndSticks) Instrument() instrument.Instrument {
 	return instrument.ClicksAndSticks()
 }
 
-// bassdrum is a struct that may be embedded for blocks that create a bass drum sound.
-type bassdrum struct{}
+// bassDrum is a struct that may be embedded for blocks that create a bass drum sound.
+type bassDrum struct{}
 
 // Instrument ...
-func (bassdrum) Instrument() instrument.Instrument {
+func (bassDrum) Instrument() instrument.Instrument {
 	return instrument.BassDrum()
 }

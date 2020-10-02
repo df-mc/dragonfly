@@ -9,7 +9,7 @@ import (
 type EmeraldOre struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

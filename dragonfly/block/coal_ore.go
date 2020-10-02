@@ -8,7 +8,7 @@ import (
 type CoalOre struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

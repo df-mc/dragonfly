@@ -6,7 +6,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 type QuartzBricks struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

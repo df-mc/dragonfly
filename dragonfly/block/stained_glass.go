@@ -11,7 +11,7 @@ type StainedGlass struct {
 	noNBT
 	transparent
 	solid
-	clicksandsticks
+	clicksAndSticks
 
 	// Colour specifies the colour of the block.
 	Colour colour.Colour

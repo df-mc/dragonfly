@@ -9,7 +9,7 @@ import (
 type CryingObsidian struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // LightEmissionLevel ...

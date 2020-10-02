@@ -11,7 +11,7 @@ import (
 type Concrete struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 
 	// Colour is the colour of the concrete block.
 	Colour colour.Colour

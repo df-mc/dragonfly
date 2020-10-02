@@ -10,7 +10,7 @@ import (
 type LapisOre struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

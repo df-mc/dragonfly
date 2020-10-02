@@ -8,7 +8,7 @@ import (
 type Bricks struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

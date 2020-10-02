@@ -9,7 +9,7 @@ import (
 type IronOre struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // BreakInfo ...

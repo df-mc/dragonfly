@@ -9,7 +9,7 @@ type Glass struct {
 	noNBT
 	solid
 	transparent
-	clicksandsticks
+	clicksAndSticks
 }
 
 // BreakInfo ...

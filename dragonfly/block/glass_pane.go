@@ -10,7 +10,7 @@ type GlassPane struct {
 	noNBT
 	transparent
 	thin
-	clicksandsticks
+	clicksAndSticks
 }
 
 // CanDisplace ...

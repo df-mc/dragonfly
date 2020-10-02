@@ -9,7 +9,7 @@ import (
 type CoalBlock struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // FlammabilityInfo ...

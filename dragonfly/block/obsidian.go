@@ -10,7 +10,7 @@ import (
 type Obsidian struct {
 	noNBT
 	solid
-	bassdrum
+	bassDrum
 }
 
 // EncodeItem ...
