@@ -58,7 +58,7 @@ type Note struct {
 	// Instrument is the instrument of the note block.
 	Instrument instrument.Instrument
 	// Pitch is the pitch of the note.
-	Pitch int32
+	Pitch int
 }
 
 // sound implements the world.Sound interface.

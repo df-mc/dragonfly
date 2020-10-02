@@ -15,7 +15,7 @@ type NoteBlock struct {
 	bass
 
 	// Pitch is the current pitch the note block is set to. Value ranges from 0-24.
-	Pitch int32
+	Pitch int
 }
 
 // playNote ...
@@ -34,7 +34,7 @@ func (n NoteBlock) instrument(pos world.BlockPos, w *world.World) instrument.Ins
 
 // DecodeNBT ...
 func (n NoteBlock) DecodeNBT(data map[string]interface{}) interface{} {
-	n.Pitch = int32(readByte(data, "note"))
+	n.Pitch = int(readByte(data, "note"))
 	return n
 }
 

@@ -39,7 +39,7 @@ type Note struct {
 	// Instrument is the instrument of the note block.
 	Instrument instrument.Instrument
 	// Pitch is the pitch of the note.
-	Pitch int32
+	Pitch int
 }
 
 // particle serves as a base for all particles in this package.
