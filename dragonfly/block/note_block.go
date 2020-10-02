@@ -18,19 +18,9 @@ type NoteBlock struct {
 	Pitch int32
 }
 
-// BreakInfo ...
-func (n NoteBlock) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.8,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(n, 1)),
-	}
-}
-
 // playNote ...
 func (n NoteBlock) playNote(pos world.BlockPos, w *world.World) {
-	w.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, w), Pitch: int(n.Pitch)})
+	w.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, w), Pitch: n.Pitch})
 	w.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
@@ -44,13 +34,13 @@ func (n NoteBlock) instrument(pos world.BlockPos, w *world.World) instrument.Ins
 
 // DecodeNBT ...
 func (n NoteBlock) DecodeNBT(data map[string]interface{}) interface{} {
-	n.Pitch = readInt32(data, "note")
+	n.Pitch = int32(readByte(data, "note"))
 	return n
 }
 
 // EncodeNBT ...
 func (n NoteBlock) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"note": n.Pitch}
+	return map[string]interface{}{"note": byte(n.Pitch)}
 }
 
 // Punch ...
@@ -69,6 +59,16 @@ func (n NoteBlock) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ 
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, w)
 	w.SetBlock(pos, n)
+}
+
+// BreakInfo ...
+func (n NoteBlock) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    0.8,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(item.NewStack(n, 1)),
+	}
 }
 
 // EncodeItem ...

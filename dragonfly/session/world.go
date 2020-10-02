@@ -412,7 +412,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	switch so := soundType.(type) {
 	case sound.Note:
 		pk.SoundType = packet.SoundEventNote
-		pk.ExtraData = int32((so.Instrument.MagicNumber << 8) | so.Pitch)
+		pk.ExtraData = (int32(so.Instrument.MagicNumber) << 8) | so.Pitch
 	case sound.DoorCrash:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundDoorCrash,

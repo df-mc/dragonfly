@@ -2,8 +2,10 @@ package instrument
 
 // Instrument represents a note block instrument.
 type Instrument struct {
-	MagicNumber int
+	MagicNumber instrument
 }
+
+type instrument int32
 
 // Piano is an instrument type for the note block.
 func Piano() Instrument {

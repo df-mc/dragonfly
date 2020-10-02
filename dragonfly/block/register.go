@@ -374,3 +374,12 @@ func readInt32(m map[string]interface{}, key string) int32 {
 	b, _ := v.(int32)
 	return b
 }
+
+// readByte reads a byte from a map at the key passed.
+//noinspection GoCommentLeadingSpace
+func readByte(m map[string]interface{}, key string) byte {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	v, _ := m[key]
+	b, _ := v.(byte)
+	return b
+}
