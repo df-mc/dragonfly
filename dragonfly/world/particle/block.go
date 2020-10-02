@@ -35,7 +35,7 @@ type Bonemeal struct{ particle }
 type DragonEggTeleport struct {
 	particle
 
-	// Diff is the distance teleported by the dragon egg.
+	// Diff is a BlockPos with the values being the difference from the original position to the new position.
 	Diff world.BlockPos
 }
 

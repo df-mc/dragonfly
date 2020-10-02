@@ -1103,7 +1103,6 @@ func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 		if punchable, ok := p.World().Block(pos).(block.Punchable); ok {
 			p.swingArm()
 			punchable.Punch(pos, face, p.World(), p)
-			return
 		}
 
 		p.breaking.Store(true)

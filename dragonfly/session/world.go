@@ -20,7 +20,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
 )
 
 // ViewChunk ...
@@ -762,5 +761,8 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 
 // abs ...
 func abs(a int) int {
-	return int(math.Abs(float64(a)))
+	if a < 0 {
+		return -a
+	}
+	return a
 }
