@@ -85,7 +85,7 @@ func (t Torch) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
-	facing := "up"
+	facing := "unknown"
 	switch t.Facing {
 	case world.FaceDown:
 		facing = "top"
