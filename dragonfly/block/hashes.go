@@ -94,4 +94,5 @@ const (
 	hashStainedGlass
 	hashWheat
 	hashIce
+	hashPackedIce
 )
