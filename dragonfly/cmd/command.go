@@ -52,6 +52,18 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 	usages := make([]string, len(r))
 	runnableValues := make([]reflect.Value, len(r))
 
+	if len(aliases) > 0 {
+		namePresent := false
+		for _, alias := range aliases {
+			if alias == name {
+				namePresent = true
+			}
+		}
+		if !namePresent {
+			aliases = append(aliases, name)
+		}
+	}
+
 	for i, runnable := range r {
 		t := reflect.TypeOf(runnable)
 		if t.Kind() != reflect.Struct && (t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct) {
@@ -190,8 +202,12 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		}
 	}
 
+	var argFrags []string
+	if args != "" {
+		argFrags = strings.Split(args, " ")
+	}
 	parser := parser{}
-	arguments := &Line{strings.Split(args, " ")}
+	arguments := &Line{args: argFrags}
 
 	// We iterate over all of the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
@@ -208,6 +224,9 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
 			return arguments, err
 		}
+	}
+	if arguments.Len() != 0 {
+		return arguments, fmt.Errorf("unexpected '%v'", strings.Join(arguments.args, " "))
 	}
 
 	v.Interface().(Runnable).Run(source, output)

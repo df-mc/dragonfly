@@ -109,6 +109,7 @@ func init() {
 	world.RegisterBlock(GildedBlackstone{})
 	world.RegisterBlock(Shroomlight{})
 	world.RegisterBlock(allCake()...)
+	world.RegisterBlock(InvisibleBedrock{})
 }
 
 func init() {
@@ -301,6 +302,7 @@ func init() {
 	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
 	world.RegisterItem("minecraft:shroomlight", Shroomlight{})
 	world.RegisterItem("minecraft:cake", Cake{})
+	world.RegisterItem("minecraft:invisibleBedrock", InvisibleBedrock{})
 }
 
 func init() {
@@ -339,10 +341,10 @@ func init() {
 		water, ok := b.(Water)
 		return ok && water.Depth == 8
 	}
-	item_internal.Bonemeal = func(pos world.BlockPos, w *world.World) bool {
+	item_internal.BoneMeal = func(pos world.BlockPos, w *world.World) bool {
 		b := w.Block(pos)
-		if bonemealAffected, ok := b.(BonemealAffected); ok {
-			return bonemealAffected.Bonemeal(pos, w)
+		if bonemealAffected, ok := b.(BoneMealAffected); ok {
+			return bonemealAffected.BoneMeal(pos, w)
 		}
 		return false
 	}

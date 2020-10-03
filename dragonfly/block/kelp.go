@@ -17,8 +17,8 @@ type Kelp struct {
 	Age int
 }
 
-// Bonemeal ...
-func (k Kelp) Bonemeal(pos world.BlockPos, w *world.World) bool {
+// BoneMeal ...
+func (k Kelp) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	for y := pos.Y(); y < 255; y++ {
 		currentPos := world.BlockPos{pos.X(), y, pos.Z()}
 		block := w.Block(currentPos)

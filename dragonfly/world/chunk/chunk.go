@@ -106,8 +106,7 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) uint8 {
 		}
 		for y := 15; y >= 0; y-- {
 			totalY := uint8(y | (subY << 4))
-			rid := sub.storages[0].RuntimeID(x, totalY, z)
-			if _, ok := FilteringBlocks[rid]; !ok {
+			if FilteringBlocks[sub.storages[0].RuntimeID(x, totalY, z)] == 15 {
 				return totalY
 			}
 		}

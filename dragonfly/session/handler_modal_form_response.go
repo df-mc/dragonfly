@@ -28,12 +28,12 @@ func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
 	delete(h.forms, pk.FormID)
 	h.mu.Unlock()
 
-	if !ok {
-		return fmt.Errorf("no form with ID %v currently opened", pk.FormID)
-	}
-	if bytes.Equal(pk.ResponseData, nullBytes) {
+	if bytes.Equal(pk.ResponseData, nullBytes) || len(pk.ResponseData) == 0 {
 		// The form was cancelled: The cross in the top right corner was clicked.
 		return nil
+	}
+	if !ok {
+		return fmt.Errorf("no form with ID %v currently opened", pk.FormID)
 	}
 	if err := f.SubmitJSON(pk.ResponseData, s.c); err != nil {
 		return fmt.Errorf("error submitting form data: %w", err)

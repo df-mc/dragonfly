@@ -21,8 +21,8 @@ type CocoaBean struct {
 	Age int
 }
 
-// Bonemeal ...
-func (c CocoaBean) Bonemeal(pos world.BlockPos, w *world.World) bool {
+// BoneMeal ...
+func (c CocoaBean) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	if c.Age == 2 {
 		return false
 	}

@@ -29,8 +29,8 @@ func (c Carrot) Consume(_ *world.World, consumer item.Consumer) item.Stack {
 	return item.Stack{}
 }
 
-// Bonemeal ...
-func (c Carrot) Bonemeal(pos world.BlockPos, w *world.World) bool {
+// BoneMeal ...
+func (c Carrot) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	if c.Growth == 7 {
 		return false
 	}

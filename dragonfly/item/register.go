@@ -95,7 +95,7 @@ func init() {
 	world.RegisterItem("minecraft:stick", Stick{})
 	world.RegisterItem("minecraft:magma_cream", MagmaCream{})
 
-	world.RegisterItem("minecraft:dye", Bonemeal{})
+	world.RegisterItem("minecraft:dye", BoneMeal{})
 	world.RegisterItem("minecraft:wheat", Wheat{})
 	world.RegisterItem("minecraft:beetroot", Beetroot{})
 	world.RegisterItem("minecraft:melon", MelonSlice{})
@@ -119,4 +119,5 @@ func init() {
 	world.RegisterItem("minecraft:golden_apple", GoldenApple{})
 	world.RegisterItem("minecraft:appleenchanted", EnchantedApple{})
 	world.RegisterItem("minecraft:pufferfish", Pufferfish{})
+	world.RegisterItem("minecraft:clock", Clock{})
 }
