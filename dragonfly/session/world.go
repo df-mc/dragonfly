@@ -366,6 +366,23 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
+	case particle.DragonEggTeleport:
+		xSign, ySign, zSign := 0, 0, 0
+		if pa.Diff.X() < 0 {
+			xSign = 1 << 24
+		}
+		if pa.Diff.Y() < 0 {
+			ySign = 1 << 25
+		}
+		if pa.Diff.Z() < 0 {
+			zSign = 1 << 26
+		}
+
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleDragonEggTeleport,
+			Position:  vec64To32(pos),
+			EventData: int32((((((abs(pa.Diff.X()) << 16) | (abs(pa.Diff.Y()) << 8)) | abs(pa.Diff.Z())) | xSign) | ySign) | zSign),
+		})
 	case particle.HugeExplosion:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleExplosion,
@@ -740,4 +757,12 @@ func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
+}
+
+// abs ...
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
 }

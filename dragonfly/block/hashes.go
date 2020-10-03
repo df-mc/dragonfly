@@ -11,6 +11,7 @@ const (
 	hashBlueIce
 	hashBricks
 	hashBoneBlock
+	hashCake
 	hashCarpet
 	hashCarrot
 	hashChest
@@ -28,6 +29,7 @@ const (
 	hashDiamondOre
 	hashDirt
 	hashDoor
+	hashDragonEgg
 	hashEmeraldBlock
 	hashEmeraldOre
 	hashEndBricks
@@ -60,6 +62,7 @@ const (
 	hashLog
 	hashMelon
 	hashMelonStem
+	hashNetherBrickFence
 	hashNetherGoldOre
 	hashNetheriteBlock
 	hashNetherrack
@@ -88,6 +91,7 @@ const (
 	hashTerracotta
 	hashTrapdoor
 	hashWater
+	hashWoodFence
 	hashWoodSlab
 	hashWoodStairs
 	hashWool
