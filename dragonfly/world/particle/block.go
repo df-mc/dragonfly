@@ -42,6 +42,14 @@ type Note struct {
 	Pitch int
 }
 
+// DragonEggTeleport is a particle that shows up when a dragon egg teleports.
+type DragonEggTeleport struct {
+	particle
+
+	// Diff is a BlockPos with the values being the difference from the original position to the new position.
+	Diff world.BlockPos
+}
+
 // particle serves as a base for all particles in this package.
 type particle struct{}
 
