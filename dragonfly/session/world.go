@@ -385,7 +385,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		})
 	case particle.Note:
 		s.writePacket(&packet.BlockEvent{
-			EventType: pa.Instrument.MagicNumber(),
+			EventType: pa.Instrument.Int32(),
 			EventData: int32(pa.Pitch),
 			Position:  protocol.BlockPos{int32(pos.X()), int32(pos.Y()), int32(pos.Z())},
 		})
@@ -429,7 +429,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	switch so := soundType.(type) {
 	case sound.Note:
 		pk.SoundType = packet.SoundEventNote
-		pk.ExtraData = (so.Instrument.MagicNumber() << 8) | int32(so.Pitch)
+		pk.ExtraData = (so.Instrument.Int32() << 8) | int32(so.Pitch)
 	case sound.DoorCrash:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundDoorCrash,

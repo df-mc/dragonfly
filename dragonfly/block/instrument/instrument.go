@@ -7,8 +7,8 @@ type Instrument struct {
 
 type instrument int32
 
-// MagicNumber ...
-func (i instrument) MagicNumber() int32 {
+// Int32 ...
+func (i instrument) Int32() int32 {
 	return int32(i)
 }
 
