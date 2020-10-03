@@ -10,6 +10,7 @@ import (
 type Basalt struct {
 	noNBT
 	solid
+	bassDrum
 
 	// Polished specifies if the basalt is its polished variant.
 	Polished bool

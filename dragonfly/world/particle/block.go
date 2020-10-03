@@ -1,6 +1,7 @@
 package particle
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -30,6 +31,24 @@ type BlockForceField struct{ particle }
 
 // Bonemeal is a particle that shows up on bonemeal usage.
 type Bonemeal struct{ particle }
+
+// Note is a particle that shows up on note block interactions.
+type Note struct {
+	particle
+
+	// Instrument is the instrument of the note block.
+	Instrument instrument.Instrument
+	// Pitch is the pitch of the note.
+	Pitch int
+}
+
+// DragonEggTeleport is a particle that shows up when a dragon egg teleports.
+type DragonEggTeleport struct {
+	particle
+
+	// Diff is a BlockPos with the values being the difference from the original position to the new position.
+	Diff world.BlockPos
+}
 
 // particle serves as a base for all particles in this package.
 type particle struct{}

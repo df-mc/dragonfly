@@ -9,6 +9,7 @@ import (
 type DiamondOre struct {
 	noNBT
 	solid
+	bassDrum
 }
 
 // BreakInfo ...

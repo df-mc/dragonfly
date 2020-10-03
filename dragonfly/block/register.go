@@ -59,6 +59,8 @@ func init() {
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(allCarpets()...)
 	world.RegisterBlock(allWool()...)
+	world.RegisterBlock(allFence()...)
+	world.RegisterBlock(NetherBrickFence{})
 	world.RegisterBlock(allFenceGates()...)
 	world.RegisterBlock(allTrapdoors()...)
 	world.RegisterBlock(allDoors()...)
@@ -106,8 +108,11 @@ func init() {
 	world.RegisterBlock(BlueIce{})
 	world.RegisterBlock(GildedBlackstone{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(allCake()...)
 	world.RegisterBlock(NetherWart{}, NetherWart{Age: 1}, NetherWart{Age: 2}, NetherWart{Age: 3})
 	world.RegisterBlock(InvisibleBedrock{})
+	world.RegisterBlock(NoteBlock{})
+	world.RegisterBlock(DragonEgg{})
 }
 
 func init() {
@@ -131,14 +136,14 @@ func init() {
 	world.RegisterItem("minecraft:log", Log{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:log", Log{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:log", Log{Wood: wood.Jungle()})
-	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Oak()})
-	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Spruce()})
-	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Birch()})
-	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Oak(), Persistent: true})
+	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Spruce(), Persistent: true})
+	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Birch(), Persistent: true})
+	world.RegisterItem("minecraft:leaves", Leaves{Wood: wood.Jungle(), Persistent: true})
 	world.RegisterItem("minecraft:chest", Chest{})
 	world.RegisterItem("minecraft:mossy_cobblestone", Cobblestone{Mossy: true})
-	world.RegisterItem("minecraft:leaves2", Leaves{Wood: wood.Acacia()})
-	world.RegisterItem("minecraft:leaves2", Leaves{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:leaves2", Leaves{Wood: wood.Acacia(), Persistent: true})
+	world.RegisterItem("minecraft:leaves2", Leaves{Wood: wood.DarkOak(), Persistent: true})
 	world.RegisterItem("minecraft:log2", Log{Wood: wood.Acacia()})
 	world.RegisterItem("minecraft:log2", Log{Wood: wood.DarkOak()})
 	world.RegisterItem("minecraft:stripped_spruce_log", Log{Wood: wood.Spruce(), Stripped: true})
@@ -220,6 +225,15 @@ func init() {
 	world.RegisterItem("minecraft:quartz_bricks", QuartzBricks{})
 	world.RegisterItem("minecraft:glass_pane", GlassPane{})
 	world.RegisterItem("minecraft:iron_bars", IronBars{})
+	world.RegisterItem("minecraft:fence", WoodFence{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:fence", WoodFence{Wood: wood.Spruce()})
+	world.RegisterItem("minecraft:fence", WoodFence{Wood: wood.Birch()})
+	world.RegisterItem("minecraft:fence", WoodFence{Wood: wood.Jungle()})
+	world.RegisterItem("minecraft:fence", WoodFence{Wood: wood.Acacia()})
+	world.RegisterItem("minecraft:fence", WoodFence{Wood: wood.DarkOak()})
+	world.RegisterItem("minecraft:crimson_fence", WoodFence{Wood: wood.Crimson()})
+	world.RegisterItem("minecraft:warped_fence", WoodFence{Wood: wood.Warped()})
+	world.RegisterItem("minecraft:nether_brick_fence", NetherBrickFence{})
 	world.RegisterItem("minecraft:fence_gate", WoodFenceGate{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_fence_gate", WoodFenceGate{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_fence_gate", WoodFenceGate{Wood: wood.Birch()})
@@ -290,8 +304,11 @@ func init() {
 	world.RegisterItem("minecraft:blue_ice", BlueIce{})
 	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
 	world.RegisterItem("minecraft:shroomlight", Shroomlight{})
+	world.RegisterItem("minecraft:cake", Cake{})
 	world.RegisterItem("minecraft:nether_wart", NetherWart{})
 	world.RegisterItem("minecraft:invisibleBedrock", InvisibleBedrock{})
+	world.RegisterItem("minecraft:noteblock", NoteBlock{})
+	world.RegisterItem("minecraft:dragon_egg", DragonEgg{})
 }
 
 func init() {
@@ -372,5 +389,14 @@ func readInt32(m map[string]interface{}, key string) int32 {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
 	b, _ := v.(int32)
+	return b
+}
+
+// readByte reads a byte from a map at the key passed.
+//noinspection GoCommentLeadingSpace
+func readByte(m map[string]interface{}, key string) byte {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	v, _ := m[key]
+	b, _ := v.(byte)
 	return b
 }

@@ -36,6 +36,11 @@ func (p BlockPos) Add(pos BlockPos) BlockPos {
 	return BlockPos{p[0] + pos[0], p[1] + pos[1], p[2] + pos[2]}
 }
 
+// Subtract subtracts two block positions together and returns a new one with the combined values.
+func (p BlockPos) Subtract(pos BlockPos) BlockPos {
+	return BlockPos{p[0] - pos[0], p[1] - pos[1], p[2] - pos[2]}
+}
+
 // Vec3 returns a vec3 holding the same coordinates as the block position.
 func (p BlockPos) Vec3() mgl64.Vec3 {
 	return mgl64.Vec3{float64(p[0]), float64(p[1]), float64(p[2])}

@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -13,6 +14,11 @@ type BoneBlock struct {
 
 	// Axis is the axis which the bone block faces.
 	Axis world.Axis
+}
+
+// Instrument ...
+func (b BoneBlock) Instrument() instrument.Instrument {
+	return instrument.Xylophone()
 }
 
 // UseOnBlock handles the rotational placing of bone blocks.

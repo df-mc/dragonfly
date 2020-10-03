@@ -6,6 +6,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 type NetherQuartzOre struct {
 	noNBT
 	solid
+	bassDrum
 }
 
 // BreakInfo ...
