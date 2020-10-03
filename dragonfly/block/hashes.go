@@ -28,6 +28,7 @@ const (
 	hashDiamondOre
 	hashDirt
 	hashDoor
+	hashDragonEgg
 	hashEmeraldBlock
 	hashEmeraldOre
 	hashEndBricks

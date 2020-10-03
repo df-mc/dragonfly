@@ -107,6 +107,7 @@ func init() {
 	world.RegisterBlock(GildedBlackstone{})
 	world.RegisterBlock(Shroomlight{})
 	world.RegisterBlock(InvisibleBedrock{})
+	world.RegisterBlock(DragonEgg{})
 }
 
 func init() {
@@ -290,6 +291,7 @@ func init() {
 	world.RegisterItem("minecraft:gilded_blackstone", GildedBlackstone{})
 	world.RegisterItem("minecraft:shroomlight", Shroomlight{})
 	world.RegisterItem("minecraft:invisibleBedrock", InvisibleBedrock{})
+	world.RegisterItem("minecraft:dragon_egg", DragonEgg{})
 }
 
 func init() {
