@@ -4,7 +4,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item/tool"
 
 // TODO: Slipperiness and SilkTouch
 
-// Packedice is a solid block similar to ice
+// PackedIce is a solid block similar to ice
 type PackedIce struct {
 	noNBT
 	solid

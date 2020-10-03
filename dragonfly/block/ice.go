@@ -2,12 +2,12 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item/tool"
 
-// TODO: Slipperiness and SilkTouch
+// TODO: Slipperiness, slowness, noteblock and SilkTouch
 
 // Ice is a solid block similar to packed ice.
 type Ice struct {
 	noNBT
-	solid
+	transparent
 }
 
 // BreakInfo ...
@@ -35,4 +35,7 @@ func (Ice) EncodeBlock() (name string, properties map[string]interface{}) {
 // Hash ...
 func (Ice) Hash() uint64 {
 	return hashIce
+}
+func (i Ice) LightDiffusionLevel() uint8 {
+	return 2
 }
