@@ -45,6 +45,7 @@ const (
 	hashGrassPath
 	hashGravel
 	hashFenceGate
+	hashInvisibleBedrock
 	hashIronBars
 	hashIronBlock
 	hashIronOre
