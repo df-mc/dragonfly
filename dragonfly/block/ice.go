@@ -8,6 +8,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item/tool"
 type Ice struct {
 	noNBT
 	transparent
+	solid
 }
 
 // BreakInfo ...
@@ -36,6 +37,8 @@ func (Ice) EncodeBlock() (name string, properties map[string]interface{}) {
 func (Ice) Hash() uint64 {
 	return hashIce
 }
+
+// LightDiffusionLevel ...
 func (i Ice) LightDiffusionLevel() uint8 {
 	return 2
 }
