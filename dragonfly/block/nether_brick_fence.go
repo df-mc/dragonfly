@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
@@ -9,6 +10,16 @@ import (
 type NetherBrickFence struct {
 	noNBT
 	transparent
+}
+
+// BreakInfo ...
+func (n NetherBrickFence) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    2,
+		Harvestable: pickaxeHarvestable,
+		Effective:   pickaxeEffective,
+		Drops:       simpleDrops(item.NewStack(n, 1)),
+	}
 }
 
 // CanDisplace ...

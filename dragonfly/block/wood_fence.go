@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
+	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
@@ -12,9 +13,19 @@ type WoodFence struct {
 	noNBT
 	transparent
 
-	// Wood is the type of wood of the fence. This field must have one of the values found in the material
+	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
 	Wood wood.Wood
+}
+
+// BreakInfo ...
+func (w WoodFence) BreakInfo() BreakInfo {
+	return BreakInfo{
+		Hardness:    2,
+		Harvestable: alwaysHarvestable,
+		Effective:   axeEffective,
+		Drops:       simpleDrops(item.NewStack(w, 1)),
+	}
 }
 
 // CanDisplace ...
