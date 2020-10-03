@@ -11,6 +11,7 @@ import (
 // NetherWart is a fungus found in the Nether that is vital in the creation of potions.
 type NetherWart struct {
 	noNBT
+	transparent
 	empty
 
 	// Age is the age of the nether wart block. 3 is fully grown.
@@ -59,10 +60,9 @@ func (n NetherWart) BreakInfo() BreakInfo {
 		Effective:   nothingEffective,
 		Drops: func(t tool.Tool) []item.Stack {
 			if n.Age == 3 {
-				return []item.Stack{item.NewStack(n, 1)}
-			} else {
 				return []item.Stack{item.NewStack(n, rand.Intn(3)+2)}
 			}
+			return []item.Stack{item.NewStack(n, 1)}
 		},
 	}
 }
