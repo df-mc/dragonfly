@@ -20,6 +20,7 @@ type Chest struct {
 	nbt
 	chest
 	transparent
+	bass
 
 	// Facing is the direction that the chest is facing.
 	Facing world.Direction

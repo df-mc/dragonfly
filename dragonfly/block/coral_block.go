@@ -11,6 +11,7 @@ import (
 type CoralBlock struct {
 	noNBT
 	solid
+	bassDrum
 
 	// Type is the type of coral of the block.
 	Type coral.Coral

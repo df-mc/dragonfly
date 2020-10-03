@@ -14,6 +14,7 @@ import (
 type WoodTrapdoor struct {
 	noNBT
 	transparent
+	bass
 
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.

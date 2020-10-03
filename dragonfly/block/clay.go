@@ -1,11 +1,19 @@
 package block
 
-import "github.com/df-mc/dragonfly/dragonfly/item"
+import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+)
 
 // Clay is a block that can be found underwater.
 type Clay struct {
 	noNBT
 	solid
+}
+
+// Instrument ...
+func (c Clay) Instrument() instrument.Instrument {
+	return instrument.Flute()
 }
 
 // BreakInfo ...

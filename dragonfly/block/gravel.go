@@ -12,6 +12,7 @@ type Gravel struct {
 	noNBT
 	gravityAffected
 	solid
+	snare
 }
 
 // NeighbourUpdateTick ...

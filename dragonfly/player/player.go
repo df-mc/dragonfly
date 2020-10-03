@@ -1100,6 +1100,11 @@ func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 	ctx := event.C()
 	p.handler().HandleStartBreak(ctx, pos)
 	ctx.Continue(func() {
+		if punchable, ok := p.World().Block(pos).(block.Punchable); ok {
+			p.swingArm()
+			punchable.Punch(pos, face, p.World(), p)
+		}
+
 		p.breaking.Store(true)
 		p.breakingPos.Store(pos)
 

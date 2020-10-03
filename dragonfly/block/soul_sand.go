@@ -1,11 +1,19 @@
 package block
 
-import "github.com/df-mc/dragonfly/dragonfly/item"
+import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+)
 
 // SoulSand is a block found naturally only in the Nether. SoulSand slows movement of mobs & players.
 type SoulSand struct {
 	noNBT
 	solid
+}
+
+// Instrument ...
+func (s SoulSand) Instrument() instrument.Instrument {
+	return instrument.CowBell()
 }
 
 //TODO: Bubble Columns
