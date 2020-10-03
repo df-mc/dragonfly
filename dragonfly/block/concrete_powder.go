@@ -12,6 +12,7 @@ type ConcretePowder struct {
 	noNBT
 	gravityAffected
 	solid
+	snare
 
 	// Colour is the colour of the concrete powder.
 	Colour colour.Colour

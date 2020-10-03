@@ -11,6 +11,7 @@ import (
 type GlazedTerracotta struct {
 	noNBT
 	solid
+	bassDrum
 
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
