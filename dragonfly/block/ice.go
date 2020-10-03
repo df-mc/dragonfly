@@ -2,7 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/dragonfly/item/tool"
 
-// TODO: Slipperiness, slowness, noteblock and SilkTouch
+// TODO: Slipperiness, melting and SilkTouch
 
 // Ice is a solid block similar to packed ice.
 type Ice struct {

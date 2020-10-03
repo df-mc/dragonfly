@@ -196,7 +196,3 @@ type EntityCollider interface {
 	// EntityCollide is called on entity collision.
 	EntityCollide(e world.Entity)
 }
-
-// Meltable is an interface for blocks  that will melt like ice.
-type Meltable interface {
-}
