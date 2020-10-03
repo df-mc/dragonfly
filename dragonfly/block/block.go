@@ -124,7 +124,7 @@ func (noNBT) HasNBT() bool {
 	return false
 }
 
-// nbt may be embedded by blocks that do have NBT.
+// nbt may be embenbdded by blocks that do have NBT.
 type nbt struct{}
 
 // HasNBT ...
