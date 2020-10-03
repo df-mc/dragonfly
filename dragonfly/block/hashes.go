@@ -66,6 +66,7 @@ const (
 	hashNetherGoldOre
 	hashNetheriteBlock
 	hashNetherrack
+	hashNetherWart
 	hashNoteblock
 	hashObsidian
 	hashPlanks
