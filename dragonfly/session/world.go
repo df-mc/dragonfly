@@ -188,6 +188,12 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Yaw:             float32(e.Yaw()),
 			HeadYaw:         float32(e.Yaw()),
 		})
+	case *entity.Lightning:
+		s.writePacket(&packet.AddActor{
+			EntityUniqueID:  int64(runtimeID),
+			EntityRuntimeID: runtimeID,
+			EntityType:      "minecraft:lightning_bolt",
+		})
 	default:
 		s.writePacket(&packet.AddActor{
 			EntityUniqueID:  int64(runtimeID),
