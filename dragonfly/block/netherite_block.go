@@ -9,6 +9,7 @@ import (
 type NetheriteBlock struct {
 	noNBT
 	solid
+	bassDrum
 }
 
 // BreakInfo ...

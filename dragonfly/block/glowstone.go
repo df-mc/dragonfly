@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"math/rand"
 )
@@ -9,6 +10,11 @@ import (
 type Glowstone struct {
 	noNBT
 	solid
+}
+
+// Instrument ...
+func (g Glowstone) Instrument() instrument.Instrument {
+	return instrument.Pling()
 }
 
 // BreakInfo ...

@@ -111,6 +111,7 @@ func init() {
 	world.RegisterBlock(allTorch()...)
 	world.RegisterBlock(allCake()...)
 	world.RegisterBlock(InvisibleBedrock{})
+	world.RegisterBlock(NoteBlock{})
 	world.RegisterBlock(DragonEgg{})
 }
 
@@ -307,6 +308,7 @@ func init() {
 	world.RegisterItem("minecraft:soul_torch", Torch{Type: fire.Soul()})
 	world.RegisterItem("minecraft:cake", Cake{})
 	world.RegisterItem("minecraft:invisibleBedrock", InvisibleBedrock{})
+	world.RegisterItem("minecraft:noteblock", NoteBlock{})
 	world.RegisterItem("minecraft:dragon_egg", DragonEgg{})
 }
 
@@ -388,5 +390,14 @@ func readInt32(m map[string]interface{}, key string) int32 {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	v, _ := m[key]
 	b, _ := v.(int32)
+	return b
+}
+
+// readByte reads a byte from a map at the key passed.
+//noinspection GoCommentLeadingSpace
+func readByte(m map[string]interface{}, key string) byte {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	v, _ := m[key]
+	b, _ := v.(byte)
 	return b
 }

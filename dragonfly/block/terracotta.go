@@ -9,6 +9,7 @@ import (
 type Terracotta struct {
 	noNBT
 	solid
+	bassDrum
 }
 
 // BreakInfo ...

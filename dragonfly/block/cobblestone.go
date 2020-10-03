@@ -6,6 +6,7 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 type Cobblestone struct {
 	noNBT
 	solid
+	bassDrum
 
 	// Mossy specifies if the cobblestone is mossy. This variant of cobblestone is typically found in
 	// dungeons or in small clusters in the giant tree taiga biome.

@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -13,6 +14,11 @@ type Wool struct {
 
 	// Colour is the colour of the wool.
 	Colour colour.Colour
+}
+
+// Instrument ...
+func (w Wool) Instrument() instrument.Instrument {
+	return instrument.Guitar()
 }
 
 // FlammabilityInfo ...

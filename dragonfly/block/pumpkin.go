@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -15,6 +16,14 @@ type Pumpkin struct {
 	Carved bool
 	// Facing is the direction the pumpkin is facing.
 	Facing world.Direction
+}
+
+// Instrument ...
+func (p Pumpkin) Instrument() instrument.Instrument {
+	if !p.Carved {
+		return instrument.Didgeridoo()
+	}
+	return instrument.Piano()
 }
 
 // UseOnBlock ...

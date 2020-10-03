@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 )
@@ -9,6 +10,11 @@ import (
 type GoldBlock struct {
 	noNBT
 	solid
+}
+
+// Instrument ...
+func (g GoldBlock) Instrument() instrument.Instrument {
+	return instrument.Bell()
 }
 
 // BreakInfo ...
