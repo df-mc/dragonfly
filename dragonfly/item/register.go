@@ -116,4 +116,6 @@ func init() {
 	world.RegisterItem("minecraft:prismarine_crystals", PrismarineCrystals{})
 
 	world.RegisterItem("minecraft:compass", Compass{})
+  
+	world.RegisterItem("minecraft:clock", Clock{})
 }
