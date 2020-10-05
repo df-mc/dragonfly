@@ -356,7 +356,7 @@ func (p *Player) Speed() float64 {
 	return p.speed.Load()
 }
 
-// Scale sets the scale of the players geometry
+// SetScale sets the scale of the players geometry
 func (p *Player) SetScale(scale float64) {
 	p.scale.Store(scale)
 	p.updateState()
