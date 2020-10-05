@@ -51,7 +51,7 @@ type UsingItem struct{}
 type OnFire struct{}
 
 // Scale sets the scale of the players geometry
-type Scale struct{
+type Scale struct {
 	Scale float64
 }
 
@@ -65,4 +65,4 @@ func (Named) __()         {}
 func (EffectBearing) __() {}
 func (UsingItem) __()     {}
 func (OnFire) __()        {}
-func (Scale) __()        {}
+func (Scale) __()         {}

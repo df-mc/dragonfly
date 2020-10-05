@@ -114,7 +114,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		speed:    *atomic.NewFloat64(0.1),
 		nameTag:  *atomic.NewString(name),
 		heldSlot: atomic.NewUint32(0),
-		scale: *atomic.NewFloat64(1),
+		scale:    *atomic.NewFloat64(1),
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
