@@ -50,7 +50,7 @@ type UsingItem struct{}
 // OnFire makes an entity show itself as on fire.
 type OnFire struct{}
 
-// Scale sets the scale of the player's geometry
+// Scale sets the scale of the player's geometry.
 type Scale struct {
 	Scale float64
 }
