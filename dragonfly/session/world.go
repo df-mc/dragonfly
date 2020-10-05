@@ -590,6 +590,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			}
 		case state.OnFire:
 			m.setFlag(dataKeyFlags, dataFlagOnFire)
+		case state.Scale:
+			m[dataKeyScale] = float32(st.Scale)
 		}
 	}
 	s.writePacket(&packet.SetActorData{

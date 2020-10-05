@@ -77,6 +77,7 @@ type Player struct {
 	fireTicks atomic.Int64
 
 	speed    atomic.Float64
+	scale    atomic.Float64
 	health   *entity_internal.HealthManager
 	effects  *entity.EffectManager
 	immunity atomic.Value
@@ -113,6 +114,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		speed:    *atomic.NewFloat64(0.1),
 		nameTag:  *atomic.NewString(name),
 		heldSlot: atomic.NewUint32(0),
+		scale: *atomic.NewFloat64(1),
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
@@ -352,6 +354,12 @@ func (p *Player) SetSpeed(speed float64) {
 // speed of a player is 0.1.
 func (p *Player) Speed() float64 {
 	return p.speed.Load()
+}
+
+// Scale sets the scale of the players geometry
+func (p *Player) SetScale(scale float64) {
+	p.scale.Store(scale)
+	p.updateState()
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
@@ -1717,6 +1725,9 @@ func (p *Player) State() (s []state.State) {
 	}
 	if p.OnFireDuration() > 0 {
 		s = append(s, state.OnFire{})
+	}
+	if p.scale.Load() >= 1 {
+		s = append(s, state.Scale{Scale: p.scale.Load()})
 	}
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {
