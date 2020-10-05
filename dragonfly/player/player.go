@@ -356,7 +356,7 @@ func (p *Player) Speed() float64 {
 	return p.speed.Load()
 }
 
-// SetScale sets the scale of the players geometry
+// SetScale sets the scale of the player's geometry
 func (p *Player) SetScale(scale float64) {
 	p.scale.Store(scale)
 	p.updateState()
@@ -1731,9 +1731,7 @@ func (p *Player) State() (s []state.State) {
 	if p.OnFireDuration() > 0 {
 		s = append(s, state.OnFire{})
 	}
-	if p.scale.Load() >= 1 {
-		s = append(s, state.Scale{Scale: p.scale.Load()})
-	}
+	s = append(s, state.Scale{Scale: p.scale.Load()})
 	colour, ambient := effect.ResultingColour(p.Effects())
 	if (colour != color.RGBA{}) {
 		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
