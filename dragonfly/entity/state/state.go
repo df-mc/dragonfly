@@ -52,6 +52,7 @@ type OnFire struct{}
 
 // Scale sets the scale of the player's geometry.
 type Scale struct {
+	// Scale is the scale of the player's geometry.
 	Scale float64
 }
 
