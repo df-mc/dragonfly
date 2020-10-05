@@ -362,6 +362,11 @@ func (p *Player) SetScale(scale float64) {
 	p.updateState()
 }
 
+// Scale returns the current scale of the player
+func (p *Player) Scale() float64 {
+	return p.scale.Load()
+}
+
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
 func (p *Player) Health() float64 {
 	return p.health.Health()
