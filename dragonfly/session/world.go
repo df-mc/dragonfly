@@ -156,10 +156,6 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 	switch v := e.(type) {
 	case Controllable:
-		s.writePacket(&packet.PlayerSkin{
-			UUID: v.UUID(),
-			Skin: skinToProtocol(v.Skin()),
-		})
 		s.writePacket(&packet.AddPlayer{
 			UUID:            v.UUID(),
 			Username:        v.Name(),
@@ -267,11 +263,12 @@ func (s *Session) ViewEntitySkin(e world.Entity) {
 	switch player := e.(type) {
 	case Controllable:
 		s.writePacket(&packet.PlayerSkin{
-			UUID:        player.UUID(),
-			Skin:        skinToProtocol(player.Skin()),
+			UUID: player.UUID(),
+			Skin: skinToProtocol(player.Skin()),
 		})
 	}
 }
+
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
 	switch e.(type) {
