@@ -130,7 +130,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
-	s.SetSkin(skin, uuid)
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 
 	chat.Global.Subscribe(p)
@@ -163,17 +162,15 @@ func (p *Player) XUID() string {
 
 // Skin returns the current skin for a player.
 func (p *Player) Skin() skin.Skin {
-	if p.session() == session.Nop {
-		return p.skin // There isn't a session so we should just use the same skin.
-	} else {
-		return p.session().Skin()
-	}
+	return p.skin
 }
 
 // SetSkin updates a players skin.
 func (p *Player) SetSkin(new skin.Skin) {
-	p.session().SetSkin(new, p.uuid)
 	p.skin = new
+	for _, viewer := range p.World().Viewers(p.Position()) {
+		viewer.ViewEntitySkin(p)
+	}
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call

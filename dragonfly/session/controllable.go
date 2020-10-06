@@ -73,4 +73,5 @@ type Controllable interface {
 	// Skin returns the skin of the controllable. Each controllable must have a skin, as it defines how the
 	// entity looks in the world.
 	Skin() skin.Skin
+	SetSkin(skin.Skin)
 }

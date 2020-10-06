@@ -262,6 +262,16 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 	})
 }
 
+// ViewEntitySkin ...
+func (s *Session) ViewEntitySkin(e world.Entity) {
+	switch player := e.(type) {
+	case Controllable:
+		s.writePacket(&packet.PlayerSkin{
+			UUID:        player.UUID(),
+			Skin:        skinToProtocol(player.Skin()),
+		})
+	}
+}
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
 	switch e.(type) {

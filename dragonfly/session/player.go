@@ -406,22 +406,6 @@ func (s *Session) SetFlying(flying bool) {
 	}
 }
 
-// SetSkin updates a players current skin.
-func (s *Session) SetSkin(new skin.Skin, uuid uuid.UUID) {
-	s.skin = new
-	for _, session := range sessions {
-		session.writePacket(&packet.PlayerSkin{
-			UUID: uuid,
-			Skin: skinToProtocol(new),
-		})
-	}
-}
-
-// Skin returns the players current skin.
-func (s *Session) Skin() skin.Skin {
-	return s.skin
-}
-
 // updateAdventureSettings updates the adventure settings.
 func (s *Session) updateAdventureSettings() {
 	s.writePacket(&packet.AdventureSettings{

@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
 	"github.com/df-mc/dragonfly/dragonfly/player/chat"
 	"github.com/df-mc/dragonfly/dragonfly/player/form"
-	"github.com/df-mc/dragonfly/dragonfly/player/skin"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -62,9 +61,6 @@ type Session struct {
 
 	// adventureFlags are the adventure flags for the session.
 	adventureFlags *atomic.Uint32
-
-	// skin is the players skin.
-	skin skin.Skin
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
