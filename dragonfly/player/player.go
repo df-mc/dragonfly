@@ -130,6 +130,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
+	s.SetSkin(skin, uuid)
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 
 	chat.Global.Subscribe(p)
@@ -160,11 +161,20 @@ func (p *Player) XUID() string {
 	return p.xuid
 }
 
-// Skin returns the skin that a player joined with. This skin will be visible to other players that the player
-// is shown to.
+// Skin returns the current skin for a player.
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
-	return p.skin
+	if p.session() == session.Nop {
+		return p.skin // There isn't a session so we should just use the same skin.
+	} else {
+		return p.session().Skin()
+	}
+}
+
+// SetSkin updates a players skin.
+func (p *Player) SetSkin(new skin.Skin) {
+	p.session().SetSkin(new, p.uuid)
+	p.skin = new
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call

@@ -406,6 +406,22 @@ func (s *Session) SetFlying(flying bool) {
 	}
 }
 
+// SetSkin updates a players current skin.
+func (s *Session) SetSkin(new skin.Skin, uuid uuid.UUID) {
+	s.skin = new
+	for _, session := range sessions {
+		session.writePacket(&packet.PlayerSkin{
+			UUID: uuid,
+			Skin: skinToProtocol(new),
+		})
+	}
+}
+
+// Skin returns the players current skin.
+func (s *Session) Skin() skin.Skin {
+	return s.skin
+}
+
 // updateAdventureSettings updates the adventure settings.
 func (s *Session) updateAdventureSettings() {
 	s.writePacket(&packet.AdventureSettings{
@@ -480,6 +496,25 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		Animations:        animations,
 		Trusted:           true,
 	}
+}
+
+// protocolToSkin converts a protocol.Skin to a skin.Skin.
+func protocolToSkin(data protocol.Skin) skin.Skin {
+	modelConfig, _ := skin.DecodeModelConfig(data.SkinResourcePatch)
+
+	playerSkin := skin.New(int(data.SkinImageWidth), int(data.SkinImageHeight))
+	playerSkin.Persona = data.PersonaSkin
+	playerSkin.Pix = data.SkinData
+	playerSkin.Model = data.SkinGeometry
+	playerSkin.ModelConfig = modelConfig
+
+	for _, animation := range data.Animations {
+		anim := skin.NewAnimation(int(animation.ImageWidth), int(animation.ImageHeight), skin.AnimationType(animation.AnimationType))
+		anim.Pix = animation.ImageData
+		anim.FrameCount = int(animation.FrameCount)
+		playerSkin.Animations = append(playerSkin.Animations, anim)
+	}
+	return playerSkin
 }
 
 // removeFromPlayerList removes the player of a session from the player list of this session. It will no
