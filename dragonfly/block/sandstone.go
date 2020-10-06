@@ -9,18 +9,20 @@ import (
 type Sandstone struct {
 	noNBT
 	solid
-	Red bool
+	Red  bool
 	Data int16
 }
+
 // BreakInfo ...
 func (s Sandstone) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    2,
 		Harvestable: pickaxeHarvestable,
-		Effective: pickaxeEffective,
-		Drops: simpleDrops(item.NewStack(s, 1)),
+		Effective:   pickaxeEffective,
+		Drops:       simpleDrops(item.NewStack(s, 1)),
 	}
 }
+
 // EncodeItem ...
 func (s Sandstone) EncodeItem() (id int32, meta int16) {
 	if s.Red {
@@ -66,36 +68,36 @@ func (s Sandstone) Hash() uint64 {
 func allSandstone() []world.Block {
 	return []world.Block{
 		Sandstone{
-			Red:   false,
-			Data:  0,
+			Red:  false,
+			Data: 0,
 		},
 		Sandstone{
-			Red:   false,
-			Data:  1,
+			Red:  false,
+			Data: 1,
 		},
 		Sandstone{
-			Red:   false,
-			Data:  2,
+			Red:  false,
+			Data: 2,
 		},
 		Sandstone{
-			Red:   false,
-			Data:  3,
+			Red:  false,
+			Data: 3,
 		},
 		Sandstone{
-			Red:   true,
-			Data:  0,
+			Red:  true,
+			Data: 0,
 		},
 		Sandstone{
-			Red:   true,
-			Data:  1,
+			Red:  true,
+			Data: 1,
 		},
 		Sandstone{
-			Red:   true,
-			Data:  2,
+			Red:  true,
+			Data: 2,
 		},
 		Sandstone{
-			Red:   true,
-			Data:  3,
+			Red:  true,
+			Data: 3,
 		},
 	}
 }
