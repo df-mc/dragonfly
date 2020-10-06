@@ -33,7 +33,7 @@ func (t GlazedTerracotta) BreakInfo() BreakInfo {
 func (t GlazedTerracotta) EncodeItem() (id int32, meta int16) {
 	// Item ID for glazed terracotta is equal to 220 + colour number.
 	if t.Colour == colour.Purple() {
-		return 219,0
+		return 219, 0
 	}
 	return int32(220 + t.Colour.Uint8()), meta
 }
