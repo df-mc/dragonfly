@@ -287,6 +287,7 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 	case gamemode.Spectator:
 		flags, id = packet.AdventureFlagWorldImmutable|packet.AdventureFlagAllowFlight|packet.AdventureFlagMuted|packet.AdventureFlagNoClip|packet.AdventureFlagNoPVP, packet.GameTypeCreativeSpectator
 	}
+	s.adventureFlags.Store(flags)
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
@@ -362,6 +363,57 @@ func (s *Session) sendGameRules(gameRules map[string]interface{}) {
 func (s *Session) EnableCoordinates(enable bool) {
 	//noinspection SpellCheckingInspection
 	s.sendGameRules(map[string]interface{}{"showcoordinates": enable})
+}
+
+// CanFly returns whether the client can fly.
+func (s *Session) CanFly() bool {
+	return packet.AdventureFlagAllowFlight&s.adventureFlags.Load() != 0
+}
+
+// SetCanFly sets whether or not the client can fly.
+func (s *Session) SetCanFly(canfly bool) {
+	if canfly {
+		if !s.CanFly() { // Don't want to re-add it.
+			s.adventureFlags.Store(s.adventureFlags.Load() | packet.AdventureFlagAllowFlight)
+			s.updateAdventureSettings()
+		}
+	} else {
+		if s.CanFly() { // Can't remove something that isn't there.
+			s.adventureFlags.Store(s.adventureFlags.Load() &^ packet.AdventureFlagAllowFlight)
+			s.updateAdventureSettings()
+			s.SetFlying(false) // Stop them if they are already flying.
+		}
+	}
+}
+
+// Flying returns whether the client is currently flying or not.
+func (s *Session) Flying() bool {
+	return packet.AdventureFlagFlying&s.adventureFlags.Load() != 0
+}
+
+// SetFlying sets whether or not the client is allowed to fly.
+func (s *Session) SetFlying(flying bool) {
+	if flying {
+		if !s.Flying() { // Don't want to re-add it.
+			s.adventureFlags.Store(s.adventureFlags.Load() | packet.AdventureFlagFlying)
+			s.updateAdventureSettings()
+		}
+	} else {
+		if s.Flying() { // Can't remove something that isn't there.
+			s.adventureFlags.Store(s.adventureFlags.Load() &^ packet.AdventureFlagFlying)
+			s.updateAdventureSettings()
+		}
+	}
+}
+
+// updateAdventureSettings updates the adventure settings.
+func (s *Session) updateAdventureSettings() {
+	s.writePacket(&packet.AdventureSettings{
+		Flags:             s.adventureFlags.Load(),
+		PermissionLevel:   packet.PermissionLevelMember,
+		PlayerUniqueID:    1,
+		ActionPermissions: uint32(packet.ActionPermissionBuildAndMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
+	})
 }
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the

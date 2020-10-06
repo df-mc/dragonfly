@@ -49,6 +49,10 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	Flying() bool
+	CanFly() bool
+	SetCanFly(bool)
+	SetFlying(bool)
 
 	StartBreaking(pos world.BlockPos, face world.Face)
 	ContinueBreaking(face world.Face)

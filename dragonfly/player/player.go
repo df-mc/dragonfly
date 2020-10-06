@@ -1704,6 +1704,26 @@ func (p *Player) PlaySound(sound world.Sound) {
 	p.session().ViewSound(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}), sound)
 }
 
+// CanFly returns whether the client can fly.
+func (p *Player) CanFly() bool {
+	return p.session().CanFly()
+}
+
+// SetCanFly sets whether or not the client can fly.
+func (p *Player) SetCanFly(canfly bool) {
+	p.session().SetCanFly(canfly)
+}
+
+// Flying returns whether the client is currently flying or not.
+func (p *Player) Flying() bool {
+	return p.session().Flying()
+}
+
+// SetFlying sets whether or not the client is currently flying.
+func (p *Player) SetFlying(flying bool) {
+	p.session().SetFlying(flying)
+}
+
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {
