@@ -53,51 +53,14 @@ func (s Sandstone) EncodeBlock() (name string, properties map[string]interface{}
 
 // Hash ...
 func (s Sandstone) Hash() uint64 {
-	switch s.Data {
-	case 1:
-		return hashChiseledSandstone | (uint64(boolByte(s.Red)) << 32)
-	case 2:
-		return hashCutSandstone | (uint64(boolByte(s.Red)) << 32)
-	case 3:
-		return hashSmoothSandstone | (uint64(boolByte(s.Red)) << 32)
-	}
-	return hashSandstone | (uint64(boolByte(s.Red)) << 32)
+	return hashSandstone | (uint64(boolByte(s.Red)) << 32) | (uint64(s.Data) << 33)
 }
 
 // allSandstone returns all possible sandstone states.
-func allSandstone() []world.Block {
-	return []world.Block{
-		Sandstone{
-			Red:  false,
-			Data: 0,
-		},
-		Sandstone{
-			Red:  false,
-			Data: 1,
-		},
-		Sandstone{
-			Red:  false,
-			Data: 2,
-		},
-		Sandstone{
-			Red:  false,
-			Data: 3,
-		},
-		Sandstone{
-			Red:  true,
-			Data: 0,
-		},
-		Sandstone{
-			Red:  true,
-			Data: 1,
-		},
-		Sandstone{
-			Red:  true,
-			Data: 2,
-		},
-		Sandstone{
-			Red:  true,
-			Data: 3,
-		},
+func allSandstone() (sandstones []world.Block) {
+	for i := 0; i < 4; i++ {
+		sandstones = append(sandstones, Sandstone{Red: false, Data: int16(i)})
+		sandstones = append(sandstones, Sandstone{Red: true, Data: int16(i)})
 	}
+	return
 }
