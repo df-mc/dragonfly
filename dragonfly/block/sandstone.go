@@ -15,11 +15,20 @@ type Sandstone struct {
 
 // BreakInfo ...
 func (s Sandstone) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(s, 1)),
+	if s.Data == 3 {
+		return BreakInfo{
+			Hardness:    2,
+			Harvestable: pickaxeHarvestable,
+			Effective:   pickaxeEffective,
+			Drops:       simpleDrops(item.NewStack(s, 1)),
+		}
+	} else {
+		return BreakInfo{
+			Hardness:    0.8,
+			Harvestable: pickaxeHarvestable,
+			Effective:   pickaxeEffective,
+			Drops:       simpleDrops(item.NewStack(s, 1)),
+		}
 	}
 }
 
