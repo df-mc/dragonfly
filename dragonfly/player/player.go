@@ -162,7 +162,6 @@ func (p *Player) XUID() string {
 }
 
 // Skin returns the current skin for a player.
-// If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
 	if p.session() == session.Nop {
 		return p.skin // There isn't a session so we should just use the same skin.
