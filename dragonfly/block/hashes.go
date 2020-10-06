@@ -79,6 +79,10 @@ const (
 	hashQuartzPillar
 	hashQuartzBricks
 	hashSand
+	hashSandstone
+	hashChiseledSandstone
+	hashCutSandstone
+	hashSmoothSandstone
 	hashShroomlight
 	hashSeaLantern
 	hashSoulSand

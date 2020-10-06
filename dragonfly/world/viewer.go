@@ -29,7 +29,7 @@ type Viewer interface {
 	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
 	// target position.
 	ViewEntityTeleport(e Entity, position mgl64.Vec3)
-	// ViewEntitySkin updates the skin of the entity (only for players)
+	// ViewEntitySkin updates the skin of an entity.
 	ViewEntitySkin(e Entity)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
