@@ -189,11 +189,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 			HeadYaw:         float32(e.Yaw()),
 		})
 	default:
-		entityType := e.EncodeEntity()
 		s.writePacket(&packet.AddActor{
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
-			EntityType:      entityType,
+			EntityType:      e.EncodeEntity(),
 			Position:        vec64To32(e.Position()),
 			Pitch:           float32(e.Pitch()),
 			Yaw:             float32(e.Yaw()),
