@@ -1758,6 +1758,11 @@ func (p *Player) swingArm() {
 	}
 }
 
+// EncodeEntity ...
+func (p *Player) EncodeEntity() string {
+	return "minecraft:player"
+}
+
 // Close closes the player and removes it from the world.
 // Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.

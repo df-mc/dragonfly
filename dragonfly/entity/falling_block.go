@@ -100,3 +100,8 @@ func (f *FallingBlock) Velocity() mgl64.Vec3 {
 func (f *FallingBlock) SetVelocity(v mgl64.Vec3) {
 	f.velocity.Store(v)
 }
+
+// EncodeEntity ...
+func (f *FallingBlock) EncodeEntity() string {
+	return "minecraft:falling_block"
+}
