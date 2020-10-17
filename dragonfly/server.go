@@ -304,7 +304,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		Yaw:            90,
 		WorldName:      server.c.World.Name,
 		Blocks:         server.blockEntries(),
-		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre()),
+		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:               1,
