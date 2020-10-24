@@ -325,3 +325,10 @@ func (s *Session) closePlayerList() {
 	sessions = n
 	sessionMu.Unlock()
 }
+
+// connection returns the minecraft connection.
+//lint:ignore U1000 Function is used using compiler directives.
+//noinspection GoUnusedFunction
+func (s *Session) connection() *minecraft.Conn {
+	return s.conn
+}

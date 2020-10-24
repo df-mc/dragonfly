@@ -33,6 +33,10 @@ type Entity interface {
 
 	Velocity() mgl64.Vec3
 	SetVelocity(v mgl64.Vec3)
+
+	// EncodeEntity converts the entity to its encoded representation: It returns the type of the Minecraft
+	// entity, for example 'minecraft:falling_block'.
+	EncodeEntity() string
 }
 
 // TickerEntity represents an entity that has a Tick method which should be called every time the entity is

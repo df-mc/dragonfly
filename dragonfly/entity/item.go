@@ -188,6 +188,11 @@ func (it *Item) State() []state.State {
 	return nil
 }
 
+// EncodeEntity ...
+func (it *Item) EncodeEntity() string {
+	return "minecraft:item"
+}
+
 // Close closes the item, removing it from the world that it is currently in.
 func (it *Item) Close() error {
 	if it.World() != nil {
