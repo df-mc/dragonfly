@@ -170,7 +170,7 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum) error {
 	}
 	found := ""
 	for _, option := range v.Options() {
-		if strings.ToLower(option) == strings.ToLower(arg) {
+		if strings.EqualFold(option, arg) {
 			found = option
 		}
 	}
