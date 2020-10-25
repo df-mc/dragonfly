@@ -86,7 +86,8 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 	}
 	if err == ErrInsufficientArgs && optional {
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
-		// not matter.
+		// not matter. Make sure to clear the value though.
+		v.Set(reflect.Zero(v.Type()))
 		return nil
 	}
 	return err
