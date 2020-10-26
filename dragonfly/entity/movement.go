@@ -12,9 +12,9 @@ func boxes(b world.Block, pos world.BlockPos, w *world.World) []physics.AABB {
 	return b.Model().AABB(pos, w)
 }
 
-// movementComputer is used to compute movement of an entity. When constructed, the gravity of the entity
+// MovementComputer is used to compute movement of an entity. When constructed, the gravity of the entity
 // the movement is computed for must be passed.
-type movementComputer struct {
+type MovementComputer struct {
 	onGround          bool
 	gravity           float64
 	dragBeforeGravity bool
@@ -23,7 +23,7 @@ type movementComputer struct {
 // tickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
 // of its drag and gravity.
 // The new position of the entity after movement is returned.
-func (c *movementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
+func (c *MovementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
 	viewers := e.World().Viewers(e.Position())
 	if !e.Velocity().ApproxEqualThreshold(mgl64.Vec3{}, 0.001) {
 		for _, v := range viewers {
@@ -41,7 +41,7 @@ func (c *movementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
 
 // applyGravity applies gravity to the entity's velocity. By default, 0.08 is subtracted from the y value, or
 // a different value if the Gravity
-func (c *movementComputer) applyGravity(e world.Entity) mgl64.Vec3 {
+func (c *MovementComputer) applyGravity(e world.Entity) mgl64.Vec3 {
 	velocity := e.Velocity()
 	if c.dragBeforeGravity {
 		velocity[1] *= 0.98
@@ -54,7 +54,7 @@ func (c *movementComputer) applyGravity(e world.Entity) mgl64.Vec3 {
 }
 
 // applyFriction applies friction to the entity, reducing its velocity on the X and Z axes.
-func (c *movementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
+func (c *MovementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
 	velocity := e.Velocity()
 	if c.onGround {
 		velocity[0] *= 0.6
@@ -67,7 +67,7 @@ func (c *movementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
 }
 
 // move moves the entity so that all viewers in the world can see it, adding the velocity to the position.
-func (c *movementComputer) move(e world.Entity, deltaPos mgl64.Vec3, viewers []world.Viewer) mgl64.Vec3 {
+func (c *MovementComputer) move(e world.Entity, deltaPos mgl64.Vec3, viewers []world.Viewer) mgl64.Vec3 {
 	if deltaPos.ApproxEqualThreshold(mgl64.Vec3{}, 0.01) {
 		return e.Position()
 	}
@@ -80,7 +80,7 @@ func (c *movementComputer) move(e world.Entity, deltaPos mgl64.Vec3, viewers []w
 // handleCollision handles the collision of the entity with blocks, adapting the velocity of the entity if it
 // happens to collide with a block.
 // The final velocity and the Vec3 that the entity should move is returned.
-func (c *movementComputer) handleCollision(e world.Entity) (move mgl64.Vec3, velocity mgl64.Vec3) {
+func (c *MovementComputer) handleCollision(e world.Entity) (move mgl64.Vec3, velocity mgl64.Vec3) {
 	// TODO: Implement collision with other entities.
 	velocity = e.Velocity()
 	deltaX, deltaY, deltaZ := velocity[0], velocity[1], velocity[2]
@@ -157,6 +157,6 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 }
 
 // OnGround checks if the entity that this computer calculates is currently on the ground.
-func (c *movementComputer) OnGround() bool {
+func (c *MovementComputer) OnGround() bool {
 	return c.onGround
 }

@@ -20,7 +20,7 @@ type Item struct {
 	i                item.Stack
 	velocity, pos    atomic.Value
 
-	*movementComputer
+	*MovementComputer
 }
 
 // NewItem creates a new item entity using the item stack passed. The item entity will be positioned at the
@@ -32,7 +32,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
 
-	it := &Item{i: i, movementComputer: &movementComputer{
+	it := &Item{i: i, MovementComputer: &MovementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,
 	}}

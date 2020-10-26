@@ -16,12 +16,12 @@ type FallingBlock struct {
 	block         world.Block
 	velocity, pos atomic.Value
 
-	*movementComputer
+	*MovementComputer
 }
 
 // NewFallingBlock ...
 func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
-	f := &FallingBlock{block: block, movementComputer: &movementComputer{gravity: 0.04, dragBeforeGravity: true}}
+	f := &FallingBlock{block: block, MovementComputer: &MovementComputer{gravity: 0.04, dragBeforeGravity: true}}
 	f.pos.Store(pos)
 	f.velocity.Store(mgl64.Vec3{})
 	return f
@@ -48,7 +48,7 @@ func (f *FallingBlock) Tick(_ int64) {
 			}
 		}
 
-		f.Close()
+		_ = f.Close()
 	}
 }
 
