@@ -249,6 +249,8 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 		return players[0:1], nil
 	case "@e":
 		return entities, nil
+	case "@a":
+		return players, nil
 	case "@s":
 		return []Target{line.src}, nil
 	case "@r":
