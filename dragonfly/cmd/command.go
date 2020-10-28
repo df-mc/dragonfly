@@ -207,6 +207,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 	if args != "" {
 		r := csv.NewReader(strings.NewReader(args))
 		r.Comma = ' '
+		r.LazyQuotes = true
 		record, err := r.Read()
 		if err != nil {
 			return nil, fmt.Errorf("error parsing command string: %w", err)
