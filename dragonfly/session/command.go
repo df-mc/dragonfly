@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"reflect"
 )
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
@@ -50,11 +51,11 @@ func (s *Session) SendAvailableCommands() {
 		overloads := make([]protocol.CommandOverload, len(params))
 		for i, params := range params {
 			for _, paramInfo := range params {
-				t, enum := valueToParamType(paramInfo.Value)
+				t, enum := valueToParamType(paramInfo.Value, paramInfo.Type)
 				t |= protocol.CommandArgValid
 
 				opt := byte(0)
-				if paramInfo.Value == false || paramInfo.Value == true {
+				if paramInfo.Type.Kind() == reflect.Bool {
 					opt |= protocol.ParamOptionCollapseEnum
 				}
 				overloads[i].Parameters = append(overloads[i].Parameters, protocol.CommandParameter{
@@ -79,7 +80,7 @@ func (s *Session) SendAvailableCommands() {
 
 // valueToParamType finds the command argument type of a value passed and returns it, in addition to creating
 // an enum if applicable.
-func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
+func valueToParamType(i interface{}, ty reflect.Type) (t uint32, enum protocol.CommandEnum) {
 	switch i.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return protocol.CommandArgTypeInt, enum
@@ -98,6 +99,9 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 		}
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
+	}
+	if ty.Implements(reflect.TypeOf((*cmd.Target)(nil)).Elem()) {
+		return protocol.CommandArgTypeTarget, enum
 	}
 	if param, ok := i.(cmd.Parameter); ok && (param.Type() == "player" || param.Type() == "target") {
 		return protocol.CommandArgTypeTarget, enum

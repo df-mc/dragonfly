@@ -159,6 +159,7 @@ type ParamInfo struct {
 	Value    interface{}
 	Optional bool
 	Suffix   string
+	Type     reflect.Type
 }
 
 // Params returns a list of all parameters of the runnables. No assumptions should be done on the values that
@@ -174,6 +175,7 @@ func (cmd Command) Params() [][]ParamInfo {
 				Value:    reflect.New(elem.Field(i).Type()).Elem().Interface(),
 				Optional: optional(fieldType),
 				Suffix:   suffix(fieldType),
+				Type:     elem.Field(i).Type(),
 			})
 		}
 	}
@@ -255,7 +257,7 @@ func parseUsage(commandName string, v reflect.Value) string {
 			// Unexported field, we can't modify this so just ignore it.
 			continue
 		}
-		typeName := getTypeName(field.Interface())
+		typeName := getTypeName(field.Interface(), field.Type())
 
 		fieldType := command.Type().Field(i)
 		suffix := suffix(fieldType)
@@ -294,7 +296,7 @@ func verifySignature(v reflect.Value) error {
 
 // getTypeName returns a readable type name for the interface value passed. If none could be found, 'value'
 // is returned.
-func getTypeName(i interface{}) string {
+func getTypeName(i interface{}, t reflect.Type) string {
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
 		return "int"
@@ -310,6 +312,11 @@ func getTypeName(i interface{}) string {
 		return "bool"
 	case mgl64.Vec3:
 		return "x y z"
+	case []Target:
+		return "target"
+	}
+	if t.Implements(reflect.TypeOf((*Target)(nil)).Elem()) {
+		return "target"
 	}
 	if param, ok := i.(Parameter); ok {
 		return param.Type()
