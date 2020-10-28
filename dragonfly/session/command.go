@@ -89,6 +89,8 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 		return protocol.CommandArgTypeString, enum
 	case cmd.Varargs:
 		return protocol.CommandArgTypeRawText, enum
+	case cmd.Target, []cmd.Target:
+		return protocol.CommandArgTypeTarget, enum
 	case bool:
 		return 0, protocol.CommandEnum{
 			Type:    "bool",

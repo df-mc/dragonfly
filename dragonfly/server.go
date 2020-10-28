@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
@@ -111,6 +112,13 @@ func (server *Server) Run() error {
 	}
 	item_registerVanillaCreativeItems()
 	world_registerAllStates()
+	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
+		// TODO: All entities in the cmd.Source's world.
+		for _, p := range server.Players() {
+			players = append(players, p)
+		}
+		return
+	})
 	server.run()
 	return nil
 }

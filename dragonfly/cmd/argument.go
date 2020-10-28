@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -13,6 +15,7 @@ import (
 // command. It is a convenience wrapper around a string slice.
 type Line struct {
 	args []string
+	src  Source
 }
 
 // Next takes the next argument from the command line and returns it. If there were no more arguments to
@@ -73,6 +76,10 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 		err = p.vec3(line, v)
 	case Varargs:
 		err = p.varargs(line, v)
+	case Target:
+		err = p.target(line, v)
+	case []Target:
+		err = p.targets(line, v)
 	default:
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
@@ -197,6 +204,101 @@ func (p parser) vec3(line *Line, v reflect.Value) error {
 func (p parser) varargs(line *Line, v reflect.Value) error {
 	v.SetString(strings.Join(line.Leftover(), " "))
 	return nil
+}
+
+// target ...
+func (p parser) target(line *Line, v reflect.Value) error {
+	targets, err := p.parseTargets(line)
+	if err != nil {
+		return err
+	}
+	if len(targets) != 1 {
+		return fmt.Errorf("target argument requires exactly one target")
+	}
+	v.Set(reflect.ValueOf(targets[0]))
+	return nil
+}
+
+// targets ...
+func (p parser) targets(line *Line, v reflect.Value) error {
+	targets, err := p.parseTargets(line)
+	if err != nil {
+		return err
+	}
+	v.Set(reflect.ValueOf(targets))
+	return nil
+}
+
+// parseTargets parses one or more Targets from the Line passed.
+func (p parser) parseTargets(line *Line) ([]Target, error) {
+	entities, players := targets(line.src)
+	first, ok := line.Next()
+	if !ok {
+		return nil, ErrInsufficientArgs
+	}
+	switch first {
+	case "@p":
+		pos := line.src.Position()
+		playerDistances := make([]float64, len(players))
+		for i, p := range players {
+			playerDistances[i] = p.Position().Sub(pos).Len()
+		}
+		sort.Slice(players, func(i, j int) bool {
+			return playerDistances[i] < playerDistances[j]
+		})
+		return players[0:1], nil
+	case "@e":
+		return entities, nil
+	case "@s":
+		return []Target{line.src}, nil
+	case "@r":
+		if len(players) == 0 {
+			return nil, nil
+		}
+		return []Target{players[rand.Intn(len(players))]}, nil
+	default:
+		target, err := p.parsePlayer(line, players, first)
+		return []Target{target}, err
+	}
+}
+
+// parsePlayer parses one Player from the Line, reading more arguments if necessary to find a valid player
+// from the players Target list.
+func (p parser) parsePlayer(line *Line, players []Target, firstArg string) (Target, error) {
+	name := firstArg
+
+	args := line.args
+
+	matches := map[int]Target{}
+	var addedArgs int
+	for {
+		if len(name) > 15 {
+			// Maximum length of the name was reached.
+			break
+		}
+		for _, p := range players {
+			if p.Name() == name {
+				// We found a match for this amount of arguments. Following arguments may still be a better
+				// match though (subset in the name, such as 'Hello' vs 'Hello World' as name), so keep going
+				// until we saturate the command line or pass 15 characters.
+				matches[addedArgs] = p
+				break
+			}
+		}
+		if len(args) <= addedArgs {
+			// No more arguments left to match a possible name with.
+			break
+		}
+		name += " " + args[addedArgs]
+		addedArgs++
+	}
+	for j := addedArgs; j >= 0; j-- {
+		if match, ok := matches[j]; ok {
+			line.NextN(j)
+			return match, nil
+		}
+	}
+	return nil, fmt.Errorf("player with name '%v' not found", name)
 }
 
 // Varargs is an argument type that may be used to capture all arguments that follow. This is useful for,

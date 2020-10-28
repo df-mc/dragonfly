@@ -12,7 +12,7 @@ import (
 // and may be used for behaviour in the Command.
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
-// float32, float64, string, bool, mgl64.Vec3, Varargs,
+// float32, float64, string, bool, mgl64.Vec3, Varargs, Target, []Target
 // or a type that implements the cmd.Parameter or cmd.Enum interface.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
@@ -207,7 +207,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		argFrags = strings.Split(args, " ")
 	}
 	parser := parser{}
-	arguments := &Line{args: argFrags}
+	arguments := &Line{args: argFrags, src: source}
 
 	// We iterate over all of the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
