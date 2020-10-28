@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/mattn/go-shellwords"
 	"reflect"
 	"strings"
 )
@@ -204,7 +205,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 	var argFrags []string
 	if args != "" {
-		argFrags = strings.Split(args, " ")
+		argFrags, _ = shellwords.Parse(args)
 	}
 	parser := parser{}
 	arguments := &Line{args: argFrags, src: source}

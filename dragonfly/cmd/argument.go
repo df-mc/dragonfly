@@ -261,45 +261,20 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 		}
 		return []Target{players[rand.Intn(len(players))]}, nil
 	default:
-		target, err := p.parsePlayer(line, players, first)
+		target, err := p.parsePlayer(players, first)
 		return []Target{target}, err
 	}
 }
 
 // parsePlayer parses one Player from the Line, reading more arguments if necessary to find a valid player
 // from the players Target list.
-func (p parser) parsePlayer(line *Line, players []Target, firstArg string) (Target, error) {
-	name := firstArg
-
-	args := line.args
-
-	matches := map[int]Target{}
-	var addedArgs int
-	for {
-		if len(name) > 15 {
-			// Maximum length of the name was reached.
-			break
-		}
-		for _, p := range players {
-			if p.Name() == name {
-				// We found a match for this amount of arguments. Following arguments may still be a better
-				// match though (subset in the name, such as 'Hello' vs 'Hello World' as name), so keep going
-				// until we saturate the command line or pass 15 characters.
-				matches[addedArgs] = p
-				break
-			}
-		}
-		if len(args) <= addedArgs {
-			// No more arguments left to match a possible name with.
-			break
-		}
-		name += " " + args[addedArgs]
-		addedArgs++
-	}
-	for j := addedArgs; j >= 0; j-- {
-		if match, ok := matches[j]; ok {
-			line.NextN(j)
-			return match, nil
+func (p parser) parsePlayer(players []Target, name string) (Target, error) {
+	for _, p := range players {
+		if p.Name() == name {
+			// We found a match for this amount of arguments. Following arguments may still be a better
+			// match though (subset in the name, such as 'Hello' vs 'Hello World' as name), so keep going
+			// until we saturate the command line or pass 15 characters.
+			return p, nil
 		}
 	}
 	return nil, fmt.Errorf("player with name '%v' not found", name)

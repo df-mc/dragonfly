@@ -9,6 +9,7 @@ require (
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.1.2
 	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/mattn/go-shellwords v1.0.10 // indirect
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/sandertv/gophertunnel v1.7.14-0.20201024205820-7e1eebce5208
