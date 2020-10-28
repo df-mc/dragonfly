@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/mattn/go-shellwords"
 	"reflect"
 	"strings"
 )
@@ -205,7 +205,13 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 	var argFrags []string
 	if args != "" {
-		argFrags, _ = shellwords.Parse(args)
+		r := csv.NewReader(strings.NewReader(args))
+		r.Comma = ' '
+		record, err := r.Read()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing command string: %w", err)
+		}
+		argFrags = record
 	}
 	parser := parser{}
 	arguments := &Line{args: argFrags, src: source}
