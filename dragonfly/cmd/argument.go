@@ -76,11 +76,13 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 		err = p.vec3(line, v)
 	case Varargs:
 		err = p.varargs(line, v)
-	case Target:
-		err = p.target(line, v)
 	case []Target:
 		err = p.targets(line, v)
 	default:
+		if _, ok := i.(Target); ok {
+			err = p.target(line, v)
+			break
+		}
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
 			break
