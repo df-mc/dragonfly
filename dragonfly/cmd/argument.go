@@ -79,7 +79,7 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 	case []Target:
 		err = p.targets(line, v)
 	default:
-		if _, ok := i.(Target); ok {
+		if v.Type().Implements(reflect.TypeOf((*Target)(nil)).Elem()) {
 			err = p.target(line, v)
 			break
 		}
