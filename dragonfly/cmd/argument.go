@@ -248,7 +248,10 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 		sort.Slice(players, func(i, j int) bool {
 			return playerDistances[i] < playerDistances[j]
 		})
-		return players[0:1], nil
+		if len(players) > 1 {
+			return players[0:1], nil
+		}
+		return nil, nil
 	case "@e":
 		return entities, nil
 	case "@a":
