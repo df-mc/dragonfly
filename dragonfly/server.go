@@ -224,7 +224,7 @@ func (server *Server) Close() error {
 	server.log.Debug("Disconnecting players...")
 	server.playerMutex.RLock()
 	for _, p := range server.p {
-		p.Disconnect(text.Colourf("<yellow>%v</yellow>", server.c.Server.ShutdownMessage))
+		p.Disconnect(text.Yellow()(server.c.Server.ShutdownMessage))
 	}
 	server.playerMutex.RUnlock()
 
