@@ -418,12 +418,18 @@ func (server *Server) blockEntries() (entries []interface{}) {
 // registerTargetFunc registers a cmd.TargetFunc to be able to get all players connected and all entities in
 // the server's world.
 func (server *Server) registerTargetFunc() {
-	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
-		// TODO: All entities in the cmd.Source's world.
-		for _, p := range server.Players() {
-			players = append(players, p)
+	cmd.AddTargetFunc(func(src cmd.Source) ([]cmd.Target, []cmd.Target) {
+		entities, players := src.World().Entities(), server.Players()
+		eTargets, pTargets := make([]cmd.Target, len(entities)), make([]cmd.Target, len(players))
+
+		entities = src.World().Entities()
+		for i, e := range entities {
+			eTargets[i] = e
 		}
-		return
+		for i, p := range players {
+			pTargets[i] = p
+		}
+		return eTargets, pTargets
 	})
 }
 

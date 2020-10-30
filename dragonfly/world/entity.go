@@ -34,6 +34,10 @@ type Entity interface {
 	Velocity() mgl64.Vec3
 	SetVelocity(v mgl64.Vec3)
 
+	// Name returns a human readable name for the entity. This is not unique for an entity, but generally
+	// unique for an entity type.
+	Name() string
+
 	// EncodeEntity converts the entity to its encoded representation: It returns the type of the Minecraft
 	// entity, for example 'minecraft:falling_block'.
 	EncodeEntity() string
