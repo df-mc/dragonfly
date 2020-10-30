@@ -134,8 +134,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 
 	go s.handlePackets()
 
-	yellow := text.Yellow()
-	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has joined the game"))
+	chat.Global.Println(text.Colourf("<yellow>%v has joined the game</yellow>", s.conn.IdentityData().DisplayName))
 
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
@@ -149,8 +148,7 @@ func (s *Session) Close() error {
 	_ = s.chunkLoader.Close()
 	_ = s.c.Close()
 
-	yellow := text.Yellow()
-	chat.Global.Println(yellow(s.conn.IdentityData().DisplayName, "has left the game"))
+	chat.Global.Println(text.Colourf("<yellow>%v has left the game</yellow>", s.conn.IdentityData().DisplayName))
 
 	if s.c.World() != nil {
 		s.c.World().RemoveEntity(s.c)
