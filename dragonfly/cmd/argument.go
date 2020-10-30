@@ -87,6 +87,10 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 			err = p.enum(line, v, enum)
 			break
 		}
+		if sub, ok := i.(SubCommand); ok {
+			err = p.sub(line, sub)
+			break
+		}
 		panic(fmt.Sprintf("non-command parameter type %T in command structure", i))
 	}
 	if err == ErrInsufficientArgs && optional {
@@ -187,6 +191,18 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum) error {
 	return nil
 }
 
+// sub reads verifies a SubCommand against the next argument.
+func (p parser) sub(line *Line, v SubCommand) error {
+	arg, ok := line.Next()
+	if !ok {
+		return ErrInsufficientArgs
+	}
+	if strings.EqualFold(v.SubName(), arg) {
+		return nil
+	}
+	return fmt.Errorf(`invalid argument "%v" for sub command "%v"`, arg, v.SubName())
+}
+
 // vec3 ...
 func (p parser) vec3(line *Line, v reflect.Value) error {
 	if err := p.float(line, v.Index(0)); err != nil {
@@ -210,6 +226,9 @@ func (p parser) targets(line *Line, v reflect.Value) error {
 	if err != nil {
 		return err
 	}
+	if len(targets) == 0 {
+		return fmt.Errorf("no targets found")
+	}
 	v.Set(reflect.ValueOf(targets))
 	return nil
 }
@@ -231,10 +250,10 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 		sort.Slice(players, func(i, j int) bool {
 			return playerDistances[i] < playerDistances[j]
 		})
-		if len(players) > 0 {
-			return players[0:1], nil
+		if len(players) == 0 {
+			return nil, nil
 		}
-		return nil, nil
+		return players[0:1], nil
 	case "@e":
 		return entities, nil
 	case "@a":

@@ -99,6 +99,12 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
 	}
+	if sub, ok := i.(cmd.SubCommand); ok {
+		return 0, protocol.CommandEnum{
+			Type:    "SubCommand" + sub.SubName(),
+			Options: []string{sub.SubName()},
+		}
+	}
 	if enum, ok := i.(cmd.Enum); ok {
 		return 0, protocol.CommandEnum{
 			Type:    enum.Type(),

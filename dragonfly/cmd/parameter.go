@@ -27,6 +27,15 @@ type Enum interface {
 	SetOption(option string, v reflect.Value)
 }
 
+// SubCommand represents a subcommand that may be added as a static value that must be written. Adding
+// multiple Runnable implementations to the command in New with different SubCommand implementations as the
+// first parameter allows for commands with subcommands.
+type SubCommand interface {
+	// SubName returns the value that must be entered by the user when executing the subcommand, such as
+	// 'kill' for a command such as /entity kill <target>.
+	SubName() string
+}
+
 // optional checks if a struct field is considered optional.
 func optional(v reflect.StructField) bool {
 	if _, ok := v.Tag.Lookup("optional"); ok {

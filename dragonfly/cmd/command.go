@@ -14,7 +14,7 @@ import (
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
 // float32, float64, string, bool, mgl64.Vec3, Varargs, []Target
-// or a type that implements the cmd.Parameter or cmd.Enum interface.
+// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
 // to specify a name different than the field name for the parameter.
@@ -318,6 +318,9 @@ func getTypeName(i interface{}) string {
 	}
 	if enum, ok := i.(Enum); ok {
 		return enum.Type()
+	}
+	if sub, ok := i.(SubCommand); ok {
+		return sub.SubName()
 	}
 	return "value"
 }

@@ -107,18 +107,13 @@ func (server *Server) Run() error {
 	server.log.Info("Starting server...")
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
+	server.registerTargetFunc()
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
+
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
-	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
-		// TODO: All entities in the cmd.Source's world.
-		for _, p := range server.Players() {
-			players = append(players, p)
-		}
-		return
-	})
 	server.run()
 	return nil
 }
@@ -134,11 +129,13 @@ func (server *Server) Start() error {
 	server.log.Info("Starting server...")
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
+	server.registerTargetFunc()
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
+
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 	go server.run()
 	return nil
 }
@@ -416,6 +413,18 @@ func (server *Server) blockEntries() (entries []interface{}) {
 		})
 	}
 	return
+}
+
+// registerTargetFunc registers a cmd.TargetFunc to be able to get all players connected and all entities in
+// the server's world.
+func (server *Server) registerTargetFunc() {
+	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
+		// TODO: All entities in the cmd.Source's world.
+		for _, p := range server.Players() {
+			players = append(players, p)
+		}
+		return
+	})
 }
 
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
