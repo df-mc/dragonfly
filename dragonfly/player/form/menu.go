@@ -12,6 +12,7 @@ import (
 type Menu struct {
 	title, body string
 	submittable MenuSubmittable
+	buttons     []Button
 }
 
 // Button represents a button added to a Menu form. The button has text on it and an optional image, which
@@ -45,6 +46,13 @@ func (m Menu) WithBody(body ...interface{}) Menu {
 	return m
 }
 
+// WithButtons creates a copy of the Menu form and appends the buttons passed to the existing buttons, after
+// which the new Menu form is returned.
+func (m Menu) WithButtons(buttons ...Button) Menu {
+	m.buttons = append(m.buttons, buttons...)
+	return m
+}
+
 // Title returns the formatted title passed to the menu upon construction using NewMenu().
 func (m Menu) Title() string {
 	return m.title
@@ -61,7 +69,7 @@ func (m Menu) Buttons() []Button {
 	v := reflect.ValueOf(m.submittable)
 	t := reflect.TypeOf(m.submittable)
 
-	buttons := make([]Button, 0, v.NumField())
+	buttons := m.buttons
 	for i := 0; i < v.NumField(); i++ {
 		fieldT := t.Field(i)
 		fieldV := v.Field(i)
