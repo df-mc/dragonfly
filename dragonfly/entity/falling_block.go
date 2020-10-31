@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
@@ -58,6 +59,11 @@ func (f *FallingBlock) Close() error {
 		f.World().RemoveEntity(f)
 	}
 	return nil
+}
+
+// Name ...
+func (f *FallingBlock) Name() string {
+	return fmt.Sprintf("%T", f.block)
 }
 
 // AABB ...

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl64"
 	"reflect"
@@ -12,8 +13,8 @@ import (
 // and may be used for behaviour in the Command.
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
-// float32, float64, string, bool, mgl64.Vec3, Varargs,
-// or a type that implements the cmd.Parameter or cmd.Enum interface.
+// float32, float64, string, bool, mgl64.Vec3, Varargs, []Target
+// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
 // to specify a name different than the field name for the parameter.
@@ -204,10 +205,17 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 	var argFrags []string
 	if args != "" {
-		argFrags = strings.Split(args, " ")
+		r := csv.NewReader(strings.NewReader(args))
+		r.Comma = ' '
+		r.LazyQuotes = true
+		record, err := r.Read()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing command string: %w", err)
+		}
+		argFrags = record
 	}
 	parser := parser{}
-	arguments := &Line{args: argFrags}
+	arguments := &Line{args: argFrags, src: source}
 
 	// We iterate over all of the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
@@ -302,12 +310,17 @@ func getTypeName(i interface{}) string {
 		return "bool"
 	case mgl64.Vec3:
 		return "x y z"
+	case []Target:
+		return "target"
 	}
 	if param, ok := i.(Parameter); ok {
 		return param.Type()
 	}
 	if enum, ok := i.(Enum); ok {
 		return enum.Type()
+	}
+	if sub, ok := i.(SubCommand); ok {
+		return sub.SubName()
 	}
 	return "value"
 }

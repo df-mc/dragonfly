@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
@@ -67,6 +68,11 @@ func (it *Item) Position() mgl64.Vec3 {
 func (it *Item) World() *world.World {
 	w, _ := world.OfEntity(it)
 	return w
+}
+
+// Name ...
+func (it *Item) Name() string {
+	return fmt.Sprintf("%T", it.i.Item())
 }
 
 // Tick ticks the entity, performing movement.

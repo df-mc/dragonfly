@@ -78,6 +78,9 @@ type World struct {
 	blockEntitiesToTick []blockEntityToTick
 	positionCache       []ChunkPos
 	entitiesToTick      []TickerEntity
+
+	entityMu sync.Mutex
+	entities map[Entity]struct{}
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -89,6 +92,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		r:                   rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:        map[BlockPos]int64{},
 		lastEntityPositions: map[Entity]ChunkPos{},
+		entities:            map[Entity]struct{}{},
 		defaultGameMode:     gamemode.Survival{},
 		difficulty:          difficulty.Normal{},
 		prov:                NoIOProvider{},
@@ -666,6 +670,9 @@ func (w *World) AddEntity(e Entity) {
 	worldsMu.Lock()
 	entityWorlds[e] = w
 	worldsMu.Unlock()
+	w.entityMu.Lock()
+	w.entities[e] = struct{}{}
+	w.entityMu.Unlock()
 
 	chunkPos := chunkPosFromVec3(e.Position())
 	c, err := w.chunk(chunkPos)
@@ -701,6 +708,9 @@ func (w *World) RemoveEntity(e Entity) {
 	worldsMu.Lock()
 	delete(entityWorlds, e)
 	worldsMu.Unlock()
+	w.entityMu.Lock()
+	delete(w.entities, e)
+	w.entityMu.Unlock()
 
 	c, ok := w.chunkFromCache(chunkPos)
 	if !ok {
@@ -748,6 +758,15 @@ func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
 			}
 			c.Unlock()
 		}
+	}
+	return m
+}
+
+// Entities returns a list of all entities currently added to the World.
+func (w *World) Entities() []Entity {
+	m := make([]Entity, 0, len(w.entities))
+	for e := range w.entities {
+		m = append(m, e)
 	}
 	return m
 }

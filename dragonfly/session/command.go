@@ -54,7 +54,7 @@ func (s *Session) SendAvailableCommands() {
 				t |= protocol.CommandArgValid
 
 				opt := byte(0)
-				if paramInfo.Value == false || paramInfo.Value == true {
+				if _, ok := paramInfo.Value.(bool); ok {
 					opt |= protocol.ParamOptionCollapseEnum
 				}
 				overloads[i].Parameters = append(overloads[i].Parameters, protocol.CommandParameter{
@@ -89,6 +89,8 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 		return protocol.CommandArgTypeString, enum
 	case cmd.Varargs:
 		return protocol.CommandArgTypeRawText, enum
+	case cmd.Target, []cmd.Target:
+		return protocol.CommandArgTypeTarget, enum
 	case bool:
 		return 0, protocol.CommandEnum{
 			Type:    "bool",
@@ -97,8 +99,11 @@ func valueToParamType(i interface{}) (t uint32, enum protocol.CommandEnum) {
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
 	}
-	if param, ok := i.(cmd.Parameter); ok && (param.Type() == "player" || param.Type() == "target") {
-		return protocol.CommandArgTypeTarget, enum
+	if sub, ok := i.(cmd.SubCommand); ok {
+		return 0, protocol.CommandEnum{
+			Type:    "SubCommand" + sub.SubName(),
+			Options: []string{sub.SubName()},
+		}
 	}
 	if enum, ok := i.(cmd.Enum); ok {
 		return 0, protocol.CommandEnum{

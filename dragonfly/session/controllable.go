@@ -57,9 +57,6 @@ type Controllable interface {
 
 	Exhaust(points float64)
 
-	// Name returns the display name of the controllable. This name is shown in-game to other viewers of the
-	// world.
-	Name() string
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.
 	UUID() uuid.UUID

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
@@ -106,11 +107,13 @@ func (server *Server) Run() error {
 	server.log.Info("Starting server...")
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
+	server.registerTargetFunc()
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
+
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 	server.run()
 	return nil
 }
@@ -126,11 +129,13 @@ func (server *Server) Start() error {
 	server.log.Info("Starting server...")
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
+	server.registerTargetFunc()
+	item_registerVanillaCreativeItems()
+	world_registerAllStates()
+
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 	go server.run()
 	return nil
 }
@@ -224,7 +229,7 @@ func (server *Server) Close() error {
 	server.log.Debug("Disconnecting players...")
 	server.playerMutex.RLock()
 	for _, p := range server.p {
-		p.Disconnect(text.Yellow()(server.c.Server.ShutdownMessage))
+		p.Disconnect(text.Colourf("<yellow>%v</yellow>", server.c.Server.ShutdownMessage))
 	}
 	server.playerMutex.RUnlock()
 
@@ -408,6 +413,24 @@ func (server *Server) blockEntries() (entries []interface{}) {
 		})
 	}
 	return
+}
+
+// registerTargetFunc registers a cmd.TargetFunc to be able to get all players connected and all entities in
+// the server's world.
+func (server *Server) registerTargetFunc() {
+	cmd.AddTargetFunc(func(src cmd.Source) ([]cmd.Target, []cmd.Target) {
+		entities, players := src.World().Entities(), server.Players()
+		eTargets, pTargets := make([]cmd.Target, len(entities)), make([]cmd.Target, len(players))
+
+		entities = src.World().Entities()
+		for i, e := range entities {
+			eTargets[i] = e
+		}
+		for i, p := range players {
+			pTargets[i] = p
+		}
+		return eTargets, pTargets
+	})
 }
 
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
