@@ -34,6 +34,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"go.uber.org/atomic"
+	"golang.org/x/text/language"
 	"image/color"
 	"math/rand"
 	"net"
@@ -48,6 +49,7 @@ type Player struct {
 	name                         string
 	uuid                         uuid.UUID
 	xuid                         string
+	locale                       language.Tag
 	pos, velocity                atomic.Value
 	nameTag                      atomic.String
 	yaw, pitch, absorptionHealth atomic.Float64
@@ -113,6 +115,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		speed:    *atomic.NewFloat64(0.1),
 		nameTag:  *atomic.NewString(name),
 		heldSlot: atomic.NewUint32(0),
+		locale:   language.BritishEnglish,
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
@@ -129,6 +132,7 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
+	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 
 	chat.Global.Subscribe(p)
 	return p
@@ -163,6 +167,11 @@ func (p *Player) XUID() string {
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
 	return p.skin
+}
+
+// Locale returns the language and locale of the Player, as selected in the Player's settings.
+func (p *Player) Locale() language.Tag {
+	return p.locale
 }
 
 // Handle changes the current handler of the player. As a result, events called by the player will call

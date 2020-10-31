@@ -11,6 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
@@ -178,6 +179,11 @@ func (s *Session) CloseConnection() {
 // Latency returns the latency of the connection.
 func (s *Session) Latency() time.Duration {
 	return s.conn.Latency()
+}
+
+// ClientData returns the login.ClientData of the underlying *minecraft.Conn.
+func (s *Session) ClientData() login.ClientData {
+	return s.conn.ClientData()
 }
 
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
