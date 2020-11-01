@@ -50,6 +50,12 @@ type UsingItem struct{}
 // OnFire makes an entity show itself as on fire.
 type OnFire struct{}
 
+// Scaled makes an entity show up with a different scale.
+type Scaled struct {
+	// Scale the size multiplier of the entity. 1 is the default, 0 is a completely invisible entity.
+	Scale float64
+}
+
 func (Sneaking) __()      {}
 func (Swimming) __()      {}
 func (Breathing) __()     {}
@@ -60,3 +66,4 @@ func (Named) __()         {}
 func (EffectBearing) __() {}
 func (UsingItem) __()     {}
 func (OnFire) __()        {}
+func (Scaled) __()        {}

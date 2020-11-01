@@ -46,13 +46,13 @@ import (
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	name                         string
-	uuid                         uuid.UUID
-	xuid                         string
-	locale                       language.Tag
-	pos, velocity                atomic.Value
-	nameTag                      atomic.String
-	yaw, pitch, absorptionHealth atomic.Float64
+	name                                string
+	uuid                                uuid.UUID
+	xuid                                string
+	locale                              language.Tag
+	pos, velocity                       atomic.Value
+	nameTag                             atomic.String
+	yaw, pitch, absorptionHealth, scale atomic.Float64
 
 	gameModeMu sync.RWMutex
 	gameMode   gamemode.GameMode
@@ -116,6 +116,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		nameTag:  *atomic.NewString(name),
 		heldSlot: atomic.NewUint32(0),
 		locale:   language.BritishEnglish,
+		scale:    *atomic.NewFloat64(1),
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
@@ -1671,14 +1672,28 @@ func (p *Player) SetVelocity(v mgl64.Vec3) {
 
 // AABB returns the axis aligned bounding box of the player.
 func (p *Player) AABB() physics.AABB {
+	s := p.Scale()
 	switch {
 	case p.Sneaking():
-		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.65, 0.3})
+		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
 	case p.Swimming():
-		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 0.6, 0.3})
+		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
 	default:
-		return physics.NewAABB(mgl64.Vec3{-0.3, 0, -0.3}, mgl64.Vec3{0.3, 1.8, 0.3})
+		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
 	}
+}
+
+// Scale returns the scale modifier of the Player. The default value for a normal scale is 1. A scale of 0
+// will make the Player completely invisible.
+func (p *Player) Scale() float64 {
+	return p.scale.Load()
+}
+
+// SetScale changes the scale modifier of the Player. The default value for a normal scale is 1. A scale of 0
+// will make the Player completely invisible.
+func (p *Player) SetScale(s float64) {
+	p.scale.Store(s)
+	p.updateState()
 }
 
 // OnGround checks if the player is considered to be on the ground.
@@ -1732,6 +1747,7 @@ func (p *Player) State() (s []state.State) {
 		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
 	}
 	s = append(s, state.Named{NameTag: p.nameTag.Load()})
+	s = append(s, state.Scaled{Scale: p.scale.Load()})
 	return
 }
 

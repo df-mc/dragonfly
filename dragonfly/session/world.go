@@ -597,6 +597,8 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 			m.setFlag(dataKeyFlags, dataFlagSwimming)
 		case state.UsingItem:
 			m.setFlag(dataKeyFlags, dataFlagUsingItem)
+		case state.Scaled:
+			m[dataKeyScale] = float32(st.Scale)
 		case state.Named:
 			m[dataKeyNameTag] = st.NameTag
 		case state.EffectBearing:
