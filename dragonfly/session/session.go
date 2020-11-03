@@ -64,6 +64,8 @@ type Session struct {
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
+
+	joinMessage, leaveMessage string
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -85,11 +87,18 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session {
+func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger, joinMessage, leaveMessage string) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
+	}
+
+	if joinMessage != "" {
+		joinMessage = fmt.Sprintf(joinMessage, conn.IdentityData().DisplayName)
+	}
+	if leaveMessage != "" {
+		leaveMessage = fmt.Sprintf(leaveMessage, conn.IdentityData().DisplayName)
 	}
 
 	s := &Session{
@@ -106,6 +115,8 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger) *Session 
 		log:                    log,
 		currentEntityRuntimeID: *atomic.NewUint64(1),
 		heldSlot:               atomic.NewUint32(0),
+		joinMessage:            joinMessage,
+		leaveMessage:           leaveMessage,
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(world.BlockPos{})
@@ -135,7 +146,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 
 	go s.handlePackets()
 
-	chat.Global.Println(text.Colourf("<yellow>%v has joined the game</yellow>", s.conn.IdentityData().DisplayName))
+	chat.Global.Println(text.Colourf("<yellow>%v</yellow>", s.joinMessage))
 
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
@@ -149,7 +160,7 @@ func (s *Session) Close() error {
 	_ = s.chunkLoader.Close()
 	_ = s.c.Close()
 
-	chat.Global.Println(text.Colourf("<yellow>%v has left the game</yellow>", s.conn.IdentityData().DisplayName))
+	chat.Global.Println(text.Colourf("<yellow>%v</yellow>", s.leaveMessage))
 
 	if s.c.World() != nil {
 		s.c.World().RemoveEntity(s.c)
