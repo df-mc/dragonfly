@@ -434,6 +434,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
+	case particle.Evaporate:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleEvaporate,
+			Position:  vec64To32(pos),
+		})
 	}
 }
 

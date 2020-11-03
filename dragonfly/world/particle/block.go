@@ -50,6 +50,9 @@ type DragonEggTeleport struct {
 	Diff world.BlockPos
 }
 
+// Evaporate is a particle that shows up when a water block evaporates
+type Evaporate struct { particle }
+
 // particle serves as a base for all particles in this package.
 type particle struct{}
 
