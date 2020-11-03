@@ -15,5 +15,6 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/yourbasic/radix v0.0.0-20180308122924-cbe1cc82e907
 	go.uber.org/atomic v1.7.0
+	golang.org/x/text v0.3.3
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
