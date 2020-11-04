@@ -298,6 +298,9 @@ func (server *Server) run() {
 			close(server.players)
 			return
 		}
+		if len(blocks) == 0 {
+			blocks = server.blockEntries()
+		}
 		go server.handleConn(c.(*minecraft.Conn))
 	}
 }
@@ -308,7 +311,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		Yaw:            90,
 		WorldName:      server.c.World.Name,
-		Blocks:         server.blockEntries(),
+		Blocks:         blocks,
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
@@ -398,6 +401,8 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 
 	return playerSkin
 }
+
+var blocks []interface{}
 
 // blockEntries loads a list of all block state entries of the server, ready to be sent in the StartGame
 // packet.
