@@ -436,7 +436,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.EventParticleEvaporate,
+			EventType: packet.EventParticleEvaporateWater,
 			Position:  vec64To32(pos),
 		})
 	}
