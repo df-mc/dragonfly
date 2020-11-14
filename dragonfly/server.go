@@ -269,19 +269,19 @@ func (server *Server) startListening() error {
 		_ = w.Close()
 	}()
 
-	server.listener = &minecraft.Listener{
-		// We wrap a log.Logger around our Logrus logger so that it will print in the same format as the
-		// normal Logrus logger would.
+	cfg := minecraft.ListenConfig{
 		ErrorLog:               log.New(w, "", 0),
-		ServerName:             server.c.Server.Name,
 		MaximumPlayers:         server.c.Server.MaximumPlayers,
+		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 	}
+
+	var err error
 	//noinspection SpellCheckingInspection
-	if err := server.listener.Listen("raknet", server.c.Network.Address); err != nil {
+	server.listener, err = cfg.Listen("raknet", server.c.Network.Address)
+	if err != nil {
 		return fmt.Errorf("listening on address failed: %w", err)
 	}
-	server.listener.StatusProvider(statusProvider{s: server})
 
 	server.log.Infof("Server running on %v.\n", server.listener.Addr())
 	return nil
