@@ -235,8 +235,9 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 				toLoad = 4
 			}
 			if err := s.chunkLoader.Load(toLoad); err != nil {
-				// The world was closed. This should generally never happen.
-				s.log.Errorf("error loading chunk: %v", err)
+				// The world was closed. This should generally never happen, and if it does, we can assume the
+				// world was closed.
+				s.log.Debugf("error loading chunk: %v", err)
 				return
 			}
 		case <-stop:

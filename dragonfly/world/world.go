@@ -2,6 +2,7 @@ package world
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
@@ -19,6 +20,7 @@ import (
 // entities and particles.
 // World generally provides a synchronised state: All entities, blocks and players usually operate in this
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
+// A nil *World is safe to use but not functional.
 type World struct {
 	name atomic.String
 	log  *logrus.Logger
@@ -126,7 +128,7 @@ func (w *World) Name() string {
 // loaded synchronously.
 func (w *World) Block(pos BlockPos) Block {
 	y := pos[1]
-	if y > 255 || y < 0 {
+	if w == nil || y > 255 || y < 0 {
 		// Fast way out.
 		return air()
 	}
@@ -175,7 +177,7 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func runtimeID(w *World, pos BlockPos) uint32 {
-	if pos[1] < 0 || pos[1] > 255 {
+	if w == nil || pos[1] < 0 || pos[1] > 255 {
 		// Fast way out.
 		return 0
 	}
@@ -194,6 +196,9 @@ func runtimeID(w *World, pos BlockPos) uint32 {
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func highestLightBlocker(w *World, x, z int) uint8 {
+	if w == nil {
+		return 0
+	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
 		return 0
@@ -206,6 +211,9 @@ func highestLightBlocker(w *World, x, z int) uint8 {
 // HighestBlock looks up the highest non-air block in the world at a specific x and z in the world. The y
 // value of the highest block is returned, or 0 if no blocks were present in the column.
 func (w *World) HighestBlock(x, z int) int {
+	if w == nil {
+		return 0
+	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
 		return 0
@@ -223,7 +231,7 @@ func (w *World) HighestBlock(x, z int) int {
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos BlockPos, b Block) {
 	y := pos[1]
-	if y > 255 || y < 0 {
+	if w == nil || y > 255 || y < 0 {
 		// Fast way out.
 		return
 	}
@@ -284,6 +292,9 @@ var breakParticle func(b Block) Particle
 // BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlock will also show particles and update blocks around the position.
 func (w *World) BreakBlock(pos BlockPos) {
+	if w == nil {
+		return
+	}
 	old := w.Block(pos)
 	w.SetBlock(pos, nil)
 	w.AddParticle(pos.Vec3Centre(), breakParticle(old))
@@ -298,6 +309,9 @@ func (w *World) BreakBlock(pos BlockPos) {
 // BreakBlockWithoutParticles breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlockWithoutParticles will also update blocks around the position.
 func (w *World) BreakBlockWithoutParticles(pos BlockPos) {
+	if w == nil {
+		return
+	}
 	w.SetBlock(pos, nil)
 	if liq, ok := w.Liquid(pos); ok {
 		// Move the liquid down a layer.
@@ -312,6 +326,9 @@ func (w *World) BreakBlockWithoutParticles(pos BlockPos) {
 // If the block can displace liquids at the position placed, it will do so, and liquid source blocks will be
 // put into the same block as the one passed.
 func (w *World) PlaceBlock(pos BlockPos, b Block) {
+	if w == nil {
+		return
+	}
 	var liquid Liquid
 	if displacer, ok := b.(LiquidDisplacer); ok {
 		liq, ok := w.Liquid(pos)
@@ -334,6 +351,9 @@ func (w *World) PlaceBlock(pos BlockPos, b Block) {
 // The method operates on a per-chunk basis, setting all blocks within a single chunk part of the structure
 // before moving on to the next chunk.
 func (w *World) BuildStructure(pos BlockPos, s Structure) {
+	if w == nil {
+		return
+	}
 	dim := s.Dimensions()
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxZ := pos[0]+width, pos[2]+length
@@ -409,7 +429,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
 func (w *World) Liquid(pos BlockPos) (Liquid, bool) {
-	if pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return nil, false
 	}
@@ -450,7 +470,7 @@ func (w *World) Liquid(pos BlockPos) (Liquid, bool) {
 // there already is a liquid at that position, in which case it will be overwritten.
 // If nil is passed for the liquid, any liquid currently present will be removed.
 func (w *World) SetLiquid(pos BlockPos, b Liquid) {
-	if pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return
 	}
@@ -568,7 +588,7 @@ func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos BlockPos) uint8 {
-	if pos[1] > 255 {
+	if w == nil || pos[1] > 255 {
 		// Above the rest of the world, so full sky light.
 		return 15
 	}
@@ -590,7 +610,7 @@ func (w *World) Light(pos BlockPos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos BlockPos) uint8 {
-	if pos[1] > 255 {
+	if w == nil || pos[1] > 255 {
 		// Above the rest of the world, so full sky light.
 		return 15
 	}
@@ -611,12 +631,18 @@ func (w *World) SkyLight(pos BlockPos) uint8 {
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
 // World.StopTime() is called.
 func (w *World) Time() int {
+	if w == nil {
+		return 0
+	}
 	return int(w.time.Load())
 }
 
 // SetTime sets the new time of the world. SetTime will always work, regardless of whether the time is stopped
 // or not.
 func (w *World) SetTime(new int) {
+	if w == nil {
+		return
+	}
 	w.time.Store(int64(new))
 	for _, viewer := range w.allViewers() {
 		viewer.ViewTime(new)
@@ -627,6 +653,9 @@ func (w *World) SetTime(new int) {
 // at the time when StopTime is called. The time may be restarted by calling World.StartTime().
 // StopTime will not do anything if the time is already stopped.
 func (w *World) StopTime() {
+	if w == nil {
+		return
+	}
 	w.timeStopped.Store(true)
 }
 
@@ -634,12 +663,18 @@ func (w *World) StopTime() {
 // cycle will continue. The time may be stopped again by calling World.StopTime().
 // StartTime will not do anything if the time is already started.
 func (w *World) StartTime() {
+	if w == nil {
+		return
+	}
 	w.timeStopped.Store(false)
 }
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
 func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
+	if w == nil {
+		return
+	}
 	p.Spawn(w, pos)
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewParticle(pos, p)
@@ -664,6 +699,9 @@ var worldsMu sync.RWMutex
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
 // If the entity passed to AddEntity is currently in a world, it is first removed from that world.
 func (w *World) AddEntity(e Entity) {
+	if w == nil {
+		return
+	}
 	if e.World() != nil {
 		e.World().RemoveEntity(e)
 	}
@@ -696,6 +734,9 @@ func (w *World) AddEntity(e Entity) {
 // RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
 func (w *World) RemoveEntity(e Entity) {
+	if w == nil {
+		return
+	}
 	w.ePosMu.Lock()
 	chunkPos, found := w.lastEntityPositions[e]
 	w.ePosMu.Unlock()
@@ -735,6 +776,9 @@ func (w *World) RemoveEntity(e Entity) {
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
 // those which are contained within the AABB when it comes to their position.
 func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
+	if w == nil {
+		return nil
+	}
 	// Make an estimate of 16 entities on average.
 	m := make([]Entity, 0, 16)
 
@@ -764,6 +808,9 @@ func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
 
 // Entities returns a list of all entities currently added to the World.
 func (w *World) Entities() []Entity {
+	if w == nil {
+		return nil
+	}
 	m := make([]Entity, 0, len(w.entities))
 	for e := range w.entities {
 		m = append(m, e)
@@ -783,12 +830,18 @@ func OfEntity(e Entity) (*World, bool) {
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
 // when joining.
 func (w *World) Spawn() BlockPos {
+	if w == nil {
+		return BlockPos{}
+	}
 	return w.provider().WorldSpawn()
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player will be spawned in the center of
 // this position when newly joining.
 func (w *World) SetSpawn(pos BlockPos) {
+	if w == nil {
+		return
+	}
 	w.provider().SetWorldSpawn(pos)
 }
 
@@ -796,6 +849,9 @@ func (w *World) SetSpawn(pos BlockPos) {
 // mode.
 // The default game mode may be changed using SetDefaultGameMode().
 func (w *World) DefaultGameMode() gamemode.GameMode {
+	if w == nil {
+		return gamemode.Survival{}
+	}
 	w.gameModeMu.RLock()
 	defer w.gameModeMu.RUnlock()
 	return w.defaultGameMode
@@ -804,6 +860,9 @@ func (w *World) DefaultGameMode() gamemode.GameMode {
 // SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
 // game mode.
 func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
+	if w == nil {
+		return
+	}
 	w.gameModeMu.Lock()
 	defer w.gameModeMu.Unlock()
 	w.defaultGameMode = mode
@@ -812,6 +871,9 @@ func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
 // Difficulty returns the difficulty of the world. Properties of mobs in the world and the player's hunger
 // will depend on this difficulty.
 func (w *World) Difficulty() difficulty.Difficulty {
+	if w == nil {
+		return difficulty.Normal{}
+	}
 	w.difficultyMu.RLock()
 	defer w.difficultyMu.RUnlock()
 	return w.difficulty
@@ -819,6 +881,9 @@ func (w *World) Difficulty() difficulty.Difficulty {
 
 // SetDifficulty changes the difficulty of a world.
 func (w *World) SetDifficulty(d difficulty.Difficulty) {
+	if w == nil {
+		return
+	}
 	w.difficultyMu.Lock()
 	defer w.difficultyMu.Unlock()
 	w.difficulty = d
@@ -828,13 +893,16 @@ func (w *World) SetDifficulty(d difficulty.Difficulty) {
 // ticked per sub chunk, so the default value is 3. Setting this value to 0 will stop random ticking
 // altogether, while setting it higher results in faster ticking.
 func (w *World) SetRandomTickSpeed(v int) {
+	if w == nil {
+		return
+	}
 	w.randomTickSpeed.Store(uint32(v))
 }
 
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
 func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
-	if pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds() {
 		return
 	}
 	w.updateMu.Lock()
@@ -848,7 +916,7 @@ func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
 func (w *World) doBlockUpdatesAround(pos BlockPos) {
-	if pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds() {
 		return
 	}
 
@@ -870,12 +938,14 @@ type neighbourUpdate struct {
 // updateNeighbour ticks the position passed as a result of the neighbour passed being updated.
 func (w *World) updateNeighbour(pos, changedNeighbour BlockPos) {
 	w.neighbourUpdatePositions = append(w.neighbourUpdatePositions, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
-
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
 // will be set, which does not read or write any data.
 func (w *World) Provider(p Provider) {
+	if w == nil {
+		return
+	}
 	w.providerMu.Lock()
 	defer w.providerMu.Unlock()
 
@@ -898,12 +968,18 @@ func (w *World) Provider(p Provider) {
 // ReadOnly makes the world read only. Chunks will no longer be saved to disk, just like entities and data
 // in the level.dat.
 func (w *World) ReadOnly() {
+	if w == nil {
+		return
+	}
 	w.rdonly.Store(true)
 }
 
 // Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
 // the default, NopGenerator.
 func (w *World) Generator(g Generator) {
+	if w == nil {
+		return
+	}
 	w.genMu.Lock()
 	defer w.genMu.Unlock()
 
@@ -917,6 +993,9 @@ func (w *World) Generator(g Generator) {
 // handlers of the Handler passed.
 // Handle sets the world's Handler to NopHandler if nil is passed.
 func (w *World) Handle(h Handler) {
+	if w == nil {
+		return
+	}
 	w.handlerMu.Lock()
 	defer w.handlerMu.Unlock()
 
@@ -929,6 +1008,9 @@ func (w *World) Handle(h Handler) {
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
 func (w *World) Viewers(pos mgl64.Vec3) []Viewer {
+	if w == nil {
+		return nil
+	}
 	c, ok := w.chunkFromCache(chunkPosFromVec3(pos))
 	if !ok {
 		return nil
@@ -942,6 +1024,9 @@ func (w *World) Viewers(pos mgl64.Vec3) []Viewer {
 
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
+	if w == nil {
+		return nil
+	}
 	w.cancelTick()
 	<-w.doneTicking
 
@@ -1247,6 +1332,9 @@ func (w *World) tickEntities(tick int64) {
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
 func (w *World) addViewer(c *chunkData, viewer Viewer) {
+	if w == nil {
+		return
+	}
 	c.v = append(c.v, viewer)
 	// After adding the viewer to the chunk, we also need to send all entities currently in the chunk that the
 	// viewer is added to.
@@ -1261,6 +1349,9 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
 // viewer and no more calls will be made when events in the chunk happen.
 func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
+	if w == nil {
+		return
+	}
 	c, ok := w.chunkFromCache(pos)
 	if !ok {
 		return
@@ -1283,6 +1374,9 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 
 // hasViewer checks if a chunk at a particular chunk position has the viewer passed. If so, true is returned.
 func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
+	if w == nil {
+		return false
+	}
 	for _, v := range viewers {
 		if v == viewer {
 			return true
@@ -1325,6 +1419,9 @@ func (w *World) provider() Provider {
 // Handler returns the Handler of the world. It should always be used, rather than direct field access, in
 // order to provide synchronisation safety.
 func (w *World) Handler() Handler {
+	if w == nil {
+		return NopHandler{}
+	}
 	w.handlerMu.RLock()
 	handler := w.handler
 	w.handlerMu.RUnlock()
@@ -1365,6 +1462,9 @@ func showEntity(e Entity, viewer Viewer) {
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
 func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
+	if w == nil {
+		return nil, errors.New("world is nil")
+	}
 	var err error
 
 	w.chunkMu.Lock()
@@ -1395,6 +1495,9 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 // position.
 //lint:ignore U1000 This method is explicitly present to be used using compiler directives.
 func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
+	if w == nil {
+		return
+	}
 	w.chunkMu.Lock()
 	defer w.chunkMu.Unlock()
 
@@ -1561,6 +1664,9 @@ func (w *World) initChunkCache() {
 // to a memory leak if the size of the world can grow. This method should therefore only be used in places
 // where the movement of players is limited to a confined space such as a hub.
 func (w *World) CloseChunkCacheJanitor() {
+	if w == nil {
+		return
+	}
 	close(w.stopCacheJanitor)
 }
 
