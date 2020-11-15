@@ -59,12 +59,8 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 				}
 			}
 			if loreInterface, ok := display["Lore"]; ok {
-				if lore, ok := loreInterface.([]interface{}); ok {
-					loreLines := make([]string, 0, len(lore))
-					for _, l := range lore {
-						loreLines = append(loreLines, l.(string))
-					}
-					*s = s.WithLore(loreLines...)
+				if lore, ok := loreInterface.([]string); ok {
+					*s = s.WithLore(lore...)
 				}
 			}
 		}
