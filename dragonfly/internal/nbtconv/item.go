@@ -81,10 +81,7 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 		}
 	}
 	if customData, ok := data["dragonflyData"]; ok {
-		d := make([]byte, len(customData.([]interface{})))
-		for i, v := range customData.([]interface{}) {
-			d[i] = v.(byte)
-		}
+		d, _ := customData.([]byte)
 		var m map[string]interface{}
 		if err := gob.NewDecoder(bytes.NewBuffer(d)).Decode(&m); err != nil {
 			panic("error decoding item user data: " + err.Error())
