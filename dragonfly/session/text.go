@@ -134,13 +134,3 @@ func (s *Session) SendSubtitle(text string) {
 func (s *Session) SendActionBarMessage(text string) {
 	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetActionBar, Text: text})
 }
-
-// SetJoinMessage changes the message that appears when the player joins the server
-func (s *Session) SetJoinMessage(message string) {
-	s.joinMessage = message
-}
-
-// SetLeaveMessage changes the message that appears when the player leaves the server
-func (s *Session) SetLeaveMessage(message string) {
-	s.leaveMessage = message
-}

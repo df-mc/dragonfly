@@ -256,16 +256,6 @@ func (p *Player) RemoveBossBar() {
 	p.session().RemoveBossBar()
 }
 
-// SetJoinMessage changes the message that appears when the player joins the server
-func (p *Player) SetJoinMessage(message string) {
-	p.s.SetJoinMessage(message)
-}
-
-// SetLeaveMessage changes the message that appears when the player leaves the server
-func (p *Player) SetLeaveMessage(message string) {
-	p.s.SetLeaveMessage(message)
-}
-
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player and is formatted following the rules of fmt.Sprintln.
 func (p *Player) Chat(msg ...interface{}) {
