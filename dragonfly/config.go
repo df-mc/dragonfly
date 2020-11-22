@@ -23,9 +23,9 @@ type Config struct {
 		// JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
 		// %v is the placeholder for the username of the player
 		JoinMessage string
-		// LeaveMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
+		// QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
 		// %v is the placeholder for the username of the player
-		LeaveMessage string
+		QuitMessage string
 	}
 	World struct {
 		// Name is the name of the world that the server holds. A world with this name will be loaded and
@@ -50,7 +50,7 @@ func DefaultConfig() Config {
 	c.Server.ShutdownMessage = "Server closed."
 	c.Server.AuthEnabled = true
 	c.Server.JoinMessage = "%v has joined the game"
-	c.Server.LeaveMessage = "%v has left the game"
+	c.Server.QuitMessage = "%v has left the game"
 	c.World.Name = "World"
 	c.World.Folder = "world"
 	c.World.MaximumChunkRadius = 32

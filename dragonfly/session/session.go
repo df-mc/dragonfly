@@ -65,7 +65,7 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, leaveMessage *atomic.String
+	joinMessage, quitMessage *atomic.String
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -87,7 +87,7 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger, joinMessage, leaveMessage *atomic.String) *Session {
+func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger, joinMessage, quitMessage *atomic.String) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -109,7 +109,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger, joinMessa
 		currentEntityRuntimeID: *atomic.NewUint64(1),
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
-		leaveMessage:           leaveMessage,
+		quitMessage:            quitMessage,
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(world.BlockPos{})
@@ -155,7 +155,7 @@ func (s *Session) Close() error {
 	_ = s.chunkLoader.Close()
 	_ = s.c.Close()
 
-	if j := s.leaveMessage.Load(); j != "" {
+	if j := s.quitMessage.Load(); j != "" {
 		chat.Global.Println(text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
 

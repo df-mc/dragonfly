@@ -36,7 +36,7 @@ type Server struct {
 	started atomic.Bool
 	name    atomic.String
 
-	joinMessage, leaveMessage atomic.String
+	joinMessage, quitMessage atomic.String
 
 	c        Config
 	log      *logrus.Logger
@@ -74,8 +74,8 @@ func New(c *Config, log *logrus.Logger) *Server {
 		p:       make(map[uuid.UUID]*player.Player),
 		name:    *atomic.NewString(c.Server.Name),
 	}
-	s.SetJoinMessage(c.Server.JoinMessage)
-	s.SetLeaveMessage(c.Server.LeaveMessage)
+	s.JoinMessage(c.Server.JoinMessage)
+	s.QuitMessage(c.Server.QuitMessage)
 	return s
 }
 
@@ -222,15 +222,15 @@ func (server *Server) SetName(a ...interface{}) {
 }
 
 // SetJoinMessage changes the join message for all players on the server. Leave this empty to disable it.
-//// %v is the placeholder for the username of the player
+// %v is the placeholder for the username of the player
 func (server *Server) JoinMessage(message string) {
 	server.joinMessage.Store(message)
 }
 
-// SetLeaveMessage changes the leave message for all players on the server. Leave this empty to disable it.
-//// %v is the placeholder for the username of the player
-func (server *Server) LeaveMessage(message string) {
-	server.leaveMessage.Store(message)
+// SetQuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
+// %v is the placeholder for the username of the player
+func (server *Server) QuitMessage(message string) {
+	server.quitMessage.Store(message)
 }
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
@@ -362,7 +362,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
-	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.leaveMessage)
+	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
 	s.Start(p, server.world, server.handleSessionClose)
 

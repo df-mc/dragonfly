@@ -19,9 +19,9 @@
   # JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
   # %v is the placeholder for the username of the player. Set this to "" to disable.
   JoinMessage = "%v has joined the game"
-  # LeaveMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
+  # QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
   # %v is the placeholder for the username of the player. Set this to "" to disable.
-  LeaveMessage = "%v has left the game"
+  QuitMessage = "%v has left the game"
 
 [World]
   # The name of the world of the server. The name will show up at the top of the player list in the in-game
