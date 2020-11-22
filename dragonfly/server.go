@@ -36,6 +36,8 @@ type Server struct {
 	started atomic.Bool
 	name    atomic.String
 
+	joinMessage, quitMessage atomic.String
+
 	c        Config
 	log      *logrus.Logger
 	listener *minecraft.Listener
@@ -72,6 +74,8 @@ func New(c *Config, log *logrus.Logger) *Server {
 		p:       make(map[uuid.UUID]*player.Player),
 		name:    *atomic.NewString(c.Server.Name),
 	}
+	s.JoinMessage(c.Server.JoinMessage)
+	s.QuitMessage(c.Server.QuitMessage)
 	return s
 }
 
@@ -217,6 +221,18 @@ func (server *Server) SetName(a ...interface{}) {
 	server.name.Store(fmt.Sprint(a...))
 }
 
+// JoinMessage changes the join message for all players on the server. Leave this empty to disable it.
+// %v is the placeholder for the username of the player
+func (server *Server) JoinMessage(message string) {
+	server.joinMessage.Store(message)
+}
+
+// QuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
+// %v is the placeholder for the username of the player
+func (server *Server) QuitMessage(message string) {
+	server.quitMessage.Store(message)
+}
+
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	if !server.running() {
@@ -349,7 +365,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
-	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log)
+	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
 	s.Start(p, server.world, server.handleSessionClose)
 
