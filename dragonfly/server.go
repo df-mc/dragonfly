@@ -221,13 +221,13 @@ func (server *Server) SetName(a ...interface{}) {
 	server.name.Store(fmt.Sprint(a...))
 }
 
-// SetJoinMessage changes the join message for all players on the server. Leave this empty to disable it.
+// JoinMessage changes the join message for all players on the server. Leave this empty to disable it.
 // %v is the placeholder for the username of the player
 func (server *Server) JoinMessage(message string) {
 	server.joinMessage.Store(message)
 }
 
-// SetQuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
+// QuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
 // %v is the placeholder for the username of the player
 func (server *Server) QuitMessage(message string) {
 	server.quitMessage.Store(message)
