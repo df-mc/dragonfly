@@ -221,27 +221,15 @@ func (server *Server) SetName(a ...interface{}) {
 	server.name.Store(fmt.Sprint(a...))
 }
 
-// JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
-// %v is the placeholder for the username of the player
-func (server *Server) JoinMessage() string {
-	return server.joinMessage.Load()
-}
-
 // SetJoinMessage changes the join message for all players on the server. Leave this empty to disable it.
 //// %v is the placeholder for the username of the player
-func (server *Server) SetJoinMessage(message string) {
+func (server *Server) JoinMessage(message string) {
 	server.joinMessage.Store(message)
-}
-
-// LeaveMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
-// %v is the placeholder for the username of the player
-func (server *Server) LeaveMessage() string {
-	return server.leaveMessage.Load()
 }
 
 // SetLeaveMessage changes the leave message for all players on the server. Leave this empty to disable it.
 //// %v is the placeholder for the username of the player
-func (server *Server) SetLeaveMessage(message string) {
+func (server *Server) LeaveMessage(message string) {
 	server.leaveMessage.Store(message)
 }
 
