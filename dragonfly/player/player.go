@@ -264,7 +264,7 @@ func (p *Player) Chat(msg ...interface{}) {
 	}
 	message := format(msg)
 	ctx := event.C()
-	p.handler().HandleChat(ctx, &message)
+	p.handler().HandleChat(p, ctx, &message)
 
 	ctx.Continue(func() {
 		chat.Global.Printf("<%v> %v\n", p.name, message)
@@ -289,7 +289,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleCommandExecution(ctx, command, args[1:])
+	p.handler().HandleCommandExecution(p, ctx, command, args[1:])
 	ctx.Continue(func() {
 		command.Execute(strings.TrimPrefix(strings.TrimPrefix(commandLine, "/"+commandName), " "), p)
 	})
@@ -311,7 +311,7 @@ func (p *Player) Transfer(address string) (err error) {
 		return err
 	}
 	ctx := event.C()
-	p.handler().HandleTransfer(ctx, addr)
+	p.handler().HandleTransfer(p, ctx, addr)
 
 	ctx.Continue(func() {
 		p.session().Transfer(addr.IP, addr.Port)
@@ -398,7 +398,7 @@ func (p *Player) Heal(health float64, source healing.Source) {
 		return
 	}
 	ctx := event.C()
-	p.handler().HandleHeal(ctx, &health, source)
+	p.handler().HandleHeal(p, ctx, &health, source)
 	ctx.Continue(func() {
 		p.addHealth(health)
 	})
@@ -420,7 +420,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleHurt(ctx, &dmg, source)
+	p.handler().HandleHurt(p, ctx, &dmg, source)
 
 	ctx.Continue(func() {
 		if source.ReducedByArmour() {
@@ -609,7 +609,7 @@ func (p *Player) Exhaust(points float64) {
 		p.hunger.SetFood(before)
 
 		ctx := event.C()
-		p.handler().HandleFoodLoss(ctx, before, after)
+		p.handler().HandleFoodLoss(p, ctx, before, after)
 		ctx.Continue(func() {
 			p.hunger.SetFood(after)
 			if before >= 7 && after <= 6 {
@@ -653,7 +653,7 @@ func (p *Player) kill(src damage.Source) {
 		p.RemoveEffect(e)
 	}
 
-	p.handler().HandleDeath(src)
+	p.handler().HandleDeath(p, src)
 
 	// Wait for a little bit before removing the entity. The client displays a death animation while the
 	// player is dying.
@@ -679,7 +679,7 @@ func (p *Player) Respawn() {
 		return
 	}
 	pos := p.World().Spawn().Vec3Middle()
-	p.handler().HandleRespawn(&pos)
+	p.handler().HandleRespawn(p, &pos)
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
@@ -898,7 +898,7 @@ func (p *Player) UseItem() {
 	}
 	i, left := p.HeldItems()
 	ctx := event.C()
-	p.handler().HandleItemUse(ctx)
+	p.handler().HandleItemUse(p, ctx)
 
 	ctx.Continue(func() {
 		switch usable := i.Item().(type) {
@@ -966,7 +966,7 @@ func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mg
 	i, left := p.HeldItems()
 
 	ctx := event.C()
-	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
+	p.handler().HandleItemUseOnBlock(p, ctx, pos, face, clickPos)
 
 	ctx.Continue(func() {
 		if activatable, ok := p.World().Block(pos).(block.Activatable); ok {
@@ -1027,7 +1027,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 	i, left := p.HeldItems()
 
 	ctx := event.C()
-	p.handler().HandleItemUseOnEntity(ctx, e)
+	p.handler().HandleItemUseOnEntity(p, ctx, e)
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
@@ -1053,7 +1053,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	i, left := p.HeldItems()
 
 	ctx := event.C()
-	p.handler().HandleAttackEntity(ctx, e)
+	p.handler().HandleAttackEntity(p, ctx, e)
 	ctx.Continue(func() {
 		p.swingArm()
 		living, ok := e.(entity.Living)
@@ -1108,7 +1108,7 @@ func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 		return
 	}
 	ctx := event.C()
-	p.handler().HandleStartBreak(ctx, pos)
+	p.handler().HandleStartBreak(p, ctx, pos)
 	ctx.Continue(func() {
 		if punchable, ok := p.World().Block(pos).(block.Punchable); ok {
 			p.swingArm()
@@ -1234,7 +1234,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block, ignoreAABB bool) 
 	}
 
 	ctx := event.C()
-	p.handler().HandleBlockPlace(ctx, pos, b)
+	p.handler().HandleBlockPlace(p, ctx, pos, b)
 	ctx.Continue(func() {
 		p.World().PlaceBlock(pos, b)
 		p.World().PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
@@ -1290,7 +1290,7 @@ func (p *Player) BreakBlock(pos world.BlockPos) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleBlockBreak(ctx, pos)
+	p.handler().HandleBlockBreak(p, ctx, pos)
 
 	ctx.Continue(func() {
 		p.swingArm()
@@ -1362,7 +1362,7 @@ func (p *Player) PickBlock(pos world.BlockPos) {
 		}
 
 		ctx := event.C()
-		p.handler().HandleBlockPick(ctx, pos, b)
+		p.handler().HandleBlockPick(p, ctx, pos, b)
 
 		ctx.Continue(func() {
 			_, offhand := p.HeldItems()
@@ -1397,7 +1397,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	pos = pos.Add(mgl64.Vec3{0.5, 0, 0.5})
 
 	ctx := event.C()
-	p.handler().HandleTeleport(ctx, pos)
+	p.handler().HandleTeleport(p, ctx, pos)
 	ctx.Continue(func() {
 		p.teleport(pos)
 	})
@@ -1421,7 +1421,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleMove(ctx, p.Position().Add(deltaPos), p.Yaw(), p.Pitch())
+	p.handler().HandleMove(p, ctx, p.Position().Add(deltaPos), p.Yaw(), p.Pitch())
 	ctx.Continue(func() {
 		for _, v := range p.World().Viewers(p.Position()) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
@@ -1447,7 +1447,7 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 		return
 	}
 
-	p.handler().HandleMove(event.C(), p.Position(), p.Yaw()+deltaYaw, p.Pitch()+deltaPitch)
+	p.handler().HandleMove(p, event.C(), p.Position(), p.Yaw()+deltaYaw, p.Pitch()+deltaPitch)
 
 	// Cancelling player rotation is rather scuffed, so we don't do that.
 	for _, v := range p.World().Viewers(p.Position()) {
@@ -1489,7 +1489,7 @@ func (p *Player) Pitch() float64 {
 // Collect makes the player collect the item stack passed, adding it to the inventory.
 func (p *Player) Collect(s item.Stack) (n int) {
 	ctx := event.C()
-	p.handler().HandleItemPickup(ctx, s)
+	p.handler().HandleItemPickup(p, ctx, s)
 	ctx.Continue(func() {
 		n, _ = p.Inventory().AddItem(s)
 	})
@@ -1507,7 +1507,7 @@ func (p *Player) Drop(s item.Stack) (n int) {
 	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
-	p.handler().HandleItemDrop(ctx, e)
+	p.handler().HandleItemDrop(p, ctx, e)
 
 	ctx.Continue(func() {
 		p.World().AddEntity(e)
@@ -1808,7 +1808,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 		return s
 	}
 	ctx := event.C()
-	p.handler().HandleItemDamage(ctx, s, d)
+	p.handler().HandleItemDamage(p, ctx, s, d)
 
 	ctx.Continue(func() {
 		s = s.Damage(d)
@@ -1867,7 +1867,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
-	p.handler().HandleQuit()
+	p.handler().HandleQuit(p)
 
 	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
