@@ -8,6 +8,7 @@ import (
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
+	"github.com/df-mc/dragonfly/dragonfly/plugin"
 	"github.com/df-mc/dragonfly/dragonfly/session"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/generator"
@@ -50,6 +51,9 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
+
+	handlers      []interface{}
+	handlersMutex sync.RWMutex
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -142,6 +146,21 @@ func (server *Server) Start() error {
 	}
 	go server.run()
 	return nil
+}
+
+// AddPlugin adds your plugin to the list of all plugins, witch are used to handle events
+func (server *Server) AddPlugin(handler interface{}) {
+	server.handlersMutex.Lock()
+	defer server.handlersMutex.Unlock()
+
+	server.handlers = append(server.handlers, handler)
+}
+
+// GetHandler returns the final plugin containing all server plugins
+func (server *Server) GetHandler() *plugin.Plugin {
+	server.handlersMutex.RLock()
+	defer server.handlersMutex.RUnlock()
+	return plugin.JoinPlugins(server.handlers)
 }
 
 // Uptime returns the duration that the server has been running for. Measurement starts the moment a call to
@@ -367,6 +386,8 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
 	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(server, conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
+
+	p.Handle(server.GetHandler())
 	s.Start(p, server.world, server.handleSessionClose)
 
 	return p
