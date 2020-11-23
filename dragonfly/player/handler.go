@@ -12,61 +12,104 @@ import (
 	"net"
 )
 
-// Handler handles events that are called by a player. Implementations of Handler may be used to listen to
-// specific events such as when a player chats or moves.
-type Handler interface {
+type MoveHandler interface {
 	// HandleMove handles the movement of a player. ctx.Cancel() may be called to cancel the movement event.
 	// The new position, yaw and pitch are passed.
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
+}
+
+type TeleportHandler interface {
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
+}
+
+type ChatHandler interface {
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
 	HandleChat(ctx *event.Context, message *string)
+}
+
+type FoodLossHandler interface {
 	// HandleFoodLoss handles the food bar of a player depleting naturally, for example because the player was
 	// sprinting and jumping. ctx.Cancel() may be called to cancel the food points being lost.
 	HandleFoodLoss(ctx *event.Context, from, to int)
+}
+
+type HealHandler interface {
 	// HandleHeal handles the player being healed by a healing source. ctx.Cancel() may be called to cancel
 	// the healing.
 	// The health added may be changed by assigning to *health.
 	HandleHeal(ctx *event.Context, health *float64, src healing.Source)
+}
+
+type HurtHandler interface {
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
 	HandleHurt(ctx *event.Context, damage *float64, src damage.Source)
+}
+
+type DeathHandler interface {
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(src damage.Source)
+}
+
+type RespawnHandler interface {
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos.
 	HandleRespawn(pos *mgl64.Vec3)
+}
+
+type StartBreakHandler interface {
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos world.BlockPos)
+}
+
+type BlockBreakHandler interface {
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
 	HandleBlockBreak(ctx *event.Context, pos world.BlockPos)
+}
+
+type BlockPlaceHandler interface {
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *event.Context, pos world.BlockPos, b world.Block)
+}
+
+type BlockPickHandler interface {
 	// HandleBlockPick handles the player picking a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being picked.
 	HandleBlockPick(ctx *event.Context, pos world.BlockPos, b world.Block)
+}
+
+type ItemUseHandler interface {
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
 	HandleItemUse(ctx *event.Context)
+}
+
+type ItemUseOnBlockHandler interface {
 	// HandleItemUseOnBlock handles the player using the item held in its main hand on a block at the block
 	// position passed. The face of the block clicked is also passed, along with the relative click position.
 	// The click position has X, Y and Z values which are all in the range 0.0-1.0. It is also called if the
 	// player is holding no item.
 	HandleItemUseOnBlock(ctx *event.Context, pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
+}
+
+type ItemUseOnEntityHandler interface {
 	// HandleItemUseOnEntity handles the player using the item held in its main hand on an entity passed to
 	// the method.
 	// HandleItemUseOnEntity is always called when a player uses an item on an entity, regardless of whether
 	// the item actually does anything when used on an entity. It is also called if the player is holding no
 	// item.
 	HandleItemUseOnEntity(ctx *event.Context, e world.Entity)
+}
+
+type AttackEntityHandler interface {
 	// HandleAttackEntity handles the player attacking an entity using the item held in its hand. ctx.Cancel()
 	// may be called to cancel the attack, which will cancel damage dealt to the target and will stop the
 	// entity from being knocked back.
@@ -75,27 +118,72 @@ type Handler interface {
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity)
+}
+
+type ItemDamageHandler interface {
 	// HandleItemDamage handles the event wherein the item either held by the player or as armour takes
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
 	// the item is passed.
 	HandleItemDamage(ctx *event.Context, i item.Stack, damage int)
+}
+
+type ItemPickupHandler interface {
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *event.Context, i item.Stack)
+}
+
+type ItemDropHandler interface {
 	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
 	HandleItemDrop(ctx *event.Context, e *entity.Item)
+}
+
+type TransferHandler interface {
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
+}
+
+type CommandExecutionHandler interface {
 	// HandleCommandExecution handles the command execution of a player, who wrote a command in the chat.
 	// ctx.Cancel() may be called to cancel the command execution.
 	HandleCommandExecution(ctx *event.Context, command cmd.Command, args []string)
+}
+
+type QuitHandler interface {
 	// HandleQuit handles the closing of a player. It is always called when the player is disconnected,
 	// regardless of the reason.
 	HandleQuit()
+}
+
+// Handler handles events that are called by a player. Implementations of Handler may be used to listen to
+// specific events such as when a player chats or moves.
+type Handler interface {
+	MoveHandler
+	TeleportHandler
+	ChatHandler
+	FoodLossHandler
+	HealHandler
+	HurtHandler
+	DeathHandler
+	RespawnHandler
+	StartBreakHandler
+	BlockBreakHandler
+	BlockPlaceHandler
+	BlockPickHandler
+	ItemUseHandler
+	ItemUseOnBlockHandler
+	ItemUseOnEntityHandler
+	AttackEntityHandler
+	ItemDamageHandler
+	ItemPickupHandler
+	ItemDropHandler
+	TransferHandler
+	CommandExecutionHandler
+	QuitHandler
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
