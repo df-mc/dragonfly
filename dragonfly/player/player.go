@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly"
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
@@ -90,13 +91,15 @@ type Player struct {
 	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
+	server *dragonfly.Server
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
-func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
+func New(server *dragonfly.Server, name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
+		server: server,
 		inv: inventory.New(36, func(slot int, item item.Stack) {
 			if slot == int(p.heldSlot.Load()) {
 				p.broadcastItems(slot, item)
@@ -129,14 +132,19 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
-	p := New(name, skin, pos)
+func NewWithSession(server *dragonfly.Server, name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
+	p := New(server, name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 
 	chat.Global.Subscribe(p)
 	return p
+}
+
+// Server returns the Server object
+func (p *Player) Server() *dragonfly.Server {
+	return p.server
 }
 
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
