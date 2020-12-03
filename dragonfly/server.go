@@ -18,6 +18,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -298,9 +299,6 @@ func (server *Server) run() {
 			close(server.players)
 			return
 		}
-		if len(blocks) == 0 {
-			blocks = server.blockEntries()
-		}
 		go server.handleConn(c.(*minecraft.Conn))
 	}
 }
@@ -311,17 +309,16 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	data := minecraft.GameData{
 		Yaw:            90,
 		WorldName:      server.c.World.Name,
-		Blocks:         blocks,
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
-		EntityUniqueID:               1,
-		EntityRuntimeID:              1,
-		Time:                         int64(server.world.Time()),
-		GameRules:                    map[string]interface{}{"naturalregeneration": false},
-		Difficulty:                   2,
-		ServerAuthoritativeMovement:  true,
-		ServerAuthoritativeInventory: true,
+		EntityUniqueID:                  1,
+		EntityRuntimeID:                 1,
+		Time:                            int64(server.world.Time()),
+		GameRules:                       map[string]interface{}{"naturalregeneration": false},
+		Difficulty:                      2,
+		ServerAuthoritativeMovementMode: packet.AuthoritativeMovementModeServer,
+		ServerAuthoritativeInventory:    true,
 	}
 	if err := conn.StartGame(data); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")
@@ -402,24 +399,6 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	return playerSkin
 }
 
-var blocks []interface{}
-
-// blockEntries loads a list of all block state entries of the server, ready to be sent in the StartGame
-// packet.
-func (server *Server) blockEntries() (entries []interface{}) {
-	for _, b := range world_allBlocks() {
-		name, properties := b.EncodeBlock()
-		entries = append(entries, map[string]interface{}{
-			"block": map[string]interface{}{
-				"version": protocol.CurrentBlockVersion,
-				"name":    name,
-				"states":  properties,
-			},
-		})
-	}
-	return
-}
-
 // registerTargetFunc registers a cmd.TargetFunc to be able to get all players connected and all entities in
 // the server's world.
 func (server *Server) registerTargetFunc() {
@@ -450,7 +429,3 @@ func world_registerAllStates()
 //go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL
 func item_registerVanillaCreativeItems()
-
-//go:linkname world_allBlocks github.com/df-mc/dragonfly/dragonfly/world.allBlocks
-//noinspection ALL
-func world_allBlocks() []world.Block
