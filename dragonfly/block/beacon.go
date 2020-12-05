@@ -131,7 +131,7 @@ func (b Beacon) recalculateLevel(pos world.BlockPos, w *world.World) int {
 	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if src, ok := world_internal.BeaconSource[block_internal.World_runtimeID(w, world.BlockPos{x, y, z})]; !ok || !src {
+				if !world_internal.BeaconSource[block_internal.World_runtimeID(w, world.BlockPos{x, y, z})] {
 					return lvl
 				}
 			}

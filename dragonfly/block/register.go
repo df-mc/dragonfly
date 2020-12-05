@@ -12,10 +12,10 @@ import (
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
-	// Always register Air first so we can use 0 runtime IDs as air.
-	world.RegisterBlock(Air{})
-
-	world.RegisterBlock(Stone{}, Stone{Smooth: true})
+	_ = world.RegisterBlock(Air{}, world.BlockState{Name: "minecraft:air"})
+	_ = world.RegisterBlock(Stone{}, world.BlockState{Name: "minecraft:stone", Properties: map[string]interface{}{"stone_type": "stone"}})
+	_ = world.RegisterBlock(Stone{Smooth: true}, world.BlockState{Name: "minecraft:smooth_stone"})
+	/*world.RegisterBlock(Stone{}, Stone{Smooth: true})
 	world.RegisterBlock(Granite{}, Granite{Polished: true})
 	world.RegisterBlock(Diorite{}, Diorite{Polished: true})
 	world.RegisterBlock(Andesite{}, Andesite{Polished: true})
@@ -113,7 +113,7 @@ func init() {
 	world.RegisterBlock(NetherWart{}, NetherWart{Age: 1}, NetherWart{Age: 2}, NetherWart{Age: 3})
 	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(NoteBlock{})
-	world.RegisterBlock(DragonEgg{})
+	world.RegisterBlock(DragonEgg{})*/
 }
 
 func init() {

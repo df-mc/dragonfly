@@ -14,6 +14,12 @@ type Potato struct {
 	crop
 }
 
+// SameCrop ...
+func (Potato) SameCrop(c Crop) bool {
+	_, ok := c.(Potato)
+	return ok
+}
+
 // AlwaysConsumable ...
 func (p Potato) AlwaysConsumable() bool {
 	return false

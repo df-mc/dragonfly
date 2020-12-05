@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	_ "github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
@@ -110,7 +111,6 @@ func (server *Server) Run() error {
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -132,7 +132,6 @@ func (server *Server) Start() error {
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -421,10 +420,6 @@ func (server *Server) registerTargetFunc() {
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
-
-//go:linkname world_registerAllStates github.com/df-mc/dragonfly/dragonfly/world.registerAllStates
-//noinspection ALL
-func world_registerAllStates()
 
 //go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL

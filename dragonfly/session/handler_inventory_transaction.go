@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -121,7 +122,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
-		if name, _ := s.c.World().Block(pos).EncodeBlock(); name == "minecraft:farmland" {
+		if _, ok := s.c.World().Block(pos).(block.Farmland); ok {
 			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
 			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
 			// UseItem action, so we just release immediately after if that happens to be the case.
