@@ -28,13 +28,3 @@ func (g Glass) BreakInfo() BreakInfo {
 func (g Glass) EncodeItem() (id int32, meta int16) {
 	return 20, 0
 }
-
-// EncodeBlock ...
-func (g Glass) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:glass", nil
-}
-
-// Hash ...
-func (Glass) Hash() uint64 {
-	return hashGlass
-}

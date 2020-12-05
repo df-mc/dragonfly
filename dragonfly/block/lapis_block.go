@@ -27,13 +27,3 @@ func (l LapisBlock) BreakInfo() BreakInfo {
 func (LapisBlock) EncodeItem() (id int32, meta int16) {
 	return 22, 0
 }
-
-// EncodeBlock ...
-func (LapisBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:lapis_block", nil
-}
-
-// Hash ...
-func (l LapisBlock) Hash() uint64 {
-	return hashLapisBlock
-}

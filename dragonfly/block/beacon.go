@@ -222,16 +222,6 @@ func (Beacon) EncodeItem() (id int32, meta int16) {
 	return 138, 0
 }
 
-// EncodeBlock ...
-func (Beacon) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:beacon", nil
-}
-
-// Hash ...
-func (Beacon) Hash() uint64 {
-	return hashBeacon
-}
-
 //go:linkname effect_effectByID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
 //noinspection ALL
 func effect_effectByID(id int) (effect.Effect, bool)

@@ -24,13 +24,3 @@ func (q NetherQuartzOre) BreakInfo() BreakInfo {
 func (NetherQuartzOre) EncodeItem() (id int32, meta int16) {
 	return 153, 0
 }
-
-// EncodeBlock ...
-func (NetherQuartzOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:quartz_ore", nil
-}
-
-// Hash ...
-func (NetherQuartzOre) Hash() uint64 {
-	return hashQuartzOre
-}

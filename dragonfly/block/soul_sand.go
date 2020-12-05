@@ -32,13 +32,3 @@ func (s SoulSand) BreakInfo() BreakInfo {
 func (s SoulSand) EncodeItem() (id int32, meta int16) {
 	return 88, 0
 }
-
-// EncodeBlock ...
-func (s SoulSand) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:soul_sand", nil
-}
-
-// Hash ...
-func (s SoulSand) Hash() uint64 {
-	return hashSoulSand
-}

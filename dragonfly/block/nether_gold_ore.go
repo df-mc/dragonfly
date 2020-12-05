@@ -26,13 +26,3 @@ func (n NetherGoldOre) BreakInfo() BreakInfo {
 func (n NetherGoldOre) EncodeItem() (id int32, meta int16) {
 	return -288, 0
 }
-
-// EncodeBlock ...
-func (n NetherGoldOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:nether_gold_ore", nil
-}
-
-// Hash ...
-func (n NetherGoldOre) Hash() uint64 {
-	return hashNetherGoldOre
-}

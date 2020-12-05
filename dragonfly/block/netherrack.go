@@ -23,13 +23,3 @@ func (e Netherrack) BreakInfo() BreakInfo {
 func (e Netherrack) EncodeItem() (id int32, meta int16) {
 	return 87, 0
 }
-
-// EncodeBlock ...
-func (e Netherrack) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:netherrack", nil
-}
-
-// Hash ...
-func (e Netherrack) Hash() uint64 {
-	return hashNetherrack
-}
