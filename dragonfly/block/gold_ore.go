@@ -28,13 +28,3 @@ func (g GoldOre) BreakInfo() BreakInfo {
 func (g GoldOre) EncodeItem() (id int32, meta int16) {
 	return 14, 0
 }
-
-// EncodeBlock ...
-func (g GoldOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:gold_ore", nil
-}
-
-// Hash ...
-func (g GoldOre) Hash() uint64 {
-	return hashGoldOre
-}

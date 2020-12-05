@@ -31,13 +31,3 @@ func (b GildedBlackstone) BreakInfo() BreakInfo {
 func (GildedBlackstone) EncodeItem() (id int32, meta int16) {
 	return -281, 0
 }
-
-// EncodeBlock ...
-func (GildedBlackstone) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:gilded_blackstone", nil
-}
-
-// Hash ...
-func (GildedBlackstone) Hash() uint64 {
-	return hashGildedBlackstone
-}

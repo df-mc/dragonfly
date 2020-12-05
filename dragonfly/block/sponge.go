@@ -36,19 +36,6 @@ func (s Sponge) EncodeItem() (id int32, meta int16) {
 	return 19, meta
 }
 
-// EncodeBlock ...
-func (s Sponge) EncodeBlock() (name string, properties map[string]interface{}) {
-	if s.Wet {
-		return "minecraft:sponge", map[string]interface{}{"sponge_type": "wet"}
-	}
-	return "minecraft:sponge", map[string]interface{}{"sponge_type": "dry"}
-}
-
-// Hash ...
-func (s Sponge) Hash() uint64 {
-	return hashSponge | (uint64(boolByte(s.Wet)) << 32)
-}
-
 // UseOnBlock places the sponge, absorbs nearby water if it's still dry and flags it as wet if any water has been
 // absorbed.
 func (s Sponge) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {

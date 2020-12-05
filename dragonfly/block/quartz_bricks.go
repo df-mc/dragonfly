@@ -23,13 +23,3 @@ func (q QuartzBricks) BreakInfo() BreakInfo {
 func (QuartzBricks) EncodeItem() (id int32, meta int16) {
 	return -304, 0
 }
-
-// EncodeBlock ...
-func (QuartzBricks) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:quartz_bricks", nil
-}
-
-// Hash ...
-func (QuartzBricks) Hash() uint64 {
-	return hashQuartzBricks
-}

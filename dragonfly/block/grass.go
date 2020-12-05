@@ -53,13 +53,3 @@ func (g Grass) BreakInfo() BreakInfo {
 func (g Grass) EncodeItem() (id int32, meta int16) {
 	return 2, 0
 }
-
-// EncodeBlock ...
-func (g Grass) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:grass", nil
-}
-
-// Hash ...
-func (g Grass) Hash() uint64 {
-	return hashGrass
-}
