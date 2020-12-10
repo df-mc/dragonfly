@@ -131,6 +131,15 @@ func (s *Session) SendSpeed(speed float64) {
 	})
 }
 
+// SendCameraShake sends a shake amount for the players camera
+func (s *Session) SendCameraShake(Intensity, Duration float32, Type CameraShakeType) {
+	s.writePacket(&packet.CameraShake{
+		Duration:  Duration,
+		Intensity: Intensity,
+		Type:      uint8(Type),
+	})
+}
+
 // SendFood ...
 func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	s.writePacket(&packet.UpdateAttributes{
@@ -567,6 +576,14 @@ func creativeItems() []protocol.CreativeItem {
 	}
 	return it
 }
+
+// CameraShakeType is the type of camera shake that the player receives
+type CameraShakeType uint8
+
+const (
+	CameraShakePositional = iota
+	CameraShakeRotational
+)
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.

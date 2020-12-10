@@ -3,7 +3,6 @@ module github.com/df-mc/dragonfly
 go 1.13
 
 require (
-	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/goleveldb v1.1.8
 	github.com/go-gl/mathgl v1.0.0
