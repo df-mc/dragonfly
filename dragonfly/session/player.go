@@ -296,6 +296,15 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
+// SendCameraShake sends a shake amount for the players camera
+func (s *Session) SendCameraShake(Intensity, Duration float32, Type CameraShakeType) {
+	s.writePacket(&packet.CameraShake{
+		Duration:  Duration,
+		Intensity: Intensity,
+		Type:      uint8(Type),
+	})
+}
+
 // SendHealth sends the health and max health to the player.
 func (s *Session) SendHealth(health *entity_internal.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
@@ -567,6 +576,13 @@ func creativeItems() []protocol.CreativeItem {
 	}
 	return it
 }
+
+type CameraShakeType uint8
+
+const (
+	CameraShakePositional = iota
+	CameraShakeRotational
+)
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
