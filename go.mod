@@ -25,4 +25,4 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
-replace github.com/sandertv/gophertunnel => C:\Users\JustTal\go\src\github.com\TwistedAsylumMC\gophertunnel
+replace github.com/sandertv/gophertunnel => C:\Users\JustTal\go\src\github.com\TwistedAsylumMC\gophertunnel // replace this path with the one on your system, using this temporarily to test
