@@ -392,7 +392,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 		})
 	}
 	s.writePacket(&packet.ItemStackResponse{Responses: []protocol.ItemStackResponse{{
-		Success:       true,
+		Status:        protocol.ItemStackResponseStatusOK,
 		RequestID:     id,
 		ContainerInfo: info,
 	}}})
@@ -403,7 +403,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	s.writePacket(&packet.ItemStackResponse{
 		Responses: []protocol.ItemStackResponse{{
-			Success:   false,
+			Status:    protocol.ItemStackResponseStatusError,
 			RequestID: id,
 		}},
 	})
