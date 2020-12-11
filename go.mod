@@ -24,3 +24,5 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
+
+replace github.com/sandertv/gophertunnel => C:\Users\JustTal\go\src\github.com\TwistedAsylumMC\gophertunnel
