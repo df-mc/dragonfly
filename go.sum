@@ -152,12 +152,10 @@ github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/sahilm/fuzzy v0.1.0 h1:FzWGaw2Opqyu+794ZQ9SYifWv2EIXpwP4q8dY1kDAwI=
 github.com/sahilm/fuzzy v0.1.0/go.mod h1:VFvziUEIMCrT6A6tw2RFIXPXXmzXbOsSHF0DOI8ZK9Y=
-github.com/sandertv/go-raknet v1.9.0 h1:Ml2/GRTbvECKSXbjGPERFqAUpiDPdK/j4x39LpzoIfc=
-github.com/sandertv/go-raknet v1.9.0/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
 github.com/sandertv/go-raknet v1.9.1 h1:nAtrjdTq4OZT9Mimv2A+RDN4ncZDdn/LhBh1QRrEXN8=
 github.com/sandertv/go-raknet v1.9.1/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
-github.com/sandertv/gophertunnel v1.9.4 h1:n4hLXbHz5GKU21+xlZID5gU18ccD+DKiFowaHc14c3Q=
-github.com/sandertv/gophertunnel v1.9.4/go.mod h1:bFLwN/orG/j1q89pN39a+s0TqBxiSxc03shC2LZmus0=
+github.com/sandertv/gophertunnel v1.10.0 h1:mLeFecSp9X6Z6DU2xqOQFBiiT1vvnCWJ8tAyXhDqalA=
+github.com/sandertv/gophertunnel v1.10.0/go.mod h1:TpC717w6p5WIDDLhQzaXeumOjCsGpsjyzxTCvA4hceg=
 github.com/sirupsen/logrus v1.6.0 h1:UBcNElsrwanuuMsnGSlYmtmgbb23qDR5dG+6X6Oo89I=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
