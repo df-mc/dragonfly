@@ -23,4 +23,4 @@ require (
 	golang.org/x/text v0.3.4
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
-) // replace this path with the one on your system, using this temporarily to test
+)
