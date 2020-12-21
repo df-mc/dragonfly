@@ -1,7 +1,9 @@
 package world
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -28,6 +30,13 @@ type TickerBlock interface {
 	Tick(currentTick int64, pos BlockPos, w *World)
 }
 
+// itemJsonEntry contains the the ID and meta for versions prior to 1.16.100/1.16.200, and the new runtime ID for the data.
+type itemJsonEntry struct {
+	OldData int32 `json:"oldData,omitempty"`
+	ID      int32 `json:"id"`
+	OldID   int32 `json:"oldId,omitempty"`
+}
+
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
 // ID and metadata value using itemByID().
 // If an item with the ID and meta passed already exists, RegisterItem panics.
@@ -45,6 +54,41 @@ func RegisterItem(name string, item Item) {
 var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
+var runtimeToOldIds = map[int32]int32{}
+var oldIdsToRuntime = map[int32]int32{}
+
+// loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
+func loadItemEntries() error {
+	var itemJsonEntries []itemJsonEntry
+	err := json.Unmarshal([]byte(resource.ItemEntries), &itemJsonEntries)
+	if err != nil {
+		return err
+	}
+	for _, jsonEntry := range itemJsonEntries {
+		var oldId int32
+		if jsonEntry.OldID == 0 {
+			oldId = (jsonEntry.ID << 4) | jsonEntry.OldData
+		} else {
+			oldId = (jsonEntry.OldID << 4) | jsonEntry.OldData
+		}
+		oldIdsToRuntime[oldId] = jsonEntry.ID
+		runtimeToOldIds[jsonEntry.ID] = oldId
+	}
+	return nil
+}
+
+// runtimeById returns the runtime ID for an item by it's old ID.
+//lint:ignore U1000 Function is used using compiler directives.
+func runtimeById(id int32, meta int16) int32 {
+	oldId := (id << 4) | int32(meta)
+	return oldIdsToRuntime[oldId]
+}
+
+// idByRuntime returns the old ID for an item by it's runtime ID.
+//lint:ignore U1000 Function is used using compiler directives.
+func idByRuntime(runtimeId int32) int32 {
+	return runtimeToOldIds[runtimeId]
+}
 
 // itemByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
 // returned and the bool true.
