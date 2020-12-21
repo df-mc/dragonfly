@@ -179,11 +179,11 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 func runtimeID(w *World, pos BlockPos) uint32 {
 	if w == nil || pos[1] < 0 || pos[1] > 255 {
 		// Fast way out.
-		return 0
+		return chunk.AirRuntimeID
 	}
 	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if err != nil {
-		return 0
+		return chunk.AirRuntimeID
 	}
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
@@ -408,7 +408,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 							}
 							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, runtimeID)
 						} else {
-							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, 0)
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, chunk.AirRuntimeID)
 						}
 					}
 				}
@@ -553,10 +553,10 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool,
 		return false, false
 	}
 	if _, ok := b.(Liquid); ok {
-		c.SetRuntimeID(x, y, z, layer, 0)
+		c.SetRuntimeID(x, y, z, layer, chunk.AirRuntimeID)
 		return true, true
 	}
-	return id == 0, false
+	return id == chunk.AirRuntimeID, false
 }
 
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
@@ -1230,7 +1230,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
 				rid := layers[0].RuntimeID(uint8(x), uint8(y), uint8(z))
-				if rid == 0 {
+				if rid == chunk.AirRuntimeID {
 					// The block was air, take the fast route out.
 					continue
 				}

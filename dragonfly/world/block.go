@@ -70,7 +70,7 @@ func registerBlockByTypeName(b Block) {
 // RegisterBlock(). If the runtime ID is found, the bool returned is true. It is otherwise false.
 func BlockRuntimeID(b Block) (uint32, bool) {
 	if b == nil {
-		return airRuntimeID, true
+		return chunk.AirRuntimeID, true
 	}
 	if (b.Model() == unimplementedModel{}) {
 		s := b.(unimplementedBlock).BlockState
@@ -167,7 +167,7 @@ func RegisterBlockState(s BlockState) error {
 	world_internal.BeaconSource = append(world_internal.BeaconSource, false)
 
 	if s.Name == "minecraft:air" {
-		airRuntimeID = rid
+		chunk.AirRuntimeID = rid
 	}
 	return nil
 }
@@ -201,11 +201,9 @@ func RegisterBlock(b Block, s BlockState) error {
 	return nil
 }
 
-var airRuntimeID uint32
-
 // air returns an air block.
 func air() Block {
-	b, _ := blockByRuntimeID(airRuntimeID)
+	b, _ := blockByRuntimeID(chunk.AirRuntimeID)
 	return b
 }
 

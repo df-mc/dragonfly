@@ -105,7 +105,7 @@ func removeEmptySubChunks(c *Chunk) {
 		if len(sub.storages) == 0 {
 			c.sub[y] = nil
 		} else if len(sub.storages) == 1 {
-			if len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == 0 {
+			if len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == AirRuntimeID {
 				// Sub chunk with only air in it.
 				c.sub[y] = nil
 			}
@@ -593,7 +593,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	}
 	if l == 1 {
 		id := storages[0].RuntimeID(x, y, z)
-		if id == 0 {
+		if id == AirRuntimeID {
 			return 0
 		}
 		return FilteringBlocks[id]
@@ -607,7 +607,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 		}
 
 		id = storages[1].RuntimeID(x, y, z)
-		if id != 0 {
+		if id != AirRuntimeID {
 			if v := FilteringBlocks[id]; v > highest {
 				highest = v
 			}

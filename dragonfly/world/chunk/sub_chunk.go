@@ -14,7 +14,7 @@ func (sub *SubChunk) Layer(layer uint8) *BlockStorage {
 	for uint8(len(sub.storages)) <= layer {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		sub.storages = append(sub.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{0})))
+		sub.storages = append(sub.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{AirRuntimeID})))
 	}
 	return sub.storages[layer]
 }
@@ -28,7 +28,7 @@ func (sub *SubChunk) Layers() []*BlockStorage {
 // range of 0-15.
 func (sub *SubChunk) RuntimeID(x, y, z byte, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
-		return 0
+		return AirRuntimeID
 	}
 	return sub.Layer(layer).RuntimeID(x, y, z)
 }
@@ -64,7 +64,7 @@ func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
 func (sub *SubChunk) blockLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 	i := index >> 1
-	if index&1 == 0 {
+	if index&1 == uint16(AirRuntimeID) {
 		return sub.blockLight[i] >> 4
 	}
 	return sub.blockLight[i] & 0xf
@@ -83,7 +83,7 @@ func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
 func (sub *SubChunk) SkyLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 	i := index >> 1
-	if index&1 == 0 {
+	if index&1 == uint16(AirRuntimeID) {
 		return sub.skyLight[i] >> 4
 	}
 	return sub.skyLight[i] & 0xf
@@ -95,7 +95,7 @@ func (sub *SubChunk) compact() {
 	newStorages := make([]*BlockStorage, 0, len(sub.storages))
 	for _, storage := range sub.storages {
 		storage.compact()
-		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == 0 {
+		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == AirRuntimeID {
 			// If the palette has only air in it, it means the storage is empty, so we can ignore it.
 			continue
 		}
