@@ -267,6 +267,7 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 // registerHandlers registers all packet handlers found in the packetHandler package.
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
+		packet.IDAdventureSettings:     nil,
 		packet.IDActorEvent:            nil,
 		packet.IDAnimate:               nil,
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
