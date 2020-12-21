@@ -40,13 +40,3 @@ func (p GlassPane) BreakInfo() BreakInfo {
 func (p GlassPane) EncodeItem() (id int32, meta int16) {
 	return 102, meta
 }
-
-// EncodeBlock ...
-func (p GlassPane) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:glass_pane", map[string]interface{}{}
-}
-
-// Hash ...
-func (p GlassPane) Hash() uint64 {
-	return hashGlassPane
-}

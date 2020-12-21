@@ -15,6 +15,12 @@ type MelonSeeds struct {
 	Direction world.Face
 }
 
+// SameCrop ...
+func (MelonSeeds) SameCrop(c Crop) bool {
+	_, ok := c.(MelonSeeds)
+	return ok
+}
+
 // NeighbourUpdateTick ...
 func (m MelonSeeds) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {

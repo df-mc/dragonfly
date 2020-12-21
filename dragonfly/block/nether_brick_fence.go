@@ -33,16 +33,6 @@ func (NetherBrickFence) SideClosed(world.BlockPos, world.BlockPos, *world.World)
 	return false
 }
 
-// EncodeBlock ...
-func (n NetherBrickFence) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:nether_brick_fence", nil
-}
-
-// Hash ...
-func (n NetherBrickFence) Hash() uint64 {
-	return hashNetherBrickFence
-}
-
 // Model ...
 func (n NetherBrickFence) Model() world.BlockModel {
 	return model.Fence{}

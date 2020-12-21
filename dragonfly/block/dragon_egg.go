@@ -74,13 +74,3 @@ func (d DragonEgg) BreakInfo() BreakInfo {
 func (d DragonEgg) EncodeItem() (id int32, meta int16) {
 	return 122, 0
 }
-
-// EncodeBlock ...
-func (d DragonEgg) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:dragon_egg", nil
-}
-
-// Hash ...
-func (d DragonEgg) Hash() uint64 {
-	return hashDragonEgg
-}

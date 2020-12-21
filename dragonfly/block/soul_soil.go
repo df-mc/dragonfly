@@ -24,13 +24,3 @@ func (s SoulSoil) BreakInfo() BreakInfo {
 func (SoulSoil) EncodeItem() (id int32, meta int16) {
 	return -236, 0
 }
-
-// EncodeBlock ...
-func (SoulSoil) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:soul_soil", nil
-}
-
-// Hash ...
-func (SoulSoil) Hash() uint64 {
-	return hashSoulSoil
-}

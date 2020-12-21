@@ -141,9 +141,9 @@ func (w *World) Block(pos BlockPos) Block {
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
 
-	state := registeredStates[rid]
-	if state.HasNBT() {
-		if _, ok := state.(NBTer); ok {
+	b, _ := blockByRuntimeID(rid)
+	if b.HasNBT() {
+		if _, ok := b.(NBTer); ok {
 			// The block was also a block entity, so we look it up in the block entity map.
 			b, ok := c.e[pos]
 			if ok {
@@ -151,7 +151,7 @@ func (w *World) Block(pos BlockPos) Block {
 			}
 		}
 	}
-	return state
+	return b
 }
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
@@ -161,16 +161,16 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 		// Fast way out.
 		return air(), nil
 	}
-	state := registeredStates[c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)]
+	b, _ := blockByRuntimeID(c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0))
 
-	if _, ok := state.(NBTer); ok {
+	if _, ok := b.(NBTer); ok {
 		// The block was also a block entity, so we look it up in the block entity map.
 		b, ok := c.e[pos]
 		if ok {
 			return b, nil
 		}
 	}
-	return state, nil
+	return b, nil
 }
 
 // runtimeID gets the block runtime ID at a specific position in the world.
@@ -179,11 +179,11 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 func runtimeID(w *World, pos BlockPos) uint32 {
 	if w == nil || pos[1] < 0 || pos[1] > 255 {
 		// Fast way out.
-		return 0
+		return chunk.AirRuntimeID
 	}
 	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if err != nil {
-		return 0
+		return chunk.AirRuntimeID
 	}
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
@@ -235,22 +235,20 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 		// Fast way out.
 		return
 	}
+
 	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
 	c, err := w.chunk(ChunkPos{x, z})
 	if err != nil {
 		return
 	}
-	var h int64
-	if b != nil {
-		h = int64(b.Hash())
-	}
-	runtimeID, ok := runtimeIDsHashes.Get(h)
+
+	rid, ok := BlockRuntimeID(b)
 	if !ok {
-		w.log.Errorf("runtime ID of block state %+v not found", b)
+		w.log.Errorf("runtime ID of block %+v not found", b)
 		c.Unlock()
 		return
 	}
-	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
+	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, rid)
 
 	var hasNBT bool
 	if b != nil {
@@ -272,11 +270,11 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 // setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
 // does not send block updates to viewer.
 func (w *World) setBlockInChunk(c *chunkData, pos BlockPos, b Block) error {
-	runtimeID, ok := runtimeIDsHashes.Get(int64(b.Hash()))
+	rid, ok := BlockRuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
 	}
-	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, uint32(runtimeID))
+	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, rid)
 
 	if _, hasNBT := b.(NBTer); hasNBT {
 		c.e[pos] = b
@@ -410,7 +408,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 							}
 							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, runtimeID)
 						} else {
-							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, 0)
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, chunk.AirRuntimeID)
 						}
 					}
 				}
@@ -555,10 +553,10 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool,
 		return false, false
 	}
 	if _, ok := b.(Liquid); ok {
-		c.SetRuntimeID(x, y, z, layer, 0)
+		c.SetRuntimeID(x, y, z, layer, chunk.AirRuntimeID)
 		return true, true
 	}
-	return id == 0, false
+	return id == chunk.AirRuntimeID, false
 }
 
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
@@ -716,6 +714,8 @@ func (w *World) AddEntity(e Entity) {
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error loading chunk to add entity: %v", err)
+		c.Unlock()
+		return
 	}
 	viewers := c.v
 	c.entities = append(c.entities, e)
@@ -1230,12 +1230,12 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
 				rid := layers[0].RuntimeID(uint8(x), uint8(y), uint8(z))
-				if rid == 0 {
+				if rid == chunk.AirRuntimeID {
 					// The block was air, take the fast route out.
 					continue
 				}
 
-				if randomTicker, ok := registeredStates[rid].(RandomTicker); ok {
+				if randomTicker, ok := blocks[rid].(RandomTicker); ok {
 					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: BlockPos{int(pos[0]<<4) + x, y + i<<2, int(pos[1]<<4) + z}})
 				}
 			}

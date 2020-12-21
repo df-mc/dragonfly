@@ -13,6 +13,12 @@ type BeetrootSeeds struct {
 	crop
 }
 
+// SameCrop ...
+func (BeetrootSeeds) SameCrop(c Crop) bool {
+	_, ok := c.(BeetrootSeeds)
+	return ok
+}
+
 // BoneMeal ...
 func (b BeetrootSeeds) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	if b.Growth == 7 {

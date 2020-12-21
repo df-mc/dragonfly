@@ -75,13 +75,3 @@ func (n NoteBlock) BreakInfo() BreakInfo {
 func (n NoteBlock) EncodeItem() (id int32, meta int16) {
 	return 25, 0
 }
-
-// EncodeBlock ...
-func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:noteblock", nil
-}
-
-// Hash ...
-func (n NoteBlock) Hash() uint64 {
-	return hashNoteblock
-}

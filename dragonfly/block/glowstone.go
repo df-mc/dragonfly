@@ -32,17 +32,7 @@ func (g Glowstone) EncodeItem() (id int32, meta int16) {
 	return 89, 0
 }
 
-// EncodeBlock ...
-func (g Glowstone) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:glowstone", nil
-}
-
 // LightEmissionLevel returns 15.
 func (Glowstone) LightEmissionLevel() uint8 {
 	return 15
-}
-
-// Hash ...
-func (Glowstone) Hash() uint64 {
-	return hashGlowstone
 }

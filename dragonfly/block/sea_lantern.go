@@ -32,13 +32,3 @@ func (s SeaLantern) BreakInfo() BreakInfo {
 func (SeaLantern) EncodeItem() (id int32, meta int16) {
 	return 169, 0
 }
-
-// EncodeBlock ...
-func (SeaLantern) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:seaLantern", nil
-}
-
-// Hash ...
-func (SeaLantern) Hash() uint64 {
-	return hashSeaLantern
-}

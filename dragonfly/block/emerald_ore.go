@@ -29,13 +29,3 @@ func (e EmeraldOre) BreakInfo() BreakInfo {
 func (e EmeraldOre) EncodeItem() (id int32, meta int16) {
 	return 129, 0
 }
-
-// EncodeBlock ...
-func (e EmeraldOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:emerald_ore", nil
-}
-
-// Hash ...
-func (e EmeraldOre) Hash() uint64 {
-	return hashEmeraldOre
-}

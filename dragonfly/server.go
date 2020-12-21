@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	_ "github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
@@ -114,7 +115,6 @@ func (server *Server) Run() error {
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -136,7 +136,6 @@ func (server *Server) Start() error {
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	item_registerVanillaCreativeItems()
-	world_registerAllStates()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -315,9 +314,6 @@ func (server *Server) run() {
 			close(server.players)
 			return
 		}
-		if len(blocks) == 0 {
-			blocks = server.blockEntries()
-		}
 		go server.handleConn(c.(*minecraft.Conn))
 	}
 }
@@ -326,9 +322,8 @@ func (server *Server) run() {
 func (server *Server) handleConn(conn *minecraft.Conn) {
 	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
-		Yaw:       90,
-		WorldName: server.c.World.Name,
-		//Blocks:         blocks,
+		Yaw:            90,
+		WorldName:      server.c.World.Name,
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
@@ -337,6 +332,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		Time:                            int64(server.world.Time()),
 		GameRules:                       map[string]interface{}{"naturalregeneration": false},
 		Difficulty:                      2,
+		Items:                           server.itemEntries(),
 		ServerAuthoritativeMovementMode: packet.AuthoritativeMovementModeServer,
 		ServerAuthoritativeInventory:    true,
 	}
@@ -419,24 +415,6 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	return playerSkin
 }
 
-var blocks []interface{}
-
-// blockEntries loads a list of all block state entries of the server, ready to be sent in the StartGame
-// packet.
-func (server *Server) blockEntries() (entries []interface{}) {
-	for _, b := range world_allBlocks() {
-		name, properties := b.EncodeBlock()
-		entries = append(entries, map[string]interface{}{
-			"block": map[string]interface{}{
-				"version": protocol.CurrentBlockVersion,
-				"name":    name,
-				"states":  properties,
-			},
-		})
-	}
-	return
-}
-
 // registerTargetFunc registers a cmd.TargetFunc to be able to get all players connected and all entities in
 // the server's world.
 func (server *Server) registerTargetFunc() {
@@ -460,14 +438,22 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
-//go:linkname world_registerAllStates github.com/df-mc/dragonfly/dragonfly/world.registerAllStates
-//noinspection ALL
-func world_registerAllStates()
+// itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
+// packet.
+func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
+	for runtimeID, name := range world_itemNames() {
+		entries = append(entries, protocol.ItemEntry{
+			Name:      name,
+			RuntimeID: int16(runtimeID),
+		})
+	}
+	return
+}
 
 //go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL
 func item_registerVanillaCreativeItems()
 
-//go:linkname world_allBlocks github.com/df-mc/dragonfly/dragonfly/world.allBlocks
-//noinspection ALL
-func world_allBlocks() []world.Block
+//go:linkname world_itemNames github.com/df-mc/dragonfly/dragonfly/world.itemNames
+//noinspection all
+func world_itemNames() map[int32]string
