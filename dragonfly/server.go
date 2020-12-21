@@ -18,6 +18,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -325,19 +326,19 @@ func (server *Server) run() {
 func (server *Server) handleConn(conn *minecraft.Conn) {
 	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
-		Yaw:            90,
-		WorldName:      server.c.World.Name,
-		Blocks:         blocks,
+		Yaw:       90,
+		WorldName: server.c.World.Name,
+		//Blocks:         blocks,
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
-		EntityUniqueID:               1,
-		EntityRuntimeID:              1,
-		Time:                         int64(server.world.Time()),
-		GameRules:                    map[string]interface{}{"naturalregeneration": false},
-		Difficulty:                   2,
-		ServerAuthoritativeMovement:  true,
-		ServerAuthoritativeInventory: true,
+		EntityUniqueID:                  1,
+		EntityRuntimeID:                 1,
+		Time:                            int64(server.world.Time()),
+		GameRules:                       map[string]interface{}{"naturalregeneration": false},
+		Difficulty:                      2,
+		ServerAuthoritativeMovementMode: packet.AuthoritativeMovementModeServer,
+		ServerAuthoritativeInventory:    true,
 	}
 	if err := conn.StartGame(data); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")

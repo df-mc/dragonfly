@@ -13,7 +13,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sahilm/fuzzy v0.1.0
-	github.com/sandertv/gophertunnel v1.8.2
+	github.com/sandertv/gophertunnel v1.9.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/yourbasic/radix v0.0.0-20180308122924-cbe1cc82e907
 	go.uber.org/atomic v1.7.0
@@ -25,3 +25,5 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
+
+replace github.com/sandertv/gophertunnel => C:\Users\JustTal\go\src\github.com\TwistedAsylumMC\gophertunnel

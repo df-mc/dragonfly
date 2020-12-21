@@ -49,3 +49,5 @@ type TickerEntity interface {
 	// Tick ticks the entity with the current tick passed.
 	Tick(current int64)
 }
+
+//TODO: Add entity animation
