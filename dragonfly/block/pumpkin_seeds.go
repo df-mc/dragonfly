@@ -111,13 +111,3 @@ func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]interfac
 func (p PumpkinSeeds) Hash() uint64 {
 	return hashPumpkinStem | (uint64(p.Growth) << 32) | (uint64(p.Direction) << 35)
 }
-
-// allPumpkinStems
-func allPumpkinStems() (stems []world.Block) {
-	for i := 0; i <= 7; i++ {
-		for j := world.Face(0); j <= 5; j++ {
-			stems = append(stems, PumpkinSeeds{Direction: j, crop: crop{Growth: i}})
-		}
-	}
-	return
-}

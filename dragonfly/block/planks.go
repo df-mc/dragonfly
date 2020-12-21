@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Planks are common blocks used in crafting recipes. They are made by crafting logs into planks.
@@ -77,12 +76,4 @@ func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 // Hash ...
 func (p Planks) Hash() uint64 {
 	return hashPlanks | (uint64(p.Wood.Uint8()) << 32)
-}
-
-// allPlanks returns all planks types.
-func allPlanks() (planks []world.Block) {
-	for _, w := range wood.All() {
-		planks = append(planks, Planks{Wood: w})
-	}
-	return
 }

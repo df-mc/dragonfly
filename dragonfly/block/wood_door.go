@@ -177,20 +177,3 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 func (d WoodDoor) Hash() uint64 {
 	return hashDoor | (uint64(d.Facing) << 32) | (uint64(boolByte(d.Right)) << 35) | (uint64(boolByte(d.Open)) << 36) | (uint64(boolByte(d.Top)) << 37) | (uint64(d.Wood.Uint8()) << 38)
 }
-
-// allDoors returns a list of all door types
-func allDoors() (doors []world.Block) {
-	for _, w := range wood.All() {
-		for i := world.Direction(0); i <= 3; i++ {
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: false})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: true, Right: false})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: false, Right: false})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: true})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: true})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: true, Right: true})
-			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: false, Right: true})
-		}
-	}
-	return
-}

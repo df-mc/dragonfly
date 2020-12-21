@@ -88,12 +88,3 @@ func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)
 }
-
-// allCarpets returns carpet blocks with all possible colours.
-func allCarpets() []world.Block {
-	b := make([]world.Block, 0, 16)
-	for _, c := range colour.All() {
-		b = append(b, Carpet{Colour: c})
-	}
-	return b
-}
