@@ -61,13 +61,3 @@ func (t GlazedTerracotta) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl6
 	place(w, pos, t, user, ctx)
 	return placed(ctx)
 }
-
-// allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
-func allGlazedTerracotta() (b []world.Block) {
-	for dir := world.Direction(0); dir < 4; dir++ {
-		for _, c := range colour.All() {
-			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
-		}
-	}
-	return b
-}

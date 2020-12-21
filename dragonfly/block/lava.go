@@ -208,22 +208,3 @@ func (l Lava) EncodeBlock() (name string, properties map[string]interface{}) {
 func (l Lava) Hash() uint64 {
 	return hashLava | (uint64(boolByte(l.Falling)) << 32) | (uint64(boolByte(l.Still)) << 33) | (uint64(l.Depth) << 34)
 }
-
-// allLava returns a list of all lava states.
-func allLava() (b []world.Block) {
-	f := func(still, falling bool) {
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 8})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 7})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 6})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 5})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 4})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 3})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 2})
-		b = append(b, Lava{Still: still, Falling: falling, Depth: 1})
-	}
-	f(true, true)
-	f(true, false)
-	f(false, false)
-	f(false, true)
-	return
-}

@@ -119,16 +119,3 @@ func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interfac
 func (t WoodTrapdoor) Hash() uint64 {
 	return hashTrapdoor | (uint64(t.Facing) << 32) | (uint64(boolByte(t.Open)) << 34) | (uint64(boolByte(t.Top)) << 35) | (uint64(t.Wood.Uint8()) << 36)
 }
-
-// allTrapdoors returns a list of all trapdoor types
-func allTrapdoors() (trapdoors []world.Block) {
-	for _, w := range wood.All() {
-		for i := world.Direction(0); i <= 3; i++ {
-			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
-			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})
-			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: true})
-			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: false})
-		}
-	}
-	return
-}
