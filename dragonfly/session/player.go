@@ -305,15 +305,6 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
-// SendCameraShake sends a shake amount for the players camera
-func (s *Session) SendCameraShake(Intensity, Duration float32, Type CameraShakeType) {
-	s.writePacket(&packet.CameraShake{
-		Duration:  Duration,
-		Intensity: Intensity,
-		Type:      uint8(Type),
-	})
-}
-
 // SendHealth sends the health and max health to the player.
 func (s *Session) SendHealth(health *entity_internal.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
