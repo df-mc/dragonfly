@@ -316,6 +316,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		Time:                            int64(server.world.Time()),
 		GameRules:                       map[string]interface{}{"naturalregeneration": false},
 		Difficulty:                      2,
+		Items:                           server.itemEntries(),
 		ServerAuthoritativeMovementMode: packet.AuthoritativeMovementModeServer,
 		ServerAuthoritativeInventory:    true,
 	}
@@ -421,6 +422,22 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
+// itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
+// packet.
+func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
+	for runtimeID, name := range world_itemNames() {
+		entries = append(entries, protocol.ItemEntry{
+			Name:      name,
+			RuntimeID: int16(runtimeID),
+		})
+	}
+	return
+}
+
 //go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL
 func item_registerVanillaCreativeItems()
+
+//go:linkname world_itemNames github.com/df-mc/dragonfly/dragonfly/world.itemNames
+//noinspection all
+func world_itemNames() map[int32]string

@@ -76,3 +76,10 @@ func itemToName(it Item) (name string, meta int16) {
 	id, meta := it.EncodeItem()
 	return names[id], meta
 }
+
+// itemNames returns a map of item names indexed by their runtime ID.
+//lint:ignore U1000 Function is used using compiler directives.
+//noinspection GoUnusedFunction
+func itemNames() map[int32]string {
+	return names
+}
