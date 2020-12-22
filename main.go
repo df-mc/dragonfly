@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly"
 	"github.com/df-mc/dragonfly/dragonfly/player/chat"
+	"github.com/df-mc/dragonfly/dragonfly/world/generator"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -31,6 +32,7 @@ func main() {
 	}
 
 	server := dragonfly.New(&config, log)
+	server.World().Generator(generator.NewVanillaGenerator(1, 2, 2))
 	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)

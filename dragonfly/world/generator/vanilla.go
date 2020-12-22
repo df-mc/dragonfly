@@ -24,7 +24,7 @@ func NewVanillaGenerator(seed int64, alpha, beta float64) (v Vanilla) {
 }
 
 // GenerateChunk ...
-func (v *Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
+func (v Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			chunk.SetRuntimeID(x, 0, z, 0, bedrock)

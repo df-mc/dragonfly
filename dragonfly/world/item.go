@@ -58,6 +58,7 @@ var runtimeToOldIds = map[int32]int32{}
 var oldIdsToRuntime = map[int32]int32{}
 
 // loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
+//lint:ignore U1000 Function is used using compiler directives.
 func loadItemEntries() error {
 	var itemJsonEntries []itemJsonEntry
 	err := json.Unmarshal([]byte(resource.ItemEntries), &itemJsonEntries)
