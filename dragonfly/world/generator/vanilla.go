@@ -16,13 +16,15 @@ var (
 type Vanilla struct {
 	Smoothness, ForestSize, ChanceForTrees float64
 
-	TerrainPerlin *perlin.Perlin
-	TreesPerlin   *perlin.Perlin
+	TerrainPerlin       *perlin.Perlin
+	TreesPerlin         *perlin.Perlin
+	TreeFrequencyPerlin *perlin.Perlin
 }
 
 func NewVanillaGenerator(seed int64, alpha, beta, smoothness, forestsize, chancefortrees float64) (v Vanilla) {
 	v.TerrainPerlin = perlin.NewPerlin(alpha, beta, 2, seed)
 	v.TreesPerlin = perlin.NewPerlin(alpha, beta, 2, seed/2)
+	v.TreeFrequencyPerlin = perlin.NewPerlin(alpha, beta, 2, seed/3)
 	v.ForestSize = forestsize
 	v.Smoothness = smoothness
 	v.ChanceForTrees = chancefortrees
@@ -58,9 +60,9 @@ func (v Vanilla) GrassLevel(x, z uint8, pos world.ChunkPos) uint8 {
 func (v Vanilla) GenerateTrees(pos world.ChunkPos, chunk *chunk.Chunk) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			chance := v.TreesPerlin.Noise2D((float64(pos.X())+float64(x))/v.ForestSize, (float64(pos.Z())+float64(z))/v.ForestSize)
-			randomChance := rand.Float64()
-			if chance < v.ChanceForTrees && randomChance < .1 {
+			chanceForTreeLocation := v.TreesPerlin.Noise2D((float64(pos.X())+float64(x))/v.ForestSize, (float64(pos.Z())+float64(z))/v.ForestSize)
+			chanceForTree := v.TreeFrequencyPerlin.Noise2D(((float64(pos.X())+float64(x))+chanceForTreeLocation)/v.ForestSize, ((float64(pos.Z())+float64(z))+chanceForTreeLocation)/v.ForestSize)
+			if chanceForTreeLocation < v.ChanceForTrees && chanceForTree < v.ChanceForTrees {
 				v.GenerateTree(x, v.GrassLevel(x, z, pos)+1, z, chunk)
 			}
 		}
