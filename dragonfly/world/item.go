@@ -56,6 +56,8 @@ var names = map[int32]string{}
 
 //lint:ignore U1000 Map is used using compiler directives.
 var runtimeToOldIds = map[int32]ItemEntry{}
+
+//lint:ignore U1000 Map is used using compiler directives.
 var oldIdsToRuntime = map[ItemEntry]int32{}
 
 // loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
