@@ -44,8 +44,13 @@ func (v Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 			for y := uint8(1); y < max; y++ {
 				chunk.SetRuntimeID(x, y, z, 0, stone)
 			}
-			chunk.SetRuntimeID(x, max+1, z, 0, dirt)
-			chunk.SetRuntimeID(x, max+2, z, 0, dirt)
+
+			dirtLevel := max
+			for ; dirtLevel < max+2; dirtLevel++ {
+				chunk.SetRuntimeID(x, dirtLevel, z, 0, dirt)
+			}
+
+			chunk.SetRuntimeID(x, dirtLevel, z, 0, grass)
 		}
 	}
 	v.GenerateTrees(pos, chunk)
@@ -58,21 +63,16 @@ func (v Vanilla) GrassLevel(x, z uint8, pos world.ChunkPos) uint8 {
 func (v Vanilla) GenerateTrees(pos world.ChunkPos, chunk *chunk.Chunk) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			chance := v.TreesPerlin.Noise2D((float64(pos.X())+float64(x))/v.ForestSize, (float64(pos.X())+float64(x))/v.ForestSize)
+			chance := v.TreesPerlin.Noise2D((float64(pos.X())+float64(x))/v.ForestSize, (float64(pos.Z())+float64(z))/v.ForestSize)
 
 			if chance < v.ChanceForTrees {
 				v.GenerateTree(x, v.GrassLevel(x, z, pos), z, chunk)
 			}
 		}
 	}
-	v.GenerateTrees(pos, chunk)
 }
 
-func (v Vanilla) GenerateTree(X, Y, Z uint8, chunk *chunk.Chunk) {
-	var x, y, z uint8
-	x = X % 16
-	y = Y % 16
-	z = Z % 16
+func (v Vanilla) GenerateTree(x, y, z uint8, chunk *chunk.Chunk) {
 	max := y + 3 + uint8(rand.Intn(3))
 	for y < max {
 		chunk.SetRuntimeID(x, y, z, 0, log)

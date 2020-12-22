@@ -32,7 +32,7 @@ func main() {
 	}
 
 	server := dragonfly.New(&config, log)
-	server.World().Generator(generator.NewVanillaGenerator(1, 2, 2))
+	server.World().Generator(generator.NewVanillaGenerator(112132124, 2, 2, 50, 100, 0.01))
 	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
