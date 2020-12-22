@@ -23,7 +23,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -292,7 +291,6 @@ func (server *Server) startListening() error {
 	}()
 
 	cfg := minecraft.ListenConfig{
-		ErrorLog:               log.New(w, "", 0),
 		MaximumPlayers:         server.c.Server.MaximumPlayers,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,

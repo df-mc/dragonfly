@@ -37,8 +37,8 @@ type itemJsonEntry struct {
 	OldID   int32 `json:"oldId,omitempty"`
 }
 
-// itemEntry holds the ID and Meta for an item translation.
-type itemEntry struct {
+// ItemEntry holds the ID and Meta for an item translation.
+type ItemEntry struct {
 	ID   int32
 	Meta int16
 }
@@ -60,8 +60,8 @@ func RegisterItem(name string, item Item) {
 var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
-var runtimeToOldIds = map[int32]itemEntry{}
-var oldIdsToRuntime = map[itemEntry]int32{}
+var runtimeToOldIds = map[int32]ItemEntry{}
+var oldIdsToRuntime = map[ItemEntry]int32{}
 
 // loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 func loadItemEntries() error {
@@ -71,7 +71,7 @@ func loadItemEntries() error {
 		return err
 	}
 	for _, jsonEntry := range itemJsonEntries {
-		entry := itemEntry{Meta: jsonEntry.OldData}
+		entry := ItemEntry{Meta: jsonEntry.OldData}
 
 		if jsonEntry.OldID == 0 {
 			entry.ID = jsonEntry.ID
@@ -88,12 +88,12 @@ func loadItemEntries() error {
 // runtimeById returns the runtime ID for an item by it's old ID.
 //lint:ignore U1000 Function is used using compiler directives.
 func runtimeById(id int32, meta int16) int32 {
-	return oldIdsToRuntime[itemEntry{ID: id, Meta: meta}]
+	return oldIdsToRuntime[ItemEntry{ID: id, Meta: meta}]
 }
 
 // idByRuntime returns the old ID for an item by it's runtime ID.
 //lint:ignore U1000 Function is used using compiler directives.
-func idByRuntime(runtimeId int32) itemEntry {
+func idByRuntime(runtimeId int32) ItemEntry {
 	return runtimeToOldIds[runtimeId]
 }
 
