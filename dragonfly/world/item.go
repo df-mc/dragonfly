@@ -32,9 +32,15 @@ type TickerBlock interface {
 
 // itemJsonEntry contains the the ID and meta for versions prior to 1.16.100/1.16.200, and the new runtime ID for the data.
 type itemJsonEntry struct {
-	OldData int32 `json:"oldData,omitempty"`
+	OldData int16 `json:"oldData,omitempty"`
 	ID      int32 `json:"id"`
 	OldID   int32 `json:"oldId,omitempty"`
+}
+
+// ItemEntry holds the ID and Meta for an item translation.
+type ItemEntry struct {
+	ID   int32
+	Meta int16
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
@@ -54,8 +60,8 @@ func RegisterItem(name string, item Item) {
 var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
-var runtimeToOldIds = map[int32]int32{}
-var oldIdsToRuntime = map[int32]int32{}
+var runtimeToOldIds = map[int32]ItemEntry{}
+var oldIdsToRuntime = map[ItemEntry]int32{}
 
 // loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 //lint:ignore U1000 Function is used using compiler directives.
@@ -66,14 +72,16 @@ func loadItemEntries() error {
 		return err
 	}
 	for _, jsonEntry := range itemJsonEntries {
-		var oldId int32
+		entry := ItemEntry{Meta: jsonEntry.OldData}
+
 		if jsonEntry.OldID == 0 {
-			oldId = (jsonEntry.ID << 4) | jsonEntry.OldData
+			entry.ID = jsonEntry.ID
 		} else {
-			oldId = (jsonEntry.OldID << 4) | jsonEntry.OldData
+			entry.ID = jsonEntry.OldID
 		}
-		oldIdsToRuntime[oldId] = jsonEntry.ID
-		runtimeToOldIds[jsonEntry.ID] = oldId
+
+		oldIdsToRuntime[entry] = jsonEntry.ID
+		runtimeToOldIds[jsonEntry.ID] = entry
 	}
 	return nil
 }
@@ -81,13 +89,12 @@ func loadItemEntries() error {
 // runtimeById returns the runtime ID for an item by it's old ID.
 //lint:ignore U1000 Function is used using compiler directives.
 func runtimeById(id int32, meta int16) int32 {
-	oldId := (id << 4) | int32(meta)
-	return oldIdsToRuntime[oldId]
+	return oldIdsToRuntime[ItemEntry{ID: id, Meta: meta}]
 }
 
 // idByRuntime returns the old ID for an item by it's runtime ID.
 //lint:ignore U1000 Function is used using compiler directives.
-func idByRuntime(runtimeId int32) int32 {
+func idByRuntime(runtimeId int32) ItemEntry {
 	return runtimeToOldIds[runtimeId]
 }
 

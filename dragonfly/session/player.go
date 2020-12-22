@@ -533,7 +533,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	id, meta := it.Item().EncodeItem()
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
-			NetworkID:     id,
+			NetworkID:     world_runtimeById(id, meta),
 			MetadataValue: meta,
 		},
 		Count:   int16(it.Count()),
@@ -551,7 +551,8 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
-	t, ok := world_itemByID(it.NetworkID, it.MetadataValue)
+	entry := world_idByRuntime(it.NetworkID, it.MetadataValue)
+	t, ok := world_itemByID(entry.ID, entry.Meta)
 	if !ok {
 		t = block.Air{}
 	}
@@ -591,6 +592,14 @@ const (
 //go:linkname world_itemByID github.com/df-mc/dragonfly/dragonfly/world.itemByID
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
+
+//go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
+//noinspection ALL
+func world_runtimeById(id int32, meta int16) int32
+
+//go:linkname world_idByRuntime github.com/df-mc/dragonfly/dragonfly/world.idByRuntime
+//noinspection ALL
+func world_idByRuntime(id int32, meta int16) world.ItemEntry
 
 //go:linkname item_id github.com/df-mc/dragonfly/dragonfly/item.id
 //noinspection ALL
