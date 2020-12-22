@@ -88,6 +88,26 @@ func init() {
 	_ = world.RegisterBlock(InvisibleBedrock{}, world.BlockState{Name: "minecraft:invisibleBedrock"})
 	_ = world.RegisterBlock(NoteBlock{}, world.BlockState{Name: "minecraft:noteblock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
+	for _, w := range wood.All() {
+		if w == wood.Acacia() || w == wood.DarkOak() {
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.X}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": "1"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Y}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": "0"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Z}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": "2"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.X}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "1"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Y}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "0"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Z}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "2"}})
+		} else if w == wood.Crimson() || w == wood.Warped() {
+			//TODO: Implement warped wood types
+		} else {
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.X}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": "1"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Y}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": "0"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Z}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": "2"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.X}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "1"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Y}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "0"}})
+			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Z}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "2"}})
+		}
+	}
+
 }
 
 func init() {

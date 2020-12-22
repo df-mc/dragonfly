@@ -3,6 +3,7 @@ package generator
 import (
 	"github.com/aquilax/go-perlin"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"math/rand"
@@ -10,7 +11,7 @@ import (
 
 var (
 	stone, _ = world.BlockRuntimeID(block.Stone{})
-	log, _   = world.BlockRuntimeID(block.CoalBlock{})
+	log, _   = world.BlockRuntimeID(block.Log{Wood: wood.Oak(), Stripped: false, Axis: world.Y})
 )
 
 type Vanilla struct {
