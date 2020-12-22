@@ -60,7 +60,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 	}()
 
 	for _, action := range req.Actions {
-		switch a := action.(type) {
+		switch a := action.Action.(type) {
 		case *protocol.TakeStackRequestAction:
 			err = h.handleTake(a, s)
 		case *protocol.PlaceStackRequestAction:
