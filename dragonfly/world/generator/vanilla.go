@@ -73,7 +73,8 @@ func (v Vanilla) GenerateTree(X, Y, Z uint8, chunk *chunk.Chunk) {
 	x = X % 16
 	y = Y % 16
 	z = Z % 16
-	for y < y+3+uint8(rand.Intn(3)) {
+	max := y + 3 + uint8(rand.Intn(3))
+	for y < max {
 		chunk.SetRuntimeID(x, y, z, 0, log)
 		y++
 	}
