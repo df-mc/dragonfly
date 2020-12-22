@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"math/rand"
 )
 
 var (
@@ -13,14 +14,19 @@ var (
 )
 
 type Vanilla struct {
+	Seed                                   int64
 	Smoothness, ForestSize, ChanceForTrees float64
 
 	TerrainPerlin *perlin.Perlin
+
+	sRand *rand.Rand
 }
 
 func NewVanillaGenerator(seed int64, alpha, beta, smoothness float64) (v Vanilla) {
-	v.TerrainPerlin = perlin.NewPerlin(alpha, beta, 2, seed)
+	v.Seed = seed
+	v.TerrainPerlin = perlin.NewPerlin(alpha, beta, 2, v.Seed)
 	v.Smoothness = smoothness
+	v.sRand = rand.New(rand.NewSource(v.Seed))
 	return
 }
 
