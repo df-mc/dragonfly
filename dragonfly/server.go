@@ -115,6 +115,9 @@ func (server *Server) Run() error {
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	item_registerVanillaCreativeItems()
+	if err := world_loadItemEntries(); err != nil {
+		return err
+	}
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -136,6 +139,9 @@ func (server *Server) Start() error {
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	item_registerVanillaCreativeItems()
+	if err := world_loadItemEntries(); err != nil {
+		return err
+	}
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -453,6 +459,10 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 //go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL
 func item_registerVanillaCreativeItems()
+
+//go:linkname world_loadItemEntries github.com/df-mc/dragonfly/dragonfly/world.loadItemEntries
+//noinspection all
+func world_loadItemEntries() error
 
 //go:linkname world_itemNames github.com/df-mc/dragonfly/dragonfly/world.itemNames
 //noinspection all

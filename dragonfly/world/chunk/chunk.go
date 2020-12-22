@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var AirRuntimeID uint32 = 134
+var AirRuntimeID uint32
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
