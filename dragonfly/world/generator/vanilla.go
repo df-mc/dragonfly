@@ -3,7 +3,6 @@ package generator
 import (
 	"github.com/aquilax/go-perlin"
 	"github.com/df-mc/dragonfly/dragonfly/block"
-	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"math/rand"
@@ -11,6 +10,7 @@ import (
 
 var (
 	stone, _ = world.BlockRuntimeID(block.Stone{})
+	log, _   = world.BlockRuntimeID(block.CoalBlock{})
 )
 
 type Vanilla struct {
@@ -19,11 +19,6 @@ type Vanilla struct {
 	TerrainPerlin *perlin.Perlin
 	TreesPerlin   *perlin.Perlin
 }
-
-var (
-	log, _    = world.BlockRuntimeID(block.Log{Wood: wood.Oak()})
-	leaves, _ = world.BlockRuntimeID(block.Leaves{Wood: wood.Oak()})
-)
 
 func NewVanillaGenerator(seed int64, alpha, beta, smoothness, forestsize, chancefortrees float64) (v Vanilla) {
 	v.TerrainPerlin = perlin.NewPerlin(alpha, beta, 2, seed)
@@ -64,8 +59,8 @@ func (v Vanilla) GenerateTrees(pos world.ChunkPos, chunk *chunk.Chunk) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			chance := v.TreesPerlin.Noise2D((float64(pos.X())+float64(x))/v.ForestSize, (float64(pos.Z())+float64(z))/v.ForestSize)
-
-			if chance < v.ChanceForTrees {
+			randomChance := rand.Float64()
+			if chance < v.ChanceForTrees && randomChance < .1 {
 				v.GenerateTree(x, v.GrassLevel(x, z, pos), z, chunk)
 			}
 		}
