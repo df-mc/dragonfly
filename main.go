@@ -32,7 +32,8 @@ func main() {
 	}
 
 	server := dragonfly.New(&config, log)
-	server.World().Generator(generator.NewVanillaGenerator(112132124, 2, 2, 50, 100, 0.01))
+	// The farther away the number, the more round the noise is
+	server.World().Generator(generator.NewVanillaGenerator(11213212, 7, 6, 75))
 	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
