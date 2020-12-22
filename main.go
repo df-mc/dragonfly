@@ -32,8 +32,9 @@ func main() {
 	}
 
 	server := dragonfly.New(&config, log)
-	// The farther away the number, the more round the noise is
-	server.World().Generator(generator.NewVanillaGenerator(11213212, 7, 6, 75))
+	// Alpha increases increase the overall highs and lows
+	// Beta controls how close the highs and lows are together going downwards
+	server.World().Generator(generator.NewVanillaGenerator(11213212, 5, 6, 75, .1, .007))
 	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)

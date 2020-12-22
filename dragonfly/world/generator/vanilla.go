@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
+	"math/rand"
 )
 
 var (
@@ -13,14 +14,24 @@ var (
 )
 
 type Vanilla struct {
-	Smoothness, ForestSize, ChanceForTrees float64
+	Smoothness, ForestFrequency, ChanceForTrees float64
 
 	TerrainPerlin *perlin.Perlin
+	BiomePerlin   *perlin.Perlin
+	TreeRand      *rand.Rand
 }
 
-func NewVanillaGenerator(seed int64, alpha, beta, smoothness float64) (v Vanilla) {
+const (
+	HEIGHT = 15
+)
+
+func NewVanillaGenerator(seed int64, alpha, beta, smoothness, forestSize, chanceForTree float64) (v Vanilla) {
 	v.TerrainPerlin = perlin.NewPerlin(alpha, beta, 2, seed)
 	v.Smoothness = smoothness
+	v.BiomePerlin = perlin.NewPerlin(2, 2, 2, seed/2)
+	v.TreeRand = rand.New(rand.NewSource(seed / 3))
+	v.ForestFrequency = forestSize
+	v.ChanceForTrees = chanceForTree
 	return
 }
 
@@ -29,7 +40,7 @@ func (v Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			chunk.SetRuntimeID(x, 0, z, 0, bedrock)
-			max := uint8(52 + (v.TerrainPerlin.Noise2D(((16*(float64(pos.X())))+float64(x))/v.Smoothness, ((16*(float64(pos.Z())))+float64(z))/v.Smoothness) * 15))
+			max := uint8(52 + (v.Perlin2DAt(x, z, v.Smoothness, pos, v.TerrainPerlin) * HEIGHT))
 			for y := uint8(1); y < max; y++ {
 				chunk.SetRuntimeID(x, y, z, 0, stone)
 			}
@@ -42,12 +53,38 @@ func (v Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 			chunk.SetRuntimeID(x, dirtLevel, z, 0, grass)
 		}
 	}
+	chance := v.BiomePerlin.Noise2D(float64(pos.X())/5, float64(pos.Z())/5)
+
+	if chance < v.ForestFrequency {
+		v.GenerateTrees(chunk, pos)
+	}
 }
 
 func (v Vanilla) GrassLevel(x, z uint8, pos world.ChunkPos) uint8 {
-	return uint8(52+(v.TerrainPerlin.Noise2D(((16*(float64(pos.X())))+float64(x))/v.Smoothness, ((16*(float64(pos.Z())))+float64(z))/v.Smoothness)*15)) + 2
+	return uint8(52 + (v.Perlin2DAt(x, z, v.Smoothness, pos, v.TerrainPerlin) * HEIGHT) + 2)
 }
 
-func (v Vanilla) GenerateWater(pos world.ChunkPos, chunk *chunk.Chunk) {
+func (v Vanilla) GenerateTrees(chunk *chunk.Chunk, pos world.ChunkPos) {
+	for x := uint8(0); x < 16; x++ {
+		for z := uint8(0); z < 16; z++ {
+			h := v.TreeRand.Float64()
+			//TODO: Also take into account if there's another tree growing nearby
+			if h < v.ChanceForTrees {
+				v.GenerateTree(x, z, chunk, v.GrassLevel(x, z, pos))
+			}
+		}
+	}
+}
 
+func (v Vanilla) GenerateTree(x, z uint8, chunk *chunk.Chunk, grassLevel uint8) {
+	max := 3 + uint8(rand.Intn(3)) + grassLevel
+
+	for i := grassLevel + 1; i < max; i++ {
+		chunk.SetRuntimeID(x, i, z, 0, log)
+	}
+}
+
+func (v Vanilla) Perlin2DAt(x, z uint8, smoothness float64, pos world.ChunkPos, perlin *perlin.Perlin) float64 {
+	// We add .4 because the range is -.4 to .4
+	return perlin.Noise2D((float64(pos.X()*16)+float64(x))/smoothness, (float64(pos.Z()*16)+float64(z))/smoothness) + .4
 }
