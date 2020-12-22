@@ -52,7 +52,7 @@ func (v Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 }
 
 func (v Vanilla) GrassLevel(x, z uint8, pos world.ChunkPos) uint8 {
-	return uint8(52+(v.TerrainPerlin.Noise2D(((16*(float64(pos.X())))+float64(x))/v.Smoothness, ((16*(float64(pos.Z())))+float64(z))/v.Smoothness)*15)) + 2
+	return uint8(52+(v.TerrainPerlin.Noise2D(((16*(float64(pos.X())))+float64(x))/v.Smoothness, ((16*(float64(pos.Z())))+float64(z))/v.Smoothness)*15)) + 3
 }
 
 func (v Vanilla) GenerateTrees(pos world.ChunkPos, chunk *chunk.Chunk) {
