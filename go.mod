@@ -3,7 +3,6 @@ module github.com/df-mc/dragonfly
 go 1.13
 
 require (
-	github.com/aquilax/go-perlin v0.0.0-20191229124216-0af9ce917c28
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/goleveldb v1.1.8
 	github.com/go-gl/mathgl v1.0.0
