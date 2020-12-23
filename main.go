@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly"
 	"github.com/df-mc/dragonfly/dragonfly/player/chat"
+	"github.com/df-mc/dragonfly/dragonfly/world/generator"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -31,6 +32,9 @@ func main() {
 	}
 
 	server := dragonfly.New(&config, log)
+	// Alpha increases increase the overall highs and lows
+	// Beta controls how close the highs and lows are together going downwards
+	server.World().Generator(generator.NewVanillaGenerator(11213212, 5, 6, 75, .1, .007))
 	server.CloseOnProgramEnd()
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
