@@ -89,7 +89,7 @@ func init() {
 	for _, c := range colour.All() {
 		_ = world.RegisterBlock(Carpet{Colour: c}, world.BlockState{Name: "minecraft:carpet", Properties: map[string]interface{}{"color": c.String()}})
 		_ = world.RegisterBlock(Concrete{Colour: c}, world.BlockState{Name: "minecraft:concrete", Properties: map[string]interface{}{"color": c.String()}})
-		_ = world.RegisterBlock(ConcretePowder{Colour: c}, world.BlockState{Name: "minecraft:concretePowder", Properties: map[string]interface{}{"color": c.String()}})
+		_ = world.RegisterBlock(ConcretePowder{Colour: c}, world.BlockState{Name: "minecraft:concrete_powder", Properties: map[string]interface{}{"color": c.String()}})
 		_ = world.RegisterBlock(Wool{Colour: c}, world.BlockState{Name: "minecraft:wool", Properties: map[string]interface{}{"color": c.String()}})
 		colourName := c.String()
 		if c == colour.LightGrey() {
@@ -169,7 +169,7 @@ func init() {
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: wood.Oak(), Stripped: true})
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
-		world.RegisterItem("minecraft:concretePowder", ConcretePowder{Colour: c})
+		world.RegisterItem("minecraft:concrete_powder", ConcretePowder{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
 		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:wool", Wool{Colour: c})
@@ -257,7 +257,7 @@ func init() {
 	world.RegisterItem("minecraft:dark_oak_fence_gate", WoodFenceGate{Wood: wood.DarkOak()})
 	world.RegisterItem("minecraft:crimson_fence_gate", WoodFenceGate{Wood: wood.Crimson()})
 	world.RegisterItem("minecraft:warped_fence_gate", WoodFenceGate{Wood: wood.Warped()})
-	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:trapdoor", WoodTrapdoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:jungle_trapdoor", WoodTrapdoor{Wood: wood.Jungle()})
