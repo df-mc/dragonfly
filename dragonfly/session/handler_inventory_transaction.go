@@ -18,11 +18,6 @@ type InventoryTransactionHandler struct {
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.InventoryTransaction)
 
-	for _, action := range pk.Actions {
-		action.OldItem.NetworkID = world_runtimeById(action.OldItem.NetworkID, action.OldItem.MetadataValue)
-		action.NewItem.NetworkID = world_runtimeById(action.NewItem.NetworkID, action.NewItem.MetadataValue)
-	}
-
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
 		h.resendInventories(s)
