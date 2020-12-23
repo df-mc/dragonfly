@@ -3,6 +3,7 @@ package generator
 import (
 	"github.com/aquilax/go-perlin"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
@@ -10,8 +11,9 @@ import (
 )
 
 var (
-	stone, _ = world.BlockRuntimeID(block.Stone{})
-	log, _   = world.BlockRuntimeID(block.Log{Wood: wood.Oak(), Stripped: false, Axis: world.Y})
+	stone, _     = world.BlockRuntimeID(block.Stone{})
+	log, _       = world.BlockRuntimeID(block.Log{Wood: wood.Oak(), Stripped: false, Axis: world.Y})
+	tallGrass, _ = world.BlockRuntimeID(block.TallGrass{Type: grass.Tall()})
 )
 
 type Vanilla struct {
@@ -51,7 +53,7 @@ func (v Vanilla) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 				chunk.SetRuntimeID(x, dirtLevel, z, 0, dirt)
 			}
 
-			chunk.SetRuntimeID(x, dirtLevel, z, 0, grass)
+			chunk.SetRuntimeID(x, dirtLevel, z, 0, grassBlock)
 		}
 	}
 	chance := v.BiomePerlin.Noise2D(float64(pos.X())/5, float64(pos.Z())/5)
