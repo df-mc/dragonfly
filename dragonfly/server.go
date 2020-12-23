@@ -113,10 +113,10 @@ func (server *Server) Run() error {
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
-	item_registerVanillaCreativeItems()
 	if err := world_loadItemEntries(); err != nil {
 		return err
 	}
+	item_registerVanillaCreativeItems()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -135,11 +135,12 @@ func (server *Server) Start() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
+	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
-	item_registerVanillaCreativeItems()
 	if err := world_loadItemEntries(); err != nil {
 		return err
 	}
+	item_registerVanillaCreativeItems()
 
 	if err := server.startListening(); err != nil {
 		return err

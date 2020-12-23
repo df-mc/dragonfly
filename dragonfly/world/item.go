@@ -30,13 +30,6 @@ type TickerBlock interface {
 	Tick(currentTick int64, pos BlockPos, w *World)
 }
 
-// itemJsonEntry contains the the ID and meta for versions prior to 1.16.100/1.16.200, and the new runtime ID for the data.
-type itemJsonEntry struct {
-	OldData int16 `json:"oldData,omitempty"`
-	ID      int32 `json:"id"`
-	OldID   int32 `json:"oldId,omitempty"`
-}
-
 // ItemEntry holds the ID and Meta for an item translation.
 type ItemEntry struct {
 	ID   int32
@@ -60,13 +53,21 @@ func RegisterItem(name string, item Item) {
 var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
+
+//lint:ignore U1000 Map is used using compiler directives.
 var runtimeToOldIds = map[int32]ItemEntry{}
+
+//lint:ignore U1000 Map is used using compiler directives.
 var oldIdsToRuntime = map[ItemEntry]int32{}
 
 // loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 //lint:ignore U1000 Function is used using compiler directives.
 func loadItemEntries() error {
-	var itemJsonEntries []itemJsonEntry
+	var itemJsonEntries []struct {
+		OldData int16 `json:"oldData,omitempty"`
+		ID      int32 `json:"id"`
+		OldID   int32 `json:"oldId,omitempty"`
+	}
 	err := json.Unmarshal([]byte(resource.ItemEntries), &itemJsonEntries)
 	if err != nil {
 		return err
