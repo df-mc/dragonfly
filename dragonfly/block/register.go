@@ -85,8 +85,7 @@ func init() {
 	_ = world.RegisterBlock(InvisibleBedrock{}, world.BlockState{Name: "minecraft:invisibleBedrock"})
 	_ = world.RegisterBlock(NoteBlock{}, world.BlockState{Name: "minecraft:noteblock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
-
-	// Color Block implementations
+  
 	for _, c := range colour.All() {
 		_ = world.RegisterBlock(Carpet{Colour: c}, world.BlockState{Name: "minecraft:carpet", Properties: map[string]interface{}{"color": c.String()}})
 		_ = world.RegisterBlock(Concrete{Colour: c}, world.BlockState{Name: "minecraft:concrete", Properties: map[string]interface{}{"color": c.String()}})
