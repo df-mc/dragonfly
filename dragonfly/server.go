@@ -448,7 +448,7 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	for runtimeID, name := range world_itemNames() {
 		entries = append(entries, protocol.ItemEntry{
 			Name:      name,
-			RuntimeID: int16(runtimeID),
+			RuntimeID: int16(world_runtimeById(runtimeID, 0)),
 		})
 	}
 	return
@@ -461,6 +461,10 @@ func item_registerVanillaCreativeItems()
 //go:linkname world_loadItemEntries github.com/df-mc/dragonfly/dragonfly/world.loadItemEntries
 //noinspection all
 func world_loadItemEntries() error
+
+//go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
+//noinspection ALL
+func world_runtimeById(id int32, meta int16) int32
 
 //go:linkname world_itemNames github.com/df-mc/dragonfly/dragonfly/world.itemNames
 //noinspection all
