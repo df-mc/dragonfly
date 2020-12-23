@@ -107,31 +107,28 @@ func init() {
 		_ = world.RegisterBlock(StainedTerracotta{Colour: c}, world.BlockState{Name: "minecraft:stained_hardened_clay", Properties: map[string]interface{}{"color": colourName}})
 	}
 
-	// Wood Block implementations
 	for _, w := range wood.All() {
 		if w == wood.Acacia() || w == wood.DarkOak() {
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.X}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": "1"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Y}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": "0"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Z}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": "2"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.X}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "1"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Y}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "0"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Z}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "2"}})
+			for i := 0; i < 3; i++ {
+				_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Axis(i)}, world.BlockState{Name: "minecraft:log2", Properties: map[string]interface{}{"new_log_type": w.String(), "pillar_axis": world.Axis(i).String()}, Version: 17825808})
+				_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Axis(i)}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": world.Axis(i).String()}, Version: 17825808})
+			}
+			_ = world.RegisterBlock(Planks{Wood: w}, world.BlockState{Name: "minecraft:planks", Properties: map[string]interface{}{"wood_type": w.String()}, Version: 17825808})
 		} else if w == wood.Crimson() || w == wood.Warped() {
 			//TODO: Implement warped wood types
 		} else {
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.X}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": "1"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Y}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": "0"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Z}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": "2"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.X}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "1"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Y}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "0"}})
-			_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Z}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": "2"}})
+			for i := 0; i < 3; i++ {
+				_ = world.RegisterBlock(Log{Wood: w, Stripped: false, Axis: world.Axis(i)}, world.BlockState{Name: "minecraft:log", Properties: map[string]interface{}{"old_log_type": w.String(), "pillar_axis": world.Axis(i).String()}, Version: 17825808})
+				_ = world.RegisterBlock(Log{Wood: w, Stripped: true, Axis: world.Axis(i)}, world.BlockState{Name: "minecraft:stripped_" + w.String() + "_log", Properties: map[string]interface{}{"pillar_axis": world.Axis(i).String()}, Version: 17825808})
+			}
+			_ = world.RegisterBlock(Planks{Wood: w}, world.BlockState{Name: "minecraft:planks", Properties: map[string]interface{}{"wood_type": w.String()}, Version: 17825808})
 		}
 	}
 
+	// TODO: check chest todo
 	for _, d := range world.AllDirections() {
-		_ = world.RegisterBlock(Chest{Facing: d}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}})
+		_ = world.RegisterBlock(Chest{Facing: d}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}, Version: 17825808})
 	}
-
 }
 
 func init() {
