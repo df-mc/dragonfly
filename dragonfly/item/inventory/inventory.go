@@ -272,16 +272,16 @@ func (inv *Inventory) Clear() {
 
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
-func (inv *Inventory) setItem(slot int, item item.Stack) func() {
-	if !inv.canAdd(item, slot) {
+func (inv *Inventory) setItem(slot int, it item.Stack) func() {
+	if !inv.canAdd(it, slot) {
 		return func() {}
 	}
-	if item.Count() > item.MaxCount() {
-		item = item.Grow(item.MaxCount() - item.Count())
+	if it.Count() > it.MaxCount() {
+		it = it.Grow(it.MaxCount() - it.Count())
 	}
-	inv.slots[slot] = item
+	inv.slots[slot] = it
 	return func() {
-		inv.f(slot, item)
+		inv.f(slot, it)
 	}
 }
 
