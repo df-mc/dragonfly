@@ -86,6 +86,7 @@ func init() {
 	_ = world.RegisterBlock(NoteBlock{}, world.BlockState{Name: "minecraft:noteblock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
 
+	// Colour block implementations
 	for _, c := range colour.All() {
 		_ = world.RegisterBlock(Carpet{Colour: c}, world.BlockState{Name: "minecraft:carpet", Properties: map[string]interface{}{"color": c.String()}})
 		_ = world.RegisterBlock(Concrete{Colour: c}, world.BlockState{Name: "minecraft:concrete", Properties: map[string]interface{}{"color": c.String()}})
@@ -106,6 +107,7 @@ func init() {
 		_ = world.RegisterBlock(StainedTerracotta{Colour: c}, world.BlockState{Name: "minecraft:stained_hardened_clay", Properties: map[string]interface{}{"color": colourName}})
 	}
 
+	// Wood implementation
 	for _, w := range wood.All() {
 		if w == wood.Acacia() || w == wood.DarkOak() {
 			for i := 0; i < 3; i++ {
@@ -134,9 +136,15 @@ func init() {
 		}
 	}
 
-	// TODO: check chest todo
+	// Directional block implementation
 	for _, d := range world.AllDirections() {
 		_ = world.RegisterBlock(Chest{Facing: d}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}, Version: 17825808})
+	}
+
+	// Fire implementation
+	for f := 0; f < 16; f++ {
+		_ = world.RegisterBlock(Fire{Age: f, Type: fire.Normal()}, world.BlockState{Name: "minecraft:fire", Properties: map[string]interface{}{"age": f}})
+		_ = world.RegisterBlock(Fire{Age: f, Type: fire.Normal()}, world.BlockState{Name: "minecraft:soul_fire", Properties: map[string]interface{}{"age": f}})
 	}
 }
 
