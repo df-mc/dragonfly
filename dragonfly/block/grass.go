@@ -28,6 +28,10 @@ func (g Grass) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 	for i := 0; i < 4; i++ {
 		spreadPos := pos.Add(world.BlockPos{r.Intn(3) - 1, r.Intn(5) - 3, r.Intn(3) - 1})
 		b := w.Block(spreadPos)
+		bAbove := w.Block(spreadPos.Add(world.BlockPos{0, 1, 0}))
+		if _, ok := bAbove.(Air); !ok {
+			continue
+		}
 		if dirt, ok := b.(Dirt); !ok || dirt.Coarse {
 			continue
 		}
