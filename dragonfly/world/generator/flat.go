@@ -11,9 +11,9 @@ import (
 type Flat struct{}
 
 var (
-	grass, _   = world.BlockRuntimeID(block.Grass{})
-	dirt, _    = world.BlockRuntimeID(block.Dirt{})
-	bedrock, _ = world.BlockRuntimeID(block.Bedrock{})
+	grassBlock, _ = world.BlockRuntimeID(block.Grass{})
+	dirt, _       = world.BlockRuntimeID(block.Dirt{})
+	bedrock, _    = world.BlockRuntimeID(block.Bedrock{})
 )
 
 // GenerateChunk ...
@@ -23,7 +23,7 @@ func (Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 			chunk.SetRuntimeID(x, 0, z, 0, bedrock)
 			chunk.SetRuntimeID(x, 1, z, 0, dirt)
 			chunk.SetRuntimeID(x, 2, z, 0, dirt)
-			chunk.SetRuntimeID(x, 3, z, 0, grass)
+			chunk.SetRuntimeID(x, 3, z, 0, grassBlock)
 		}
 	}
 }
