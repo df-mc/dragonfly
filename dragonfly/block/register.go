@@ -85,6 +85,9 @@ func init() {
 	_ = world.RegisterBlock(InvisibleBedrock{}, world.BlockState{Name: "minecraft:invisibleBedrock"})
 	_ = world.RegisterBlock(NoteBlock{}, world.BlockState{Name: "minecraft:noteblock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
+	_ = world.RegisterBlock(BoneBlock{Axis: world.X}, world.BlockState{Name: "minecraft:bone_block", Properties: map[string]interface{}{"pillar_axis": world.X.String(), "deprecated": int32(0)}})
+	_ = world.RegisterBlock(BoneBlock{Axis: world.Y}, world.BlockState{Name: "minecraft:bone_block", Properties: map[string]interface{}{"pillar_axis": world.Y.String(), "deprecated": int32(0)}})
+	_ = world.RegisterBlock(BoneBlock{Axis: world.Z}, world.BlockState{Name: "minecraft:bone_block", Properties: map[string]interface{}{"pillar_axis": world.Z.String(), "deprecated": int32(0)}})
 
 	// Colour block implementations
 	for _, c := range colour.All() {
@@ -138,6 +141,9 @@ func init() {
 
 	// Directional block implementation
 	for _, d := range world.AllDirections() {
+		for i := 0; i < 3; i++ {
+			_ = world.RegisterBlock(CocoaBean{Age: i, Facing: d}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": i, "direction": int32(d)}})
+		}
 		_ = world.RegisterBlock(Chest{Facing: d}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}, Version: 17825808})
 	}
 
@@ -146,6 +152,18 @@ func init() {
 		_ = world.RegisterBlock(Fire{Age: f, Type: fire.Normal()}, world.BlockState{Name: "minecraft:fire", Properties: map[string]interface{}{"age": f}})
 		_ = world.RegisterBlock(Fire{Age: f, Type: fire.Normal()}, world.BlockState{Name: "minecraft:soul_fire", Properties: map[string]interface{}{"age": f}})
 	}
+
+	// Beetroot/Carrot implementation
+	for g := 0; g < 8; g++ {
+		_ = world.RegisterBlock(BeetrootSeeds{}, world.BlockState{Name: "minecraft:beetroot", Properties: map[string]interface{}{"growth": g}})
+		_ = world.RegisterBlock(Carrot{}, world.BlockState{Name: "minecraft:carrot", Properties: map[string]interface{}{"growth": g}})
+	}
+
+	// Cake implementation
+	for b := 0; b < 7; b++ {
+		_ = world.RegisterBlock(Cake{Bites: b}, world.BlockState{Name: "minecraft:cake", Properties: map[string]interface{}{"bite_counter": b}})
+	}
+
 }
 
 func init() {
