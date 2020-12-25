@@ -1,5 +1,5 @@
 <p align="center">
-	<a href="https://github.com/df-mc/dragonfly"><img src="https://github.com/JustTalDevelops/dragonfly/blob/master/assets/dragonfly.png?raw=true"></img></a><br>
+	<a href="https://github.com/df-mc/dragonfly"><img src="https://github.com/JustTalDevelops/dragonfly/blob/master/assets/banner.png?raw=true"></img></a><br>
 	Dragonfly is a server software for Minecraft Bedrock Edition written in Go. It was written with scalability
   and simplicity in mind and aims to make the process of setting up a server and modifying it easy.
 </p>
