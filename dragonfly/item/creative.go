@@ -43,7 +43,7 @@ func registerVanillaCreativeItems() {
 		panic(err)
 	}
 	for _, data := range m {
-		it, found := world_itemByID(world_runtimeById(data.ID, data.Meta), data.Meta)
+		it, found := world_itemByID(data.ID, data.Meta)
 		if !found {
 			// The item wasn't registered, so don't register it as a creative item.
 			continue
@@ -72,6 +72,6 @@ func registerVanillaCreativeItems() {
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
 
-//go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
-//noinspection ALL
-func world_runtimeById(id int32, meta int16) int32
+////go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
+////noinspection ALL
+//func world_runtimeById(id int32, meta int16) int32
