@@ -1,5 +1,5 @@
 <p align="center">
-	<a href="https://github.com/df-mc/dragonfly"><img src="https://github.com/JustTalDevelops/dragonfly/blob/master/assets/dragonfly_final.png?raw=true"></img></a><br>
+	<a href="https://github.com/df-mc/dragonfly"><img src="https://github.com/df-mc/dragonfly/blob/master/assets/dragonfly_final.png?raw=true"></img></a><br>
 	<b>Dragonfly is a server software for Minecraft Bedrock Edition written in Go.</b>
 </p>
 
