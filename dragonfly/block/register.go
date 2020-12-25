@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
-	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
