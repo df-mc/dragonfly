@@ -409,9 +409,8 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 			t = skin.AnimationBody128x128
 		}
 
-		anim := skin.NewAnimation(animation.ImageWidth, animation.ImageHeight, t)
-		//anim.FrameCount = int(animation.Frames)
-		anim.FrameCount = 0 // TODO: Figure out why the fuck the rapid blinking is even happening
+		anim := skin.NewAnimation(animation.ImageWidth, animation.ImageHeight, animation.AnimationExpression, t)
+		anim.FrameCount = int(animation.Frames)
 		anim.Pix, _ = base64.StdEncoding.DecodeString(animation.Image)
 
 		playerSkin.Animations = append(playerSkin.Animations, anim)

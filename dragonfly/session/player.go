@@ -418,6 +418,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		case skin.AnimationBody128x128:
 			protocolAnim.AnimationType = protocol.SkinAnimationBody128x128
 		}
+		protocolAnim.ExpressionType = uint32(animation.AnimationExpression)
 		animations = append(animations, protocolAnim)
 	}
 
