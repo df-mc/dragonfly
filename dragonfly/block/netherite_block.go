@@ -15,7 +15,7 @@ type NetheriteBlock struct {
 // BreakInfo ...
 func (n NetheriteBlock) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness: 5,
+		Hardness: 50,
 		Harvestable: func(t tool.Tool) bool {
 			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
 		},
