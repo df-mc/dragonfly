@@ -160,6 +160,7 @@ func init() {
 	for g := 0; g < 8; g++ {
 		_ = world.RegisterBlock(BeetrootSeeds{}, world.BlockState{Name: "minecraft:beetroot", Properties: map[string]interface{}{"growth": g}})
 		_ = world.RegisterBlock(Carrot{}, world.BlockState{Name: "minecraft:carrot", Properties: map[string]interface{}{"growth": g}})
+		_ = world.RegisterBlock(MelonSeeds{}, world.BlockState{Name: "minecraft:melon_stem", Properties: map[string]interface{}{"growth": g}})
 	}
 
 	// Cake/Farmland implementation
