@@ -124,7 +124,8 @@ func init() {
 			}
 		} else if w == wood.Crimson() || w == wood.Warped() {
 			_ = world.RegisterBlock(WoodFence{Wood: w}, world.BlockState{Name: "minecraft:" + w.String() + "_fence"})
-			//TODO: Implement warped wood types
+			// TODO (Civiled): Register warped and crimson wood blocks
+			// TODO (Civiled): Register doors
 		} else {
 			_ = world.RegisterBlock(WoodFence{Wood: w}, world.BlockState{Name: "minecraft:fence", Properties: map[string]interface{}{"wood_type": w.String()}})
 			for i := 0; i < 3; i++ {
