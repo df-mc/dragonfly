@@ -50,13 +50,15 @@ func init() {
 	_ = world.RegisterBlock(NetherBrickFence{}, world.BlockState{Name: "minecraft:nether_brick_fence"})
 	_ = world.RegisterBlock(EndStone{}, world.BlockState{Name: "minecraft:end_stone"})
 	_ = world.RegisterBlock(Netherrack{}, world.BlockState{Name: "minecraft:netherrack"})
-	/*world.RegisterBlock(Quartz{}, Quartz{Smooth: true})
-	world.RegisterBlock(ChiseledQuartz{})
-	world.RegisterBlock(QuartzPillar{Axis: world.X}, QuartzPillar{Axis: world.Y}, QuartzPillar{Axis: world.Z})*/
+	_ = world.RegisterBlock(Quartz{Smooth: true}, world.BlockState{Name: "minecraft:quartz_block", Properties: map[string]interface{}{"chisel_type": "smooth", "pillar_axis": "x"}})
+	_ = world.RegisterBlock(Quartz{Smooth: false}, world.BlockState{Name: "minecraft:quartz_block", Properties: map[string]interface{}{"chisel_type": "default", "pillar_axis": "x"}})
+	_ = world.RegisterBlock(ChiseledQuartz{}, world.BlockState{Name: "minecraft:quartz_block", Properties: map[string]interface{}{"chisel_type": "chiseled", "pillar_axis": "x"}})
 	_ = world.RegisterBlock(QuartzBricks{}, world.BlockState{Name: "minecraft:quartz_bricks"})
 	_ = world.RegisterBlock(Clay{}, world.BlockState{Name: "minecraft:clay"})
-	/*world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
-	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})*/
+	_ = world.RegisterBlock(Lantern{Type: fire.Normal(), Hanging: true}, world.BlockState{Name: "minecraft:lantern", Properties: map[string]interface{}{"hanging": true}})
+	_ = world.RegisterBlock(Lantern{Type: fire.Normal(), Hanging: true}, world.BlockState{Name: "minecraft:soul_lantern", Properties: map[string]interface{}{"hanging": true}})
+	_ = world.RegisterBlock(Lantern{Type: fire.Normal(), Hanging: true}, world.BlockState{Name: "minecraft:lantern", Properties: map[string]interface{}{"hanging": false}})
+	_ = world.RegisterBlock(Lantern{Type: fire.Normal(), Hanging: true}, world.BlockState{Name: "minecraft:soul_lantern", Properties: map[string]interface{}{"hanging": false}})
 	_ = world.RegisterBlock(AncientDebris{}, world.BlockState{Name: "minecraft:ancient_debris"})
 	_ = world.RegisterBlock(EmeraldOre{}, world.BlockState{Name: "minecraft:emerald_ore"})
 	_ = world.RegisterBlock(DiamondOre{}, world.BlockState{Name: "minecraft:diamond_ore"})
@@ -71,7 +73,6 @@ func init() {
 	_ = world.RegisterBlock(Sand{Red: true}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "red"}})
 	_ = world.RegisterBlock(Gravel{}, world.BlockState{Name: "minecraft:gravel"})
 	_ = world.RegisterBlock(Bricks{}, world.BlockState{Name: "minecraft:brick_block"})
-	//world.RegisterBlock(allFire()...)
 	_ = world.RegisterBlock(SoulSand{}, world.BlockState{Name: "minecraft:soul_sand"})
 	_ = world.RegisterBlock(Barrier{}, world.BlockState{Name: "minecraft:barrier"})
 	//world.RegisterBlock(Basalt{Axis: world.X}, Basalt{Axis: world.Y}, Basalt{Axis: world.Z}, Basalt{Polished: true, Axis: world.X}, Basalt{Polished: true, Axis: world.Y}, Basalt{Polished: true, Axis: world.Z})
@@ -142,8 +143,10 @@ func init() {
 	// Directional block implementation
 	for _, d := range world.AllDirections() {
 		for i := 0; i < 3; i++ {
+
 			_ = world.RegisterBlock(CocoaBean{Age: i, Facing: d}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": i, "direction": int32(d)}})
 		}
+		_ = world.RegisterBlock(LitPumpkin{Facing: d}, world.BlockState{Name: "minecraft:lit_pumpkin", Properties: map[string]interface{}{"direction": int32(d)}})
 		_ = world.RegisterBlock(Chest{Facing: d}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}, Version: 17825808})
 	}
 
@@ -159,11 +162,21 @@ func init() {
 		_ = world.RegisterBlock(Carrot{}, world.BlockState{Name: "minecraft:carrot", Properties: map[string]interface{}{"growth": g}})
 	}
 
-	// Cake implementation
+	// Cake/Farmland implementation
 	for b := 0; b < 7; b++ {
 		_ = world.RegisterBlock(Cake{Bites: b}, world.BlockState{Name: "minecraft:cake", Properties: map[string]interface{}{"bite_counter": b}})
+		_ = world.RegisterBlock(Farmland{Hydration: b}, world.BlockState{Name: "minecraft:farmland", Properties: map[string]interface{}{"moisturized_amount": b}})
 	}
 
+	// Kelp implementation
+	for k := 0; k < 26; k++ {
+		_ = world.RegisterBlock(Kelp{Age: k}, world.BlockState{Name: "minecraft:kelp", Properties: map[string]interface{}{"kelp_age": k}})
+	}
+
+	// Chiseled quartz implementation
+	for dir := 0; dir < 3; dir++ {
+		_ = world.RegisterBlock(QuartzPillar{Axis: world.Axis(dir)}, world.BlockState{Name: "minecraft:quartz_block", Properties: map[string]interface{}{"pillar_axis": world.Axis(dir), "chisel_type": "lines"}})
+	}
 }
 
 func init() {
