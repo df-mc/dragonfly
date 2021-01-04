@@ -198,7 +198,7 @@ func anyBlockLight(c *Chunk) bool {
 		}
 		for _, layer := range sub.storages {
 			for _, id := range layer.palette.blockRuntimeIDs {
-				if LightBlocks[id] != 0 {
+				if LightBlocks[id] != uint8(AirRuntimeID) {
 					return true
 				}
 			}
@@ -553,7 +553,7 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	}
 	if l == 1 {
 		id := storages[0].RuntimeID(x, y, z)
-		if id == 0 {
+		if id == AirRuntimeID {
 			return 0
 		}
 		return LightBlocks[id]
@@ -561,11 +561,11 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	if l == 2 {
 		var highest uint8
 		id := storages[0].RuntimeID(x, y, z)
-		if id != 0 {
+		if id != AirRuntimeID {
 			highest = LightBlocks[id]
 		}
 		id = storages[1].RuntimeID(x, y, z)
-		if id != 0 {
+		if id != AirRuntimeID {
 			if v := LightBlocks[id]; v > highest {
 				highest = v
 			}
@@ -602,7 +602,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 		var highest uint8
 
 		id := storages[0].RuntimeID(x, y, z)
-		if id != 0 {
+		if id != AirRuntimeID {
 			highest = FilteringBlocks[id]
 		}
 
@@ -618,7 +618,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	var highest uint8
 	for i := range storages {
 		id := storages[i].RuntimeID(x, y, z)
-		if id != 0 {
+		if id != AirRuntimeID {
 			if l := FilteringBlocks[id]; l > highest {
 				highest = l
 			}
