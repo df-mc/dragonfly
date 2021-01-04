@@ -52,10 +52,10 @@ func (d Direction) Rotate90() Direction {
 func AllDirections() (d []Direction) {
 	d = make([]Direction, 4)
 
-	d[0] = North
-	d[1] = East
-	d[2] = South
-	d[3] = West
+	d[0] = South
+	d[1] = West
+	d[2] = North
+	d[3] = East
 
 	return
 }
