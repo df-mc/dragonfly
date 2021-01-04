@@ -143,15 +143,16 @@ func init() {
 	}
 
 	// Directional block implementation
-	for _, d := range world.AllDirections() {
+	for d := 0; d < 4; d++ {
 		for i := 0; i < 3; i++ {
 
-			_ = world.RegisterBlock(CocoaBean{Age: i, Facing: d}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": i, "direction": int32(d)}})
+			_ = world.RegisterBlock(CocoaBean{Age: i, Facing: world.Direction(d)}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": i, "direction": int32(d)}})
 		}
-		_ = world.RegisterBlock(LitPumpkin{Facing: d}, world.BlockState{Name: "minecraft:lit_pumpkin", Properties: map[string]interface{}{"direction": int32(d)}})
-		_ = world.RegisterBlock(Chest{Facing: d}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}, Version: 17825808})
-		_ = world.RegisterBlock(Pumpkin{Facing: d}, world.BlockState{Name: "minecraft:pumpkin", Properties: map[string]interface{}{"direction": int32(d)}})
-		_ = world.RegisterBlock(Pumpkin{Facing: d}, world.BlockState{Name: "minecraft:carved_pumpkin", Properties: map[string]interface{}{"direction": int32(d)}})
+		//TODO (Civiled): Fix pumpkin facing orientation because of inconsistency 0_0
+		_ = world.RegisterBlock(LitPumpkin{Facing: world.Direction(d)}, world.BlockState{Name: "minecraft:lit_pumpkin", Properties: map[string]interface{}{"direction": int32(d)}})
+		_ = world.RegisterBlock(Chest{Facing: world.Direction(d)}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(d)}, Version: 17825808})
+		_ = world.RegisterBlock(Pumpkin{Facing: world.Direction(d), Carved: false}, world.BlockState{Name: "minecraft:pumpkin", Properties: map[string]interface{}{"direction": d + 1}})
+		_ = world.RegisterBlock(Pumpkin{Facing: world.Direction(d), Carved: true}, world.BlockState{Name: "minecraft:carved_pumpkin", Properties: map[string]interface{}{"direction": d - 1}})
 	}
 
 	// Fire implementation
