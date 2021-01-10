@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"sync"
 )
 
@@ -105,7 +106,7 @@ func removeEmptySubChunks(c *Chunk) {
 		if len(sub.storages) == 0 {
 			c.sub[y] = nil
 		} else if len(sub.storages) == 1 {
-			if len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == AirRuntimeID {
+			if len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == world_internal.AirRuntimeID {
 				// Sub chunk with only air in it.
 				c.sub[y] = nil
 			}
@@ -198,7 +199,7 @@ func anyBlockLight(c *Chunk) bool {
 		}
 		for _, layer := range sub.storages {
 			for _, id := range layer.palette.blockRuntimeIDs {
-				if LightBlocks[id] != uint8(AirRuntimeID) {
+				if LightBlocks[id] != uint8(world_internal.AirRuntimeID) {
 					return true
 				}
 			}
@@ -553,7 +554,7 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	}
 	if l == 1 {
 		id := storages[0].RuntimeID(x, y, z)
-		if id == AirRuntimeID {
+		if id == world_internal.AirRuntimeID {
 			return 0
 		}
 		return LightBlocks[id]
@@ -561,11 +562,11 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	if l == 2 {
 		var highest uint8
 		id := storages[0].RuntimeID(x, y, z)
-		if id != AirRuntimeID {
+		if id != world_internal.AirRuntimeID {
 			highest = LightBlocks[id]
 		}
 		id = storages[1].RuntimeID(x, y, z)
-		if id != AirRuntimeID {
+		if id != world_internal.AirRuntimeID {
 			if v := LightBlocks[id]; v > highest {
 				highest = v
 			}
@@ -593,7 +594,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	}
 	if l == 1 {
 		id := storages[0].RuntimeID(x, y, z)
-		if id == AirRuntimeID {
+		if id == world_internal.AirRuntimeID {
 			return 0
 		}
 		return FilteringBlocks[id]
@@ -602,12 +603,12 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 		var highest uint8
 
 		id := storages[0].RuntimeID(x, y, z)
-		if id != AirRuntimeID {
+		if id != world_internal.AirRuntimeID {
 			highest = FilteringBlocks[id]
 		}
 
 		id = storages[1].RuntimeID(x, y, z)
-		if id != AirRuntimeID {
+		if id != world_internal.AirRuntimeID {
 			if v := FilteringBlocks[id]; v > highest {
 				highest = v
 			}
@@ -618,7 +619,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	var highest uint8
 	for i := range storages {
 		id := storages[i].RuntimeID(x, y, z)
-		if id != AirRuntimeID {
+		if id != world_internal.AirRuntimeID {
 			if l := FilteringBlocks[id]; l > highest {
 				highest = l
 			}

@@ -2,10 +2,9 @@ package chunk
 
 import (
 	"bytes"
+	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"sync"
 )
-
-var AirRuntimeID uint32
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
@@ -66,7 +65,7 @@ func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 	if sub == nil {
 		// The sub chunk was not initialised, so we can conclude that the block at that location would be
 		// an air block.
-		return AirRuntimeID
+		return world_internal.AirRuntimeID
 	}
 	return sub.RuntimeID(x, y, z, layer)
 }
@@ -89,7 +88,7 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 		sub = &SubChunk{skyLight: fullSkyLight}
 		chunk.sub[i] = sub
 	}
-	if len(sub.storages) < 2 && runtimeID == AirRuntimeID && layer == 1 {
+	if len(sub.storages) < 2 && runtimeID == world_internal.AirRuntimeID && layer == 1 {
 		// Air was set at the second layer, but there were less than 2 layers, so there already was air there.
 		// Don't do anything with this, just return.
 		return
@@ -127,7 +126,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) uint8 {
 		for y := 15; y >= 0; y-- {
 			totalY := uint8(y | (subY << 4))
 			rid := sub.storages[0].RuntimeID(x, totalY, z)
-			if rid != AirRuntimeID {
+			if rid != world_internal.AirRuntimeID {
 				return totalY
 			}
 		}
