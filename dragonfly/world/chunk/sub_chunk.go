@@ -64,7 +64,7 @@ func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
 func (sub *SubChunk) blockLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 	i := index >> 1
-	if index&1 == uint16(AirRuntimeID) {
+	if index&1 == 0 {
 		return sub.blockLight[i] >> 4
 	}
 	return sub.blockLight[i] & 0xf
@@ -83,7 +83,7 @@ func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
 func (sub *SubChunk) SkyLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 	i := index >> 1
-	if index&1 == uint16(AirRuntimeID) {
+	if index&1 == 0 {
 		return sub.skyLight[i] >> 4
 	}
 	return sub.skyLight[i] & 0xf
