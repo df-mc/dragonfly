@@ -81,3 +81,11 @@ func (w WoodFence) EncodeItem() (id int32, meta int16) {
 		return 85, int16(w.Wood.Uint8())
 	}
 }
+
+// allFence ...
+func allFence() (fence []world.Block) {
+	for _, w := range wood.All() {
+		fence = append(fence, WoodFence{Wood: w})
+	}
+	return
+}

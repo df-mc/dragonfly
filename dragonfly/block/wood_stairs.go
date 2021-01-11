@@ -115,3 +115,17 @@ func (WoodStairs) CanDisplace(b world.Liquid) bool {
 func (s WoodStairs) SideClosed(pos, side world.BlockPos, w *world.World) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
+
+// allWoodStairs returns all states of wood stairs.
+func allWoodStairs() (stairs []world.Block) {
+	f := func(facing world.Direction, upsideDown bool) {
+		for _, w := range wood.All() {
+			stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: w})
+		}
+	}
+	for i := world.Direction(0); i <= 3; i++ {
+		f(i, true)
+		f(i, false)
+	}
+	return
+}

@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Wool is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
@@ -52,4 +53,13 @@ func (w Wool) EncodeBlock() (name string, properties map[string]interface{}) {
 // Hash ...
 func (w Wool) Hash() uint64 {
 	return hashWool | (uint64(w.Colour.Uint8()) << 32)
+}
+
+// allWool returns wool blocks with all possible colours.
+func allWool() []world.Block {
+	b := make([]world.Block, 0, 16)
+	for _, c := range colour.All() {
+		b = append(b, Wool{Colour: c})
+	}
+	return b
 }

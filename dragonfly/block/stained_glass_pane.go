@@ -59,3 +59,12 @@ func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]inte
 func (p StainedGlassPane) Hash() uint64 {
 	return hashStainedGlassPane | uint64(p.Colour.Uint8())<<34
 }
+
+// allStainedGlassPane returns stained glass panes with all possible colours.
+func allStainedGlassPane() []world.Block {
+	b := make([]world.Block, 0, 16)
+	for _, c := range colour.All() {
+		b = append(b, StainedGlassPane{Colour: c})
+	}
+	return b
+}

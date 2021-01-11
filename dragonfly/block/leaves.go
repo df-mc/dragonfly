@@ -148,3 +148,20 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 func (l Leaves) Hash() uint64 {
 	return hashLeaves | (uint64(boolByte(l.Persistent)) << 32) | (uint64(boolByte(l.shouldUpdate)) << 33) | (uint64(l.Wood.Uint8()) << 34)
 }
+
+// allLogs returns a list of all possible leaves states.
+func allLeaves() (leaves []world.Block) {
+	f := func(persistent, update bool) {
+		leaves = append(leaves, Leaves{Wood: wood.Oak(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Spruce(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Birch(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Jungle(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.Acacia(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: wood.DarkOak(), Persistent: persistent, shouldUpdate: update})
+	}
+	f(true, true)
+	f(true, false)
+	f(false, true)
+	f(false, false)
+	return
+}

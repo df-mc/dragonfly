@@ -83,3 +83,11 @@ func (s WheatSeeds) EncodeBlock() (name string, properties map[string]interface{
 func (s WheatSeeds) Hash() uint64 {
 	return hashWheat | (uint64(s.Growth) << 32)
 }
+
+// allWheat ...
+func allWheat() (wheat []world.Block) {
+	for i := 0; i <= 7; i++ {
+		wheat = append(wheat, WheatSeeds{crop{Growth: i}})
+	}
+	return
+}
