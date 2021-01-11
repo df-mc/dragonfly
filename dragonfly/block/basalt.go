@@ -60,3 +60,10 @@ func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
 func (b Basalt) Hash() uint64 {
 	return hashBasalt | (uint64(boolByte(b.Polished)) << 32) | (uint64(b.Axis) << 33)
 }
+
+func registerBasalt() {
+	for _, axis := range world.AllAxis() {
+		_ = world.RegisterBlock(Basalt{Axis: axis, Polished: false}, world.BlockState{Name: "minecraft:basalt", Properties: map[string]interface{}{"pillar_axis": axis.String()}})
+		_ = world.RegisterBlock(Basalt{Axis: axis, Polished: true}, world.BlockState{Name: "minecraft:polished_basalt", Properties: map[string]interface{}{"pillar_axis": axis.String()}})
+	}
+}
