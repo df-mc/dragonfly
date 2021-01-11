@@ -94,3 +94,11 @@ func (c Carrot) EncodeBlock() (name string, properties map[string]interface{}) {
 func (c Carrot) Hash() uint64 {
 	return hashCarrot | (uint64(c.Growth) << 32)
 }
+
+// allCarrot ...
+func allCarrot() (carrot []world.Block) {
+	for i := 0; i <= 7; i++ {
+		carrot = append(carrot, Carrot{crop{Growth: i}})
+	}
+	return
+}

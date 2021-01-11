@@ -59,3 +59,12 @@ func (c ConcretePowder) EncodeBlock() (name string, properties map[string]interf
 func (c ConcretePowder) Hash() uint64 {
 	return hashConcretePowder | (uint64(c.Colour.Uint8()) << 32)
 }
+
+// allConcretePowder returns concrete powder with all possible colours.
+func allConcretePowder() []world.Block {
+	b := make([]world.Block, 0, 16)
+	for _, c := range colour.All() {
+		b = append(b, ConcretePowder{Colour: c})
+	}
+	return b
+}

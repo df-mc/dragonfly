@@ -86,3 +86,11 @@ func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]interfa
 func (b BeetrootSeeds) Hash() uint64 {
 	return hashBeetroot | (uint64(b.Growth) << 32)
 }
+
+// allBeetroot ...
+func allBeetroot() (beetroot []world.Block) {
+	for i := 0; i <= 7; i++ {
+		beetroot = append(beetroot, BeetrootSeeds{crop{Growth: i}})
+	}
+	return
+}

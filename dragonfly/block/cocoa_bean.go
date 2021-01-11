@@ -118,3 +118,13 @@ func (c CocoaBean) Hash() uint64 {
 func (c CocoaBean) Model() world.BlockModel {
 	return model.CocoaBean{Facing: c.Facing, Age: c.Age}
 }
+
+// allCocoaBeans ...
+func allCocoaBeans() (cocoa []world.Block) {
+	for i := world.Direction(0); i <= 3; i++ {
+		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 0})
+		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 1})
+		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 2})
+	}
+	return
+}

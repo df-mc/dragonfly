@@ -14,7 +14,7 @@ type Farmland struct {
 
 	// Hydration is how much moisture the farmland block has. Hydration starts at 0 & caps at 7. During a random tick
 	// update, if there is water within 4 blocks from the farmland block, hydration is set to 7. Otherwise, it
-	// decreases until it turns into dirt.
+	// decrements until it turns into dirt.
 	Hydration int
 }
 
@@ -82,4 +82,12 @@ func (f Farmland) EncodeBlock() (name string, properties map[string]interface{})
 // Hash ...
 func (f Farmland) Hash() uint64 {
 	return hashFarmland | (uint64(f.Hydration) << 32)
+}
+
+// allFarmland returns all possible states that a block of farmland can be in.
+func allFarmland() (b []world.Block) {
+	for i := 0; i <= 7; i++ {
+		b = append(b, Farmland{Hydration: i})
+	}
+	return
 }
