@@ -86,3 +86,9 @@ func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]interfa
 func (b BeetrootSeeds) Hash() uint64 {
 	return hashBeetroot | (uint64(b.Growth) << 32)
 }
+
+func registerBeetroot() {
+	for growth := 0; growth < 8; growth++ {
+		_ = world.RegisterBlock(BeetrootSeeds{}, world.BlockState{Name: "minecraft:beetroot", Properties: map[string]interface{}{"growth": int32(growth)}})
+	}
+}

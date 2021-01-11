@@ -93,3 +93,9 @@ func (c Cake) Hash() uint64 {
 func (c Cake) Model() world.BlockModel {
 	return model.Cake{Bites: c.Bites}
 }
+
+func registerCake() {
+	for bites := 0; bites < 7; bites++ {
+		_ = world.RegisterBlock(Cake{Bites: bites}, world.BlockState{Name: "minecraft:cake", Properties: map[string]interface{}{"bite_counter": int32(bites)}})
+	}
+}
