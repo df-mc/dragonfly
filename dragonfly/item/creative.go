@@ -71,7 +71,3 @@ func registerVanillaCreativeItems() {
 //go:linkname world_itemByID github.com/df-mc/dragonfly/dragonfly/world.itemByID
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
-
-////go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
-////noinspection ALL
-//func world_runtimeById(id int32, meta int16) int32

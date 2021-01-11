@@ -445,10 +445,10 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 // itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
-	for runtimeID, name := range world_itemNames() {
+	for _, name := range world_itemNames() {
 		entries = append(entries, protocol.ItemEntry{
 			Name:      name,
-			RuntimeID: int16(world_runtimeById(runtimeID, 0)),
+			RuntimeID: int16(world_runtimeById(name)),
 		})
 	}
 	return
@@ -464,7 +464,7 @@ func world_loadItemEntries() error
 
 //go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
 //noinspection ALL
-func world_runtimeById(id int32, meta int16) int32
+func world_runtimeById(name string) int32
 
 //go:linkname world_itemNames github.com/df-mc/dragonfly/dragonfly/world.itemNames
 //noinspection all

@@ -531,10 +531,10 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
-	id, meta := it.Item().EncodeItem()
+	name, meta := world_itemToName(it.Item())
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
-			NetworkID:     world_runtimeById(id, meta),
+			NetworkID:     world_runtimeById(name),
 			MetadataValue: meta,
 		},
 		Count:   int16(it.Count()),
@@ -552,8 +552,7 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
-	entry := world_idByRuntime(it.NetworkID, it.MetadataValue)
-	t, ok := world_itemByID(entry.ID, entry.Meta)
+	t, ok := world_itemByName(world_idByRuntime(it.NetworkID), it.MetadataValue)
 	if !ok {
 		t = block.Air{}
 	}
@@ -594,13 +593,21 @@ const (
 //noinspection ALL
 func world_itemByID(id int32, meta int16) (world.Item, bool)
 
+//go:linkname world_itemByName github.com/df-mc/dragonfly/dragonfly/world.itemByName
+//noinspection ALL
+func world_itemByName(name string, meta int16) (world.Item, bool)
+
+//go:linkname world_itemToName github.com/df-mc/dragonfly/dragonfly/world.itemToName
+//noinspection ALL
+func world_itemToName(it world.Item) (name string, meta int16)
+
 //go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
 //noinspection ALL
-func world_runtimeById(id int32, meta int16) int32
+func world_runtimeById(name string) int32
 
 //go:linkname world_idByRuntime github.com/df-mc/dragonfly/dragonfly/world.idByRuntime
 //noinspection ALL
-func world_idByRuntime(id int32, meta int16) world.ItemEntry
+func world_idByRuntime(runtimeId int32) string
 
 //go:linkname item_id github.com/df-mc/dragonfly/dragonfly/item.id
 //noinspection ALL
