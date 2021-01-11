@@ -569,6 +569,7 @@ func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(item.CreativeItems()))
 	for index, i := range item.CreativeItems() {
 		v := stackFromItem(i)
+		fmt.Println(world_idByRuntime(v.NetworkID), ":", v.NetworkID)
 		delete(v.NBTData, "Damage")
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
