@@ -125,7 +125,7 @@ func (l Log) Hash() uint64 {
 }
 
 // allLogs returns a list of all possible log states.
-func allLogs() (logs []world.Block) {
+func allLogs() (logs []Log) {
 	f := func(axis world.Axis, stripped bool) {
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Oak()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Spruce()})

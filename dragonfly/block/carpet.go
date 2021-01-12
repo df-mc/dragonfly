@@ -88,3 +88,11 @@ func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)
 }
+
+// allCarpet ...
+func allCarpet() (carpets []Carpet) {
+	for _, c := range colour.All() {
+		carpets = append(carpets, Carpet{Colour: c})
+	}
+	return
+}

@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // StainedTerracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. In contrast
@@ -48,8 +47,8 @@ func (t StainedTerracotta) Hash() uint64 {
 }
 
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.
-func allStainedTerracotta() []world.Block {
-	b := make([]world.Block, 0, 16)
+func allStainedTerracotta() []StainedTerracotta {
+	b := make([]StainedTerracotta, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, StainedTerracotta{Colour: c})
 	}

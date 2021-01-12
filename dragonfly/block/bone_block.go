@@ -57,3 +57,11 @@ func (b BoneBlock) EncodeBlock() (name string, properties map[string]interface{}
 func (b BoneBlock) Hash() uint64 {
 	return hashBoneBlock | (uint64(b.Axis << 32))
 }
+
+// allBoneBlock ...
+func allBoneBlock() (boneBlocks []BoneBlock) {
+	for _, axis := range world.AllAxis() {
+		boneBlocks = append(boneBlocks, BoneBlock{Axis: axis})
+	}
+	return
+}

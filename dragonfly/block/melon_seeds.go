@@ -113,7 +113,7 @@ func (m MelonSeeds) Hash() uint64 {
 }
 
 // allMelonStems
-func allMelonStems() (stems []world.Block) {
+func allMelonStems() (stems []MelonSeeds) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
 			stems = append(stems, MelonSeeds{direction: j, crop: crop{Growth: i}})

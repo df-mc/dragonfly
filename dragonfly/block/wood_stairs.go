@@ -117,7 +117,7 @@ func (s WoodStairs) SideClosed(pos, side world.BlockPos, w *world.World) bool {
 }
 
 // allWoodStairs returns all states of wood stairs.
-func allWoodStairs() (stairs []world.Block) {
+func allWoodStairs() (stairs []WoodStairs) {
 	f := func(facing world.Direction, upsideDown bool) {
 		for _, w := range wood.All() {
 			stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: w})

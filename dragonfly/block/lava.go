@@ -210,7 +210,7 @@ func (l Lava) Hash() uint64 {
 }
 
 // allLava returns a list of all lava states.
-func allLava() (b []world.Block) {
+func allLava() (b []Lava) {
 	f := func(still, falling bool) {
 		b = append(b, Lava{Still: still, Falling: falling, Depth: 8})
 		b = append(b, Lava{Still: still, Falling: falling, Depth: 7})

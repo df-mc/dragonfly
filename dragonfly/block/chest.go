@@ -206,3 +206,11 @@ func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
 func (c Chest) Hash() uint64 {
 	return hashChest | (uint64(c.Facing) << 32)
 }
+
+// allChests ...
+func allChests() (chests []Chest) {
+	for _, direction := range world.AllDirections() {
+		chests = append(chests, Chest{Facing: direction})
+	}
+	return
+}

@@ -93,3 +93,11 @@ func (c Cake) Hash() uint64 {
 func (c Cake) Model() world.BlockModel {
 	return model.Cake{Bites: c.Bites}
 }
+
+// allCake ...
+func allCake() (cake []Cake) {
+	for bites := 0; bites < 7; bites++ {
+		cake = append(cake, Cake{Bites: bites})
+	}
+	return
+}

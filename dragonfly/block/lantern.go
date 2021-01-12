@@ -109,3 +109,12 @@ func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) 
 func (l Lantern) Hash() uint64 {
 	return hashLantern | (uint64(boolByte(l.Hanging)) << 32) | (uint64(l.Type.Uint8()) << 33)
 }
+
+// allLanterns ...
+func allLanterns() (lanterns []Lantern) {
+	for _, f := range fire.AllFireTypes() {
+		lanterns = append(lanterns, Lantern{Hanging: false, Type: f})
+		lanterns = append(lanterns, Lantern{Hanging: true, Type: f})
+	}
+	return
+}

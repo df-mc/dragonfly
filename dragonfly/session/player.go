@@ -554,7 +554,21 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 func stackToItem(it protocol.ItemStack) item.Stack {
 	t, ok := world_itemByName(world_idByRuntime(it.NetworkID), it.MetadataValue)
 	if !ok {
-		t = block.Air{}
+		// Minecraft uses "minecraft:bucket" for all of their buckets, however the JSON I am using to translate runtime IDs only uses the identifier,
+		// so it would collide with the other bucket types (lava and water.)
+		// I was thinking about adding a meta field, but it seems a bit stupid because this issue only occurs for this item and nothing else,
+		// so instead I just hardcoded it in here for now until I can think of a better solution. Let me know if you folks have any ideas.
+
+		// note from like 1 hour later lmao: im gonna add another field to the item entries json for meta so this will be removed next commit
+		// i'm just way too tired to change it right now
+		switch it.NetworkID {
+		case 362:
+			t, _ = world_itemByName("minecraft:bucket", 8)
+		case 363:
+			t, _ = world_itemByName("minecraft:bucket", 10)
+		default:
+			t = block.Air{}
+		}
 	}
 	//noinspection SpellCheckingInspection
 	if nbter, ok := t.(world.NBTer); ok && len(it.NBTData) != 0 {

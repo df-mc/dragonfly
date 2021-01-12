@@ -61,8 +61,8 @@ func (c ConcretePowder) Hash() uint64 {
 }
 
 // allConcretePowder returns concrete powder with all possible colours.
-func allConcretePowder() []world.Block {
-	b := make([]world.Block, 0, 16)
+func allConcretePowder() []ConcretePowder {
+	b := make([]ConcretePowder, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, ConcretePowder{Colour: c})
 	}

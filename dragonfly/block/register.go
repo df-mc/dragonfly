@@ -51,8 +51,6 @@ func init() {
 	_ = world.RegisterBlock(Netherrack{}, world.BlockState{Name: "minecraft:netherrack"})
 	_ = world.RegisterBlock(QuartzBricks{}, world.BlockState{Name: "minecraft:quartz_bricks"})
 	_ = world.RegisterBlock(Clay{}, world.BlockState{Name: "minecraft:clay"})
-	/*world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
-	world.RegisterBlock(Lantern{Type: fire.Normal()}, Lantern{Type: fire.Normal(), Hanging: true}, Lantern{Type: fire.Soul()}, Lantern{Type: fire.Soul(), Hanging: true})*/
 	_ = world.RegisterBlock(AncientDebris{}, world.BlockState{Name: "minecraft:ancient_debris"})
 	_ = world.RegisterBlock(EmeraldOre{}, world.BlockState{Name: "minecraft:emerald_ore"})
 	_ = world.RegisterBlock(DiamondOre{}, world.BlockState{Name: "minecraft:diamond_ore"})
@@ -62,18 +60,13 @@ func init() {
 	_ = world.RegisterBlock(IronOre{}, world.BlockState{Name: "minecraft:iron_ore"})
 	_ = world.RegisterBlock(CoalOre{}, world.BlockState{Name: "minecraft:coal_ore"})
 	_ = world.RegisterBlock(NetherQuartzOre{}, world.BlockState{Name: "minecraft:quartz_ore"})
-	/*world.RegisterBlock(allCocoaBeans()...)
-	world.RegisterBlock(allWheat()...)
-	world.RegisterBlock(allBeetroot()...)
+	/*world.RegisterBlock(allWheat()...)
 	world.RegisterBlock(allPotato()...)
 	world.RegisterBlock(allCarrot()...)
-	world.RegisterBlock(allPumpkinStems()...)
 	world.RegisterBlock(allMelonStems()...)*/
-	_ = world.RegisterBlock(Melon{}, world.BlockState{Name: "minecraft:melon_block"})
 	_ = world.RegisterBlock(Sand{}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "normal"}})
 	_ = world.RegisterBlock(Sand{Red: true}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "red"}})
 	_ = world.RegisterBlock(Gravel{}, world.BlockState{Name: "minecraft:gravel"})
-	//world.RegisterBlock(allConcretePowder()...)
 	_ = world.RegisterBlock(Bricks{}, world.BlockState{Name: "minecraft:brick_block"})
 	_ = world.RegisterBlock(SoulSand{}, world.BlockState{Name: "minecraft:soul_sand"})
 	_ = world.RegisterBlock(Barrier{}, world.BlockState{Name: "minecraft:barrier"})
@@ -84,7 +77,6 @@ func init() {
 	_ = world.RegisterBlock(GildedBlackstone{}, world.BlockState{Name: "minecraft:gilded_blackstone"})
 	_ = world.RegisterBlock(Shroomlight{}, world.BlockState{Name: "minecraft:shroomlight"})
 	_ = world.RegisterBlock(InvisibleBedrock{}, world.BlockState{Name: "minecraft:invisibleBedrock"})
-	_ = world.RegisterBlock(NoteBlock{}, world.BlockState{Name: "minecraft:noteblock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
 
 	registerBasalt()
@@ -226,7 +218,7 @@ func init() {
 	world.RegisterItem("minecraft:dark_oak_fence_gate", WoodFenceGate{Wood: wood.DarkOak()})
 	world.RegisterItem("minecraft:crimson_fence_gate", WoodFenceGate{Wood: wood.Crimson()})
 	world.RegisterItem("minecraft:warped_fence_gate", WoodFenceGate{Wood: wood.Warped()})
-	world.RegisterItem("minecraft:wooden_trapdoor", WoodTrapdoor{Wood: wood.Oak()})
+	world.RegisterItem("minecraft:trapdoor", WoodTrapdoor{Wood: wood.Oak()})
 	world.RegisterItem("minecraft:spruce_trapdoor", WoodTrapdoor{Wood: wood.Spruce()})
 	world.RegisterItem("minecraft:birch_trapdoor", WoodTrapdoor{Wood: wood.Birch()})
 	world.RegisterItem("minecraft:jungle_trapdoor", WoodTrapdoor{Wood: wood.Jungle()})
@@ -388,59 +380,68 @@ func readByte(m map[string]interface{}, key string) byte {
 }
 
 func registerBasalt() {
-	for _, axis := range world.AllAxis() {
-		_ = world.RegisterBlock(Basalt{Axis: axis, Polished: false}, world.BlockState{Name: "minecraft:basalt", Properties: map[string]interface{}{"pillar_axis": axis.String()}})
-		_ = world.RegisterBlock(Basalt{Axis: axis, Polished: true}, world.BlockState{Name: "minecraft:polished_basalt", Properties: map[string]interface{}{"pillar_axis": axis.String()}})
+	for _, b := range allBasalt() {
+		name, properties := b.EncodeBlock()
+		_ = world.RegisterBlock(b, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerBeetroot() {
-	for growth := 0; growth < 8; growth++ {
-		_ = world.RegisterBlock(BeetrootSeeds{}, world.BlockState{Name: "minecraft:beetroot", Properties: map[string]interface{}{"growth": int32(growth)}})
+	for _, c := range allBeetroot() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerBoneBlock() {
-	for _, axis := range world.AllAxis() {
-		_ = world.RegisterBlock(BoneBlock{Axis: axis}, world.BlockState{Name: "minecraft:bone_block", Properties: map[string]interface{}{"pillar_axis": axis.String(), "deprecated": int32(0)}})
+	for _, b := range allBoneBlock() {
+		name, properties := b.EncodeBlock()
+		_ = world.RegisterBlock(b, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerCake() {
-	for bites := 0; bites < 7; bites++ {
-		_ = world.RegisterBlock(Cake{Bites: bites}, world.BlockState{Name: "minecraft:cake", Properties: map[string]interface{}{"bite_counter": int32(bites)}})
+	for _, c := range allCake() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerCarpet() {
-	for _, color := range colour.All() {
-		_ = world.RegisterBlock(Carpet{Colour: color}, world.BlockState{Name: "minecraft:carpet", Properties: map[string]interface{}{"color": color.String()}})
+	for _, c := range allCarpet() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerCarrot() {
-	for growth := 0; growth < 8; growth++ {
-		_ = world.RegisterBlock(Carrot{}, world.BlockState{Name: "minecraft:carrots", Properties: map[string]interface{}{"growth": int32(growth)}})
+	for _, c := range allCarrots() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerChest() {
-	for _, direction := range world.AllDirections() {
-		_ = world.RegisterBlock(Chest{Facing: direction}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(direction)}})
+	for _, c := range allChests() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerCocoaBeans() {
-	for direction := world.Direction(0); direction <= 3; direction++ {
-		_ = world.RegisterBlock(CocoaBean{Facing: direction, Age: 0}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": int32(0), "direction": int32(direction)}})
-		_ = world.RegisterBlock(CocoaBean{Facing: direction, Age: 1}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": int32(1), "direction": int32(direction)}})
-		_ = world.RegisterBlock(CocoaBean{Facing: direction, Age: 2}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": int32(2), "direction": int32(direction)}})
+	for _, c := range allCocoaBeans() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
 
 func registerConcrete() {
-	for _, c := range colour.All() {
-		_ = world.RegisterBlock(Concrete{Colour: c}, world.BlockState{Name: "minecraft:concrete", Properties: map[string]interface{}{"color": c.String()}})
-		_ = world.RegisterBlock(ConcretePowder{Colour: c}, world.BlockState{Name: "minecraft:concretePowder", Properties: map[string]interface{}{"color": c.String()}})
+	for _, c := range allConcrete() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
+	}
+	for _, c := range allConcretePowder() {
+		name, properties := c.EncodeBlock()
+		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
 	}
 }
