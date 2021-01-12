@@ -59,7 +59,7 @@ func (b BoneBlock) Hash() uint64 {
 }
 
 // allBoneBlock ...
-func allBoneBlock() (boneBlocks []BoneBlock) {
+func allBoneBlock() (boneBlocks []canEncode) {
 	for _, axis := range world.AllAxis() {
 		boneBlocks = append(boneBlocks, BoneBlock{Axis: axis})
 	}

@@ -113,7 +113,7 @@ func (p PumpkinSeeds) Hash() uint64 {
 }
 
 // allPumpkinStems
-func allPumpkinStems() (stems []PumpkinSeeds) {
+func allPumpkinStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
 			stems = append(stems, PumpkinSeeds{Direction: j, crop: crop{Growth: i}})

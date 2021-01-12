@@ -85,7 +85,7 @@ func (f Farmland) Hash() uint64 {
 }
 
 // allFarmland returns all possible states that a block of farmland can be in.
-func allFarmland() (b []Farmland) {
+func allFarmland() (b []canEncode) {
 	for i := 0; i <= 7; i++ {
 		b = append(b, Farmland{Hydration: i})
 	}

@@ -55,8 +55,8 @@ func (w Wool) Hash() uint64 {
 }
 
 // allWool returns wool blocks with all possible colours.
-func allWool() []Wool {
-	b := make([]Wool, 0, 16)
+func allWool() []canEncode {
+	b := make([]canEncode, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, Wool{Colour: c})
 	}

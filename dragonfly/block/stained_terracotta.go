@@ -47,8 +47,8 @@ func (t StainedTerracotta) Hash() uint64 {
 }
 
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.
-func allStainedTerracotta() []StainedTerracotta {
-	b := make([]StainedTerracotta, 0, 16)
+func allStainedTerracotta() []canEncode {
+	b := make([]canEncode, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, StainedTerracotta{Colour: c})
 	}

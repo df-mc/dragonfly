@@ -49,8 +49,8 @@ func (g StainedGlass) Hash() uint64 {
 }
 
 // allStainedGlass returns stained glass blocks with all possible colours.
-func allStainedGlass() []StainedGlass {
-	b := make([]StainedGlass, 0, 16)
+func allStainedGlass() []canEncode {
+	b := make([]canEncode, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, StainedGlass{Colour: c})
 	}

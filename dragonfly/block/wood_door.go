@@ -179,7 +179,7 @@ func (d WoodDoor) Hash() uint64 {
 }
 
 // allDoors returns a list of all door types
-func allDoors() (doors []WoodDoor) {
+func allDoors() (doors []canEncode) {
 	for _, w := range wood.All() {
 		for i := world.Direction(0); i <= 3; i++ {
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})

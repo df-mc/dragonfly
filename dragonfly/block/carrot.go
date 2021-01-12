@@ -96,7 +96,7 @@ func (c Carrot) Hash() uint64 {
 }
 
 // allCarrots ...
-func allCarrots() (carrots []Carrot) {
+func allCarrots() (carrots []canEncode) {
 	for growth := 0; growth < 8; growth++ {
 		c := Carrot{}
 		c.Growth = growth

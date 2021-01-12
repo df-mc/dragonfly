@@ -208,7 +208,7 @@ func (c Chest) Hash() uint64 {
 }
 
 // allChests ...
-func allChests() (chests []Chest) {
+func allChests() (chests []canEncode) {
 	for _, direction := range world.AllDirections() {
 		chests = append(chests, Chest{Facing: direction})
 	}

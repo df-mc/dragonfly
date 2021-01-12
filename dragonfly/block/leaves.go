@@ -150,7 +150,7 @@ func (l Leaves) Hash() uint64 {
 }
 
 // allLogs returns a list of all possible leaves states.
-func allLeaves() (leaves []Leaves) {
+func allLeaves() (leaves []canEncode) {
 	f := func(persistent, update bool) {
 		leaves = append(leaves, Leaves{Wood: wood.Oak(), Persistent: persistent, shouldUpdate: update})
 		leaves = append(leaves, Leaves{Wood: wood.Spruce(), Persistent: persistent, shouldUpdate: update})

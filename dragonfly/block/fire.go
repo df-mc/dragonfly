@@ -249,7 +249,7 @@ func (f Fire) Hash() uint64 {
 }
 
 // allFire ...
-func allFire() (b []Fire) {
+func allFire() (b []canEncode) {
 	for i := 0; i < 16; i++ {
 		b = append(b, Fire{Age: i, Type: fire.Normal()})
 		b = append(b, Fire{Age: i, Type: fire.Soul()})

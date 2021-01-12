@@ -82,7 +82,7 @@ func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}
 }
 
 // allNoteBlocks ...
-func allNoteBlocks() (noteBlocks []NoteBlock) {
+func allNoteBlocks() (noteBlocks []canEncode) {
 	for i := 0; i < 25; i++ {
 		noteBlocks = append(noteBlocks, NoteBlock{Pitch: i})
 	}

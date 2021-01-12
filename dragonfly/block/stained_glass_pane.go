@@ -61,8 +61,8 @@ func (p StainedGlassPane) Hash() uint64 {
 }
 
 // allStainedGlassPane returns stained glass panes with all possible colours.
-func allStainedGlassPane() []StainedGlassPane {
-	b := make([]StainedGlassPane, 0, 16)
+func allStainedGlassPane() []canEncode {
+	b := make([]canEncode, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, StainedGlassPane{Colour: c})
 	}

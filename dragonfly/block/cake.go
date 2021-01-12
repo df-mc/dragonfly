@@ -95,7 +95,7 @@ func (c Cake) Model() world.BlockModel {
 }
 
 // allCake ...
-func allCake() (cake []Cake) {
+func allCake() (cake []canEncode) {
 	for bites := 0; bites < 7; bites++ {
 		cake = append(cake, Cake{Bites: bites})
 	}

@@ -79,7 +79,7 @@ func (p Planks) Hash() uint64 {
 }
 
 // allPlanks returns all planks types.
-func allPlanks() (planks []Planks) {
+func allPlanks() (planks []canEncode) {
 	for _, w := range wood.All() {
 		planks = append(planks, Planks{Wood: w})
 	}

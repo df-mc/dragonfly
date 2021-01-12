@@ -64,6 +64,7 @@ func init() {
 	world.RegisterBlock(allPotato()...)
 	world.RegisterBlock(allCarrot()...)
 	world.RegisterBlock(allMelonStems()...)*/
+	_ = world.RegisterBlock(Melon{}, world.BlockState{Name: "minecraft:melon_block"})
 	_ = world.RegisterBlock(Sand{}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "normal"}})
 	_ = world.RegisterBlock(Sand{Red: true}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "red"}})
 	_ = world.RegisterBlock(Gravel{}, world.BlockState{Name: "minecraft:gravel"})
@@ -79,16 +80,43 @@ func init() {
 	_ = world.RegisterBlock(InvisibleBedrock{}, world.BlockState{Name: "minecraft:invisibleBedrock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
 
-	registerBasalt()
-	registerBeetroot()
-	registerBoneBlock()
-	registerCake()
-	registerCarpet()
-	registerCarrot()
-	registerChest()
-	registerConcrete()
-	registerCocoaBeans()
-
+	registerAll(allBasalt())
+	registerAll(allBeetroot())
+	registerAll(allBoneBlock())
+	registerAll(allCake())
+	registerAll(allCarpet())
+	registerAll(allCarrots())
+	registerAll(allChests())
+	registerAll(allConcrete())
+	registerAll(allConcretePowder())
+	registerAll(allCocoaBeans())
+	registerAll(allCoral())
+	registerAll(allEndBrickStairs())
+	registerAll(allNoteBlocks())
+	registerAll(allWool())
+	registerAll(allStainedTerracotta())
+	registerAll(allGlazedTerracotta())
+	registerAll(allStainedGlass())
+	registerAll(allStainedGlassPane())
+	registerAll(allLanterns())
+	registerAll(allFire())
+	registerAll(allPlanks())
+	registerAll(allFence())
+	registerAll(allFenceGates())
+	registerAll(allWoodStairs())
+	registerAll(allDoors())
+	registerAll(allTrapdoors())
+	registerAll(allWoodSlabs())
+	registerAll(allLogs())
+	registerAll(allLeaves())
+	registerAll(allTorch())
+	registerAll(allPumpkinStems())
+	registerAll(allPumpkins())
+	registerAll(allLitPumpkins())
+	registerAll(allMelonStems())
+	registerAll(allFarmland())
+	registerAll(allLava())
+	registerAll(allWater())
 }
 
 func init() {
@@ -379,69 +407,9 @@ func readByte(m map[string]interface{}, key string) byte {
 	return b
 }
 
-func registerBasalt() {
-	for _, b := range allBasalt() {
+func registerAll(blocks []canEncode) {
+	for _, b := range blocks {
 		name, properties := b.EncodeBlock()
-		_ = world.RegisterBlock(b, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerBeetroot() {
-	for _, c := range allBeetroot() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerBoneBlock() {
-	for _, b := range allBoneBlock() {
-		name, properties := b.EncodeBlock()
-		_ = world.RegisterBlock(b, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerCake() {
-	for _, c := range allCake() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerCarpet() {
-	for _, c := range allCarpet() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerCarrot() {
-	for _, c := range allCarrots() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerChest() {
-	for _, c := range allChests() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerCocoaBeans() {
-	for _, c := range allCocoaBeans() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-}
-
-func registerConcrete() {
-	for _, c := range allConcrete() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
-	}
-	for _, c := range allConcretePowder() {
-		name, properties := c.EncodeBlock()
-		_ = world.RegisterBlock(c, world.BlockState{Name: name, Properties: properties})
+		_ = world.RegisterBlock(b.(world.Block), world.BlockState{Name: name, Properties: properties})
 	}
 }

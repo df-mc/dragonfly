@@ -111,7 +111,7 @@ func (l Lantern) Hash() uint64 {
 }
 
 // allLanterns ...
-func allLanterns() (lanterns []Lantern) {
+func allLanterns() (lanterns []canEncode) {
 	for _, f := range fire.AllFireTypes() {
 		lanterns = append(lanterns, Lantern{Hanging: false, Type: f})
 		lanterns = append(lanterns, Lantern{Hanging: true, Type: f})

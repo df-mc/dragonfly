@@ -77,7 +77,7 @@ func (s EndBrickStairs) SideClosed(pos, side world.BlockPos, w *world.World) boo
 }
 
 // allEndBrickStairs ...
-func allEndBrickStairs() (stairs []EndBrickStairs) {
+func allEndBrickStairs() (stairs []canEncode) {
 	for _, direction := range world.AllDirections() {
 		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: true})
 		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: false})

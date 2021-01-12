@@ -148,7 +148,7 @@ func (w Water) Hash() uint64 {
 }
 
 // allWater returns a list of all water states.
-func allWater() (b []Water) {
+func allWater() (b []canEncode) {
 	f := func(still, falling bool) {
 		b = append(b, Water{Still: still, Falling: falling, Depth: 8})
 		b = append(b, Water{Still: still, Falling: falling, Depth: 7})
