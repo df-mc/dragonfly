@@ -369,7 +369,7 @@ func init() {
 		}
 		return gravity.CanSolidify(pos, w)
 	}
-	item_internal.Fire = Fire{}
+	item_internal.Fire = Fire{Type: fire.Normal(), Age: 0}
 }
 
 // readSlice reads an interface slice from a map at the key passed.
