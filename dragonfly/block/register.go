@@ -160,7 +160,7 @@ func init() {
 	world.RegisterItem("minecraft:stripped_oak_log", Log{Wood: wood.Oak(), Stripped: true})
 	for _, c := range colour.All() {
 		world.RegisterItem("minecraft:concrete", Concrete{Colour: c})
-		world.RegisterItem("minecraft:concretePowder", ConcretePowder{Colour: c})
+		world.RegisterItem("minecraft:concrete_powder", ConcretePowder{Colour: c})
 		world.RegisterItem("minecraft:stained_hardened_clay", StainedTerracotta{Colour: c})
 		world.RegisterItem("minecraft:carpet", Carpet{Colour: c})
 		world.RegisterItem("minecraft:wool", Wool{Colour: c})

@@ -98,10 +98,7 @@ func (c Carrot) Hash() uint64 {
 // allCarrots ...
 func allCarrots() (carrots []canEncode) {
 	for growth := 0; growth < 8; growth++ {
-		c := Carrot{}
-		c.Growth = growth
-
-		carrots = append(carrots, c)
+		carrots = append(carrots, Carrot{crop{Growth: growth}})
 	}
 	return
 }

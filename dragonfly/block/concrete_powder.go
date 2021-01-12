@@ -52,7 +52,7 @@ func (c ConcretePowder) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (c ConcretePowder) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:concrete_powder", map[string]interface{}{"color": c.Colour.String()}
+	return "minecraft:concretePowder", map[string]interface{}{"color": c.Colour.String()}
 }
 
 // Hash ...

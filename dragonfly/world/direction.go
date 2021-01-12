@@ -49,13 +49,6 @@ func (d Direction) Rotate90() Direction {
 	panic("invalid direction")
 }
 
-func AllDirections() (d []Direction) {
-	d = make([]Direction, 4)
-
-	d[0] = South
-	d[1] = West
-	d[2] = North
-	d[3] = East
-
-	return
+func AllDirections() []Direction {
+	return []Direction{North, East, South, West}
 }
