@@ -87,6 +87,7 @@ func init() {
 	registerAll(allConcretePowder())
 	registerAll(allCocoaBeans())
 	registerAll(allCoral())
+	registerAll(allCoralBlocks())
 	registerAll(allEndBrickStairs())
 	registerAll(allNoteBlocks())
 	registerAll(allWool())
