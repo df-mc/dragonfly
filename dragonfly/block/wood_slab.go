@@ -191,3 +191,17 @@ func (s WoodSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
 }
+
+// allWoodSlabs returns all states of wood slabs.
+func allWoodSlabs() (slabs []world.Block) {
+	f := func(double bool, upsideDown bool) {
+		for _, w := range wood.All() {
+			slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: w})
+		}
+	}
+	f(false, false)
+	f(false, true)
+	f(true, false)
+	f(true, true)
+	return
+}

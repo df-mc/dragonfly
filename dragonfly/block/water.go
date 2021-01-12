@@ -146,3 +146,22 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 func (w Water) Hash() uint64 {
 	return hashWater | (uint64(boolByte(w.Falling)) << 32) | (uint64(boolByte(w.Still)) << 33) | (uint64(w.Depth) << 34)
 }
+
+// allWater returns a list of all water states.
+func allWater() (b []world.Block) {
+	f := func(still, falling bool) {
+		b = append(b, Water{Still: still, Falling: falling, Depth: 8})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 7})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 6})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 5})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 4})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 3})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 2})
+		b = append(b, Water{Still: still, Falling: falling, Depth: 1})
+	}
+	f(true, true)
+	f(true, false)
+	f(false, false)
+	f(false, true)
+	return
+}

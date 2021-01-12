@@ -123,3 +123,20 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 func (l Log) Hash() uint64 {
 	return hashLog | (uint64(boolByte(l.Stripped)) << 32) | (uint64(l.Axis) << 33) | (uint64(l.Wood.Uint8()) << 35)
 }
+
+// allLogs returns a list of all possible log states.
+func allLogs() (logs []world.Block) {
+	f := func(axis world.Axis, stripped bool) {
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Oak()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Spruce()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Birch()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Jungle()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Acacia()})
+		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.DarkOak()})
+	}
+	for axis := world.Axis(0); axis < 3; axis++ {
+		f(axis, true)
+		f(axis, false)
+	}
+	return
+}

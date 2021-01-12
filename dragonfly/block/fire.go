@@ -247,3 +247,12 @@ func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
 func (f Fire) Hash() uint64 {
 	return hashFire | (uint64(f.Age) << 32) | (uint64(f.Type.Uint8()) << 36)
 }
+
+// allFire ...
+func allFire() (b []world.Block) {
+	for i := 0; i < 16; i++ {
+		b = append(b, Fire{Age: i, Type: fire.Normal()})
+		b = append(b, Fire{Age: i, Type: fire.Soul()})
+	}
+	return
+}

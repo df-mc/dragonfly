@@ -112,3 +112,12 @@ func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
 func (t Torch) Hash() uint64 {
 	return hashTorch | (uint64(t.Facing) << 32) | (uint64(t.Type.Uint8()) << 35)
 }
+
+// allTorch ...
+func allTorch() (torch []world.Block) {
+	for i := world.Face(0); i < 6; i++ {
+		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
+		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})
+	}
+	return
+}

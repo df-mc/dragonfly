@@ -100,3 +100,11 @@ func (p Potato) EncodeBlock() (name string, properties map[string]interface{}) {
 func (p Potato) Hash() uint64 {
 	return hashPotato | (uint64(p.Growth) << 32)
 }
+
+// allPotato ...
+func allPotato() (potato []world.Block) {
+	for i := 0; i <= 7; i++ {
+		potato = append(potato, Potato{crop{Growth: i}})
+	}
+	return
+}
