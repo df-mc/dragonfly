@@ -94,9 +94,3 @@ func (c Carrot) EncodeBlock() (name string, properties map[string]interface{}) {
 func (c Carrot) Hash() uint64 {
 	return hashCarrot | (uint64(c.Growth) << 32)
 }
-
-func registerCarrot() {
-	for growth := 0; growth < 8; growth++ {
-		_ = world.RegisterBlock(Carrot{}, world.BlockState{Name: "minecraft:carrots", Properties: map[string]interface{}{"growth": int32(growth)}})
-	}
-}

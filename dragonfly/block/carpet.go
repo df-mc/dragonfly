@@ -88,9 +88,3 @@ func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)
 }
-
-func registerCarpet() {
-	for _, color := range colour.All() {
-		_ = world.RegisterBlock(Carpet{Colour: color}, world.BlockState{Name: "minecraft:carpet", Properties: map[string]interface{}{"color": color.String()}})
-	}
-}

@@ -379,3 +379,46 @@ func readByte(m map[string]interface{}, key string) byte {
 	b, _ := v.(byte)
 	return b
 }
+
+func registerBasalt() {
+	for _, axis := range world.AllAxis() {
+		_ = world.RegisterBlock(Basalt{Axis: axis, Polished: false}, world.BlockState{Name: "minecraft:basalt", Properties: map[string]interface{}{"pillar_axis": axis.String()}})
+		_ = world.RegisterBlock(Basalt{Axis: axis, Polished: true}, world.BlockState{Name: "minecraft:polished_basalt", Properties: map[string]interface{}{"pillar_axis": axis.String()}})
+	}
+}
+
+func registerBeetroot() {
+	for growth := 0; growth < 8; growth++ {
+		_ = world.RegisterBlock(BeetrootSeeds{}, world.BlockState{Name: "minecraft:beetroot", Properties: map[string]interface{}{"growth": int32(growth)}})
+	}
+}
+
+func registerBoneBlock() {
+	for _, axis := range world.AllAxis() {
+		_ = world.RegisterBlock(BoneBlock{Axis: axis}, world.BlockState{Name: "minecraft:bone_block", Properties: map[string]interface{}{"pillar_axis": axis.String(), "deprecated": int32(0)}})
+	}
+}
+
+func registerCake() {
+	for bites := 0; bites < 7; bites++ {
+		_ = world.RegisterBlock(Cake{Bites: bites}, world.BlockState{Name: "minecraft:cake", Properties: map[string]interface{}{"bite_counter": int32(bites)}})
+	}
+}
+
+func registerCarpet() {
+	for _, color := range colour.All() {
+		_ = world.RegisterBlock(Carpet{Colour: color}, world.BlockState{Name: "minecraft:carpet", Properties: map[string]interface{}{"color": color.String()}})
+	}
+}
+
+func registerCarrot() {
+	for growth := 0; growth < 8; growth++ {
+		_ = world.RegisterBlock(Carrot{}, world.BlockState{Name: "minecraft:carrots", Properties: map[string]interface{}{"growth": int32(growth)}})
+	}
+}
+
+func registerChest() {
+	for _, direction := range world.AllDirections() {
+		_ = world.RegisterBlock(Chest{Facing: direction}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(direction)}})
+	}
+}

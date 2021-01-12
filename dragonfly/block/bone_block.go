@@ -57,9 +57,3 @@ func (b BoneBlock) EncodeBlock() (name string, properties map[string]interface{}
 func (b BoneBlock) Hash() uint64 {
 	return hashBoneBlock | (uint64(b.Axis << 32))
 }
-
-func registerBoneBlock() {
-	for _, axis := range world.AllAxis() {
-		_ = world.RegisterBlock(BoneBlock{Axis: axis}, world.BlockState{Name: "minecraft:bone_block", Properties: map[string]interface{}{"pillar_axis": axis.String(), "deprecated": int32(0)}})
-	}
-}

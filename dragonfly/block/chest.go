@@ -206,9 +206,3 @@ func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
 func (c Chest) Hash() uint64 {
 	return hashChest | (uint64(c.Facing) << 32)
 }
-
-func registerChest() {
-	for _, direction := range world.AllDirections() {
-		_ = world.RegisterBlock(Chest{Facing: direction}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(direction)}})
-	}
-}
