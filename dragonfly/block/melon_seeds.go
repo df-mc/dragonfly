@@ -104,7 +104,7 @@ func (m MelonSeeds) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (m MelonSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:melon_stem", map[string]interface{}{"growth": int32(m.Growth)}
+	return "minecraft:melon_stem", map[string]interface{}{"facing_direction": int(m.direction), "growth": int32(m.Growth)}
 }
 
 // Hash ...
@@ -116,7 +116,7 @@ func (m MelonSeeds) Hash() uint64 {
 func allMelonStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
-			stems = append(stems, MelonSeeds{direction: j, crop: crop{Growth: i}})
+			stems = append(stems, MelonSeeds{crop: crop{Growth: i}, direction: j})
 		}
 	}
 	return
