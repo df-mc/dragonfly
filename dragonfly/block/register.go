@@ -117,6 +117,9 @@ func init() {
 	registerAll(allFarmland())
 	registerAll(allLava())
 	registerAll(allWater())
+	registerAll(allKelp())
+	registerAll(allPotato())
+	registerAll(allWheat())
 }
 
 func init() {
