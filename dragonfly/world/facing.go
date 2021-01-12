@@ -76,8 +76,3 @@ func (f Face) Axis() Axis {
 		return Z
 	}
 }
-
-// AllFaces returns a list of all of the current faces allowed inside of the world (up, down, north, east, south, west)
-func AllFaces() []Face {
-	return []Face{FaceUp, FaceDown, FaceNorth, FaceEast, FaceSouth, FaceWest}
-}
