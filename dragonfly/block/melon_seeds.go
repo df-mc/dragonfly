@@ -12,7 +12,7 @@ type MelonSeeds struct {
 	crop
 
 	// direction is the direction from the stem to the melon.
-	direction world.Face
+	Direction world.Face
 }
 
 // SameCrop ...
@@ -25,9 +25,9 @@ func (MelonSeeds) SameCrop(c Crop) bool {
 func (m MelonSeeds) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
 		w.BreakBlock(pos)
-	} else if m.direction != world.FaceDown {
-		if _, ok := w.Block(pos.Side(m.direction)).(Melon); !ok {
-			m.direction = world.FaceDown
+	} else if m.Direction != world.FaceDown {
+		if _, ok := w.Block(pos.Side(m.Direction)).(Melon); !ok {
+			m.Direction = world.FaceDown
 			w.PlaceBlock(pos, m)
 		}
 	}
@@ -53,7 +53,7 @@ func (m MelonSeeds) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 				case Farmland:
 				case Dirt:
 				case Grass:
-					m.direction = direction
+					m.Direction = direction
 					w.PlaceBlock(pos, m)
 					w.PlaceBlock(stemPos, Melon{})
 				}
@@ -104,19 +104,19 @@ func (m MelonSeeds) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (m MelonSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:melon_stem", map[string]interface{}{"facing_direction": int(m.direction), "growth": int32(m.Growth)}
+	return "minecraft:melon_stem", map[string]interface{}{"facing_direction": int32(m.Direction), "growth": int32(m.Growth)}
 }
 
 // Hash ...
 func (m MelonSeeds) Hash() uint64 {
-	return hashMelonStem | (uint64(m.Growth) << 32)
+	return hashMelonStem | (uint64(m.Growth) << 32) | (uint64(m.Direction) << 35)
 }
 
 // allMelonStems
 func allMelonStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
-			stems = append(stems, MelonSeeds{crop: crop{Growth: i}, direction: j})
+			stems = append(stems, MelonSeeds{crop: crop{Growth: i}, Direction: j})
 		}
 	}
 	return
