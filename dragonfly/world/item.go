@@ -49,10 +49,16 @@ var itemsNames = map[string]int32{}
 var names = map[int32]string{}
 
 //lint:ignore U1000 Map is used using compiler directives.
-var runtimeToOldIds = map[int32]string{}
+var runtimeToOldIds = map[int32]ItemEntry{}
 
 //lint:ignore U1000 Map is used using compiler directives.
-var oldIdsToRuntime = map[string]int32{}
+var oldIdsToRuntime = map[ItemEntry]int32{}
+
+// ItemEntry contains the basis for an item entry in the item entries list, used to translate runtime IDs.
+type ItemEntry struct {
+	Name string
+	Meta int16
+}
 
 // loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 //lint:ignore U1000 Function is used using compiler directives.
@@ -60,27 +66,30 @@ func loadItemEntries() error {
 	var itemJsonEntries []struct {
 		Name string `json:"name"`
 		ID   int32  `json:"id"`
+		Meta int16  `json:"meta"`
 	}
 	err := json.Unmarshal([]byte(resource.ItemEntries), &itemJsonEntries)
 	if err != nil {
 		return err
 	}
 	for _, jsonEntry := range itemJsonEntries {
-		oldIdsToRuntime[jsonEntry.Name] = jsonEntry.ID
-		runtimeToOldIds[jsonEntry.ID] = jsonEntry.Name
+		entry := ItemEntry{Name: jsonEntry.Name, Meta: jsonEntry.Meta}
+
+		oldIdsToRuntime[entry] = jsonEntry.ID
+		runtimeToOldIds[jsonEntry.ID] = entry
 	}
 	return nil
 }
 
 // runtimeById returns the runtime ID for an item by it's name.
 //lint:ignore U1000 Function is used using compiler directives.
-func runtimeById(name string) int32 {
-	return oldIdsToRuntime[name]
+func runtimeById(entry ItemEntry) int32 {
+	return oldIdsToRuntime[entry]
 }
 
 // idByRuntime returns the old ID for an item by it's runtime ID.
 //lint:ignore U1000 Function is used using compiler directives.
-func idByRuntime(runtimeId int32) string {
+func idByRuntime(runtimeId int32) ItemEntry {
 	return runtimeToOldIds[runtimeId]
 }
 

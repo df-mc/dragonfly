@@ -534,7 +534,9 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	name, meta := world_itemToName(it.Item())
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
-			NetworkID:     world_runtimeById(name),
+			NetworkID: world_runtimeById(world.ItemEntry{
+				Name: name,
+			}),
 			MetadataValue: meta,
 		},
 		Count:   int16(it.Count()),
@@ -551,22 +553,21 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 }
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
-func stackToItem(it protocol.ItemStack) item.Stack {
-	t, ok := world_itemByName(world_idByRuntime(it.NetworkID), it.MetadataValue)
+func stackToItem(it protocol.ItemStack, useFoundMetadataFirst bool) item.Stack {
+	entry := world_idByRuntime(it.NetworkID)
+	var meta int16
+	var oppositeMeta int16
+	if useFoundMetadataFirst {
+		meta = entry.Meta
+		oppositeMeta = it.MetadataValue
+	} else {
+		meta = it.MetadataValue
+		oppositeMeta = entry.Meta
+	}
+	t, ok := world_itemByName(entry.Name, meta)
 	if !ok {
-		// Minecraft uses "minecraft:bucket" for all of their buckets, however the JSON I am using to translate runtime IDs only uses the identifier,
-		// so it would collide with the other bucket types (lava and water.)
-		// I was thinking about adding a meta field, but it seems a bit stupid because this issue only occurs for this item and nothing else,
-		// so instead I just hardcoded it in here for now until I can think of a better solution. Let me know if you folks have any ideas.
-
-		// note from like 1 hour later lmao: im gonna add another field to the item entries json for meta so this will be removed next commit
-		// i'm just way too tired to change it right now
-		switch it.NetworkID {
-		case 362:
-			t, _ = world_itemByName("minecraft:bucket", 8)
-		case 363:
-			t, _ = world_itemByName("minecraft:bucket", 10)
-		default:
+		t, ok = world_itemByName(entry.Name, oppositeMeta)
+		if !ok {
 			t = block.Air{}
 		}
 	}
@@ -617,11 +618,11 @@ func world_itemToName(it world.Item) (name string, meta int16)
 
 //go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
 //noinspection ALL
-func world_runtimeById(name string) int32
+func world_runtimeById(entry world.ItemEntry) int32
 
 //go:linkname world_idByRuntime github.com/df-mc/dragonfly/dragonfly/world.idByRuntime
 //noinspection ALL
-func world_idByRuntime(runtimeId int32) string
+func world_idByRuntime(runtimeId int32) world.ItemEntry
 
 //go:linkname item_id github.com/df-mc/dragonfly/dragonfly/item.id
 //noinspection ALL
