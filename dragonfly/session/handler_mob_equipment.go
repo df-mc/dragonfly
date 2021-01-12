@@ -48,9 +48,12 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 		}
 	}
 	if clientSideItem.Count() != actual.Count() {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different counts: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem.Count(), actual.Count())
+		clientSideItem = stackToItem(pk.NewItem, true)
+		if clientSideItem.Count() != actual.Count() {
+			// Only ever debug these as they are frequent and expected to happen whenever client and server get
+			// out of sync.
+			s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different counts: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem.Count(), actual.Count())
+		}
 	}
 	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 		viewer.ViewEntityItems(s.c)
