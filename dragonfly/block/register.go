@@ -27,27 +27,14 @@ func init() {
 	_ = world.RegisterBlock(Dirt{Coarse: true}, world.BlockState{Name: "minecraft:dirt", Properties: map[string]interface{}{"dirt_type": "coarse"}})
 	_ = world.RegisterBlock(Cobblestone{}, world.BlockState{Name: "minecraft:cobblestone"})
 	_ = world.RegisterBlock(Cobblestone{Mossy: true}, world.BlockState{Name: "minecraft:mossy_cobblestone"})
-	/*world.RegisterBlock(allFarmland()...)
-	world.RegisterBlock(allKelp()...)
-	world.RegisterBlock(allLogs()...)
-	world.RegisterBlock(allLeaves()...)*/
 	_ = world.RegisterBlock(Bedrock{}, world.BlockState{Name: "minecraft:bedrock", Properties: map[string]interface{}{"infiniburn_bit": false}})
 	_ = world.RegisterBlock(Bedrock{InfiniteBurning: true}, world.BlockState{Name: "minecraft:bedrock", Properties: map[string]interface{}{"infiniburn_bit": true}})
-	/*_ = world.RegisterBlock(Chest{Facing: world.East}, Chest{Facing: world.West}, Chest{Facing: world.North}, Chest{Facing: world.South})
-	world.RegisterBlock(allConcrete()...)
-	world.RegisterBlock(allLight()...)
-	world.RegisterBlock(allPlanks()...)
-	world.RegisterBlock(allWoodStairs()...)
-	world.RegisterBlock(allWoodSlabs()...)
-	world.RegisterBlock(allWater()...)
-	world.RegisterBlock(allLava()...)*/
 	_ = world.RegisterBlock(Obsidian{}, world.BlockState{Name: "minecraft:obsidian"})
 	_ = world.RegisterBlock(DiamondBlock{}, world.BlockState{Name: "minecraft:diamond_block"})
 	_ = world.RegisterBlock(Glass{}, world.BlockState{Name: "minecraft:glass"})
 	_ = world.RegisterBlock(Glowstone{}, world.BlockState{Name: "minecraft:glowstone"})
 	_ = world.RegisterBlock(EmeraldBlock{}, world.BlockState{Name: "minecraft:emerald_block"})
 	_ = world.RegisterBlock(EndBricks{}, world.BlockState{Name: "minecraft:end_bricks"})
-	//world.RegisterBlock(allEndBrickStairs()...)
 	_ = world.RegisterBlock(GoldBlock{}, world.BlockState{Name: "minecraft:gold_block"})
 	_ = world.RegisterBlock(NetheriteBlock{}, world.BlockState{Name: "minecraft:netherite_block"})
 	_ = world.RegisterBlock(IronBlock{}, world.BlockState{Name: "minecraft:iron_block"})
@@ -56,29 +43,12 @@ func init() {
 	_ = world.RegisterBlock(Sponge{}, world.BlockState{Name: "minecraft:sponge", Properties: map[string]interface{}{"sponge_type": "dry"}})
 	_ = world.RegisterBlock(Sponge{Wet: true}, world.BlockState{Name: "minecraft:sponge", Properties: map[string]interface{}{"sponge_type": "wet"}})
 	_ = world.RegisterBlock(LapisBlock{}, world.BlockState{Name: "minecraft:lapis_block"})
-	/*world.RegisterBlock(allStainedTerracotta()...)
-	world.RegisterBlock(allGlazedTerracotta()...)*/
 	_ = world.RegisterBlock(Terracotta{}, world.BlockState{Name: "minecraft:hardened_clay"})
-	/*world.RegisterBlock(allStainedGlass()...)
-	world.RegisterBlock(allStainedGlassPane()...)*/
 	_ = world.RegisterBlock(GlassPane{}, world.BlockState{Name: "minecraft:glass_pane"})
 	_ = world.RegisterBlock(IronBars{}, world.BlockState{Name: "minecraft:iron_bars"})
-	/*world.RegisterBlock(allCarpets()...)
-	world.RegisterBlock(allWool()...)
-	world.RegisterBlock(allFence()...)*/
 	_ = world.RegisterBlock(NetherBrickFence{}, world.BlockState{Name: "minecraft:nether_brick_fence"})
-	/*world.RegisterBlock(allFenceGates()...)
-	world.RegisterBlock(allTrapdoors()...)
-	world.RegisterBlock(allDoors()...)
-	world.RegisterBlock(allCoral()...)
-	world.RegisterBlock(allCoralBlocks()...)
-	world.RegisterBlock(allPumpkins()...)
-	world.RegisterBlock(LitPumpkin{Facing: world.East}, LitPumpkin{Facing: world.West}, LitPumpkin{Facing: world.North}, LitPumpkin{Facing: world.South})*/
 	_ = world.RegisterBlock(EndStone{}, world.BlockState{Name: "minecraft:end_stone"})
 	_ = world.RegisterBlock(Netherrack{}, world.BlockState{Name: "minecraft:netherrack"})
-	/*world.RegisterBlock(Quartz{}, Quartz{Smooth: true})
-	world.RegisterBlock(ChiseledQuartz{})
-	world.RegisterBlock(QuartzPillar{Axis: world.X}, QuartzPillar{Axis: world.Y}, QuartzPillar{Axis: world.Z})*/
 	_ = world.RegisterBlock(QuartzBricks{}, world.BlockState{Name: "minecraft:quartz_bricks"})
 	_ = world.RegisterBlock(Clay{}, world.BlockState{Name: "minecraft:clay"})
 	/*world.RegisterBlock(BoneBlock{Axis: world.X}, BoneBlock{Axis: world.Y}, BoneBlock{Axis: world.Z})
@@ -105,22 +75,28 @@ func init() {
 	_ = world.RegisterBlock(Gravel{}, world.BlockState{Name: "minecraft:gravel"})
 	//world.RegisterBlock(allConcretePowder()...)
 	_ = world.RegisterBlock(Bricks{}, world.BlockState{Name: "minecraft:brick_block"})
-	//world.RegisterBlock(allFire()...)
 	_ = world.RegisterBlock(SoulSand{}, world.BlockState{Name: "minecraft:soul_sand"})
 	_ = world.RegisterBlock(Barrier{}, world.BlockState{Name: "minecraft:barrier"})
-	//world.RegisterBlock(Basalt{Axis: world.X}, Basalt{Axis: world.Y}, Basalt{Axis: world.Z}, Basalt{Polished: true, Axis: world.X}, Basalt{Polished: true, Axis: world.Y}, Basalt{Polished: true, Axis: world.Z})
 	_ = world.RegisterBlock(CryingObsidian{}, world.BlockState{Name: "minecraft:crying_obsidian"})
 	_ = world.RegisterBlock(SeaLantern{}, world.BlockState{Name: "minecraft:seaLantern"})
 	_ = world.RegisterBlock(SoulSoil{}, world.BlockState{Name: "minecraft:soul_soil"})
 	_ = world.RegisterBlock(BlueIce{}, world.BlockState{Name: "minecraft:blue_ice"})
 	_ = world.RegisterBlock(GildedBlackstone{}, world.BlockState{Name: "minecraft:gilded_blackstone"})
 	_ = world.RegisterBlock(Shroomlight{}, world.BlockState{Name: "minecraft:shroomlight"})
-	/*world.RegisterBlock(allTorch()...)
-	world.RegisterBlock(allCake()...)
-	world.RegisterBlock(NetherWart{}, NetherWart{Age: 1}, NetherWart{Age: 2}, NetherWart{Age: 3})*/
 	_ = world.RegisterBlock(InvisibleBedrock{}, world.BlockState{Name: "minecraft:invisibleBedrock"})
 	_ = world.RegisterBlock(NoteBlock{}, world.BlockState{Name: "minecraft:noteblock"})
 	_ = world.RegisterBlock(DragonEgg{}, world.BlockState{Name: "minecraft:dragon_egg"})
+
+	registerBasalt()
+	registerBeetroot()
+	registerBoneBlock()
+	registerCake()
+	registerCarpet()
+	registerCarrot()
+	registerChest()
+	registerConcrete()
+	registerCocoaBeans()
+
 }
 
 func init() {
@@ -451,5 +427,20 @@ func registerCarrot() {
 func registerChest() {
 	for _, direction := range world.AllDirections() {
 		_ = world.RegisterBlock(Chest{Facing: direction}, world.BlockState{Name: "minecraft:chest", Properties: map[string]interface{}{"facing_direction": 2 + int32(direction)}})
+	}
+}
+
+func registerCocoaBeans() {
+	for direction := world.Direction(0); direction <= 3; direction++ {
+		_ = world.RegisterBlock(CocoaBean{Facing: direction, Age: 0}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": int32(0), "direction": int32(direction)}})
+		_ = world.RegisterBlock(CocoaBean{Facing: direction, Age: 1}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": int32(1), "direction": int32(direction)}})
+		_ = world.RegisterBlock(CocoaBean{Facing: direction, Age: 2}, world.BlockState{Name: "minecraft:cocoa", Properties: map[string]interface{}{"age": int32(2), "direction": int32(direction)}})
+	}
+}
+
+func registerConcrete() {
+	for _, c := range colour.All() {
+		_ = world.RegisterBlock(Concrete{Colour: c}, world.BlockState{Name: "minecraft:concrete", Properties: map[string]interface{}{"color": c.String()}})
+		_ = world.RegisterBlock(ConcretePowder{Colour: c}, world.BlockState{Name: "minecraft:concretePowder", Properties: map[string]interface{}{"color": c.String()}})
 	}
 }
