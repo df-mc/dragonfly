@@ -118,6 +118,7 @@ func init() {
 	registerAll(allPotato())
 	registerAll(allWheat())
 	registerAll(allQuartz())
+	registerAll(allNetherWart())
 }
 
 func init() {

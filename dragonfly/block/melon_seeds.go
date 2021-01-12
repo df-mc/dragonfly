@@ -112,7 +112,7 @@ func (m MelonSeeds) Hash() uint64 {
 	return hashMelonStem | (uint64(m.Growth) << 32) | (uint64(m.Direction) << 35)
 }
 
-// allMelonStems
+// allMelonStems ...
 func allMelonStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
