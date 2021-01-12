@@ -60,10 +60,6 @@ func init() {
 	_ = world.RegisterBlock(IronOre{}, world.BlockState{Name: "minecraft:iron_ore"})
 	_ = world.RegisterBlock(CoalOre{}, world.BlockState{Name: "minecraft:coal_ore"})
 	_ = world.RegisterBlock(NetherQuartzOre{}, world.BlockState{Name: "minecraft:quartz_ore"})
-	/*world.RegisterBlock(allWheat()...)
-	world.RegisterBlock(allPotato()...)
-	world.RegisterBlock(allCarrot()...)
-	world.RegisterBlock(allMelonStems()...)*/
 	_ = world.RegisterBlock(Melon{}, world.BlockState{Name: "minecraft:melon_block"})
 	_ = world.RegisterBlock(Sand{}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "normal"}})
 	_ = world.RegisterBlock(Sand{Red: true}, world.BlockState{Name: "minecraft:sand", Properties: map[string]interface{}{"sand_type": "red"}})
