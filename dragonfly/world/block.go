@@ -157,7 +157,6 @@ func RegisterBlockState(s BlockState) error {
 	if _, ok := stateRuntimeIDs[h]; ok {
 		return fmt.Errorf("cannot register the same state twice (%+v)", s)
 	}
-	fmt.Println(s.Name, s.Properties)
 	rid := uint32(len(states))
 	stateRuntimeIDs[h] = rid
 	states = append(states, s)
