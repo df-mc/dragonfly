@@ -87,7 +87,8 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 	sub := chunk.sub[i]
 	if sub == nil {
 		// The first layer is initialised in the next call to Layer().
-		sub = &SubChunk{skyLight: fullSkyLight}
+		sub = NewSubChunk(world_internal.AirRuntimeID)
+		sub.skyLight = fullSkyLight
 		chunk.sub[i] = sub
 	}
 	if len(sub.storages) < 2 && runtimeID == world_internal.AirRuntimeID && layer == 1 {

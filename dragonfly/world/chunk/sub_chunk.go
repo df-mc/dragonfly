@@ -5,9 +5,15 @@ import "github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
+	air        uint32
 	storages   []*BlockStorage
 	blockLight [2048]uint8
 	skyLight   [2048]uint8
+}
+
+// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
+func NewSubChunk(airRuntimeID uint32) *SubChunk {
+	return &SubChunk{air: airRuntimeID}
 }
 
 // Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer

@@ -512,7 +512,7 @@ func subByY(y uint8, c *Chunk) *SubChunk {
 	sub := c.sub[index]
 
 	if sub == nil {
-		sub = &SubChunk{}
+		sub = NewSubChunk(world_internal.AirRuntimeID)
 		c.sub[index] = sub
 	}
 	return sub
