@@ -1526,7 +1526,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New()
+		c = chunk.New(world_internal.AirRuntimeID)
 		w.generator().GenerateChunk(pos, c)
 		return newChunkData(c), nil
 	}

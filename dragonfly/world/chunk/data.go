@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"sync"
@@ -46,8 +47,8 @@ var pool = sync.Pool{
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 //noinspection GoUnusedExportedFunction
-func NetworkDecode(data []byte, subChunkCount int) (*Chunk, error) {
-	c, buf := New(), bytes.NewBuffer(data)
+func NetworkDecode(airRuntimeId uint32, data []byte, subChunkCount int) (*Chunk, error) {
+	c, buf := New(airRuntimeId), bytes.NewBuffer(data)
 	for y := 0; y < subChunkCount; y++ {
 		ver, err := buf.ReadByte()
 		if err != nil {
@@ -174,7 +175,7 @@ func DiskEncode(c *Chunk, blob bool) (d SerialisedData) {
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
 // invalid, an error is returned.
 func DiskDecode(data SerialisedData) (*Chunk, error) {
-	c := New()
+	c := New(world_internal.AirRuntimeID)
 	copy(c.biomes[:], data.Data2D[512:])
 
 	for y, sub := range data.SubChunks {

@@ -11,6 +11,8 @@ import (
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
 	sync.Mutex
+	// air is the runtime ID of air.
+	air uint32
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub [16]*SubChunk
@@ -21,8 +23,8 @@ type Chunk struct {
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
-func New() *Chunk {
-	return &Chunk{blockEntities: make(map[[3]int]map[string]interface{})}
+func New(airRuntimeID uint32) *Chunk {
+	return &Chunk{air: airRuntimeID, blockEntities: make(map[[3]int]map[string]interface{})}
 }
 
 // Sub returns a list of all sub chunks present in the chunk.
