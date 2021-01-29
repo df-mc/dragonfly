@@ -76,7 +76,14 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 		s := b.(unimplementedBlock).BlockState
 		return stateRuntimeIDs[stateHash{name: s.Name, properties: s.HashProperties()}], true
 	}
+
 	rid, ok := blockRuntimeIDs[b]
+	if !ok {
+		if b, ok := b.(canEncode); ok {
+			name, properties := b.EncodeBlock()
+			return stateRuntimeIDs[stateHash{name: name, properties: BlockState{Name: name, Properties: properties}.HashProperties()}], true
+		}
+	}
 	return rid, ok
 }
 
@@ -294,6 +301,11 @@ type lightDiffuser interface {
 // liquidRemovable is identical to a block.LiquidRemovable.
 type liquidRemovable interface {
 	HasLiquidDrops() bool
+}
+
+// canEncode represents a block that can be encoded into a name with properties.
+type canEncode interface {
+	EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // beaconSource represents a block which is capable of contributing to powering a beacon pyramid.
