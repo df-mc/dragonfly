@@ -54,7 +54,7 @@ func NetworkDecode(airRuntimeId uint32, data []byte, subChunkCount int) (*Chunk,
 		if err != nil {
 			return nil, fmt.Errorf("error reading version: %w", err)
 		}
-		c.sub[y] = NewSubChunk(world_internal.AirRuntimeID)
+		c.sub[y] = NewSubChunk(airRuntimeId)
 		switch ver {
 		default:
 			return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)

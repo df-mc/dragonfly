@@ -1,7 +1,5 @@
 package chunk
 
-import "github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
-
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
@@ -22,7 +20,7 @@ func (sub *SubChunk) Layer(layer uint8) *BlockStorage {
 	for uint8(len(sub.storages)) <= layer {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		sub.storages = append(sub.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{world_internal.AirRuntimeID})))
+		sub.storages = append(sub.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{sub.air})))
 	}
 	return sub.storages[layer]
 }
@@ -36,7 +34,7 @@ func (sub *SubChunk) Layers() []*BlockStorage {
 // range of 0-15.
 func (sub *SubChunk) RuntimeID(x, y, z byte, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
-		return world_internal.AirRuntimeID
+		return sub.air
 	}
 	return sub.Layer(layer).RuntimeID(x, y, z)
 }
@@ -103,7 +101,7 @@ func (sub *SubChunk) compact() {
 	newStorages := make([]*BlockStorage, 0, len(sub.storages))
 	for _, storage := range sub.storages {
 		storage.compact()
-		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == world_internal.AirRuntimeID {
+		if len(storage.palette.blockRuntimeIDs) == 1 && storage.palette.blockRuntimeIDs[0] == sub.air {
 			// If the palette has only air in it, it means the storage is empty, so we can ignore it.
 			continue
 		}
