@@ -8,6 +8,8 @@ import (
 type Crop interface {
 	// GrowthStage returns the crop's current stage of growth. The max value is 7.
 	GrowthStage() int
+	// SameCrop checks if two crops are of the same type.
+	SameCrop(c Crop) bool
 }
 
 // crop is a base for crop plants.
@@ -85,11 +87,9 @@ func (c crop) CalculateGrowthChance(pos world.BlockPos, w *world.World) float64 
 
 // sameCrop checks if both blocks are crops and that they are the same type.
 func sameCrop(blockA, blockB world.Block) bool {
-	if _, ok := blockA.(Crop); ok {
-		if _, ok := blockB.(Crop); ok {
-			nameA, _ := blockA.EncodeBlock()
-			nameB, _ := blockB.EncodeBlock()
-			return nameA == nameB
+	if a, ok := blockA.(Crop); ok {
+		if b, ok := blockB.(Crop); ok {
+			return a.SameCrop(b)
 		}
 	}
 	return false

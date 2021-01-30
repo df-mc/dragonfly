@@ -30,13 +30,3 @@ func (l LapisOre) BreakInfo() BreakInfo {
 func (l LapisOre) EncodeItem() (id int32, meta int16) {
 	return 21, 0
 }
-
-// EncodeBlock ...
-func (l LapisOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:lapis_ore", nil
-}
-
-// Hash ...
-func (l LapisOre) Hash() uint64 {
-	return hashLapisOre
-}

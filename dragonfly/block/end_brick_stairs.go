@@ -76,11 +76,11 @@ func (s EndBrickStairs) SideClosed(pos, side world.BlockPos, w *world.World) boo
 	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
 
-// allEndBrickStairs returns all states of endbrick stairs.
-func allEndBrickStairs() (stairs []world.Block) {
-	for i := world.Direction(0); i <= 3; i++ {
-		stairs = append(stairs, EndBrickStairs{Facing: i, UpsideDown: true})
-		stairs = append(stairs, EndBrickStairs{Facing: i, UpsideDown: false})
+// allEndBrickStairs ...
+func allEndBrickStairs() (stairs []canEncode) {
+	for direction := world.Direction(0); direction <= 3; direction++ {
+		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: true})
+		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: false})
 	}
 	return
 }

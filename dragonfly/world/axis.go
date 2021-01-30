@@ -39,3 +39,8 @@ func (a Axis) FromString(s string) (interface{}, error) {
 	}
 	return nil, fmt.Errorf("unexpected axis '%v', expecting one of 'x', 'y' or 'z'", s)
 }
+
+// AllAxes return all possible axes. (x, y, z)
+func AllAxes() []Axis {
+	return []Axis{X, Y, Z}
+}

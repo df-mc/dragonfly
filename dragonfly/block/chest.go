@@ -16,6 +16,8 @@ import (
 // Chest is a container block which may be used to store items. Chests may also be paired to create a bigger
 // single container.
 // The empty value of Chest is not valid. It must be created using item.NewChest().
+// TODO: Redo inventory stuff in here. The inventory should be moved to a different place in world.World so
+//  that this block can be hashed properly.
 type Chest struct {
 	nbt
 	chest
@@ -203,4 +205,12 @@ func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
 // Hash ...
 func (c Chest) Hash() uint64 {
 	return hashChest | (uint64(c.Facing) << 32)
+}
+
+// allChests ...
+func allChests() (chests []canEncode) {
+	for _, direction := range world.AllDirections() {
+		chests = append(chests, Chest{Facing: direction})
+	}
+	return
 }

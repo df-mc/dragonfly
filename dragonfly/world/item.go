@@ -1,7 +1,9 @@
 package world
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -46,6 +48,51 @@ var items = map[int32]Item{}
 var itemsNames = map[string]int32{}
 var names = map[int32]string{}
 
+//lint:ignore U1000 Map is used using compiler directives.
+var runtimeToOldIds = map[int32]ItemEntry{}
+
+//lint:ignore U1000 Map is used using compiler directives.
+var oldIdsToRuntime = map[ItemEntry]int32{}
+
+// ItemEntry contains the basis for an item entry in the item entries list, used to translate runtime IDs.
+type ItemEntry struct {
+	Name string
+	Meta int16
+}
+
+// loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
+//lint:ignore U1000 Function is used using compiler directives.
+func loadItemEntries() error {
+	var itemJsonEntries []struct {
+		Name string `json:"name"`
+		ID   int32  `json:"id"`
+		Meta int16  `json:"meta"`
+	}
+	err := json.Unmarshal([]byte(resource.ItemEntries), &itemJsonEntries)
+	if err != nil {
+		return err
+	}
+	for _, jsonEntry := range itemJsonEntries {
+		entry := ItemEntry{Name: jsonEntry.Name, Meta: jsonEntry.Meta}
+
+		oldIdsToRuntime[entry] = jsonEntry.ID
+		runtimeToOldIds[jsonEntry.ID] = entry
+	}
+	return nil
+}
+
+// runtimeById returns the runtime ID for an item by it's name.
+//lint:ignore U1000 Function is used using compiler directives.
+func runtimeById(entry ItemEntry) int32 {
+	return oldIdsToRuntime[entry]
+}
+
+// idByRuntime returns the old ID for an item by it's runtime ID.
+//lint:ignore U1000 Function is used using compiler directives.
+func idByRuntime(runtimeId int32) ItemEntry {
+	return runtimeToOldIds[runtimeId]
+}
+
 // itemByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
 // returned and the bool true.
 //lint:ignore U1000 Function is used using compiler directives.
@@ -75,4 +122,11 @@ func itemByName(name string, meta int16) (Item, bool) {
 func itemToName(it Item) (name string, meta int16) {
 	id, meta := it.EncodeItem()
 	return names[id], meta
+}
+
+// itemNames returns a map of item names indexed by their runtime ID.
+//lint:ignore U1000 Function is used using compiler directives.
+//noinspection GoUnusedFunction
+func itemNames() map[int32]string {
+	return names
 }

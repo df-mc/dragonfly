@@ -43,7 +43,6 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
 			s.log.Debugf("failed processing packet from %v (%v): ItemStackRequest: error resolving item stack request: %v", s.conn.RemoteAddr(), s.c.Name(), err)
-			return nil
 		}
 	}
 	return nil
@@ -353,6 +352,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
 	inventory, _ := s.invByID(int32(slot.ContainerID))
+
 	_ = inventory.SetItem(int(slot.Slot), i)
 
 	if h.changes[slot.ContainerID] == nil {
@@ -392,7 +392,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 		})
 	}
 	s.writePacket(&packet.ItemStackResponse{Responses: []protocol.ItemStackResponse{{
-		Success:       true,
+		Status:        protocol.ItemStackResponseStatusOK,
 		RequestID:     id,
 		ContainerInfo: info,
 	}}})
@@ -403,7 +403,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	s.writePacket(&packet.ItemStackResponse{
 		Responses: []protocol.ItemStackResponse{{
-			Success:   false,
+			Status:    protocol.ItemStackResponseStatusError,
 			RequestID: id,
 		}},
 	})

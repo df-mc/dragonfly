@@ -34,18 +34,22 @@ type Animation struct {
 	// FrameCount is the amount of frames that the animation plays for. Exactly this amount of frames should
 	// be present in the Pix animation data.
 	FrameCount int
+
+	// AnimationExpression is the player's animation expression.
+	AnimationExpression int
 }
 
 // NewAnimation returns a new animation using the width and height passed, with the type specifying what part
 // of the body to display it on.
 // NewAnimation fills out the Pix field adequately and sets FrameCount to 1 by default.
-func NewAnimation(width, height int, animationType AnimationType) Animation {
+func NewAnimation(width, height int, expression int, animationType AnimationType) Animation {
 	return Animation{
-		w:          width,
-		h:          height,
-		aType:      animationType,
-		Pix:        make([]uint8, width*height*4),
-		FrameCount: 1,
+		w:                   width,
+		h:                   height,
+		aType:               animationType,
+		Pix:                 make([]uint8, width*height*4),
+		FrameCount:          1,
+		AnimationExpression: expression,
 	}
 }
 

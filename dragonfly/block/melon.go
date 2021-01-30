@@ -25,13 +25,3 @@ func (m Melon) BreakInfo() BreakInfo {
 func (m Melon) EncodeItem() (id int32, meta int16) {
 	return 103, 0
 }
-
-// EncodeBlock ...
-func (m Melon) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:melon_block", nil
-}
-
-// Hash ...
-func (m Melon) Hash() uint64 {
-	return hashMelon
-}

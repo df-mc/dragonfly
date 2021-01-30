@@ -79,7 +79,7 @@ func (p Pumpkin) Hash() uint64 {
 	return hashPumpkin | (uint64(boolByte(p.Carved)) << 32) | (uint64(p.Facing) << 33)
 }
 
-func allPumpkins() (pumpkins []world.Block) {
+func allPumpkins() (pumpkins []canEncode) {
 	for i := world.Direction(0); i <= 3; i++ {
 		pumpkins = append(pumpkins, Pumpkin{Facing: i})
 		pumpkins = append(pumpkins, Pumpkin{Facing: i, Carved: true})

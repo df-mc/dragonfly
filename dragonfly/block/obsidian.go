@@ -18,16 +18,6 @@ func (Obsidian) EncodeItem() (id int32, meta int16) {
 	return 49, 0
 }
 
-// EncodeBlock ...
-func (Obsidian) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:obsidian", nil
-}
-
-// Hash ...
-func (Obsidian) Hash() uint64 {
-	return hashObsidian
-}
-
 // BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
 	return BreakInfo{

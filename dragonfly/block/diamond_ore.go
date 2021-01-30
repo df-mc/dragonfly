@@ -29,13 +29,3 @@ func (d DiamondOre) BreakInfo() BreakInfo {
 func (d DiamondOre) EncodeItem() (id int32, meta int16) {
 	return 56, 0
 }
-
-// EncodeBlock ...
-func (d DiamondOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:diamond_ore", nil
-}
-
-// Hash ...
-func (d DiamondOre) Hash() uint64 {
-	return hashDiamondOre
-}

@@ -14,6 +14,12 @@ type Potato struct {
 	crop
 }
 
+// SameCrop ...
+func (Potato) SameCrop(c Crop) bool {
+	_, ok := c.(Potato)
+	return ok
+}
+
 // AlwaysConsumable ...
 func (p Potato) AlwaysConsumable() bool {
 	return false
@@ -96,7 +102,7 @@ func (p Potato) Hash() uint64 {
 }
 
 // allPotato ...
-func allPotato() (potato []world.Block) {
+func allPotato() (potato []canEncode) {
 	for i := 0; i <= 7; i++ {
 		potato = append(potato, Potato{crop{Growth: i}})
 	}

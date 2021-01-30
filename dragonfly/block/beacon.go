@@ -131,7 +131,7 @@ func (b Beacon) recalculateLevel(pos world.BlockPos, w *world.World) int {
 	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if src, ok := world_internal.BeaconSource[block_internal.World_runtimeID(w, world.BlockPos{x, y, z})]; !ok || !src {
+				if !world_internal.BeaconSource[block_internal.World_runtimeID(w, world.BlockPos{x, y, z})] {
 					return lvl
 				}
 			}
@@ -220,16 +220,6 @@ func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
 // EncodeItem ...
 func (Beacon) EncodeItem() (id int32, meta int16) {
 	return 138, 0
-}
-
-// EncodeBlock ...
-func (Beacon) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:beacon", nil
-}
-
-// Hash ...
-func (Beacon) Hash() uint64 {
-	return hashBeacon
 }
 
 //go:linkname effect_effectByID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID

@@ -15,6 +15,12 @@ type PumpkinSeeds struct {
 	Direction world.Face
 }
 
+// SameCrop ...
+func (PumpkinSeeds) SameCrop(c Crop) bool {
+	_, ok := c.(PumpkinSeeds)
+	return ok
+}
+
 // NeighbourUpdateTick ...
 func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
@@ -107,7 +113,7 @@ func (p PumpkinSeeds) Hash() uint64 {
 }
 
 // allPumpkinStems
-func allPumpkinStems() (stems []world.Block) {
+func allPumpkinStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
 			stems = append(stems, PumpkinSeeds{Direction: j, crop: crop{Growth: i}})

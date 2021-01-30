@@ -56,6 +56,8 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		s.c.ContinueBreaking(world.Face(pk.BlockFace))
 	case packet.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
+	case packet.PlayerActionCreativePlayerDestroyBlock:
+		// Don't do anything for this action.
 	default:
 		return fmt.Errorf("unhandled ActionType %v", pk.ActionType)
 	}

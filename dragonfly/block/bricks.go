@@ -25,13 +25,3 @@ func (b Bricks) BreakInfo() BreakInfo {
 func (Bricks) EncodeItem() (id int32, meta int16) {
 	return 45, 0
 }
-
-// EncodeBlock ...
-func (b Bricks) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:brick_block", nil
-}
-
-// Hash ...
-func (b Bricks) Hash() uint64 {
-	return hashBricks
-}

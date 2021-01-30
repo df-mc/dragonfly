@@ -120,3 +120,14 @@ func (q QuartzPillar) EncodeBlock() (name string, properties map[string]interfac
 func (q QuartzPillar) Hash() uint64 {
 	return hashQuartzPillar | (uint64(q.Axis << 32))
 }
+
+// allQuartz ...
+func allQuartz() (quartz []canEncode) {
+	quartz = append(quartz, Quartz{})
+	quartz = append(quartz, Quartz{Smooth: true})
+	quartz = append(quartz, ChiseledQuartz{})
+	for _, a := range world.AllAxes() {
+		quartz = append(quartz, QuartzPillar{Axis: a})
+	}
+	return
+}

@@ -66,3 +66,10 @@ func (l LitPumpkin) EncodeBlock() (name string, properties map[string]interface{
 func (l LitPumpkin) Hash() uint64 {
 	return hashLitPumpkin | (uint64(l.Facing) << 32)
 }
+
+func allLitPumpkins() (pumpkins []canEncode) {
+	for i := world.Direction(0); i <= 3; i++ {
+		pumpkins = append(pumpkins, LitPumpkin{Facing: i})
+	}
+	return
+}

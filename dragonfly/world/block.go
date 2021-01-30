@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/brentp/intintmap"
-	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
@@ -23,121 +21,13 @@ import (
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
 // inventory: It is also an item.
+// Every Block implementation must be able to be hashed as key in a map.
 type Block interface {
-	// EncodeBlock converts the block to its encoded representation: It returns the name of the minecraft
-	// block, for example 'minecraft:stone' and the block properties (also referred to as states) that the
-	// block holds.
-	EncodeBlock() (name string, properties map[string]interface{})
-	// Hash returns a unique hash of the block including the block properties. No two different blocks must
-	// return the same hash.
-	Hash() uint64
 	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
 	// entity. If true is returned, Block must implemented the NBTer interface.
 	HasNBT() bool
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
-}
-
-// RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
-// one random block in each sub chunk are picked to receive a random tick.
-type RandomTicker interface {
-	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.Rand
-	// instance is passed which may be used to generate values randomly without locking.
-	RandomTick(pos BlockPos, w *World, r *rand.Rand)
-}
-
-// ScheduledTicker represents a block that executes an action when it has a block update scheduled, such as
-// when a block adjacent to it is broken.
-type ScheduledTicker interface {
-	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
-	// when a block is placed or broken.
-	ScheduledTick(pos BlockPos, w *World)
-}
-
-// NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
-// through placement or being broken.
-type NeighbourUpdateTicker interface {
-	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
-	// position of this block is passed.
-	NeighbourUpdateTick(pos, changedNeighbour BlockPos, w *World)
-}
-
-// lightEmitter is identical to a block.lightEmitter.
-type lightEmitter interface {
-	LightEmissionLevel() uint8
-}
-
-// lightDiffuser is identical to a block.LightDiffuser.
-type lightDiffuser interface {
-	LightDiffusionLevel() uint8
-}
-
-// liquidRemovable is identical to a block.LiquidRemovable.
-type liquidRemovable interface {
-	HasLiquidDrops() bool
-}
-
-// beaconSource represents a block which is capable of contributing to powering a beacon pyramid.
-type beaconSource interface {
-	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
-	// beacon pyramid.
-	PowersBeacon() bool
-}
-
-// LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without
-// fully removing the liquid.
-type LiquidDisplacer interface {
-	// CanDisplace specifies if the block is able to displace the liquid passed.
-	CanDisplace(b Liquid) bool
-	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
-	// closed. When this returns true (for example, when the side is below the position and the block is a
-	// slab), liquid inside of the displacer won't flow from pos into side.
-	SideClosed(pos, side BlockPos, w *World) bool
-}
-
-// RegisterBlock registers a block with the save name passed. The save name is used to save the block to the
-// world's database and must not conflict with existing blocks.
-// If a saveName is passed which already has a block registered for it, RegisterBlock panics.
-func RegisterBlock(states ...Block) {
-	if len(states) == 0 {
-		panic("at least one block state must be registered")
-	}
-	for _, state := range states {
-		name, props := state.EncodeBlock()
-		key := keyStruct{name: name, pHash: hashProperties(props)}
-
-		if _, ok := blocksHash[key]; ok {
-			if _, unimplemented := state.(unimplementedBlock); !unimplemented {
-				panic(fmt.Sprintf("cannot overwrite an existing block with the same name '%v' and properties %+v", name, props))
-			} else {
-				continue
-			}
-		}
-		rid := uint32(len(registeredStates))
-
-		runtimeIDsHashes.Put(int64(state.Hash()), int64(rid))
-		registeredStates = append(registeredStates, state)
-
-		filterLevel := uint8(15)
-		if diffuser, ok := state.(lightDiffuser); ok {
-			filterLevel = diffuser.LightDiffusionLevel()
-		}
-		chunk.FilteringBlocks = append(chunk.FilteringBlocks, filterLevel)
-		emissionLevel := uint8(0)
-		if emitter, ok := state.(lightEmitter); ok {
-			emissionLevel = emitter.LightEmissionLevel()
-		}
-		chunk.LightBlocks = append(chunk.LightBlocks, emissionLevel)
-		if removable, ok := state.(liquidRemovable); ok {
-			world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
-		}
-		if source, ok := state.(beaconSource); ok {
-			world_internal.BeaconSource[rid] = source.PowersBeacon()
-		}
-
-		blocksHash[key] = state
-		registerBlockByTypeName(state)
-	}
 }
 
 // replaceableBlock represents a block that may be replaced by another block automatically. An example is
@@ -154,14 +44,6 @@ func replaceable(w *World, c *chunkData, pos BlockPos, with Block) bool {
 		return replaceable.ReplaceableBy(with)
 	}
 	return false
-}
-
-// allBlocks returns a list of all registered states of the server. The list is ordered according to the
-// runtime ID that the blocks have.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func allBlocks() []Block {
-	return registeredStates
 }
 
 // blocksByName is a list of blocks indexed by their type names.
@@ -184,98 +66,65 @@ func registerBlockByTypeName(b Block) {
 	blocksByName[name.String()] = reflect.New(reflect.TypeOf(b)).Elem().Interface().(Block)
 }
 
-// init registers all default states.
-func init() {
-	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]interface{}, found bool) {
-		block, ok := blockByRuntimeID(runtimeID)
-		if !ok {
-			return "", nil, false
-		}
-		name, properties = block.EncodeBlock()
-		return name, properties, true
-	}
-	chunk.StateToRuntimeID = func(name string, properties map[string]interface{}) (runtimeID uint32, found bool) {
-		blockInstance, ok := blockByNameAndProperties(name, properties)
-		if !ok {
-			return 0, false
-		}
-		return BlockRuntimeID(blockInstance)
-	}
-}
-
-var registeredStates []Block
-var blocksHash = map[keyStruct]Block{}
-var runtimeIDsHashes = intintmap.New(8000, 0.95)
-
-type keyStruct struct {
-	name  string
-	pHash string
-}
-
 // BlockRuntimeID attempts to return a runtime ID of a block state previously registered using
 // RegisterBlock(). If the runtime ID is found, the bool returned is true. It is otherwise false.
-func BlockRuntimeID(state Block) (uint32, bool) {
-	if state == nil {
-		return 0, true
+func BlockRuntimeID(b Block) (uint32, bool) {
+	if b == nil {
+		return world_internal.AirRuntimeID, true
 	}
-	runtimeID, ok := runtimeIDsHashes.Get(int64(state.Hash()))
-	return uint32(runtimeID), ok
+	if (b.Model() == unimplementedModel{}) {
+		s := b.(unimplementedBlock).BlockState
+		return stateRuntimeIDs[stateHash{name: s.Name, properties: s.HashProperties()}], true
+	}
+
+	rid, ok := blockRuntimeIDs[b]
+	if !ok {
+		if b, ok := b.(canEncode); ok {
+			name, properties := b.EncodeBlock()
+			return stateRuntimeIDs[stateHash{name: name, properties: BlockState{Name: name, Properties: properties}.HashProperties()}], true
+		}
+	}
+	return rid, ok
 }
 
 // blockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
 // false. If found, the block state is non-nil and the bool true.
-func blockByRuntimeID(runtimeID uint32) (Block, bool) {
-	if runtimeID >= uint32(len(registeredStates)) {
-		return nil, false
+func blockByRuntimeID(rid uint32) (Block, bool) {
+	if rid >= uint32(len(states)) {
+		return air(), false
 	}
-	return registeredStates[runtimeID], true
-}
-
-// blockByNameAndProperties attempts to return a block instance by a name and its properties passed.
-func blockByNameAndProperties(name string, properties map[string]interface{}) (b Block, found bool) {
-	blockInstance, ok := blocksHash[keyStruct{name: name, pHash: hashProperties(properties)}]
-	return blockInstance, ok
-}
-
-// registerAllStates registers all block states present in the game, skipping ones that have already been
-// registered before this is called.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func registerAllStates() {
-	var m []unimplementedBlock
-	b, _ := base64.StdEncoding.DecodeString(resource.BlockStates)
-	_ = nbt.Unmarshal(b, &m)
-
-	for _, b := range m {
-		key := keyStruct{name: b.Block.Name, pHash: hashProperties(b.Block.Properties)}
-		if _, ok := blocksHash[key]; ok {
-			// Duplicate state, don't add it.
-			continue
-		}
-		RegisterBlock(b)
+	b, ok := blocks[rid]
+	if !ok {
+		b = unimplementedBlock{states[rid]}
 	}
+	return b, true
 }
 
+type BlockState struct {
+	Name       string                 `nbt:"name"`
+	Properties map[string]interface{} `nbt:"states"`
+	Version    int32                  `nbt:"version"`
+}
+
+// buffers holds a sync.Pool of pooled byte buffers used to create a hash for the properties of a BlockState.
 var buffers = sync.Pool{New: func() interface{} {
 	return bytes.NewBuffer(make([]byte, 0, 128))
 }}
 
-// hashProperties produces a hash for the block properties map passed.
-// Passing the same map into hashProperties will always result in the same hash.
-func hashProperties(properties map[string]interface{}) string {
-	// TODO: Find a way to speed this up even more. Even though a lot of effort has been put into reducing the
-	//  time this function takes, it is still too much. Any improvements to its performance have a large
-	//  impact on large world modifications.
-
-	keys := make([]string, 0, len(properties))
-	for k := range properties {
+// HashProperties produces a hash for the block properties held by the BlockState.
+func (s BlockState) HashProperties() string {
+	if s.Properties == nil {
+		return ""
+	}
+	keys := make([]string, 0, len(s.Properties))
+	for k := range s.Properties {
 		keys = append(keys, k)
 	}
 	radix.Sort(keys)
 
 	b := buffers.Get().(*bytes.Buffer)
 	for _, k := range keys {
-		switch v := properties[k].(type) {
+		switch v := s.Properties[k].(type) {
 		case bool:
 			if v {
 				b.WriteByte(1)
@@ -301,36 +150,74 @@ func hashProperties(properties map[string]interface{}) string {
 	return *(*string)(unsafe.Pointer(&data))
 }
 
+type stateHash struct {
+	name, properties string
+}
+
+var states []BlockState
+var stateRuntimeIDs = map[stateHash]uint32{}
+var blockRuntimeIDs = map[Block]uint32{}
+var blocks = map[uint32]Block{}
+
+func RegisterBlockState(s BlockState) error {
+	h := stateHash{name: s.Name, properties: s.HashProperties()}
+	if _, ok := stateRuntimeIDs[h]; ok {
+		return fmt.Errorf("cannot register the same state twice (%+v)", s)
+	}
+	rid := uint32(len(states))
+	stateRuntimeIDs[h] = rid
+	states = append(states, s)
+
+	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
+	chunk.LightBlocks = append(chunk.LightBlocks, 0)
+	world_internal.LiquidRemovable = append(world_internal.LiquidRemovable, false)
+	world_internal.BeaconSource = append(world_internal.BeaconSource, false)
+
+	if s.Name == "minecraft:air" {
+		world_internal.AirRuntimeID = rid
+	}
+	return nil
+}
+
+func RegisterBlock(b Block, s BlockState) error {
+	h := stateHash{name: s.Name, properties: s.HashProperties()}
+
+	if _, ok := blockRuntimeIDs[b]; ok {
+		return fmt.Errorf("cannot register the same block twice (%#v)", b)
+	}
+	rid, ok := stateRuntimeIDs[h]
+	if !ok {
+		return fmt.Errorf("block state returned is not currently registered (%+v)", s)
+	}
+	blockRuntimeIDs[b] = rid
+	blocks[rid] = b
+
+	if diffuser, ok := b.(lightDiffuser); ok {
+		chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
+	}
+	if emitter, ok := b.(lightEmitter); ok {
+		chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
+	}
+	if removable, ok := b.(liquidRemovable); ok {
+		world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
+	}
+	if source, ok := b.(beaconSource); ok {
+		world_internal.BeaconSource[rid] = source.PowersBeacon()
+	}
+	registerBlockByTypeName(b)
+	return nil
+}
+
 // air returns an air block.
 func air() Block {
-	b, _ := blockByRuntimeID(0)
+	b, _ := blockByRuntimeID(world_internal.AirRuntimeID)
 	return b
 }
 
 // unimplementedBlock represents a block that has not yet been implemented. It is used for registering block
 // states that haven't yet been added.
 type unimplementedBlock struct {
-	Block struct {
-		Name       string                 `nbt:"name"`
-		Properties map[string]interface{} `nbt:"states"`
-		Version    int32                  `nbt:"version"`
-	} `nbt:"block"`
-	ID int16 `nbt:"id"`
-}
-
-// Name ...
-func (u unimplementedBlock) Name() string {
-	return u.Block.Name
-}
-
-// EncodeBlock ...
-func (u unimplementedBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return u.Block.Name, u.Block.Properties
-}
-
-// Hash ...
-func (u unimplementedBlock) Hash() uint64 {
-	return xxhash.Sum64String(u.Block.Name + hashProperties(u.Block.Properties))
+	BlockState
 }
 
 // HasNBT ...
@@ -375,4 +262,98 @@ type Liquid interface {
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos BlockPos, w *World, flownIntoBy *BlockPos) bool
+}
+
+// RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
+// one random block in each sub chunk are picked to receive a random tick.
+type RandomTicker interface {
+	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.Rand
+	// instance is passed which may be used to generate values randomly without locking.
+	RandomTick(pos BlockPos, w *World, r *rand.Rand)
+}
+
+// ScheduledTicker represents a block that executes an action when it has a block update scheduled, such as
+// when a block adjacent to it is broken.
+type ScheduledTicker interface {
+	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
+	// when a block is placed or broken.
+	ScheduledTick(pos BlockPos, w *World)
+}
+
+// NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
+// through placement or being broken.
+type NeighbourUpdateTicker interface {
+	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
+	// position of this block is passed.
+	NeighbourUpdateTick(pos, changedNeighbour BlockPos, w *World)
+}
+
+// lightEmitter is identical to a block.lightEmitter.
+type lightEmitter interface {
+	LightEmissionLevel() uint8
+}
+
+// lightDiffuser is identical to a block.LightDiffuser.
+type lightDiffuser interface {
+	LightDiffusionLevel() uint8
+}
+
+// liquidRemovable is identical to a block.LiquidRemovable.
+type liquidRemovable interface {
+	HasLiquidDrops() bool
+}
+
+// canEncode represents a block that can be encoded into a name with properties.
+type canEncode interface {
+	EncodeBlock() (name string, properties map[string]interface{})
+}
+
+// beaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type beaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
+// LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without
+// fully removing the liquid.
+type LiquidDisplacer interface {
+	// CanDisplace specifies if the block is able to displace the liquid passed.
+	CanDisplace(b Liquid) bool
+	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
+	// closed. When this returns true (for example, when the side is below the position and the block is a
+	// slab), liquid inside of the displacer won't flow from pos into side.
+	SideClosed(pos, side BlockPos, w *World) bool
+}
+
+// init registers all default states.
+func init() {
+	b, _ := base64.StdEncoding.DecodeString(resource.BlockStates)
+	dec := nbt.NewDecoder(bytes.NewBuffer(b))
+
+	var s BlockState
+	for {
+		if err := dec.Decode(&s); err != nil {
+			break
+		}
+		if err := RegisterBlockState(s); err != nil {
+			// Should never happen.
+			panic("duplicate block state registered")
+		}
+	}
+
+	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]interface{}, found bool) {
+		if runtimeID >= uint32(len(states)) {
+			return "", nil, false
+		}
+		s := states[runtimeID]
+		return s.Name, s.Properties, true
+	}
+	chunk.StateToRuntimeID = func(name string, properties map[string]interface{}) (runtimeID uint32, found bool) {
+		s := BlockState{Name: name, Properties: properties}
+		h := stateHash{name: name, properties: s.HashProperties()}
+
+		rid, ok := stateRuntimeIDs[h]
+		return rid, ok
+	}
 }

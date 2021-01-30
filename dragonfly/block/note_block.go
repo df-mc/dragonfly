@@ -78,10 +78,13 @@ func (n NoteBlock) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:noteblock", nil
+	return "minecraft:noteblock", map[string]interface{}{"pitch": n.Pitch}
 }
 
-// Hash ...
-func (n NoteBlock) Hash() uint64 {
-	return hashNoteblock
+// allNoteBlocks ...
+func allNoteBlocks() (noteBlocks []canEncode) {
+	for i := 0; i < 25; i++ {
+		noteBlocks = append(noteBlocks, NoteBlock{Pitch: i})
+	}
+	return
 }

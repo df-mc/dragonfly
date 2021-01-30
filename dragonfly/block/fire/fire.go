@@ -57,3 +57,8 @@ func (f fire) String() string {
 	}
 	panic("unknown fire type")
 }
+
+// AllFireTypes ...
+func AllFireTypes() (fireTypes []Fire) {
+	return []Fire{{fire(0), 15}, {fire(1), 10}}
+}

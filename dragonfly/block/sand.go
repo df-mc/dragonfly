@@ -38,16 +38,3 @@ func (s Sand) EncodeItem() (id int32, meta int16) {
 	}
 	return 12, 0
 }
-
-// EncodeBlock ...
-func (s Sand) EncodeBlock() (name string, properties map[string]interface{}) {
-	if s.Red {
-		return "minecraft:sand", map[string]interface{}{"sand_type": "red"}
-	}
-	return "minecraft:sand", map[string]interface{}{"sand_type": "normal"}
-}
-
-// Hash ...
-func (s Sand) Hash() uint64 {
-	return hashSand | (uint64(boolByte(s.Red)) << 32)
-}

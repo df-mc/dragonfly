@@ -26,13 +26,3 @@ func (c CoalOre) BreakInfo() BreakInfo {
 func (c CoalOre) EncodeItem() (id int32, meta int16) {
 	return 16, 0
 }
-
-// EncodeBlock ...
-func (c CoalOre) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:coal_ore", nil
-}
-
-// Hash ...
-func (c CoalOre) Hash() uint64 {
-	return hashCoalOre
-}

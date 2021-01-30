@@ -29,13 +29,3 @@ func (s Shroomlight) BreakInfo() BreakInfo {
 func (Shroomlight) EncodeItem() (id int32, meta int16) {
 	return -230, 0
 }
-
-// EncodeBlock ...
-func (Shroomlight) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:shroomlight", nil
-}
-
-// Hash ...
-func (Shroomlight) Hash() uint64 {
-	return hashShroomlight
-}

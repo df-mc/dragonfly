@@ -13,6 +13,12 @@ type WheatSeeds struct {
 	crop
 }
 
+// SameCrop ...
+func (WheatSeeds) SameCrop(c Crop) bool {
+	_, ok := c.(WheatSeeds)
+	return ok
+}
+
 // BoneMeal ...
 func (s WheatSeeds) BoneMeal(pos world.BlockPos, w *world.World) bool {
 	if s.Growth == 7 {
@@ -79,7 +85,7 @@ func (s WheatSeeds) Hash() uint64 {
 }
 
 // allWheat ...
-func allWheat() (wheat []world.Block) {
+func allWheat() (wheat []canEncode) {
 	for i := 0; i <= 7; i++ {
 		wheat = append(wheat, WheatSeeds{crop{Growth: i}})
 	}
