@@ -126,7 +126,7 @@ func allQuartz() (quartz []canEncode) {
 	quartz = append(quartz, Quartz{})
 	quartz = append(quartz, Quartz{Smooth: true})
 	quartz = append(quartz, ChiseledQuartz{})
-	for _, a := range world.AllAxis() {
+	for _, a := range world.AllAxes() {
 		quartz = append(quartz, QuartzPillar{Axis: a})
 	}
 	return

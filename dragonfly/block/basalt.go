@@ -63,7 +63,7 @@ func (b Basalt) Hash() uint64 {
 
 // allBasalt ...
 func allBasalt() (basalt []canEncode) {
-	for _, axis := range world.AllAxis() {
+	for _, axis := range world.AllAxes() {
 		basalt = append(basalt, Basalt{Axis: axis, Polished: false})
 		basalt = append(basalt, Basalt{Axis: axis, Polished: true})
 	}
