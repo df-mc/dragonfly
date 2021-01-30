@@ -10,6 +10,8 @@ import (
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
 	sync.Mutex
+	// air is the runtime ID of air.
+	air uint32
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub [16]*SubChunk
@@ -20,8 +22,8 @@ type Chunk struct {
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
-func New() *Chunk {
-	return &Chunk{blockEntities: make(map[[3]int]map[string]interface{})}
+func New(airRuntimeID uint32) *Chunk {
+	return &Chunk{air: airRuntimeID, blockEntities: make(map[[3]int]map[string]interface{})}
 }
 
 // Sub returns a list of all sub chunks present in the chunk.
@@ -63,8 +65,8 @@ func (chunk *Chunk) RuntimeID(x, y, z uint8, layer uint8) uint32 {
 	sub := chunk.sub[y>>4]
 	if sub == nil {
 		// The sub chunk was not initialised, so we can conclude that the block at that location would be
-		// an air block. (always runtime ID 0)
-		return 0
+		// an air block.
+		return chunk.air
 	}
 	return sub.RuntimeID(x, y, z, layer)
 }
@@ -84,10 +86,11 @@ func (chunk *Chunk) SetRuntimeID(x, y, z uint8, layer uint8, runtimeID uint32) {
 	sub := chunk.sub[i]
 	if sub == nil {
 		// The first layer is initialised in the next call to Layer().
-		sub = &SubChunk{skyLight: fullSkyLight}
+		sub = NewSubChunk(chunk.air)
+		sub.skyLight = fullSkyLight
 		chunk.sub[i] = sub
 	}
-	if len(sub.storages) < 2 && runtimeID == 0 && layer == 1 {
+	if len(sub.storages) < 2 && runtimeID == chunk.air && layer == 1 {
 		// Air was set at the second layer, but there were less than 2 layers, so there already was air there.
 		// Don't do anything with this, just return.
 		return
@@ -125,7 +128,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) uint8 {
 		for y := 15; y >= 0; y-- {
 			totalY := uint8(y | (subY << 4))
 			rid := sub.storages[0].RuntimeID(x, totalY, z)
-			if rid != 0 {
+			if rid != chunk.air {
 				return totalY
 			}
 		}

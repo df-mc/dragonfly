@@ -102,7 +102,7 @@ func (p Potato) Hash() uint64 {
 }
 
 // allPotato ...
-func allPotato() (potato []world.Block) {
+func allPotato() (potato []canEncode) {
 	for i := 0; i <= 7; i++ {
 		potato = append(potato, Potato{crop{Growth: i}})
 	}

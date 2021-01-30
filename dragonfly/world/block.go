@@ -70,13 +70,20 @@ func registerBlockByTypeName(b Block) {
 // RegisterBlock(). If the runtime ID is found, the bool returned is true. It is otherwise false.
 func BlockRuntimeID(b Block) (uint32, bool) {
 	if b == nil {
-		return airRuntimeID, true
+		return world_internal.AirRuntimeID, true
 	}
 	if (b.Model() == unimplementedModel{}) {
 		s := b.(unimplementedBlock).BlockState
 		return stateRuntimeIDs[stateHash{name: s.Name, properties: s.HashProperties()}], true
 	}
+
 	rid, ok := blockRuntimeIDs[b]
+	if !ok {
+		if b, ok := b.(canEncode); ok {
+			name, properties := b.EncodeBlock()
+			return stateRuntimeIDs[stateHash{name: name, properties: BlockState{Name: name, Properties: properties}.HashProperties()}], true
+		}
+	}
 	return rid, ok
 }
 
@@ -167,7 +174,7 @@ func RegisterBlockState(s BlockState) error {
 	world_internal.BeaconSource = append(world_internal.BeaconSource, false)
 
 	if s.Name == "minecraft:air" {
-		airRuntimeID = rid
+		world_internal.AirRuntimeID = rid
 	}
 	return nil
 }
@@ -201,11 +208,9 @@ func RegisterBlock(b Block, s BlockState) error {
 	return nil
 }
 
-var airRuntimeID uint32
-
 // air returns an air block.
 func air() Block {
-	b, _ := blockByRuntimeID(airRuntimeID)
+	b, _ := blockByRuntimeID(world_internal.AirRuntimeID)
 	return b
 }
 
@@ -296,6 +301,11 @@ type lightDiffuser interface {
 // liquidRemovable is identical to a block.LiquidRemovable.
 type liquidRemovable interface {
 	HasLiquidDrops() bool
+}
+
+// canEncode represents a block that can be encoded into a name with properties.
+type canEncode interface {
+	EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // beaconSource represents a block which is capable of contributing to powering a beacon pyramid.

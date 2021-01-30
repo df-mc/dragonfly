@@ -23,7 +23,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -37,6 +36,8 @@ import (
 type Server struct {
 	started atomic.Bool
 	name    atomic.String
+
+	joinMessage, quitMessage atomic.String
 
 	c        Config
 	log      *logrus.Logger
@@ -74,6 +75,8 @@ func New(c *Config, log *logrus.Logger) *Server {
 		p:       make(map[uuid.UUID]*player.Player),
 		name:    *atomic.NewString(c.Server.Name),
 	}
+	s.JoinMessage(c.Server.JoinMessage)
+	s.QuitMessage(c.Server.QuitMessage)
 	return s
 }
 
@@ -110,6 +113,9 @@ func (server *Server) Run() error {
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
+	if err := world_loadItemEntries(); err != nil {
+		return err
+	}
 	item_registerVanillaCreativeItems()
 
 	if err := server.startListening(); err != nil {
@@ -131,6 +137,9 @@ func (server *Server) Start() error {
 	server.loadWorld()
 	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
+	if err := world_loadItemEntries(); err != nil {
+		return err
+	}
 	item_registerVanillaCreativeItems()
 
 	if err := server.startListening(); err != nil {
@@ -217,6 +226,18 @@ func (server *Server) SetName(a ...interface{}) {
 	server.name.Store(fmt.Sprint(a...))
 }
 
+// JoinMessage changes the join message for all players on the server. Leave this empty to disable it.
+// %v is the placeholder for the username of the player
+func (server *Server) JoinMessage(message string) {
+	server.joinMessage.Store(message)
+}
+
+// QuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
+// %v is the placeholder for the username of the player
+func (server *Server) QuitMessage(message string) {
+	server.quitMessage.Store(message)
+}
+
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (server *Server) Close() error {
 	if !server.running() {
@@ -270,7 +291,6 @@ func (server *Server) startListening() error {
 	}()
 
 	cfg := minecraft.ListenConfig{
-		ErrorLog:               log.New(w, "", 0),
 		MaximumPlayers:         server.c.Server.MaximumPlayers,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
@@ -316,6 +336,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		Time:                            int64(server.world.Time()),
 		GameRules:                       map[string]interface{}{"naturalregeneration": false},
 		Difficulty:                      2,
+		Items:                           server.itemEntries(),
 		ServerAuthoritativeMovementMode: packet.AuthoritativeMovementModeServer,
 		ServerAuthoritativeInventory:    true,
 	}
@@ -345,7 +366,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
-	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log)
+	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
 	s.Start(p, server.world, server.handleSessionClose)
 
@@ -388,7 +409,7 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 			t = skin.AnimationBody128x128
 		}
 
-		anim := skin.NewAnimation(animation.ImageWidth, animation.ImageHeight, t)
+		anim := skin.NewAnimation(animation.ImageWidth, animation.ImageHeight, animation.AnimationExpression, t)
 		anim.FrameCount = int(animation.Frames)
 		anim.Pix, _ = base64.StdEncoding.DecodeString(animation.Image)
 
@@ -421,6 +442,30 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
+// itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
+// packet.
+func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
+	for _, name := range world_itemNames() {
+		entries = append(entries, protocol.ItemEntry{
+			Name:      name,
+			RuntimeID: int16(world_runtimeById(world.ItemEntry{Name: name})),
+		})
+	}
+	return
+}
+
 //go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/dragonfly/item.registerVanillaCreativeItems
 //noinspection ALL
 func item_registerVanillaCreativeItems()
+
+//go:linkname world_loadItemEntries github.com/df-mc/dragonfly/dragonfly/world.loadItemEntries
+//noinspection all
+func world_loadItemEntries() error
+
+//go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
+//noinspection ALL
+func world_runtimeById(entry world.ItemEntry) int32
+
+//go:linkname world_itemNames github.com/df-mc/dragonfly/dragonfly/world.itemNames
+//noinspection all
+func world_itemNames() map[int32]string

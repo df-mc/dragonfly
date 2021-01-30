@@ -35,19 +35,25 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 	// The user swapped changed held slots so stop using item right away.
 	s.c.ReleaseItem()
 
-	clientSideItem := stackToItem(pk.NewItem)
+	clientSideItem := stackToItem(pk.NewItem, false)
 	actual, _ := s.inv.Item(int(pk.InventorySlot))
 
 	// The item the client claims to have must be identical to the one we have registered server-side.
 	if !clientSideItem.Comparable(actual) {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different types: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
+		clientSideItem = stackToItem(pk.NewItem, true)
+		if !clientSideItem.Comparable(actual) {
+			// Only ever debug these as they are frequent and expected to happen whenever client and server get
+			// out of sync.
+			s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different types: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
+		}
 	}
 	if clientSideItem.Count() != actual.Count() {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different counts: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem.Count(), actual.Count())
+		clientSideItem = stackToItem(pk.NewItem, true)
+		if clientSideItem.Count() != actual.Count() {
+			// Only ever debug these as they are frequent and expected to happen whenever client and server get
+			// out of sync.
+			s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got different counts: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem.Count(), actual.Count())
+		}
 	}
 	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 		viewer.ViewEntityItems(s.c)

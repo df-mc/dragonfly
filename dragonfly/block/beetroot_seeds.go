@@ -88,9 +88,9 @@ func (b BeetrootSeeds) Hash() uint64 {
 }
 
 // allBeetroot ...
-func allBeetroot() (beetroot []world.Block) {
+func allBeetroot() (beetroot []canEncode) {
 	for i := 0; i <= 7; i++ {
-		beetroot = append(beetroot, BeetrootSeeds{crop{Growth: i}})
+		beetroot = append(beetroot, BeetrootSeeds{crop: crop{Growth: i}})
 	}
 	return
 }

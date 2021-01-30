@@ -11,7 +11,7 @@ import (
 type MelonSeeds struct {
 	crop
 
-	// Direction is the direction from the stem to the melon.
+	// direction is the direction from the stem to the melon.
 	Direction world.Face
 }
 
@@ -40,7 +40,7 @@ func (m MelonSeeds) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 			m.Growth++
 			w.PlaceBlock(pos, m)
 		} else {
-			directions := []world.Direction{world.North, world.South, world.West, world.East}
+			directions := world.AllDirections()
 			for _, i := range directions {
 				if _, ok := w.Block(pos.Side(i.Face())).(Melon); ok {
 					return
@@ -112,11 +112,11 @@ func (m MelonSeeds) Hash() uint64 {
 	return hashMelonStem | (uint64(m.Growth) << 32) | (uint64(m.Direction) << 35)
 }
 
-// allMelonStems
-func allMelonStems() (stems []world.Block) {
+// allMelonStems ...
+func allMelonStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
 		for j := world.Face(0); j <= 5; j++ {
-			stems = append(stems, MelonSeeds{Direction: j, crop: crop{Growth: i}})
+			stems = append(stems, MelonSeeds{crop: crop{Growth: i}, Direction: j})
 		}
 	}
 	return

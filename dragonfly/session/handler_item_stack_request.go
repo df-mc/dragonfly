@@ -352,6 +352,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
 	inventory, _ := s.invByID(int32(slot.ContainerID))
+
 	_ = inventory.SetItem(int(slot.Slot), i)
 
 	if h.changes[slot.ContainerID] == nil {

@@ -114,7 +114,7 @@ func (t Torch) Hash() uint64 {
 }
 
 // allTorch ...
-func allTorch() (torch []world.Block) {
+func allTorch() (torch []canEncode) {
 	for i := world.Face(0); i < 6; i++ {
 		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
 		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})

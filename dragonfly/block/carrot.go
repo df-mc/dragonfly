@@ -95,10 +95,10 @@ func (c Carrot) Hash() uint64 {
 	return hashCarrot | (uint64(c.Growth) << 32)
 }
 
-// allCarrot ...
-func allCarrot() (carrot []world.Block) {
-	for i := 0; i <= 7; i++ {
-		carrot = append(carrot, Carrot{crop{Growth: i}})
+// allCarrots ...
+func allCarrots() (carrots []canEncode) {
+	for growth := 0; growth < 8; growth++ {
+		carrots = append(carrots, Carrot{crop{Growth: growth}})
 	}
 	return
 }

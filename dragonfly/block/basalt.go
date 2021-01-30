@@ -60,3 +60,12 @@ func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
 func (b Basalt) Hash() uint64 {
 	return hashBasalt | (uint64(boolByte(b.Polished)) << 32) | (uint64(b.Axis) << 33)
 }
+
+// allBasalt ...
+func allBasalt() (basalt []canEncode) {
+	for _, axis := range world.AllAxes() {
+		basalt = append(basalt, Basalt{Axis: axis, Polished: false})
+		basalt = append(basalt, Basalt{Axis: axis, Polished: true})
+	}
+	return
+}

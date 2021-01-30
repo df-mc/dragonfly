@@ -30,20 +30,26 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
 		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem)) {
-			return nil
+		if !held.Equal(stackToItem(data.HeldItem, false)) {
+			if !held.Equal(stackToItem(data.HeldItem, true)) {
+				return nil
+			}
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem)) {
-			return nil
+		if !held.Equal(stackToItem(data.HeldItem, false)) {
+			if !held.Equal(stackToItem(data.HeldItem, true)) {
+				return nil
+			}
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
 		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem)) {
-			return nil
+		if !held.Equal(stackToItem(data.HeldItem, false)) {
+			if !held.Equal(stackToItem(data.HeldItem, true)) {
+				return nil
+			}
 		}
 		return h.handleReleaseItemTransaction(data, s)
 	}
@@ -68,10 +74,13 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if action.OldItem.Count != 0 || action.OldItem.NetworkID != 0 || action.OldItem.MetadataValue != 0 {
 				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
 			}
-			newItem := stackToItem(action.NewItem)
+			newItem := stackToItem(action.NewItem, false)
 			actual, offHand := s.c.HeldItems()
 			if !newItem.Comparable(actual) {
-				return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
+				newItem = stackToItem(action.NewItem, true)
+				if !newItem.Comparable(actual) {
+					return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
+				}
 			}
 			if newItem.Count() > actual.Count() {
 				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())

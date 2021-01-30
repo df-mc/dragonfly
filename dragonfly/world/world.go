@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
+	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
@@ -179,11 +180,11 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 func runtimeID(w *World, pos BlockPos) uint32 {
 	if w == nil || pos[1] < 0 || pos[1] > 255 {
 		// Fast way out.
-		return 0
+		return world_internal.AirRuntimeID
 	}
 	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if err != nil {
-		return 0
+		return world_internal.AirRuntimeID
 	}
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
@@ -408,7 +409,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 							}
 							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, runtimeID)
 						} else {
-							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, 0)
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, world_internal.AirRuntimeID)
 						}
 					}
 				}
@@ -553,10 +554,10 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool,
 		return false, false
 	}
 	if _, ok := b.(Liquid); ok {
-		c.SetRuntimeID(x, y, z, layer, 0)
+		c.SetRuntimeID(x, y, z, layer, world_internal.AirRuntimeID)
 		return true, true
 	}
-	return id == 0, false
+	return id == world_internal.AirRuntimeID, false
 }
 
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
@@ -1230,7 +1231,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
 				rid := layers[0].RuntimeID(uint8(x), uint8(y), uint8(z))
-				if rid == 0 {
+				if rid == world_internal.AirRuntimeID {
 					// The block was air, take the fast route out.
 					continue
 				}
@@ -1525,7 +1526,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New()
+		c = chunk.New(world_internal.AirRuntimeID)
 		w.generator().GenerateChunk(pos, c)
 		return newChunkData(c), nil
 	}

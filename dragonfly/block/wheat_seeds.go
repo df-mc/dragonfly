@@ -85,7 +85,7 @@ func (s WheatSeeds) Hash() uint64 {
 }
 
 // allWheat ...
-func allWheat() (wheat []world.Block) {
+func allWheat() (wheat []canEncode) {
 	for i := 0; i <= 7; i++ {
 		wheat = append(wheat, WheatSeeds{crop{Growth: i}})
 	}

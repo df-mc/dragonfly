@@ -37,5 +37,5 @@ func (p Potion) Consume(_ *world.World, c Consumer) Stack {
 
 // EncodeItem ...
 func (p Potion) EncodeItem() (id int32, meta int16) {
-	return 373, int16(p.Type.Uint8())
+	return 424, int16(p.Type.Uint8())
 }
