@@ -9,6 +9,7 @@ import (
 	"math/rand"
 )
 
+// GrassPlant is a transparent plant block which can be used to obtain seeds and as decoration.
 type GrassPlant struct {
 	noNBT
 	transparent
