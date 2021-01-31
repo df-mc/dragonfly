@@ -37,6 +37,21 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 	}
 }
 
+// BoneMeal attempts to affect the block using a bone meal item.
+func (g GrassPlant) BoneMeal(pos world.BlockPos, w *world.World) bool {
+	switch g.Grass {
+	case grass.SmallGrass():
+		w.SetBlock(pos, GrassPlant{Grass: grass.TallGrass()})
+		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Grass: grass.TallGrass(), UpperBit: true})
+		return true
+	case grass.Fern():
+		w.SetBlock(pos, GrassPlant{Grass: grass.LargeFern()})
+		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Grass: grass.LargeFern(), UpperBit: true})
+		return true
+	}
+	return false
+}
+
 // NeighbourUpdateTick ...
 func (g GrassPlant) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if p, ok := w.Block(pos).(GrassPlant); ok {
