@@ -26,6 +26,9 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
 		Drops: func(t tool.Tool) []item.Stack {
+			if g.Grass == grass.NetherSprouts() {
+				return []item.Stack{item.NewStack(g, 1)}
+			}
 			if rand.Float32() > 0.57 {
 				return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 			}
@@ -38,14 +41,10 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 func (g GrassPlant) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if p, ok := w.Block(pos).(GrassPlant); ok {
 		if p.Grass == grass.TallGrass() || p.Grass == grass.LargeFern() {
-			if p.UpperBit {
-				if _, ok := w.Block(pos.Side(world.FaceDown)).(GrassPlant); !ok {
-					w.BreakBlock(pos)
-				}
-			} else {
-				if _, ok := w.Block(pos.Side(world.FaceUp)).(GrassPlant); !ok {
-					w.BreakBlock(pos)
-				}
+			if _, ok := w.Block(pos.Side(world.FaceDown)).(GrassPlant); !ok && p.UpperBit {
+				w.BreakBlock(pos)
+			} else if _, ok := w.Block(pos.Side(world.FaceUp)).(GrassPlant); !ok {
+				w.BreakBlock(pos)
 			}
 		}
 		return
