@@ -4,40 +4,49 @@ import (
 	"fmt"
 )
 
+// Grass represents a grass plant, which can be placed on top of grass blocks.
 type Grass struct {
 	grass
 }
 
+// SmallGrass returns the small grass variant of grass.
 func SmallGrass() Grass {
 	return Grass{0}
 }
 
+// Fern returns the fern variant of grass.
 func Fern() Grass {
 	return Grass{1}
 }
 
+// TallGrass returns the tall grass variant of grass.
 func TallGrass() Grass {
 	return Grass{2}
 }
 
+// LargeFern returns the large fern variant of grass.
 func LargeFern() Grass {
 	return Grass{3}
 }
 
+// NetherSprouts returns the nether sprouts variant of grass.
 func NetherSprouts() Grass {
 	return Grass{4}
 }
 
+// All returns all variants of grass.
 func All() []Grass {
 	return []Grass{SmallGrass(), Fern(), TallGrass(), LargeFern(), NetherSprouts()}
 }
 
 type grass uint8
 
+// Uint8 converts the grass to an integer that uniquely identifies it's type.
 func (g grass) Uint8() uint8 {
 	return uint8(g)
 }
 
+// Name returns the grass's display name.
 func (g grass) Name() string {
 	switch g {
 	case 0:
