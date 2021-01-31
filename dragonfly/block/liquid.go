@@ -1,11 +1,15 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
+	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"math"
+	"math/rand"
 	"sync"
 )
 
@@ -141,13 +145,15 @@ func flowInto(b world.Liquid, src, pos world.BlockPos, w *world.World, falling b
 		w.BreakBlockWithoutParticles(pos)
 	}
 	if removable.HasLiquidDrops() {
-		it, ok := existing.(world.Item)
-		if !ok {
-			// Should never happen.
-			panic("blocks removable by liquid with drops should always implement world.Item")
+		if b, ok := existing.(Breakable); ok {
+			for _, d := range b.BreakInfo().Drops(tool.None{}) {
+				itemEntity := entity.NewItem(d, pos.Vec3Centre())
+				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+				w.AddEntity(itemEntity)
+			}
+		} else {
+			panic("liquid drops should always implement breakable")
 		}
-		// TODO: Drop item entities.
-		_ = it
 	}
 	ctx := event.C()
 	w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
