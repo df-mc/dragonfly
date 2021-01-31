@@ -19,6 +19,15 @@ type GrassPlant struct {
 	grass.Grass
 }
 
+// FlammabilityInfo ...
+func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: 60,
+		Flammability:  100,
+		LavaFlammable: true,
+	}
+}
+
 // BreakInfo ...
 func (g GrassPlant) BreakInfo() BreakInfo {
 	return BreakInfo{
@@ -56,10 +65,14 @@ func (g GrassPlant) BoneMeal(pos world.BlockPos, w *world.World) bool {
 func (g GrassPlant) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if p, ok := w.Block(pos).(GrassPlant); ok {
 		if p.Grass == grass.TallGrass() || p.Grass == grass.LargeFern() {
-			if _, ok := w.Block(pos.Side(world.FaceDown)).(GrassPlant); !ok && p.UpperBit {
-				w.BreakBlock(pos)
-			} else if _, ok := w.Block(pos.Side(world.FaceUp)).(GrassPlant); !ok {
-				w.BreakBlock(pos)
+			if p.UpperBit {
+				if _, ok := w.Block(pos.Side(world.FaceDown)).(GrassPlant); !ok {
+					w.BreakBlock(pos)
+				}
+			} else {
+				if _, ok := w.Block(pos.Side(world.FaceUp)).(GrassPlant); !ok {
+					w.BreakBlock(pos)
+				}
 			}
 		}
 		return
