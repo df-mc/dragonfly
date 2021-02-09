@@ -238,7 +238,7 @@ func spreadNeighbour(b world.Liquid, src world.BlockPos, w *world.World, node li
 // canFlowInto checks if a liquid can flow into the block present in the world at a specific block position.
 func canFlowInto(b world.Liquid, w *world.World, pos world.BlockPos, sideways bool) bool {
 	rid := block_internal.World_runtimeID(w, pos)
-	if rid == 0 {
+	if rid == world_internal.AirRuntimeID {
 		return true
 	}
 	_, ok := world_internal.LiquidRemovable[rid]
