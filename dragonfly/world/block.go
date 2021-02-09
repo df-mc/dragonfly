@@ -168,6 +168,7 @@ func RegisterBlockState(s BlockState) error {
 	stateRuntimeIDs[h] = rid
 	states = append(states, s)
 
+	world_internal.LiquidRemovable = append(world_internal.LiquidRemovable, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 	world_internal.BeaconSource = append(world_internal.BeaconSource, false)
@@ -188,6 +189,7 @@ func RegisterBlock(b Block, s BlockState) error {
 	if !ok {
 		return fmt.Errorf("block state returned is not currently registered (%+v)", s)
 	}
+	fmt.Println(s.Name, rid)
 	blockRuntimeIDs[b] = rid
 	blocks[rid] = b
 
@@ -197,8 +199,8 @@ func RegisterBlock(b Block, s BlockState) error {
 	if emitter, ok := b.(lightEmitter); ok {
 		chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
 	}
-	if removable, ok := b.(liquidRemovable); ok {
-		world_internal.LiquidRemovable[rid] = removable.HasLiquidDrops()
+	if _, ok := b.(liquidRemovable); ok {
+		world_internal.LiquidRemovable[rid] = true
 	}
 	if source, ok := b.(beaconSource); ok {
 		world_internal.BeaconSource[rid] = source.PowersBeacon()
