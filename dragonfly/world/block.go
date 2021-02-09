@@ -170,7 +170,6 @@ func RegisterBlockState(s BlockState) error {
 
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
-	world_internal.LiquidRemovable = append(world_internal.LiquidRemovable, false)
 	world_internal.BeaconSource = append(world_internal.BeaconSource, false)
 
 	if s.Name == "minecraft:air" {
