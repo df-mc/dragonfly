@@ -3,7 +3,6 @@ package world
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
@@ -189,7 +188,6 @@ func RegisterBlock(b Block, s BlockState) error {
 	if !ok {
 		return fmt.Errorf("block state returned is not currently registered (%+v)", s)
 	}
-	fmt.Println(s.Name, rid)
 	blockRuntimeIDs[b] = rid
 	blocks[rid] = b
 
