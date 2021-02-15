@@ -2,6 +2,7 @@ package world
 
 import (
 	"bytes"
+        "fmt"
 	"encoding/base64"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
