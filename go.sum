@@ -36,6 +36,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
+github.com/TwistedAsylumMC/gophertunnel v1.10.6-0.20210217021733-4c21a51c91fa h1:PP5gsyddNN0PWzN/aBJKtLTVN8EVVx10tnXi8mg6Ghg=
+github.com/TwistedAsylumMC/gophertunnel v1.10.6-0.20210217021733-4c21a51c91fa/go.mod h1:TpC717w6p5WIDDLhQzaXeumOjCsGpsjyzxTCvA4hceg=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
@@ -158,8 +160,6 @@ github.com/sandertv/go-raknet v1.9.1/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+D
 github.com/sandertv/go-raknet v1.9.1/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
 github.com/sandertv/go-raknet v1.10.0 h1:KERyx6Ooc+4VmmYaa1ncByO1g18k3+Ste/wyUdCjtTw=
 github.com/sandertv/go-raknet v1.10.0/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
-github.com/sandertv/gophertunnel v1.10.3 h1:pDPRvYN3cJ7jtfPXbk5sLv84cqpIU8X9n1X26MCjpo4=
-github.com/sandertv/gophertunnel v1.10.3/go.mod h1:TpC717w6p5WIDDLhQzaXeumOjCsGpsjyzxTCvA4hceg=
 github.com/sirupsen/logrus v1.6.0 h1:UBcNElsrwanuuMsnGSlYmtmgbb23qDR5dG+6X6Oo89I=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=

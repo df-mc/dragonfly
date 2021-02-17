@@ -15,6 +15,5 @@ func (s statusProvider) ServerStatus(playerCount, maxPlayers int) minecraft.Serv
 		ServerName:  s.s.name.Load(),
 		PlayerCount: playerCount,
 		MaxPlayers:  maxPlayers,
-		ShowVersion: false,
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -18,45 +19,45 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		return ErrSelfRuntimeID
 	}
 	switch pk.ActionType {
-	case packet.PlayerActionRespawn:
+	case protocol.PlayerActionRespawn:
 		// Don't do anything for this action.
-	case packet.PlayerActionJump:
+	case protocol.PlayerActionJump:
 		if s.c.Sprinting() {
 			s.c.Exhaust(0.2)
 		} else {
 			s.c.Exhaust(0.05)
 		}
-	case packet.PlayerActionStartSprint:
+	case protocol.PlayerActionStartSprint:
 		s.c.StartSprinting()
-	case packet.PlayerActionStopSprint:
+	case protocol.PlayerActionStopSprint:
 		s.c.StopSprinting()
-	case packet.PlayerActionStartSneak:
+	case protocol.PlayerActionStartSneak:
 		s.c.StartSneaking()
-	case packet.PlayerActionStopSneak:
+	case protocol.PlayerActionStopSneak:
 		s.c.StopSneaking()
-	case packet.PlayerActionStartSwimming:
+	case protocol.PlayerActionStartSwimming:
 		if _, ok := s.c.World().Liquid(world.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()}))); ok {
 			s.c.StartSwimming()
 		}
-	case packet.PlayerActionStopSwimming:
+	case protocol.PlayerActionStopSwimming:
 		s.c.StopSwimming()
-	case packet.PlayerActionStartBreak:
+	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
 		s.c.StartBreaking(world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])}, world.Face(pk.BlockFace))
-	case packet.PlayerActionAbortBreak:
+	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
-	case packet.PlayerActionStopBreak:
+	case protocol.PlayerActionStopBreak:
 		s.c.FinishBreaking()
-	case packet.PlayerActionContinueBreak:
+	case protocol.PlayerActionContinueBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
 		s.c.ContinueBreaking(world.Face(pk.BlockFace))
-	case packet.PlayerActionStartBuildingBlock:
+	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
-	case packet.PlayerActionCreativePlayerDestroyBlock:
+	case protocol.PlayerActionCreativePlayerDestroyBlock:
 		// Don't do anything for this action.
 	default:
 		return fmt.Errorf("unhandled ActionType %v", pk.ActionType)
