@@ -320,10 +320,10 @@ func init() {
 	world.RegisterItem("minecraft:noteblock", NoteBlock{})
 	world.RegisterItem("minecraft:dragon_egg", DragonEgg{})
 	world.RegisterItem("minecraft:tallgrass", GrassPlant{})
-	world.RegisterItem("minecraft:nether_sprouts", GrassPlant{Grass: grass.NetherSprouts()})
-	world.RegisterItem("minecraft:tallgrass", GrassPlant{Grass: grass.Fern()})
-	world.RegisterItem("minecraft:double_plant", GrassPlant{Grass: grass.TallGrass()})
-	world.RegisterItem("minecraft:double_plant", GrassPlant{Grass: grass.LargeFern()})
+	world.RegisterItem("minecraft:nether_sprouts", GrassPlant{Type: grass.NetherSprouts()})
+	world.RegisterItem("minecraft:tallgrass", GrassPlant{Type: grass.Fern()})
+	world.RegisterItem("minecraft:double_plant", GrassPlant{Type: grass.TallGrass()})
+	world.RegisterItem("minecraft:double_plant", GrassPlant{Type: grass.LargeFern()})
 }
 
 func init() {
