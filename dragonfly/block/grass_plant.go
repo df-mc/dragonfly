@@ -15,14 +15,16 @@ type GrassPlant struct {
 	transparent
 	empty
 
-	UpperBit bool
+	// UpperPart is set if the plant is the upper part, for things like tall plants.
+	UpperPart bool
 
-	grass.Grass
+	// Type is the type of grass that the plant represents.
+	Type grass.Grass
 }
 
 // FlammabilityInfo ...
 func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
-	if g.Grass == grass.NetherSprouts() {
+	if g.Type == grass.NetherSprouts() {
 		return FlammabilityInfo{
 			Encouragement: 60,
 			Flammability:  0,
@@ -43,7 +45,7 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 		Harvestable: alwaysHarvestable,
 		Effective:   nothingEffective,
 		Drops: func(t tool.Tool) []item.Stack {
-			if g.Grass == grass.NetherSprouts() {
+			if g.Type == grass.NetherSprouts() {
 				return []item.Stack{item.NewStack(g, 1)}
 			}
 			if rand.Float32() > 0.57 {
@@ -56,14 +58,14 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 
 // BoneMeal attempts to affect the block using a bone meal item.
 func (g GrassPlant) BoneMeal(pos world.BlockPos, w *world.World) bool {
-	switch g.Grass {
+	switch g.Type {
 	case grass.SmallGrass():
-		w.SetBlock(pos, GrassPlant{Grass: grass.TallGrass()})
-		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Grass: grass.TallGrass(), UpperBit: true})
+		w.SetBlock(pos, GrassPlant{Type: grass.TallGrass()})
+		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Type: grass.TallGrass(), UpperPart: true})
 		return true
 	case grass.Fern():
-		w.SetBlock(pos, GrassPlant{Grass: grass.LargeFern()})
-		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Grass: grass.LargeFern(), UpperBit: true})
+		w.SetBlock(pos, GrassPlant{Type: grass.LargeFern()})
+		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Type: grass.LargeFern(), UpperPart: true})
 		return true
 	}
 	return false
@@ -72,8 +74,8 @@ func (g GrassPlant) BoneMeal(pos world.BlockPos, w *world.World) bool {
 // NeighbourUpdateTick ...
 func (g GrassPlant) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 	if p, ok := w.Block(pos).(GrassPlant); ok {
-		if p.Grass == grass.TallGrass() || p.Grass == grass.LargeFern() {
-			if p.UpperBit {
+		if p.Type == grass.TallGrass() || p.Type == grass.LargeFern() {
+			if p.UpperPart {
 				if _, ok := w.Block(pos.Side(world.FaceDown)).(GrassPlant); !ok {
 					w.BreakBlock(pos)
 				}
@@ -107,15 +109,15 @@ func (g GrassPlant) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3
 	}
 
 	place(w, pos, g, user, ctx)
-	if g.Grass == grass.TallGrass() || g.Grass == grass.LargeFern() {
-		place(w, pos.Side(world.FaceUp), GrassPlant{Grass: g.Grass, UpperBit: true}, user, ctx)
+	if g.Type == grass.TallGrass() || g.Type == grass.LargeFern() {
+		place(w, pos.Side(world.FaceUp), GrassPlant{Type: g.Type, UpperPart: true}, user, ctx)
 	}
 	return placed(ctx)
 }
 
 // EncodeItem ...
 func (g GrassPlant) EncodeItem() (id int32, meta int16) {
-	switch g.Grass {
+	switch g.Type {
 	case grass.SmallGrass():
 		return 31, 1
 	case grass.Fern():
@@ -132,15 +134,15 @@ func (g GrassPlant) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{}) {
-	switch g.Grass {
+	switch g.Type {
 	case grass.SmallGrass():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "default"}
 	case grass.Fern():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
 	case grass.TallGrass():
-		return "minecraft:double_plant", map[string]interface{}{"double_plant_type": "grass", "upper_block_bit": g.UpperBit}
+		return "minecraft:double_plant", map[string]interface{}{"double_plant_type": "grass", "upper_block_bit": g.UpperPart}
 	case grass.LargeFern():
-		return "minecraft:double_plant", map[string]interface{}{"double_plant_type": "fern", "upper_block_bit": g.UpperBit}
+		return "minecraft:double_plant", map[string]interface{}{"double_plant_type": "fern", "upper_block_bit": g.UpperPart}
 	case grass.NetherSprouts():
 		return "minecraft:nether_sprouts", map[string]interface{}{}
 	}
@@ -150,8 +152,8 @@ func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{
 // allGrassPlants ...
 func allGrassPlants() (grasses []canEncode) {
 	for _, g := range grass.All() {
-		grasses = append(grasses, GrassPlant{Grass: g, UpperBit: false})
-		grasses = append(grasses, GrassPlant{Grass: g, UpperBit: true})
+		grasses = append(grasses, GrassPlant{Type: g, UpperPart: false})
+		grasses = append(grasses, GrassPlant{Type: g, UpperPart: true})
 	}
 	return
 }
