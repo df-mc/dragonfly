@@ -51,6 +51,7 @@ func New(dir string) (*Provider, error) {
 		if err := nbt.UnmarshalEncoding(f[8:], &p.d, nbt.LittleEndian); err != nil {
 			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
+		p.d.FirstLoad = false
 		p.d.WorldStartCount++
 	}
 	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
