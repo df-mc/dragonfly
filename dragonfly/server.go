@@ -111,7 +111,6 @@ func (server *Server) Run() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
-	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	if err := world_loadItemEntries(); err != nil {
 		return err
@@ -135,7 +134,6 @@ func (server *Server) Start() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
-	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	if err := world_loadItemEntries(); err != nil {
 		return err
@@ -381,6 +379,14 @@ func (server *Server) loadWorld() {
 		server.log.Fatalf("error loading world: %v", err)
 	}
 	server.world.Provider(p)
+	if _, ok := server.world.Generator().(world.NopGenerator); ok {
+		server.world.SetGenerator(generator.Flat{})
+	}
+	if p.FirstLoad() {
+		fmt.Println("First time loading, setting spawn")
+		server.world.SetSpawn(world.BlockPos{0, server.world.HighestBlock(0, 0), 0})
+	}
+
 	server.log.Debugf("Loaded world '%v'.", server.world.Name())
 }
 

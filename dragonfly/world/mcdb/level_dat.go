@@ -115,4 +115,5 @@ type data struct {
 	UseMSAGamerTagsOnly            bool                   `nbt:"useMsaGamertagsOnly"`
 	WorldStartCount                int64                  `nbt:"worldStartCount"`
 	Experiments                    map[string]interface{} `nbt:"experiments"`
+	FirstLoad                      bool
 }

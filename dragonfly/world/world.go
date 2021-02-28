@@ -111,6 +111,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		cancelTick:          cancel,
 		name:                *atomic.NewString("World"),
 	}
+
 	w.initChunkCache()
 	go w.startTicking()
 	go w.chunkCacheJanitor()
@@ -975,9 +976,14 @@ func (w *World) ReadOnly() {
 	w.rdonly.Store(true)
 }
 
-// Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
+// Generator returns the world generator.
+func (w *World) Generator() Generator {
+	return w.gen
+}
+
+// SetGenerator changes the generator of the world to the one passed. If nil is passed, the generator is set to
 // the default, NopGenerator.
-func (w *World) Generator(g Generator) {
+func (w *World) SetGenerator(g Generator) {
 	if w == nil {
 		return
 	}
