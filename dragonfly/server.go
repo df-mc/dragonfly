@@ -383,7 +383,6 @@ func (server *Server) loadWorld() {
 		server.world.SetGenerator(generator.Flat{})
 	}
 	if p.FirstLoad() {
-		fmt.Println("First time loading, setting spawn")
 		server.world.SetSpawn(world.BlockPos{0, server.world.HighestBlock(0, 0), 0})
 	}
 
