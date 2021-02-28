@@ -976,14 +976,9 @@ func (w *World) ReadOnly() {
 	w.rdonly.Store(true)
 }
 
-// Generator returns the world generator.
-func (w *World) Generator() Generator {
-	return w.gen
-}
-
-// SetGenerator changes the generator of the world to the one passed. If nil is passed, the generator is set to
+// Generator changes the generator of the world to the one passed. If nil is passed, the generator is set to
 // the default, NopGenerator.
-func (w *World) SetGenerator(g Generator) {
+func (w *World) Generator(g Generator) {
 	if w == nil {
 		return
 	}

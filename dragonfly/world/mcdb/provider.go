@@ -86,8 +86,8 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.MultiPlayerGame = true
 }
 
-// FirstLoad returns true if this is the first time the world was loaded.
-func (p *Provider) FirstLoad() bool {
+// LoadFirstLoad returns true if this is the first time the world was loaded.
+func (p *Provider) LoadFirstLoad() bool {
 	return p.d.FirstLoad
 }
 
