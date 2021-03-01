@@ -374,6 +374,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 // loadWorld loads the world of the server, ending the program if the world could not be loaded.
 func (server *Server) loadWorld() {
 	server.log.Debug("Loading world...")
+
 	p, previouslyLoaded, err := mcdb.New(server.c.World.Folder)
 	if err != nil {
 		server.log.Fatalf("error loading world: %v", err)
