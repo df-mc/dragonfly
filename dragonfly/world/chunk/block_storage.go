@@ -17,9 +17,9 @@ type BlockStorage struct {
 	// bitsPerBlock is the amount of bits required to store one block. The number increases as the block
 	// storage holds more unique block states.
 	bitsPerBlock uint16
-	blockMask    uint32
 	// filledBitsPerWord returns the amount of blocks that are actually filled per uint32.
 	filledBitsPerWord uint16
+	blockMask         uint32
 	// Palette holds all block runtime IDs that the blocks in the blocks slice point to. These runtime IDs
 	// point to block states.
 	palette *Palette
@@ -33,7 +33,7 @@ type BlockStorage struct {
 // The bits per block are calculated using the length of the uint32 slice.
 func newBlockStorage(blocks []uint32, palette *Palette) *BlockStorage {
 	bitsPerBlock := uint16(len(blocks) / uint32BitSize / uint32ByteSize)
-	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, blockMask: (1 << bitsPerBlock) - 1, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, palette: palette}
+	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, blockMask: (1 << bitsPerBlock) - 1, palette: palette}
 }
 
 // Palette returns the Palette of the block storage.
