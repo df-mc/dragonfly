@@ -75,16 +75,8 @@ func (storage *BlockStorage) paletteOffset(x, y, z byte) uint16 {
 func (storage *BlockStorage) setPaletteOffset(x, y, z byte, paletteOffset uint16) {
 	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
 	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
-	v := &storage.blocks[uint32Offset]
 
-	// Manual inline.
-	for i := uint16(0); i < storage.bitsPerBlock; i++ {
-		if (paletteOffset & (1 << i)) != 0 {
-			*v |= uint32(1 << (i + bitOffset))
-		} else {
-			*v &^= uint32(1 << (i + bitOffset))
-		}
-	}
+	storage.blocks[uint32Offset] = storage.blocks[uint32Offset]&^(((1<<storage.bitsPerBlock)-1)<<bitOffset) | uint32(paletteOffset<<bitOffset)
 }
 
 // resize changes the size of a block storage to palette size newPaletteSize. A new block storage is
