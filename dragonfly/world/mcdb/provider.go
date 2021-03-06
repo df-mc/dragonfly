@@ -31,27 +31,25 @@ const chunkVersion = 19
 // New creates a new provider reading and writing files to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
 // error is returned.
-func New(dir string) (p *Provider, previouslyExisted bool, err error) {
+func New(dir string) (*Provider, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	p = &Provider{dir: dir}
+	p := &Provider{dir: dir}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
 	} else {
-		previouslyExisted = true
-
 		f, err := ioutil.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
-			return nil, previouslyExisted, fmt.Errorf("error opening level.dat file: %w", err)
+			return nil, fmt.Errorf("error opening level.dat file: %w", err)
 		}
 		// The first 8 bytes are a useless header (version and length): We don't need it.
 		if len(f) < 8 {
 			// The file did not have enough content, meaning it is corrupted. We return an error.
-			return nil, previouslyExisted, fmt.Errorf("level.dat exists but has no data")
+			return nil, fmt.Errorf("level.dat exists but has no data")
 		}
 		if err := nbt.UnmarshalEncoding(f[8:], &p.d, nbt.LittleEndian); err != nil {
-			return nil, previouslyExisted, fmt.Errorf("error decoding level.dat NBT: %w", err)
+			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
 		p.d.WorldStartCount++
 	}
@@ -60,10 +58,10 @@ func New(dir string) (p *Provider, previouslyExisted bool, err error) {
 		BlockSize:   16 * opt.KiB,
 	})
 	if err != nil {
-		return nil, previouslyExisted, fmt.Errorf("error opening leveldb database: %w", err)
+		return nil, fmt.Errorf("error opening leveldb database: %w", err)
 	}
 	p.db = db
-	return p, previouslyExisted, nil
+	return p, nil
 }
 
 // initDefaultLevelDat initialises a default level.dat file.

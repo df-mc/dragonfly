@@ -25,6 +25,7 @@ import (
 	"go.uber.org/atomic"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -375,13 +376,15 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 func (server *Server) loadWorld() {
 	server.log.Debug("Loading world...")
 
-	p, previouslyLoaded, err := mcdb.New(server.c.World.Folder)
+	_, firstLoad := os.Stat(filepath.Join(server.c.World.Folder, "level.dat"))
+
+	p, err := mcdb.New(server.c.World.Folder)
 	if err != nil {
 		server.log.Fatalf("error loading world: %v", err)
 	}
 	server.world.Provider(p)
 	server.world.Generator(generator.Flat{})
-	if !previouslyLoaded {
+	if os.IsNotExist(firstLoad) || p.WorldSpawn().Y() > 256 {
 		server.world.SetSpawn(world.BlockPos{0, server.world.HighestBlock(0, 0), 0})
 	}
 
