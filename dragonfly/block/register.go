@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
+	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
@@ -119,6 +120,7 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allQuartz())
 	registerAll(allNetherWart())
+	registerAll(allGrassPlants())
 }
 
 func init() {
@@ -317,6 +319,11 @@ func init() {
 	world.RegisterItem("minecraft:invisibleBedrock", InvisibleBedrock{})
 	world.RegisterItem("minecraft:noteblock", NoteBlock{})
 	world.RegisterItem("minecraft:dragon_egg", DragonEgg{})
+	world.RegisterItem("minecraft:tallgrass", GrassPlant{})
+	world.RegisterItem("minecraft:nether_sprouts", GrassPlant{Type: grass.NetherSprouts()})
+	world.RegisterItem("minecraft:tallgrass", GrassPlant{Type: grass.Fern()})
+	world.RegisterItem("minecraft:double_plant", GrassPlant{Type: grass.TallGrass()})
+	world.RegisterItem("minecraft:double_plant", GrassPlant{Type: grass.LargeFern()})
 }
 
 func init() {

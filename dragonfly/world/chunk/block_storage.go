@@ -19,6 +19,7 @@ type BlockStorage struct {
 	bitsPerBlock uint16
 	// filledBitsPerWord returns the amount of blocks that are actually filled per uint32.
 	filledBitsPerWord uint16
+	blockMask         uint32
 	// Palette holds all block runtime IDs that the blocks in the blocks slice point to. These runtime IDs
 	// point to block states.
 	palette *Palette
@@ -32,7 +33,7 @@ type BlockStorage struct {
 // The bits per block are calculated using the length of the uint32 slice.
 func newBlockStorage(blocks []uint32, palette *Palette) *BlockStorage {
 	bitsPerBlock := uint16(len(blocks) / uint32BitSize / uint32ByteSize)
-	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, palette: palette}
+	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, blockMask: (1 << bitsPerBlock) - 1, palette: palette}
 }
 
 // Palette returns the Palette of the block storage.
@@ -65,26 +66,18 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 // paletteOffset looks up the palette offset at a given x, y and z value in the block storage. This palette
 // offset is not the runtime ID at this offset, but merely an offset in the palette, pointing to a runtime ID.
 func (storage *BlockStorage) paletteOffset(x, y, z byte) uint16 {
-	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
-	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
-	return uint16((storage.blocks[uint32Offset] >> bitOffset) & (1<<storage.bitsPerBlock - 1))
+	offset := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
+	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, (offset%storage.filledBitsPerWord)*storage.bitsPerBlock
+	return uint16((storage.blocks[uint32Offset] >> bitOffset) & storage.blockMask)
 }
 
 // setPaletteOffset sets the palette offset at a given x, y and z to paletteOffset. This offset should point
 // to a runtime ID in the block storage's palette.
 func (storage *BlockStorage) setPaletteOffset(x, y, z byte, paletteOffset uint16) {
-	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
-	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
-	v := &storage.blocks[uint32Offset]
+	offset := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
+	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, (offset%storage.filledBitsPerWord)*storage.bitsPerBlock
 
-	// Manual inline.
-	for i := uint16(0); i < storage.bitsPerBlock; i++ {
-		if (paletteOffset & (1 << i)) != 0 {
-			*v |= uint32(1 << (i + bitOffset))
-		} else {
-			*v &^= uint32(1 << (i + bitOffset))
-		}
-	}
+	storage.blocks[uint32Offset] = storage.blocks[uint32Offset]&^(storage.blockMask<<bitOffset) | uint32(paletteOffset<<bitOffset)
 }
 
 // resize changes the size of a block storage to palette size newPaletteSize. A new block storage is
