@@ -282,7 +282,7 @@ func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	// total.
 	uint32Count := 4096 / blocksPerUint32
 
-	if blockSize == 3 || blockSize == 5 || blockSize == 6 {
+	if paletteSize(blockSize).padded() {
 		// We've got one of the padded sizes, so the block storage has another uint32 to be able to store
 		// every block.
 		uint32Count++
@@ -332,7 +332,7 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	// total.
 	uint32Count := 4096 / blocksPerUint32
 
-	if blockSize == 3 || blockSize == 5 || blockSize == 6 {
+	if paletteSize(blockSize).padded() {
 		// We've got one of the padded sizes, so the block storage has another uint32 to be able to store
 		// every block.
 		uint32Count++
