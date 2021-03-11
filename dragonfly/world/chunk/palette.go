@@ -8,11 +8,12 @@ type paletteSize byte
 // Palette is a palette of runtime IDs that every block storage has. Block storages hold 'pointers' to indexes
 // in this palette.
 type Palette struct {
-	size paletteSize
+	last      uint32
+	lastIndex int16
+	size      paletteSize
+
 	// blockRuntimeIDs is a map of runtime IDs. The block storages point to the index to this runtime ID.
 	blockRuntimeIDs []uint32
-	last            uint32
-	lastIndex       int
 }
 
 // newPalette returns a new palette with size and a slice of added runtime IDs.
@@ -42,15 +43,16 @@ func (palette *Palette) Replace(f func(runtimeID uint32) uint32) {
 
 // Index loops through the runtime IDs of the palette and looks for the index of the given runtime ID. If the
 // runtime ID can not be found, -1 is returned.
-func (palette *Palette) Index(runtimeID uint32) int {
+func (palette *Palette) Index(runtimeID uint32) int16 {
 	if runtimeID == palette.last {
 		return palette.lastIndex
 	}
 	for i, id := range palette.blockRuntimeIDs {
 		if id == runtimeID {
 			palette.last = runtimeID
-			palette.lastIndex = i
-			return i
+			v := int16(i)
+			palette.lastIndex = v
+			return v
 		}
 	}
 	return -1
@@ -73,4 +75,9 @@ var offsets = [...]int{1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 16: 7}
 // increaseSize increases the size of the palette to the next palette size.
 func (palette *Palette) increaseSize() {
 	palette.size = sizes[offsets[palette.size]+1]
+}
+
+// padded returns true if the palette size is 3, 5 or 6.
+func (p paletteSize) padded() bool {
+	return p == 3 || p == 5 || p == 6
 }
