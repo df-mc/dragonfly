@@ -36,6 +36,8 @@ func (palette *Palette) Add(runtimeID uint32) uint16 {
 // Replace calls the function passed for each runtime ID present in the palette. The value returned by the
 // function replaces the runtime ID present at the index of the runtime ID passed.
 func (palette *Palette) Replace(f func(runtimeID uint32) uint32) {
+	// Reset last runtime ID as it now has a different offset.
+	palette.last = math.MaxUint32
 	for index, id := range palette.blockRuntimeIDs {
 		palette.blockRuntimeIDs[index] = f(id)
 	}
