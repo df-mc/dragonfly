@@ -38,7 +38,7 @@ type BlockStorage struct {
 	blocks []uint32
 }
 
-// NewBlockStorage creates a new block storage using the uint32 slice as the blocks and the palette passed.
+// newBlockStorage creates a new block storage using the uint32 slice as the blocks and the palette passed.
 // The bits per block are calculated using the length of the uint32 slice.
 func newBlockStorage(blocks []uint32, palette *Palette) *BlockStorage {
 	bitsPerBlock := uint16(len(blocks) / uint32BitSize / uint32ByteSize)
@@ -105,7 +105,7 @@ func (storage *BlockStorage) resize(newPaletteSize paletteSize) {
 
 	const subChunkBlockCount = 16 * 16 * 16
 	requiredUint32s := subChunkBlockCount / int(uint32BitSize/newPaletteSize)
-	if newPaletteSize == 3 || newPaletteSize == 5 || newPaletteSize == 6 {
+	if newPaletteSize.padded() {
 		// Add one uint32 if the palette size is one of the padded sizes.
 		requiredUint32s++
 	}
