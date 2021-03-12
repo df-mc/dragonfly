@@ -424,35 +424,36 @@ func insertBlockLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Ch
 func spreadPropagate(queue *nodeQueue, c *Chunk, neighbourChunks []*Chunk, skylight bool) {
 	node := queue.Front()
 	x, y, z := uint8(node.x&0xf), node.y, uint8(node.z&0xf)
+	yLocal := y & 0xf
 	sub := subByY(y, chunkByNode(node, c, neighbourChunks))
 
 	if skylight {
 		if !node.first {
-			filter := filterLevel(sub, x, y&0xf, z) + 1
+			filter := filterLevel(sub, x, yLocal, z) + 1
 			if filter >= node.level {
 				return
 			}
 			node.level -= filter
-			if sub.SkyLightAt(x, y&0xf, z) >= node.level {
+			if sub.SkyLightAt(x, yLocal, z) >= node.level {
 				// This neighbour already had either as high of a level as what we're updating it to, or
 				// higher already, so spreading it further is pointless as that will already have been done.
 				return
 			}
-			sub.setSkyLight(x, y&0xf, z, node.level)
+			sub.setSkyLight(x, yLocal, z, node.level)
 		}
 	} else {
 		if !node.first {
-			filter := filterLevel(sub, x, y&0xf, z) + 1
+			filter := filterLevel(sub, x, yLocal, z) + 1
 			if filter >= node.level {
 				return
 			}
 			node.level -= filter
-			if sub.blockLightAt(x, y&0xf, z) >= node.level {
+			if sub.blockLightAt(x, yLocal, z) >= node.level {
 				// This neighbour already had either as high of a level as what we're updating it to, or
 				// higher already, so spreading it further is pointless as that will already have been done.
 				return
 			}
-			sub.setBlockLight(x, y&0xf, z, node.level)
+			sub.setBlockLight(x, yLocal, z, node.level)
 		}
 	}
 	for _, neighbour := range node.neighbours(queue) {
