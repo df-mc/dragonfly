@@ -1339,7 +1339,7 @@ func (w *World) tickEntities(tick int64) {
 func (w *World) allViewers() []Viewer {
 	w.viewersMu.RLock()
 	v := make([]Viewer, 0, len(w.viewers))
-	for viewer, _ := range w.viewers {
+	for viewer := range w.viewers {
 		v = append(v, viewer)
 	}
 	w.viewersMu.RUnlock()
