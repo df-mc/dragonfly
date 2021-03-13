@@ -99,6 +99,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		blockUpdates:        map[BlockPos]int64{},
 		lastEntityPositions: map[Entity]ChunkPos{},
 		entities:            map[Entity]struct{}{},
+		viewers:             map[Viewer]struct{}{},
 		defaultGameMode:     gamemode.Survival{},
 		difficulty:          difficulty.Normal{},
 		prov:                NoIOProvider{},
@@ -370,6 +371,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			c, err := w.chunk(chunkPos)
 			if err != nil {
 				w.log.Errorf("error loading chunk for structure: %v", err)
+				continue
 			}
 			f := func(x, y, z int) Block {
 				if x>>4 == chunkX && z>>4 == chunkZ {
