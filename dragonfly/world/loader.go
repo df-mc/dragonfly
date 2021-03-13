@@ -29,7 +29,7 @@ type Loader struct {
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
 	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunk.Chunk), viewer: v}
-	l.newWorld(world)
+	l.world(world)
 	return l
 }
 
@@ -46,7 +46,7 @@ func (l *Loader) ChangeWorld(new *World) {
 	l.mu.Lock()
 	l.reset()
 	l.w.removeWorldViewer(l.viewer)
-	l.newWorld(new)
+	l.world(new)
 	l.mu.Unlock()
 }
 
@@ -128,9 +128,9 @@ func (l *Loader) reset() {
 	l.loaded = map[ChunkPos]*chunk.Chunk{}
 }
 
-// newWorld sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
+// world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
 // This is only here to get rid of duplicated code, ChangeWorld should be used instead of this.
-func (l *Loader) newWorld(new *World) {
+func (l *Loader) world(new *World) {
 	l.w = new
 	l.w.addWorldViewer(l.viewer)
 	l.populateLoadQueue()
