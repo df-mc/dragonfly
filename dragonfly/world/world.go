@@ -84,6 +84,9 @@ type World struct {
 
 	entityMu sync.Mutex
 	entities map[Entity]struct{}
+
+	viewersMu sync.RWMutex
+	viewers   map[Viewer]struct{}
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -96,6 +99,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		blockUpdates:        map[BlockPos]int64{},
 		lastEntityPositions: map[Entity]ChunkPos{},
 		entities:            map[Entity]struct{}{},
+		viewers:             map[Viewer]struct{}{},
 		defaultGameMode:     gamemode.Survival{},
 		difficulty:          difficulty.Normal{},
 		prov:                NoIOProvider{},
@@ -367,6 +371,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			c, err := w.chunk(chunkPos)
 			if err != nil {
 				w.log.Errorf("error loading chunk for structure: %v", err)
+				continue
 			}
 			f := func(x, y, z int) Block {
 				if x>>4 == chunkX && z>>4 == chunkZ {
@@ -1330,6 +1335,31 @@ func (w *World) tickEntities(tick int64) {
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
+// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
+func (w *World) allViewers() []Viewer {
+	w.viewersMu.RLock()
+	v := make([]Viewer, 0, len(w.viewers))
+	for viewer := range w.viewers {
+		v = append(v, viewer)
+	}
+	w.viewersMu.RUnlock()
+	return v
+}
+
+// addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
+func (w *World) addWorldViewer(viewer Viewer) {
+	w.viewersMu.Lock()
+	w.viewers[viewer] = struct{}{}
+	w.viewersMu.Unlock()
+}
+
+// removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
+func (w *World) removeWorldViewer(viewer Viewer) {
+	w.viewersMu.Lock()
+	delete(w.viewers, viewer)
+	w.viewersMu.Unlock()
+}
+
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
 func (w *World) addViewer(c *chunkData, viewer Viewer) {
@@ -1341,6 +1371,7 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	// viewer is added to.
 	entities := c.entities
 	c.Unlock()
+
 	for _, entity := range entities {
 		showEntity(entity, viewer)
 	}
@@ -1384,28 +1415,6 @@ func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
 		}
 	}
 	return false
-}
-
-// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() []Viewer {
-	var v []Viewer
-	found := make(map[Viewer]struct{})
-
-	w.chunkMu.RLock()
-	for _, c := range w.chunks {
-		c.Lock()
-		for _, viewer := range c.v {
-			if _, ok := found[viewer]; ok {
-				// We've already found this viewer in another chunk. Don't add it again.
-				continue
-			}
-			found[viewer] = struct{}{}
-			v = append(v, viewer)
-		}
-		c.Unlock()
-	}
-	w.chunkMu.RUnlock()
-	return v
 }
 
 // provider returns the provider of the world. It should always be used, rather than direct field access, in
