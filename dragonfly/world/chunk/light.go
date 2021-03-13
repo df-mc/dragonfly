@@ -198,7 +198,7 @@ func anyBlockLight(c *Chunk) bool {
 		}
 		for _, layer := range sub.storages {
 			for _, id := range layer.palette.blockRuntimeIDs {
-				if LightBlocks[id] != uint8(c.air) {
+				if LightBlocks[id] != 0 {
 					return true
 				}
 			}
