@@ -84,6 +84,9 @@ type World struct {
 
 	entityMu sync.Mutex
 	entities map[Entity]struct{}
+
+	viewersMu sync.RWMutex
+	viewers   map[Viewer]struct{}
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -1330,6 +1333,31 @@ func (w *World) tickEntities(tick int64) {
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
+// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
+func (w *World) allViewers() []Viewer {
+	w.viewersMu.RLock()
+	v := make([]Viewer, 0, len(w.viewers))
+	for viewer, _ := range w.viewers {
+		v = append(v, viewer)
+	}
+	w.viewersMu.RUnlock()
+	return v
+}
+
+// addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
+func (w *World) addWorldViewer(viewer Viewer) {
+	w.viewersMu.Lock()
+	w.viewers[viewer] = struct{}{}
+	w.viewersMu.Unlock()
+}
+
+// removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
+func (w *World) removeWorldViewer(viewer Viewer) {
+	w.viewersMu.Lock()
+	delete(w.viewers, viewer)
+	w.viewersMu.Unlock()
+}
+
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
 func (w *World) addViewer(c *chunkData, viewer Viewer) {
@@ -1341,6 +1369,7 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	// viewer is added to.
 	entities := c.entities
 	c.Unlock()
+
 	for _, entity := range entities {
 		showEntity(entity, viewer)
 	}
@@ -1384,28 +1413,6 @@ func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
 		}
 	}
 	return false
-}
-
-// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() []Viewer {
-	var v []Viewer
-	found := make(map[Viewer]struct{})
-
-	w.chunkMu.RLock()
-	for _, c := range w.chunks {
-		c.Lock()
-		for _, viewer := range c.v {
-			if _, ok := found[viewer]; ok {
-				// We've already found this viewer in another chunk. Don't add it again.
-				continue
-			}
-			found[viewer] = struct{}{}
-			v = append(v, viewer)
-		}
-		c.Unlock()
-	}
-	w.chunkMu.RUnlock()
-	return v
 }
 
 // provider returns the provider of the world. It should always be used, rather than direct field access, in

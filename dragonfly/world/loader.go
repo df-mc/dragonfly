@@ -28,8 +28,8 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, w: world, loaded: make(map[ChunkPos]*chunk.Chunk), viewer: v}
-	l.populateLoadQueue()
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunk.Chunk), viewer: v}
+	l.newWorld(world)
 	return l
 }
 
@@ -45,7 +45,8 @@ func (l *Loader) World() *World {
 func (l *Loader) ChangeWorld(new *World) {
 	l.mu.Lock()
 	l.reset()
-	l.w = new
+	l.w.removeWorldViewer(l.viewer)
+	l.newWorld(new)
 	l.mu.Unlock()
 }
 
@@ -112,6 +113,7 @@ func (l *Loader) Load(n int) error {
 func (l *Loader) Close() error {
 	l.mu.Lock()
 	l.reset()
+	l.w.removeWorldViewer(l.viewer)
 	l.closed = true
 	l.viewer = nil
 	l.mu.Unlock()
@@ -124,6 +126,13 @@ func (l *Loader) reset() {
 		l.w.removeViewer(pos, l.viewer)
 	}
 	l.loaded = map[ChunkPos]*chunk.Chunk{}
+}
+
+// newWorld sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
+// This is only here to get rid of duplicated code, ChangeWorld should be used instead of this.
+func (l *Loader) newWorld(new *World) {
+	l.w = new
+	l.w.addWorldViewer(l.viewer)
 	l.populateLoadQueue()
 }
 
