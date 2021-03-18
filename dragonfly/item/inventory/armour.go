@@ -38,7 +38,9 @@ func canAddArmour(s item.Stack, slot int) bool {
 		// TODO: Allow turtle helmets and mob skulls here.
 	case 1:
 		_, ok = i.(item.Chestplate)
-		// TODO: Allow elytra here.
+		if !ok {
+			ok = item_internal.IsElytra(i)
+		}
 	case 2:
 		_, ok = i.(item.Leggings)
 	case 3:
