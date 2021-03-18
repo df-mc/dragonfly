@@ -369,8 +369,9 @@ func insertBlockLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Ch
 		if sub == nil {
 			continue
 		}
+		subY := uint8(i << 4)
 		for y := uint8(0); y < 16; y++ {
-			totalY := y + uint8(i<<4)
+			totalY := y + subY
 			for x := uint8(0); x < 16; x++ {
 				for z := uint8(0); z < 16; z++ {
 					if z != 0 && z != 15 && x != 0 && x != 15 {
