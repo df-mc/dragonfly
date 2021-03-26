@@ -189,9 +189,6 @@ func chunkPosFromBlockPos(p BlockPos) ChunkPos {
 
 // Distance returns the distance between two vectors.
 func Distance(a, b mgl64.Vec3) float64 {
-	return math.Sqrt(
-		math.Pow(b[0]-a[0], 2) +
-			math.Pow(b[1]-a[1], 2) +
-			math.Pow(b[2]-a[2], 2),
-	)
+	xDiff, yDiff, zDiff := b[0]-a[0], b[1]-a[1], b[2]-a[2]
+	return math.Sqrt(xDiff*xDiff + yDiff*yDiff + zDiff*zDiff)
 }
