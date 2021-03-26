@@ -28,9 +28,16 @@ func (palette *Palette) Len() int {
 
 // Add adds a runtime ID to the palette. It does not first if the runtime ID was already set in the palette.
 // The index at which the runtime ID was added is returned.
-func (palette *Palette) Add(runtimeID uint32) uint16 {
+// Another bool is returned indicating if the palette was resized as a result of the adding of the runtime ID.
+func (palette *Palette) Add(runtimeID uint32) (index int16, resize bool) {
+	i := int16(len(palette.blockRuntimeIDs))
 	palette.blockRuntimeIDs = append(palette.blockRuntimeIDs, runtimeID)
-	return uint16(len(palette.blockRuntimeIDs) - 1)
+
+	if palette.needsResize() {
+		palette.increaseSize()
+		return i, true
+	}
+	return i, false
 }
 
 // Replace calls the function passed for each runtime ID present in the palette. The value returned by the
@@ -47,8 +54,16 @@ func (palette *Palette) Replace(f func(runtimeID uint32) uint32) {
 // runtime ID can not be found, -1 is returned.
 func (palette *Palette) Index(runtimeID uint32) int16 {
 	if runtimeID == palette.last {
+		// Fast path out.
 		return palette.lastIndex
 	}
+	// Slow path in a separate function allows for inlining the fast path.
+	return palette.indexSlow(runtimeID)
+}
+
+// indexSlow searches the index of a runtime ID in the palette's block runtime IDs by iterating through the
+// palette's block runtime IDs.
+func (palette *Palette) indexSlow(runtimeID uint32) int16 {
 	for i, id := range palette.blockRuntimeIDs {
 		if id == runtimeID {
 			palette.last = runtimeID

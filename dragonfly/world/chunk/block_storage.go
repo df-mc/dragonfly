@@ -65,10 +65,10 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 	if index == -1 {
 		// The runtime ID was not yet available in the palette. We add it, then check if the block storage
 		// needs to be resized for the palette pointers to fit.
-		index = int16(storage.palette.Add(runtimeID))
+		var resize bool
+		index, resize = storage.palette.Add(runtimeID)
 
-		if storage.palette.needsResize() {
-			storage.palette.increaseSize()
+		if resize {
 			storage.resize(storage.palette.size)
 		}
 	}
