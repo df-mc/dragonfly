@@ -64,8 +64,9 @@ func (palette *Palette) Index(runtimeID uint32) int16 {
 // indexSlow searches the index of a runtime ID in the palette's block runtime IDs by iterating through the
 // palette's block runtime IDs.
 func (palette *Palette) indexSlow(runtimeID uint32) int16 {
-	for i, id := range palette.blockRuntimeIDs {
-		if id == runtimeID {
+	l := len(palette.blockRuntimeIDs)
+	for i := 0; i < l; i++ {
+		if palette.blockRuntimeIDs[i] == runtimeID {
 			palette.last = runtimeID
 			v := int16(i)
 			palette.lastIndex = v
