@@ -115,6 +115,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		cancelTick:          cancel,
 		name:                *atomic.NewString("World"),
 	}
+
 	w.initChunkCache()
 	go w.startTicking()
 	go w.chunkCacheJanitor()
