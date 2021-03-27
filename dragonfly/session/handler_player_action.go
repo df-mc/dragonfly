@@ -50,7 +50,7 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		s.c.AbortBreaking()
 	case protocol.PlayerActionStopBreak:
 		s.c.FinishBreaking()
-	case protocol.PlayerActionContinueBreak:
+	case protocol.PlayerActionCrackBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 

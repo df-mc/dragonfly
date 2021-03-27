@@ -300,7 +300,7 @@ func (s *Session) SendGameMode(mode gamemode.GameMode) {
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    1,
-		ActionPermissions: uint32(packet.ActionPermissionBuildAndMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
+		ActionPermissions: uint32(packet.ActionPermissionBuild | packet.ActionPermissionMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
 	})
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
