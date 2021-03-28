@@ -206,6 +206,12 @@ type EntityCollider interface {
 	EntityCollide(e world.Entity)
 }
 
+// FallDistanceEntity is an entity that has a fall distance.
+type FallDistanceEntity interface {
+	// ResetFallDistance resets the entities fall distance.
+	ResetFallDistance()
+}
+
 // InstrumentBlock represents a block that creates a note block sound other than the piano.
 type InstrumentBlock interface {
 	// Instrument returns the instrument used.
