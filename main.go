@@ -4,7 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly"
+	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/item/bucket"
 	"github.com/df-mc/dragonfly/dragonfly/player/chat"
+	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
+	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -35,10 +40,15 @@ func main() {
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)
 	}
+	server.World().SetDifficulty(difficulty.Easy{})
 
 	for {
-		if _, err := server.Accept(); err != nil {
+		if p, err := server.Accept(); err != nil {
 			return
+		} else {
+			p.SetGameMode(gamemode.Survival{})
+			p.Inventory().AddItem(item.NewStack(block.Dirt{}, 32))
+			p.Inventory().AddItem(item.NewStack(item.Bucket{Content: bucket.Water()}, 1))
 		}
 	}
 }

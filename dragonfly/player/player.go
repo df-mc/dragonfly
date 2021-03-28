@@ -216,6 +216,11 @@ func (p *Player) SendTip(a ...interface{}) {
 	p.session().SendTip(format(a))
 }
 
+// ResetFallDistance resets the player's fall distance.
+func (p *Player) ResetFallDistance() {
+	p.fallDistance.Store(0)
+}
+
 // SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
 // and the text it shows.
 // If non-empty, the subtitle is shown in a smaller font below the title. The same counts for the action text
@@ -411,20 +416,17 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 	if p.OnGround() {
 		if p.fallDistance.Load() > 0 {
 			p.fall(p.fallDistance.Load())
-			p.fallDistance.Store(0)
+			p.ResetFallDistance()
 		}
 	} else if distanceThisTick < p.fallDistance.Load() {
 		p.fallDistance.Store(p.fallDistance.Load() - distanceThisTick)
 	} else {
-		p.fallDistance.Store(0)
+		p.ResetFallDistance()
 	}
 }
 
 // fall is called when a falling entity hits the ground.
 func (p *Player) fall(fallDistance float64) {
-	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); ok {
-		return
-	}
 	fallDamage := fallDistance - 3
 	for _, e := range p.Effects() {
 		if _, ok := e.(effect.JumpBoost); ok {
