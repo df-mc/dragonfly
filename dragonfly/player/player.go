@@ -436,7 +436,7 @@ func (p *Player) fall(fallDistance float64) {
 		return
 	}
 
-	p.Hurt(math.Ceil(fallDamage), damage.SourceFall{})
+	p.Hurt(p.FinalDamageFrom(math.Ceil(fallDamage), damage.SourceFall{}), damage.SourceFall{})
 }
 
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
