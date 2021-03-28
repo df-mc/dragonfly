@@ -36,6 +36,7 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
 	"image/color"
+	"math"
 	"math/rand"
 	"net"
 	"strings"
@@ -76,7 +77,8 @@ type Player struct {
 	immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
-	fireTicks atomic.Int64
+	fireTicks    atomic.Int64
+	fallDistance atomic.Float64
 
 	speed    atomic.Float64
 	health   *entity_internal.HealthManager
@@ -402,6 +404,37 @@ func (p *Player) Heal(health float64, source healing.Source) {
 	ctx.Continue(func() {
 		p.addHealth(health)
 	})
+}
+
+// updateFallState is called to update the entities falling state.
+func (p *Player) updateFallState(distanceThisTick float64) {
+	if p.OnGround() {
+		if p.fallDistance.Load() > 0 {
+			p.fall(p.fallDistance.Load())
+			p.fallDistance.Store(0)
+		}
+	} else if distanceThisTick < p.fallDistance.Load() {
+		p.fallDistance.Store(p.fallDistance.Load() - distanceThisTick)
+	} else {
+		p.fallDistance.Store(0)
+	}
+}
+
+// fall is called when a falling entity hits the ground.
+func (p *Player) fall(fallDistance float64) {
+	fallDamage := fallDistance - 3
+	for _, e := range p.Effects() {
+		if _, ok := e.(effect.JumpBoost); ok {
+			fallDamage -= float64(e.Level())
+		}
+	}
+	fallDamage = math.Ceil(fallDamage)
+
+	if fallDamage < 0.5 {
+		return
+	}
+
+	p.Hurt(fallDamage, damage.SourceFall{})
 }
 
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
@@ -1426,6 +1459,12 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 		for _, v := range p.World().Viewers(p.Position()) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
 		}
+
+		ok := p.gameMode == gamemode.Creative{} || p.gameMode == gamemode.Spectator{}
+		if !ok {
+			p.updateFallState(p.Position().Add(deltaPos).Y() - p.pos.Load().(mgl64.Vec3).Y())
+		}
+
 		p.pos.Store(p.Position().Add(deltaPos))
 
 		// The vertical axis isn't relevant for calculation of exhaustion points.
