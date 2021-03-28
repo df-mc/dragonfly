@@ -1,6 +1,8 @@
 package session
 
 import (
+	"bytes"
+	"github.com/df-mc/dragonfly/dragonfly/player/scoreboard"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -48,7 +50,7 @@ func (s *Session) SendJukeboxPopup(message string) {
 }
 
 // SendScoreboard ...
-func (s *Session) SendScoreboard(displayName string) {
+func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	if s.scoreboardObj.Load() != "" {
 		s.RemoveScoreboard()
 	}
@@ -58,34 +60,35 @@ func (s *Session) SendScoreboard(displayName string) {
 	s.writePacket(&packet.SetDisplayObjective{
 		DisplaySlot:   "sidebar",
 		ObjectiveName: obj,
-		DisplayName:   displayName,
+		DisplayName:   sb.Name(),
 		CriteriaName:  "dummy",
 	})
+	pk := &packet.SetScore{
+		ActionType: packet.ScoreboardActionModify,
+	}
+	for k, line := range bytes.Split(sb.Bytes(), []byte{'\n'}) {
+		if len(line) == 0 {
+			line = []byte("§" + colours[k])
+		}
+		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
+			EntryID:       int64(k),
+			ObjectiveName: s.scoreboardObj.Load(),
+			Score:         int32(k),
+			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
+			DisplayName:   string(line),
+		})
+	}
+	s.writePacket(pk)
 }
+
+// colours holds a list of colour codes to be filled out for empty lines in a scoreboard.
+var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}
 
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
 	s.writePacket(&packet.RemoveObjective{
 		ObjectiveName: s.scoreboardObj.Load(),
 	})
-}
-
-// SendScoreboardLines sends a list of scoreboard lines for the scoreboard currently active on the player's
-// screen.
-func (s *Session) SendScoreboardLines(v []string) {
-	pk := &packet.SetScore{
-		ActionType: packet.ScoreboardActionModify,
-	}
-	for k, line := range v {
-		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
-			EntryID:       int64(k),
-			ObjectiveName: s.scoreboardObj.Load(),
-			Score:         int32(k),
-			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
-			DisplayName:   line,
-		})
-	}
-	s.writePacket(pk)
 }
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.

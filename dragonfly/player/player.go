@@ -233,8 +233,7 @@ func (p *Player) SendTitle(t title.Title) {
 // by the caller.
 // SendScoreboard may be called at any time to change the scoreboard of the player.
 func (p *Player) SendScoreboard(scoreboard *scoreboard.Scoreboard) {
-	p.session().SendScoreboard(scoreboard.Name())
-	p.session().SendScoreboardLines(scoreboard.Lines())
+	p.session().SendScoreboard(scoreboard)
 }
 
 // RemoveScoreboard removes any scoreboard currently present on the screen of the player. Nothing happens if
