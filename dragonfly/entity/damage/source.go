@@ -54,7 +54,7 @@ type SourceCustom struct{}
 
 // ReducedByArmour ...
 func (SourceFall) ReducedByArmour() bool {
-	return true
+	return false
 }
 
 // ReducedByArmour ...

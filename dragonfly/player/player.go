@@ -422,19 +422,21 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 
 // fall is called when a falling entity hits the ground.
 func (p *Player) fall(fallDistance float64) {
+	if _, ok := p.World().Block(world.BlockPosFromVec3(p.Position())).(world.Liquid); ok {
+		return
+	}
 	fallDamage := fallDistance - 3
 	for _, e := range p.Effects() {
 		if _, ok := e.(effect.JumpBoost); ok {
 			fallDamage -= float64(e.Level())
 		}
 	}
-	fallDamage = math.Ceil(fallDamage)
 
 	if fallDamage < 0.5 {
 		return
 	}
 
-	p.Hurt(fallDamage, damage.SourceFall{})
+	p.Hurt(math.Ceil(fallDamage), damage.SourceFall{})
 }
 
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
