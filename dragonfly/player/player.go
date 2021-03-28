@@ -266,7 +266,7 @@ func (p *Player) Chat(msg ...interface{}) {
 	p.handler().HandleChat(ctx, &message)
 
 	ctx.Continue(func() {
-		chat.Global.Printf("<%v> %v\n", p.name, message)
+		_, _ = fmt.Fprintf(chat.Global, "<%v> %v\n", p.name, message)
 	})
 }
 
