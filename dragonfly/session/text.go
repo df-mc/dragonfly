@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"strings"
 	"time"
 )
 
@@ -75,10 +76,20 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 			ObjectiveName: s.scoreboardObj.Load(),
 			Score:         int32(k),
 			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
-			DisplayName:   string(line),
+			DisplayName:   padScoreboardString(sb, string(line)),
 		})
 	}
 	s.writePacket(pk)
+}
+
+// pad pads the string passed for as much as needed to achieve the same length as the name of the scoreboard.
+// If the string passed is already of the same length as the name of the scoreboard or longer, the string will
+// receive one space of padding.
+func padScoreboardString(sb *scoreboard.Scoreboard, s string) string {
+	if len(sb.Name())-len(s)-2 <= 0 {
+		return " " + s + " "
+	}
+	return " " + s + strings.Repeat(" ", len(sb.Name())-len(s)-2)
 }
 
 // colours holds a list of colour codes to be filled out for empty lines in a scoreboard.
