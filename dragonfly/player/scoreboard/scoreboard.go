@@ -50,13 +50,3 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 func (board *Scoreboard) Bytes() []byte {
 	return board.p
 }
-
-// pad pads the string passed for as much as needed to achieve the same length as the name of the scoreboard.
-// If the string passed is already of the same length as the name of the scoreboard or longer, the string will
-// receive one space of padding.
-func (board *Scoreboard) pad(s string) string {
-	if len(board.name)-len(s)-2 <= 0 {
-		return " " + s + " "
-	}
-	return " " + s + strings.Repeat(" ", len(board.name)-len(s)-2)
-}
