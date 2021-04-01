@@ -26,9 +26,9 @@ type World struct {
 	name atomic.String
 	log  *logrus.Logger
 
-	unixTime, currentTick, time atomic.Int64
-	timeStopped                 atomic.Bool
-	rdonly                      atomic.Bool
+	currentTick, time atomic.Int64
+	timeStopped       atomic.Bool
+	rdonly            atomic.Bool
 
 	lastPos   ChunkPos
 	lastChunk *chunkData
@@ -109,7 +109,6 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		stopCacheJanitor:    make(chan struct{}),
 		simDistSq:           int32(simulationDistance * simulationDistance),
 		randomTickSpeed:     *atomic.NewUint32(3),
-		unixTime:            *atomic.NewInt64(time.Now().Unix()),
 		log:                 log,
 		stopTick:            ctx,
 		cancelTick:          cancel,
@@ -1082,7 +1081,6 @@ func (w *World) startTicking() {
 	for {
 		select {
 		case <-ticker.C:
-			w.unixTime.Store(time.Now().Unix())
 			w.tick()
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
