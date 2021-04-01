@@ -15,10 +15,15 @@ type PlayerActionHandler struct{}
 func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.PlayerAction)
 
-	if pk.EntityRuntimeID != selfEntityRuntimeID {
+	return handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
+}
+
+// handlePlayerAction handles an action performed by a player, found in packet.PlayerAction and packet.PlayerAuthInput.
+func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) error {
+	if entityRuntimeID != selfEntityRuntimeID {
 		return ErrSelfRuntimeID
 	}
-	switch pk.ActionType {
+	switch action {
 	case protocol.PlayerActionRespawn:
 		// Don't do anything for this action.
 	case protocol.PlayerActionJump:
@@ -45,7 +50,7 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.StartBreaking(world.BlockPos{int(pk.BlockPosition[0]), int(pk.BlockPosition[1]), int(pk.BlockPosition[2])}, world.Face(pk.BlockFace))
+		s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
 	case protocol.PlayerActionStopBreak:
@@ -54,13 +59,13 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.ContinueBreaking(world.Face(pk.BlockFace))
+		s.c.ContinueBreaking(world.Face(face))
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
 		// Don't do anything for this action.
 	default:
-		return fmt.Errorf("unhandled ActionType %v", pk.ActionType)
+		return fmt.Errorf("unhandled ActionType %v", action)
 	}
 	return nil
 }
