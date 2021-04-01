@@ -26,9 +26,9 @@ type World struct {
 	name atomic.String
 	log  *logrus.Logger
 
-	unixTime, currentTick, time atomic.Int64
-	timeStopped                 atomic.Bool
-	rdonly                      atomic.Bool
+	currentTick, time atomic.Int64
+	timeStopped       atomic.Bool
+	rdonly            atomic.Bool
 
 	lastPos   ChunkPos
 	lastChunk *chunkData
@@ -84,6 +84,9 @@ type World struct {
 
 	entityMu sync.Mutex
 	entities map[Entity]struct{}
+
+	viewersMu sync.RWMutex
+	viewers   map[Viewer]struct{}
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -96,6 +99,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		blockUpdates:        map[BlockPos]int64{},
 		lastEntityPositions: map[Entity]ChunkPos{},
 		entities:            map[Entity]struct{}{},
+		viewers:             map[Viewer]struct{}{},
 		defaultGameMode:     gamemode.Survival{},
 		difficulty:          difficulty.Normal{},
 		prov:                NoIOProvider{},
@@ -105,12 +109,12 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		stopCacheJanitor:    make(chan struct{}),
 		simDistSq:           int32(simulationDistance * simulationDistance),
 		randomTickSpeed:     *atomic.NewUint32(3),
-		unixTime:            *atomic.NewInt64(time.Now().Unix()),
 		log:                 log,
 		stopTick:            ctx,
 		cancelTick:          cancel,
 		name:                *atomic.NewString("World"),
 	}
+
 	w.initChunkCache()
 	go w.startTicking()
 	go w.chunkCacheJanitor()
@@ -367,6 +371,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			c, err := w.chunk(chunkPos)
 			if err != nil {
 				w.log.Errorf("error loading chunk for structure: %v", err)
+				continue
 			}
 			f := func(x, y, z int) Block {
 				if x>>4 == chunkX && z>>4 == chunkZ {
@@ -1076,7 +1081,6 @@ func (w *World) startTicking() {
 	for {
 		select {
 		case <-ticker.C:
-			w.unixTime.Store(time.Now().Unix())
 			w.tick()
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
@@ -1225,12 +1229,19 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					// No layers present, so skip it right away.
 					continue
 				}
+				layer := layers[0]
+				p := layer.Palette()
+				if p.Len() == 1 && p.RuntimeID(0) == world_internal.AirRuntimeID {
+					// Empty layer present, so skip it right away.
+					continue
+				}
+
 				x, y, z := (ra>>i)&0xf, (rb>>i)&0xf, (rc>>i)&0xf
 
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layers[0].RuntimeID(uint8(x), uint8(y), uint8(z))
+				rid := layer.RuntimeID(uint8(x), uint8(y), uint8(z))
 				if rid == world_internal.AirRuntimeID {
 					// The block was air, take the fast route out.
 					continue
@@ -1330,6 +1341,31 @@ func (w *World) tickEntities(tick int64) {
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
+// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
+func (w *World) allViewers() []Viewer {
+	w.viewersMu.RLock()
+	v := make([]Viewer, 0, len(w.viewers))
+	for viewer := range w.viewers {
+		v = append(v, viewer)
+	}
+	w.viewersMu.RUnlock()
+	return v
+}
+
+// addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
+func (w *World) addWorldViewer(viewer Viewer) {
+	w.viewersMu.Lock()
+	w.viewers[viewer] = struct{}{}
+	w.viewersMu.Unlock()
+}
+
+// removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
+func (w *World) removeWorldViewer(viewer Viewer) {
+	w.viewersMu.Lock()
+	delete(w.viewers, viewer)
+	w.viewersMu.Unlock()
+}
+
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
 func (w *World) addViewer(c *chunkData, viewer Viewer) {
@@ -1341,6 +1377,7 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	// viewer is added to.
 	entities := c.entities
 	c.Unlock()
+
 	for _, entity := range entities {
 		showEntity(entity, viewer)
 	}
@@ -1384,28 +1421,6 @@ func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
 		}
 	}
 	return false
-}
-
-// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() []Viewer {
-	var v []Viewer
-	found := make(map[Viewer]struct{})
-
-	w.chunkMu.RLock()
-	for _, c := range w.chunks {
-		c.Lock()
-		for _, viewer := range c.v {
-			if _, ok := found[viewer]; ok {
-				// We've already found this viewer in another chunk. Don't add it again.
-				continue
-			}
-			found[viewer] = struct{}{}
-			v = append(v, viewer)
-		}
-		c.Unlock()
-	}
-	w.chunkMu.RUnlock()
-	return v
 }
 
 // provider returns the provider of the world. It should always be used, rather than direct field access, in

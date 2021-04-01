@@ -69,7 +69,6 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.DoDayLightCycle = true
 	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.LevelName = "World"
-	p.d.SpawnY = 128
 	p.d.GameType = 1
 	p.d.StorageVersion = 8
 	p.d.Generator = 1
@@ -117,12 +116,7 @@ func (p *Provider) SetWorldName(name string) {
 
 // WorldSpawn returns the spawn of the world as present in the level.dat.
 func (p *Provider) WorldSpawn() world.BlockPos {
-	y := p.d.SpawnY
-	if p.d.SpawnY > 256 {
-		// TODO: Spawn at the highest block of the world. We're currently doing a guess.
-		y = 90
-	}
-	return world.BlockPos{int(p.d.SpawnX), int(y), int(p.d.SpawnZ)}
+	return world.BlockPos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)}
 }
 
 // SetWorldSpawn sets the spawn of the world to a new one.

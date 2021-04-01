@@ -24,6 +24,7 @@ import (
 	"go.uber.org/atomic"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -110,7 +111,6 @@ func (server *Server) Run() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
-	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	if err := world_loadItemEntries(); err != nil {
 		return err
@@ -134,7 +134,6 @@ func (server *Server) Start() error {
 
 	server.log.Info("Starting server...")
 	server.loadWorld()
-	server.World().Generator(generator.Flat{})
 	server.registerTargetFunc()
 	if err := world_loadItemEntries(); err != nil {
 		return err
@@ -375,11 +374,19 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 // loadWorld loads the world of the server, ending the program if the world could not be loaded.
 func (server *Server) loadWorld() {
 	server.log.Debug("Loading world...")
+
+	_, firstLoad := os.Stat(filepath.Join(server.c.World.Folder, "level.dat"))
+
 	p, err := mcdb.New(server.c.World.Folder)
 	if err != nil {
 		server.log.Fatalf("error loading world: %v", err)
 	}
 	server.world.Provider(p)
+	server.world.Generator(generator.Flat{})
+	if os.IsNotExist(firstLoad) || p.WorldSpawn().Y() > 256 {
+		server.world.SetSpawn(world.BlockPos{0, server.world.HighestBlock(0, 0), 0})
+	}
+
 	server.log.Debugf("Loaded world '%v'.", server.world.Name())
 }
 

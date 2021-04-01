@@ -140,7 +140,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 	go s.handlePackets()
 
 	if j := s.joinMessage.Load(); j != "" {
-		chat.Global.Println(text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
 
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
@@ -156,7 +156,7 @@ func (s *Session) Close() error {
 	_ = s.c.Close()
 
 	if j := s.quitMessage.Load(); j != "" {
-		chat.Global.Println(text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
 
 	if s.c.World() != nil {

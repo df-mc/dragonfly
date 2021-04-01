@@ -3,7 +3,6 @@ package world
 import (
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"unsafe"
 )
 
 // BlockPos holds the position of a block. The position is represented of an array with an x, y and z value,
@@ -160,25 +159,12 @@ func (p ChunkPos) Z() int32 {
 	return p[1]
 }
 
-// Hash returns the hash of the chunk position. It is essentially the bytes of the X and Z values of the
-// position following each other.
-func (p ChunkPos) Hash() string {
-	x, z := p[0], p[1]
-	v := []byte{
-		uint8(x >> 24), uint8(x >> 16), uint8(x >> 8), uint8(x),
-		uint8(z >> 24), uint8(z >> 16), uint8(z >> 8), uint8(z),
-	}
-	// We can 'safely' unsafely turn the byte slice into a string here, as the byte slice will never be
-	// changed. (It never leaves the method.)
-	return *(*string)(unsafe.Pointer(&v))
-}
-
 // chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
 // those of the Vec3 divided by 16, then rounded down.
 func chunkPosFromVec3(vec3 mgl64.Vec3) ChunkPos {
 	return ChunkPos{
-		int32(math.Floor(vec3[0] / 16)),
-		int32(math.Floor(vec3[2] / 16)),
+		int32(math.Floor(vec3[0])) >> 4,
+		int32(math.Floor(vec3[2])) >> 4,
 	}
 }
 
@@ -189,9 +175,6 @@ func chunkPosFromBlockPos(p BlockPos) ChunkPos {
 
 // Distance returns the distance between two vectors.
 func Distance(a, b mgl64.Vec3) float64 {
-	return math.Sqrt(
-		math.Pow(b[0]-a[0], 2) +
-			math.Pow(b[1]-a[1], 2) +
-			math.Pow(b[2]-a[2], 2),
-	)
+	xDiff, yDiff, zDiff := b[0]-a[0], b[1]-a[1], b[2]-a[2]
+	return math.Sqrt(xDiff*xDiff + yDiff*yDiff + zDiff*zDiff)
 }

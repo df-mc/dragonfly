@@ -40,6 +40,9 @@ func neighboursLavaFlammable(pos world.BlockPos, w *world.World) bool {
 
 // EntityCollide ...
 func (l Lava) EntityCollide(e world.Entity) {
+	if fallEntity, ok := e.(FallDistanceEntity); ok {
+		fallEntity.ResetFallDistance()
+	}
 	if flammable, ok := e.(entity.Flammable); ok {
 		block_internal.LavaDamage(e, 4)
 		flammable.SetOnFire(time.Duration(15) * time.Second)

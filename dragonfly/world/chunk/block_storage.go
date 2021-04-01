@@ -1,5 +1,9 @@
 package chunk
 
+import (
+	"unsafe"
+)
+
 const (
 	// uint32ByteSize is the amount of bytes in a uint32.
 	uint32ByteSize = 4
@@ -19,7 +23,12 @@ type BlockStorage struct {
 	bitsPerBlock uint16
 	// filledBitsPerWord returns the amount of blocks that are actually filled per uint32.
 	filledBitsPerWord uint16
-	blockMask         uint32
+	// blockMask is the equivalent of 1 << bitsPerBlock - 1.
+	blockMask uint32
+
+	// blocksStart holds an unsafe.Pointer to the first byte in the blocks slice below.
+	blocksStart unsafe.Pointer
+
 	// Palette holds all block runtime IDs that the blocks in the blocks slice point to. These runtime IDs
 	// point to block states.
 	palette *Palette
@@ -29,11 +38,14 @@ type BlockStorage struct {
 	blocks []uint32
 }
 
-// NewBlockStorage creates a new block storage using the uint32 slice as the blocks and the palette passed.
+// newBlockStorage creates a new block storage using the uint32 slice as the blocks and the palette passed.
 // The bits per block are calculated using the length of the uint32 slice.
 func newBlockStorage(blocks []uint32, palette *Palette) *BlockStorage {
 	bitsPerBlock := uint16(len(blocks) / uint32BitSize / uint32ByteSize)
-	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: uint32BitSize / bitsPerBlock * bitsPerBlock, blockMask: (1 << bitsPerBlock) - 1, palette: palette}
+	blockMask := (uint32(1) << bitsPerBlock) - 1
+	filledBitsPerWord := uint32BitSize / bitsPerBlock * bitsPerBlock
+	blocksStart := unsafe.Pointer(&blocks[0])
+	return &BlockStorage{blocks: blocks, bitsPerBlock: bitsPerBlock, filledBitsPerWord: filledBitsPerWord, blockMask: blockMask, palette: palette, blocksStart: blocksStart}
 }
 
 // Palette returns the Palette of the block storage.
@@ -53,10 +65,10 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 	if index == -1 {
 		// The runtime ID was not yet available in the palette. We add it, then check if the block storage
 		// needs to be resized for the palette pointers to fit.
-		index = int(storage.palette.Add(runtimeID))
+		var resize bool
+		index, resize = storage.palette.Add(runtimeID)
 
-		if storage.palette.needsResize() {
-			storage.palette.increaseSize()
+		if resize {
 			storage.resize(storage.palette.size)
 		}
 	}
@@ -68,7 +80,9 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 func (storage *BlockStorage) paletteOffset(x, y, z byte) uint16 {
 	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
 	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
-	return uint16((storage.blocks[uint32Offset] >> bitOffset) & storage.blockMask)
+
+	w := *(*uint32)(unsafe.Pointer(uintptr(storage.blocksStart) + uintptr(uint32Offset<<2)))
+	return uint16((w >> bitOffset) & storage.blockMask)
 }
 
 // setPaletteOffset sets the palette offset at a given x, y and z to paletteOffset. This offset should point
@@ -77,7 +91,8 @@ func (storage *BlockStorage) setPaletteOffset(x, y, z byte, paletteOffset uint16
 	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerBlock
 	uint32Offset, bitOffset := offset/storage.filledBitsPerWord, offset%storage.filledBitsPerWord
 
-	storage.blocks[uint32Offset] = storage.blocks[uint32Offset]&^(storage.blockMask<<bitOffset) | uint32(paletteOffset<<bitOffset)
+	ptr := (*uint32)(unsafe.Pointer(uintptr(storage.blocksStart) + uintptr(uint32Offset<<2)))
+	*ptr = (*ptr &^ (storage.blockMask << bitOffset)) | (uint32(paletteOffset) << bitOffset)
 }
 
 // resize changes the size of a block storage to palette size newPaletteSize. A new block storage is
@@ -90,7 +105,7 @@ func (storage *BlockStorage) resize(newPaletteSize paletteSize) {
 
 	const subChunkBlockCount = 16 * 16 * 16
 	requiredUint32s := subChunkBlockCount / int(uint32BitSize/newPaletteSize)
-	if newPaletteSize == 3 || newPaletteSize == 5 || newPaletteSize == 6 {
+	if newPaletteSize.padded() {
 		// Add one uint32 if the palette size is one of the padded sizes.
 		requiredUint32s++
 	}

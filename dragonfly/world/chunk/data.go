@@ -111,7 +111,14 @@ func NetworkEncode(c *Chunk) (d SerialisedData) {
 		_ = buf.WriteByte(byte(len(sub.storages)))
 		for _, storage := range sub.storages {
 			_ = buf.WriteByte(byte(storage.bitsPerBlock<<1) | 1)
-			_ = binary.Write(buf, binary.LittleEndian, storage.blocks)
+
+			b := make([]byte, len(storage.blocks)*4)
+			for i, v := range storage.blocks {
+				// Explicitly don't use the binary package to greatly improve performance of writing the uint32s.
+				i <<= 2
+				b[i], b[i+1], b[i+2], b[i+3] = byte(v), byte(v>>8), byte(v>>16), byte(v>>24)
+			}
+			_, _ = buf.Write(b)
 
 			_ = protocol.WriteVarint32(buf, int32(storage.palette.Len()))
 			for _, runtimeID := range storage.palette.blockRuntimeIDs {
@@ -282,7 +289,7 @@ func networkDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	// total.
 	uint32Count := 4096 / blocksPerUint32
 
-	if blockSize == 3 || blockSize == 5 || blockSize == 6 {
+	if paletteSize(blockSize).padded() {
 		// We've got one of the padded sizes, so the block storage has another uint32 to be able to store
 		// every block.
 		uint32Count++
@@ -332,7 +339,7 @@ func diskDecodeBlockStorage(buf *bytes.Buffer) (*BlockStorage, error) {
 	// total.
 	uint32Count := 4096 / blocksPerUint32
 
-	if blockSize == 3 || blockSize == 5 || blockSize == 6 {
+	if paletteSize(blockSize).padded() {
 		// We've got one of the padded sizes, so the block storage has another uint32 to be able to store
 		// every block.
 		uint32Count++
