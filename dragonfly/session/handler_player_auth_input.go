@@ -78,6 +78,7 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 	}
 	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
 		// God knows what this is for.
+		s.log.Debugf("PlayerAuthInput: unexpected item stack request: %#v\n", pk.ItemStackRequest)
 	}
 	if pk.InputData&packet.InputFlagPerformBlockActions != 0 {
 		if err := h.handleBlockActions(pk.BlockActions, s); err != nil {

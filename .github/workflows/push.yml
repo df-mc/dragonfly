@@ -69,7 +69,7 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh -i ~/.ssh/id_rsa $HOST rm -f dragonfly_exe
-          scp -i ~/.ssh/id_rsa dragonfly_exe $HOST:/home/ubuntu/dragonfly_exe
+          scp -i ~/.ssh/id_rsa dragonfly_exe $HOST:/home/dragonfly_exe
 
       - name: Restart server
         env:
