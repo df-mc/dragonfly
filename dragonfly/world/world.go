@@ -1286,7 +1286,6 @@ func (w *World) tickEntities(tick int64) {
 
 		newC, ok := w.chunks[chunkPos]
 		if !ok {
-			w.chunkMu.RUnlock()
 			continue
 		}
 
