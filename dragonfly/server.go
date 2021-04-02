@@ -19,7 +19,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
-	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -330,14 +329,14 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
-		EntityUniqueID:                  1,
-		EntityRuntimeID:                 1,
-		Time:                            int64(server.world.Time()),
-		GameRules:                       map[string]interface{}{"naturalregeneration": false},
-		Difficulty:                      2,
-		Items:                           server.itemEntries(),
-		ServerAuthoritativeMovementMode: packet.AuthoritativeMovementModeServer,
-		ServerAuthoritativeInventory:    true,
+		EntityUniqueID:               1,
+		EntityRuntimeID:              1,
+		Time:                         int64(server.world.Time()),
+		GameRules:                    map[string]interface{}{"naturalregeneration": false},
+		Difficulty:                   2,
+		Items:                        server.itemEntries(),
+		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer},
+		ServerAuthoritativeInventory: true,
 	}
 	if err := conn.StartGame(data); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")
