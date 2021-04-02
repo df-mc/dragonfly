@@ -1280,10 +1280,10 @@ func (w *World) tickEntities(tick int64) {
 	var entitiesToMove []entityToMove
 
 	w.ePosMu.Lock()
+	w.chunkMu.RLock()
 	for e, lastPos := range w.lastEntityPositions {
 		chunkPos := chunkPosFromVec3(e.Position())
 
-		w.chunkMu.RLock()
 		newC, ok := w.chunks[chunkPos]
 		if !ok {
 			w.chunkMu.RUnlock()
@@ -1319,8 +1319,8 @@ func (w *World) tickEntities(tick int64) {
 
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: append([]Viewer(nil), lastC.v...), after: newC})
 		}
-		w.chunkMu.RUnlock()
 	}
+	w.chunkMu.RUnlock()
 	w.ePosMu.Unlock()
 
 	for _, move := range entitiesToMove {
