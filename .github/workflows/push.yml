@@ -22,7 +22,7 @@ jobs:
           export PATH=$PATH:$GOPATH/bin
 
       - name: Build
-        run: go build -o dragonfly -v .
+        run: go build -o dragonfly_exe -v .
 
       - name: Vet
         run: go vet ./...
@@ -56,7 +56,7 @@ jobs:
           export PATH=$PATH:$GOPATH/bin
 
       - name: Build
-        run: go build -o dragonfly -v .
+        run: go build -o dragonfly_exe -v .
 
       - name: Set SSH info
         env:
@@ -74,7 +74,7 @@ jobs:
           HOST: ${{ secrets.HOST }}
         run: |
           ssh -i ~/.ssh/id_rsa $HOST screen -S dragonfly -X stuff '^C\n'
-          ssh -i ~/.ssh/id_rsa $HOST rm -f dragonfly
+          ssh -i ~/.ssh/id_rsa $HOST rm -f dragonfly_exe
 
       - name: Transfer executable
         env:
@@ -82,10 +82,10 @@ jobs:
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          scp -i ~/.ssh/id_rsa dragonfly $HOST:/home/dragonfly
+          scp -i ~/.ssh/id_rsa dragonfly_exe $HOST:/home/dragonfly_exe
 
       - name: Restart server
         env:
           HOST: ${{ secrets.HOST }}
         run: |
-          ssh -i ~/.ssh/id_rsa $HOST "screen -S dragonfly -X stuff './dragonfly\n'"
+          ssh -i ~/.ssh/id_rsa $HOST "screen -S dragonfly -X stuff './dragonfly_exe\n'"

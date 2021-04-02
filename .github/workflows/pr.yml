@@ -22,7 +22,7 @@ jobs:
           export PATH=$PATH:$GOPATH/bin
 
       - name: Build
-        run: go build -o dragonfly -v .
+        run: go build -o dragonfly_exe -v .
 
       - name: Vet
         run: go vet ./...
