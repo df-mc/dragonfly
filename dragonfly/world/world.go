@@ -82,7 +82,7 @@ type World struct {
 	positionCache       []ChunkPos
 	entitiesToTick      []TickerEntity
 
-	entityMu sync.Mutex
+	entityMu sync.RWMutex
 	entities map[Entity]struct{}
 
 	viewersMu sync.RWMutex
@@ -817,10 +817,12 @@ func (w *World) Entities() []Entity {
 	if w == nil {
 		return nil
 	}
+	w.entityMu.RLock()
 	m := make([]Entity, 0, len(w.entities))
 	for e := range w.entities {
 		m = append(m, e)
 	}
+	w.entityMu.RUnlock()
 	return m
 }
 
@@ -1277,37 +1279,49 @@ func (w *World) tickEntities(tick int64) {
 	}
 	var entitiesToMove []entityToMove
 
+	w.ePosMu.Lock()
 	w.chunkMu.RLock()
-	// We first iterate over all chunks to see if entities move out of them. We make sure not to lock two
-	// chunks at the same time.
-	for chunkPos, c := range w.chunks {
-		c.Lock()
-		chunkEntities := make([]Entity, 0, len(c.entities))
-		for _, entity := range c.entities {
-			if ticker, ok := entity.(TickerEntity); ok {
+	for e, lastPos := range w.lastEntityPositions {
+		chunkPos := chunkPosFromVec3(e.Position())
+
+		newC, ok := w.chunks[chunkPos]
+		if !ok {
+			w.chunkMu.RUnlock()
+			continue
+		}
+
+		newC.Lock()
+		v := len(newC.v)
+		newC.Unlock()
+
+		if v > 0 {
+			if ticker, ok := e.(TickerEntity); ok {
 				w.entitiesToTick = append(w.entitiesToTick, ticker)
 			}
+		}
 
+		if lastPos != chunkPos {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for viewers to view it.
-			newChunkPos := chunkPosFromVec3(entity.Position())
-			if newChunkPos != chunkPos {
-				newC, ok := w.chunks[newChunkPos]
-				if !ok {
+			w.lastEntityPositions[e] = chunkPos
+
+			lastC := w.chunks[lastPos]
+			lastC.Lock()
+			chunkEntities := make([]Entity, 0, len(lastC.entities)-1)
+			for _, entity := range lastC.entities {
+				if entity == e {
 					continue
 				}
-				w.ePosMu.Lock()
-				w.lastEntityPositions[entity] = newChunkPos
-				w.ePosMu.Unlock()
-				entitiesToMove = append(entitiesToMove, entityToMove{e: entity, viewersBefore: append([]Viewer(nil), c.v...), after: newC})
-				continue
+				chunkEntities = append(chunkEntities, entity)
 			}
-			chunkEntities = append(chunkEntities, entity)
+			lastC.entities = chunkEntities
+			lastC.Unlock()
+
+			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: append([]Viewer(nil), lastC.v...), after: newC})
 		}
-		c.entities = chunkEntities
-		c.Unlock()
 	}
 	w.chunkMu.RUnlock()
+	w.ePosMu.Unlock()
 
 	for _, move := range entitiesToMove {
 		move.after.Lock()
