@@ -401,12 +401,13 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 							continue
 						}
 						placePos := BlockPos{xOffset, y + pos[1], zOffset}
-						if b := s.At(xOffset-pos[0], y, zOffset-pos[2], f); b != nil {
+						b, liq := s.At(xOffset-pos[0], y, zOffset-pos[2], f)
+						if b != nil {
 							if err := w.setBlockInChunk(c, placePos, b); err != nil {
 								w.log.Errorf("error setting block of structure: %v", err)
 							}
 						}
-						if liq := s.AdditionalLiquidAt(xOffset-pos[0], y, zOffset-pos[2]); liq != nil {
+						if liq != nil {
 							runtimeID, ok := BlockRuntimeID(liq)
 							if !ok {
 								w.log.Errorf("runtime ID of block state %+v not found", liq)

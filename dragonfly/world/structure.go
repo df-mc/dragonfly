@@ -6,16 +6,12 @@ type Structure interface {
 	// length respectively.
 	Dimensions() [3]int
 	// At returns the block at a specific location in the structure. When the structure is placed in the
-	// world, this method is called for every location within the dimensions of the structure.
+	// world, this method is called for every location within the dimensions of the structure. Additionally,
+	// At may return a Liquid to be placed in the same place as the block.
 	// At may return nil to not place any block at the position. Returning Air will set any block at that
 	// position to air, but returning nil will not do anything.
 	// In addition to the coordinates, At will have a function passed that may be used to get a block at a
 	// specific position. In scope of At(), structures should use this over World.Block(), due to the way
 	// chunks are locked.
-	At(x, y, z int, blockAt func(x, y, z int) Block) Block
-	// AdditionalLiquidAt returns additional liquid blocks at a specific location in the structure. Most
-	// structures will not need to properly implement this method, but structures may implement it to provide
-	// waterlogged blocks when needed.
-	// Structures that do not need this should return nil.
-	AdditionalLiquidAt(x, y, z int) Liquid
+	At(x, y, z int, blockAt func(x, y, z int) Block) (Block, Liquid)
 }
