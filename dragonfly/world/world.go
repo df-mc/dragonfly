@@ -727,6 +727,10 @@ func (w *World) AddEntity(e Entity) {
 	c.entities = append(c.entities, e)
 	c.Unlock()
 
+	w.ePosMu.Lock()
+	w.lastEntityPositions[e] = chunkPos
+	w.ePosMu.Unlock()
+
 	for _, viewer := range viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
@@ -745,12 +749,12 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	w.ePosMu.Lock()
 	chunkPos, found := w.lastEntityPositions[e]
-	w.ePosMu.Unlock()
 	if !found {
 		chunkPos = chunkPosFromVec3(e.Position())
 	} else {
 		delete(w.lastEntityPositions, e)
 	}
+	w.ePosMu.Unlock()
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
@@ -1187,9 +1191,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 	}
 
 	w.chunkMu.RLock()
-	for pos := range w.chunks {
-		c := w.chunks[pos]
-
+	for pos, c := range w.chunks {
 		withinSimDist := false
 		for _, chunkPos := range w.positionCache {
 			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
