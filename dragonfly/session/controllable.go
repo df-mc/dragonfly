@@ -53,6 +53,7 @@ type Controllable interface {
 	StartBreaking(pos world.BlockPos, face world.Face)
 	ContinueBreaking(face world.Face)
 	FinishBreaking()
+	IsBreaking() bool
 	AbortBreaking()
 
 	Exhaust(points float64)

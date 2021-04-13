@@ -30,24 +30,24 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
 		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem, false)) {
-			if !held.Equal(stackToItem(data.HeldItem, true)) {
+		if !held.Equal(stackToItem(data.HeldItem.Stack, false)) {
+			if !held.Equal(stackToItem(data.HeldItem.Stack, true)) {
 				return nil
 			}
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem, false)) {
-			if !held.Equal(stackToItem(data.HeldItem, true)) {
+		if !held.Equal(stackToItem(data.HeldItem.Stack, false)) {
+			if !held.Equal(stackToItem(data.HeldItem.Stack, true)) {
 				return nil
 			}
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
 		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem, false)) {
-			if !held.Equal(stackToItem(data.HeldItem, true)) {
+		if !held.Equal(stackToItem(data.HeldItem.Stack, false)) {
+			if !held.Equal(stackToItem(data.HeldItem.Stack, true)) {
 				return nil
 			}
 		}
@@ -71,13 +71,13 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 		case protocol.InventoryActionSourceWorld:
 			// Item dropping using Q in the hotbar still uses the old inventory transaction system, so we need
 			// to account for that.
-			if action.OldItem.Count != 0 || action.OldItem.NetworkID != 0 || action.OldItem.MetadataValue != 0 {
+			if action.OldItem.Stack.Count != 0 || action.OldItem.Stack.NetworkID != 0 || action.OldItem.Stack.MetadataValue != 0 {
 				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
 			}
-			newItem := stackToItem(action.NewItem, false)
+			newItem := stackToItem(action.NewItem.Stack, false)
 			actual, offHand := s.c.HeldItems()
 			if !newItem.Comparable(actual) {
-				newItem = stackToItem(action.NewItem, true)
+				newItem = stackToItem(action.NewItem.Stack, true)
 				if !newItem.Comparable(actual) {
 					return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
 				}

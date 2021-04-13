@@ -4,14 +4,13 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/go-gl/mathgl/mgl64"
-	"io"
 )
 
 // Entity represents an entity in the world, typically an object that may be moved around and can be
 // interacted with by other entities.
 // Viewers of a world may view an entity when near it.
 type Entity interface {
-	io.Closer
+	Close() error
 	// AABB returns the AABB of the entity.
 	AABB() physics.AABB
 	// Position returns the current position of the entity in the world.
