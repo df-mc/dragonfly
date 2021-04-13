@@ -1212,8 +1212,8 @@ func (p *Player) AbortBreaking() {
 	}
 }
 
-// IsBreaking returns true if the player is currently breaking a block.
-func (p *Player) IsBreaking() bool {
+// Breaking returns true if the player is currently breaking a block.
+func (p *Player) Breaking() bool {
 	return p.breaking.Load()
 }
 

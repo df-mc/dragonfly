@@ -57,7 +57,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStopBreak:
 		s.c.FinishBreaking()
 	case protocol.PlayerActionContinueDestroyBlock:
-		if s.c.IsBreaking() {
+		if s.c.Breaking() {
 			s.c.AbortBreaking()
 			s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
 		}
