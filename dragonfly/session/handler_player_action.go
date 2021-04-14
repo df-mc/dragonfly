@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -47,6 +46,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		}
 	case protocol.PlayerActionStopSwimming:
 		s.c.StopSwimming()
+	case protocol.PlayerActionContinueDestroyBlock:
+		fallthrough
 	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
@@ -54,28 +55,15 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
+	case protocol.PlayerActionPredictDestroyBlock:
+		fallthrough
 	case protocol.PlayerActionStopBreak:
 		s.c.FinishBreaking()
-	case protocol.PlayerActionContinueDestroyBlock:
-		if s.c.Breaking() {
-			s.c.AbortBreaking()
-			s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
-		}
-		fallthrough
 	case protocol.PlayerActionCrackBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
 		s.c.ContinueBreaking(world.Face(face))
-	case protocol.PlayerActionPredictDestroyBlock:
-		s.swingingArm.Store(true)
-		defer s.swingingArm.Store(false)
-
-		s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
-		s.c.FinishBreaking()
-		if _, ok := s.c.GameMode().(gamemode.Survival); ok {
-			s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}.Side(world.Face(face).Opposite()), world.Face(face))
-		}
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
