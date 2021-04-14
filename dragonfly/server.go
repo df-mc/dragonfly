@@ -335,7 +335,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		GameRules:                    map[string]interface{}{"naturalregeneration": false},
 		Difficulty:                   2,
 		Items:                        server.itemEntries(),
-		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer},
+		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
 	}
 	if err := conn.StartGame(data); err != nil {
