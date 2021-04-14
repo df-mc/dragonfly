@@ -1212,11 +1212,6 @@ func (p *Player) AbortBreaking() {
 	}
 }
 
-// Breaking returns true if the player is currently breaking a block.
-func (p *Player) Breaking() bool {
-	return p.breaking.Load()
-}
-
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
 // Player.StartBreaking().
 // The face passed is used to display particles on the side of the block broken.
