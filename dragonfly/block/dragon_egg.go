@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/particle"
@@ -16,7 +17,7 @@ type DragonEgg struct {
 }
 
 // NeighbourUpdateTick ...
-func (d DragonEgg) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (d DragonEgg) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	d.fall(d, pos, w)
 }
 
@@ -27,14 +28,14 @@ func (d DragonEgg) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (d DragonEgg) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (d DragonEgg) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // teleport ...
-func (d DragonEgg) teleport(pos world.BlockPos, w *world.World) {
+func (d DragonEgg) teleport(pos cube.Pos, w *world.World) {
 	for i := 0; i < 1000; i++ {
-		newPos := pos.Add(world.BlockPos{rand.Intn(31) - 15, max(0-pos.Y(), min(255-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
+		newPos := pos.Add(cube.Pos{rand.Intn(31) - 15, max(0-pos.Y(), min(255-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
 
 		if _, ok := w.Block(newPos).(Air); ok {
 			w.PlaceBlock(newPos, d)
@@ -51,12 +52,12 @@ func (d DragonEgg) LightEmissionLevel() uint8 {
 }
 
 // Punch ...
-func (d DragonEgg) Punch(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
+func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	d.teleport(pos, w)
 }
 
 // Activate ...
-func (d DragonEgg) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
+func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	d.teleport(pos, w)
 }
 

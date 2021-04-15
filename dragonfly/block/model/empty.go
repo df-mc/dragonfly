@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -9,11 +10,11 @@ import (
 type Empty struct{}
 
 // AABB ...
-func (Empty) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (Empty) AABB(cube.Pos, *world.World) []physics.AABB {
 	return nil
 }
 
 // FaceSolid ...
-func (Empty) FaceSolid(world.BlockPos, world.Face, *world.World) bool {
+func (Empty) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

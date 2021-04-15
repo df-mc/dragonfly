@@ -3,8 +3,8 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
-	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -182,7 +182,7 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no beacon container opened")
 	}
-	pos := s.openedPos.Load().(world.BlockPos)
+	pos := s.openedPos.Load().(cube.Pos)
 	beacon, ok := s.c.World().Block(pos).(block.Beacon)
 	if !ok {
 		return fmt.Errorf("no beacon container opened")

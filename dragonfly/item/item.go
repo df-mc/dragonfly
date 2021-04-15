@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -23,7 +24,7 @@ type UsableOnBlock interface {
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
 	// UseOnBlock returns a bool indicating if the item was used successfully.
-	UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool
+	UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -113,7 +114,7 @@ type nameable interface {
 // which interact with the world using an item.
 type User interface {
 	// Facing returns the direction that the user is facing.
-	Facing() world.Direction
+	Facing() cube.Direction
 	// Position returns the current position of the user in the world.
 	Position() mgl64.Vec3
 	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and

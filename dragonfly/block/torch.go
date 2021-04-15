@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -14,7 +15,7 @@ type Torch struct {
 	empty
 
 	// Facing is the direction from the torch to the block.
-	Facing world.Face
+	Facing cube.Face
 	// Type is the type of fire lighting the torch.
 	Type fire.Fire
 }
@@ -30,12 +31,12 @@ func (t Torch) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (t Torch) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, t)
 	if !used {
 		return false
 	}
-	if face == world.FaceDown {
+	if face == cube.FaceDown {
 		return false
 	}
 	if _, ok := w.Block(pos).(world.Liquid); ok {
@@ -43,7 +44,7 @@ func (t Torch) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Ve
 	}
 	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {
 		found := false
-		for _, i := range []world.Face{world.FaceSouth, world.FaceWest, world.FaceNorth, world.FaceEast, world.FaceDown} {
+		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceWest, cube.FaceNorth, cube.FaceEast, cube.FaceDown} {
 			if w.Block(pos.Side(i)).Model().FaceSolid(pos.Side(i), i.Opposite(), w) {
 				found = true
 				face = i.Opposite()
@@ -61,7 +62,7 @@ func (t Torch) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Ve
 }
 
 // NeighbourUpdateTick ...
-func (t Torch) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
 		w.BreakBlockWithoutParticles(pos)
 	}
@@ -87,15 +88,15 @@ func (t Torch) EncodeItem() (id int32, meta int16) {
 func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
 	facing := "unknown"
 	switch t.Facing {
-	case world.FaceDown:
+	case cube.FaceDown:
 		facing = "top"
-	case world.FaceNorth:
+	case cube.FaceNorth:
 		facing = "north"
-	case world.FaceEast:
+	case cube.FaceEast:
 		facing = "east"
-	case world.FaceSouth:
+	case cube.FaceSouth:
 		facing = "south"
-	case world.FaceWest:
+	case cube.FaceWest:
 		facing = "west"
 	}
 
@@ -115,7 +116,7 @@ func (t Torch) Hash() uint64 {
 
 // allTorch ...
 func allTorch() (torch []canEncode) {
-	for i := world.Face(0); i < 6; i++ {
+	for i := cube.Face(0); i < 6; i++ {
 		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
 		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})
 	}

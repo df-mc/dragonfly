@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
@@ -349,7 +350,7 @@ func init() {
 		p, ok := b.(Pumpkin)
 		return ok && !p.Carved
 	}
-	item_internal.CarvePumpkin = func(b world.Block, face world.Face) world.Block {
+	item_internal.CarvePumpkin = func(b world.Block, face cube.Face) world.Block {
 		return Pumpkin{Carved: true, Facing: face.Direction()}
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
@@ -362,7 +363,7 @@ func init() {
 		water, ok := b.(Water)
 		return ok && water.Depth == 8
 	}
-	item_internal.BoneMeal = func(pos world.BlockPos, w *world.World) bool {
+	item_internal.BoneMeal = func(pos cube.Pos, w *world.World) bool {
 		b := w.Block(pos)
 		if bonemealAffected, ok := b.(BoneMealAffected); ok {
 			return bonemealAffected.BoneMeal(pos, w)
@@ -370,7 +371,7 @@ func init() {
 		return false
 	}
 	item_internal.Replaceable = replaceableWith
-	entity_internal.CanSolidify = func(b world.Block, pos world.BlockPos, w *world.World) bool {
+	entity_internal.CanSolidify = func(b world.Block, pos cube.Pos, w *world.World) bool {
 		gravity, ok := b.(GravityAffected)
 		if !ok {
 			return false

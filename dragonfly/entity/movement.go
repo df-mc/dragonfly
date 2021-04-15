@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -8,7 +9,7 @@ import (
 )
 
 // boxes returns the axis aligned bounding box of a block.
-func boxes(b world.Block, pos world.BlockPos, w *world.World) []physics.AABB {
+func boxes(b world.Block, pos cube.Pos, w *world.World) []physics.AABB {
 	return b.Model().AABB(pos, w)
 }
 
@@ -145,7 +146,7 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 	for y := minY; y <= maxY; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
-				pos := world.BlockPos{x, y, z}
+				pos := cube.Pos{x, y, z}
 				boxes := boxes(e.World().Block(pos), pos, w)
 				for _, box := range boxes {
 					blockAABBs = append(blockAABBs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))

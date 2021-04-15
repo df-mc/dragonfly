@@ -1,6 +1,7 @@
 package player
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
@@ -42,16 +43,16 @@ type Handler interface {
 	HandleRespawn(pos *mgl64.Vec3)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
-	HandleStartBreak(ctx *event.Context, pos world.BlockPos)
+	HandleStartBreak(ctx *event.Context, pos cube.Pos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken.
-	HandleBlockBreak(ctx *event.Context, pos world.BlockPos)
+	HandleBlockBreak(ctx *event.Context, pos cube.Pos)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
-	HandleBlockPlace(ctx *event.Context, pos world.BlockPos, b world.Block)
+	HandleBlockPlace(ctx *event.Context, pos cube.Pos, b world.Block)
 	// HandleBlockPick handles the player picking a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being picked.
-	HandleBlockPick(ctx *event.Context, pos world.BlockPos, b world.Block)
+	HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -60,7 +61,7 @@ type Handler interface {
 	// position passed. The face of the block clicked is also passed, along with the relative click position.
 	// The click position has X, Y and Z values which are all in the range 0.0-1.0. It is also called if the
 	// player is holding no item.
-	HandleItemUseOnBlock(ctx *event.Context, pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
+	HandleItemUseOnBlock(ctx *event.Context, pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
 	// HandleItemUseOnEntity handles the player using the item held in its main hand on an entity passed to
 	// the method.
 	// HandleItemUseOnEntity is always called when a player uses an item on an entity, regardless of whether
@@ -125,16 +126,16 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 func (NopHandler) HandleChat(*event.Context, *string) {}
 
 // HandleStartBreak ...
-func (NopHandler) HandleStartBreak(*event.Context, world.BlockPos) {}
+func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
 
 // HandleBlockBreak ...
-func (NopHandler) HandleBlockBreak(*event.Context, world.BlockPos) {}
+func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos) {}
 
 // HandleBlockPlace ...
-func (NopHandler) HandleBlockPlace(*event.Context, world.BlockPos, world.Block) {}
+func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
 
 // HandleBlockPick ...
-func (NopHandler) HandleBlockPick(ctx *event.Context, pos world.BlockPos, b world.Block) {}
+func (NopHandler) HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
@@ -143,7 +144,7 @@ func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
 func (NopHandler) HandleItemUse(*event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(*event.Context, world.BlockPos, world.Face, mgl64.Vec3) {
+func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3) {
 }
 
 // HandleItemUseOnEntity ...

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
@@ -123,7 +124,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
-	p.breakingPos.Store(world.BlockPos{})
+	p.breakingPos.Store(cube.Pos{})
 	return p
 }
 
@@ -995,7 +996,7 @@ func (p *Player) ReleaseItem() {
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
 // returns immediately.
-func (p *Player) UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3) {
+func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
 	if !p.canReach(pos.Vec3Centre()) {
 		return
 	}
@@ -1132,7 +1133,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 // If no block is present at the position, or if the block is out of range, StartBreaking will return
 // immediately and the block will not be broken. StartBreaking will stop the breaking of any block that the
 // player might be breaking before this method is called.
-func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
+func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
 	if _, air := p.World().Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
@@ -1166,13 +1167,13 @@ func (p *Player) StartBreaking(pos world.BlockPos, face world.Face) {
 
 // breakTime returns the time needed to break a block at the position passed, taking into account the item
 // held, if the player is on the ground/underwater and if the player has any effects.
-func (p *Player) breakTime(pos world.BlockPos) time.Duration {
+func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	held, _ := p.HeldItems()
 	breakTime := block.BreakDuration(p.World().Block(pos), held)
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+	if _, ok := p.World().Liquid(cube.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -1195,7 +1196,7 @@ func (p *Player) FinishBreaking() {
 		return
 	}
 	p.AbortBreaking()
-	p.BreakBlock(p.breakingPos.Load().(world.BlockPos))
+	p.BreakBlock(p.breakingPos.Load().(cube.Pos))
 }
 
 // AbortBreaking makes the player stop breaking the block it is currently breaking, or returns immediately
@@ -1206,7 +1207,7 @@ func (p *Player) AbortBreaking() {
 		return
 	}
 	p.breakParticleCounter.Store(0)
-	pos := p.breakingPos.Load().(world.BlockPos)
+	pos := p.breakingPos.Load().(cube.Pos)
 	for _, viewer := range p.World().Viewers(pos.Vec3()) {
 		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
 	}
@@ -1215,11 +1216,11 @@ func (p *Player) AbortBreaking() {
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
 // Player.StartBreaking().
 // The face passed is used to display particles on the side of the block broken.
-func (p *Player) ContinueBreaking(face world.Face) {
+func (p *Player) ContinueBreaking(face cube.Face) {
 	if !p.breaking.Load() {
 		return
 	}
-	pos := p.breakingPos.Load().(world.BlockPos)
+	pos := p.breakingPos.Load().(cube.Pos)
 
 	p.swingArm()
 
@@ -1244,7 +1245,7 @@ func (p *Player) ContinueBreaking(face world.Face) {
 // of the player.
 // A use context may be passed to obtain information on if the block placement was successful. (SubCount will
 // be incremented). Nil may also be passed for the context parameter.
-func (p *Player) PlaceBlock(pos world.BlockPos, b world.Block, ctx *item.UseContext) {
+func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
 	if p.placeBlock(pos, b, ctx.IgnoreAABB) {
 		if ctx != nil {
 			ctx.CountSub++
@@ -1254,7 +1255,7 @@ func (p *Player) PlaceBlock(pos world.BlockPos, b world.Block, ctx *item.UseCont
 
 // placeBlock makes the player place the block passed at the position passed, granted it is within the range
 // of the player. A bool is returned indicating if a block was placed successfully.
-func (p *Player) placeBlock(pos world.BlockPos, b world.Block, ignoreAABB bool) (success bool) {
+func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (success bool) {
 	defer func() {
 		if !success {
 			p.World().SetBlock(pos, p.World().Block(pos))
@@ -1278,7 +1279,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block, ignoreAABB bool) 
 		success = true
 	})
 	ctx.Stop(func() {
-		pos.Neighbours(func(neighbour world.BlockPos) {
+		pos.Neighbours(func(neighbour cube.Pos) {
 			p.World().SetBlock(neighbour, p.World().Block(neighbour))
 		})
 		p.World().SetBlock(pos, p.World().Block(pos))
@@ -1288,7 +1289,7 @@ func (p *Player) placeBlock(pos world.BlockPos, b world.Block, ignoreAABB bool) 
 
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
 // This returns true if there is an entity in the way that could prevent the block from being placed.
-func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
+func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	blockBoxes := b.Model().AABB(pos, p.World())
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
@@ -1309,7 +1310,7 @@ func (p *Player) obstructedPos(pos world.BlockPos, b world.Block) bool {
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
-func (p *Player) BreakBlock(pos world.BlockPos) {
+func (p *Player) BreakBlock(pos cube.Pos) {
 	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
 		return
 	}
@@ -1381,7 +1382,7 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
 // pick the block, the method returns immediately.
-func (p *Player) PickBlock(pos world.BlockPos) {
+func (p *Player) PickBlock(pos cube.Pos) {
 	if !p.canReach(pos.Vec3()) {
 		return
 	}
@@ -1500,7 +1501,7 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 }
 
 // Facing returns the horizontal direction that the player is facing.
-func (p *Player) Facing() world.Direction {
+func (p *Player) Facing() cube.Direction {
 	return entity.Facing(p)
 }
 
@@ -1561,7 +1562,7 @@ func (p *Player) Drop(s item.Stack) (n int) {
 // OpenBlockContainer opens a block container, such as a chest, at the position passed. If no container was
 // present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.
-func (p *Player) OpenBlockContainer(pos world.BlockPos) {
+func (p *Player) OpenBlockContainer(pos cube.Pos) {
 	if p.session() == session.Nop {
 		return
 	}
@@ -1584,7 +1585,7 @@ func (p *Player) Tick(current int64) {
 	if p.Dead() {
 		return
 	}
-	if _, ok := p.World().Liquid(world.BlockPosFromVec3(p.Position())); !ok {
+	if _, ok := p.World().Liquid(cube.BlockPosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 	}
 	p.onGround.Store(p.checkOnGround())
@@ -1606,11 +1607,11 @@ func (p *Player) Tick(current int64) {
 
 	// TODO: Move to Move()
 	aabb := p.AABB().Translate(p.Position())
-	min, max := world.BlockPosFromVec3(aabb.Min()), world.BlockPosFromVec3(aabb.Max())
+	min, max := cube.BlockPosFromVec3(aabb.Min()), cube.BlockPosFromVec3(aabb.Max())
 	for x := min[0]; x <= max[0]; x++ {
 		for y := min[1]; y <= max[1]; y++ {
 			for z := min[2]; z <= max[2]; z++ {
-				if collide, ok := p.World().Block(world.BlockPos{x, y, z}).(block.EntityCollider); ok {
+				if collide, ok := p.World().Block(cube.Pos{x, y, z}).(block.EntityCollider); ok {
 					collide.EntityCollide(p)
 				}
 			}
@@ -1686,7 +1687,7 @@ func (p *Player) checkOnGround() bool {
 	for x := min[0]; x <= max[0]+1; x++ {
 		for z := min[2]; z <= max[2]+1; z++ {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
-				bPos := world.BlockPosFromVec3(mgl64.Vec3{x, y, z})
+				bPos := cube.BlockPosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
 				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
@@ -1811,7 +1812,7 @@ func (p *Player) canBreathe() bool {
 			return true
 		}
 	}
-	_, submerged := p.World().Liquid(world.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
+	_, submerged := p.World().Liquid(cube.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
 	return !submerged
 }
 

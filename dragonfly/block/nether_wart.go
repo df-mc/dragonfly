@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -24,7 +25,7 @@ func (n NetherWart) HasLiquidDrops() bool {
 }
 
 // RandomTick ...
-func (n NetherWart) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (n NetherWart) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if n.Age < 3 && r.Float64() < 0.1 {
 		n.Age++
 		w.PlaceBlock(pos, n)
@@ -32,12 +33,12 @@ func (n NetherWart) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 }
 
 // UseOnBlock ...
-func (n NetherWart) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (n NetherWart) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, n)
 	if !used {
 		return false
 	}
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(SoulSand); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(SoulSand); !ok {
 		return false
 	}
 
@@ -46,8 +47,8 @@ func (n NetherWart) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl
 }
 
 // NeighbourUpdateTick ...
-func (n NetherWart) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(SoulSand); !ok {
+func (n NetherWart) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(SoulSand); !ok {
 		w.BreakBlockWithoutParticles(pos)
 	}
 }

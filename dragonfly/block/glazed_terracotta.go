@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -16,7 +17,7 @@ type GlazedTerracotta struct {
 	// Colour specifies the colour of the block.
 	Colour colour.Colour
 	// Facing specifies the face of the block.
-	Facing world.Direction
+	Facing cube.Direction
 }
 
 // BreakInfo ...
@@ -51,7 +52,7 @@ func (t GlazedTerracotta) Hash() uint64 {
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.
-func (t GlazedTerracotta) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, t)
 	if !used {
 		return
@@ -64,7 +65,7 @@ func (t GlazedTerracotta) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl6
 
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
 func allGlazedTerracotta() (b []canEncode) {
-	for dir := world.Direction(0); dir < 4; dir++ {
+	for dir := cube.Direction(0); dir < 4; dir++ {
 		for _, c := range colour.All() {
 			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
 		}

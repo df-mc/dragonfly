@@ -1,6 +1,7 @@
 package physics
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -74,34 +75,34 @@ func (aabb AABB) Extend(vec mgl64.Vec3) AABB {
 }
 
 // ExtendTowards extends the bounding box by x in a given direction.
-func (aabb AABB) ExtendTowards(d int, x float64) AABB {
-	switch d {
-	case 0:
-		aabb.max[1] += x
-	case 1:
-		aabb.min[1] -= x
-	case 2:
+func (aabb AABB) ExtendTowards(f cube.Face, x float64) AABB {
+	switch f {
+	case cube.FaceDown:
+		aabb.max[1] -= x
+	case cube.FaceUp:
+		aabb.min[1] += x
+	case cube.FaceNorth:
 		aabb.min[2] -= x
-	case 3:
+	case cube.FaceSouth:
 		aabb.max[2] += x
-	case 4:
+	case cube.FaceWest:
 		aabb.min[0] -= x
-	case 5:
+	case cube.FaceEast:
 		aabb.max[0] += x
 	}
 	return aabb
 }
 
 // Stretch stretches the bounding box by x in a given axis.
-func (aabb AABB) Stretch(a int, x float64) AABB {
+func (aabb AABB) Stretch(a cube.Axis, x float64) AABB {
 	switch a {
-	case 0:
+	case cube.Y:
 		aabb.min[1] -= x
 		aabb.max[1] += x
-	case 1:
+	case cube.Z:
 		aabb.min[2] -= x
 		aabb.max[2] += x
-	case 2:
+	case cube.X:
 		aabb.min[0] -= x
 		aabb.max[0] += x
 	}

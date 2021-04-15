@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"bytes"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"sync"
 )
 
@@ -18,12 +19,12 @@ type Chunk struct {
 	// biomes is an array of biome IDs. There is one biome ID for every column in the chunk.
 	biomes [256]uint8
 	// blockEntities holds all block entities of the chunk, prefixed by their absolute position.
-	blockEntities map[[3]int]map[string]interface{}
+	blockEntities map[cube.Pos]map[string]interface{}
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
 func New(airRuntimeID uint32) *Chunk {
-	return &Chunk{air: airRuntimeID, blockEntities: make(map[[3]int]map[string]interface{})}
+	return &Chunk{air: airRuntimeID, blockEntities: make(map[cube.Pos]map[string]interface{})}
 }
 
 // Sub returns a list of all sub chunks present in the chunk.
@@ -138,7 +139,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) uint8 {
 
 // SetBlockNBT sets block NBT data to a given position in the chunk. If the data passed is nil, the block NBT
 // currently present will be cleared.
-func (chunk *Chunk) SetBlockNBT(pos [3]int, data map[string]interface{}) {
+func (chunk *Chunk) SetBlockNBT(pos cube.Pos, data map[string]interface{}) {
 	if data == nil {
 		delete(chunk.blockEntities, pos)
 		return
@@ -147,7 +148,7 @@ func (chunk *Chunk) SetBlockNBT(pos [3]int, data map[string]interface{}) {
 }
 
 // BlockNBT returns a list of all block NBT data set in the chunk.
-func (chunk *Chunk) BlockNBT() map[[3]int]map[string]interface{} {
+func (chunk *Chunk) BlockNBT() map[cube.Pos]map[string]interface{} {
 	return chunk.blockEntities
 }
 

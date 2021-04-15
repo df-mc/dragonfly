@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -19,7 +20,7 @@ type WoodDoor struct {
 	// package.
 	Wood wood.Wood
 	// Facing is the direction the door is facing.
-	Facing world.Direction
+	Facing cube.Direction
 	// Open is whether or not the door is open.
 	Open bool
 	// Top is whether the block is the top or bottom half of a door
@@ -42,38 +43,38 @@ func (d WoodDoor) Model() world.BlockModel {
 }
 
 // NeighbourUpdateTick ...
-func (d WoodDoor) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.Top {
-		if _, ok := w.Block(pos.Side(world.FaceDown)).(WoodDoor); !ok {
+		if _, ok := w.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
 			w.BreakBlock(pos)
 		}
 	} else {
-		if solid := w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w); !solid {
+		if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
 			w.BreakBlock(pos)
-		} else if _, ok := w.Block(pos.Side(world.FaceUp)).(WoodDoor); !ok {
+		} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
 			w.BreakBlock(pos)
 		}
 	}
 }
 
 // UseOnBlock handles the directional placing of doors
-func (d WoodDoor) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, d)
 	if !used {
 		return false
 	}
-	if face != world.FaceUp {
+	if face != cube.FaceUp {
 		return false
 	}
-	if solid := w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w); !solid {
+	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
 		return false
 	}
-	if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}
 	d.Facing = user.Facing()
-	left := w.Block(pos.Side(d.Facing.Rotate90().Opposite().Face()))
-	right := w.Block(pos.Side(d.Facing.Rotate90().Face()))
+	left := w.Block(pos.Side(d.Facing.RotateLeft90().Face()))
+	right := w.Block(pos.Side(d.Facing.RotateRight90().Face()))
 	if door, ok := left.(WoodDoor); ok {
 		if door.Wood == d.Wood {
 			d.Right = true
@@ -90,16 +91,16 @@ func (d WoodDoor) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, 
 
 	ctx.IgnoreAABB = true
 	place(w, pos, d, user, ctx)
-	place(w, pos.Side(world.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	return placed(ctx)
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	d.Open = !d.Open
 	w.PlaceBlock(pos, d)
 
-	otherPos := pos.Side(world.Face(boolByte(!d.Top)))
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
 	other := w.Block(otherPos)
 	if door, ok := other.(WoodDoor); ok {
 		door.Open = d.Open
@@ -126,7 +127,7 @@ func (d WoodDoor) CanDisplace(l world.Liquid) bool {
 }
 
 // SideClosed ...
-func (d WoodDoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -157,11 +158,11 @@ func (d WoodDoor) EncodeItem() (id int32, meta int16) {
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{}) {
 	direction := 3
 	switch d.Facing {
-	case world.South:
+	case cube.South:
 		direction = 1
-	case world.West:
+	case cube.West:
 		direction = 2
-	case world.East:
+	case cube.East:
 		direction = 0
 	}
 
@@ -181,7 +182,7 @@ func (d WoodDoor) Hash() uint64 {
 // allDoors returns a list of all door types
 func allDoors() (doors []canEncode) {
 	for _, w := range wood.All() {
-		for i := world.Direction(0); i <= 3; i++ {
+		for i := cube.Direction(0); i <= 3; i++ {
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: false})
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: true, Top: true, Right: false})

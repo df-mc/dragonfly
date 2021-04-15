@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
@@ -40,7 +41,7 @@ func (b Beacon) BreakInfo() BreakInfo {
 }
 
 // UseOnBlock ...
-func (b Beacon) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (b Beacon) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, b)
 	if !used {
 		return
@@ -51,7 +52,7 @@ func (b Beacon) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos world.BlockPos, _ world.Face, _ *world.World, u item.User) {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 	}
@@ -90,7 +91,7 @@ func (b Beacon) CanDisplace(l world.Liquid) bool {
 }
 
 // SideClosed ...
-func (b Beacon) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (b Beacon) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -106,7 +107,7 @@ func (b Beacon) Level() int {
 
 // Tick recalculates level, recalculates the active state of the beacon, and powers players,
 // once every 80 ticks (4 seconds).
-func (b Beacon) Tick(currentTick int64, pos world.BlockPos, w *world.World) {
+func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	if currentTick%80 == 0 {
 		before := b.level
 		// Recalculating pyramid level and powering up players in range once every 4 seconds.
@@ -124,14 +125,14 @@ func (b Beacon) Tick(currentTick int64, pos world.BlockPos, w *world.World) {
 }
 
 // recalculateLevel recalculates the level of the beacon's pyramid and returns it. The level can be 0-4.
-func (b Beacon) recalculateLevel(pos world.BlockPos, w *world.World) int {
+func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
 	var lvl int
 	iter := 1
 	// This loop goes over all 4 possible pyramid levels.
 	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if !world_internal.BeaconSource[block_internal.World_runtimeID(w, world.BlockPos{x, y, z})] {
+				if !world_internal.BeaconSource[block_internal.World_runtimeID(w, cube.Pos{x, y, z})] {
 					return lvl
 				}
 			}
@@ -143,9 +144,9 @@ func (b Beacon) recalculateLevel(pos world.BlockPos, w *world.World) int {
 }
 
 // obstructed determines whether the beacon is currently obstructed.
-func (b Beacon) obstructed(pos world.BlockPos, w *world.World) bool {
+func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
 	// Fast obstructed light calculation.
-	if w.SkyLight(pos.Add(world.BlockPos{0, 1})) == 15 {
+	if w.SkyLight(pos.Add(cube.Pos{0, 1})) == 15 {
 		return false
 		// Slow obstructed light calculation, if the fast way out failed.
 	} else if world_highestLightBlocker(w, pos.X(), pos.Z()) <= uint8(pos.Y()) {
@@ -157,7 +158,7 @@ func (b Beacon) obstructed(pos world.BlockPos, w *world.World) bool {
 // broadcastBeaconEffects determines the entities in range which could receive the beacon's powers, and
 // determines the powers (effects) that these entities could get. Afterwards, the entities in range that are
 // beaconAffected get their according effect(s).
-func (b Beacon) broadcastBeaconEffects(pos world.BlockPos, w *world.World) {
+func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 	seconds := 9 + b.level*2
 	if b.level == 4 {
 		seconds--

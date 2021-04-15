@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -13,7 +14,7 @@ type Slab struct {
 }
 
 // AABB ...
-func (s Slab) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (s Slab) AABB(cube.Pos, *world.World) []physics.AABB {
 	if s.Double {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 	}
@@ -24,11 +25,11 @@ func (s Slab) AABB(world.BlockPos, *world.World) []physics.AABB {
 }
 
 // FaceSolid ...
-func (s Slab) FaceSolid(_ world.BlockPos, face world.Face, _ *world.World) bool {
+func (s Slab) FaceSolid(_ cube.Pos, face cube.Face, _ *world.World) bool {
 	if s.Double {
 		return true
 	} else if s.Top {
-		return face == world.FaceUp
+		return face == cube.FaceUp
 	}
-	return face == world.FaceDown
+	return face == cube.FaceDown
 }

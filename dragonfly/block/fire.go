@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
@@ -33,8 +34,8 @@ func FlammableBlock(block world.Block) bool {
 }
 
 // neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
-func neighboursFlammable(pos world.BlockPos, w *world.World) bool {
-	for i := world.Face(0); i < 6; i++ {
+func neighboursFlammable(pos cube.Pos, w *world.World) bool {
+	for i := cube.Face(0); i < 6; i++ {
 		if FlammableBlock(w.Block(pos.Side(i))) {
 			return true
 		}
@@ -66,8 +67,8 @@ func difficultyOffset(d difficulty.Difficulty) int {
 }
 
 // infinitelyBurning returns true if fire can infinitely burn at the specified position.
-func infinitelyBurning(pos world.BlockPos, w *world.World) bool {
-	switch block := w.Block(pos.Side(world.FaceDown)).(type) {
+func infinitelyBurning(pos cube.Pos, w *world.World) bool {
+	switch block := w.Block(pos.Side(cube.FaceDown)).(type) {
 	//TODO: Magma Block
 	case Netherrack:
 		return true
@@ -78,7 +79,7 @@ func infinitelyBurning(pos world.BlockPos, w *world.World) bool {
 }
 
 // burn attempts to burn a block.
-func (f Fire) burn(pos world.BlockPos, w *world.World, chanceBound int) {
+func (f Fire) burn(pos cube.Pos, w *world.World, chanceBound int) {
 	if flammable, ok := w.Block(pos).(Flammable); ok && rand.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		//TODO: Check if not raining
 		if rand.Intn(f.Age+10) < 5 {
@@ -96,7 +97,7 @@ func (f Fire) burn(pos world.BlockPos, w *world.World, chanceBound int) {
 }
 
 // tick ...
-func (f Fire) tick(pos world.BlockPos, w *world.World) {
+func (f Fire) tick(pos cube.Pos, w *world.World) {
 	if f.Type == fire.Normal() {
 		infinitelyBurns := infinitelyBurning(pos, w)
 
@@ -110,26 +111,26 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
 
 		if !infinitelyBurns {
-			_, waterBelow := w.Block(pos.Side(world.FaceDown)).(Water)
+			_, waterBelow := w.Block(pos.Side(cube.FaceDown)).(Water)
 			if waterBelow {
 				w.BreakBlockWithoutParticles(pos)
 				return
 			}
 			if !neighboursFlammable(pos, w) {
-				if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos, world.FaceUp, w) || f.Age > 3 {
+				if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, w) || f.Age > 3 {
 					w.BreakBlockWithoutParticles(pos)
 				}
 				return
 			}
-			if !FlammableBlock(w.Block(pos.Side(world.FaceDown))) && f.Age == 15 && rand.Intn(4) == 0 {
+			if !FlammableBlock(w.Block(pos.Side(cube.FaceDown))) && f.Age == 15 && rand.Intn(4) == 0 {
 				w.BreakBlockWithoutParticles(pos)
 				return
 			}
 		}
 
 		//TODO: If high humidity, chance should be subtracted by 50
-		for face := world.Face(0); face < 6; face++ {
-			if face == world.FaceUp || face == world.FaceDown {
+		for face := cube.Face(0); face < 6; face++ {
+			if face == cube.FaceUp || face == cube.FaceDown {
 				f.burn(pos.Side(face), w, 300)
 			} else {
 				f.burn(pos.Side(face), w, 250)
@@ -147,14 +148,14 @@ func (f Fire) tick(pos world.BlockPos, w *world.World) {
 					if x == 0 && y == 0 && z == 0 {
 						continue
 					}
-					blockPos := pos.Add(world.BlockPos{x, y, z})
+					blockPos := pos.Add(cube.Pos{x, y, z})
 					block := w.Block(blockPos)
 					if _, ok := block.(Air); !ok {
 						continue
 					}
 
 					encouragement := 0
-					blockPos.Neighbours(func(neighbour world.BlockPos) {
+					blockPos.Neighbours(func(neighbour cube.Pos) {
 						if flammable, ok := w.Block(neighbour).(Flammable); ok {
 							encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
 						}
@@ -190,19 +191,19 @@ func (f Fire) EntityCollide(e world.Entity) {
 }
 
 // ScheduledTick ...
-func (f Fire) ScheduledTick(pos world.BlockPos, w *world.World) {
+func (f Fire) ScheduledTick(pos cube.Pos, w *world.World) {
 	f.tick(pos, w)
 }
 
 // RandomTick ...
-func (f Fire) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+func (f Fire) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	f.tick(pos, w)
 }
 
 // NeighbourUpdateTick ...
-func (f Fire) NeighbourUpdateTick(pos, neighbour world.BlockPos, w *world.World) {
-	below := w.Block(pos.Side(world.FaceDown))
-	if !below.Model().FaceSolid(pos, world.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == fire.Soul()) {
+func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
+	below := w.Block(pos.Side(cube.FaceDown))
+	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == fire.Soul()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
 		switch below.(type) {

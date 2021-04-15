@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -92,7 +93,7 @@ func NetworkDecode(airRuntimeId uint32, data []byte, subChunkCount int) (*Chunk,
 		if err := dec.Decode(&m); err != nil {
 			return nil, fmt.Errorf("error decoding block entity: %w", err)
 		}
-		c.SetBlockNBT([3]int{int(m["x"].(int32)), int(m["y"].(int32)), int(m["z"].(int32))}, m)
+		c.SetBlockNBT(cube.Pos{int(m["x"].(int32)), int(m["y"].(int32)), int(m["z"].(int32))}, m)
 	}
 	return c, nil
 }

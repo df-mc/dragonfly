@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -11,11 +12,11 @@ import (
 type Leaves struct{}
 
 // AABB ...
-func (Leaves) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (Leaves) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
 // FaceSolid ...
-func (Leaves) FaceSolid(world.BlockPos, world.Face, *world.World) bool {
+func (Leaves) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

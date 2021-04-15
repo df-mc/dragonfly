@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
@@ -115,12 +116,12 @@ func (p *Provider) SetWorldName(name string) {
 }
 
 // WorldSpawn returns the spawn of the world as present in the level.dat.
-func (p *Provider) WorldSpawn() world.BlockPos {
-	return world.BlockPos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)}
+func (p *Provider) WorldSpawn() cube.Pos {
+	return cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)}
 }
 
 // SetWorldSpawn sets the spawn of the world to a new one.
-func (p *Provider) SetWorldSpawn(pos world.BlockPos) {
+func (p *Provider) SetWorldSpawn(pos cube.Pos) {
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 }
 

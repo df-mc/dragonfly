@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -36,7 +37,7 @@ func (c Carrot) Consume(_ *world.World, consumer item.Consumer) item.Stack {
 }
 
 // BoneMeal ...
-func (c Carrot) BoneMeal(pos world.BlockPos, w *world.World) bool {
+func (c Carrot) BoneMeal(pos cube.Pos, w *world.World) bool {
 	if c.Growth == 7 {
 		return false
 	}
@@ -46,13 +47,13 @@ func (c Carrot) BoneMeal(pos world.BlockPos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (c Carrot) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
 
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		return false
 	}
 
@@ -76,7 +77,7 @@ func (c Carrot) EncodeItem() (id int32, meta int16) {
 }
 
 // RandomTick ...
-func (c Carrot) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+func (c Carrot) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if w.Light(pos) < 8 {
 		w.BreakBlock(pos)
 	} else if c.Growth < 7 && rand.Float64() <= c.CalculateGrowthChance(pos, w) {

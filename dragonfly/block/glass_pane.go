@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -20,7 +21,7 @@ func (p GlassPane) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (p GlassPane) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (p GlassPane) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 

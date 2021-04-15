@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/particle"
@@ -11,7 +12,7 @@ import (
 type BoneMeal struct{}
 
 // UseOnBlock ...
-func (b BoneMeal) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ok := item_internal.BoneMeal(pos, w)
 	if ok {
 		ctx.CountSub = 1

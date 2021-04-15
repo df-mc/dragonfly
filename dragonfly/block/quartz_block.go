@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -28,12 +29,12 @@ type (
 		solid
 		bassDrum
 		// Axis is the axis which the quartz pillar block faces.
-		Axis world.Axis
+		Axis cube.Axis
 	}
 )
 
 // UseOnBlock handles the rotational placing of quartz pillar blocks.
-func (q QuartzPillar) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, q)
 	if !used {
 		return
@@ -126,7 +127,7 @@ func allQuartz() (quartz []canEncode) {
 	quartz = append(quartz, Quartz{})
 	quartz = append(quartz, Quartz{Smooth: true})
 	quartz = append(quartz, ChiseledQuartz{})
-	for _, a := range world.AllAxes() {
+	for _, a := range cube.Axes() {
 		quartz = append(quartz, QuartzPillar{Axis: a})
 	}
 	return

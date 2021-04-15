@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -19,7 +20,7 @@ type WoodFenceGate struct {
 	// package.
 	Wood wood.Wood
 	// Facing is the direction the fence gate swings open.
-	Facing world.Direction
+	Facing cube.Direction
 	// Open is whether the fence gate is open.
 	Open bool
 	// Lowered lowers the fence gate by 3 pixels and is set when placed next to wall blocks.
@@ -49,7 +50,7 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 }
 
 // UseOnBlock ...
-func (f WoodFenceGate) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, f)
 	if !used {
 		return false
@@ -62,7 +63,7 @@ func (f WoodFenceGate) UseOnBlock(pos world.BlockPos, face world.Face, clickPos 
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos world.BlockPos, clickedFace world.Face, w *world.World, u item.User) {
+func (f WoodFenceGate) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
@@ -78,7 +79,7 @@ func (f WoodFenceGate) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (f WoodFenceGate) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (f WoodFenceGate) SideClosed(pos, side cube.Pos, w *world.World) bool {
 	return false
 }
 
@@ -109,11 +110,11 @@ func (f WoodFenceGate) EncodeItem() (id int32, meta int16) {
 func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interface{}) {
 	direction := 2
 	switch f.Facing {
-	case world.South:
+	case cube.South:
 		direction = 0
-	case world.West:
+	case cube.West:
 		direction = 1
-	case world.East:
+	case cube.East:
 		direction = 3
 	}
 
@@ -138,7 +139,7 @@ func (f WoodFenceGate) Model() world.BlockModel {
 // allFenceGates returns a list of all trapdoor types.
 func allFenceGates() (fenceGates []canEncode) {
 	for _, w := range wood.All() {
-		for i := world.Direction(0); i <= 3; i++ {
+		for i := cube.Direction(0); i <= 3; i++ {
 			fenceGates = append(fenceGates, WoodFenceGate{Wood: w, Facing: i, Open: false, Lowered: false})
 			fenceGates = append(fenceGates, WoodFenceGate{Wood: w, Facing: i, Open: false, Lowered: true})
 			fenceGates = append(fenceGates, WoodFenceGate{Wood: w, Facing: i, Open: true, Lowered: true})

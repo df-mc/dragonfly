@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -16,13 +17,13 @@ type ContainerViewer interface {
 // ContainerOpener represents an entity that is able to open a container.
 type ContainerOpener interface {
 	// OpenBlockContainer opens a block container at the position passed.
-	OpenBlockContainer(pos world.BlockPos)
+	OpenBlockContainer(pos cube.Pos)
 }
 
 // Container represents a container of items, typically a block such as a chest. Containers may have their
 // inventory opened by viewers.
 type Container interface {
-	AddViewer(v ContainerViewer, w *world.World, pos world.BlockPos)
-	RemoveViewer(v ContainerViewer, w *world.World, pos world.BlockPos)
+	AddViewer(v ContainerViewer, w *world.World, pos cube.Pos)
+	RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos)
 	Inventory() *inventory.Inventory
 }

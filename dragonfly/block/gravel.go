@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -16,7 +17,7 @@ type Gravel struct {
 }
 
 // NeighbourUpdateTick ...
-func (g Gravel) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	g.fall(g, pos, w)
 }
 

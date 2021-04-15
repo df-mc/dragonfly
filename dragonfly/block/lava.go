@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
@@ -29,8 +30,8 @@ type Lava struct {
 }
 
 // neighboursLavaFlammable returns true if one a block adjacent to the passed position is flammable.
-func neighboursLavaFlammable(pos world.BlockPos, w *world.World) bool {
-	for i := world.Face(0); i < 6; i++ {
+func neighboursLavaFlammable(pos cube.Pos, w *world.World) bool {
+	for i := cube.Face(0); i < 6; i++ {
 		if flammable, ok := w.Block(pos.Side(i)).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable {
 			return true
 		}
@@ -50,11 +51,11 @@ func (l Lava) EntityCollide(e world.Entity) {
 }
 
 // RandomTick ...
-func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (l Lava) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	i := r.Intn(3)
 	if i > 0 {
 		for j := 0; j < i; j++ {
-			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
+			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
 			if _, ok := w.Block(pos).(Air); ok {
 				if neighboursLavaFlammable(pos, w) {
 					w.PlaceBlock(pos, Fire{})
@@ -63,8 +64,8 @@ func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 		}
 	} else {
 		for j := 0; j < 3; j++ {
-			pos = pos.Add(world.BlockPos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
-			if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); ok {
+			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
+			if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); ok {
 				if flammable, ok := w.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable && flammable.FlammabilityInfo().Encouragement > 0 {
 					w.PlaceBlock(pos, Fire{})
 				}
@@ -74,7 +75,7 @@ func (l Lava) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 }
 
 // AABB returns no boxes.
-func (Lava) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (Lava) AABB(cube.Pos, *world.World) []physics.AABB {
 	return nil
 }
 
@@ -94,14 +95,14 @@ func (Lava) LightEmissionLevel() uint8 {
 }
 
 // NeighbourUpdateTick ...
-func (l Lava) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Harden(pos, w, nil) {
 		w.ScheduleBlockUpdate(pos, time.Second*3/2)
 	}
 }
 
 // ScheduledTick ...
-func (l Lava) ScheduledTick(pos world.BlockPos, w *world.World) {
+func (l Lava) ScheduledTick(pos cube.Pos, w *world.World) {
 	if !l.Harden(pos, w, nil) {
 		tickLiquid(l, pos, w)
 	}
@@ -136,14 +137,14 @@ func (Lava) LiquidType() string {
 }
 
 // Harden handles the hardening logic of lava.
-func (l Lava) Harden(pos world.BlockPos, w *world.World, flownIntoBy *world.BlockPos) bool {
+func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 	var ok bool
 	var water, b world.Block
 
 	if flownIntoBy == nil {
 		var water, b world.Block
-		_, soulSoilFound := w.Block(pos.Side(world.FaceDown)).(SoulSoil)
-		pos.Neighbours(func(neighbour world.BlockPos) {
+		_, soulSoilFound := w.Block(pos.Side(cube.FaceDown)).(SoulSoil)
+		pos.Neighbours(func(neighbour cube.Pos) {
 			if b != nil || neighbour[1] == pos[1]-1 {
 				return
 			}

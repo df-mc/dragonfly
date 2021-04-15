@@ -2,6 +2,7 @@ package world
 
 import (
 	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
@@ -31,7 +32,7 @@ type Viewer interface {
 	ViewEntityTeleport(e Entity, position mgl64.Vec3)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
-	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockNBT map[BlockPos]Block)
+	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockNBT map[cube.Pos]Block)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
 	ViewTime(time int)
@@ -52,10 +53,10 @@ type Viewer interface {
 	ViewSound(pos mgl64.Vec3, s Sound)
 	// ViewBlockUpdate views the updating of a block. It is called when a block is set at the position passed
 	// to the method.
-	ViewBlockUpdate(pos BlockPos, b Block, layer int)
+	ViewBlockUpdate(pos cube.Pos, b Block, layer int)
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
-	ViewBlockAction(pos BlockPos, a blockAction.Action)
+	ViewBlockAction(pos cube.Pos, a blockAction.Action)
 	// ViewEmote views an emote being performed by another entity.
 	ViewEmote(player Entity, emote uuid.UUID)
 }

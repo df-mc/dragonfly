@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -20,7 +21,7 @@ type WoodTrapdoor struct {
 	// package.
 	Wood wood.Wood
 	// Facing is the direction the trapdoor is facing.
-	Facing world.Direction
+	Facing cube.Direction
 	// Open is whether or not the trapdoor is open.
 	Open bool
 	// Top is whether the trapdoor occupies the top or bottom part of a block.
@@ -42,20 +43,20 @@ func (t WoodTrapdoor) Model() world.BlockModel {
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
-func (t WoodTrapdoor) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, t)
 	if !used {
 		return false
 	}
 	t.Facing = user.Facing().Opposite()
-	t.Top = (clickPos.Y() > 0.5 && face != world.FaceUp) || face == world.FaceDown
+	t.Top = (clickPos.Y() > 0.5 && face != cube.FaceUp) || face == cube.FaceDown
 
 	place(w, pos, t, user, ctx)
 	return placed(ctx)
 }
 
 // Activate ...
-func (t WoodTrapdoor) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
+func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	t.Open = !t.Open
 	w.PlaceBlock(pos, t)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
@@ -78,7 +79,7 @@ func (t WoodTrapdoor) CanDisplace(l world.Liquid) bool {
 }
 
 // SideClosed ...
-func (t WoodTrapdoor) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -123,7 +124,7 @@ func (t WoodTrapdoor) Hash() uint64 {
 // allTrapdoors returns a list of all trapdoor types
 func allTrapdoors() (trapdoors []canEncode) {
 	for _, w := range wood.All() {
-		for i := world.Direction(0); i <= 3; i++ {
+		for i := cube.Direction(0); i <= 3; i++ {
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: true, Top: true})

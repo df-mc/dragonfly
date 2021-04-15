@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -16,18 +17,18 @@ type EndBrickStairs struct {
 	// of the block.
 	UpsideDown bool
 	// Facing is the direction that the full side of the stairs is facing.
-	Facing world.Direction
+	Facing cube.Direction
 }
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
 // when needed.
-func (s EndBrickStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s EndBrickStairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, s)
 	if !used {
 		return
 	}
 	s.Facing = user.Facing()
-	if face == world.FaceDown || (clickPos[1] > 0.5 && face != world.FaceUp) {
+	if face == cube.FaceDown || (clickPos[1] > 0.5 && face != cube.FaceUp) {
 		s.UpsideDown = true
 	}
 
@@ -72,13 +73,13 @@ func (EndBrickStairs) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s EndBrickStairs) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (s EndBrickStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
 
 // allEndBrickStairs ...
 func allEndBrickStairs() (stairs []canEncode) {
-	for direction := world.Direction(0); direction <= 3; direction++ {
+	for direction := cube.Direction(0); direction <= 3; direction++ {
 		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: true})
 		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: false})
 	}

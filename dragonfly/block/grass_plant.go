@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
@@ -57,30 +58,30 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
-func (g GrassPlant) BoneMeal(pos world.BlockPos, w *world.World) bool {
+func (g GrassPlant) BoneMeal(pos cube.Pos, w *world.World) bool {
 	switch g.Type {
 	case grass.SmallGrass():
 		w.SetBlock(pos, GrassPlant{Type: grass.TallGrass()})
-		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Type: grass.TallGrass(), UpperPart: true})
+		w.SetBlock(pos.Side(cube.FaceUp), GrassPlant{Type: grass.TallGrass(), UpperPart: true})
 		return true
 	case grass.Fern():
 		w.SetBlock(pos, GrassPlant{Type: grass.LargeFern()})
-		w.SetBlock(pos.Side(world.FaceUp), GrassPlant{Type: grass.LargeFern(), UpperPart: true})
+		w.SetBlock(pos.Side(cube.FaceUp), GrassPlant{Type: grass.LargeFern(), UpperPart: true})
 		return true
 	}
 	return false
 }
 
 // NeighbourUpdateTick ...
-func (g GrassPlant) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (g GrassPlant) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if p, ok := w.Block(pos).(GrassPlant); ok {
 		if p.Type == grass.TallGrass() || p.Type == grass.LargeFern() {
 			if p.UpperPart {
-				if _, ok := w.Block(pos.Side(world.FaceDown)).(GrassPlant); !ok {
+				if _, ok := w.Block(pos.Side(cube.FaceDown)).(GrassPlant); !ok {
 					w.BreakBlock(pos)
 				}
 			} else {
-				if _, ok := w.Block(pos.Side(world.FaceUp)).(GrassPlant); !ok {
+				if _, ok := w.Block(pos.Side(cube.FaceUp)).(GrassPlant); !ok {
 					w.BreakBlock(pos)
 				}
 			}
@@ -88,7 +89,7 @@ func (g GrassPlant) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
 		return
 	}
 
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Grass); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
 		w.BreakBlock(pos)
 	}
 }
@@ -99,18 +100,18 @@ func (g GrassPlant) HasLiquidDrops() bool {
 }
 
 // UseOnBlock ...
-func (g GrassPlant) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, g)
 	if !used {
 		return false
 	}
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Grass); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
 		return false
 	}
 
 	place(w, pos, g, user, ctx)
 	if g.Type == grass.TallGrass() || g.Type == grass.LargeFern() {
-		place(w, pos.Side(world.FaceUp), GrassPlant{Type: g.Type, UpperPart: true}, user, ctx)
+		place(w, pos.Side(cube.FaceUp), GrassPlant{Type: g.Type, UpperPart: true}, user, ctx)
 	}
 	return placed(ctx)
 }

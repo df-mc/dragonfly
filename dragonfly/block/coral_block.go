@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/coral"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"time"
@@ -20,7 +21,7 @@ type CoralBlock struct {
 }
 
 // NeighbourUpdateTick ...
-func (c CoralBlock) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
+func (c CoralBlock) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
 	if c.Dead {
 		return
 	}
@@ -28,13 +29,13 @@ func (c CoralBlock) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w 
 }
 
 // ScheduledTick ...
-func (c CoralBlock) ScheduledTick(pos world.BlockPos, w *world.World) {
+func (c CoralBlock) ScheduledTick(pos cube.Pos, w *world.World) {
 	if c.Dead {
 		return
 	}
 
 	adjacentWater := false
-	pos.Neighbours(func(neighbour world.BlockPos) {
+	pos.Neighbours(func(neighbour cube.Pos) {
 		if liquid, ok := w.Liquid(neighbour); ok {
 			if _, ok := liquid.(Water); ok {
 				adjacentWater = true

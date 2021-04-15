@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
@@ -37,7 +38,7 @@ func (f *FallingBlock) Block() world.Block {
 func (f *FallingBlock) Tick(_ int64) {
 	f.pos.Store(f.tickMovement(f))
 
-	pos := world.BlockPosFromVec3(f.Position())
+	pos := cube.BlockPosFromVec3(f.Position())
 	if f.OnGround() || entity_internal.CanSolidify(f.block, pos, f.World()) {
 		if item_internal.Replaceable(f.World(), pos, f.block) {
 			f.World().PlaceBlock(pos, f.block)

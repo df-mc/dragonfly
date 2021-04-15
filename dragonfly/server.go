@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/cmd"
 	_ "github.com/df-mc/dragonfly/dragonfly/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/dragonfly/player"
@@ -384,7 +385,7 @@ func (server *Server) loadWorld() {
 	server.world.Provider(p)
 	server.world.Generator(generator.Flat{})
 	if os.IsNotExist(firstLoad) || p.WorldSpawn().Y() > 256 {
-		server.world.SetSpawn(world.BlockPos{0, server.world.HighestBlock(0, 0), 0})
+		server.world.SetSpawn(cube.Pos{0, server.world.HighestBlock(0, 0), 0})
 	}
 
 	server.log.Debugf("Loaded world '%v'.", server.world.Name())

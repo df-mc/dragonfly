@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
@@ -44,11 +45,11 @@ func (s WoodSlab) Model() world.BlockModel {
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
 // being turned into double slabs.
-func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	clickedBlock := w.Block(pos)
 	if clickedSlab, ok := clickedBlock.(WoodSlab); ok && !s.Double {
-		if (face == world.FaceUp && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.Top) ||
-			(face == world.FaceDown && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.Top) {
+		if (face == cube.FaceUp && !clickedSlab.Double && clickedSlab.Wood == s.Wood && !clickedSlab.Top) ||
+			(face == cube.FaceDown && !clickedSlab.Double && clickedSlab.Wood == s.Wood && clickedSlab.Top) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
 
@@ -70,7 +71,7 @@ func (s WoodSlab) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64
 	if !used {
 		return
 	}
-	if face == world.FaceDown || (clickPos[1] > 0.5 && face != world.FaceUp) {
+	if face == cube.FaceDown || (clickPos[1] > 0.5 && face != cube.FaceUp) {
 		s.Top = true
 	}
 
@@ -104,7 +105,7 @@ func (s WoodSlab) LightDiffusionLevel() uint8 {
 }
 
 // AABB ...
-func (s WoodSlab) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (s WoodSlab) AABB(cube.Pos, *world.World) []physics.AABB {
 	if s.Double {
 		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 	}
@@ -187,7 +188,7 @@ func (s WoodSlab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s WoodSlab) SideClosed(pos, side world.BlockPos, _ *world.World) bool {
+func (s WoodSlab) SideClosed(pos, side cube.Pos, _ *world.World) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
 }

@@ -1,26 +1,27 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
 
 // Facing returns the horizontal direction that an entity is facing.
-func Facing(e world.Entity) world.Direction {
+func Facing(e world.Entity) cube.Direction {
 	yaw := math.Mod(e.Yaw()-90, 360)
 	if yaw < 0 {
 		yaw += 360
 	}
 	switch {
 	case (yaw > 0 && yaw < 45) || (yaw > 315 && yaw < 360):
-		return world.West
+		return cube.West
 	case yaw > 45 && yaw < 135:
-		return world.North
+		return cube.North
 	case yaw > 135 && yaw < 225:
-		return world.East
+		return cube.East
 	case yaw > 225 && yaw < 315:
-		return world.South
+		return cube.South
 	}
 	return 0
 }

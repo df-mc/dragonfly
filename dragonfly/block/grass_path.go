@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -13,9 +14,9 @@ type GrassPath struct {
 }
 
 // NeighbourUpdateTick handles the turning from grass path into dirt if a block is placed on top of it.
-func (p GrassPath) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	up := pos.Add(world.BlockPos{0, 1})
-	if w.Block(up).Model().FaceSolid(up, world.FaceDown, w) {
+func (p GrassPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	up := pos.Add(cube.Pos{0, 1})
+	if w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
 		// A block with a solid side at the bottom was placed onto this one.
 		w.SetBlock(pos, Dirt{})
 	}

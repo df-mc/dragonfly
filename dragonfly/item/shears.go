@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -11,8 +12,8 @@ import (
 type Shears struct{}
 
 // UseOnBlock ...
-func (s Shears) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if face == world.FaceUp || face == world.FaceDown {
+func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+	if face == cube.FaceUp || face == cube.FaceDown {
 		// Pumpkins can only be carved when once of the horizontal faces is clicked.
 		return false
 	}

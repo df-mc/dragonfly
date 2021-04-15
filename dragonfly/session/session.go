@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
 	"github.com/df-mc/dragonfly/dragonfly/player/chat"
 	"github.com/df-mc/dragonfly/dragonfly/player/form"
@@ -112,7 +113,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log *logrus.Logger, joinMessa
 		quitMessage:            quitMessage,
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(world.BlockPos{})
+	s.openedPos.Store(cube.Pos{})
 
 	s.registerHandlers()
 	return s

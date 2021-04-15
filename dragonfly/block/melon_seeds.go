@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,7 +13,7 @@ type MelonSeeds struct {
 	crop
 
 	// direction is the direction from the stem to the melon.
-	Direction world.Face
+	Direction cube.Face
 }
 
 // SameCrop ...
@@ -22,25 +23,25 @@ func (MelonSeeds) SameCrop(c Crop) bool {
 }
 
 // NeighbourUpdateTick ...
-func (m MelonSeeds) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
+func (m MelonSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		w.BreakBlock(pos)
-	} else if m.Direction != world.FaceDown {
+	} else if m.Direction != cube.FaceDown {
 		if _, ok := w.Block(pos.Side(m.Direction)).(Melon); !ok {
-			m.Direction = world.FaceDown
+			m.Direction = cube.FaceDown
 			w.PlaceBlock(pos, m)
 		}
 	}
 }
 
 // RandomTick ...
-func (m MelonSeeds) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (m MelonSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if rand.Float64() <= m.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if m.Growth < 7 {
 			m.Growth++
 			w.PlaceBlock(pos, m)
 		} else {
-			directions := world.AllDirections()
+			directions := cube.Directions()
 			for _, i := range directions {
 				if _, ok := w.Block(pos.Side(i.Face())).(Melon); ok {
 					return
@@ -49,7 +50,7 @@ func (m MelonSeeds) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 			direction := directions[rand.Intn(len(directions))].Face()
 			stemPos := pos.Side(direction)
 			if _, ok := w.Block(stemPos).(Air); ok {
-				switch w.Block(stemPos.Side(world.FaceDown)).(type) {
+				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
 				case Farmland:
 				case Dirt:
 				case Grass:
@@ -63,7 +64,7 @@ func (m MelonSeeds) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand)
 }
 
 // BoneMeal ...
-func (m MelonSeeds) BoneMeal(pos world.BlockPos, w *world.World) bool {
+func (m MelonSeeds) BoneMeal(pos cube.Pos, w *world.World) bool {
 	if m.Growth == 7 {
 		return false
 	}
@@ -73,13 +74,13 @@ func (m MelonSeeds) BoneMeal(pos world.BlockPos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (m MelonSeeds) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (m MelonSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, m)
 	if !used {
 		return false
 	}
 
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		return false
 	}
 
@@ -115,7 +116,7 @@ func (m MelonSeeds) Hash() uint64 {
 // allMelonStems ...
 func allMelonStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {
-		for j := world.Face(0); j <= 5; j++ {
+		for j := cube.Face(0); j <= 5; j++ {
 			stems = append(stems, MelonSeeds{crop: crop{Growth: i}, Direction: j})
 		}
 	}

@@ -3,7 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
-	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"time"
@@ -123,7 +123,7 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 
 // handleUseItemTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.UseItemTransactionData, s *Session) error {
-	pos := world.BlockPos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
+	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
@@ -141,7 +141,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
 		s.sendInv(s.inv, protocol.WindowIDInventory)
-		s.c.UseItemOnBlock(pos, world.Face(data.BlockFace), vec32To64(data.ClickedPosition))
+		s.c.UseItemOnBlock(pos, cube.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
 		if time.Since(h.lastUseItemOnBlock) < time.Second/20 {

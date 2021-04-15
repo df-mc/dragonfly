@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -19,14 +20,14 @@ type NoteBlock struct {
 }
 
 // playNote ...
-func (n NoteBlock) playNote(pos world.BlockPos, w *world.World) {
+func (n NoteBlock) playNote(pos cube.Pos, w *world.World) {
 	w.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, w), Pitch: n.Pitch})
 	w.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
 // updateInstrument ...
-func (n NoteBlock) instrument(pos world.BlockPos, w *world.World) instrument.Instrument {
-	if instrumentBlock, ok := w.Block(pos.Side(world.FaceDown)).(InstrumentBlock); ok {
+func (n NoteBlock) instrument(pos cube.Pos, w *world.World) instrument.Instrument {
+	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(InstrumentBlock); ok {
 		return instrumentBlock.Instrument()
 	}
 	return instrument.Piano()
@@ -44,16 +45,16 @@ func (n NoteBlock) EncodeNBT() map[string]interface{} {
 }
 
 // Punch ...
-func (n NoteBlock) Punch(pos world.BlockPos, _ world.Face, w *world.World, u item.User) {
-	if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); !ok {
+func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
 	n.playNote(pos, w)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos world.BlockPos, _ world.Face, w *world.World, _ item.User) {
-	if _, ok := w.Block(pos.Side(world.FaceUp)).(Air); !ok {
+func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
 	n.Pitch = (n.Pitch + 1) % 25

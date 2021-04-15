@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -13,7 +14,7 @@ type BoneBlock struct {
 	solid
 
 	// Axis is the axis which the bone block faces.
-	Axis world.Axis
+	Axis cube.Axis
 }
 
 // Instrument ...
@@ -22,7 +23,7 @@ func (b BoneBlock) Instrument() instrument.Instrument {
 }
 
 // UseOnBlock handles the rotational placing of bone blocks.
-func (b BoneBlock) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (b BoneBlock) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, b)
 	if !used {
 		return
@@ -60,7 +61,7 @@ func (b BoneBlock) Hash() uint64 {
 
 // allBoneBlock ...
 func allBoneBlock() (boneBlocks []canEncode) {
-	for _, axis := range world.AllAxes() {
+	for _, axis := range cube.Axes() {
 		boneBlocks = append(boneBlocks, BoneBlock{Axis: axis})
 	}
 	return

@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -16,13 +17,13 @@ type Shovel struct {
 }
 
 // UseOnBlock handles the creation of grass path blocks from grass blocks.
-func (s Shovel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if grass := w.Block(pos); grass == item_internal.Grass {
-		if face == world.FaceDown {
+		if face == cube.FaceDown {
 			// Grass paths are not created when the bottom face is clicked.
 			return false
 		}
-		if w.Block(pos.Add(world.BlockPos{0, 1})) != item_internal.Air {
+		if w.Block(pos.Add(cube.Pos{0, 1})) != item_internal.Air {
 			// Grass paths can only be created if air is above the grass block.
 			return false
 		}

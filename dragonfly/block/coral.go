@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/coral"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -23,12 +24,12 @@ type Coral struct {
 }
 
 // UseOnBlock ...
-func (c Coral) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
-	if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w) {
+	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
 		return false
 	}
 	if liquid, ok := w.Liquid(pos); ok {
@@ -55,13 +56,13 @@ func (c Coral) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (c Coral) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (c Coral) SideClosed(pos, side cube.Pos, w *world.World) bool {
 	return false
 }
 
 // NeighbourUpdateTick ...
-func (c Coral) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *world.World) {
-	if !w.Block(pos.Side(world.FaceDown)).Model().FaceSolid(pos.Side(world.FaceDown), world.FaceUp, w) {
+func (c Coral) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
 		w.BreakBlock(pos)
 		return
 	}
@@ -72,13 +73,13 @@ func (c Coral) NeighbourUpdateTick(pos, changedNeighbour world.BlockPos, w *worl
 }
 
 // ScheduledTick ...
-func (c Coral) ScheduledTick(pos world.BlockPos, w *world.World) {
+func (c Coral) ScheduledTick(pos cube.Pos, w *world.World) {
 	if c.Dead {
 		return
 	}
 
 	adjacentWater := false
-	pos.Neighbours(func(neighbour world.BlockPos) {
+	pos.Neighbours(func(neighbour cube.Pos) {
 		if liquid, ok := w.Liquid(neighbour); ok {
 			if _, ok := liquid.(Water); ok {
 				adjacentWater = true

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
@@ -72,8 +73,8 @@ type World struct {
 	// blockUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
-	blockUpdates             map[BlockPos]int64
-	updatePositions          []BlockPos
+	blockUpdates             map[cube.Pos]int64
+	updatePositions          []cube.Pos
 	neighbourUpdatePositions []neighbourUpdate
 	neighbourUpdatesSync     []neighbourUpdate
 
@@ -96,7 +97,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
 		r:                   rand.New(rand.NewSource(time.Now().Unix())),
-		blockUpdates:        map[BlockPos]int64{},
+		blockUpdates:        map[cube.Pos]int64{},
 		lastEntityPositions: map[Entity]ChunkPos{},
 		entities:            map[Entity]struct{}{},
 		viewers:             map[Viewer]struct{}{},
@@ -131,7 +132,7 @@ func (w *World) Name() string {
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
-func (w *World) Block(pos BlockPos) Block {
+func (w *World) Block(pos cube.Pos) Block {
 	y := pos[1]
 	if w == nil || y > 255 || y < 0 {
 		// Fast way out.
@@ -161,7 +162,7 @@ func (w *World) Block(pos BlockPos) Block {
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
-func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
+func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 	if pos.OutOfBounds() {
 		// Fast way out.
 		return air(), nil
@@ -181,7 +182,7 @@ func (w *World) blockInChunk(c *chunkData, pos BlockPos) (Block, error) {
 // runtimeID gets the block runtime ID at a specific position in the world.
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
-func runtimeID(w *World, pos BlockPos) uint32 {
+func runtimeID(w *World, pos cube.Pos) uint32 {
 	if w == nil || pos[1] < 0 || pos[1] > 255 {
 		// Fast way out.
 		return world_internal.AirRuntimeID
@@ -234,7 +235,7 @@ func (w *World) HighestBlock(x, z int) int {
 // Nil may be passed as the block to set the block to air.
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
-func (w *World) SetBlock(pos BlockPos, b Block) {
+func (w *World) SetBlock(pos cube.Pos, b Block) {
 	y := pos[1]
 	if w == nil || y > 255 || y < 0 {
 		// Fast way out.
@@ -274,7 +275,7 @@ func (w *World) SetBlock(pos BlockPos, b Block) {
 
 // setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
 // does not send block updates to viewer.
-func (w *World) setBlockInChunk(c *chunkData, pos BlockPos, b Block) error {
+func (w *World) setBlockInChunk(c *chunkData, pos cube.Pos, b Block) error {
 	rid, ok := BlockRuntimeID(b)
 	if !ok {
 		return fmt.Errorf("runtime ID of block state %+v not found", b)
@@ -294,7 +295,7 @@ var breakParticle func(b Block) Particle
 
 // BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlock will also show particles and update blocks around the position.
-func (w *World) BreakBlock(pos BlockPos) {
+func (w *World) BreakBlock(pos cube.Pos) {
 	if w == nil {
 		return
 	}
@@ -311,7 +312,7 @@ func (w *World) BreakBlock(pos BlockPos) {
 
 // BreakBlockWithoutParticles breaks a block at the position passed. Unlike when setting the block at that position to air,
 // BreakBlockWithoutParticles will also update blocks around the position.
-func (w *World) BreakBlockWithoutParticles(pos BlockPos) {
+func (w *World) BreakBlockWithoutParticles(pos cube.Pos) {
 	if w == nil {
 		return
 	}
@@ -328,7 +329,7 @@ func (w *World) BreakBlockWithoutParticles(pos BlockPos) {
 // block updates around the position.
 // If the block can displace liquids at the position placed, it will do so, and liquid source blocks will be
 // put into the same block as the one passed.
-func (w *World) PlaceBlock(pos BlockPos, b Block) {
+func (w *World) PlaceBlock(pos cube.Pos, b Block) {
 	if w == nil {
 		return
 	}
@@ -353,7 +354,7 @@ func (w *World) PlaceBlock(pos BlockPos, b Block) {
 // will do so within much less time than separate SetBlock calls would.
 // The method operates on a per-chunk basis, setting all blocks within a single chunk part of the structure
 // before moving on to the next chunk.
-func (w *World) BuildStructure(pos BlockPos, s Structure) {
+func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 	if w == nil {
 		return
 	}
@@ -375,10 +376,10 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 			}
 			f := func(x, y, z int) Block {
 				if x>>4 == chunkX && z>>4 == chunkZ {
-					b, _ := w.blockInChunk(c, BlockPos{x, y, z})
+					b, _ := w.blockInChunk(c, cube.Pos{x, y, z})
 					return b
 				}
-				return w.Block(BlockPos{x, y, z})
+				return w.Block(cube.Pos{x, y, z})
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			for localX := 0; localX < 16; localX++ {
@@ -400,7 +401,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 							// it, so don't break but continue.
 							continue
 						}
-						placePos := BlockPos{xOffset, y + pos[1], zOffset}
+						placePos := cube.Pos{xOffset, y + pos[1], zOffset}
 						b, liq := s.At(xOffset-pos[0], y, zOffset-pos[2], f)
 						if b != nil {
 							if err := w.setBlockInChunk(c, placePos, b); err != nil {
@@ -433,7 +434,7 @@ func (w *World) BuildStructure(pos BlockPos, s Structure) {
 // Liquid attempts to return any liquid block at the position passed. This liquid may be in the foreground or
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
-func (w *World) Liquid(pos BlockPos) (Liquid, bool) {
+func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return nil, false
@@ -474,7 +475,7 @@ func (w *World) Liquid(pos BlockPos) (Liquid, bool) {
 // overwrite any existing blocks. It will instead be in the same position as a block currently there, unless
 // there already is a liquid at that position, in which case it will be overwritten.
 // If nil is passed for the liquid, any liquid currently present will be removed.
-func (w *World) SetLiquid(pos BlockPos, b Liquid) {
+func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return
@@ -529,7 +530,7 @@ func (w *World) SetLiquid(pos BlockPos, b Liquid) {
 // removeLiquids removes any liquid blocks that may be present at a specific block position in the chunk
 // passed.
 // The bool returned specifies if no blocks were left on the foreground layer.
-func (w *World) removeLiquids(c *chunkData, pos BlockPos) bool {
+func (w *World) removeLiquids(c *chunkData, pos cube.Pos) bool {
 	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
 
 	noneLeft := false
@@ -568,7 +569,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool,
 
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
 // liquid if so.
-func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
+func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	if pos.OutOfBounds() {
 		// Fast way out.
 		return nil, false
@@ -592,7 +593,7 @@ func (w *World) additionalLiquid(pos BlockPos) (Liquid, bool) {
 // Light returns the light level at the position passed. This is the highest of the sky and block light.
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
-func (w *World) Light(pos BlockPos) uint8 {
+func (w *World) Light(pos cube.Pos) uint8 {
 	if w == nil || pos[1] > 255 {
 		// Above the rest of the world, so full sky light.
 		return 15
@@ -614,7 +615,7 @@ func (w *World) Light(pos BlockPos) uint8 {
 // SkyLight returns the sky light level at the position passed. This light level is not influenced by blocks
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
-func (w *World) SkyLight(pos BlockPos) uint8 {
+func (w *World) SkyLight(pos cube.Pos) uint8 {
 	if w == nil || pos[1] > 255 {
 		// Above the rest of the world, so full sky light.
 		return 15
@@ -842,16 +843,16 @@ func OfEntity(e Entity) (*World, bool) {
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
 // when joining.
-func (w *World) Spawn() BlockPos {
+func (w *World) Spawn() cube.Pos {
 	if w == nil {
-		return BlockPos{}
+		return cube.Pos{}
 	}
 	return w.provider().WorldSpawn()
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player will be spawned in the center of
 // this position when newly joining.
-func (w *World) SetSpawn(pos BlockPos) {
+func (w *World) SetSpawn(pos cube.Pos) {
 	if w == nil {
 		return
 	}
@@ -914,7 +915,7 @@ func (w *World) SetRandomTickSpeed(v int) {
 
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
-func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
+func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	if w == nil || pos.OutOfBounds() {
 		return
 	}
@@ -928,7 +929,7 @@ func (w *World) ScheduleBlockUpdate(pos BlockPos, delay time.Duration) {
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
-func (w *World) doBlockUpdatesAround(pos BlockPos) {
+func (w *World) doBlockUpdatesAround(pos cube.Pos) {
 	if w == nil || pos.OutOfBounds() {
 		return
 	}
@@ -937,7 +938,7 @@ func (w *World) doBlockUpdatesAround(pos BlockPos) {
 
 	w.updateMu.Lock()
 	w.updateNeighbour(pos, changed)
-	pos.Neighbours(func(pos BlockPos) {
+	pos.Neighbours(func(pos cube.Pos) {
 		w.updateNeighbour(pos, changed)
 	})
 	w.updateMu.Unlock()
@@ -945,11 +946,11 @@ func (w *World) doBlockUpdatesAround(pos BlockPos) {
 
 // neighbourUpdate represents a position that needs to be updated because of a neighbour that changed.
 type neighbourUpdate struct {
-	pos, neighbour BlockPos
+	pos, neighbour cube.Pos
 }
 
 // updateNeighbour ticks the position passed as a result of the neighbour passed being updated.
-func (w *World) updateNeighbour(pos, changedNeighbour BlockPos) {
+func (w *World) updateNeighbour(pos, changedNeighbour cube.Pos) {
 	w.neighbourUpdatePositions = append(w.neighbourUpdatePositions, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
 }
 
@@ -1162,14 +1163,14 @@ func (w *World) tickScheduledBlocks(tick int64) {
 // toTick is a struct used to keep track of blocks that need to be ticked upon a random tick.
 type toTick struct {
 	b   RandomTicker
-	pos BlockPos
+	pos cube.Pos
 }
 
 // blockEntityToTick is a struct used to keep track of block entities that need to be ticked upon a normal
 // world tick.
 type blockEntityToTick struct {
 	b   TickerBlock
-	pos BlockPos
+	pos cube.Pos
 }
 
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
@@ -1253,7 +1254,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 
 				if randomTicker, ok := blocks[rid].(RandomTicker); ok {
-					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: BlockPos{int(pos[0]<<4) + x, y + i<<2, int(pos[1]<<4) + z}})
+					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: cube.Pos{int(pos[0]<<4) + x, y + i<<2, int(pos[1]<<4) + z}})
 				}
 			}
 		}
@@ -1632,7 +1633,7 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 // loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
 // have block NBT will then be stored into memory.
 func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interface{}) {
-	c.e = make(map[BlockPos]Block, len(blockEntityData))
+	c.e = make(map[cube.Pos]Block, len(blockEntityData))
 	for _, data := range blockEntityData {
 		pos := blockPosFromNBT(data)
 
@@ -1736,12 +1737,12 @@ func (w *World) chunkCacheJanitor() {
 // by the mutex present in the chunk.Chunk held.
 type chunkData struct {
 	*chunk.Chunk
-	e        map[BlockPos]Block
+	e        map[cube.Pos]Block
 	v        []Viewer
 	entities []Entity
 }
 
 // newChunkData returns a new chunkData wrapper around the chunk.Chunk passed.
 func newChunkData(c *chunk.Chunk) *chunkData {
-	return &chunkData{Chunk: c, e: map[BlockPos]Block{}}
+	return &chunkData{Chunk: c, e: map[cube.Pos]Block{}}
 }

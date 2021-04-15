@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -11,11 +12,11 @@ import (
 type Chest struct{}
 
 // AABB ...
-func (Chest) AABB(pos world.BlockPos, w *world.World) []physics.AABB {
+func (Chest) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
 // FaceSolid ...
-func (Chest) FaceSolid(pos world.BlockPos, face world.Face, w *world.World) bool {
+func (Chest) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
 	return false
 }

@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
@@ -19,14 +20,14 @@ type ConcretePowder struct {
 }
 
 // CanSolidify ...
-func (c ConcretePowder) CanSolidify(pos world.BlockPos, w *world.World) bool {
+func (c ConcretePowder) CanSolidify(pos cube.Pos, w *world.World) bool {
 	_, water := w.Block(pos).(Water)
 	return water
 }
 
 // NeighbourUpdateTick ...
-func (c ConcretePowder) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	for i := world.Face(0); i < 6; i++ {
+func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	for i := cube.Face(0); i < 6; i++ {
 		if _, ok := w.Block(pos.Side(i)).(Water); ok {
 			w.PlaceBlock(pos, Concrete{Colour: c.Colour})
 			return

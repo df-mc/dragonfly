@@ -1,6 +1,23 @@
-package world
+package cube
 
-import "fmt"
+import (
+	"fmt"
+)
+
+const (
+	// FaceDown represents the bottom face of a block.
+	FaceDown Face = iota
+	// FaceUp represents the top face of a block.
+	FaceUp
+	// FaceNorth represents the north face of a block.
+	FaceNorth
+	// FaceSouth represents the south face of a block.
+	FaceSouth
+	// FaceWest represents the west face of the block.
+	FaceWest
+	// FaceEast represents the east face of the block.
+	FaceEast
+)
 
 // Face represents the face of a block or entity.
 type Face int
@@ -29,21 +46,6 @@ func (f Face) FromString(s string) (interface{}, error) {
 	}
 	return nil, fmt.Errorf("unexpected facing '%v', expecting one of 'down', 'up', 'north', 'south', 'west' or 'east'", s)
 }
-
-const (
-	// FaceDown represents the bottom face of a block.
-	FaceDown Face = iota
-	// FaceUp represents the top face of a block.
-	FaceUp
-	// FaceNorth represents the north face of a block.
-	FaceNorth
-	// FaceSouth represents the south face of a block.
-	FaceSouth
-	// FaceWest represents the west face of the block.
-	FaceWest
-	// FaceEast represents the east face of the block.
-	FaceEast
-)
 
 // Opposite returns the opposite face. FaceDown will return up, north will return south and west will return east,
 // and vice versa.
@@ -76,3 +78,29 @@ func (f Face) Axis() Axis {
 		return Z
 	}
 }
+
+// String returns the Face as a string.
+func (f Face) String() string {
+	switch f {
+	case FaceUp:
+		return "up"
+	case FaceDown:
+		return "down"
+	case FaceNorth:
+		return "north"
+	case FaceSouth:
+		return "south"
+	case FaceWest:
+		return "west"
+	case FaceEast:
+		return "east"
+	}
+	panic("invalid face")
+}
+
+// HorizontalFaces returns a list of all horizontal faces, from north to west.
+func HorizontalFaces() []Face {
+	return hFaces[:]
+}
+
+var hFaces = [...]Face{FaceNorth, FaceEast, FaceSouth, FaceWest}

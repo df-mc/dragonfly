@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
@@ -24,7 +25,7 @@ type Leaves struct {
 }
 
 // findLog ...
-func findLog(pos world.BlockPos, w *world.World, visited *[]world.BlockPos, distance int) bool {
+func findLog(pos cube.Pos, w *world.World, visited *[]cube.Pos, distance int) bool {
 	for _, v := range *visited {
 		if v == pos {
 			return false
@@ -39,7 +40,7 @@ func findLog(pos world.BlockPos, w *world.World, visited *[]world.BlockPos, dist
 		return false
 	}
 	logFound := false
-	pos.Neighbours(func(neighbour world.BlockPos) {
+	pos.Neighbours(func(neighbour cube.Pos) {
 		if !logFound && findLog(neighbour, w, visited, distance+1) {
 			logFound = true
 		}
@@ -48,9 +49,9 @@ func findLog(pos world.BlockPos, w *world.World, visited *[]world.BlockPos, dist
 }
 
 // RandomTick ...
-func (l Leaves) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (l Leaves) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if !l.Persistent && l.shouldUpdate {
-		if findLog(pos, w, &[]world.BlockPos{}, 0) {
+		if findLog(pos, w, &[]cube.Pos{}, 0) {
 			l.shouldUpdate = false
 			w.PlaceBlock(pos, l)
 		} else {
@@ -60,7 +61,7 @@ func (l Leaves) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (l Leaves) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Persistent && !l.shouldUpdate {
 		l.shouldUpdate = true
 		w.PlaceBlock(pos, l)
@@ -129,7 +130,7 @@ func (Leaves) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (Leaves) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 

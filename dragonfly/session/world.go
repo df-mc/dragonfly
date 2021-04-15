@@ -5,6 +5,7 @@ import (
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/dragonfly/block"
 	blockAction "github.com/df-mc/dragonfly/dragonfly/block/action"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/action"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
@@ -23,7 +24,7 @@ import (
 )
 
 // ViewChunk ...
-func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
+func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	if !s.conn.ClientCacheEnabled() {
 		s.sendNetworkChunk(pos, c, blockEntities)
 		return
@@ -33,7 +34,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
-func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
+func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	data := chunk.NetworkEncode(c)
 
 	count := byte(0)
@@ -95,7 +96,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 }
 
 // sendNetworkChunk sends a network encoded chunk to the client.
-func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[world.BlockPos]world.Block) {
+func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	data := chunk.NetworkEncode(c)
 
 	count := byte(0)
@@ -520,7 +521,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 }
 
 // ViewBlockUpdate ...
-func (s *Session) ViewBlockUpdate(pos world.BlockPos, b world.Block, layer int) {
+func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	runtimeID, _ := world.BlockRuntimeID(b)
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
@@ -624,7 +625,7 @@ func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
 }
 
 // OpenBlockContainer ...
-func (s *Session) OpenBlockContainer(pos world.BlockPos) {
+func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	s.closeCurrentContainer()
 
 	b := s.c.World().Block(pos)
@@ -653,7 +654,7 @@ func (s *Session) OpenBlockContainer(pos world.BlockPos) {
 }
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
-func (s *Session) openNormalContainer(b block.Container, pos world.BlockPos) {
+func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	b.AddViewer(s, s.c.World(), pos)
 
 	nextID := s.nextWindowID()
@@ -691,7 +692,7 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 }
 
 // ViewBlockAction ...
-func (s *Session) ViewBlockAction(pos world.BlockPos, a blockAction.Action) {
+func (s *Session) ViewBlockAction(pos cube.Pos, a blockAction.Action) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
 	case blockAction.Open:

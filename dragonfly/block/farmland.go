@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"math/rand"
@@ -21,20 +22,20 @@ type Farmland struct {
 //TODO: Add crop trampling
 
 // NeighbourUpdateTick ...
-func (f Farmland) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if solid := w.Block(pos.Side(world.FaceUp)).Model().FaceSolid(pos.Side(world.FaceUp), world.FaceDown, w); solid {
+func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if solid := w.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, w); solid {
 		w.SetBlock(pos, Dirt{})
 	}
 }
 
 // RandomTick ...
-func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+func (f Farmland) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if !f.hydrated(pos, w) {
 		if f.Hydration > 0 {
 			f.Hydration--
 			w.PlaceBlock(pos, f)
 		} else {
-			blockAbove := w.Block(pos.Side(world.FaceUp))
+			blockAbove := w.Block(pos.Side(cube.FaceUp))
 			if _, cropAbove := blockAbove.(Crop); !cropAbove {
 				w.PlaceBlock(pos, Dirt{})
 			}
@@ -46,14 +47,14 @@ func (f Farmland) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
 }
 
 // hydrated checks for water within 4 blocks in each direction from the farmland.
-func (f Farmland) hydrated(pos world.BlockPos, w *world.World) bool {
+func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 	posX := pos.X()
 	posY := pos.Y()
 	posZ := pos.Z()
 	for y := 0; y <= 1; y++ {
 		for x := -4; x <= 4; x++ {
 			for z := -4; z <= 4; z++ {
-				if liquid, ok := w.Liquid(world.BlockPos{posX + x, posY + y, posZ + z}); ok {
+				if liquid, ok := w.Liquid(cube.Pos{posX + x, posY + y, posZ + z}); ok {
 					if _, ok := liquid.(Water); ok {
 						return true
 					}

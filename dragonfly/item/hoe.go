@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -15,13 +16,13 @@ type Hoe struct {
 }
 
 // UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
-func (h Hoe) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
+func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
 	if grass := w.Block(pos); grass == item_internal.Grass || grass == item_internal.Dirt {
-		if face == world.FaceDown {
+		if face == cube.FaceDown {
 			// Tilled land isn't created when the bottom face is clicked.
 			return false
 		}
-		if w.Block(pos.Add(world.BlockPos{0, 1})) != item_internal.Air {
+		if w.Block(pos.Add(cube.Pos{0, 1})) != item_internal.Air {
 			// Tilled land can only be created if air is above the grass block.
 			return false
 		}

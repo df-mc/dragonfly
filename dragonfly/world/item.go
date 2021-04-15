@@ -3,6 +3,7 @@ package world
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 )
 
@@ -27,7 +28,7 @@ type NBTer interface {
 // tick for loaded blocks that implement this interface.
 type TickerBlock interface {
 	NBTer
-	Tick(currentTick int64, pos BlockPos, w *World)
+	Tick(currentTick int64, pos cube.Pos, w *World)
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an

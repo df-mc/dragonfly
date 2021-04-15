@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/potion"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -11,7 +12,7 @@ import (
 type GlassBottle struct{}
 
 // UseOnBlock ...
-func (g GlassBottle) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (g GlassBottle) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if item_internal.IsWaterSource(w.Block(pos)) {
 		ctx.CountSub = 1
 		ctx.NewItem = NewStack(Potion{Type: potion.Water()}, 1)

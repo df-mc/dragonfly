@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -16,7 +17,7 @@ type Axe struct {
 }
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
-func (a Axe) UseOnBlock(pos world.BlockPos, _ world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (a Axe) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if b := w.Block(pos); item_internal.IsUnstrippedLog(b) {
 		strippedLog := item_internal.StripLog(b)
 		w.PlaceBlock(pos, strippedLog)

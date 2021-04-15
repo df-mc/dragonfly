@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -33,7 +34,7 @@ func (Carpet) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (Carpet) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (Carpet) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -68,20 +69,20 @@ func (Carpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (Carpet) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if _, ok := w.Block(pos.Add(world.BlockPos{0, -1})).(Air); ok {
+func (Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if _, ok := w.Block(pos.Add(cube.Pos{0, -1})).(Air); ok {
 		w.BreakBlockWithoutParticles(pos)
 	}
 }
 
 // UseOnBlock handles not placing carpets on top of air blocks.
-func (c Carpet) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
 
-	if _, ok := w.Block((world.BlockPos{pos.X(), pos.Y() - 1, pos.Z()})).(Air); ok {
+	if _, ok := w.Block((cube.Pos{pos.X(), pos.Y() - 1, pos.Z()})).(Air); ok {
 		return
 	}
 

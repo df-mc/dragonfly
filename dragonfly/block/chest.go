@@ -3,6 +3,7 @@ package block
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block/action"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/inventory"
@@ -25,7 +26,7 @@ type Chest struct {
 	bass
 
 	// Facing is the direction that the chest is facing.
-	Facing world.Direction
+	Facing cube.Direction
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
 	// include colour codes.
 	CustomName string
@@ -76,12 +77,12 @@ func (Chest) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (Chest) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // open opens the chest, displaying the animation and playing a sound.
-func (c Chest) open(w *world.World, pos world.BlockPos) {
+func (c Chest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, action.Open{})
 	}
@@ -89,7 +90,7 @@ func (c Chest) open(w *world.World, pos world.BlockPos) {
 }
 
 // close closes the chest, displaying the animation and playing a sound.
-func (c Chest) close(w *world.World, pos world.BlockPos) {
+func (c Chest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, action.Close{})
 	}
@@ -97,7 +98,7 @@ func (c Chest) close(w *world.World, pos world.BlockPos) {
 }
 
 // AddViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
-func (c Chest) AddViewer(v ContainerViewer, w *world.World, pos world.BlockPos) {
+func (c Chest) AddViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	c.viewerMu.Lock()
 	if len(*c.viewers) == 0 {
 		c.open(w, pos)
@@ -108,7 +109,7 @@ func (c Chest) AddViewer(v ContainerViewer, w *world.World, pos world.BlockPos) 
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to
 // it.
-func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos world.BlockPos) {
+func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	c.viewerMu.Lock()
 	if len(*c.viewers) == 0 {
 		c.viewerMu.Unlock()
@@ -128,14 +129,14 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos world.BlockPo
 }
 
 // Activate ...
-func (c Chest) Activate(pos world.BlockPos, _ world.Face, _ *world.World, u item.User) {
+func (c Chest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 	}
 }
 
 // UseOnBlock ...
-func (c Chest) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return
@@ -209,7 +210,7 @@ func (c Chest) Hash() uint64 {
 
 // allChests ...
 func allChests() (chests []canEncode) {
-	for _, direction := range world.AllDirections() {
+	for _, direction := range cube.Directions() {
 		chests = append(chests, Chest{Facing: direction})
 	}
 	return

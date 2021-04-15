@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -10,11 +11,11 @@ import (
 type Carpet struct{}
 
 // AABB ...
-func (Carpet) AABB(world.BlockPos, *world.World) []physics.AABB {
+func (Carpet) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.0625, 1})}
 }
 
 // FaceSolid ...
-func (Carpet) FaceSolid(world.BlockPos, world.Face, *world.World) bool {
+func (Carpet) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

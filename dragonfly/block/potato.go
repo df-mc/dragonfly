@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -37,7 +38,7 @@ func (p Potato) Consume(_ *world.World, c item.Consumer) item.Stack {
 }
 
 // BoneMeal ...
-func (p Potato) BoneMeal(pos world.BlockPos, w *world.World) bool {
+func (p Potato) BoneMeal(pos cube.Pos, w *world.World) bool {
 	if p.Growth == 7 {
 		return false
 	}
@@ -47,13 +48,13 @@ func (p Potato) BoneMeal(pos world.BlockPos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (p Potato) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, p)
 	if !used {
 		return false
 	}
 
-	if _, ok := w.Block(pos.Side(world.FaceDown)).(Farmland); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		return false
 	}
 
@@ -82,7 +83,7 @@ func (p Potato) EncodeItem() (id int32, meta int16) {
 }
 
 // RandomTick ...
-func (p Potato) RandomTick(pos world.BlockPos, w *world.World, _ *rand.Rand) {
+func (p Potato) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if w.Light(pos) < 8 {
 		w.BreakBlock(pos)
 	} else if p.Growth < 7 && rand.Float64() <= p.CalculateGrowthChance(pos, w) {

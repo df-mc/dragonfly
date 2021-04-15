@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -16,13 +17,13 @@ type CocoaBean struct {
 	transparent
 
 	// Facing is the direction from the cocoa bean to the log.
-	Facing world.Direction
+	Facing cube.Direction
 	// Age is the stage of the cocoa bean's growth. 2 is fully grown.
 	Age int
 }
 
 // BoneMeal ...
-func (c CocoaBean) BoneMeal(pos world.BlockPos, w *world.World) bool {
+func (c CocoaBean) BoneMeal(pos cube.Pos, w *world.World) bool {
 	if c.Age == 2 {
 		return false
 	}
@@ -37,20 +38,20 @@ func (c CocoaBean) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (c CocoaBean) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != wood.Jungle() || log.Stripped {
 		w.BreakBlockWithoutParticles(pos)
 	}
 }
 
 // UseOnBlock ...
-func (c CocoaBean) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
 
-	if face == world.FaceUp || face == world.FaceDown {
+	if face == cube.FaceUp || face == cube.FaceDown {
 		return false
 	}
 	if log, ok := w.Block(pos.Side(face.Opposite())).(Log); ok {
@@ -67,7 +68,7 @@ func (c CocoaBean) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3,
 }
 
 // RandomTick ...
-func (c CocoaBean) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (c CocoaBean) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if c.Age < 2 && r.Intn(5) == 0 {
 		c.Age++
 		w.PlaceBlock(pos, c)
@@ -98,11 +99,11 @@ func (c CocoaBean) EncodeItem() (id int32, meta int16) {
 func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}) {
 	direction := 2
 	switch c.Facing {
-	case world.South:
+	case cube.South:
 		direction = 0
-	case world.West:
+	case cube.West:
 		direction = 1
-	case world.East:
+	case cube.East:
 		direction = 3
 	}
 
@@ -121,7 +122,7 @@ func (c CocoaBean) Model() world.BlockModel {
 
 // allCocoaBeans ...
 func allCocoaBeans() (cocoa []canEncode) {
-	for i := world.Direction(0); i <= 3; i++ {
+	for i := cube.Direction(0); i <= 3; i++ {
 		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 0})
 		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 1})
 		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 2})

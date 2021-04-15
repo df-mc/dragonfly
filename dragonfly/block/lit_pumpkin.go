@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,7 +13,7 @@ type LitPumpkin struct {
 	solid
 
 	// Facing is the direction the pumpkin is facing.
-	Facing world.Direction
+	Facing cube.Direction
 }
 
 // LightEmissionLevel ...
@@ -21,7 +22,7 @@ func (l LitPumpkin) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (l LitPumpkin) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, l)
 	if !used {
 		return
@@ -51,11 +52,11 @@ func (l LitPumpkin) EncodeItem() (id int32, meta int16) {
 func (l LitPumpkin) EncodeBlock() (name string, properties map[string]interface{}) {
 	direction := 2
 	switch l.Facing {
-	case world.South:
+	case cube.South:
 		direction = 0
-	case world.West:
+	case cube.West:
 		direction = 1
-	case world.East:
+	case cube.East:
 		direction = 3
 	}
 
@@ -68,7 +69,7 @@ func (l LitPumpkin) Hash() uint64 {
 }
 
 func allLitPumpkins() (pumpkins []canEncode) {
-	for i := world.Direction(0); i <= 3; i++ {
+	for i := cube.Direction(0); i <= 3; i++ {
 		pumpkins = append(pumpkins, LitPumpkin{Facing: i})
 	}
 	return

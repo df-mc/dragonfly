@@ -1,6 +1,7 @@
 package item_internal
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
@@ -35,7 +36,7 @@ var IsCarvedPumpkin func(i world.Item) bool
 var IsUncarvedPumpkin func(b world.Block) bool
 
 // CarvePumpkin is a function used to convert a pumpkin block to a carved pumpkin block.
-var CarvePumpkin func(b world.Block, face world.Face) world.Block
+var CarvePumpkin func(b world.Block, face cube.Face) world.Block
 
 // IsWater is a function used to check if a liquid is water.
 var IsWater func(b world.Block) bool
@@ -44,10 +45,10 @@ var IsWater func(b world.Block) bool
 var IsWaterSource func(b world.Block) bool
 
 // BoneMeal is a function used to attempt to use it on a block.
-var BoneMeal func(pos world.BlockPos, w *world.World) bool
+var BoneMeal func(pos cube.Pos, w *world.World) bool
 
 // Replaceable is a function used to check if a block is replaceable.
-var Replaceable func(w *world.World, pos world.BlockPos, with world.Block) bool
+var Replaceable func(w *world.World, pos cube.Pos, with world.Block) bool
 
 // Fire holds a fire block.
 var Fire world.Block

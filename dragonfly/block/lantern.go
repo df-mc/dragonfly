@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -25,15 +26,15 @@ func (l Lantern) Model() world.BlockModel {
 }
 
 // NeighbourUpdateTick ...
-func (l Lantern) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
+func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if l.Hanging {
-		up := pos.Side(world.FaceUp)
-		if !w.Block(up).Model().FaceSolid(up, world.FaceDown, w) {
+		up := pos.Side(cube.FaceUp)
+		if !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
 			w.BreakBlockWithoutParticles(pos)
 		}
 	} else {
-		down := pos.Side(world.FaceDown)
-		if !w.Block(down).Model().FaceSolid(down, world.FaceUp, w) {
+		down := pos.Side(cube.FaceDown)
+		if !w.Block(down).Model().FaceSolid(down, cube.FaceUp, w) {
 			w.BreakBlockWithoutParticles(pos)
 		}
 	}
@@ -45,24 +46,24 @@ func (l Lantern) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (l Lantern) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, l)
 	if !used {
 		return false
 	}
-	if face == world.FaceDown {
-		upPos := pos.Side(world.FaceUp)
-		if !w.Block(upPos).Model().FaceSolid(upPos, world.FaceDown, w) {
-			face = world.FaceUp
+	if face == cube.FaceDown {
+		upPos := pos.Side(cube.FaceUp)
+		if !w.Block(upPos).Model().FaceSolid(upPos, cube.FaceDown, w) {
+			face = cube.FaceUp
 		}
 	}
-	if face != world.FaceDown {
-		downPos := pos.Side(world.FaceDown)
-		if !w.Block(downPos).Model().FaceSolid(downPos, world.FaceUp, w) {
+	if face != cube.FaceDown {
+		downPos := pos.Side(cube.FaceDown)
+		if !w.Block(downPos).Model().FaceSolid(downPos, cube.FaceUp, w) {
 			return false
 		}
 	}
-	l.Hanging = face == world.FaceDown
+	l.Hanging = face == cube.FaceDown
 
 	place(w, pos, l, user, ctx)
 	return placed(ctx)

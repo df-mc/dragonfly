@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/event"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -68,11 +69,11 @@ func (Water) LightDiffusionLevel() uint8 {
 }
 
 // ScheduledTick ...
-func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
+func (w Water) ScheduledTick(pos cube.Pos, wo *world.World) {
 	if w.Depth == 7 {
 		// Attempt to form new water source blocks.
 		count := 0
-		pos.Neighbours(func(neighbour world.BlockPos) {
+		pos.Neighbours(func(neighbour cube.Pos) {
 			if neighbour[1] == pos[1] {
 				if liquid, ok := wo.Liquid(neighbour); ok {
 					if water, ok := liquid.(Water); ok && water.Depth == 8 && !water.Falling {
@@ -83,7 +84,7 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 		})
 		if count >= 2 {
 			func() {
-				if canFlowInto(w, wo, pos.Side(world.FaceDown), true) {
+				if canFlowInto(w, wo, pos.Side(cube.FaceDown), true) {
 					return
 				}
 				// Only form a new source block if there either is no water below this block, or if the water
@@ -96,7 +97,7 @@ func (w Water) ScheduledTick(pos world.BlockPos, wo *world.World) {
 }
 
 // NeighbourUpdateTick ...
-func (Water) NeighbourUpdateTick(pos, _ world.BlockPos, wo *world.World) {
+func (Water) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 	wo.ScheduleBlockUpdate(pos, time.Second/4)
 }
 
@@ -106,11 +107,11 @@ func (Water) LiquidType() string {
 }
 
 // Harden hardens the water if lava flows into it.
-func (w Water) Harden(pos world.BlockPos, wo *world.World, flownIntoBy *world.BlockPos) bool {
+func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool {
 	if flownIntoBy == nil {
 		return false
 	}
-	if lava, ok := wo.Block(pos.Side(world.FaceUp)).(Lava); ok {
+	if lava, ok := wo.Block(pos.Side(cube.FaceUp)).(Lava); ok {
 		ctx := event.C()
 		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{})
 		ctx.Continue(func() {

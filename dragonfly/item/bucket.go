@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/bucket"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -28,7 +29,7 @@ func (b Bucket) Empty() bool {
 }
 
 // UseOnBlock handles the bucket filling and emptying logic.
-func (b Bucket) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if b.Empty() {
 		return b.fillFrom(pos, w, ctx)
 	}
@@ -57,7 +58,7 @@ func (b Bucket) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w 
 
 // fillFrom fills a bucket from the liquid at the position passed in the world. If there is no liquid or if
 // the liquid is no source, fillFrom returns false.
-func (b Bucket) fillFrom(pos world.BlockPos, w *world.World, ctx *UseContext) bool {
+func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 	liquid, ok := w.Liquid(pos)
 	if !ok {
 		return false

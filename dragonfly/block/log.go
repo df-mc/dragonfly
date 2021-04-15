@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -21,7 +22,7 @@ type Log struct {
 	// Stripped specifies if the log is stripped or not.
 	Stripped bool
 	// Axis is the axis which the log block faces.
-	Axis world.Axis
+	Axis cube.Axis
 }
 
 // FlammabilityInfo ...
@@ -34,7 +35,7 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 }
 
 // UseOnBlock handles the rotational placing of logs.
-func (l Log) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, l)
 	if !used {
 		return
@@ -126,7 +127,7 @@ func (l Log) Hash() uint64 {
 
 // allLogs returns a list of all possible log states.
 func allLogs() (logs []canEncode) {
-	f := func(axis world.Axis, stripped bool) {
+	f := func(axis cube.Axis, stripped bool) {
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Oak()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Spruce()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Birch()})
@@ -134,7 +135,7 @@ func allLogs() (logs []canEncode) {
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Acacia()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.DarkOak()})
 	}
-	for axis := world.Axis(0); axis < 3; axis++ {
+	for axis := cube.Axis(0); axis < 3; axis++ {
 		f(axis, true)
 		f(axis, false)
 	}

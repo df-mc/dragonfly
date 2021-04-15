@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/player/form"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
@@ -31,10 +32,10 @@ type Controllable interface {
 
 	UseItem()
 	ReleaseItem()
-	UseItemOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3)
+	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity)
-	BreakBlock(pos world.BlockPos)
-	PickBlock(pos world.BlockPos)
+	BreakBlock(pos cube.Pos)
+	PickBlock(pos cube.Pos)
 	AttackEntity(e world.Entity)
 	Drop(s item.Stack) (n int)
 
@@ -50,8 +51,8 @@ type Controllable interface {
 	Swimming() bool
 	StopSwimming()
 
-	StartBreaking(pos world.BlockPos, face world.Face)
-	ContinueBreaking(face world.Face)
+	StartBreaking(pos cube.Pos, face cube.Face)
+	ContinueBreaking(face cube.Face)
 	FinishBreaking()
 	AbortBreaking()
 

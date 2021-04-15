@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/dragonfly/world"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -41,7 +41,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStopSneak:
 		s.c.StopSneaking()
 	case protocol.PlayerActionStartSwimming:
-		if _, ok := s.c.World().Liquid(world.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()}))); ok {
+		if _, ok := s.c.World().Liquid(cube.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()}))); ok {
 			s.c.StartSwimming()
 		}
 	case protocol.PlayerActionStopSwimming:
@@ -52,7 +52,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
+		s.c.StartBreaking(cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}, cube.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
 	case protocol.PlayerActionPredictDestroyBlock:
@@ -63,7 +63,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.ContinueBreaking(world.Face(face))
+		s.c.ContinueBreaking(cube.Face(face))
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:

@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -18,9 +19,9 @@ type Kelp struct {
 }
 
 // BoneMeal ...
-func (k Kelp) BoneMeal(pos world.BlockPos, w *world.World) bool {
+func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
 	for y := pos.Y(); y < 255; y++ {
-		currentPos := world.BlockPos{pos.X(), y, pos.Z()}
+		currentPos := cube.Pos{pos.X(), y, pos.Z()}
 		block := w.Block(currentPos)
 		if kelp, ok := block.(Kelp); ok {
 			if kelp.Age == 25 {
@@ -70,7 +71,7 @@ func (Kelp) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed will always return false since kelp doesn't close any side.
-func (Kelp) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (Kelp) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -81,16 +82,16 @@ func (k Kelp) withRandomAge() Kelp {
 }
 
 // UseOnBlock ...
-func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, k)
 	if !used {
 		return
 	}
 
-	below := pos.Add(world.BlockPos{0, -1})
+	below := pos.Add(cube.Pos{0, -1})
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
-		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
 			return false
 		}
 	}
@@ -108,7 +109,7 @@ func (k Kelp) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 }
 
 // NeighbourUpdateTick ...
-func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
+func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 	if _, ok := w.Liquid(pos); !ok {
 		w.BreakBlockWithoutParticles(pos)
 		return
@@ -118,20 +119,20 @@ func (k Kelp) NeighbourUpdateTick(pos, changed world.BlockPos, w *world.World) {
 		w.PlaceBlock(pos, k.withRandomAge())
 	}
 
-	below := pos.Add(world.BlockPos{0, -1})
+	below := pos.Add(cube.Pos{0, -1})
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
-		if !belowBlock.Model().FaceSolid(below, world.FaceUp, w) {
+		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
 			w.BreakBlockWithoutParticles(pos)
 		}
 	}
 }
 
 // RandomTick ...
-func (k Kelp) RandomTick(pos world.BlockPos, w *world.World, r *rand.Rand) {
+func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.Intn(100) < 15 && k.Age < 25 {
-		abovePos := pos.Add(world.BlockPos{0, 1})
+		abovePos := pos.Add(cube.Pos{0, 1})
 
 		liquid, ok := w.Liquid(abovePos)
 

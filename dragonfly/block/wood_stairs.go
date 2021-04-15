@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
 	"github.com/df-mc/dragonfly/dragonfly/item"
@@ -21,7 +22,7 @@ type WoodStairs struct {
 	// of the block.
 	UpsideDown bool
 	// Facing is the direction that the full side of the stairs is facing.
-	Facing world.Direction
+	Facing cube.Direction
 }
 
 // FlammabilityInfo ...
@@ -38,13 +39,13 @@ func (f WoodStairs) FlammabilityInfo() FlammabilityInfo {
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
 // when needed.
-func (s WoodStairs) UseOnBlock(pos world.BlockPos, face world.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s WoodStairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, s)
 	if !used {
 		return
 	}
 	s.Facing = user.Facing()
-	if face == world.FaceDown || (clickPos[1] > 0.5 && face != world.FaceUp) {
+	if face == cube.FaceDown || (clickPos[1] > 0.5 && face != cube.FaceUp) {
 		s.UpsideDown = true
 	}
 
@@ -101,7 +102,7 @@ func (s WoodStairs) Hash() uint64 {
 }
 
 // toStairDirection converts a facing to a stairs direction for Minecraft.
-func toStairsDirection(v world.Direction) int32 {
+func toStairsDirection(v cube.Direction) int32 {
 	return int32(3 - v)
 }
 
@@ -112,18 +113,18 @@ func (WoodStairs) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s WoodStairs) SideClosed(pos, side world.BlockPos, w *world.World) bool {
+func (s WoodStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
 
 // allWoodStairs returns all states of wood stairs.
 func allWoodStairs() (stairs []canEncode) {
-	f := func(facing world.Direction, upsideDown bool) {
+	f := func(facing cube.Direction, upsideDown bool) {
 		for _, w := range wood.All() {
 			stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: w})
 		}
 	}
-	for i := world.Direction(0); i <= 3; i++ {
+	for i := cube.Direction(0); i <= 3; i++ {
 		f(i, true)
 		f(i, false)
 	}

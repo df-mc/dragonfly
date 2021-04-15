@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -26,7 +27,7 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 }
 
 // UseOnBlock ...
-func (f FlintAndSteel) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
 	if w.Block(pos.Side(face)) == item_internal.Air {
 		w.PlaySound(pos.Vec3(), sound.Ignite{})

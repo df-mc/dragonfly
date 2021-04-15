@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -23,18 +24,18 @@ func (c Cake) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (c Cake) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (c Cake) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // UseOnBlock ...
-func (c Cake) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
 
-	if _, air := w.Block(pos.Side(world.FaceDown)).(Air); air {
+	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
 		return false
 	}
 
@@ -43,14 +44,14 @@ func (c Cake) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *w
 }
 
 // NeighbourUpdateTick ...
-func (c Cake) NeighbourUpdateTick(pos, _ world.BlockPos, w *world.World) {
-	if _, air := w.Block(pos.Side(world.FaceDown)).(Air); air {
+func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
 		w.BreakBlock(pos)
 	}
 }
 
 // Activate ...
-func (c Cake) Activate(pos world.BlockPos, _ world.Face, w *world.World, u item.User) {
+func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {

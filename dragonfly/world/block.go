@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
@@ -38,7 +39,7 @@ type replaceableBlock interface {
 }
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *World, c *chunkData, pos BlockPos, with Block) bool {
+func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
 	b, _ := w.blockInChunk(c, pos)
 	if replaceable, ok := b.(replaceableBlock); ok {
 		return replaceable.ReplaceableBy(with)
@@ -234,12 +235,12 @@ func (unimplementedBlock) Model() BlockModel {
 type unimplementedModel struct{}
 
 // AABB ...
-func (u unimplementedModel) AABB(BlockPos, *World) []physics.AABB {
+func (u unimplementedModel) AABB(cube.Pos, *World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
 // FaceSolid ...
-func (u unimplementedModel) FaceSolid(BlockPos, Face, *World) bool {
+func (u unimplementedModel) FaceSolid(cube.Pos, cube.Face, *World) bool {
 	return true
 }
 
@@ -261,7 +262,7 @@ type Liquid interface {
 	LiquidType() string
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
-	Harden(pos BlockPos, w *World, flownIntoBy *BlockPos) bool
+	Harden(pos cube.Pos, w *World, flownIntoBy *cube.Pos) bool
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -269,7 +270,7 @@ type Liquid interface {
 type RandomTicker interface {
 	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.Rand
 	// instance is passed which may be used to generate values randomly without locking.
-	RandomTick(pos BlockPos, w *World, r *rand.Rand)
+	RandomTick(pos cube.Pos, w *World, r *rand.Rand)
 }
 
 // ScheduledTicker represents a block that executes an action when it has a block update scheduled, such as
@@ -277,7 +278,7 @@ type RandomTicker interface {
 type ScheduledTicker interface {
 	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
 	// when a block is placed or broken.
-	ScheduledTick(pos BlockPos, w *World)
+	ScheduledTick(pos cube.Pos, w *World)
 }
 
 // NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
@@ -285,7 +286,7 @@ type ScheduledTicker interface {
 type NeighbourUpdateTicker interface {
 	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
 	// position of this block is passed.
-	NeighbourUpdateTick(pos, changedNeighbour BlockPos, w *World)
+	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *World)
 }
 
 // lightEmitter is identical to a block.lightEmitter.
@@ -323,7 +324,7 @@ type LiquidDisplacer interface {
 	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
 	// closed. When this returns true (for example, when the side is below the position and the block is a
 	// slab), liquid inside of the displacer won't flow from pos into side.
-	SideClosed(pos, side BlockPos, w *World) bool
+	SideClosed(pos, side cube.Pos, w *World) bool
 }
 
 // init registers all default states.

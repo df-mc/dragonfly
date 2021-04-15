@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/model"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -29,7 +30,7 @@ func (NetherBrickFence) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (NetherBrickFence) SideClosed(world.BlockPos, world.BlockPos, *world.World) bool {
+func (NetherBrickFence) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 

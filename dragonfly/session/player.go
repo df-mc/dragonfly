@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/dragonfly/block"
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/effect"
 	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/nbtconv"
@@ -31,7 +32,7 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
-	pos := s.openedPos.Load().(world.BlockPos)
+	pos := s.openedPos.Load().(cube.Pos)
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}
@@ -89,14 +90,14 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(world.BlockPos))
+			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
 			if _, chest := b.(block.Chest); chest {
 				return s.openedWindow.Load().(*inventory.Inventory), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(world.BlockPos))
+			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
 			if _, beacon := b.(block.Beacon); beacon {
 				return s.ui, true
 			}

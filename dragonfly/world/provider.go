@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
@@ -18,9 +19,9 @@ type Provider interface {
 	SetWorldName(name string)
 	// WorldSpawn returns the spawn position of the world. Although players may spawn at different positions,
 	// every new player spawns at this position.
-	WorldSpawn() BlockPos
+	WorldSpawn() cube.Pos
 	// SetWorldSpawn sets the spawn of a world to a new position.
-	SetWorldSpawn(pos BlockPos)
+	SetWorldSpawn(pos cube.Pos)
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -79,7 +80,7 @@ func (NoIOProvider) LoadDefaultGameMode() gamemode.GameMode { return gamemode.Ad
 func (NoIOProvider) SaveDefaultGameMode(gamemode.GameMode) {}
 
 // SetWorldSpawn ...
-func (NoIOProvider) SetWorldSpawn(BlockPos) {}
+func (NoIOProvider) SetWorldSpawn(cube.Pos) {}
 
 // SaveTimeCycle ...
 func (NoIOProvider) SaveTimeCycle(bool) {}
@@ -136,8 +137,8 @@ func (NoIOProvider) WorldName() string {
 func (NoIOProvider) SetWorldName(string) {}
 
 // WorldSpawn ...
-func (NoIOProvider) WorldSpawn() BlockPos {
-	return BlockPos{0, 30, 0}
+func (NoIOProvider) WorldSpawn() cube.Pos {
+	return cube.Pos{0, 30, 0}
 }
 
 // Close ...

@@ -1,6 +1,7 @@
 package particle
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/instrument"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -23,7 +24,7 @@ type PunchBlock struct {
 	// block is punched.
 	Block world.Block
 	// Face is the face of the block that was punched. It is here that the particles will be shown.
-	Face world.Face
+	Face cube.Face
 }
 
 // BlockForceField is a particle that shows up as a block that turns invisible from an opaque black colour.
@@ -46,8 +47,8 @@ type Note struct {
 type DragonEggTeleport struct {
 	particle
 
-	// Diff is a BlockPos with the values being the difference from the original position to the new position.
-	Diff world.BlockPos
+	// Diff is a Pos with the values being the difference from the original position to the new position.
+	Diff cube.Pos
 }
 
 // Evaporate is a particle that shows up when a water block evaporates

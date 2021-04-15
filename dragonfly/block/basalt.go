@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -15,11 +16,11 @@ type Basalt struct {
 	// Polished specifies if the basalt is its polished variant.
 	Polished bool
 	// Axis is the axis which the basalt faces.
-	Axis world.Axis
+	Axis cube.Axis
 }
 
 // UseOnBlock ...
-func (b Basalt) UseOnBlock(pos world.BlockPos, face world.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, b)
 	if !used {
 		return
@@ -63,7 +64,7 @@ func (b Basalt) Hash() uint64 {
 
 // allBasalt ...
 func allBasalt() (basalt []canEncode) {
-	for _, axis := range world.AllAxes() {
+	for _, axis := range cube.Axes() {
 		basalt = append(basalt, Basalt{Axis: axis, Polished: false})
 		basalt = append(basalt, Basalt{Axis: axis, Polished: true})
 	}
