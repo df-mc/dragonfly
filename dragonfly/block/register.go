@@ -363,13 +363,6 @@ func init() {
 		water, ok := b.(Water)
 		return ok && water.Depth == 8
 	}
-	item_internal.BoneMeal = func(pos cube.Pos, w *world.World) bool {
-		b := w.Block(pos)
-		if bonemealAffected, ok := b.(BoneMealAffected); ok {
-			return bonemealAffected.BoneMeal(pos, w)
-		}
-		return false
-	}
 	item_internal.Replaceable = replaceableWith
 	entity_internal.CanSolidify = func(b world.Block, pos cube.Pos, w *world.World) bool {
 		gravity, ok := b.(GravityAffected)

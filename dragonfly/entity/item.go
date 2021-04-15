@@ -105,7 +105,7 @@ func (it *Item) checkNearby() {
 			continue
 		}
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
-			if collector, ok := e.(item.Collector); ok {
+			if collector, ok := e.(Collector); ok {
 				// A collector was within range to pick up the entity.
 				it.collect(collector)
 				return
@@ -146,7 +146,7 @@ func (it *Item) merge(other *Item) bool {
 }
 
 // collect makes a collector collect the item (or at least part of it).
-func (it *Item) collect(collector item.Collector) {
+func (it *Item) collect(collector Collector) {
 	n := collector.Collect(it.i)
 	if n == 0 {
 		return
@@ -205,4 +205,14 @@ func (it *Item) Close() error {
 		it.World().RemoveEntity(it)
 	}
 	return nil
+}
+
+// Collector represents an entity in the world that is able to collect an item, typically an entity such as
+// a player or a zombie.
+type Collector interface {
+	world.Entity
+	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
+	// may be picked up.
+	// The count of items collected from the stack n is returned.
+	Collect(stack item.Stack) (n int)
 }

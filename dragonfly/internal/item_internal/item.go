@@ -44,9 +44,6 @@ var IsWater func(b world.Block) bool
 // IsWaterSource is a function used to check if a block is a water source.
 var IsWaterSource func(b world.Block) bool
 
-// BoneMeal is a function used to attempt to use it on a block.
-var BoneMeal func(pos cube.Pos, w *world.World) bool
-
 // Replaceable is a function used to check if a block is replaceable.
 var Replaceable func(w *world.World, pos cube.Pos, with world.Block) bool
 
