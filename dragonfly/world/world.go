@@ -1560,6 +1560,14 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
 		c = chunk.New(world_internal.AirRuntimeID)
 		w.generator().GenerateChunk(pos, c)
+		for _, sub := range c.Sub() {
+			if sub == nil {
+				continue
+			}
+			// Creating new sub chunks will create a fully lit sub chunk, but we don't want that here as
+			// light updates aren't happening (yet).
+			sub.ClearLight()
+		}
 		return newChunkData(c), nil
 	}
 	data := newChunkData(c)

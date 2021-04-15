@@ -58,6 +58,12 @@ func (sub *SubChunk) Light(x, y, z byte) uint8 {
 	return blockLight
 }
 
+// ClearLight clears all light of the sub chunk.
+func (sub *SubChunk) ClearLight() {
+	sub.skyLight = [2048]uint8{}
+	sub.blockLight = [2048]uint8{}
+}
+
 // setBlockLight sets the block light value at a specific position in the sub chunk.
 func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
