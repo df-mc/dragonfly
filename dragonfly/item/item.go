@@ -127,16 +127,6 @@ type User interface {
 	SetHeldItems(right, left Stack)
 }
 
-// Collector represents an entity in the world that is able to collect an item, typically an entity such as
-// a player or a zombie.
-type Collector interface {
-	world.Entity
-	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
-	// may be picked up.
-	// The count of items collected from the stack n is returned.
-	Collect(stack Stack) (n int)
-}
-
 // Carrier represents an entity that is able to carry an item.
 type Carrier interface {
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
