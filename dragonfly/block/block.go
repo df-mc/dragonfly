@@ -59,12 +59,6 @@ type BeaconSource interface {
 	PowersBeacon() bool
 }
 
-// BoneMealAffected represents a block that is affected when bonemeal is used on it.
-type BoneMealAffected interface {
-	// BoneMeal attempts to affect the block using a bone meal item.
-	BoneMeal(pos cube.Pos, w *world.World) bool
-}
-
 // beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
 type beaconAffected interface {
 	// AddEffect adds a specific effect to the entity that implements this interface.
