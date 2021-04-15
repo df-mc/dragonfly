@@ -46,6 +46,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		}
 	case protocol.PlayerActionStopSwimming:
 		s.c.StopSwimming()
+	case protocol.PlayerActionContinueDestroyBlock:
+		fallthrough
 	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
@@ -53,6 +55,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		s.c.StartBreaking(world.BlockPos{int(pos[0]), int(pos[1]), int(pos[2])}, world.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
+	case protocol.PlayerActionPredictDestroyBlock:
+		fallthrough
 	case protocol.PlayerActionStopBreak:
 		s.c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:

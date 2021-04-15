@@ -193,7 +193,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		s.writePacket(&packet.AddItemActor{
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
-			Item:            stackFromItem(v.Item()),
+			Item:            instanceFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
 		})
 	case *entity.FallingBlock:
@@ -347,12 +347,12 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 	// Show the main hand item.
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: runtimeID,
-		NewItem:         stackFromItem(mainHand),
+		NewItem:         instanceFromItem(mainHand),
 	})
 	// Show the off-hand item.
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: runtimeID,
-		NewItem:         stackFromItem(offHand),
+		NewItem:         instanceFromItem(offHand),
 		WindowID:        protocol.WindowIDOffHand,
 	})
 }
@@ -374,10 +374,10 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 	// Show the main hand item.
 	s.writePacket(&packet.MobArmourEquipment{
 		EntityRuntimeID: runtimeID,
-		Helmet:          stackFromItem(inv.Helmet()),
-		Chestplate:      stackFromItem(inv.Chestplate()),
-		Leggings:        stackFromItem(inv.Leggings()),
-		Boots:           stackFromItem(inv.Boots()),
+		Helmet:          instanceFromItem(inv.Helmet()),
+		Chestplate:      instanceFromItem(inv.Chestplate()),
+		Leggings:        instanceFromItem(inv.Leggings()),
+		Boots:           instanceFromItem(inv.Boots()),
 	})
 }
 

@@ -519,7 +519,7 @@ func (s *Session) SetHeldSlot(slot int) error {
 	mainHand, _ := s.c.HeldItems()
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: selfEntityRuntimeID,
-		NewItem:         stackFromItem(mainHand),
+		NewItem:         instanceFromItem(mainHand),
 		InventorySlot:   byte(slot),
 		HotBarSlot:      byte(slot),
 	})
@@ -532,15 +532,25 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 		return protocol.ItemStack{}
 	}
 	name, meta := world_itemToName(it.Item())
+	var blockRuntimeID uint32
+	if b, ok := it.Item().(world.Block); ok {
+		blockRuntimeID, ok = world.BlockRuntimeID(b)
+		if !ok {
+			panic("should never happen")
+		}
+	}
+
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
 			NetworkID: world_runtimeById(world.ItemEntry{
 				Name: name,
 			}),
-			MetadataValue: meta,
+			MetadataValue: uint32(meta),
 		},
-		Count:   int16(it.Count()),
-		NBTData: nbtconv.ItemToNBT(it, true),
+		BlockRuntimeID: int32(blockRuntimeID),
+		HasNetworkID:   true,
+		Count:          uint16(it.Count()),
+		NBTData:        nbtconv.ItemToNBT(it, true),
 	}
 }
 
@@ -554,21 +564,35 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack, useFoundMetadataFirst bool) item.Stack {
-	entry := world_idByRuntime(it.NetworkID)
-	var meta int16
-	var oppositeMeta int16
-	if useFoundMetadataFirst {
-		meta = entry.Meta
-		oppositeMeta = it.MetadataValue
-	} else {
-		meta = it.MetadataValue
-		oppositeMeta = entry.Meta
-	}
-	t, ok := world_itemByName(entry.Name, meta)
-	if !ok {
-		t, ok = world_itemByName(entry.Name, oppositeMeta)
-		if !ok {
+	var t world.Item
+	var ok bool
+
+	if it.BlockRuntimeID != 0 {
+		var b world.Block
+		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
+		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
+		// return air anyways.
+		b, _ = world_blockByRuntimeID(uint32(it.BlockRuntimeID))
+		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}
+		}
+	} else {
+		entry := world_idByRuntime(it.NetworkID)
+		var meta int16
+		var oppositeMeta int16
+		if useFoundMetadataFirst {
+			meta = entry.Meta
+			oppositeMeta = int16(it.MetadataValue)
+		} else {
+			meta = int16(it.MetadataValue)
+			oppositeMeta = entry.Meta
+		}
+		t, ok = world_itemByName(entry.Name, meta)
+		if !ok {
+			t, ok = world_itemByName(entry.Name, oppositeMeta)
+			if !ok {
+				t = block.Air{}
+			}
 		}
 	}
 	//noinspection SpellCheckingInspection
@@ -635,3 +659,7 @@ func effect_idByEffect(effect.Effect) (int, bool)
 //go:linkname effect_byID github.com/df-mc/dragonfly/dragonfly/entity/effect.effectByID
 //noinspection ALL
 func effect_byID(int) (effect.Effect, bool)
+
+//go:linkname world_blockByRuntimeID github.com/df-mc/dragonfly/dragonfly/world.blockByRuntimeID
+//noinspection ALL
+func world_blockByRuntimeID(rid uint32) (world.Block, bool)
