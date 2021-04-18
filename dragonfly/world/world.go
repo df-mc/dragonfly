@@ -133,8 +133,7 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos cube.Pos) Block {
-	y := pos[1]
-	if w == nil || y > 255 || y < 0 {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return air()
 	}
@@ -236,8 +235,7 @@ func (w *World) HighestBlock(x, z int) int {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block) {
-	y := pos[1]
-	if w == nil || y > 255 || y < 0 {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return
 	}
@@ -1221,6 +1219,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		subChunks := c.Sub()
 		// In total we generate 3 random blocks per sub chunk.
 		for j := uint32(0); j < tickSpeed; j++ {
+			// TODO: Account for 'dynamic' world height here.
+
 			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
 			// obtain a total of 16 coordinates on one axis from one uint64. One for each sub chunk.
 			ra, rb, rc := int(w.r.Uint64()), int(w.r.Uint64()), int(w.r.Uint64())
