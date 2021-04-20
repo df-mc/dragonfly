@@ -116,8 +116,7 @@ func NetworkEncode(c *Chunk) (d SerialisedData) {
 			b := make([]byte, len(storage.blocks)*4)
 			for i, v := range storage.blocks {
 				// Explicitly don't use the binary package to greatly improve performance of writing the uint32s.
-				i <<= 2
-				b[i], b[i+1], b[i+2], b[i+3] = byte(v), byte(v>>8), byte(v>>16), byte(v>>24)
+				b[i*4], b[i*4+1], b[i*4+2], b[i*4+3] = byte(v), byte(v>>8), byte(v>>16), byte(v>>24)
 			}
 			_, _ = buf.Write(b)
 
