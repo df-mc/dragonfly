@@ -6,7 +6,6 @@ package block_internal
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	_ "unsafe" // Imported for compiler directives.
 )
 
@@ -14,23 +13,9 @@ import (
 //noinspection ALL
 var world_blocksByName = map[string]world.Block{}
 
-//go:linkname world_breakParticle github.com/df-mc/dragonfly/dragonfly/world.breakParticle
-//noinspection ALL
-var world_breakParticle func(b world.Block) world.Particle
-
-//go:linkname World_registeredStates github.com/df-mc/dragonfly/dragonfly/world.registeredStates
-//noinspection ALL
-var World_registeredStates []world.Block
-
 //go:linkname World_runtimeID github.com/df-mc/dragonfly/dragonfly/world.runtimeID
 //noinspection ALL
 func World_runtimeID(w *world.World, pos cube.Pos) uint32
-
-func init() {
-	world_breakParticle = func(b world.Block) world.Particle {
-		return particle.BlockBreak{Block: b}
-	}
-}
 
 // BlockByTypeName attempts to return a block by its type name.
 func BlockByTypeName(name string) (world.Block, bool) {
