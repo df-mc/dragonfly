@@ -19,8 +19,8 @@ type ConcretePowder struct {
 	Colour colour.Colour
 }
 
-// CanSolidify ...
-func (c ConcretePowder) CanSolidify(pos cube.Pos, w *world.World) bool {
+// Solidifies ...
+func (c ConcretePowder) Solidifies(pos cube.Pos, w *world.World) bool {
 	_, water := w.Block(pos).(Water)
 	return water
 }

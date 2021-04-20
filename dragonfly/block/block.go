@@ -153,17 +153,11 @@ func (transparent) LightDiffusionLevel() uint8 {
 	return 0
 }
 
-// GravityAffected represents blocks affected by gravity.
-type GravityAffected interface {
-	// CanSolidify returns whether the falling block can return back to a normal block without being on the ground.
-	CanSolidify(pos cube.Pos, w *world.World) bool
-}
-
 // gravityAffected is a struct that may be embedded for blocks affected by gravity.
 type gravityAffected struct{}
 
-// CanSolidify ...
-func (g gravityAffected) CanSolidify(cube.Pos, *world.World) bool {
+// Solidifies ...
+func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 	return false
 }
 

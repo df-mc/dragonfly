@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
-	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	_ "unsafe" // Imported for compiler directives.
@@ -364,13 +363,6 @@ func init() {
 		return ok && water.Depth == 8
 	}
 	item_internal.Replaceable = replaceableWith
-	entity_internal.CanSolidify = func(b world.Block, pos cube.Pos, w *world.World) bool {
-		gravity, ok := b.(GravityAffected)
-		if !ok {
-			return false
-		}
-		return gravity.CanSolidify(pos, w)
-	}
 	item_internal.Fire = Fire{Type: fire.Normal(), Age: 0}
 }
 

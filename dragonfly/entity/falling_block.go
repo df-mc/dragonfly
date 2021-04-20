@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
-	"github.com/df-mc/dragonfly/dragonfly/internal/entity_internal"
 	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
@@ -39,7 +38,8 @@ func (f *FallingBlock) Tick(_ int64) {
 	f.pos.Store(f.tickMovement(f))
 
 	pos := cube.BlockPosFromVec3(f.Position())
-	if f.OnGround() || entity_internal.CanSolidify(f.block, pos, f.World()) {
+
+	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.OnGround() {
 		if item_internal.Replaceable(f.World(), pos, f.block) {
 			f.World().PlaceBlock(pos, f.block)
 		} else {
@@ -111,4 +111,12 @@ func (f *FallingBlock) SetVelocity(v mgl64.Vec3) {
 // EncodeEntity ...
 func (f *FallingBlock) EncodeEntity() string {
 	return "minecraft:falling_block"
+}
+
+// Solidifiable represents a block that can solidify by specific adjacent blocks. An example is concrete
+// powder, which can turn into concrete by touching water.
+type Solidifiable interface {
+	// Solidifies returns whether the falling block can solidify at the position it is currently in. If so,
+	// the block will immediately stop falling.
+	Solidifies(pos cube.Pos, w *world.World) bool
 }
