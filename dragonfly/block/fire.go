@@ -4,7 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
-	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
+	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"math/rand"
@@ -185,7 +185,9 @@ func (f Fire) tick(pos cube.Pos, w *world.World) {
 // EntityCollide ...
 func (f Fire) EntityCollide(e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
-		block_internal.FireDamage(e, 1)
+		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+			l.Hurt(1, damage.SourceFire{})
+		}
 		flammable.SetOnFire(time.Duration(8) * time.Second)
 	}
 }

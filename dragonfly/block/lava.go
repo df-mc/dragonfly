@@ -3,9 +3,9 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity"
+	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/event"
-	"github.com/df-mc/dragonfly/dragonfly/internal/block_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"math/rand"
@@ -45,7 +45,9 @@ func (l Lava) EntityCollide(e world.Entity) {
 		fallEntity.ResetFallDistance()
 	}
 	if flammable, ok := e.(entity.Flammable); ok {
-		block_internal.LavaDamage(e, 4)
+		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+			l.Hurt(4, damage.SourceLava{})
+		}
 		flammable.SetOnFire(time.Duration(15) * time.Second)
 	}
 }
