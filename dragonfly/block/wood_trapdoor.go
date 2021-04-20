@@ -116,11 +116,6 @@ func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interfac
 	}
 }
 
-// Hash ...
-func (t WoodTrapdoor) Hash() uint64 {
-	return hashTrapdoor | (uint64(t.Facing) << 32) | (uint64(boolByte(t.Open)) << 34) | (uint64(boolByte(t.Top)) << 35) | (uint64(t.Wood.Uint8()) << 36)
-}
-
 // allTrapdoors returns a list of all trapdoor types
 func allTrapdoors() (trapdoors []canEncode) {
 	for _, w := range wood.All() {

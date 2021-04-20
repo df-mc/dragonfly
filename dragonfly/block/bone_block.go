@@ -54,11 +54,6 @@ func (b BoneBlock) EncodeBlock() (name string, properties map[string]interface{}
 	return "minecraft:bone_block", map[string]interface{}{"pillar_axis": b.Axis.String(), "deprecated": int32(0)}
 }
 
-// Hash ...
-func (b BoneBlock) Hash() uint64 {
-	return hashBoneBlock | (uint64(b.Axis << 32))
-}
-
 // allBoneBlock ...
 func allBoneBlock() (boneBlocks []canEncode) {
 	for _, axis := range cube.Axes() {

@@ -174,11 +174,6 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 	}
 }
 
-// Hash ...
-func (d WoodDoor) Hash() uint64 {
-	return hashDoor | (uint64(d.Facing) << 32) | (uint64(boolByte(d.Right)) << 35) | (uint64(boolByte(d.Open)) << 36) | (uint64(boolByte(d.Top)) << 37) | (uint64(d.Wood.Uint8()) << 38)
-}
-
 // allDoors returns a list of all door types
 func allDoors() (doors []canEncode) {
 	for _, w := range wood.All() {

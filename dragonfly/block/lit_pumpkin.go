@@ -63,11 +63,6 @@ func (l LitPumpkin) EncodeBlock() (name string, properties map[string]interface{
 	return "minecraft:lit_pumpkin", map[string]interface{}{"direction": int32(direction)}
 }
 
-// Hash ...
-func (l LitPumpkin) Hash() uint64 {
-	return hashLitPumpkin | (uint64(l.Facing) << 32)
-}
-
 func allLitPumpkins() (pumpkins []canEncode) {
 	for i := cube.Direction(0); i <= 3; i++ {
 		pumpkins = append(pumpkins, LitPumpkin{Facing: i})

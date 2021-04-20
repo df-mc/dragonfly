@@ -80,11 +80,6 @@ func (s WheatSeeds) EncodeBlock() (name string, properties map[string]interface{
 	return "minecraft:wheat", map[string]interface{}{"growth": int32(s.Growth)}
 }
 
-// Hash ...
-func (s WheatSeeds) Hash() uint64 {
-	return hashWheat | (uint64(s.Growth) << 32)
-}
-
 // allWheat ...
 func allWheat() (wheat []canEncode) {
 	for i := 0; i <= 7; i++ {

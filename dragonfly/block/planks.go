@@ -73,11 +73,6 @@ func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 	}
 }
 
-// Hash ...
-func (p Planks) Hash() uint64 {
-	return hashPlanks | (uint64(p.Wood.Uint8()) << 32)
-}
-
 // allPlanks returns all planks types.
 func allPlanks() (planks []canEncode) {
 	for _, w := range wood.All() {

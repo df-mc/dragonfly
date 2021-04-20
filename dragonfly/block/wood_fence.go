@@ -61,11 +61,6 @@ func (w WoodFence) EncodeBlock() (name string, properties map[string]interface{}
 	return "minecraft:fence", map[string]interface{}{"wood_type": w.Wood.String()}
 }
 
-// Hash ...
-func (w WoodFence) Hash() uint64 {
-	return hashWoodFence | (uint64(w.Wood.Uint8()) << 32)
-}
-
 // Model ...
 func (w WoodFence) Model() world.BlockModel {
 	return model.Fence{Wooden: true}

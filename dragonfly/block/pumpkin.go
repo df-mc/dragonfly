@@ -75,11 +75,6 @@ func (p Pumpkin) EncodeBlock() (name string, properties map[string]interface{}) 
 	return "minecraft:pumpkin", map[string]interface{}{"direction": int32(direction)}
 }
 
-// Hash ...
-func (p Pumpkin) Hash() uint64 {
-	return hashPumpkin | (uint64(boolByte(p.Carved)) << 32) | (uint64(p.Facing) << 33)
-}
-
 func allPumpkins() (pumpkins []canEncode) {
 	for i := cube.Direction(0); i <= 3; i++ {
 		pumpkins = append(pumpkins, Pumpkin{Facing: i})

@@ -57,11 +57,6 @@ func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
 }
 
-// Hash ...
-func (b Basalt) Hash() uint64 {
-	return hashBasalt | (uint64(boolByte(b.Polished)) << 32) | (uint64(b.Axis) << 33)
-}
-
 // allBasalt ...
 func allBasalt() (basalt []canEncode) {
 	for _, axis := range cube.Axes() {

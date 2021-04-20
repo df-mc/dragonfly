@@ -246,11 +246,6 @@ func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
 	panic("unknown fire type")
 }
 
-// Hash ...
-func (f Fire) Hash() uint64 {
-	return hashFire | (uint64(f.Age) << 32) | (uint64(f.Type.Uint8()) << 36)
-}
-
 // allFire ...
 func allFire() (b []canEncode) {
 	for i := 0; i < 16; i++ {

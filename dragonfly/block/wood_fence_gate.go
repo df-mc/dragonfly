@@ -126,11 +126,6 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interfa
 	}
 }
 
-// Hash ...
-func (f WoodFenceGate) Hash() uint64 {
-	return hashFenceGate | (uint64(f.Facing) << 32) | (uint64(boolByte(f.Open)) << 34) | (uint64(boolByte(f.Lowered)) << 35) | (uint64(f.Wood.Uint8()) << 36)
-}
-
 // Model ...
 func (f WoodFenceGate) Model() world.BlockModel {
 	return model.FenceGate{Facing: f.Facing, Open: f.Open}

@@ -106,11 +106,6 @@ func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) 
 	panic("invalid fire type")
 }
 
-// Hash ...
-func (l Lantern) Hash() uint64 {
-	return hashLantern | (uint64(boolByte(l.Hanging)) << 32) | (uint64(l.Type.Uint8()) << 33)
-}
-
 // allLanterns ...
 func allLanterns() (lanterns []canEncode) {
 	for _, f := range fire.AllFireTypes() {

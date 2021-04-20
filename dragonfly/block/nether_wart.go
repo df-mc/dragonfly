@@ -78,11 +78,6 @@ func (n NetherWart) EncodeBlock() (name string, properties map[string]interface{
 	return "minecraft:nether_wart", map[string]interface{}{"age": int32(n.Age)}
 }
 
-// Hash ...
-func (n NetherWart) Hash() uint64 {
-	return hashNetherWart | (uint64(n.Age) << 32)
-}
-
 // allNetherWart ...
 func allNetherWart() (wart []canEncode) {
 	for i := 0; i < 4; i++ {

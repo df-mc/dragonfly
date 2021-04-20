@@ -85,11 +85,6 @@ func (c Cake) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:cake", map[string]interface{}{"bite_counter": int32(c.Bites)}
 }
 
-// Hash ...
-func (c Cake) Hash() uint64 {
-	return hashCake | (uint64(c.Bites) << 32)
-}
-
 // Model ...
 func (c Cake) Model() world.BlockModel {
 	return model.Cake{Bites: c.Bites}

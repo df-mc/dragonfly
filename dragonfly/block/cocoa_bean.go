@@ -110,11 +110,6 @@ func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}
 	return "minecraft:cocoa", map[string]interface{}{"age": int32(c.Age), "direction": int32(direction)}
 }
 
-// Hash ...
-func (c CocoaBean) Hash() uint64 {
-	return hashCocoa | (uint64(c.Age) << 32) | (uint64(c.Facing) << 34)
-}
-
 // Model ...
 func (c CocoaBean) Model() world.BlockModel {
 	return model.CocoaBean{Facing: c.Facing, Age: c.Age}

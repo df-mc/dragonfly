@@ -29,11 +29,6 @@ func (l Light) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:light_block", map[string]interface{}{"block_light_level": int32(l.Level)}
 }
 
-// Hash ...
-func (l Light) Hash() uint64 {
-	return hashLight | (uint64(l.Level) << 32)
-}
-
 // allLight returns all possible light blocks.
 func allLight() []world.Block {
 	m := make([]world.Block, 0, 16)

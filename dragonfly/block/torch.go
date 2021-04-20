@@ -109,11 +109,6 @@ func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
 	panic("invalid fire type")
 }
 
-// Hash ...
-func (t Torch) Hash() uint64 {
-	return hashTorch | (uint64(t.Facing) << 32) | (uint64(t.Type.Uint8()) << 35)
-}
-
 // allTorch ...
 func allTorch() (torch []canEncode) {
 	for i := cube.Face(0); i < 6; i++ {

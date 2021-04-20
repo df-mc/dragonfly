@@ -83,11 +83,6 @@ func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]interfa
 	return "minecraft:beetroot", map[string]interface{}{"growth": int32(b.Growth)}
 }
 
-// Hash ...
-func (b BeetrootSeeds) Hash() uint64 {
-	return hashBeetroot | (uint64(b.Growth) << 32)
-}
-
 // allBeetroot ...
 func allBeetroot() (beetroot []canEncode) {
 	for i := 0; i <= 7; i++ {

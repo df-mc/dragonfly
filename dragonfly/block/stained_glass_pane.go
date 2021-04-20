@@ -56,11 +56,6 @@ func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]inte
 	return "minecraft:stained_glass_pane", map[string]interface{}{"color": colourName}
 }
 
-// Hash ...
-func (p StainedGlassPane) Hash() uint64 {
-	return hashStainedGlassPane | uint64(p.Colour.Uint8())<<34
-}
-
 // allStainedGlassPane returns stained glass panes with all possible colours.
 func allStainedGlassPane() []canEncode {
 	b := make([]canEncode, 0, 16)

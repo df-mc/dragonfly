@@ -35,8 +35,3 @@ func (c Clay) EncodeItem() (id int32, meta int16) {
 func (c Clay) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:clay", nil
 }
-
-// Hash ...
-func (c Clay) Hash() uint64 {
-	return hashClay
-}

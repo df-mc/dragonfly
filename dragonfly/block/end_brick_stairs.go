@@ -61,11 +61,6 @@ func (s EndBrickStairs) EncodeBlock() (name string, properties map[string]interf
 	return "minecraft:end_brick_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 }
 
-// Hash ...
-func (s EndBrickStairs) Hash() uint64 {
-	return hashEndBrickStairs | (uint64(boolByte(s.UpsideDown)) << 32) | (uint64(s.Facing) << 33)
-}
-
 // CanDisplace ...
 func (EndBrickStairs) CanDisplace(b world.Liquid) bool {
 	_, ok := b.(Water)

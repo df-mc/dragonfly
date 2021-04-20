@@ -56,11 +56,6 @@ func (c ConcretePowder) EncodeBlock() (name string, properties map[string]interf
 	return "minecraft:concretePowder", map[string]interface{}{"color": c.Colour.String()}
 }
 
-// Hash ...
-func (c ConcretePowder) Hash() uint64 {
-	return hashConcretePowder | (uint64(c.Colour.Uint8()) << 32)
-}
-
 // allConcretePowder returns concrete powder with all possible colours.
 func allConcretePowder() []canEncode {
 	b := make([]canEncode, 0, 16)

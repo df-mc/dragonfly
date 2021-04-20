@@ -41,11 +41,6 @@ func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]int
 	return "minecraft:stained_hardened_clay", map[string]interface{}{"color": colourName}
 }
 
-// Hash ...
-func (t StainedTerracotta) Hash() uint64 {
-	return hashStainedTerracotta | (uint64(t.Colour.Uint8()) << 32)
-}
-
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.
 func allStainedTerracotta() []canEncode {
 	b := make([]canEncode, 0, 16)

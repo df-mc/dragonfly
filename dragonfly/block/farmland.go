@@ -80,11 +80,6 @@ func (f Farmland) EncodeBlock() (name string, properties map[string]interface{})
 	return "minecraft:farmland", map[string]interface{}{"moisturized_amount": int32(f.Hydration)}
 }
 
-// Hash ...
-func (f Farmland) Hash() uint64 {
-	return hashFarmland | (uint64(f.Hydration) << 32)
-}
-
 // allFarmland returns all possible states that a block of farmland can be in.
 func allFarmland() (b []canEncode) {
 	for i := 0; i <= 7; i++ {

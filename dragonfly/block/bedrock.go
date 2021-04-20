@@ -22,8 +22,3 @@ func (b Bedrock) EncodeBlock() (name string, properties map[string]interface{}) 
 	//noinspection SpellCheckingInspection
 	return "minecraft:bedrock", map[string]interface{}{"infiniburn_bit": b.InfiniteBurning}
 }
-
-// Hash ...
-func (b Bedrock) Hash() uint64 {
-	return hashBedrock | (uint64(boolByte(b.InfiniteBurning)) << 32)
-}

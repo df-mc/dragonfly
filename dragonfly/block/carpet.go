@@ -58,11 +58,6 @@ func (c Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:carpet", map[string]interface{}{"color": c.Colour.String()}
 }
 
-// Hash ...
-func (c Carpet) Hash() uint64 {
-	return hashCarpet | (uint64(c.Colour.Uint8()) << 32)
-}
-
 // HasLiquidDrops ...
 func (Carpet) HasLiquidDrops() bool {
 	return true

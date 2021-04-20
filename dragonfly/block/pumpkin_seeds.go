@@ -108,11 +108,6 @@ func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]interfac
 	return "minecraft:pumpkin_stem", map[string]interface{}{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
 }
 
-// Hash ...
-func (p PumpkinSeeds) Hash() uint64 {
-	return hashPumpkinStem | (uint64(p.Growth) << 32) | (uint64(p.Direction) << 35)
-}
-
 // allPumpkinStems
 func allPumpkinStems() (stems []canEncode) {
 	for i := 0; i <= 7; i++ {

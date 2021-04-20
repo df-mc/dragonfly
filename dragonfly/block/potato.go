@@ -97,11 +97,6 @@ func (p Potato) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:potatoes", map[string]interface{}{"growth": int32(p.Growth)}
 }
 
-// Hash ...
-func (p Potato) Hash() uint64 {
-	return hashPotato | (uint64(p.Growth) << 32)
-}
-
 // allPotato ...
 func allPotato() (potato []canEncode) {
 	for i := 0; i <= 7; i++ {

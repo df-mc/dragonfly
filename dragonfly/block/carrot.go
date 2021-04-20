@@ -91,11 +91,6 @@ func (c Carrot) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:carrots", map[string]interface{}{"growth": int32(c.Growth)}
 }
 
-// Hash ...
-func (c Carrot) Hash() uint64 {
-	return hashCarrot | (uint64(c.Growth) << 32)
-}
-
 // allCarrots ...
 func allCarrots() (carrots []canEncode) {
 	for growth := 0; growth < 8; growth++ {
