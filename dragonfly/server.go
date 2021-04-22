@@ -110,7 +110,7 @@ func (server *Server) Run() error {
 		panic("server already running")
 	}
 
-	server.log.Info("Starting server...")
+	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
 	if err := world_loadItemEntries(); err != nil {
@@ -133,7 +133,7 @@ func (server *Server) Start() error {
 		panic("server already running")
 	}
 
-	server.log.Info("Starting server...")
+	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
 	if err := world_loadItemEntries(); err != nil {
