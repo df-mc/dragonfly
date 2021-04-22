@@ -413,7 +413,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.EventParticleExplosion,
 			Position:  vec64To32(pos),
 		})
-	case particle.Bonemeal:
+	case particle.BoneMeal:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleCropGrowth,
 			Position:  vec64To32(pos),

@@ -30,8 +30,8 @@ type PunchBlock struct {
 // BlockForceField is a particle that shows up as a block that turns invisible from an opaque black colour.
 type BlockForceField struct{ particle }
 
-// Bonemeal is a particle that shows up on bonemeal usage.
-type Bonemeal struct{ particle }
+// BoneMeal is a particle that shows up on bone meal usage.
+type BoneMeal struct{ particle }
 
 // Note is a particle that shows up on note block interactions.
 type Note struct {
