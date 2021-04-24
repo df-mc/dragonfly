@@ -64,9 +64,10 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 
 	s.blobMu.Lock()
 	s.openChunkTransactions = append(s.openChunkTransactions, m)
-	if len(s.blobs) > 4096 {
+	l := len(s.blobs)
+	if l > 4096 {
 		s.blobMu.Unlock()
-		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), len(s.blobs))
+		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), l)
 		_ = s.c.Close()
 		return
 	}
