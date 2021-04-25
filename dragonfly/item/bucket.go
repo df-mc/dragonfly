@@ -42,13 +42,15 @@ func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	} else {
 		return false
 	}
-	if d, ok := w.Block(pos).(world.LiquidDisplacer); (ok && d.CanDisplace(liq)) || item_internal.Replaceable(w, pos, liq) {
+
+	if bl := w.Block(pos); canDisplace(bl, liq) || replaceableWith(bl, liq) {
 		w.SetLiquid(pos, liq)
-	} else if d, ok := w.Block(pos.Side(face)).(world.LiquidDisplacer); (ok && d.CanDisplace(liq)) || item_internal.Replaceable(w, pos.Side(face), liq) {
+	} else if bl := w.Block(pos.Side(face)); canDisplace(bl, liq) || replaceableWith(bl, liq) {
 		w.SetLiquid(pos.Side(face), liq)
 	} else {
 		return false
 	}
+
 	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: liq})
 	ctx.NewItem = NewStack(Bucket{}, 1)
 	ctx.NewItemSurvivalOnly = true
@@ -89,4 +91,25 @@ func (b Bucket) EncodeItem() (id int32, meta int16) {
 		return 325, 10
 	}
 	return 325, 0
+}
+
+// replaceable represents a block that may be replaced by another block automatically. An example is grass,
+// which may be replaced by clicking it with another block.
+type replaceable interface {
+	// ReplaceableBy returns a bool which indicates if the block is replaceableWith by another block.
+	ReplaceableBy(b world.Block) bool
+}
+
+func replaceableWith(b world.Block, with world.Block) bool {
+	if r, ok := b.(replaceable); ok {
+		return r.ReplaceableBy(with)
+	}
+	return false
+}
+
+func canDisplace(b world.Block, liq world.Liquid) bool {
+	if d, ok := b.(world.LiquidDisplacer); ok {
+		return d.CanDisplace(liq)
+	}
+	return false
 }
