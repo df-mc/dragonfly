@@ -232,7 +232,7 @@ func (s *Session) HideEntity(e world.Entity) {
 	id, ok := s.entityRuntimeIDs[e]
 	if _, controllable := e.(Controllable); !controllable {
 		delete(s.entityRuntimeIDs, e)
-		delete(s.entities, s.entityRuntimeIDs[e])
+		delete(s.entities, id)
 	}
 	s.entityMutex.Unlock()
 	if !ok {
