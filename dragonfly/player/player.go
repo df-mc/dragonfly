@@ -1464,10 +1464,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
 		}
 
-		ok := p.gameMode == gamemode.Creative{} || p.gameMode == gamemode.Spectator{}
-		if !ok {
-			p.updateFallState(p.Position().Add(deltaPos).Y() - p.pos.Load().(mgl64.Vec3).Y())
-		}
+		p.updateFallState(p.Position().Add(deltaPos).Y() - p.Position().Y())
 
 		p.pos.Store(p.Position().Add(deltaPos))
 
