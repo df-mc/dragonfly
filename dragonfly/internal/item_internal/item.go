@@ -14,12 +14,6 @@ var GrassPath world.Block
 // Grass holds a grass block.
 var Grass world.Block
 
-// Dirt holds a dirt block.
-var Dirt world.Block
-
-// Farmland holds a farmland block.
-var Farmland world.Block
-
 // Water and Lava hold blocks for their respective liquids.
 var Water, Lava world.Liquid
 

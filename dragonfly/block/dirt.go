@@ -1,6 +1,9 @@
 package block
 
-import "github.com/df-mc/dragonfly/dragonfly/item"
+import (
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
+)
 
 // Dirt is a block found abundantly in most biomes under a layer of grass blocks at the top of the normal
 // world.
@@ -21,6 +24,14 @@ func (d Dirt) BreakInfo() BreakInfo {
 		Effective:   shovelEffective,
 		Drops:       simpleDrops(item.NewStack(d, 1)),
 	}
+}
+
+// Till ...
+func (d Dirt) Till() (world.Block, bool) {
+	if d.Coarse {
+		return Dirt{Coarse: false}, true
+	}
+	return Farmland{}, true
 }
 
 // EncodeItem ...

@@ -51,10 +51,7 @@ func (p Pumpkin) BreakInfo() BreakInfo {
 
 // Carve ...
 func (p Pumpkin) Carve(f cube.Face) (world.Block, bool) {
-	if !p.Carved {
-		return Pumpkin{Facing: f.Direction(), Carved: true}, true
-	}
-	return nil, false
+	return Pumpkin{Facing: f.Direction(), Carved: true}, !p.Carved
 }
 
 // EncodeItem ...
