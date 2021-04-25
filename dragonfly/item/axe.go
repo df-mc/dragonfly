@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
-	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -18,15 +17,23 @@ type Axe struct {
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
 func (a Axe) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if b := w.Block(pos); item_internal.IsUnstrippedLog(b) {
-		strippedLog := item_internal.StripLog(b)
-		w.PlaceBlock(pos, strippedLog)
-		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: strippedLog})
+	if s, ok := w.Block(pos).(strippable); ok {
+		if res, ok := s.Strip(); ok {
+			w.PlaceBlock(pos, res)
+			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
-		ctx.DamageItem(1)
-		return true
+			ctx.DamageItem(1)
+			return true
+		}
 	}
 	return false
+}
+
+// strippable represents a block that can be stripped.
+type strippable interface {
+	// Strip returns a block that is the result of stripping it. Alternatively, the bool returned may be false to
+	// indicate the block couldn't be stripped.
+	Strip() (world.Block, bool)
 }
 
 // MaxCount always returns 1.

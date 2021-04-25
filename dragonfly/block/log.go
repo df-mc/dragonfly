@@ -56,6 +56,14 @@ func (l Log) BreakInfo() BreakInfo {
 	}
 }
 
+// Strip ...
+func (l Log) Strip() (world.Block, bool) {
+	if !l.Stripped {
+		return Log{Axis: l.Axis, Wood: l.Wood, Stripped: true}, true
+	}
+	return nil, false
+}
+
 // EncodeItem ...
 func (l Log) EncodeItem() (id int32, meta int16) {
 	switch l.Wood {

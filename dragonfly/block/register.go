@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
-	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/block/fire"
 	"github.com/df-mc/dragonfly/dragonfly/block/grass"
 	"github.com/df-mc/dragonfly/dragonfly/block/wood"
@@ -332,25 +331,9 @@ func init() {
 	item_internal.GrassPath = GrassPath{}
 	item_internal.Farmland = Farmland{Hydration: 0}
 	item_internal.Dirt = Dirt{}
-	item_internal.IsUnstrippedLog = func(b world.Block) bool {
-		l, ok := b.(Log)
-		return ok && !l.Stripped
-	}
-	item_internal.StripLog = func(b world.Block) world.Block {
-		l := b.(Log)
-		l.Stripped = true
-		return l
-	}
 	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
 		p, ok := b.(Pumpkin)
 		return ok && p.Carved
-	}
-	item_internal.IsUncarvedPumpkin = func(b world.Block) bool {
-		p, ok := b.(Pumpkin)
-		return ok && !p.Carved
-	}
-	item_internal.CarvePumpkin = func(b world.Block, face cube.Face) world.Block {
-		return Pumpkin{Carved: true, Facing: face.Direction()}
 	}
 	item_internal.Lava = Lava{Depth: 8, Still: true}
 	item_internal.Water = Water{Depth: 8, Still: true}

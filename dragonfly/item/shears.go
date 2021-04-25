@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
-	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -17,15 +16,22 @@ func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		// Pumpkins can only be carved when once of the horizontal faces is clicked.
 		return false
 	}
-	if b := w.Block(pos); item_internal.IsUncarvedPumpkin(b) {
-		// TODO: Drop pumpkin seeds.
-		carvedPumpkin := item_internal.CarvePumpkin(b, face)
-		w.PlaceBlock(pos, carvedPumpkin)
+	if c, ok := w.Block(pos).(carvable); ok {
+		if res, ok := c.Carve(face); ok {
+			// TODO: Drop pumpkin seeds.
+			w.PlaceBlock(pos, res)
 
-		ctx.DamageItem(1)
-		return true
+			ctx.DamageItem(1)
+			return true
+		}
 	}
 	return false
+}
+
+// carvable represents a block that may be carved by using shears on it.
+type carvable interface {
+	// Carve returns the resulting block of carving this block. If carving it has no result, Carve returns false.
+	Carve(f cube.Face) (world.Block, bool)
 }
 
 // ToolType ...
