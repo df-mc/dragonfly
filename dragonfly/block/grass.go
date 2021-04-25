@@ -59,3 +59,8 @@ func (g Grass) EncodeItem() (id int32, meta int16) {
 func (g Grass) Till() (world.Block, bool) {
 	return Farmland{}, true
 }
+
+// Shovel ...
+func (g Grass) Shovel() (world.Block, bool) {
+	return GrassPath{}, true
+}

@@ -327,8 +327,6 @@ func init() {
 
 func init() {
 	item_internal.Air = Air{}
-	item_internal.Grass = Grass{}
-	item_internal.GrassPath = GrassPath{}
 	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
 		p, ok := b.(Pumpkin)
 		return ok && p.Carved
