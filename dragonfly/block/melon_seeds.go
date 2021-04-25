@@ -51,9 +51,7 @@ func (m MelonSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			stemPos := pos.Side(direction)
 			if _, ok := w.Block(stemPos).(Air); ok {
 				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
-				case Farmland:
-				case Dirt:
-				case Grass:
+				case Farmland, Dirt, Grass:
 					m.Direction = direction
 					w.PlaceBlock(pos, m)
 					w.PlaceBlock(stemPos, Melon{})
