@@ -337,11 +337,6 @@ func init() {
 		_, ok := b.(Water)
 		return ok
 	}
-	item_internal.IsWaterSource = func(b world.Block) bool {
-		water, ok := b.(Water)
-		return ok && water.Depth == 8
-	}
-	item_internal.Replaceable = replaceableWith
 	item_internal.Fire = Fire{Type: fire.Normal(), Age: 0}
 }
 
