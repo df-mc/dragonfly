@@ -93,10 +93,7 @@ func (b Bucket) EncodeItem() (id int32, meta int16) {
 	return 325, 0
 }
 
-// replaceable represents a block that may be replaced by another block automatically. An example is grass,
-// which may be replaced by clicking it with another block.
 type replaceable interface {
-	// ReplaceableBy returns a bool which indicates if the block is replaceableWith by another block.
 	ReplaceableBy(b world.Block) bool
 }
 

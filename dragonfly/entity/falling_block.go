@@ -38,7 +38,7 @@ func (f *FallingBlock) Tick(_ int64) {
 
 	pos := cube.BlockPosFromVec3(f.Position())
 
-	if a, ok := f.block.(solidifiable); (ok && a.Solidifies(pos, f.World())) || f.OnGround() {
+	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.OnGround() {
 		b := f.World().Block(pos)
 		if r, ok := b.(replaceable); ok && r.ReplaceableBy(f.block) {
 			f.World().PlaceBlock(pos, f.block)
@@ -113,17 +113,14 @@ func (f *FallingBlock) EncodeEntity() string {
 	return "minecraft:falling_block"
 }
 
-// solidifiable represents a block that can solidify by specific adjacent blocks. An example is concrete
+// Solidifiable represents a block that can solidify by specific adjacent blocks. An example is concrete
 // powder, which can turn into concrete by touching water.
-type solidifiable interface {
+type Solidifiable interface {
 	// Solidifies returns whether the falling block can solidify at the position it is currently in. If so,
 	// the block will immediately stop falling.
 	Solidifies(pos cube.Pos, w *world.World) bool
 }
 
-// replaceable represents a block that may be replaced by another block automatically. An example is grass,
-// which may be replaced by clicking it with another block.
 type replaceable interface {
-	// ReplaceableBy returns a bool which indicates if the block is replaceableWith by another block.
 	ReplaceableBy(b world.Block) bool
 }
