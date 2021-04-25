@@ -10,17 +10,9 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-//go:linkname world_blocksByName github.com/df-mc/dragonfly/dragonfly/world.blocksByName
-//noinspection ALL
-var world_blocksByName = map[string]world.Block{}
-
 //go:linkname world_breakParticle github.com/df-mc/dragonfly/dragonfly/world.breakParticle
 //noinspection ALL
 var world_breakParticle func(b world.Block) world.Particle
-
-//go:linkname World_registeredStates github.com/df-mc/dragonfly/dragonfly/world.registeredStates
-//noinspection ALL
-var World_registeredStates []world.Block
 
 //go:linkname World_runtimeID github.com/df-mc/dragonfly/dragonfly/world.runtimeID
 //noinspection ALL
@@ -30,19 +22,4 @@ func init() {
 	world_breakParticle = func(b world.Block) world.Particle {
 		return particle.BlockBreak{Block: b}
 	}
-}
-
-// BlockByTypeName attempts to return a block by its type name.
-func BlockByTypeName(name string) (world.Block, bool) {
-	v, ok := world_blocksByName[name]
-	return v, ok
-}
-
-// BlockNames returns a list of all block names.
-func BlockNames() []string {
-	m := make([]string, 0, len(world_blocksByName))
-	for k := range world_blocksByName {
-		m = append(m, k)
-	}
-	return m
 }

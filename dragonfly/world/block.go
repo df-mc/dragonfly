@@ -13,10 +13,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/yourbasic/radix"
 	"math/rand"
-	"reflect"
-	"strings"
 	"sync"
-	"unicode"
 	"unsafe"
 )
 
@@ -45,26 +42,6 @@ func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
 		return replaceable.ReplaceableBy(with)
 	}
 	return false
-}
-
-// blocksByName is a list of blocks indexed by their type names.
-var blocksByName = map[string]Block{}
-
-// RegisterBlockByTypeName registers the block passed by its type name. It converts the type name of blocks
-// such as 'Leaves' to 'leaves' and the name of blocks suck as 'CoralFan' to 'coral_fan'.
-func registerBlockByTypeName(b Block) {
-	var name strings.Builder
-	for i, r := range reflect.TypeOf(b).Name() {
-		if unicode.IsUpper(r) {
-			if i != 0 {
-				name.WriteByte('_')
-			}
-			name.WriteRune(unicode.ToLower(r))
-			continue
-		}
-		name.WriteRune(r)
-	}
-	blocksByName[name.String()] = reflect.New(reflect.TypeOf(b)).Elem().Interface().(Block)
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block state previously registered using
@@ -205,7 +182,6 @@ func RegisterBlock(b Block, s BlockState) error {
 	if source, ok := b.(beaconSource); ok {
 		world_internal.BeaconSource[rid] = source.PowersBeacon()
 	}
-	registerBlockByTypeName(b)
 	return nil
 }
 
