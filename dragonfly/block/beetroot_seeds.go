@@ -69,10 +69,10 @@ func (b BeetrootSeeds) EncodeItem() (id int32, meta int16) {
 }
 
 // RandomTick ...
-func (b BeetrootSeeds) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+func (b BeetrootSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
 		w.BreakBlock(pos)
-	} else if b.Growth < 7 && rand.Intn(3) > 0 && rand.Float64() <= b.CalculateGrowthChance(pos, w) {
+	} else if b.Growth < 7 && r.Intn(3) > 0 && r.Float64() <= b.CalculateGrowthChance(pos, w) {
 		b.Growth++
 		w.PlaceBlock(pos, b)
 	}
