@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/player/form"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 )
@@ -27,8 +26,8 @@ type Controllable interface {
 
 	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
-	GameMode() gamemode.GameMode
-	SetGameMode(mode gamemode.GameMode)
+	GameMode() world.GameMode
+	SetGameMode(mode world.GameMode)
 
 	UseItem()
 	ReleaseItem()

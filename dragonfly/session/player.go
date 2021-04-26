@@ -13,7 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/player/form"
 	"github.com/df-mc/dragonfly/dragonfly/player/skin"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -285,16 +284,16 @@ func (s *Session) Transfer(ip net.IP, port int) {
 
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
-func (s *Session) SendGameMode(mode gamemode.GameMode) {
+func (s *Session) SendGameMode(mode world.GameMode) {
 	flags, id := uint32(0), int32(packet.GameTypeSurvival)
 	switch mode.(type) {
-	case gamemode.Creative:
+	case world.GameModeCreative:
 		flags = packet.AdventureFlagAllowFlight
 		id = packet.GameTypeCreative
-	case gamemode.Adventure:
+	case world.GameModeAdventure:
 		flags |= packet.AdventureFlagWorldImmutable
 		id = packet.GameTypeAdventure
-	case gamemode.Spectator:
+	case world.GameModeSpectator:
 		flags, id = packet.AdventureFlagWorldImmutable|packet.AdventureFlagAllowFlight|packet.AdventureFlagMuted|packet.AdventureFlagNoClip|packet.AdventureFlagNoPVP, packet.GameTypeCreativeSpectator
 	}
 	s.writePacket(&packet.AdventureSettings{

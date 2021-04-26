@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -195,31 +194,31 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 }
 
 // LoadDefaultGameMode returns the default game mode stored in the level.dat.
-func (p *Provider) LoadDefaultGameMode() gamemode.GameMode {
+func (p *Provider) LoadDefaultGameMode() world.GameMode {
 	switch p.d.GameType {
 	default:
-		return gamemode.Adventure{}
+		return world.GameModeAdventure{}
 	case 0:
-		return gamemode.Survival{}
+		return world.GameModeSurvival{}
 	case 1:
-		return gamemode.Creative{}
+		return world.GameModeCreative{}
 	case 2:
-		return gamemode.Adventure{}
+		return world.GameModeAdventure{}
 	case 3:
-		return gamemode.Spectator{}
+		return world.GameModeSpectator{}
 	}
 }
 
 // SaveDefaultGameMode changes the default game mode in the level.dat.
-func (p *Provider) SaveDefaultGameMode(mode gamemode.GameMode) {
+func (p *Provider) SaveDefaultGameMode(mode world.GameMode) {
 	switch mode.(type) {
-	case gamemode.Survival:
+	case world.GameModeSurvival:
 		p.d.GameType = 0
-	case gamemode.Creative:
+	case world.GameModeCreative:
 		p.d.GameType = 1
-	case gamemode.Adventure:
+	case world.GameModeAdventure:
 		p.d.GameType = 2
-	case gamemode.Spectator:
+	case world.GameModeSpectator:
 		p.d.GameType = 3
 	}
 }

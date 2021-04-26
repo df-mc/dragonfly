@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -39,7 +38,7 @@ type World struct {
 	doneTicking      chan struct{}
 
 	gameModeMu      sync.RWMutex
-	defaultGameMode gamemode.GameMode
+	defaultGameMode GameMode
 
 	difficultyMu sync.RWMutex
 	difficulty   Difficulty
@@ -100,7 +99,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		lastEntityPositions: map[Entity]ChunkPos{},
 		entities:            map[Entity]struct{}{},
 		viewers:             map[Viewer]struct{}{},
-		defaultGameMode:     gamemode.Survival{},
+		defaultGameMode:     GameModeSurvival{},
 		difficulty:          DifficultyNormal{},
 		prov:                NoIOProvider{},
 		gen:                 NopGenerator{},
@@ -861,9 +860,9 @@ func (w *World) SetSpawn(pos cube.Pos) {
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game
 // mode.
 // The default game mode may be changed using SetDefaultGameMode().
-func (w *World) DefaultGameMode() gamemode.GameMode {
+func (w *World) DefaultGameMode() GameMode {
 	if w == nil {
-		return gamemode.Survival{}
+		return GameModeSurvival{}
 	}
 	w.gameModeMu.RLock()
 	defer w.gameModeMu.RUnlock()
@@ -872,7 +871,7 @@ func (w *World) DefaultGameMode() gamemode.GameMode {
 
 // SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
 // game mode.
-func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
+func (w *World) SetDefaultGameMode(mode GameMode) {
 	if w == nil {
 		return
 	}

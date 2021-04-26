@@ -3,7 +3,6 @@ package world
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"io"
 )
 
@@ -53,9 +52,9 @@ type Provider interface {
 	// cycle is stopped, false is returned.
 	LoadTimeCycle() bool
 	// LoadDefaultGameMode loads the default game mode of the world.
-	LoadDefaultGameMode() gamemode.GameMode
+	LoadDefaultGameMode() GameMode
 	// SaveDefaultGameMode sets the default game mode of the world.
-	SaveDefaultGameMode(mode gamemode.GameMode)
+	SaveDefaultGameMode(mode GameMode)
 	// LoadDifficulty loads the difficulty of a world.
 	LoadDifficulty() Difficulty
 	// SaveDifficulty saves the difficulty of a world.
@@ -73,10 +72,10 @@ func (NoIOProvider) LoadDifficulty() Difficulty { return DifficultyNormal{} }
 func (NoIOProvider) SaveDifficulty(Difficulty) {}
 
 // LoadDefaultGameMode ...
-func (NoIOProvider) LoadDefaultGameMode() gamemode.GameMode { return gamemode.Adventure{} }
+func (NoIOProvider) LoadDefaultGameMode() GameMode { return GameModeAdventure{} }
 
 // SaveDefaultGameMode ...
-func (NoIOProvider) SaveDefaultGameMode(gamemode.GameMode) {}
+func (NoIOProvider) SaveDefaultGameMode(GameMode) {}
 
 // SetWorldSpawn ...
 func (NoIOProvider) SetWorldSpawn(cube.Pos) {}

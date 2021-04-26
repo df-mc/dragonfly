@@ -28,7 +28,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/player/title"
 	"github.com/df-mc/dragonfly/dragonfly/session"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -56,7 +55,7 @@ type Player struct {
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 
 	gameModeMu sync.RWMutex
-	gameMode   gamemode.GameMode
+	gameMode   world.GameMode
 
 	skin skin.Skin
 
@@ -110,7 +109,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		hunger:   newHungerManager(),
 		health:   entity_internal.NewHealthManager(),
 		effects:  entity.NewEffectManager(),
-		gameMode: gamemode.Adventure{},
+		gameMode: world.GameModeAdventure{},
 		h:        NopHandler{},
 		name:     name,
 		skin:     skin,
@@ -400,7 +399,7 @@ func (p *Player) addHealth(health float64) {
 // added to the original health exceeds the entity's max health, Heal will not add the full amount.
 // If the health passed is negative, Heal will not do anything.
 func (p *Player) Heal(health float64, source healing.Source) {
-	if p.Dead() || health < 0 || !p.survival() {
+	if p.Dead() || health < 0 || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
 	ctx := event.C()
@@ -446,7 +445,7 @@ func (p *Player) fall(fallDistance float64) {
 // respawn.
 // If the damage passed is negative, Hurt will not do anything.
 func (p *Player) Hurt(dmg float64, source damage.Source) {
-	if p.Dead() || dmg < 0 || !p.survival() {
+	if p.Dead() || dmg < 0 || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
 	for _, e := range p.Effects() {
@@ -542,7 +541,7 @@ func (p *Player) absorption() float64 {
 // source of the velocity, typically the position of an attacking entity. The source is used to calculate the
 // direction which the entity should be knocked back in.
 func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
-	if p.Dead() || !p.survival() {
+	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
 	if p.session() == session.Nop {
@@ -632,7 +631,7 @@ func (*Player) BeaconAffected() bool {
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
 // exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
 func (p *Player) Exhaust(points float64) {
-	if !p.survival() {
+	if !p.GameMode().AllowsTakingDamage() {
 		return
 	}
 	before := p.hunger.Food()
@@ -655,16 +654,6 @@ func (p *Player) Exhaust(points float64) {
 		})
 	}
 	p.sendFood()
-}
-
-// survival checks if the player is considered to be survival, meaning either adventure or survival game mode.
-func (p *Player) survival() bool {
-	return p.GameMode() == gamemode.Survival{} || p.GameMode() == gamemode.Adventure{}
-}
-
-// canEdit checks if the player has a game mode that allows it to edit the world.
-func (p *Player) canEdit() bool {
-	return p.GameMode() == gamemode.Creative{} || p.GameMode() == gamemode.Survival{}
 }
 
 // Dead checks if the player is considered dead. True is returned if the health of the player is equal to or
@@ -732,7 +721,7 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !p.hunger.canSprint() && (p.GameMode() != gamemode.Creative{}) {
+	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() {
 		return
 	}
 	if !p.sprinting.CAS(false, true) {
@@ -818,7 +807,7 @@ func (p *Player) SetInvisible() {
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, or if the player is in spectator mode, nothing happens.
 func (p *Player) SetVisible() {
-	if (p.GameMode() == gamemode.Spectator{}) {
+	if (p.GameMode() == world.GameModeSpectator{}) {
 		return
 	}
 	if !p.invisible.CAS(true, false) {
@@ -841,11 +830,6 @@ func (p *Player) SetMobile() {
 		return
 	}
 	p.updateState()
-}
-
-// FireProof ...
-func (p *Player) FireProof() bool {
-	return p.GameMode() != gamemode.Survival{} && p.GameMode() != gamemode.Adventure{}
 }
 
 // OnFireDuration ...
@@ -895,7 +879,7 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
 // with the world that it is in.
-func (p *Player) SetGameMode(mode gamemode.GameMode) {
+func (p *Player) SetGameMode(mode world.GameMode) {
 	p.gameModeMu.Lock()
 	previous := p.gameMode
 	p.gameMode = mode
@@ -903,9 +887,9 @@ func (p *Player) SetGameMode(mode gamemode.GameMode) {
 
 	p.session().SendGameMode(mode)
 
-	if (mode == gamemode.Spectator{}) {
+	if (mode == world.GameModeSpectator{}) {
 		p.SetInvisible()
-	} else if (mode != gamemode.Spectator{}) && (previous == gamemode.Spectator{}) {
+	} else if (mode != world.GameModeSpectator{}) && (previous == world.GameModeSpectator{}) {
 		for _, eff := range p.Effects() {
 			if _, ok := eff.(effect.Invisibility); ok {
 				return
@@ -918,7 +902,7 @@ func (p *Player) SetGameMode(mode gamemode.GameMode) {
 // GameMode returns the current game mode assigned to the player. If not changed, the game mode returned will
 // be the same as that of the world that the player spawns in.
 // The game mode may be changed using Player.SetGameMode().
-func (p *Player) GameMode() gamemode.GameMode {
+func (p *Player) GameMode() world.GameMode {
 	p.gameModeMu.RLock()
 	mode := p.gameMode
 	p.gameModeMu.RUnlock()
@@ -949,7 +933,7 @@ func (p *Player) UseItem() {
 				p.addNewItem(ctx)
 			}
 		case item.Consumable:
-			if !usable.AlwaysConsumable() && (p.GameMode() != gamemode.Creative{}) && p.Food() >= 20 {
+			if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 				// The item.Consumable is not always consumable, the player is not in creative mode and the
 				// food bar is filled: The item cannot be consumed.
 				p.ReleaseItem()
@@ -1027,7 +1011,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
-		} else if b, ok := i.Item().(world.Block); ok && p.canEdit() {
+		} else if b, ok := i.Item().(world.Block); ok && p.GameMode().AllowsEditing() {
 			// The item IS a block, meaning it is being placed.
 			replacedPos := pos
 			if replaceable, ok := p.World().Block(pos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(b) {
@@ -1035,7 +1019,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				replacedPos = pos.Side(face)
 			}
 			if replaceable, ok := p.World().Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds() {
-				if p.placeBlock(replacedPos, b, false) && p.survival() {
+				if p.placeBlock(replacedPos, b, false) && !p.GameMode().CreativeInventory() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
@@ -1260,7 +1244,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 			p.World().SetBlock(pos, p.World().Block(pos))
 		}
 	}()
-	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
+	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		return false
 	}
 	if !ignoreAABB {
@@ -1310,7 +1294,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
-	if !p.canReach(pos.Vec3Centre()) || !p.canEdit() {
+	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		return
 	}
 	b := p.World().Block(pos)
@@ -1318,7 +1302,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		// Don't do anything if the position broken is already air.
 		return
 	}
-	if _, breakable := b.(block.Breakable); !breakable && p.survival() {
+	if _, breakable := b.(block.Breakable); !breakable && !p.GameMode().CreativeInventory() {
 		// Block cannot be broken server-side. Set the block back so viewers have it resent and cancel all
 		// further action.
 		p.World().SetBlock(pos, p.World().Block(pos))
@@ -1363,17 +1347,17 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		// If the block is a container, it should drop its inventory contents regardless whether the
 		// player is in creative mode or not.
 		drops = container.Inventory().Contents()
-		if breakable, ok := b.(block.Breakable); ok && p.survival() {
+		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
 				drops = breakable.BreakInfo().Drops(t)
 			}
 		}
 		container.Inventory().Clear()
-	} else if breakable, ok := b.(block.Breakable); ok && p.survival() {
+	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
 			drops = breakable.BreakInfo().Drops(t)
 		}
-	} else if it, ok := b.(world.Item); ok && p.survival() {
+	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
 		drops = []item.Stack{item.NewStack(it, 1)}
 	}
 	return drops
@@ -1393,7 +1377,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 		slot, found := p.Inventory().First(copiedItem)
 
-		if (!found && p.GameMode() != gamemode.Creative{}) {
+		if (!found && p.GameMode() != world.GameModeCreative{}) {
 			return
 		}
 
@@ -1587,13 +1571,13 @@ func (p *Player) Tick(current int64) {
 	p.onGround.Store(p.checkOnGround())
 	p.tickFood()
 	p.effects.Tick(p)
-	if p.Position()[1] < 0 && p.survival() && current%10 == 0 {
+	if p.Position()[1] < 0 && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
 	if p.OnFireDuration() > 0 {
 		p.fireTicks.Sub(1)
-		if p.FireProof() || p.OnFireDuration() <= 0 {
+		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 {
 			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
@@ -1756,7 +1740,7 @@ func (p *Player) State() (s []state.State) {
 	if p.Swimming() {
 		s = append(s, state.Swimming{})
 	}
-	if p.canBreathe() || !p.survival() {
+	if p.canBreathe() || !p.GameMode().AllowsTakingDamage() {
 		s = append(s, state.Breathing{})
 	}
 	if p.invisible.Load() {
@@ -1833,7 +1817,7 @@ func (p *Player) Close() error {
 // broke, a breaking sound is played.
 // If the player is not survival, the original stack is returned.
 func (p *Player) damageItem(s item.Stack, d int) item.Stack {
-	if !p.survival() || d == 0 {
+	if p.GameMode().CreativeInventory() || d == 0 {
 		return s
 	}
 	ctx := event.C()
@@ -1851,7 +1835,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 // subtractItem subtracts d from the count of the item stack passed and returns it, if the player is in
 // survival or adventure mode.
 func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
-	if p.survival() && d != 0 {
+	if !p.GameMode().CreativeInventory() && d != 0 {
 		return s.Grow(-d)
 	}
 	return s
@@ -1859,7 +1843,7 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // addNewItem adds the new item of the context passed to the inventory.
 func (p *Player) addNewItem(ctx *item.UseContext) {
-	if (ctx.NewItemSurvivalOnly && !p.survival()) || ctx.NewItem.Empty() {
+	if (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Empty() {
 		return
 	}
 	held, left := p.HeldItems()
@@ -1882,12 +1866,12 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
-	if (p.GameMode() == gamemode.Spectator{}) {
+	if (p.GameMode() == world.GameModeSpectator{}) {
 		return false
 	}
 	eyes := p.Position().Add(mgl64.Vec3{0, eyeHeight})
 
-	if (p.GameMode() == gamemode.Creative{}) {
+	if p.GameMode().CreativeInventory() {
 		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()
 	}
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
