@@ -36,7 +36,7 @@ func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // RandomTick ...
 func (p PumpkinSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	if rand.Float64() <= p.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
+	if r.Float64() <= p.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if p.Growth < 7 {
 			p.Growth++
 			w.PlaceBlock(pos, p)
@@ -47,7 +47,7 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 					return
 				}
 			}
-			direction := directions[rand.Intn(len(directions))].Face()
+			direction := directions[r.Intn(len(directions))].Face()
 			stemPos := pos.Side(direction)
 			if _, ok := w.Block(stemPos).(Air); ok {
 				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
