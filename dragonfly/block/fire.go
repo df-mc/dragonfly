@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity"
 	"github.com/df-mc/dragonfly/dragonfly/entity/damage"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"math/rand"
 	"time"
 )
@@ -49,21 +48,6 @@ func max(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// difficultyOffset ...
-func difficultyOffset(d difficulty.Difficulty) int {
-	switch d.(type) {
-	case difficulty.Peaceful:
-		return 0
-	case difficulty.Easy:
-		return 7
-	case difficulty.Normal:
-		return 14
-	case difficulty.Hard:
-		return 21
-	}
-	panic("unknown difficulty")
 }
 
 // infinitelyBurning returns true if fire can infinitely burn at the specified position.
@@ -165,7 +149,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World) {
 					}
 
 					//TODO: Divide chance by 2 in high humidity
-					maxChance := (encouragement + 40 + difficultyOffset(w.Difficulty())) / (f.Age + 30)
+					maxChance := (encouragement + 40 + w.Difficulty().FireSpreadIncrease()) / (f.Age + 30)
 
 					//TODO: Check if exposed to rain
 					if maxChance > 0 && rand.Intn(randomBound) <= maxChance {

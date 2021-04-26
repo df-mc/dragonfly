@@ -28,7 +28,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/player/title"
 	"github.com/df-mc/dragonfly/dragonfly/session"
 	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/df-mc/dragonfly/dragonfly/world/particle"
 	"github.com/df-mc/dragonfly/dragonfly/world/sound"
@@ -637,7 +636,7 @@ func (p *Player) Exhaust(points float64) {
 		return
 	}
 	before := p.hunger.Food()
-	if (p.World().Difficulty() != difficulty.Peaceful{}) {
+	if !p.World().Difficulty().FoodRegenerates() {
 		p.hunger.exhaust(points)
 	}
 	after := p.hunger.Food()
@@ -1630,10 +1629,10 @@ func (p *Player) Tick(current int64) {
 // is full enough.
 func (p *Player) tickFood() {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || p.World().Difficulty() == difficulty.Peaceful{}) {
+	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || p.World().Difficulty().FoodRegenerates()) {
 		p.hunger.foodTick = 0
 		p.regenerate()
-		if (p.World().Difficulty() == difficulty.Peaceful{}) {
+		if p.World().Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
 	} else if p.hunger.foodTick == 80 {
@@ -1660,19 +1659,9 @@ func (p *Player) regenerate() {
 // mode, damage will only be dealt if the player has more than 2 health and in hard mode, damage will always
 // be dealt.
 func (p *Player) starve() {
-	switch p.World().Difficulty().(type) {
-	case difficulty.Peaceful:
-		return
-	case difficulty.Easy:
-		if p.Health() <= 10 {
-			return
-		}
-	case difficulty.Normal:
-		if p.Health() <= 2 {
-			return
-		}
+	if p.Health() > p.World().Difficulty().StarvationHealthLimit() {
+		p.Hurt(1, damage.SourceStarvation{})
 	}
-	p.Hurt(1, damage.SourceStarvation{})
 }
 
 // checkOnGround checks if the player is currently considered to be on the ground.

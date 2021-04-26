@@ -3,7 +3,6 @@ package world
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
-	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"io"
 )
@@ -58,9 +57,9 @@ type Provider interface {
 	// SaveDefaultGameMode sets the default game mode of the world.
 	SaveDefaultGameMode(mode gamemode.GameMode)
 	// LoadDifficulty loads the difficulty of a world.
-	LoadDifficulty() difficulty.Difficulty
+	LoadDifficulty() Difficulty
 	// SaveDifficulty saves the difficulty of a world.
-	SaveDifficulty(d difficulty.Difficulty)
+	SaveDifficulty(d Difficulty)
 }
 
 // NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
@@ -68,10 +67,10 @@ type Provider interface {
 type NoIOProvider struct{}
 
 // LoadDifficulty ...
-func (NoIOProvider) LoadDifficulty() difficulty.Difficulty { return difficulty.Normal{} }
+func (NoIOProvider) LoadDifficulty() Difficulty { return DifficultyNormal{} }
 
 // SaveDifficulty ...
-func (NoIOProvider) SaveDifficulty(difficulty.Difficulty) {}
+func (NoIOProvider) SaveDifficulty(Difficulty) {}
 
 // LoadDefaultGameMode ...
 func (NoIOProvider) LoadDefaultGameMode() gamemode.GameMode { return gamemode.Adventure{} }

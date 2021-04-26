@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
-	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
@@ -43,7 +42,7 @@ type World struct {
 	defaultGameMode gamemode.GameMode
 
 	difficultyMu sync.RWMutex
-	difficulty   difficulty.Difficulty
+	difficulty   Difficulty
 
 	handlerMu sync.RWMutex
 	handler   Handler
@@ -102,7 +101,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		entities:            map[Entity]struct{}{},
 		viewers:             map[Viewer]struct{}{},
 		defaultGameMode:     gamemode.Survival{},
-		difficulty:          difficulty.Normal{},
+		difficulty:          DifficultyNormal{},
 		prov:                NoIOProvider{},
 		gen:                 NopGenerator{},
 		handler:             NopHandler{},
@@ -884,9 +883,9 @@ func (w *World) SetDefaultGameMode(mode gamemode.GameMode) {
 
 // Difficulty returns the difficulty of the world. Properties of mobs in the world and the player's hunger
 // will depend on this difficulty.
-func (w *World) Difficulty() difficulty.Difficulty {
+func (w *World) Difficulty() Difficulty {
 	if w == nil {
-		return difficulty.Normal{}
+		return DifficultyNormal{}
 	}
 	w.difficultyMu.RLock()
 	defer w.difficultyMu.RUnlock()
@@ -894,7 +893,7 @@ func (w *World) Difficulty() difficulty.Difficulty {
 }
 
 // SetDifficulty changes the difficulty of a world.
-func (w *World) SetDifficulty(d difficulty.Difficulty) {
+func (w *World) SetDifficulty(d Difficulty) {
 	if w == nil {
 		return
 	}

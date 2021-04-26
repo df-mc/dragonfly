@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
-	"github.com/df-mc/dragonfly/dragonfly/world/difficulty"
 	"github.com/df-mc/dragonfly/dragonfly/world/gamemode"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
@@ -226,29 +225,29 @@ func (p *Provider) SaveDefaultGameMode(mode gamemode.GameMode) {
 }
 
 // LoadDifficulty loads the difficulty stored in the level.dat.
-func (p *Provider) LoadDifficulty() difficulty.Difficulty {
+func (p *Provider) LoadDifficulty() world.Difficulty {
 	switch p.d.Difficulty {
 	default:
-		return difficulty.Normal{}
+		return world.DifficultyNormal{}
 	case 0:
-		return difficulty.Peaceful{}
+		return world.DifficultyPeaceful{}
 	case 1:
-		return difficulty.Easy{}
+		return world.DifficultyEasy{}
 	case 3:
-		return difficulty.Hard{}
+		return world.DifficultyHard{}
 	}
 }
 
 // SaveDifficulty saves the difficulty passed to the level.dat.
-func (p *Provider) SaveDifficulty(d difficulty.Difficulty) {
+func (p *Provider) SaveDifficulty(d world.Difficulty) {
 	switch d.(type) {
-	case difficulty.Peaceful:
+	case world.DifficultyPeaceful:
 		p.d.Difficulty = 0
-	case difficulty.Easy:
+	case world.DifficultyEasy:
 		p.d.Difficulty = 1
-	case difficulty.Normal:
+	case world.DifficultyNormal:
 		p.d.Difficulty = 2
-	case difficulty.Hard:
+	case world.DifficultyHard:
 		p.d.Difficulty = 3
 	}
 }
