@@ -77,10 +77,10 @@ func (c Carrot) EncodeItem() (id int32, meta int16) {
 }
 
 // RandomTick ...
-func (c Carrot) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+func (c Carrot) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
 		w.BreakBlock(pos)
-	} else if c.Growth < 7 && rand.Float64() <= c.CalculateGrowthChance(pos, w) {
+	} else if c.Growth < 7 && r.Float64() <= c.CalculateGrowthChance(pos, w) {
 		c.Growth++
 		w.PlaceBlock(pos, c)
 	}

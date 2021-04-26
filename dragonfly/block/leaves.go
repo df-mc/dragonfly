@@ -49,7 +49,7 @@ func findLog(pos cube.Pos, w *world.World, visited *[]cube.Pos, distance int) bo
 }
 
 // RandomTick ...
-func (l Leaves) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if !l.Persistent && l.shouldUpdate {
 		if findLog(pos, w, &[]cube.Pos{}, 0) {
 			l.shouldUpdate = false
