@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/entity/physics"
 	"github.com/df-mc/dragonfly/dragonfly/entity/state"
-	"github.com/df-mc/dragonfly/dragonfly/internal/item_internal"
 	"github.com/df-mc/dragonfly/dragonfly/item"
 	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -40,7 +39,8 @@ func (f *FallingBlock) Tick(_ int64) {
 	pos := cube.BlockPosFromVec3(f.Position())
 
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.OnGround() {
-		if item_internal.Replaceable(f.World(), pos, f.block) {
+		b := f.World().Block(pos)
+		if r, ok := b.(replaceable); ok && r.ReplaceableBy(f.block) {
 			f.World().PlaceBlock(pos, f.block)
 		} else {
 			if i, ok := f.block.(world.Item); ok {
@@ -119,4 +119,8 @@ type Solidifiable interface {
 	// Solidifies returns whether the falling block can solidify at the position it is currently in. If so,
 	// the block will immediately stop falling.
 	Solidifies(pos cube.Pos, w *world.World) bool
+}
+
+type replaceable interface {
+	ReplaceableBy(b world.Block) bool
 }

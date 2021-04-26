@@ -18,22 +18,31 @@ type Shovel struct {
 
 // UseOnBlock handles the creation of grass path blocks from grass blocks.
 func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if grass := w.Block(pos); grass == item_internal.Grass {
-		if face == cube.FaceDown {
-			// Grass paths are not created when the bottom face is clicked.
-			return false
-		}
-		if w.Block(pos.Add(cube.Pos{0, 1})) != item_internal.Air {
-			// Grass paths can only be created if air is above the grass block.
-			return false
-		}
-		w.PlaceBlock(pos, item_internal.GrassPath)
-		w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: item_internal.GrassPath})
+	if b, ok := w.Block(pos).(shovellable); ok {
+		if res, ok := b.Shovel(); ok {
+			if face == cube.FaceDown {
+				// Grass paths are not created when the bottom face is clicked.
+				return false
+			}
+			if w.Block(pos.Add(cube.Pos{0, 1})) != item_internal.Air {
+				// Grass paths can only be created if air is above the grass block.
+				return false
+			}
+			w.PlaceBlock(pos, res)
+			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
-		ctx.DamageItem(1)
-		return true
+			ctx.DamageItem(1)
+			return true
+		}
 	}
 	return false
+}
+
+// shovellable represents a block that can be changed by using a shovel on it.
+type shovellable interface {
+	// Shovel returns a block that results from using a shovel on it, or false if it could not be changed using
+	// a shovel.
+	Shovel() (world.Block, bool)
 }
 
 // MaxCount always returns 1.

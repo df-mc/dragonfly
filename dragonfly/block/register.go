@@ -327,10 +327,6 @@ func init() {
 
 func init() {
 	item_internal.Air = Air{}
-	item_internal.Grass = Grass{}
-	item_internal.GrassPath = GrassPath{}
-	item_internal.Farmland = Farmland{Hydration: 0}
-	item_internal.Dirt = Dirt{}
 	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
 		p, ok := b.(Pumpkin)
 		return ok && p.Carved
@@ -341,11 +337,6 @@ func init() {
 		_, ok := b.(Water)
 		return ok
 	}
-	item_internal.IsWaterSource = func(b world.Block) bool {
-		water, ok := b.(Water)
-		return ok && water.Depth == 8
-	}
-	item_internal.Replaceable = replaceableWith
 	item_internal.Fire = Fire{Type: fire.Normal(), Age: 0}
 }
 
