@@ -439,7 +439,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
-		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
+		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
 		return nil, false
 	}
 	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
@@ -481,7 +481,7 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 	chunkPos := chunkPosFromBlockPos(pos)
 	c, err := w.chunk(chunkPos)
 	if err != nil {
-		w.log.Errorf("failed setting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
+		w.log.Errorf("failed setting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
 		return
 	}
 	if b == nil {
@@ -495,7 +495,7 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 		current, err := w.blockInChunk(c, pos)
 		if err != nil {
 			c.Unlock()
-			w.log.Errorf("failed setting liquid: error getting block at position %v: %w", chunkPosFromBlockPos(pos), err)
+			w.log.Errorf("failed setting liquid: error getting block at position %v: %v", chunkPosFromBlockPos(pos), err)
 			return
 		}
 		if displacer, ok := current.(LiquidDisplacer); !ok || !displacer.CanDisplace(b) {
@@ -574,7 +574,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
-		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %w", chunkPosFromBlockPos(pos), err)
+		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
 		return nil, false
 	}
 	id := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 1)
