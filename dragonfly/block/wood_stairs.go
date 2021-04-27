@@ -113,7 +113,7 @@ func (s WoodStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 }
 
 // allWoodStairs returns all states of wood stairs.
-func allWoodStairs() (stairs []canEncode) {
+func allWoodStairs() (stairs []world.Block) {
 	f := func(facing cube.Direction, upsideDown bool) {
 		for _, w := range wood.All() {
 			stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: w})

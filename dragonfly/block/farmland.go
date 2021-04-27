@@ -81,7 +81,7 @@ func (f Farmland) EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // allFarmland returns all possible states that a block of farmland can be in.
-func allFarmland() (b []canEncode) {
+func allFarmland() (b []world.Block) {
 	for i := 0; i <= 7; i++ {
 		b = append(b, Farmland{Hydration: i})
 	}

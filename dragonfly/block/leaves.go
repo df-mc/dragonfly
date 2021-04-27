@@ -146,7 +146,7 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allLogs returns a list of all possible leaves states.
-func allLeaves() (leaves []canEncode) {
+func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
 		leaves = append(leaves, Leaves{Wood: wood.Oak(), Persistent: persistent, shouldUpdate: update})
 		leaves = append(leaves, Leaves{Wood: wood.Spruce(), Persistent: persistent, shouldUpdate: update})

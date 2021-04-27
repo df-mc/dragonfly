@@ -86,7 +86,7 @@ func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 }
 
 // allCarpet ...
-func allCarpet() (carpets []canEncode) {
+func allCarpet() (carpets []world.Block) {
 	for _, c := range colour.All() {
 		carpets = append(carpets, Carpet{Colour: c})
 	}

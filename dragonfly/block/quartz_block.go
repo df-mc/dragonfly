@@ -108,7 +108,7 @@ func (q QuartzPillar) EncodeBlock() (name string, properties map[string]interfac
 }
 
 // allQuartz ...
-func allQuartz() (quartz []canEncode) {
+func allQuartz() (quartz []world.Block) {
 	quartz = append(quartz, Quartz{})
 	quartz = append(quartz, Quartz{Smooth: true})
 	quartz = append(quartz, ChiseledQuartz{})

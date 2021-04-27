@@ -27,3 +27,8 @@ func (b BlueIce) BreakInfo() BreakInfo {
 func (BlueIce) EncodeItem() (id int32, meta int16) {
 	return -11, 0
 }
+
+// EncodeBlock ...
+func (BlueIce) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:blue_ice", nil
+}

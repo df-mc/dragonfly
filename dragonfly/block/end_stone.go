@@ -20,6 +20,11 @@ func (e EndStone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (e EndStone) EncodeItem() (id int32, meta int16) {
+func (EndStone) EncodeItem() (id int32, meta int16) {
 	return 121, 0
+}
+
+// EncodeBlock ...
+func (EndStone) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:end_stone", nil
 }

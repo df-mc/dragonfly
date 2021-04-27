@@ -33,3 +33,8 @@ func (c CryingObsidian) BreakInfo() BreakInfo {
 func (CryingObsidian) EncodeItem() (id int32, meta int16) {
 	return -289, 0
 }
+
+// EncodeBlock ...
+func (CryingObsidian) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:crying_obsidian", nil
+}

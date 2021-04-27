@@ -23,6 +23,11 @@ func (t Terracotta) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (t Terracotta) EncodeItem() (id int32, meta int16) {
+func (Terracotta) EncodeItem() (id int32, meta int16) {
 	return 172, meta
+}
+
+// EncodeBlock ...
+func (Terracotta) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:hardened_clay", nil
 }

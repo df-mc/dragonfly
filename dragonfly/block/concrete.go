@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // Concrete is a solid block which comes in the 16 regular dye colors, created by placing concrete powder
@@ -37,8 +38,8 @@ func (c Concrete) EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // allConcrete returns concrete blocks with all possible colours.
-func allConcrete() []canEncode {
-	b := make([]canEncode, 0, 16)
+func allConcrete() []world.Block {
+	b := make([]world.Block, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, Concrete{Colour: c})
 	}

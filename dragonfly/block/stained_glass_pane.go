@@ -57,8 +57,8 @@ func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]inte
 }
 
 // allStainedGlassPane returns stained glass panes with all possible colours.
-func allStainedGlassPane() []canEncode {
-	b := make([]canEncode, 0, 16)
+func allStainedGlassPane() []world.Block {
+	b := make([]world.Block, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, StainedGlassPane{Colour: c})
 	}

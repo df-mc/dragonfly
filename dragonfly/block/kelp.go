@@ -148,7 +148,7 @@ func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // allKelp returns all possible states of a kelp block.
-func allKelp() (b []canEncode) {
+func allKelp() (b []world.Block) {
 	for i := 0; i < 26; i++ {
 		b = append(b, Kelp{Age: i})
 	}

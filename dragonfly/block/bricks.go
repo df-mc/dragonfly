@@ -25,3 +25,8 @@ func (b Bricks) BreakInfo() BreakInfo {
 func (Bricks) EncodeItem() (id int32, meta int16) {
 	return 45, 0
 }
+
+// EncodeBlock ...
+func (Bricks) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:bricks", nil
+}

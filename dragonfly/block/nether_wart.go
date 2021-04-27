@@ -79,7 +79,7 @@ func (n NetherWart) EncodeBlock() (name string, properties map[string]interface{
 }
 
 // allNetherWart ...
-func allNetherWart() (wart []canEncode) {
+func allNetherWart() (wart []world.Block) {
 	for i := 0; i < 4; i++ {
 		wart = append(wart, NetherWart{Age: i})
 	}

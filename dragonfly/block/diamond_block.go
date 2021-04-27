@@ -32,3 +32,8 @@ func (DiamondBlock) PowersBeacon() bool {
 func (DiamondBlock) EncodeItem() (id int32, meta int16) {
 	return 57, 0
 }
+
+// EncodeBlock ...
+func (DiamondBlock) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:diamond_block", nil
+}

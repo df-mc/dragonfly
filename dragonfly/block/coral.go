@@ -118,7 +118,7 @@ func (c Coral) EncodeItem() (id int32, meta int16) {
 }
 
 // allCoral returns a list of all coral block variants
-func allCoral() (c []canEncode) {
+func allCoral() (c []world.Block) {
 	f := func(dead bool) {
 		c = append(c, Coral{Type: coral.Tube(), Dead: dead})
 		c = append(c, Coral{Type: coral.Brain(), Dead: dead})

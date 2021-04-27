@@ -41,3 +41,11 @@ func (d Dirt) EncodeItem() (id int32, meta int16) {
 	}
 	return 3, meta
 }
+
+// EncodeBlock ...
+func (d Dirt) EncodeBlock() (string, map[string]interface{}) {
+	if d.Coarse {
+		return "minecraft:dirt", map[string]interface{}{"dirt_type": "coarse"}
+	}
+	return "minecraft:dirt", map[string]interface{}{"dirt_type": "normal"}
+}

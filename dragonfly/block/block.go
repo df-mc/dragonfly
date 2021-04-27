@@ -238,8 +238,3 @@ type bassDrum struct{}
 func (bassDrum) Instrument() instrument.Instrument {
 	return instrument.BassDrum()
 }
-
-// canEncode represents a block that can be encoded into a name with properties.
-type canEncode interface {
-	EncodeBlock() (name string, properties map[string]interface{})
-}

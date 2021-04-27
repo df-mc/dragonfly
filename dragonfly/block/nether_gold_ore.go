@@ -23,6 +23,11 @@ func (n NetherGoldOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (n NetherGoldOre) EncodeItem() (id int32, meta int16) {
+func (NetherGoldOre) EncodeItem() (id int32, meta int16) {
 	return -288, 0
+}
+
+// EncodeBlock ...
+func (NetherGoldOre) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:nether_gold_ore", nil
 }

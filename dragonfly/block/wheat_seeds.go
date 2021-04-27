@@ -81,7 +81,7 @@ func (s WheatSeeds) EncodeBlock() (name string, properties map[string]interface{
 }
 
 // allWheat ...
-func allWheat() (wheat []canEncode) {
+func allWheat() (wheat []world.Block) {
 	for i := 0; i <= 7; i++ {
 		wheat = append(wheat, WheatSeeds{crop{Growth: i}})
 	}

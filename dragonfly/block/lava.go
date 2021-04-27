@@ -211,7 +211,7 @@ func (l Lava) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allLava returns a list of all lava states.
-func allLava() (b []canEncode) {
+func allLava() (b []world.Block) {
 	f := func(still, falling bool) {
 		b = append(b, Lava{Still: still, Falling: falling, Depth: 8})
 		b = append(b, Lava{Still: still, Falling: falling, Depth: 7})

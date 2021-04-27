@@ -21,6 +21,9 @@ import (
 // inventory: It is also an item.
 // Every Block implementation must be able to be hashed as key in a map.
 type Block interface {
+	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
+	// with the block.
+	EncodeBlock() (string, map[string]interface{})
 	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
 	// entity. If true is returned, Block must implemented the NBTer interface.
 	HasNBT() bool
@@ -157,8 +160,10 @@ func RegisterBlockState(s BlockState) error {
 	return nil
 }
 
-func RegisterBlock(b Block, s BlockState) error {
-	h := stateHash{name: s.Name, properties: s.HashProperties()}
+func RegisterBlock(b Block) error {
+	name, properties := b.EncodeBlock()
+	s := BlockState{Name: name, Properties: properties}
+	h := stateHash{name: name, properties: s.HashProperties()}
 
 	if _, ok := blockRuntimeIDs[b]; ok {
 		return fmt.Errorf("cannot register the same block twice (%#v)", b)
@@ -195,6 +200,11 @@ func air() Block {
 // states that haven't yet been added.
 type unimplementedBlock struct {
 	BlockState
+}
+
+// EncodeBlock ...
+func (b unimplementedBlock) EncodeBlock() (string, map[string]interface{}) {
+	return b.Name, b.Properties
 }
 
 // HasNBT ...

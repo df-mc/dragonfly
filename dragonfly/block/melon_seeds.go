@@ -107,7 +107,7 @@ func (m MelonSeeds) EncodeBlock() (name string, properties map[string]interface{
 }
 
 // allMelonStems ...
-func allMelonStems() (stems []canEncode) {
+func allMelonStems() (stems []world.Block) {
 	for i := 0; i <= 7; i++ {
 		for j := cube.Face(0); j <= 5; j++ {
 			stems = append(stems, MelonSeeds{crop: crop{Growth: i}, Direction: j})

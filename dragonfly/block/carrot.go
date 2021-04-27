@@ -92,7 +92,7 @@ func (c Carrot) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allCarrots ...
-func allCarrots() (carrots []canEncode) {
+func allCarrots() (carrots []world.Block) {
 	for growth := 0; growth < 8; growth++ {
 		carrots = append(carrots, Carrot{crop{Growth: growth}})
 	}

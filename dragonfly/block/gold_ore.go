@@ -25,6 +25,11 @@ func (g GoldOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (g GoldOre) EncodeItem() (id int32, meta int16) {
+func (GoldOre) EncodeItem() (id int32, meta int16) {
 	return 14, 0
+}
+
+// EncodeBlock ...
+func (GoldOre) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:gold_ore", nil
 }

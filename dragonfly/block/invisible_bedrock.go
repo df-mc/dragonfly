@@ -12,3 +12,8 @@ type InvisibleBedrock struct {
 func (InvisibleBedrock) EncodeItem() (id int32, meta int16) {
 	return 95, 0
 }
+
+// EncodeBlock ...
+func (InvisibleBedrock) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:invisible_bedrock", nil
+}

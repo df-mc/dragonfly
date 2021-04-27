@@ -29,6 +29,11 @@ func (s SoulSand) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s SoulSand) EncodeItem() (id int32, meta int16) {
+func (SoulSand) EncodeItem() (id int32, meta int16) {
 	return 88, 0
+}
+
+// EncodeBlock ...
+func (SoulSand) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:soul_sand", nil
 }

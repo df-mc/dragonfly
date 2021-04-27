@@ -151,7 +151,7 @@ func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{
 }
 
 // allGrassPlants ...
-func allGrassPlants() (grasses []canEncode) {
+func allGrassPlants() (grasses []world.Block) {
 	for _, g := range grass.All() {
 		grasses = append(grasses, GrassPlant{Type: g, UpperPart: false})
 		grasses = append(grasses, GrassPlant{Type: g, UpperPart: true})

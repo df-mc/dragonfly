@@ -24,6 +24,11 @@ func (a AncientDebris) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (a AncientDebris) EncodeItem() (id int32, meta int16) {
+func (AncientDebris) EncodeItem() (id int32, meta int16) {
 	return -271, 0
+}
+
+// EncodeBlock ...
+func (AncientDebris) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:ancient_debris", nil
 }

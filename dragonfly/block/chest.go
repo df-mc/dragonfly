@@ -204,7 +204,7 @@ func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allChests ...
-func allChests() (chests []canEncode) {
+func allChests() (chests []world.Block) {
 	for _, direction := range cube.Directions() {
 		chests = append(chests, Chest{Facing: direction})
 	}

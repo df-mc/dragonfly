@@ -189,7 +189,7 @@ func (s WoodSlab) SideClosed(pos, side cube.Pos, _ *world.World) bool {
 }
 
 // allWoodSlabs returns all states of wood slabs.
-func allWoodSlabs() (slabs []canEncode) {
+func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
 		for _, w := range wood.All() {
 			slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: w})

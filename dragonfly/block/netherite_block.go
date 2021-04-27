@@ -33,3 +33,8 @@ func (NetheriteBlock) PowersBeacon() bool {
 func (NetheriteBlock) EncodeItem() (id int32, meta int16) {
 	return -270, 0
 }
+
+// EncodeBlock ...
+func (NetheriteBlock) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:netherite_block", nil
+}

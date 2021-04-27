@@ -110,7 +110,7 @@ func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allTorch ...
-func allTorch() (torch []canEncode) {
+func allTorch() (torch []world.Block) {
 	for i := cube.Face(0); i < 6; i++ {
 		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
 		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})

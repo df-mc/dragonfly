@@ -55,7 +55,7 @@ func (b BoneBlock) EncodeBlock() (name string, properties map[string]interface{}
 }
 
 // allBoneBlock ...
-func allBoneBlock() (boneBlocks []canEncode) {
+func allBoneBlock() (boneBlocks []world.Block) {
 	for _, axis := range cube.Axes() {
 		boneBlocks = append(boneBlocks, BoneBlock{Axis: axis})
 	}

@@ -62,7 +62,7 @@ func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 }
 
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
-func allGlazedTerracotta() (b []canEncode) {
+func allGlazedTerracotta() (b []world.Block) {
 	for dir := cube.Direction(0); dir < 4; dir++ {
 		for _, c := range colour.All() {
 			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})

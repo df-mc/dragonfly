@@ -27,3 +27,8 @@ func (l LapisBlock) BreakInfo() BreakInfo {
 func (LapisBlock) EncodeItem() (id int32, meta int16) {
 	return 22, 0
 }
+
+// EncodeBlock ...
+func (LapisBlock) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:lapis_block", nil
+}

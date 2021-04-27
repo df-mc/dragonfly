@@ -20,6 +20,11 @@ func (e Netherrack) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (e Netherrack) EncodeItem() (id int32, meta int16) {
+func (Netherrack) EncodeItem() (id int32, meta int16) {
 	return 87, 0
+}
+
+// EncodeBlock ...
+func (Netherrack) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:netherrack", nil
 }

@@ -37,6 +37,11 @@ func (g Gravel) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (g Gravel) EncodeItem() (id int32, meta int16) {
+func (Gravel) EncodeItem() (id int32, meta int16) {
 	return 13, 0
+}
+
+// EncodeBlock ...
+func (Gravel) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:gravel", nil
 }

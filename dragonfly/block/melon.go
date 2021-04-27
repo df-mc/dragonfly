@@ -22,6 +22,11 @@ func (m Melon) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (m Melon) EncodeItem() (id int32, meta int16) {
+func (Melon) EncodeItem() (id int32, meta int16) {
 	return 103, 0
+}
+
+// EncodeBlock ...
+func (Melon) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:melon", nil
 }

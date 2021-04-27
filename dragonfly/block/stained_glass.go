@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/dragonfly/block/colour"
 	"github.com/df-mc/dragonfly/dragonfly/item/tool"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 )
 
 // StainedGlass is a decorative, fully transparent solid block that is dyed into a different colour.
@@ -44,8 +45,8 @@ func (g StainedGlass) EncodeBlock() (name string, properties map[string]interfac
 }
 
 // allStainedGlass returns stained glass blocks with all possible colours.
-func allStainedGlass() []canEncode {
-	b := make([]canEncode, 0, 16)
+func allStainedGlass() []world.Block {
+	b := make([]world.Block, 0, 16)
 	for _, c := range colour.All() {
 		b = append(b, StainedGlass{Colour: c})
 	}

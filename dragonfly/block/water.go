@@ -147,7 +147,7 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allWater returns a list of all water states.
-func allWater() (b []canEncode) {
+func allWater() (b []world.Block) {
 	f := func(still, falling bool) {
 		b = append(b, Water{Still: still, Falling: falling, Depth: 8})
 		b = append(b, Water{Still: still, Falling: falling, Depth: 7})

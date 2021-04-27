@@ -107,7 +107,7 @@ func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) 
 }
 
 // allLanterns ...
-func allLanterns() (lanterns []canEncode) {
+func allLanterns() (lanterns []world.Block) {
 	for _, f := range fire.AllFireTypes() {
 		lanterns = append(lanterns, Lantern{Hanging: false, Type: f})
 		lanterns = append(lanterns, Lantern{Hanging: true, Type: f})

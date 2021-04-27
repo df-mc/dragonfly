@@ -107,7 +107,7 @@ func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]interfac
 }
 
 // allPumpkinStems
-func allPumpkinStems() (stems []canEncode) {
+func allPumpkinStems() (stems []world.Block) {
 	for i := 0; i <= 7; i++ {
 		for j := cube.Face(0); j <= 5; j++ {
 			stems = append(stems, PumpkinSeeds{Direction: j, crop: crop{Growth: i}})

@@ -28,8 +28,13 @@ func (g Glowstone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (g Glowstone) EncodeItem() (id int32, meta int16) {
+func (Glowstone) EncodeItem() (id int32, meta int16) {
 	return 89, 0
+}
+
+// EncodeBlock ...
+func (Glowstone) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:glowstone", nil
 }
 
 // LightEmissionLevel returns 15.

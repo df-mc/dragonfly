@@ -58,7 +58,7 @@ func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allBasalt ...
-func allBasalt() (basalt []canEncode) {
+func allBasalt() (basalt []world.Block) {
 	for _, axis := range cube.Axes() {
 		basalt = append(basalt, Basalt{Axis: axis, Polished: false})
 		basalt = append(basalt, Basalt{Axis: axis, Polished: true})

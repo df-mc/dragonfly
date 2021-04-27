@@ -98,7 +98,7 @@ func (p Potato) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allPotato ...
-func allPotato() (potato []canEncode) {
+func allPotato() (potato []world.Block) {
 	for i := 0; i <= 7; i++ {
 		potato = append(potato, Potato{crop{Growth: i}})
 	}

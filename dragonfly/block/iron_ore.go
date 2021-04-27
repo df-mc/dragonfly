@@ -25,6 +25,11 @@ func (i IronOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (i IronOre) EncodeItem() (id int32, meta int16) {
+func (IronOre) EncodeItem() (id int32, meta int16) {
 	return 15, 0
+}
+
+// EncodeBlock ...
+func (IronOre) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:iron_ore", nil
 }

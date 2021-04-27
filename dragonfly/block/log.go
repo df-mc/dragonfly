@@ -126,7 +126,7 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allLogs returns a list of all possible log states.
-func allLogs() (logs []canEncode) {
+func allLogs() (logs []world.Block) {
 	f := func(axis cube.Axis, stripped bool) {
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Oak()})
 		logs = append(logs, Log{Axis: axis, Stripped: stripped, Wood: wood.Spruce()})

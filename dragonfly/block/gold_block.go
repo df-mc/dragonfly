@@ -38,3 +38,8 @@ func (GoldBlock) PowersBeacon() bool {
 func (GoldBlock) EncodeItem() (id int32, meta int16) {
 	return 41, 0
 }
+
+// EncodeBlock ...
+func (GoldBlock) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:gold_block", nil
+}

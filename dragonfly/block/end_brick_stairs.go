@@ -73,7 +73,7 @@ func (s EndBrickStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 }
 
 // allEndBrickStairs ...
-func allEndBrickStairs() (stairs []canEncode) {
+func allEndBrickStairs() (stairs []world.Block) {
 	for direction := cube.Direction(0); direction <= 3; direction++ {
 		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: true})
 		stairs = append(stairs, EndBrickStairs{Facing: direction, UpsideDown: false})

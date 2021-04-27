@@ -84,7 +84,7 @@ func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]interfa
 }
 
 // allBeetroot ...
-func allBeetroot() (beetroot []canEncode) {
+func allBeetroot() (beetroot []world.Block) {
 	for i := 0; i <= 7; i++ {
 		beetroot = append(beetroot, BeetrootSeeds{crop: crop{Growth: i}})
 	}

@@ -116,7 +116,7 @@ func (c CocoaBean) Model() world.BlockModel {
 }
 
 // allCocoaBeans ...
-func allCocoaBeans() (cocoa []canEncode) {
+func allCocoaBeans() (cocoa []world.Block) {
 	for i := cube.Direction(0); i <= 3; i++ {
 		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 0})
 		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 1})

@@ -231,7 +231,7 @@ func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // allFire ...
-func allFire() (b []canEncode) {
+func allFire() (b []world.Block) {
 	for i := 0; i < 16; i++ {
 		b = append(b, Fire{Age: i, Type: fire.Normal()})
 		b = append(b, Fire{Age: i, Type: fire.Soul()})

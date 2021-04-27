@@ -38,3 +38,8 @@ func (EmeraldBlock) PowersBeacon() bool {
 func (EmeraldBlock) EncodeItem() (id int32, meta int16) {
 	return 133, 0
 }
+
+// EncodeBlock ...
+func (EmeraldBlock) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:emerald_block", nil
+}

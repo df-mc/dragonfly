@@ -72,6 +72,11 @@ func (d DragonEgg) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (d DragonEgg) EncodeItem() (id int32, meta int16) {
+func (DragonEgg) EncodeItem() (id int32, meta int16) {
 	return 122, 0
+}
+
+// EncodeBlock ...
+func (DragonEgg) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:dragon_egg", nil
 }

@@ -20,6 +20,11 @@ func (c EndBricks) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c EndBricks) EncodeItem() (id int32, meta int16) {
+func (EndBricks) EncodeItem() (id int32, meta int16) {
 	return 206, 0
+}
+
+// EncodeBlock ...
+func (EndBricks) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:end_bricks", nil
 }

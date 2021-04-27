@@ -175,7 +175,7 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 }
 
 // allDoors returns a list of all door types
-func allDoors() (doors []canEncode) {
+func allDoors() (doors []world.Block) {
 	for _, w := range wood.All() {
 		for i := cube.Direction(0); i <= 3; i++ {
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})

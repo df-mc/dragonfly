@@ -26,3 +26,8 @@ func (Air) HasLiquidDrops() bool {
 func (Air) EncodeItem() (id int32, meta int16) {
 	return 0, 0
 }
+
+// EncodeBlock ...
+func (Air) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:air", nil
+}
