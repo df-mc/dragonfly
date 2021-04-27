@@ -114,12 +114,28 @@ type ScheduledTicker interface {
 	ScheduledTick(pos cube.Pos, w *World)
 }
 
+// TickerBlock is an implementation of NBTer with an additional Tick method that is called on every world
+// tick for loaded blocks that implement this interface.
+type TickerBlock interface {
+	NBTer
+	Tick(currentTick int64, pos cube.Pos, w *World)
+}
+
 // NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
 // through placement or being broken.
 type NeighbourUpdateTicker interface {
 	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
 	// position of this block is passed.
 	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *World)
+}
+
+// NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
+// this is done to store additional data.
+type NBTer interface {
+	// DecodeNBT returns the item or block, depending on which of those the NBTer was, with the NBT data
+	// decoded into it.
+	DecodeNBT(data map[string]interface{}) interface{}
+	EncodeNBT() map[string]interface{}
 }
 
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without

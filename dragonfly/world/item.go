@@ -3,7 +3,6 @@ package world
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/dragonfly/block/cube"
 	"github.com/df-mc/dragonfly/dragonfly/internal/resource"
 )
 
@@ -13,22 +12,6 @@ type Item interface {
 	// EncodeItem encodes the item to its Minecraft representation, which consists of a numerical ID and a
 	// metadata value.
 	EncodeItem() (id int32, meta int16)
-}
-
-// NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
-// this is done to store additional data.
-type NBTer interface {
-	// DecodeNBT returns the item or block, depending on which of those the NBTer was, with the NBT data
-	// decoded into it.
-	DecodeNBT(data map[string]interface{}) interface{}
-	EncodeNBT() map[string]interface{}
-}
-
-// TickerBlock is an implementation of NBTer with an additional Tick method that is called on every world
-// tick for loaded blocks that implement this interface.
-type TickerBlock interface {
-	NBTer
-	Tick(currentTick int64, pos cube.Pos, w *World)
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an

@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/internal/world_internal"
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"github.com/yourbasic/radix"
+	"sort"
 	"sync"
 	"unsafe"
 )
@@ -116,7 +116,9 @@ func hashProperties(properties map[string]interface{}) string {
 	for k := range properties {
 		keys = append(keys, k)
 	}
-	radix.Sort(keys)
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 
 	b := buffers.Get().(*bytes.Buffer)
 	for _, k := range keys {
