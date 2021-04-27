@@ -32,5 +32,6 @@ jobs:
 
       - name: Staticcheck
         run: |
+          go get honnef.co/go/tools/cmd/staticcheck
           GOBIN=$PWD/bin go install honnef.co/go/tools/cmd/staticcheck
           ./bin/staticcheck ./...
