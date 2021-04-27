@@ -316,7 +316,7 @@ func init() {
 	world.RegisterItem("minecraft:cake", Cake{})
 	world.RegisterItem("minecraft:nether_wart", NetherWart{})
 	world.RegisterItem("minecraft:invisibleBedrock", InvisibleBedrock{})
-	world.RegisterItem("minecraft:noteblock", NoteBlock{})
+	world.RegisterItem("minecraft:noteblock", NoteBlock{Pitch: 24})
 	world.RegisterItem("minecraft:dragon_egg", DragonEgg{})
 	world.RegisterItem("minecraft:tallgrass", GrassPlant{})
 	world.RegisterItem("minecraft:nether_sprouts", GrassPlant{Type: grass.NetherSprouts()})
