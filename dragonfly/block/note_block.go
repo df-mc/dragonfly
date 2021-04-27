@@ -79,7 +79,7 @@ func (n NoteBlock) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:noteblock", map[string]interface{}{"pitch": n.Pitch}
+	return "minecraft:noteblock", nil
 }
 
 // allNoteBlocks ...

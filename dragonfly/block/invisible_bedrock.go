@@ -15,5 +15,5 @@ func (InvisibleBedrock) EncodeItem() (id int32, meta int16) {
 
 // EncodeBlock ...
 func (InvisibleBedrock) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:invisible_bedrock", nil
+	return "minecraft:invisibleBedrock", nil
 }

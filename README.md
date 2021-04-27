@@ -7,7 +7,7 @@ There are currently no prebuilt executables available. These may be provided lat
 more stable stage.
 
 ### Development setup
-Installing/compiling Dragonfly requires at least Go 1.13.
+Installing/compiling Dragonfly requires at least Go 1.16.
 
 ##### Instant install, when GOPATH/bin is added to $PATH:
 ```
