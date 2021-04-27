@@ -132,11 +132,8 @@ func hashProperties(properties map[string]interface{}) string {
 		case uint8:
 			b.WriteByte(v)
 		case int32:
-			a := uint32(v)
-			b.WriteByte(byte(a))
-			b.WriteByte(byte(a >> 8))
-			b.WriteByte(byte(a >> 16))
-			b.WriteByte(byte(a >> 24))
+			a := *(*[4]byte)(unsafe.Pointer(&v))
+			b.Write(a[:])
 		case string:
 			b.WriteString(v)
 		default:
