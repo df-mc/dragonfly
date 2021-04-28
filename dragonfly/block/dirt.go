@@ -8,7 +8,6 @@ import (
 // Dirt is a block found abundantly in most biomes under a layer of grass blocks at the top of the normal
 // world.
 type Dirt struct {
-	noNBT
 	solid
 
 	// Coarse specifies if the dirt should be off the coarse dirt variant. Grass blocks won't spread on

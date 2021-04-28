@@ -7,7 +7,6 @@ import (
 type (
 	// Stone is a block found underground in the world or on mountains.
 	Stone struct {
-		noNBT
 		solid
 		bassDrum
 
@@ -24,7 +23,6 @@ type (
 
 	// polishable forms the base of blocks that may be polished.
 	polishable struct {
-		noNBT
 		solid
 		bassDrum
 		// Polished specifies if the block is polished or not. When set to true, the block will represent its

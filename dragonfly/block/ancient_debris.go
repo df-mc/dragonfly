@@ -7,7 +7,6 @@ import (
 
 // AncientDebris is a rare ore found within The Nether.
 type AncientDebris struct {
-	noNBT
 	solid
 }
 

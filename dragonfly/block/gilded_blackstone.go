@@ -8,7 +8,6 @@ import (
 
 // GildedBlackstone is a variant of blackstone that can drop itself or gold nuggets when mined.
 type GildedBlackstone struct {
-	noNBT
 	solid
 }
 

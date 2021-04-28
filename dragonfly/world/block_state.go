@@ -20,6 +20,10 @@ var (
 	blocks []Block
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
+	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
+	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a nil implementation in
+	// this slice.
+	nbtBlocks []bool
 )
 
 func init() {
@@ -62,6 +66,7 @@ func registerBlockState(s blockState) {
 	stateRuntimeIDs[h] = rid
 	blocks = append(blocks, unknownBlock{s})
 
+	nbtBlocks = append(nbtBlocks, false)
 	world_internal.LiquidRemovable = append(world_internal.LiquidRemovable, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)

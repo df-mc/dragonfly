@@ -7,7 +7,6 @@ import (
 
 // EmeraldOre is an ore generating exclusively under mountain biomes.
 type EmeraldOre struct {
-	noNBT
 	solid
 	bassDrum
 }

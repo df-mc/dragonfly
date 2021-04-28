@@ -6,7 +6,6 @@ import (
 
 // Glass is a decorative, fully transparent solid block that can be dyed into stained glass.
 type Glass struct {
-	noNBT
 	solid
 	transparent
 	clicksAndSticks

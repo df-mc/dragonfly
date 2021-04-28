@@ -10,7 +10,6 @@ import (
 // Farmland is a block that crops are grown on. Farmland is created by interacting with a grass or dirt block using a
 // hoe. Farmland can be hydrated by nearby water, with no hydration resulting in it turning into a dirt block.
 type Farmland struct {
-	noNBT
 	tilledGrass
 
 	// Hydration is how much moisture the farmland block has. Hydration starts at 0 & caps at 7. During a random tick

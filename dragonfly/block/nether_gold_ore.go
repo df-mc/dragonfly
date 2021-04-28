@@ -7,7 +7,6 @@ import (
 
 // NetherGoldOre is a variant of gold ore found exclusively in The Nether.
 type NetherGoldOre struct {
-	noNBT
 	solid
 }
 

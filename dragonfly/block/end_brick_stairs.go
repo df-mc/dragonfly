@@ -10,7 +10,6 @@ import (
 
 // EndBrickStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using end bricks.
 type EndBrickStairs struct {
-	noNBT
 	transparent
 
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part

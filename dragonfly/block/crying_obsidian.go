@@ -7,7 +7,6 @@ import (
 
 // CryingObsidian is a luminous variant of obsidian that can be used to craft a respawn anchor and produces purple particles when placed.
 type CryingObsidian struct {
-	noNBT
 	solid
 	bassDrum
 }

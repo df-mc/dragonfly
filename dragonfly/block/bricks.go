@@ -6,7 +6,6 @@ import (
 
 // Bricks are decorative building blocks.
 type Bricks struct {
-	noNBT
 	solid
 	bassDrum
 }

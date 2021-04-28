@@ -7,7 +7,6 @@ import (
 
 // IronOre is a mineral block found underground.
 type IronOre struct {
-	noNBT
 	solid
 	bassDrum
 }

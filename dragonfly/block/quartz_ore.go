@@ -4,7 +4,6 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // NetherQuartzOre is ore found in the Nether.
 type NetherQuartzOre struct {
-	noNBT
 	solid
 	bassDrum
 }

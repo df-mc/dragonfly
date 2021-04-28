@@ -6,7 +6,6 @@ import (
 
 // CoalOre is a common ore.
 type CoalOre struct {
-	noNBT
 	solid
 	bassDrum
 }

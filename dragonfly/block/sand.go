@@ -8,7 +8,6 @@ import (
 
 // Sand is a block affected by gravity. It can come in a red variant.
 type Sand struct {
-	noNBT
 	gravityAffected
 	solid
 	snare

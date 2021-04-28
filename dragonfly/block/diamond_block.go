@@ -7,7 +7,6 @@ import (
 
 // DiamondBlock is a block which can only be gained by crafting it.
 type DiamondBlock struct {
-	noNBT
 	solid
 }
 

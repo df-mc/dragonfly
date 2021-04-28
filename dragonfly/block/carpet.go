@@ -10,7 +10,6 @@ import (
 
 // Carpet is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
 type Carpet struct {
-	noNBT
 	carpet
 	transparent
 

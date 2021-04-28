@@ -7,7 +7,6 @@ import (
 
 // SeaLantern is an underwater light sources that appear in ocean monuments and underwater ruins.
 type SeaLantern struct {
-	noNBT
 	transparent
 	solid
 	clicksAndSticks

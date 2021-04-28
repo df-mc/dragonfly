@@ -7,7 +7,6 @@ import (
 
 // LapisBlock is a decorative mineral block that is crafted from lapis lazuli.
 type LapisBlock struct {
-	noNBT
 	solid
 }
 

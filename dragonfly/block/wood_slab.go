@@ -13,7 +13,6 @@ import (
 
 // WoodSlab is a half block that allows entities to walk up blocks without jumping.
 type WoodSlab struct {
-	noNBT
 	bass
 
 	// Wood is the type of wood of the slabs. This field must have one of the values found in the material

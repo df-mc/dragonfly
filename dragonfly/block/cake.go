@@ -10,7 +10,6 @@ import (
 
 // Cake is an edible block.
 type Cake struct {
-	noNBT
 	transparent
 
 	// Bites is the amount of bites taken out of the cake.

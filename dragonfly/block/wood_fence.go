@@ -11,7 +11,6 @@ import (
 // WoodFence are blocks similar to Walls, which cannot normally be jumped over. Unlike walls however,
 // they allow the player (but not mobs) to see through them, making for excellent barriers.
 type WoodFence struct {
-	noNBT
 	transparent
 	bass
 

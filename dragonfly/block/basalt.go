@@ -9,7 +9,6 @@ import (
 
 // Basalt is a type of igneous rock found in the Nether.
 type Basalt struct {
-	noNBT
 	solid
 	bassDrum
 

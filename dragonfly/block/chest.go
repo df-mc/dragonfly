@@ -20,7 +20,6 @@ import (
 // TODO: Redo inventory stuff in here. The inventory should be moved to a different place in world.World so
 //  that this block can be hashed properly.
 type Chest struct {
-	nbt
 	chest
 	transparent
 	bass

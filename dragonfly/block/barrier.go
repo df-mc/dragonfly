@@ -2,7 +2,6 @@ package block
 
 // Barrier is a transparent solid block used to create invisible boundaries.
 type Barrier struct {
-	noNBT
 	transparent
 	solid
 }

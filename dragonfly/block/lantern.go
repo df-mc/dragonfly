@@ -11,7 +11,6 @@ import (
 
 // Lantern is a light emitting block.
 type Lantern struct {
-	noNBT
 	transparent
 
 	// Hanging determines if a lantern is hanging off a block.

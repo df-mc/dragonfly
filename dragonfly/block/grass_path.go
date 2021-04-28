@@ -8,7 +8,6 @@ import (
 
 // GrassPath is a decorative block that can be created by using a shovel on a grass block.
 type GrassPath struct {
-	noNBT
 	tilledGrass
 	transparent
 }

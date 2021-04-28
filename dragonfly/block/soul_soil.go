@@ -6,7 +6,6 @@ import (
 
 // SoulSoil is a block naturally found only in the soul sand valley.
 type SoulSoil struct {
-	noNBT
 	solid
 }
 

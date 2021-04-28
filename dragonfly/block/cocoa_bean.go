@@ -13,7 +13,6 @@ import (
 
 // CocoaBean is a crop block found in Jungle biomes.
 type CocoaBean struct {
-	noNBT
 	transparent
 
 	// Facing is the direction from the cocoa bean to the log.

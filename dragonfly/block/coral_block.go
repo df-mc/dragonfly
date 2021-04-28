@@ -10,7 +10,6 @@ import (
 
 // CoralBlock is a solid block that comes in 5 variants.
 type CoralBlock struct {
-	noNBT
 	solid
 	bassDrum
 

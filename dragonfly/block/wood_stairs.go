@@ -11,7 +11,6 @@ import (
 
 // WoodStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
 type WoodStairs struct {
-	noNBT
 	transparent
 	bass
 

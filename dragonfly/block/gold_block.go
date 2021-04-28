@@ -8,7 +8,6 @@ import (
 
 // GoldBlock is a precious metal block crafted from 9 gold ingots.
 type GoldBlock struct {
-	noNBT
 	solid
 }
 

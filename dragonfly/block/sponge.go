@@ -11,7 +11,6 @@ import (
 // Sponge is a block that can be used to remove water around itself when placed, turning into a wet sponge in the
 // process.
 type Sponge struct {
-	noNBT
 	solid
 
 	// Wet specifies whether the dry or the wet variant of the block is used.

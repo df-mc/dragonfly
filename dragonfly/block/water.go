@@ -11,7 +11,6 @@ import (
 
 // Water is a natural fluid that generates abundantly in the world.
 type Water struct {
-	noNBT
 	empty
 	replaceable
 

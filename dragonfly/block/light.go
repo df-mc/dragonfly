@@ -4,7 +4,6 @@ import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // Light is an invisible block that can produce any light level.
 type Light struct {
-	noNBT
 	empty
 	replaceable
 	transparent

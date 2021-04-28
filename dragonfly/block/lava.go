@@ -14,7 +14,6 @@ import (
 
 // Lava is a light-emitting fluid block that causes fire damage.
 type Lava struct {
-	noNBT
 	empty
 	replaceable
 

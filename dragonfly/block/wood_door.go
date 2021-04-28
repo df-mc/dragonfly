@@ -12,7 +12,6 @@ import (
 
 // WoodDoor is a block that can be used as an openable 1x2 barrier.
 type WoodDoor struct {
-	noNBT
 	transparent
 	bass
 

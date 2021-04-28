@@ -10,7 +10,6 @@ import (
 // ConcretePowder is a gravity affected block that comes in 16 different colours. When interacting with water,
 // it becomes concrete.
 type ConcretePowder struct {
-	noNBT
 	gravityAffected
 	solid
 	snare

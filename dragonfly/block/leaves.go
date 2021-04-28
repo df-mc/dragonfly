@@ -11,7 +11,6 @@ import (
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
 type Leaves struct {
-	noNBT
 	leaves
 
 	// Wood is the type of wood of the leaves. This field must have one of the values found in the material

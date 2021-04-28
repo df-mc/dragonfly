@@ -15,7 +15,6 @@ type Crop interface {
 
 // crop is a base for crop plants.
 type crop struct {
-	noNBT
 	transparent
 	empty
 

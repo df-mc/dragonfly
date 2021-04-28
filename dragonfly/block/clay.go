@@ -7,7 +7,6 @@ import (
 
 // Clay is a block that can be found underwater.
 type Clay struct {
-	noNBT
 	solid
 }
 

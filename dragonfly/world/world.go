@@ -146,13 +146,10 @@ func (w *World) Block(pos cube.Pos) Block {
 	c.Unlock()
 
 	b, _ := blockByRuntimeID(rid)
-	if b.HasNBT() {
-		if _, ok := b.(NBTer); ok {
-			// The block was also a block entity, so we look it up in the block entity map.
-			b, ok := c.e[pos]
-			if ok {
-				return b
-			}
+	if nbtBlocks[rid] {
+		// The block was also a block entity, so we look it up in the block entity map.
+		if nbtB, ok := c.e[pos]; ok {
+			return nbtB
 		}
 	}
 	return b
@@ -254,14 +251,8 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	}
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, rid)
 
-	var hasNBT bool
-	if b != nil {
-		hasNBT = b.HasNBT()
-	}
-	if hasNBT {
-		if _, hasNBT := b.(NBTer); hasNBT {
-			c.e[pos] = b
-		}
+	if nbtBlocks[rid] {
+		c.e[pos] = b
 	} else {
 		delete(c.e, pos)
 	}

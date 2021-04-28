@@ -11,7 +11,6 @@ import (
 
 // NetherWart is a fungus found in the Nether that is vital in the creation of potions.
 type NetherWart struct {
-	noNBT
 	transparent
 	empty
 

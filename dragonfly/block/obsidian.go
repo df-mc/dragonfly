@@ -8,7 +8,6 @@ import (
 // Obsidian is a dark purple block known for its high blast resistance and strength, most commonly found when
 // water flows over lava.
 type Obsidian struct {
-	noNBT
 	solid
 	bassDrum
 }

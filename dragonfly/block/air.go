@@ -6,7 +6,6 @@ import (
 
 // Air is the block present in otherwise empty space.
 type Air struct {
-	noNBT
 	empty
 	replaceable
 	transparent

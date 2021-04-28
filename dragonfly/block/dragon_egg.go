@@ -10,7 +10,6 @@ import (
 
 // DragonEgg is a decorative block or a "trophy item", and the rarest item in the game.
 type DragonEgg struct {
-	noNBT
 	solid
 	transparent
 	gravityAffected

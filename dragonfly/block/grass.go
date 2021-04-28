@@ -9,7 +9,6 @@ import (
 
 // Grass blocks generate abundantly across the surface of the world.
 type Grass struct {
-	noNBT
 	solid
 }
 

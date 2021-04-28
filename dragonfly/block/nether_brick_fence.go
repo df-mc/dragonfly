@@ -9,7 +9,6 @@ import (
 
 // NetherBrickFence is the nether brick variant of the fence block.
 type NetherBrickFence struct {
-	noNBT
 	transparent
 }
 

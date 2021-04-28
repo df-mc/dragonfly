@@ -8,7 +8,6 @@ import (
 
 // Planks are common blocks used in crafting recipes. They are made by crafting logs into planks.
 type Planks struct {
-	noNBT
 	solid
 	bass
 

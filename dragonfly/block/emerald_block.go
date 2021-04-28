@@ -8,7 +8,6 @@ import (
 
 // EmeraldBlock is a precious mineral block crafted using 9 emeralds.
 type EmeraldBlock struct {
-	noNBT
 	solid
 }
 

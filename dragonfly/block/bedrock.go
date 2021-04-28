@@ -2,7 +2,6 @@ package block
 
 // Bedrock is a block that is indestructible in survival.
 type Bedrock struct {
-	noNBT
 	solid
 	transparent
 	bassDrum

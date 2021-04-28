@@ -15,9 +15,6 @@ type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
 	EncodeBlock() (string, map[string]interface{})
-	// HasNBT specifies if this Block has additional NBT present in the world save, also known as a block
-	// entity. If true is returned, Block must implemented the NBTer interface.
-	HasNBT() bool
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
 }
@@ -68,6 +65,9 @@ func RegisterBlock(b Block) {
 	}
 	if source, ok := b.(beaconSource); ok {
 		world_internal.BeaconSource[rid] = source.PowersBeacon()
+	}
+	if _, ok := b.(NBTer); ok {
+		nbtBlocks[rid] = true
 	}
 }
 

@@ -12,7 +12,6 @@ import (
 // species: oak, spruce, birch, jungle, acacia, and dark oak.
 // Stripped log is a variant obtained by using an axe on a log.
 type Log struct {
-	noNBT
 	solid
 	bass
 

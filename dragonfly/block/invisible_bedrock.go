@@ -3,7 +3,6 @@ package block
 // InvisibleBedrock is an indestructible, solid block, similar to bedrock and has the appearance of air.
 // It shares many of its properties with barriers.
 type InvisibleBedrock struct {
-	noNBT
 	transparent
 	solid
 }

@@ -8,7 +8,6 @@ import (
 
 // Glowstone is commonly found on the ceiling of the nether dimension.
 type Glowstone struct {
-	noNBT
 	solid
 }
 

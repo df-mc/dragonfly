@@ -8,7 +8,6 @@ import (
 
 // IronBars are blocks that serve a similar purpose to glass panes, but made of iron instead of glass.
 type IronBars struct {
-	noNBT
 	transparent
 	thin
 }

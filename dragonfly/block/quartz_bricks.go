@@ -4,7 +4,6 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // QuartzBricks is a mineral block used only for decoration.
 type QuartzBricks struct {
-	noNBT
 	solid
 	bassDrum
 }

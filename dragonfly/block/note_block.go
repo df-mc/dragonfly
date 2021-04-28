@@ -11,7 +11,6 @@ import (
 
 // NoteBlock is a musical block that emits sounds when powered with redstone.
 type NoteBlock struct {
-	nbt
 	solid
 	bass
 

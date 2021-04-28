@@ -4,7 +4,6 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // EndStone is a block found in The End.
 type EndStone struct {
-	noNBT
 	solid
 	bassDrum
 }

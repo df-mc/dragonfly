@@ -4,7 +4,6 @@ import "github.com/df-mc/dragonfly/dragonfly/item"
 
 // EndBricks is a block made from combining four endstone blocks together.
 type EndBricks struct {
-	noNBT
 	solid
 	bassDrum
 }
