@@ -25,13 +25,12 @@ type Runnable interface {
 	Run(source Source, output *Output)
 }
 
-// Limiter may be implemented by a type also implementing Runnable to limit the sources that may run the
-// command. If the source running the command is not on of the types returned by the Limit method, the
-// command will fail.
-type Limiter interface {
-	// Limit returns all sources that the command can be run by. It is only limited to these sources: Other
-	// sources can under no circumstance call it.
-	Limit() []Source
+// Allower may be implemented by a type also implementing Runnable to limit the sources that may run the
+// command.
+type Allower interface {
+	// Allow checks if the Source passed is allowed to execute the command. True is returned if the Source is
+	// allowed to execute the command.
+	Allow(s Source) bool
 }
 
 // Command is a wrapper around a Runnable. It provides additional identity and utility methods for the actual
@@ -190,17 +189,8 @@ func (cmd Command) String() string {
 // parsing was not successful or the Runnable could not be ran by this source, an error is returned, and the
 // leftover command line.
 func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
-	if limiter, ok := v.Interface().(Limiter); ok {
-		allowed := false
-		for _, allowedSource := range limiter.Limit() {
-			if reflect.TypeOf(source) == reflect.TypeOf(allowedSource) {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			return nil, fmt.Errorf("source %T cannot execute this command", source)
-		}
+	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
+		return nil, fmt.Errorf("source %T cannot execute this command", source)
 	}
 
 	var argFrags []string

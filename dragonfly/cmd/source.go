@@ -3,7 +3,7 @@ package cmd
 import "github.com/df-mc/dragonfly/dragonfly/world"
 
 // Source represents a source of a command execution. Commands may limit the sources that can run them by
-// implementing the Limiter interface.
+// implementing the Allower interface.
 // Source implements Target. A Source must always be able to target itself.
 type Source interface {
 	Target
