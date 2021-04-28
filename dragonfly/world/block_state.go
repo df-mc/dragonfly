@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/dragonfly/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"sort"
-	"sync"
+	"strings"
 	"unsafe"
 )
 
@@ -107,11 +107,6 @@ type stateHash struct {
 	name, properties string
 }
 
-// buffers holds a sync.Pool of pooled byte buffers used to create a hash for the properties of a blockState.
-var buffers = sync.Pool{New: func() interface{} {
-	return bytes.NewBuffer(make([]byte, 0, 128))
-}}
-
 // HashProperties produces a hash for the block properties held by the blockState.
 func hashProperties(properties map[string]interface{}) string {
 	if properties == nil {
@@ -125,7 +120,7 @@ func hashProperties(properties map[string]interface{}) string {
 		return keys[i] < keys[j]
 	})
 
-	b := buffers.Get().(*bytes.Buffer)
+	var b strings.Builder
 	for _, k := range keys {
 		switch v := properties[k].(type) {
 		case bool:
@@ -148,8 +143,5 @@ func hashProperties(properties map[string]interface{}) string {
 		}
 	}
 
-	data := append([]byte(nil), b.Bytes()...)
-	b.Reset()
-	buffers.Put(b)
-	return *(*string)(unsafe.Pointer(&data))
+	return b.String()
 }
