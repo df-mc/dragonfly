@@ -71,10 +71,12 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 
 		targetPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
 
-		// The client sends a start break action even in cases where it shouldn't. (attempting to break an item with a sword in creative, extinguishing fire, etc)
+		// The client sends a start break action even in cases where it shouldn't. (attempting to break a block with a sword in creative)
 		// Not sure if there is a better way to handle this.
 		if (s.c.GameMode() == world.GameModeCreative{}) {
 			held, _ := s.c.HeldItems()
+			// In case the player is trying to extinguish fire, we still need start breaking the target block
+			// since start breaking contains the code for extinguishing fire. However, we abort right after.
 			if _, ok := s.c.World().Block(targetPos.Side(cube.Face(face))).(block.Fire); !ok {
 				if _, ok = held.Item().(item.Sword); ok {
 					break
