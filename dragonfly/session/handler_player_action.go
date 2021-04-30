@@ -49,6 +49,22 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		}
 	case protocol.PlayerActionStopSwimming:
 		s.c.StopSwimming()
+	case protocol.PlayerActionAbortBreak:
+		s.c.AbortBreaking()
+	case protocol.PlayerActionStopBreak, protocol.PlayerActionPredictDestroyBlock:
+		s.c.FinishBreaking()
+	case protocol.PlayerActionCrackBreak, protocol.PlayerActionContinueDestroyBlock:
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+
+		newPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+		breakingPos, ok := s.c.BreakingPosition()
+
+		if s.c.Breaking() && ok && newPos.Vec3().ApproxEqual(breakingPos.Vec3()) {
+			s.c.ContinueBreaking(cube.Face(face))
+		} else {
+			return handlePlayerAction(protocol.PlayerActionStartBreak, face, pos, entityRuntimeID, s)
+		}
 	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
@@ -71,35 +87,6 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		}
 
 		s.c.StartBreaking(targetPos, cube.Face(face))
-	case protocol.PlayerActionAbortBreak:
-		s.c.AbortBreaking()
-	case protocol.PlayerActionStopBreak, protocol.PlayerActionPredictDestroyBlock:
-		s.c.FinishBreaking()
-	case protocol.PlayerActionCrackBreak, protocol.PlayerActionContinueDestroyBlock:
-		s.swingingArm.Store(true)
-		defer s.swingingArm.Store(false)
-
-		newPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
-		breakingPos, ok := s.c.BreakingPosition()
-
-		if s.c.Breaking() && ok && newPos.Vec3().ApproxEqual(breakingPos.Vec3()) {
-			s.c.ContinueBreaking(cube.Face(face))
-		} else {
-			// Not sure if there is a better way to handle this.
-			if (s.c.GameMode() == world.GameModeCreative{}) {
-				held, _ := s.c.HeldItems()
-				if _, ok = held.Item().(item.Sword); ok {
-					break
-				}
-				if _, ok = s.c.World().Block(newPos.Side(cube.Face(face))).(block.Fire); ok {
-					s.c.StartBreaking(newPos, cube.Face(face))
-					defer s.c.AbortBreaking()
-					return nil, true
-				}
-			}
-
-			s.c.StartBreaking(newPos, cube.Face(face))
-		}
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
