@@ -17,14 +17,14 @@ type PlayerActionHandler struct{}
 // Handle ...
 func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) (err error) {
 	pk := p.(*packet.PlayerAction)
-	err, _ = handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
+	_, err = handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
 	return
 }
 
 // handlePlayerAction handles an action performed by a player, found in packet.PlayerAction and packet.PlayerAuthInput.
-func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) (error, bool) {
+func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) (bool, error) {
 	if entityRuntimeID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID, false
+		return false, ErrSelfRuntimeID
 	}
 	switch action {
 	case protocol.PlayerActionRespawn:
@@ -82,7 +82,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 			} else {
 				s.c.StartBreaking(targetPos, cube.Face(face))
 				defer s.c.AbortBreaking()
-				return nil, true
+				return true, nil
 			}
 		}
 
@@ -92,7 +92,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
 		// Don't do anything for this action.
 	default:
-		return fmt.Errorf("unhandled ActionType %v", action), false
+		return false, fmt.Errorf("unhandled ActionType %v", action)
 	}
-	return nil, false
+	return false, nil
 }
