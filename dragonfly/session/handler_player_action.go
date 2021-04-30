@@ -26,7 +26,6 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	if entityRuntimeID != selfEntityRuntimeID {
 		return ErrSelfRuntimeID, false
 	}
-	fmt.Println(action)
 	switch action {
 	case protocol.PlayerActionRespawn:
 		// Don't do anything for this action.
