@@ -54,6 +54,8 @@ type Controllable interface {
 	ContinueBreaking(face cube.Face)
 	FinishBreaking()
 	AbortBreaking()
+	BreakingPosition() (pos cube.Pos, ok bool)
+	Breaking() bool
 
 	Exhaust(points float64)
 

@@ -2,7 +2,10 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/dragonfly/block"
 	"github.com/df-mc/dragonfly/dragonfly/block/cube"
+	"github.com/df-mc/dragonfly/dragonfly/item"
+	"github.com/df-mc/dragonfly/dragonfly/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -12,17 +15,18 @@ import (
 type PlayerActionHandler struct{}
 
 // Handle ...
-func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
+func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) (err error) {
 	pk := p.(*packet.PlayerAction)
-
-	return handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
+	err, _ = handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
+	return
 }
 
 // handlePlayerAction handles an action performed by a player, found in packet.PlayerAction and packet.PlayerAuthInput.
-func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) error {
+func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) (error, bool) {
 	if entityRuntimeID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID
+		return ErrSelfRuntimeID, false
 	}
+	fmt.Println(action)
 	switch action {
 	case protocol.PlayerActionRespawn:
 		// Don't do anything for this action.
@@ -46,30 +50,63 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		}
 	case protocol.PlayerActionStopSwimming:
 		s.c.StopSwimming()
-	case protocol.PlayerActionContinueDestroyBlock:
-		fallthrough
 	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.StartBreaking(cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}, cube.Face(face))
+		targetPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+
+		// The client sends a start break action even in cases where it shouldn't. (attempting to break an item with a sword in creative, extinguishing fire, etc)
+		// Not sure if there is a better way to handle this.
+		if (s.c.GameMode() == world.GameModeCreative{}) {
+			held, _ := s.c.HeldItems()
+			if _, ok := s.c.World().Block(targetPos.Side(cube.Face(face))).(block.Fire); !ok {
+				if _, ok = held.Item().(item.Sword); ok {
+					break
+				}
+			} else {
+				s.c.StartBreaking(targetPos, cube.Face(face))
+				defer s.c.AbortBreaking()
+				return nil, true
+			}
+		}
+
+		s.c.StartBreaking(targetPos, cube.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
-	case protocol.PlayerActionPredictDestroyBlock:
-		fallthrough
-	case protocol.PlayerActionStopBreak:
+	case protocol.PlayerActionStopBreak, protocol.PlayerActionPredictDestroyBlock:
 		s.c.FinishBreaking()
-	case protocol.PlayerActionCrackBreak:
+	case protocol.PlayerActionCrackBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.ContinueBreaking(cube.Face(face))
+		newPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+		breakingPos, ok := s.c.BreakingPosition()
+
+		if s.c.Breaking() && ok && newPos.Vec3().ApproxEqual(breakingPos.Vec3()) {
+			s.c.ContinueBreaking(cube.Face(face))
+		} else {
+			// Not sure if there is a better way to handle this.
+			if (s.c.GameMode() == world.GameModeCreative{}) {
+				held, _ := s.c.HeldItems()
+				if _, ok = held.Item().(item.Sword); ok {
+					break
+				}
+				if _, ok = s.c.World().Block(newPos.Side(cube.Face(face))).(block.Fire); ok {
+					s.c.StartBreaking(newPos, cube.Face(face))
+					defer s.c.AbortBreaking()
+					return nil, true
+				}
+			}
+
+			s.c.StartBreaking(newPos, cube.Face(face))
+		}
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
 		// Don't do anything for this action.
 	default:
-		return fmt.Errorf("unhandled ActionType %v", action)
+		return fmt.Errorf("unhandled ActionType %v", action), false
 	}
-	return nil
+	return nil, false
 }

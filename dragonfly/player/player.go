@@ -1171,6 +1171,17 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	return breakTime
 }
 
+// BreakingPosition returns the breaking position of the player.
+func (p *Player) BreakingPosition() (pos cube.Pos, ok bool) {
+	pos, ok = p.breakingPos.Load().(cube.Pos)
+	return
+}
+
+// Breaking is true if the player is breaking a block.
+func (p *Player) Breaking() bool {
+	return p.breaking.Load()
+}
+
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
 // if the player isn't breaking anything.
 // FinishBreaking will stop the animation and break the block.
