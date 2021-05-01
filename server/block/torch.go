@@ -85,18 +85,25 @@ func (t Torch) EncodeItem() (id int32, name string, meta int16) {
 
 // EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
+	face := t.Facing.String()
+	if t.Facing == cube.FaceDown {
+		face = "top"
+	}
 	switch t.Type {
 	case fire.Normal():
-		return "minecraft:torch", map[string]interface{}{"torch_facing_direction": t.Facing.String()}
+		return "minecraft:torch", map[string]interface{}{"torch_facing_direction": face}
 	case fire.Soul():
-		return "minecraft:soul_torch", map[string]interface{}{"torch_facing_direction": t.Facing.String()}
+		return "minecraft:soul_torch", map[string]interface{}{"torch_facing_direction": face}
 	}
 	panic("invalid fire type")
 }
 
 // allTorches ...
 func allTorches() (torch []world.Block) {
-	for _, i := range cube.HorizontalFaces() {
+	for i := cube.Face(0); i < 6; i++ {
+		if i == cube.FaceUp {
+			continue
+		}
 		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
 		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})
 	}
