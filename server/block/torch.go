@@ -1,0 +1,104 @@
+package block
+
+import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/fire"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
+)
+
+// Torch are non-solid blocks that emit light.
+type Torch struct {
+	transparent
+	empty
+
+	// Facing is the direction from the torch to the block.
+	Facing cube.Face
+	// Type is the type of fire lighting the torch.
+	Type fire.Fire
+}
+
+// LightEmissionLevel ...
+func (t Torch) LightEmissionLevel() uint8 {
+	switch t.Type {
+	case fire.Normal():
+		return 14
+	default:
+		return t.Type.LightLevel
+	}
+}
+
+// UseOnBlock ...
+func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(w, pos, face, t)
+	if !used {
+		return false
+	}
+	if face == cube.FaceDown {
+		return false
+	}
+	if _, ok := w.Block(pos).(world.Liquid); ok {
+		return false
+	}
+	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {
+		found := false
+		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceWest, cube.FaceNorth, cube.FaceEast, cube.FaceDown} {
+			if w.Block(pos.Side(i)).Model().FaceSolid(pos.Side(i), i.Opposite(), w) {
+				found = true
+				face = i.Opposite()
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	t.Facing = face.Opposite()
+
+	place(w, pos, t, user, ctx)
+	return placed(ctx)
+}
+
+// NeighbourUpdateTick ...
+func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
+		w.BreakBlockWithoutParticles(pos)
+	}
+}
+
+// HasLiquidDrops ...
+func (t Torch) HasLiquidDrops() bool {
+	return true
+}
+
+// EncodeItem ...
+func (t Torch) EncodeItem() (id int32, name string, meta int16) {
+	switch t.Type {
+	case fire.Normal():
+		return 50, "minecraft:torch", 0
+	case fire.Soul():
+		return -268, "minecraft:soul_torch", 0
+	}
+	panic("invalid fire type")
+}
+
+// EncodeBlock ...
+func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
+	switch t.Type {
+	case fire.Normal():
+		return "minecraft:torch", map[string]interface{}{"torch_facing_direction": t.Facing.String()}
+	case fire.Soul():
+		return "minecraft:soul_torch", map[string]interface{}{"torch_facing_direction": t.Facing.String()}
+	}
+	panic("invalid fire type")
+}
+
+// allTorches ...
+func allTorches() (torch []world.Block) {
+	for _, i := range cube.HorizontalFaces() {
+		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
+		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})
+	}
+	return
+}
