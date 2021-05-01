@@ -34,8 +34,8 @@ func (IronBlock) PowersBeacon() bool {
 }
 
 // EncodeItem ...
-func (IronBlock) EncodeItem() (id int32, meta int16) {
-	return 42, 0
+func (IronBlock) EncodeItem() (id int32, name string, meta int16) {
+	return 42, "minecraft:iron_block", 0
 }
 
 // EncodeBlock ...

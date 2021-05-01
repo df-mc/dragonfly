@@ -24,8 +24,8 @@ func (g Glass) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Glass) EncodeItem() (id int32, meta int16) {
-	return 20, 0
+func (Glass) EncodeItem() (id int32, name string, meta int16) {
+	return 20, "minecraft:glass", 0
 }
 
 // EncodeBlock ...

@@ -4,6 +4,6 @@ package item
 type Brick struct{}
 
 // EncodeItem ...
-func (b Brick) EncodeItem() (id int32, meta int16) {
-	return 336, 0
+func (b Brick) EncodeItem() (id int32, name string, meta int16) {
+	return 336, "minecraft:brick", 0
 }

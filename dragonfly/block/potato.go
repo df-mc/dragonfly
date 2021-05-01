@@ -78,8 +78,8 @@ func (p Potato) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (p Potato) EncodeItem() (id int32, meta int16) {
-	return 392, 0
+func (p Potato) EncodeItem() (id int32, name string, meta int16) {
+	return 392, "minecraft:potato", 0
 }
 
 // RandomTick ...

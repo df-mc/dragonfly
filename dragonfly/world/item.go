@@ -11,14 +11,14 @@ import (
 type Item interface {
 	// EncodeItem encodes the item to its Minecraft representation, which consists of a numerical ID and a
 	// metadata value.
-	EncodeItem() (id int32, meta int16)
+	EncodeItem() (id int32, name string, meta int16)
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
 // ID and metadata value using itemByID().
 // If an item with the ID and meta passed already exists, RegisterItem panics.
-func RegisterItem(name string, item Item) {
-	id, meta := item.EncodeItem()
+func RegisterItem(item Item) {
+	id, name, meta := item.EncodeItem()
 	k := (id << 16) | int32(meta)
 	if _, ok := items[k]; ok {
 		panic(fmt.Sprintf("item registered with ID %v and meta %v already exists", id, meta))
@@ -98,14 +98,6 @@ func itemByName(name string, meta int16) (Item, bool) {
 		return nil, false
 	}
 	return itemByID(id, meta)
-}
-
-// itemToName encodes an item to its string ID and metadata value.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func itemToName(it Item) (name string, meta int16) {
-	id, meta := it.EncodeItem()
-	return names[id], meta
 }
 
 // itemNames returns a map of item names indexed by their runtime ID.

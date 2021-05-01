@@ -4,8 +4,8 @@ package item
 type Emerald struct{}
 
 // EncodeItem ...
-func (Emerald) EncodeItem() (id int32, meta int16) {
-	return 388, 0
+func (Emerald) EncodeItem() (id int32, name string, meta int16) {
+	return 388, "minecraft:emerald", 0
 }
 
 // PayableForBeacon ...

@@ -7,8 +7,8 @@ type Barrier struct {
 }
 
 // EncodeItem ...
-func (Barrier) EncodeItem() (id int32, meta int16) {
-	return -161, 0
+func (Barrier) EncodeItem() (id int32, name string, meta int16) {
+	return -161, "minecraft:barrier", 0
 }
 
 // EncodeBlock ...

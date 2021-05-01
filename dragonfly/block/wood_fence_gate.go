@@ -83,24 +83,24 @@ func (f WoodFenceGate) SideClosed(pos, side cube.Pos, w *world.World) bool {
 }
 
 // EncodeItem ...
-func (f WoodFenceGate) EncodeItem() (id int32, meta int16) {
+func (f WoodFenceGate) EncodeItem() (id int32, name string, meta int16) {
 	switch f.Wood {
 	case wood.Oak():
-		return 107, 0
+		return 107, "minecraft:fence_gate", 0
 	case wood.Spruce():
-		return 183, 0
+		return 183, "minecraft:spruce_fence_gate", 0
 	case wood.Birch():
-		return 184, 0
+		return 184, "minecraft:birch_fence_gate", 0
 	case wood.Jungle():
-		return 185, 0
+		return 185, "minecraft:jungle_fence_gate", 0
 	case wood.Acacia():
-		return 187, 0
+		return 187, "minecraft:acacia_fence_gate", 0
 	case wood.DarkOak():
-		return 186, 0
+		return 186, "minecraft:dark_oak_fence_gate", 0
 	case wood.Crimson():
-		return -258, 0
+		return -258, "minecraft:crimson_fence_gate", 0
 	case wood.Warped():
-		return -259, 0
+		return -259, "minecraft:warped_fence_gate", 0
 	}
 	panic("invalid wood type")
 }

@@ -25,8 +25,8 @@ func (s Shroomlight) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Shroomlight) EncodeItem() (id int32, meta int16) {
-	return -230, 0
+func (Shroomlight) EncodeItem() (id int32, name string, meta int16) {
+	return -230, "minecraft:shroomlight", 0
 }
 
 // EncodeBlock ...

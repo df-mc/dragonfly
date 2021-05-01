@@ -43,8 +43,8 @@ func (l LitPumpkin) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (l LitPumpkin) EncodeItem() (id int32, meta int16) {
-	return 91, 0
+func (l LitPumpkin) EncodeItem() (id int32, name string, meta int16) {
+	return 91, "minecraft:lit_pumpkin", 0
 }
 
 // EncodeBlock ...

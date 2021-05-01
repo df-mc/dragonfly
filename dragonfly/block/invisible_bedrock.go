@@ -8,8 +8,8 @@ type InvisibleBedrock struct {
 }
 
 // EncodeItem ...
-func (InvisibleBedrock) EncodeItem() (id int32, meta int16) {
-	return 95, 0
+func (InvisibleBedrock) EncodeItem() (id int32, name string, meta int16) {
+	return 95, "minecraft:invisibleBedrock", 0
 }
 
 // EncodeBlock ...

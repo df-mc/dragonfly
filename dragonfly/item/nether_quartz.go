@@ -4,6 +4,6 @@ package item
 type NetherQuartz struct{}
 
 // EncodeItem ...
-func (NetherQuartz) EncodeItem() (id int32, meta int16) {
-	return 406, 0
+func (NetherQuartz) EncodeItem() (id int32, name string, meta int16) {
+	return 406, "minecraft:quartz", 0
 }

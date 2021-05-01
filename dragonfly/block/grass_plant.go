@@ -116,18 +116,18 @@ func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 }
 
 // EncodeItem ...
-func (g GrassPlant) EncodeItem() (id int32, meta int16) {
+func (g GrassPlant) EncodeItem() (id int32, name string, meta int16) {
 	switch g.Type {
 	case grass.SmallGrass():
-		return 31, 1
+		return 31, "minecraft:tallgrass", 1
 	case grass.Fern():
-		return 31, 2
+		return 31, "minecraft:tallgrass", 2
 	case grass.TallGrass():
-		return 175, 2
+		return 175, "minecraft:double_plant", 2
 	case grass.LargeFern():
-		return 175, 3
+		return 175, "minecraft:double_plant", 3
 	case grass.NetherSprouts():
-		return 760, 0
+		return 760, "minecraft:nether_sprouts", 0
 	}
 	panic("should never happen")
 }
@@ -153,7 +153,9 @@ func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{
 func allGrassPlants() (grasses []world.Block) {
 	for _, g := range grass.All() {
 		grasses = append(grasses, GrassPlant{Type: g, UpperPart: false})
-		grasses = append(grasses, GrassPlant{Type: g, UpperPart: true})
+		if g == grass.TallGrass() || g == grass.LargeFern() {
+			grasses = append(grasses, GrassPlant{Type: g, UpperPart: true})
+		}
 	}
 	return
 }

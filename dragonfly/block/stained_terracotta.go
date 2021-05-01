@@ -27,18 +27,13 @@ func (t StainedTerracotta) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (t StainedTerracotta) EncodeItem() (id int32, meta int16) {
-	return 159, int16(t.Colour.Uint8())
+func (t StainedTerracotta) EncodeItem() (id int32, name string, meta int16) {
+	return 159, "minecraft:stained_hardened_clay", int16(t.Colour.Uint8())
 }
 
 // EncodeBlock ...
 func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]interface{}) {
-	colourName := t.Colour.String()
-	if t.Colour == colour.LightGrey() {
-		// Light grey is actually called "silver" in the block state. Mojang pls.
-		colourName = "silver"
-	}
-	return "minecraft:stained_hardened_clay", map[string]interface{}{"color": colourName}
+	return "minecraft:stained_hardened_clay", map[string]interface{}{"color": t.Colour.String()}
 }
 
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.

@@ -23,8 +23,8 @@ func (b BlueIce) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (BlueIce) EncodeItem() (id int32, meta int16) {
-	return -11, 0
+func (BlueIce) EncodeItem() (id int32, name string, meta int16) {
+	return -11, "minecraft:blue_ice", 0
 }
 
 // EncodeBlock ...

@@ -39,24 +39,14 @@ func (p Planks) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (p Planks) EncodeItem() (id int32, meta int16) {
+func (p Planks) EncodeItem() (id int32, name string, meta int16) {
 	switch p.Wood {
-	case wood.Oak():
-		return 5, 0
-	case wood.Spruce():
-		return 5, 1
-	case wood.Birch():
-		return 5, 2
-	case wood.Jungle():
-		return 5, 3
-	case wood.Acacia():
-		return 5, 4
-	case wood.DarkOak():
-		return 5, 5
+	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle(), wood.Acacia(), wood.DarkOak():
+		return 5, "minecraft:planks", int16(p.Wood.Uint8())
 	case wood.Crimson():
-		return -242, 0
+		return -242, "minecraft:" + p.Wood.String() + "_planks", 0
 	case wood.Warped():
-		return -243, 0
+		return -243, "minecraft:" + p.Wood.String() + "_planks", 0
 	}
 	panic("invalid wood type")
 }

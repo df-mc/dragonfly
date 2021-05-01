@@ -27,8 +27,8 @@ func (b GildedBlackstone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (GildedBlackstone) EncodeItem() (id int32, meta int16) {
-	return -281, 0
+func (GildedBlackstone) EncodeItem() (id int32, name string, meta int16) {
+	return -281, "minecraft:gilded_blackstone", 0
 }
 
 // EncodeBlock ...

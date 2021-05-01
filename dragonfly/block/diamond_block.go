@@ -28,8 +28,8 @@ func (DiamondBlock) PowersBeacon() bool {
 }
 
 // EncodeItem ...
-func (DiamondBlock) EncodeItem() (id int32, meta int16) {
-	return 57, 0
+func (DiamondBlock) EncodeItem() (id int32, name string, meta int16) {
+	return 57, "minecraft:diamond_block", 0
 }
 
 // EncodeBlock ...

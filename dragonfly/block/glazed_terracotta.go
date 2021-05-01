@@ -30,22 +30,18 @@ func (t GlazedTerracotta) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (t GlazedTerracotta) EncodeItem() (id int32, meta int16) {
+func (t GlazedTerracotta) EncodeItem() (id int32, name string, meta int16) {
+	colourName := t.Colour.String()
 	// Item ID for glazed terracotta is equal to 220 + colour number, except for purple glazed terracotta.
 	if t.Colour == colour.Purple() {
-		return 219, meta
+		return 219, "minecraft:" + colourName + "_glazed_terracotta", 0
 	}
-	return int32(220 + t.Colour.Uint8()), meta
+	return int32(220 + t.Colour.Uint8()), "minecraft:" + colourName + "_glazed_terracotta", 0
 }
 
 // EncodeBlock ...
 func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]interface{}) {
-	colourName := t.Colour.String()
-	if t.Colour == colour.LightGrey() {
-		// Light grey is actually called "silver" in the block state. Mojang pls.
-		colourName = "silver"
-	}
-	return "minecraft:" + colourName + "_glazed_terracotta", map[string]interface{}{"facing_direction": int32(2 + t.Facing)}
+	return "minecraft:" + t.Colour.String() + "_glazed_terracotta", map[string]interface{}{"facing_direction": int32(2 + t.Facing)}
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.

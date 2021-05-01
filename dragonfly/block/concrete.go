@@ -27,8 +27,8 @@ func (c Concrete) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Concrete) EncodeItem() (id int32, meta int16) {
-	return 236, int16(c.Colour.Uint8())
+func (c Concrete) EncodeItem() (id int32, name string, meta int16) {
+	return 236, "minecraft:concrete", int16(c.Colour.Uint8())
 }
 
 // EncodeBlock ...

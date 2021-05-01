@@ -23,11 +23,11 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Cobblestone) EncodeItem() (id int32, meta int16) {
+func (c Cobblestone) EncodeItem() (id int32, name string, meta int16) {
 	if c.Mossy {
-		return 48, 0
+		return 48, "minecraft:mossy_cobblestone", 0
 	}
-	return 4, 0
+	return 4, "minecraft:cobblestone", 0
 }
 
 // EncodeBlock ...

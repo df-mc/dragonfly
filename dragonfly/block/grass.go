@@ -50,8 +50,8 @@ func (g Grass) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Grass) EncodeItem() (id int32, meta int16) {
-	return 2, 0
+func (Grass) EncodeItem() (id int32, name string, meta int16) {
+	return 2, "minecraft:grass", 0
 }
 
 // EncodeBlock ...

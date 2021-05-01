@@ -51,8 +51,8 @@ func (s EndBrickStairs) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s EndBrickStairs) EncodeItem() (id int32, meta int16) {
-	return -178, 0
+func (s EndBrickStairs) EncodeItem() (id int32, name string, meta int16) {
+	return -178, "minecraft:end_brick_stairs", 0
 }
 
 // EncodeBlock ...

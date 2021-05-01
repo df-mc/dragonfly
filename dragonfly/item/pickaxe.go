@@ -50,20 +50,21 @@ func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (p Pickaxe) EncodeItem() (id int32, meta int16) {
+func (p Pickaxe) EncodeItem() (id int32, name string, meta int16) {
+	name = "minecraft:" + p.Tier.Name + "_pickaxe"
 	switch p.Tier {
 	case tool.TierWood:
-		return 270, 0
+		return 270, name, 0
 	case tool.TierGold:
-		return 285, 0
+		return 285, name, 0
 	case tool.TierStone:
-		return 274, 0
+		return 274, name, 0
 	case tool.TierIron:
-		return 257, 0
+		return 257, name, 0
 	case tool.TierDiamond:
-		return 278, 0
+		return 278, name, 0
 	case tool.TierNetherite:
-		return 745, 0
+		return 745, name, 0
 	}
 	panic("invalid pickaxe tier")
 }

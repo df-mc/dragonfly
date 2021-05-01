@@ -99,20 +99,12 @@ func (l Leaves) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (l Leaves) EncodeItem() (id int32, meta int16) {
+func (l Leaves) EncodeItem() (id int32, name string, meta int16) {
 	switch l.Wood {
-	case wood.Oak():
-		return 18, 0
-	case wood.Spruce():
-		return 18, 1
-	case wood.Birch():
-		return 18, 2
-	case wood.Jungle():
-		return 18, 3
-	case wood.Acacia():
-		return 161, 0
-	case wood.DarkOak():
-		return 161, 1
+	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle():
+		return 18, "minecraft:leaves", int16(l.Wood.Uint8())
+	case wood.Acacia(), wood.DarkOak():
+		return 161, "minecraft:leaves2", int16(l.Wood.Uint8() - 4)
 	}
 	panic("invalid wood type")
 }

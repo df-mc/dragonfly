@@ -12,8 +12,8 @@ type Bedrock struct {
 }
 
 // EncodeItem ...
-func (Bedrock) EncodeItem() (id int32, meta int16) {
-	return 7, 0
+func (Bedrock) EncodeItem() (id int32, name string, meta int16) {
+	return 7, "minecraft:bedrock", 0
 }
 
 // EncodeBlock ...

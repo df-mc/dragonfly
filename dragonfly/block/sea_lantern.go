@@ -28,8 +28,8 @@ func (s SeaLantern) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (SeaLantern) EncodeItem() (id int32, meta int16) {
-	return 169, 0
+func (SeaLantern) EncodeItem() (id int32, name string, meta int16) {
+	return 169, "minecraft:seaLantern", 0
 }
 
 // EncodeBlock ...

@@ -28,11 +28,11 @@ func (s Sponge) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s Sponge) EncodeItem() (id int32, meta int16) {
+func (s Sponge) EncodeItem() (id int32, name string, meta int16) {
 	if s.Wet {
 		meta = 1
 	}
-	return 19, meta
+	return 19, "minecraft:sponge", meta
 }
 
 // EncodeBlock ...

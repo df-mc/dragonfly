@@ -48,8 +48,8 @@ func (c Carpet) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Carpet) EncodeItem() (id int32, meta int16) {
-	return 171, int16(c.Colour.Uint8())
+func (c Carpet) EncodeItem() (id int32, name string, meta int16) {
+	return 171, "minecraft:carpet", int16(c.Colour.Uint8())
 }
 
 // EncodeBlock ...

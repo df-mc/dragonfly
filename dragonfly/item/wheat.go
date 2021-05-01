@@ -4,6 +4,6 @@ package item
 type Wheat struct{}
 
 // EncodeItem ...
-func (w Wheat) EncodeItem() (id int32, meta int16) {
-	return 296, 0
+func (w Wheat) EncodeItem() (id int32, name string, meta int16) {
+	return 296, "minecraft:wheat", 0
 }

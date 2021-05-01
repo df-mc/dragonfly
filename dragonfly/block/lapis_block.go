@@ -23,8 +23,8 @@ func (l LapisBlock) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (LapisBlock) EncodeItem() (id int32, meta int16) {
-	return 22, 0
+func (LapisBlock) EncodeItem() (id int32, name string, meta int16) {
+	return 22, "minecraft:lapis_block", 0
 }
 
 // EncodeBlock ...

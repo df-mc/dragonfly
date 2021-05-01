@@ -287,8 +287,8 @@ func (s Stack) Comparable(s2 Stack) bool {
 		return true
 	}
 
-	id, meta := s.Item().EncodeItem()
-	id2, meta2 := s2.Item().EncodeItem()
+	id, _, meta := s.Item().EncodeItem()
+	id2, _, meta2 := s2.Item().EncodeItem()
 	if id != id2 || meta != meta2 || s.damage != s2.damage {
 		return false
 	}

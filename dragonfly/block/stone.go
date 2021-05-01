@@ -70,11 +70,11 @@ func (a Andesite) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s Stone) EncodeItem() (id int32, meta int16) {
+func (s Stone) EncodeItem() (id int32, name string, meta int16) {
 	if s.Smooth {
-		return -183, 0
+		return -183, "minecraft:smooth_stone", 0
 	}
-	return 1, 0
+	return 1, "minecraft:stone", 0
 }
 
 // EncodeBlock ...
@@ -86,11 +86,11 @@ func (s Stone) EncodeBlock() (string, map[string]interface{}) {
 }
 
 // EncodeItem ...
-func (a Andesite) EncodeItem() (id int32, meta int16) {
+func (a Andesite) EncodeItem() (id int32, name string, meta int16) {
 	if a.Polished {
-		return 1, 6
+		return 1, "minecraft:stone", 6
 	}
-	return 1, 5
+	return 1, "minecraft:stone", 5
 }
 
 // EncodeBlock ...
@@ -102,11 +102,11 @@ func (a Andesite) EncodeBlock() (string, map[string]interface{}) {
 }
 
 // EncodeItem ...
-func (d Diorite) EncodeItem() (id int32, meta int16) {
+func (d Diorite) EncodeItem() (id int32, name string, meta int16) {
 	if d.Polished {
-		return 1, 4
+		return 1, "minecraft:stone", 4
 	}
-	return 1, 3
+	return 1, "minecraft:stone", 3
 }
 
 // EncodeBlock ...
@@ -118,11 +118,11 @@ func (d Diorite) EncodeBlock() (string, map[string]interface{}) {
 }
 
 // EncodeItem ...
-func (g Granite) EncodeItem() (id int32, meta int16) {
+func (g Granite) EncodeItem() (id int32, name string, meta int16) {
 	if g.Polished {
-		return 1, 2
+		return 1, "minecraft:stone", 2
 	}
-	return 1, 1
+	return 1, "minecraft:stone", 1
 }
 
 // EncodeBlock ...

@@ -4,6 +4,6 @@ package item
 type Flint struct{}
 
 // EncodeItem ...
-func (f Flint) EncodeItem() (id int32, meta int16) {
-	return 318, 0
+func (f Flint) EncodeItem() (id int32, name string, meta int16) {
+	return 318, "minecraft:flint", 0
 }

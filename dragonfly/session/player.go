@@ -531,7 +531,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
-	name, meta := world_itemToName(it.Item())
+	_, name, meta := it.Item().EncodeItem()
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
 		blockRuntimeID, ok = world.BlockRuntimeID(b)
@@ -635,10 +635,6 @@ func world_itemByID(id int32, meta int16) (world.Item, bool)
 //go:linkname world_itemByName github.com/df-mc/dragonfly/dragonfly/world.itemByName
 //noinspection ALL
 func world_itemByName(name string, meta int16) (world.Item, bool)
-
-//go:linkname world_itemToName github.com/df-mc/dragonfly/dragonfly/world.itemToName
-//noinspection ALL
-func world_itemToName(it world.Item) (name string, meta int16)
 
 //go:linkname world_runtimeById github.com/df-mc/dragonfly/dragonfly/world.runtimeById
 //noinspection ALL

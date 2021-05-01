@@ -61,38 +61,38 @@ func (l Log) Strip() (world.Block, bool) {
 }
 
 // EncodeItem ...
-func (l Log) EncodeItem() (id int32, meta int16) {
+func (l Log) EncodeItem() (id int32, name string, meta int16) {
 	switch l.Wood {
 	case wood.Oak():
 		if l.Stripped {
-			return -10, 0
+			return -10, "minecraft:stripped_oak_log", 0
 		}
-		return 17, 0
+		return 17, "minecraft:log", 0
 	case wood.Spruce():
 		if l.Stripped {
-			return -5, 0
+			return -5, "minecraft:stripped_spruce_log", 0
 		}
-		return 17, 1
+		return 17, "minecraft:log", 1
 	case wood.Birch():
 		if l.Stripped {
-			return -6, 0
+			return -6, "minecraft:stripped_birch_log", 0
 		}
-		return 17, 2
+		return 17, "minecraft:log", 2
 	case wood.Jungle():
 		if l.Stripped {
-			return -7, 0
+			return -7, "minecraft:stripped_jungle_log", 0
 		}
-		return 17, 3
+		return 17, "minecraft:log", 3
 	case wood.Acacia():
 		if l.Stripped {
-			return -8, 0
+			return -8, "minecraft:stripped_acacia_log", 0
 		}
-		return 162, 0
+		return 162, "minecraft:log2", 0
 	case wood.DarkOak():
 		if l.Stripped {
-			return -9, 0
+			return -9, "minecraft:stripped_dark_oak_log", 0
 		}
-		return 162, 1
+		return 162, "minecraft:log2", 1
 	}
 	panic("invalid wood type")
 }

@@ -20,8 +20,8 @@ func (q NetherQuartzOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (NetherQuartzOre) EncodeItem() (id int32, meta int16) {
-	return 153, 0
+func (NetherQuartzOre) EncodeItem() (id int32, name string, meta int16) {
+	return 153, "minecraft:quartz_ore", 0
 }
 
 // EncodeBlock ...

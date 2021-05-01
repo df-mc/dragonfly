@@ -58,20 +58,21 @@ func (c Chestplate) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (c Chestplate) EncodeItem() (id int32, meta int16) {
+func (c Chestplate) EncodeItem() (id int32, name string, meta int16) {
+	name = "minecraft:" + c.Tier.Name + "_chestplate"
 	switch c.Tier {
 	case armour.TierLeather:
-		return 299, 0
+		return 299, name, 0
 	case armour.TierGold:
-		return 315, 0
+		return 315, name, 0
 	case armour.TierChain:
-		return 303, 0
+		return 303, name, 0
 	case armour.TierIron:
-		return 307, 0
+		return 307, name, 0
 	case armour.TierDiamond:
-		return 311, 0
+		return 311, name, 0
 	case armour.TierNetherite:
-		return 749, 0
+		return 749, name, 0
 	}
 	panic("invalid chestplate tier")
 }

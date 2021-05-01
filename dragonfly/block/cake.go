@@ -75,8 +75,8 @@ func (c Cake) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Cake) EncodeItem() (id int32, meta int16) {
-	return 354, 0
+func (c Cake) EncodeItem() (id int32, name string, meta int16) {
+	return 354, "minecraft:cake", 0
 }
 
 // EncodeBlock ...

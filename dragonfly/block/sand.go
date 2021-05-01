@@ -32,11 +32,11 @@ func (s Sand) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s Sand) EncodeItem() (id int32, meta int16) {
+func (s Sand) EncodeItem() (id int32, name string, meta int16) {
 	if s.Red {
-		return 12, 1
+		return 12, "minecraft:sand", 1
 	}
-	return 12, 0
+	return 12, "minecraft:sand", 0
 }
 
 // EncodeBlock ...

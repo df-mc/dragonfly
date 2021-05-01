@@ -66,14 +66,14 @@ func (w WoodFence) Model() world.BlockModel {
 }
 
 // EncodeItem ...
-func (w WoodFence) EncodeItem() (id int32, meta int16) {
+func (w WoodFence) EncodeItem() (id int32, name string, meta int16) {
 	switch w.Wood {
 	case wood.Crimson():
-		return -256, 0
+		return -256, "minecraft:crimson_fence", 0
 	case wood.Warped():
-		return -257, 0
+		return -257, "minecraft:warped_fence", 0
 	default:
-		return 85, int16(w.Wood.Uint8())
+		return 85, "minecraft:fence", int16(w.Wood.Uint8())
 	}
 }
 

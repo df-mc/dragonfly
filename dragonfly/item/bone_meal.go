@@ -27,6 +27,6 @@ func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.W
 }
 
 // EncodeItem ...
-func (b BoneMeal) EncodeItem() (id int32, meta int16) {
-	return 351, 15
+func (b BoneMeal) EncodeItem() (id int32, name string, meta int16) {
+	return 351, "minecraft:dye", 15
 }

@@ -83,14 +83,14 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 }
 
 // EncodeItem ...
-func (b Bucket) EncodeItem() (id int32, meta int16) {
+func (b Bucket) EncodeItem() (id int32, name string, meta int16) {
 	switch b.Content {
 	case bucket.Water():
-		return 325, 8
+		return 325, "minecraft:bucket", 8
 	case bucket.Lava():
-		return 325, 10
+		return 325, "minecraft:bucket", 10
 	}
-	return 325, 0
+	return 325, "minecraft:bucket", 0
 }
 
 type replaceable interface {

@@ -34,11 +34,11 @@ func (d Dirt) Till() (world.Block, bool) {
 }
 
 // EncodeItem ...
-func (d Dirt) EncodeItem() (id int32, meta int16) {
+func (d Dirt) EncodeItem() (id int32, name string, meta int16) {
 	if d.Coarse {
 		meta = 1
 	}
-	return 3, meta
+	return 3, "minecraft:dirt", meta
 }
 
 // EncodeBlock ...

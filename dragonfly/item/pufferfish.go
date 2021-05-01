@@ -29,6 +29,6 @@ func (p Pufferfish) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (p Pufferfish) EncodeItem() (id int32, meta int16) {
-	return 462, 0
+func (p Pufferfish) EncodeItem() (id int32, name string, meta int16) {
+	return 462, "minecraft:pufferfish", 0
 }

@@ -25,8 +25,8 @@ type WoodStairs struct {
 }
 
 // FlammabilityInfo ...
-func (f WoodStairs) FlammabilityInfo() FlammabilityInfo {
-	if !f.Wood.Flammable() {
+func (s WoodStairs) FlammabilityInfo() FlammabilityInfo {
+	if !s.Wood.Flammable() {
 		return FlammabilityInfo{}
 	}
 	return FlammabilityInfo{
@@ -68,24 +68,24 @@ func (s WoodStairs) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s WoodStairs) EncodeItem() (id int32, meta int16) {
+func (s WoodStairs) EncodeItem() (id int32, name string, meta int16) {
 	switch s.Wood {
 	case wood.Oak():
-		return 53, 0
+		return 53, "minecraft:oak_stairs", 0
 	case wood.Spruce():
-		return 134, 0
+		return 134, "minecraft:spruce_stairs", 0
 	case wood.Birch():
-		return 135, 0
+		return 135, "minecraft:birch_stairs", 0
 	case wood.Jungle():
-		return 136, 0
+		return 136, "minecraft:jungle_stairs", 0
 	case wood.Acacia():
-		return 163, 0
+		return 163, "minecraft:acacia_stairs", 0
 	case wood.DarkOak():
-		return 164, 0
+		return 164, "minecraft:dark_oak_stairs", 0
 	case wood.Crimson():
-		return -254, 0
+		return -254, "minecraft:crimson_stairs", 0
 	case wood.Warped():
-		return -255, 0
+		return -255, "minecraft:warped_stairs", 0
 	}
 	panic("invalid wood type")
 }

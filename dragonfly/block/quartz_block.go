@@ -69,21 +69,21 @@ func (q QuartzPillar) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (q Quartz) EncodeItem() (id int32, meta int16) {
+func (q Quartz) EncodeItem() (id int32, name string, meta int16) {
 	if q.Smooth {
-		return 155, 3
+		return 155, "minecraft:quartz_block", 3
 	}
-	return 155, 0
+	return 155, "minecraft:quartz_block", 0
 }
 
 // EncodeItem ...
-func (c ChiseledQuartz) EncodeItem() (id int32, meta int16) {
-	return 155, 1
+func (c ChiseledQuartz) EncodeItem() (id int32, name string, meta int16) {
+	return 155, "minecraft:quartz_block", 1
 }
 
 // EncodeItem ...
-func (q QuartzPillar) EncodeItem() (id int32, meta int16) {
-	return 155, 2
+func (q QuartzPillar) EncodeItem() (id int32, name string, meta int16) {
+	return 155, "minecraft:quartz_block", 2
 }
 
 // EncodeBlock ...

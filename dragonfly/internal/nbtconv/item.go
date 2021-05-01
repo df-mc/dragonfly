@@ -13,10 +13,6 @@ import (
 //noinspection ALL
 func world_itemByName(name string, meta int16) (world.Item, bool)
 
-//go:linkname world_itemToName github.com/df-mc/dragonfly/dragonfly/world.itemToName
-//noinspection ALL
-func world_itemToName(it world.Item) (name string, meta int16)
-
 //go:linkname item_enchantmentByID github.com/df-mc/dragonfly/dragonfly/item.enchantmentByID
 //noinspection ALL
 func item_enchantmentByID(id int) (item.Enchantment, bool)
@@ -96,7 +92,8 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		m = nbt.EncodeNBT()
 	}
 	if !network {
-		m["Name"], m["Damage"] = world_itemToName(s.Item())
+		_, name, damage := s.Item().EncodeItem()
+		m["Name"], m["Damage"] = name, damage
 		m["Count"] = byte(s.Count())
 		if _, ok := s.Item().(item.Durable); ok {
 			m["Damage"] = int16(s.MaxDurability() - s.Durability())

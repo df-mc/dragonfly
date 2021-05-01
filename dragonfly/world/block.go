@@ -52,6 +52,9 @@ func RegisterBlock(b Block) {
 		// this done through registering of all states present in the block_states.nbt file.
 		panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
 	}
+	if _, ok := blocks[rid].(unknownBlock); !ok {
+		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
+	}
 	blocks[rid] = b
 
 	if diffuser, ok := b.(lightDiffuser); ok {

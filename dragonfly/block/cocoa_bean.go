@@ -90,8 +90,8 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c CocoaBean) EncodeItem() (id int32, meta int16) {
-	return 351, 3
+func (c CocoaBean) EncodeItem() (id int32, name string, meta int16) {
+	return 351, "minecraft:cocoa_beans", 3
 }
 
 // EncodeBlock ...

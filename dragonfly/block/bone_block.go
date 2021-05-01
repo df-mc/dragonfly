@@ -44,8 +44,8 @@ func (b BoneBlock) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (b BoneBlock) EncodeItem() (id int32, meta int16) {
-	return 216, 0
+func (b BoneBlock) EncodeItem() (id int32, name string, meta int16) {
+	return 216, "minecraft:bone_block", 0
 }
 
 // EncodeBlock ...

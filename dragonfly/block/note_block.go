@@ -72,19 +72,11 @@ func (n NoteBlock) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (n NoteBlock) EncodeItem() (id int32, meta int16) {
-	return 25, 0
+func (n NoteBlock) EncodeItem() (id int32, name string, meta int16) {
+	return 25, "minecraft:noteblock", 0
 }
 
 // EncodeBlock ...
 func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:noteblock", nil
-}
-
-// allNoteBlocks ...
-func allNoteBlocks() (noteBlocks []world.Block) {
-	for i := 0; i < 25; i++ {
-		noteBlocks = append(noteBlocks, NoteBlock{Pitch: i})
-	}
-	return
 }

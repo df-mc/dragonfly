@@ -41,18 +41,13 @@ func (p StainedGlassPane) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (p StainedGlassPane) EncodeItem() (id int32, meta int16) {
-	return 160, int16(p.Colour.Uint8())
+func (p StainedGlassPane) EncodeItem() (id int32, name string, meta int16) {
+	return 160, "minecraft:stained_glass_pane", int16(p.Colour.Uint8())
 }
 
 // EncodeBlock ...
 func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]interface{}) {
-	colourName := p.Colour.String()
-	if p.Colour == colour.LightGrey() {
-		// And here we go again. Light grey is actually called "silver".
-		colourName = "silver"
-	}
-	return "minecraft:stained_glass_pane", map[string]interface{}{"color": colourName}
+	return "minecraft:stained_glass_pane", map[string]interface{}{"color": p.Colour.String()}
 }
 
 // allStainedGlassPane returns stained glass panes with all possible colours.

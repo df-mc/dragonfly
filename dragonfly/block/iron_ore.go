@@ -24,8 +24,8 @@ func (i IronOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (IronOre) EncodeItem() (id int32, meta int16) {
-	return 15, 0
+func (IronOre) EncodeItem() (id int32, name string, meta int16) {
+	return 15, "minecraft:iron_ore", 0
 }
 
 // EncodeBlock ...

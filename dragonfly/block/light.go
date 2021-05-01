@@ -14,8 +14,8 @@ type Light struct {
 }
 
 // EncodeItem ...
-func (l Light) EncodeItem() (id int32, meta int16) {
-	return -215, int16(l.Level)
+func (l Light) EncodeItem() (id int32, name string, meta int16) {
+	return -215, "minecraft:light_block", int16(l.Level)
 }
 
 // LightEmissionLevel ...

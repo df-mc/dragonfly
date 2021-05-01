@@ -19,8 +19,8 @@ func (q QuartzBricks) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (QuartzBricks) EncodeItem() (id int32, meta int16) {
-	return -304, 0
+func (QuartzBricks) EncodeItem() (id int32, name string, meta int16) {
+	return -304, "minecraft:quartz_bricks", 0
 }
 
 // EncodeBlock ...

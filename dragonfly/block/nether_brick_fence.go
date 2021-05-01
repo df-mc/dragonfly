@@ -39,8 +39,8 @@ func (n NetherBrickFence) Model() world.BlockModel {
 }
 
 // EncodeItem ...
-func (NetherBrickFence) EncodeItem() (id int32, meta int16) {
-	return 113, 0
+func (NetherBrickFence) EncodeItem() (id int32, name string, meta int16) {
+	return 113, "minecraft:nether_brick_fence", 0
 }
 
 // EncodeBlock ...

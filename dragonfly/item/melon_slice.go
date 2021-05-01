@@ -25,6 +25,6 @@ func (m MelonSlice) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (m MelonSlice) EncodeItem() (id int32, meta int16) {
-	return 360, 0
+func (m MelonSlice) EncodeItem() (id int32, name string, meta int16) {
+	return 360, "minecraft:melon", 0
 }

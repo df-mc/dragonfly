@@ -48,7 +48,7 @@ func registerVanillaCreativeItems() {
 			// The item wasn't registered, so don't register it as a creative item.
 			continue
 		}
-		_, resultingMeta := it.EncodeItem()
+		_, _, resultingMeta := it.EncodeItem()
 		if resultingMeta != data.Meta {
 			// We found an item registered with that ID and a meta of 0, but we only need items with strictly
 			// the same meta here.

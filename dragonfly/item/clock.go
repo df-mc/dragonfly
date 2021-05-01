@@ -4,6 +4,6 @@ package item
 type Clock struct{}
 
 // EncodeItem ...
-func (w Clock) EncodeItem() (id int32, meta int16) {
-	return 347, 0
+func (w Clock) EncodeItem() (id int32, name string, meta int16) {
+	return 347, "minecraft:clock", 0
 }
