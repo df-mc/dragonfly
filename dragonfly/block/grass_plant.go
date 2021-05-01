@@ -136,7 +136,7 @@ func (g GrassPlant) EncodeItem() (id int32, name string, meta int16) {
 func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch g.Type {
 	case grass.SmallGrass():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "default"}
+		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
 	case grass.Fern():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
 	case grass.TallGrass():
