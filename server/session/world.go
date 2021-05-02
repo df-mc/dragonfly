@@ -575,7 +575,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 	case action.Eat:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
-			id, _, meta := held.Item().(world.Item).EncodeItem()
+			_, name, meta := held.Item().(world.Item).EncodeItem()
+			id := world_runtimeById(world.ItemEntry{
+				Name: name,
+				Meta: meta,
+			})
 			s.writePacket(&packet.ActorEvent{
 				EntityRuntimeID: s.entityRuntimeID(e),
 				EventType:       packet.ActorEventEatingItem,

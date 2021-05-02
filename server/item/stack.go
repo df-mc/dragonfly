@@ -287,9 +287,9 @@ func (s Stack) Comparable(s2 Stack) bool {
 		return true
 	}
 
-	id, _, meta := s.Item().EncodeItem()
-	id2, _, meta2 := s2.Item().EncodeItem()
-	if id != id2 || meta != meta2 || s.damage != s2.damage {
+	_, name, meta := s.Item().EncodeItem()
+	_, name2, meta2 := s2.Item().EncodeItem()
+	if name != name2 || meta != meta2 || s.damage != s2.damage {
 		return false
 	}
 	if s.customName != s2.customName || len(s.lore) != len(s2.lore) || len(s.enchantments) != len(s2.enchantments) {
