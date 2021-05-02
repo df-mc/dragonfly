@@ -7,7 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// TilledGrass is a model used for grass that has been tilled in some way, such as grass paths and farmland.
+// TilledGrass is a model used for grass that has been tilled in some way, such as dirt paths and farmland.
 type TilledGrass struct {
 }
 
