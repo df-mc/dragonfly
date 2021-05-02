@@ -101,8 +101,8 @@ func (Water) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 }
 
 // LiquidType ...
-func (Water) LiquidType() string {
-	return "water"
+func (Water) LiquidType() int {
+	return 8
 }
 
 // Harden hardens the water if lava flows into it.

@@ -32,9 +32,9 @@ type Liquid interface {
 	WithDepth(depth int, falling bool) Liquid
 	// LiquidFalling checks if the liquid is currently considered falling down.
 	LiquidFalling() bool
-	// LiquidType returns a string unique for the liquid, used to check if two liquids are considered to be
+	// LiquidType returns an int unique for the liquid, used to check if two liquids are considered to be
 	// of the same type.
-	LiquidType() string
+	LiquidType() int
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, w *World, flownIntoBy *cube.Pos) bool

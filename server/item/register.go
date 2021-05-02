@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/item/armour"
-	"github.com/df-mc/dragonfly/server/item/bucket"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
@@ -25,8 +24,6 @@ func init() {
 	}
 
 	world.RegisterItem(Bucket{})
-	world.RegisterItem(Bucket{Content: bucket.Water()})
-	world.RegisterItem(Bucket{Content: bucket.Lava()})
 
 	world.RegisterItem(Shears{})
 

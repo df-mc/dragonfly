@@ -132,9 +132,9 @@ func (l Lava) LiquidFalling() bool {
 	return l.Falling
 }
 
-// LiquidType returns "lava" as a unique identifier for the lava liquid.
-func (Lava) LiquidType() string {
-	return "lava"
+// LiquidType returns 10 as a unique identifier for the lava liquid.
+func (Lava) LiquidType() int {
+	return 10
 }
 
 // Harden handles the hardening logic of lava.

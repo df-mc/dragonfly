@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/grass"
 	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/internal/item_internal"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -314,6 +315,9 @@ func init() {
 	world.RegisterItem(GrassPlant{Type: grass.TallGrass()})
 	world.RegisterItem(GrassPlant{Type: grass.LargeFern()})
 	world.RegisterItem(Farmland{})
+
+	world.RegisterItem(item.Bucket{Content: Water{}})
+	world.RegisterItem(item.Bucket{Content: Lava{}})
 }
 
 func init() {
@@ -322,8 +326,6 @@ func init() {
 		p, ok := b.(Pumpkin)
 		return ok && p.Carved
 	}
-	item_internal.Lava = Lava{Depth: 8, Still: true}
-	item_internal.Water = Water{Depth: 8, Still: true}
 	item_internal.IsWater = func(b world.Block) bool {
 		_, ok := b.(Water)
 		return ok

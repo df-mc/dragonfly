@@ -2,8 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
-	"github.com/df-mc/dragonfly/server/item/bucket"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,7 +10,7 @@ import (
 // Bucket is a tool used to carry water, lava, milk and fish.
 type Bucket struct {
 	// Content is the content that the bucket has. By default, this value resolves to an empty bucket.
-	Content bucket.Content
+	Content world.Liquid
 }
 
 // MaxCount returns 16.
@@ -25,7 +23,7 @@ func (b Bucket) MaxCount() int {
 
 // Empty returns true if the bucket is empty.
 func (b Bucket) Empty() bool {
-	return b.Content == bucket.Content{}
+	return b.Content == nil
 }
 
 // UseOnBlock handles the bucket filling and emptying logic.
@@ -33,16 +31,7 @@ func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	if b.Empty() {
 		return b.fillFrom(pos, w, ctx)
 	}
-
-	var liq world.Liquid
-	if b.Content == bucket.Water() {
-		liq = item_internal.Water
-	} else if b.Content == bucket.Lava() {
-		liq = item_internal.Lava
-	} else {
-		return false
-	}
-
+	liq := b.Content.WithDepth(8, false)
 	if bl := w.Block(pos); canDisplace(bl, liq) || replaceableWith(bl, liq) {
 		w.SetLiquid(pos, liq)
 	} else if bl := w.Block(pos.Side(face)); canDisplace(bl, liq) || replaceableWith(bl, liq) {
@@ -51,7 +40,7 @@ func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: liq})
+	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: b.Content})
 	ctx.NewItem = NewStack(Bucket{}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
@@ -72,11 +61,7 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 	w.SetLiquid(pos, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.BucketFill{Liquid: liquid})
 
-	if item_internal.IsWater(liquid) {
-		ctx.NewItem = NewStack(Bucket{Content: bucket.Water()}, 1)
-	} else {
-		ctx.NewItem = NewStack(Bucket{Content: bucket.Lava()}, 1)
-	}
+	ctx.NewItem = NewStack(Bucket{Content: liquid}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true
@@ -84,13 +69,10 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 
 // EncodeItem ...
 func (b Bucket) EncodeItem() (id int32, name string, meta int16) {
-	switch b.Content {
-	case bucket.Water():
-		return 325, "minecraft:bucket", 8
-	case bucket.Lava():
-		return 325, "minecraft:bucket", 10
+	if !b.Empty() {
+		meta = int16(b.Content.LiquidType())
 	}
-	return 325, "minecraft:bucket", 0
+	return 325, "minecraft:bucket", meta
 }
 
 type replaceable interface {
