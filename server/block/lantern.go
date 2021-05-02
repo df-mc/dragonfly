@@ -68,9 +68,15 @@ func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	return placed(ctx)
 }
 
-// HasLiquidDrops ...
-func (l Lantern) HasLiquidDrops() bool {
-	return true
+// CanDisplace ...
+func (l Lantern) CanDisplace(b world.Liquid) bool {
+	_, water := b.(Water)
+	return water
+}
+
+// SideClosed ...
+func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // BreakInfo ...

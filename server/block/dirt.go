@@ -33,6 +33,11 @@ func (d Dirt) Till() (world.Block, bool) {
 	return Farmland{}, true
 }
 
+// Shovel ...
+func (d Dirt) Shovel() (world.Block, bool) {
+	return DirtPath{}, true
+}
+
 // EncodeItem ...
 func (d Dirt) EncodeItem() (id int32, name string, meta int16) {
 	if d.Coarse {

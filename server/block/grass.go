@@ -66,5 +66,5 @@ func (g Grass) Till() (world.Block, bool) {
 
 // Shovel ...
 func (g Grass) Shovel() (world.Block, bool) {
-	return GrassPath{}, true
+	return DirtPath{}, true
 }

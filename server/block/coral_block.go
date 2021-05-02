@@ -50,8 +50,8 @@ func (c CoralBlock) ScheduledTick(pos cube.Pos, w *world.World) {
 // BreakInfo ...
 func (c CoralBlock) BreakInfo() BreakInfo {
 	return BreakInfo{
-		Hardness:    1.5,
-		Harvestable: alwaysHarvestable,
+		Hardness:    7,
+		Harvestable: pickaxeHarvestable,
 		Effective:   pickaxeEffective,
 		Drops:       simpleDrops(item.NewStack(CoralBlock{Type: c.Type, Dead: true}, 1)), //TODO: Not dead coral blocks should drop itself if mined with silk touch
 	}
