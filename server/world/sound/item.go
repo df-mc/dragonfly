@@ -7,7 +7,7 @@ import "github.com/df-mc/dragonfly/server/world"
 type ItemBreak struct{ sound }
 
 // ItemUseOn is a sound played when a player uses its item on a block. An example of this is when a player
-// uses a shovel to turn grass into grass path. Note that in these cases, the Block is actually the new block,
+// uses a shovel to turn grass into dirt path. Note that in these cases, the Block is actually the new block,
 // not the old one.
 type ItemUseOn struct {
 	// Block is generally the block that was created by using the item on a block. The sound played differs

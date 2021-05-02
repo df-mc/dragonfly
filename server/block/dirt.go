@@ -35,7 +35,7 @@ func (d Dirt) Till() (world.Block, bool) {
 
 // Shovel ...
 func (d Dirt) Shovel() (world.Block, bool) {
-	return GrassPath{}, true
+	return DirtPath{}, true
 }
 
 // EncodeItem ...

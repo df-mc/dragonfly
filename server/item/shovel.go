@@ -10,22 +10,22 @@ import (
 )
 
 // Shovel is a tool generally used for mining ground-like blocks, such as sand, gravel and dirt. Additionally,
-// shovels may be used to turn grass into grass paths.
+// shovels may be used to turn grass into dirt paths.
 type Shovel struct {
 	// Tier is the tier of the shovel.
 	Tier tool.Tier
 }
 
-// UseOnBlock handles the creation of grass path blocks from grass blocks.
+// UseOnBlock handles the creation of dirt path blocks from dirt or grass blocks.
 func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if b, ok := w.Block(pos).(shovellable); ok {
 		if res, ok := b.Shovel(); ok {
 			if face == cube.FaceDown {
-				// Grass paths are not created when the bottom face is clicked.
+				// Dirt paths are not created when the bottom face is clicked.
 				return false
 			}
 			if w.Block(pos.Add(cube.Pos{0, 1})) != item_internal.Air {
-				// Grass paths can only be created if air is above the grass block.
+				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}
 			w.PlaceBlock(pos, res)

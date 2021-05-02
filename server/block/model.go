@@ -38,7 +38,7 @@ func (carpet) Model() world.BlockModel {
 	return model.Carpet{}
 }
 
-// tilledGrass represents a block that has a model of farmland or grass paths.
+// tilledGrass represents a block that has a model of farmland or dirt paths.
 type tilledGrass struct{}
 
 // Model ...
