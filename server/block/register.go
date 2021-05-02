@@ -313,6 +313,7 @@ func init() {
 	world.RegisterItem(GrassPlant{Type: grass.Fern()})
 	world.RegisterItem(GrassPlant{Type: grass.TallGrass()})
 	world.RegisterItem(GrassPlant{Type: grass.LargeFern()})
+	world.RegisterItem(Farmland{})
 }
 
 func init() {
