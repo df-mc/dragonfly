@@ -9,10 +9,6 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-//go:linkname item_values github.com/df-mc/dragonfly/server/item.values
-//noinspection ALL
-func item_values(s item.Stack) map[string]interface{}
-
 // ItemFromNBT decodes the data of an item into an item stack.
 func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 	disk := s == nil
@@ -113,9 +109,9 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		}
 		m["ench"] = enchantments
 	}
-	if len(item_values(s)) != 0 {
+	if len(s.Values()) != 0 {
 		buf := new(bytes.Buffer)
-		if err := gob.NewEncoder(buf).Encode(item_values(s)); err != nil {
+		if err := gob.NewEncoder(buf).Encode(s.Values()); err != nil {
 			panic("error encoding item user data: " + err.Error())
 		}
 		m["dragonflyData"] = buf.Bytes()

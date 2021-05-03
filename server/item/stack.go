@@ -197,7 +197,7 @@ func (s Stack) Lore() []string {
 //
 // WithValue may be called with a nil value, in which case the value at the key will be cleared.
 //
-// WithValue stores values by encoding them using the encoding/gob package. Users of WithValue must ensure
+// WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
 func (s Stack) WithValue(key string, val interface{}) Stack {
 	s.data = copyMap(s.data)
@@ -326,11 +326,10 @@ func (s Stack) String() string {
 	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v') x%v", s.item, s.item, s.customName, s.lore, s.count)
 }
 
-// values returns all values associated with the stack by users.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func values(s Stack) map[string]interface{} {
-	return s.data
+// Values returns all values associated with the stack by users. The map returned is a copy of the original:
+// Modifying it will not modify the item stack.
+func (s Stack) Values() map[string]interface{} {
+	return copyMap(s.data)
 }
 
 // stackID is a counter for unique stack IDs.
@@ -351,7 +350,7 @@ func id(s Stack) int32 {
 	return s.id
 }
 
-// format is a utility function to format a list of values to have spaces between them, but no newline at the
+// format is a utility function to format a list of Values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
 func format(a []interface{}) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
