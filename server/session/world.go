@@ -575,15 +575,14 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 	case action.Eat:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
-			_, name, meta := held.Item().(world.Item).EncodeItem()
-			id := world_runtimeById(world.ItemEntry{
-				Name: name,
-				Meta: meta,
-			})
+
+			rid, meta, _ := world.ItemRuntimeID(held.Item())
 			s.writePacket(&packet.ActorEvent{
 				EntityRuntimeID: s.entityRuntimeID(e),
 				EventType:       packet.ActorEventEatingItem,
-				EventData:       (id << 16) | int32(meta),
+				// It's a little weird how the runtime ID is still shifted 16 bits to the left here, given the
+				// runtime ID already includes the meta, but it seems to work.
+				EventData: (rid << 16) | int32(meta),
 			})
 		}
 	}

@@ -91,11 +91,9 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.
 func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransactionData, s *Session) error {
 	held, _ := s.c.HeldItems()
-	if !held.Equal(stackToItem(data.HeldItem.Stack, false)) {
-		if !held.Equal(stackToItem(data.HeldItem.Stack, true)) {
-			s.log.Debugf("failed processing item interaction from %v (%v): PlayerAuthInput: actual held and client held item mismatch", s.conn.RemoteAddr(), s.c.Name())
-			return nil
-		}
+	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
+		s.log.Debugf("failed processing item interaction from %v (%v): PlayerAuthInput: actual held and client held item mismatch", s.conn.RemoteAddr(), s.c.Name())
+		return nil
 	}
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
 	s.swingingArm.Store(true)

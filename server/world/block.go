@@ -74,8 +74,8 @@ func RegisterBlock(b Block) {
 	}
 }
 
-// BlockRuntimeID attempts to return a runtime ID of a block state previously registered using
-// RegisterBlock(). If the runtime ID is found, the bool returned is true. It is otherwise false.
+// BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
+// If the runtime ID is found, the bool returned is true. It is otherwise false.
 func BlockRuntimeID(b Block) (uint32, bool) {
 	if b == nil {
 		return world_internal.AirRuntimeID, true
@@ -86,8 +86,8 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 	return rid, ok
 }
 
-// BlockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
-// false. If found, the block state is non-nil and the bool true.
+// BlockByRuntimeID attempts to return a block by its runtime ID. If not found, the bool returned is
+// false. If found, the block is non-nil and the bool true.
 func BlockByRuntimeID(rid uint32) (Block, bool) {
 	if rid >= uint32(len(blocks)) {
 		return air(), false

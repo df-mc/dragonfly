@@ -531,7 +531,6 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
-	_, name, meta := it.Item().EncodeItem()
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
 		blockRuntimeID, ok = world.BlockRuntimeID(b)
@@ -540,11 +539,11 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 		}
 	}
 
+	rid, meta, _ := world.ItemRuntimeID(it.Item())
+
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
-			NetworkID: world_runtimeById(world.ItemEntry{
-				Name: name,
-			}),
+			NetworkID:     rid,
 			MetadataValue: uint32(meta),
 		},
 		BlockRuntimeID: int32(blockRuntimeID),
@@ -563,7 +562,7 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 }
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
-func stackToItem(it protocol.ItemStack, useFoundMetadataFirst bool) item.Stack {
+func stackToItem(it protocol.ItemStack) item.Stack {
 	var t world.Item
 	var ok bool
 
@@ -577,22 +576,9 @@ func stackToItem(it protocol.ItemStack, useFoundMetadataFirst bool) item.Stack {
 			t = block.Air{}
 		}
 	} else {
-		entry := world_idByRuntime(it.NetworkID)
-		var meta int16
-		var oppositeMeta int16
-		if useFoundMetadataFirst {
-			meta = entry.Meta
-			oppositeMeta = int16(it.MetadataValue)
-		} else {
-			meta = int16(it.MetadataValue)
-			oppositeMeta = entry.Meta
-		}
-		t, ok = world.ItemByName(entry.Name, meta)
+		t, ok = world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
 		if !ok {
-			t, ok = world.ItemByName(entry.Name, oppositeMeta)
-			if !ok {
-				t = block.Air{}
-			}
+			t = block.Air{}
 		}
 	}
 	//noinspection SpellCheckingInspection
@@ -627,14 +613,6 @@ const (
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
-
-//go:linkname world_runtimeById github.com/df-mc/dragonfly/server/world.runtimeById
-//noinspection ALL
-func world_runtimeById(entry world.ItemEntry) int32
-
-//go:linkname world_idByRuntime github.com/df-mc/dragonfly/server/world.idByRuntime
-//noinspection ALL
-func world_idByRuntime(runtimeId int32) world.ItemEntry
 
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 //noinspection ALL
