@@ -43,23 +43,20 @@ var (
 	itemNamesToRuntimeIDs = map[string]int32{}
 )
 
-// loadItemEntries reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
-//lint:ignore U1000 Function is used using compiler directives.
-func loadItemEntries() error {
+// init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
+func init() {
 	var m []struct {
 		Name string `json:"name"`
 		ID   int32  `json:"id"`
-		Meta int16  `json:"meta"`
 	}
 	err := json.Unmarshal([]byte(resource.ItemEntries), &m)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	for _, i := range m {
 		itemNamesToRuntimeIDs[i.Name] = i.ID
 		itemRuntimeIDsToNames[i.ID] = i.Name
 	}
-	return nil
 }
 
 // ItemByName attempts to return an item by a name and a metadata value.

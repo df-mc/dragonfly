@@ -113,9 +113,6 @@ func (server *Server) Run() error {
 	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
-	if err := world_loadItemEntries(); err != nil {
-		return err
-	}
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -135,9 +132,6 @@ func (server *Server) Start() error {
 	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
-	if err := world_loadItemEntries(); err != nil {
-		return err
-	}
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -461,7 +455,3 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	}
 	return
 }
-
-//go:linkname world_loadItemEntries github.com/df-mc/dragonfly/server/world.loadItemEntries
-//noinspection all
-func world_loadItemEntries() error
