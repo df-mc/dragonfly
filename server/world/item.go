@@ -24,6 +24,9 @@ func RegisterItem(item Item) {
 	if _, ok := items[h]; ok {
 		panic(fmt.Sprintf("item registered with name %v and meta %v already exists", name, meta))
 	}
+	if _, ok := itemNamesToRuntimeIDs[name]; !ok {
+		panic(fmt.Sprintf("item name %v does not have a runtime ID", name))
+	}
 	items[h] = item
 }
 

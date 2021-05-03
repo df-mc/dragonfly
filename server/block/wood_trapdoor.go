@@ -86,7 +86,7 @@ func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 func (t WoodTrapdoor) EncodeItem() (id int32, name string, meta int16) {
 	switch t.Wood {
 	case wood.Oak():
-		return 96, "minecraft:wooden_trapdoor", 0
+		return 96, "minecraft:trapdoor", 0
 	case wood.Spruce():
 		return -149, "minecraft:spruce_trapdoor", 0
 	case wood.Birch():
