@@ -116,7 +116,6 @@ func (server *Server) Run() error {
 	if err := world_loadItemEntries(); err != nil {
 		return err
 	}
-	item_registerVanillaCreativeItems()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -139,7 +138,6 @@ func (server *Server) Start() error {
 	if err := world_loadItemEntries(); err != nil {
 		return err
 	}
-	item_registerVanillaCreativeItems()
 
 	if err := server.startListening(); err != nil {
 		return err
@@ -463,10 +461,6 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	}
 	return
 }
-
-//go:linkname item_registerVanillaCreativeItems github.com/df-mc/dragonfly/server/item.registerVanillaCreativeItems
-//noinspection ALL
-func item_registerVanillaCreativeItems()
 
 //go:linkname world_loadItemEntries github.com/df-mc/dragonfly/server/world.loadItemEntries
 //noinspection all

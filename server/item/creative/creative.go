@@ -1,21 +1,26 @@
-package item
+package creative
 
 import (
 	_ "embed"
 	"encoding/base64"
+	// The following three imports are essential for this package: They make sure this package is loaded after
+	// all these imports. This ensures that all items are registered before the creative items are registered
+	// in the init function in this package.
+	_ "github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	_ "unsafe" // Imported for compiler directives.
 )
 
-// CreativeItems returns a list with all items that have been registered as a creative item. These items will
+// Items returns a list with all items that have been registered as a creative item. These items will
 // be accessible by players in-game who have creative mode enabled.
-func CreativeItems() []Stack {
+func Items() []item.Stack {
 	return creativeItemStacks
 }
 
-// RegisterCreativeItem registers an item as a creative item, exposing it in the creative inventory.
-func RegisterCreativeItem(item Stack) {
+// RegisterItem registers an item as a creative item, exposing it in the creative inventory.
+func RegisterItem(item item.Stack) {
 	creativeItemStacks = append(creativeItemStacks, item)
 }
 
@@ -23,8 +28,8 @@ var (
 	//go:embed creative_items.nbt
 	creativeItemData []byte
 	// creativeItemStacks holds a list of all item stacks that were registered to the creative inventory using
-	// RegisterCreativeItem.
-	creativeItemStacks []Stack
+	// RegisterItem.
+	creativeItemStacks []item.Stack
 )
 
 //lint:ignore U1000 Type is used using compiler directives.
@@ -34,14 +39,9 @@ type creativeItemEntry struct {
 	NBT  string `json:"nbt" nbt:"nbt"`
 }
 
-// registerVanillaCreativeItems initialises the creative items, registering all creative items that have also
-// been registered as normal items and are present in vanilla.
-// TODO: Call this without awful linkname directives. It's currently done this way because the block package is
-//  loaded before the item package, so registering vanilla items here will lead to none of the blocks being in
-//  the inventory.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func registerVanillaCreativeItems() {
+// init initialises the creative items, registering all creative items that have also been registered as
+// normal items and are present in vanilla.
+func init() {
 	var temp map[string]interface{}
 
 	var m []creativeItemEntry
@@ -69,6 +69,6 @@ func registerVanillaCreativeItems() {
 				it = n.DecodeNBT(temp).(world.Item)
 			}
 		}
-		RegisterCreativeItem(NewStack(it, 1))
+		RegisterItem(item.NewStack(it, 1))
 	}
 }

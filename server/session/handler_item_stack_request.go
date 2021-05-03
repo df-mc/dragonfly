@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -117,10 +118,10 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 		return fmt.Errorf("can only craft creative items in gamemode creative/spectator")
 	}
 	index := a.CreativeItemNetworkID - 1
-	if int(index) >= len(item.CreativeItems()) {
+	if int(index) >= len(creative.Items()) {
 		return fmt.Errorf("creative item with network ID %v does not exist", index)
 	}
-	it := item.CreativeItems()[index]
+	it := creative.Items()[index]
 	it = it.Grow(it.MaxCount() - 1)
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
