@@ -31,25 +31,19 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	case *protocol.UseItemOnEntityTransactionData:
 		held, _ := s.c.HeldItems()
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-			if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-				return nil
-			}
+			return nil
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		held, _ := s.c.HeldItems()
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-			if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-				return nil
-			}
+			return nil
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
 		held, _ := s.c.HeldItems()
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-			if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-				return nil
-			}
+			return nil
 		}
 		return h.handleReleaseItemTransaction(data, s)
 	}
@@ -77,10 +71,7 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			newItem := stackToItem(action.NewItem.Stack)
 			actual, offHand := s.c.HeldItems()
 			if !newItem.Comparable(actual) {
-				newItem = stackToItem(action.NewItem.Stack)
-				if !newItem.Comparable(actual) {
-					return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
-				}
+				return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
 			}
 			if newItem.Count() > actual.Count() {
 				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())
