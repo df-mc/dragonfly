@@ -84,11 +84,6 @@ func (b unknownBlock) EncodeBlock() (string, map[string]interface{}) {
 	return b.Name, b.Properties
 }
 
-// HasNBT ...
-func (unknownBlock) HasNBT() bool {
-	return false
-}
-
 // Model ...
 func (unknownBlock) Model() BlockModel {
 	return unknownModel{}
