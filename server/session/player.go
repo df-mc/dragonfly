@@ -587,9 +587,9 @@ func stackToItem(it protocol.ItemStack, useFoundMetadataFirst bool) item.Stack {
 			meta = int16(it.MetadataValue)
 			oppositeMeta = entry.Meta
 		}
-		t, ok = world_itemByName(entry.Name, meta)
+		t, ok = world.ItemByName(entry.Name, meta)
 		if !ok {
-			t, ok = world_itemByName(entry.Name, oppositeMeta)
+			t, ok = world.ItemByName(entry.Name, oppositeMeta)
 			if !ok {
 				t = block.Air{}
 			}
@@ -627,14 +627,6 @@ const (
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
-
-//go:linkname world_itemByID github.com/df-mc/dragonfly/server/world.itemByID
-//noinspection ALL
-func world_itemByID(id int32, meta int16) (world.Item, bool)
-
-//go:linkname world_itemByName github.com/df-mc/dragonfly/server/world.itemByName
-//noinspection ALL
-func world_itemByName(name string, meta int16) (world.Item, bool)
 
 //go:linkname world_runtimeById github.com/df-mc/dragonfly/server/world.runtimeById
 //noinspection ALL

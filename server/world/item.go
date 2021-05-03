@@ -77,27 +77,20 @@ func idByRuntime(runtimeId int32) ItemEntry {
 	return runtimeToOldIds[runtimeId]
 }
 
-// itemByID attempts to return an item by the ID and meta it was registered with. If found, the item found is
-// returned and the bool true.
+// ItemByName attempts to return an item by a name and a metadata value, rather than an ID.
 //lint:ignore U1000 Function is used using compiler directives.
-func itemByID(id int32, meta int16) (Item, bool) {
+//noinspection GoUnusedFunction
+func ItemByName(name string, meta int16) (Item, bool) {
+	id, ok := itemsNames[name]
+	if !ok {
+		return nil, false
+	}
 	it, ok := items[(id<<16)|int32(meta)]
 	if !ok {
 		// Also try obtaining the item with a metadata value of 0, for cases with durability.
 		it, ok = items[(id<<16)|int32(0)]
 	}
 	return it, ok
-}
-
-// itemByName attempts to return an item by a name and a metadata value, rather than an ID.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func itemByName(name string, meta int16) (Item, bool) {
-	id, ok := itemsNames[name]
-	if !ok {
-		return nil, false
-	}
-	return itemByID(id, meta)
 }
 
 // itemNames returns a map of item names indexed by their runtime ID.

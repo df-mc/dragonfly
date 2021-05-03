@@ -1,9 +1,8 @@
 package item
 
 import (
+	_ "embed"
 	"encoding/base64"
-	"encoding/json"
-	"github.com/df-mc/dragonfly/server/internal/resource"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	_ "unsafe" // Imported for compiler directives.
@@ -20,30 +19,37 @@ func RegisterCreativeItem(item Stack) {
 	creativeItemStacks = append(creativeItemStacks, item)
 }
 
-// creativeItemStacks holds a list of all item stacks that were registered to the creative inventory using
-// RegisterCreativeItem.
-var creativeItemStacks []Stack
+var (
+	//go:embed creative_items.nbt
+	creativeItemData []byte
+	// creativeItemStacks holds a list of all item stacks that were registered to the creative inventory using
+	// RegisterCreativeItem.
+	creativeItemStacks []Stack
+)
 
 //lint:ignore U1000 Type is used using compiler directives.
 type creativeItemEntry struct {
-	ID   int32
-	Meta int16
-	NBT  string
+	Name string `json:"name" nbt:"name"`
+	Meta int16  `json:"meta" nbt:"meta"`
+	NBT  string `json:"nbt" nbt:"nbt"`
 }
 
 // registerVanillaCreativeItems initialises the creative items, registering all creative items that have also
 // been registered as normal items and are present in vanilla.
+// TODO: Call this without awful linkname directives. It's currently done this way because the block package is
+//  loaded before the item package, so registering vanilla items here will lead to none of the blocks being in
+//  the inventory.
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func registerVanillaCreativeItems() {
 	var temp map[string]interface{}
 
 	var m []creativeItemEntry
-	if err := json.Unmarshal([]byte(resource.CreativeItems), &m); err != nil {
+	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {
 		panic(err)
 	}
 	for _, data := range m {
-		it, found := world_itemByID(data.ID, data.Meta)
+		it, found := world.ItemByName(data.Name, data.Meta)
 		if !found {
 			// The item wasn't registered, so don't register it as a creative item.
 			continue
@@ -54,20 +60,15 @@ func registerVanillaCreativeItems() {
 			// the same meta here.
 			continue
 		}
-		//noinspection ALL
-		if nbter, ok := it.(world.NBTer); ok {
+		if n, ok := it.(world.NBTer); ok {
 			nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
 			if err := nbt.Unmarshal(nbtData, &temp); err != nil {
 				panic(err)
 			}
 			if len(temp) != 0 {
-				it = nbter.DecodeNBT(temp).(world.Item)
+				it = n.DecodeNBT(temp).(world.Item)
 			}
 		}
 		RegisterCreativeItem(NewStack(it, 1))
 	}
 }
-
-//go:linkname world_itemByID github.com/df-mc/dragonfly/server/world.itemByID
-//noinspection ALL
-func world_itemByID(id int32, meta int16) (world.Item, bool)

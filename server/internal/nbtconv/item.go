@@ -9,10 +9,6 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-//go:linkname world_itemByName github.com/df-mc/dragonfly/server/world.itemByName
-//noinspection ALL
-func world_itemByName(name string, meta int16) (world.Item, bool)
-
 //go:linkname item_enchantmentByID github.com/df-mc/dragonfly/server/item.enchantmentByID
 //noinspection ALL
 func item_enchantmentByID(id int) (item.Enchantment, bool)
@@ -29,7 +25,7 @@ func item_values(s item.Stack) map[string]interface{}
 func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 	disk := s == nil
 	if disk {
-		it, ok := world_itemByName(readString(data, "Name"), readInt16(data, "Damage"))
+		it, ok := world.ItemByName(readString(data, "Name"), readInt16(data, "Damage"))
 		if !ok {
 			return item.Stack{}
 		}
