@@ -9,14 +9,6 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-//go:linkname item_enchantmentByID github.com/df-mc/dragonfly/server/item.enchantmentByID
-//noinspection ALL
-func item_enchantmentByID(id int) (item.Enchantment, bool)
-
-//go:linkname item_idByEnchantment github.com/df-mc/dragonfly/server/item.idByEnchantment
-//noinspection ALL
-func item_idByEnchantment(ench item.Enchantment) (int, bool)
-
 //go:linkname item_values github.com/df-mc/dragonfly/server/item.values
 //noinspection ALL
 func item_values(s item.Stack) map[string]interface{}
@@ -61,7 +53,7 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 		enchantments, ok := enchantmentList.([]map[string]interface{})
 		if ok {
 			for _, ench := range enchantments {
-				if e, ok := item_enchantmentByID(int(readInt16(ench, "id"))); ok {
+				if e, ok := item.EnchantmentByID(int(readInt16(ench, "id"))); ok {
 					e = e.WithLevel(int(readInt16(ench, "lvl")))
 					*s = s.WithEnchantment(e)
 				}
@@ -112,7 +104,7 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 	if len(s.Enchantments()) != 0 {
 		var enchantments []map[string]interface{}
 		for _, ench := range s.Enchantments() {
-			if enchType, ok := item_idByEnchantment(ench); ok {
+			if enchType, ok := item.EnchantmentID(ench); ok {
 				enchantments = append(enchantments, map[string]interface{}{
 					"id":  int16(enchType),
 					"lvl": int16(ench.Level()),

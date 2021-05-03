@@ -35,20 +35,16 @@ var (
 	enchantmentIds = map[reflect.Type]int{}
 )
 
-// enchantmentByID attempts to return an enchantment by the ID it was registered with. If found, the enchantment found
+// EnchantmentByID attempts to return an enchantment by the ID it was registered with. If found, the enchantment found
 // is returned and the bool true.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func enchantmentByID(id int) (Enchantment, bool) {
-	enchantment, ok := enchantments[id]
-	return enchantment, ok
+func EnchantmentByID(id int) (Enchantment, bool) {
+	e, ok := enchantments[id]
+	return e, ok
 }
 
-// idByEnchantment attempts to return the ID the enchantment was registered with. If found, the id is returned and
+// EnchantmentID attempts to return the ID the enchantment was registered with. If found, the id is returned and
 // the bool true.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func idByEnchantment(ench Enchantment) (int, bool) {
-	id, ok := enchantmentIds[reflect.TypeOf(ench)]
+func EnchantmentID(e Enchantment) (int, bool) {
+	id, ok := enchantmentIds[reflect.TypeOf(e)]
 	return id, ok
 }
