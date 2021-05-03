@@ -145,7 +145,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
 
-	b, _ := blockByRuntimeID(rid)
+	b, _ := BlockByRuntimeID(rid)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
@@ -162,7 +162,7 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		// Fast way out.
 		return air(), nil
 	}
-	b, _ := blockByRuntimeID(c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0))
+	b, _ := BlockByRuntimeID(c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0))
 
 	if _, ok := b.(NBTer); ok {
 		// The block was also a block entity, so we look it up in the block entity map.
@@ -436,7 +436,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	x, y, z := uint8(pos[0]), uint8(pos[1]), uint8(pos[2])
 
 	id := c.RuntimeID(x, y, z, 0)
-	b, ok := blockByRuntimeID(id)
+	b, ok := BlockByRuntimeID(id)
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		c.Unlock()
@@ -448,7 +448,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	}
 
 	id = c.RuntimeID(x, y, z, 1)
-	b, ok = blockByRuntimeID(id)
+	b, ok = BlockByRuntimeID(id)
 	c.Unlock()
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
@@ -544,7 +544,7 @@ func (w *World) removeLiquids(c *chunkData, pos cube.Pos) bool {
 func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool, bool) {
 	id := c.RuntimeID(x, y, z, layer)
 
-	b, ok := blockByRuntimeID(id)
+	b, ok := BlockByRuntimeID(id)
 	if !ok {
 		w.log.Errorf("failed removing liquids: cannot get block by runtime ID %v", id)
 		return false, false
@@ -570,7 +570,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	}
 	id := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 1)
 	c.Unlock()
-	b, ok := blockByRuntimeID(id)
+	b, ok := BlockByRuntimeID(id)
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
@@ -1635,7 +1635,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interf
 		pos := blockPosFromNBT(data)
 
 		id := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
-		b, ok := blockByRuntimeID(id)
+		b, ok := BlockByRuntimeID(id)
 		if !ok {
 			w.log.Errorf("error loading block entity data: could not find block state by runtime ID %v", id)
 			continue

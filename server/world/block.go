@@ -86,9 +86,9 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 	return rid, ok
 }
 
-// blockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
+// BlockByRuntimeID attempts to return a block state by its runtime ID. If not found, the bool returned is
 // false. If found, the block state is non-nil and the bool true.
-func blockByRuntimeID(rid uint32) (Block, bool) {
+func BlockByRuntimeID(rid uint32) (Block, bool) {
 	if rid >= uint32(len(blocks)) {
 		return air(), false
 	}
@@ -97,7 +97,7 @@ func blockByRuntimeID(rid uint32) (Block, bool) {
 
 // air returns an air block.
 func air() Block {
-	b, _ := blockByRuntimeID(world_internal.AirRuntimeID)
+	b, _ := BlockByRuntimeID(world_internal.AirRuntimeID)
 	return b
 }
 

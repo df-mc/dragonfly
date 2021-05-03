@@ -572,7 +572,7 @@ func stackToItem(it protocol.ItemStack, useFoundMetadataFirst bool) item.Stack {
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
 		// return air anyways.
-		b, _ = world_blockByRuntimeID(uint32(it.BlockRuntimeID))
+		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}
 		}
@@ -647,7 +647,3 @@ func effect_idByEffect(effect.Effect) (int, bool)
 //go:linkname effect_byID github.com/df-mc/dragonfly/server/entity/effect.effectByID
 //noinspection ALL
 func effect_byID(int) (effect.Effect, bool)
-
-//go:linkname world_blockByRuntimeID github.com/df-mc/dragonfly/server/world.blockByRuntimeID
-//noinspection ALL
-func world_blockByRuntimeID(rid uint32) (world.Block, bool)
