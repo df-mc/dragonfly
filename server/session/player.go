@@ -338,7 +338,7 @@ func (s *Session) SendAbsorption(value float64) {
 // SendEffect sends an effects passed to the player.
 func (s *Session) SendEffect(e effect.Effect) {
 	s.SendEffectRemoval(e)
-	id, _ := effect_idByEffect(e)
+	id, _ := effect.ID(e)
 	s.writePacket(&packet.MobEffect{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Operation:       packet.MobEffectAdd,
@@ -351,7 +351,7 @@ func (s *Session) SendEffect(e effect.Effect) {
 
 // SendEffectRemoval sends the removal of an effect passed.
 func (s *Session) SendEffectRemoval(e effect.Effect) {
-	id, ok := effect_idByEffect(e)
+	id, ok := effect.ID(e)
 	if !ok {
 		panic(fmt.Sprintf("unregistered effect type %T", e))
 	}
@@ -618,11 +618,3 @@ const (
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
-
-//go:linkname effect_idByEffect github.com/df-mc/dragonfly/server/entity/effect.idByEffect
-//noinspection ALL
-func effect_idByEffect(effect.Effect) (int, bool)
-
-//go:linkname effect_byID github.com/df-mc/dragonfly/server/entity/effect.effectByID
-//noinspection ALL
-func effect_byID(int) (effect.Effect, bool)

@@ -50,20 +50,16 @@ var (
 	effectIds = map[reflect.Type]int{}
 )
 
-// effectByID attempts to return an effect by the ID it was registered with. If found, the effect found
+// ByID attempts to return an effect by the ID it was registered with. If found, the effect found
 // is returned and the bool true.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func effectByID(id int) (Effect, bool) {
+func ByID(id int) (Effect, bool) {
 	effect, ok := effects[id]
 	return effect, ok
 }
 
-// idByEffect attempts to return the ID an effect was registered with. If found, the id is returned and
+// ID attempts to return the ID an effect was registered with. If found, the id is returned and
 // the bool true.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func idByEffect(e Effect) (int, bool) {
+func ID(e Effect) (int, bool) {
 	id, ok := effectIds[reflect.TypeOf(e)]
 	return id, ok
 }

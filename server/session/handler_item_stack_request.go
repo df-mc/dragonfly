@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -201,8 +202,8 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
 	}
 
-	beacon.Primary, _ = effect_byID(int(a.PrimaryEffect))
-	beacon.Secondary, _ = effect_byID(int(a.SecondaryEffect))
+	beacon.Primary, _ = effect.ByID(int(a.PrimaryEffect))
+	beacon.Secondary, _ = effect.ByID(int(a.SecondaryEffect))
 	s.c.World().SetBlock(pos, beacon)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client

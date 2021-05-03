@@ -60,10 +60,10 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 // DecodeNBT ...
 func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
 	b.level = int(readInt32(data, "Levels"))
-	if primary, ok := effect_effectByID(int(readInt32(data, "Primary"))); ok {
+	if primary, ok := effect.ByID(int(readInt32(data, "Primary"))); ok {
 		b.Primary = primary
 	}
-	if secondary, ok := effect_effectByID(int(readInt32(data, "Secondary"))); ok {
+	if secondary, ok := effect.ByID(int(readInt32(data, "Secondary"))); ok {
 		b.Secondary = secondary
 	}
 	return b
@@ -74,10 +74,10 @@ func (b Beacon) EncodeNBT() map[string]interface{} {
 	m := map[string]interface{}{
 		"Levels": int32(b.level),
 	}
-	if primary, ok := effect_idByEffect(b.Primary); ok {
+	if primary, ok := effect.ID(b.Primary); ok {
 		m["Primary"] = int32(primary)
 	}
-	if secondary, ok := effect_idByEffect(b.Secondary); ok {
+	if secondary, ok := effect.ID(b.Secondary); ok {
 		m["Secondary"] = int32(secondary)
 	}
 	return m
@@ -188,8 +188,8 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 		// Secondary power can only be set if the primary power is set.
 		if secondary != nil {
 			// It is possible to select 2 primary powers if the beacon's level is 4.
-			pId, pOk := effect_idByEffect(primary)
-			sId, sOk := effect_idByEffect(secondary)
+			pId, pOk := effect.ID(primary)
+			sId, sOk := effect.ID(secondary)
 			if pOk && sOk && pId == sId {
 				primary = primary.WithSettings(dur, 2, true)
 				secondary = nil
@@ -226,14 +226,6 @@ func (Beacon) EncodeItem() (id int32, name string, meta int16) {
 func (Beacon) EncodeBlock() (string, map[string]interface{}) {
 	return "minecraft:beacon", nil
 }
-
-//go:linkname effect_effectByID github.com/df-mc/dragonfly/server/entity/effect.effectByID
-//noinspection ALL
-func effect_effectByID(id int) (effect.Effect, bool)
-
-//go:linkname effect_idByEffect github.com/df-mc/dragonfly/server/entity/effect.idByEffect
-//noinspection ALL
-func effect_idByEffect(e effect.Effect) (int, bool)
 
 //go:linkname world_highestLightBlocker github.com/df-mc/dragonfly/server/world.highestLightBlocker
 //noinspection ALL
