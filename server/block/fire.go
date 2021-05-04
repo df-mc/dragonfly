@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/fire"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
@@ -17,7 +16,7 @@ type Fire struct {
 	empty
 
 	// Type is the type of fire.
-	Type fire.Fire
+	Type FireType
 	// Age affects how fire extinguishes. Newly placed fire starts at 0 and the value has a 1/3 chance of incrementing
 	// each block tick.
 	Age int
@@ -81,7 +80,7 @@ func (f Fire) burn(pos cube.Pos, w *world.World, chanceBound int) {
 
 // tick ...
 func (f Fire) tick(pos cube.Pos, w *world.World) {
-	if f.Type == fire.Normal() {
+	if f.Type == NormalFire() {
 		infinitelyBurns := infinitelyBurning(pos, w)
 
 		// TODO: !infinitelyBurning && raining && exposed to rain && 20 + age * 3% = extinguish & return
@@ -188,19 +187,19 @@ func (f Fire) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
 	below := w.Block(pos.Side(cube.FaceDown))
-	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == fire.Soul()) {
+	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
 		switch below.(type) {
 		case SoulSand, SoulSoil:
-			f.Type = fire.Soul()
+			f.Type = SoulFire()
 			w.PlaceBlock(pos, f)
 		case Water:
 			if neighbour == pos {
 				w.BreakBlockWithoutParticles(pos)
 			}
 		default:
-			if f.Type == fire.Soul() {
+			if f.Type == SoulFire() {
 				w.BreakBlockWithoutParticles(pos)
 				return
 			}
@@ -215,15 +214,15 @@ func (f Fire) HasLiquidDrops() bool {
 
 // LightEmissionLevel ...
 func (f Fire) LightEmissionLevel() uint8 {
-	return f.Type.LightLevel
+	return f.Type.LightLevel()
 }
 
 // EncodeBlock ...
 func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch f.Type {
-	case fire.Normal():
+	case NormalFire():
 		return "minecraft:fire", map[string]interface{}{"age": int32(f.Age)}
-	case fire.Soul():
+	case SoulFire():
 		return "minecraft:soul_fire", map[string]interface{}{"age": int32(f.Age)}
 	}
 	panic("unknown fire type")
@@ -232,8 +231,8 @@ func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
 // allFire ...
 func allFire() (b []world.Block) {
 	for i := 0; i < 16; i++ {
-		b = append(b, Fire{Age: i, Type: fire.Normal()})
-		b = append(b, Fire{Age: i, Type: fire.Soul()})
+		b = append(b, Fire{Age: i, Type: NormalFire()})
+		b = append(b, Fire{Age: i, Type: SoulFire()})
 	}
 	return
 }

@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/fire"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -16,16 +15,16 @@ type Torch struct {
 	// Facing is the direction from the torch to the block.
 	Facing cube.Face
 	// Type is the type of fire lighting the torch.
-	Type fire.Fire
+	Type FireType
 }
 
 // LightEmissionLevel ...
 func (t Torch) LightEmissionLevel() uint8 {
 	switch t.Type {
-	case fire.Normal():
+	case NormalFire():
 		return 14
 	default:
-		return t.Type.LightLevel
+		return t.Type.LightLevel()
 	}
 }
 
@@ -75,9 +74,9 @@ func (t Torch) HasLiquidDrops() bool {
 // EncodeItem ...
 func (t Torch) EncodeItem() (name string, meta int16) {
 	switch t.Type {
-	case fire.Normal():
+	case NormalFire():
 		return "minecraft:torch", 0
-	case fire.Soul():
+	case SoulFire():
 		return "minecraft:soul_torch", 0
 	}
 	panic("invalid fire type")
@@ -90,9 +89,9 @@ func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
 		face = "top"
 	}
 	switch t.Type {
-	case fire.Normal():
+	case NormalFire():
 		return "minecraft:torch", map[string]interface{}{"torch_facing_direction": face}
-	case fire.Soul():
+	case SoulFire():
 		return "minecraft:soul_torch", map[string]interface{}{"torch_facing_direction": face}
 	}
 	panic("invalid fire type")
@@ -104,8 +103,8 @@ func allTorches() (torch []world.Block) {
 		if i == cube.FaceUp {
 			continue
 		}
-		torch = append(torch, Torch{Type: fire.Normal(), Facing: i})
-		torch = append(torch, Torch{Type: fire.Soul(), Facing: i})
+		torch = append(torch, Torch{Type: NormalFire(), Facing: i})
+		torch = append(torch, Torch{Type: SoulFire(), Facing: i})
 	}
 	return
 }

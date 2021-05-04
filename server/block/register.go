@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/fire"
 	"github.com/df-mc/dragonfly/server/block/grass"
 	"github.com/df-mc/dragonfly/server/internal/item_internal"
 	"github.com/df-mc/dragonfly/server/item"
@@ -267,8 +266,8 @@ func init() {
 	world.RegisterItem(Netherrack{})
 	world.RegisterItem(Clay{})
 	world.RegisterItem(BoneBlock{})
-	world.RegisterItem(Lantern{Type: fire.Normal()})
-	world.RegisterItem(Lantern{Type: fire.Soul()})
+	world.RegisterItem(Lantern{Type: NormalFire()})
+	world.RegisterItem(Lantern{Type: SoulFire()})
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(EmeraldOre{})
 	world.RegisterItem(DiamondOre{})
@@ -300,8 +299,8 @@ func init() {
 	world.RegisterItem(BlueIce{})
 	world.RegisterItem(GildedBlackstone{})
 	world.RegisterItem(Shroomlight{})
-	world.RegisterItem(Torch{Type: fire.Normal()})
-	world.RegisterItem(Torch{Type: fire.Soul()})
+	world.RegisterItem(Torch{Type: NormalFire()})
+	world.RegisterItem(Torch{Type: SoulFire()})
 	world.RegisterItem(Cake{})
 	world.RegisterItem(NetherWart{})
 	world.RegisterItem(InvisibleBedrock{})
@@ -328,7 +327,7 @@ func init() {
 		_, ok := b.(Water)
 		return ok
 	}
-	item_internal.Fire = Fire{Type: fire.Normal(), Age: 0}
+	item_internal.Fire = Fire{Type: NormalFire(), Age: 0}
 }
 
 // readSlice reads an interface slice from a map at the key passed.
