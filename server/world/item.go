@@ -2,8 +2,8 @@ package world
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -37,7 +37,7 @@ type itemHash struct {
 }
 
 var (
-	//go:embed name_runtime_id_map.json
+	//go:embed item_runtime_ids.nbt
 	itemRuntimeIDData []byte
 	// items holds a list of all registered items, indexed using the itemHash created when calling
 	// Item.EncodeItem.
@@ -51,7 +51,7 @@ var (
 // init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 func init() {
 	var m map[string]int32
-	err := json.Unmarshal(itemRuntimeIDData, &m)
+	err := nbt.Unmarshal(itemRuntimeIDData, &m)
 	if err != nil {
 		panic(err)
 	}
