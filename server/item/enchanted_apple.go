@@ -31,5 +31,5 @@ func (e EnchantedApple) Consume(_ *world.World, c Consumer) Stack {
 
 // EncodeItem ...
 func (e EnchantedApple) EncodeItem() (id int32, name string, meta int16) {
-	return 466, "minecraft:appleenchanted", 0
+	return 466, "minecraft:enchanted_golden_apple", 0
 }
