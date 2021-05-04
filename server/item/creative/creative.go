@@ -3,6 +3,9 @@ package creative
 import (
 	_ "embed"
 	"encoding/base64"
+	"github.com/df-mc/dragonfly/server/block"
+	"strings"
+
 	// The following three imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all items are registered before the creative items are registered
 	// in the init function in this package.
@@ -58,6 +61,11 @@ func init() {
 			it world.Item
 			ok bool
 		)
+		if strings.Contains(data.Name, "bucket") {
+			// Buckets for some reason occur 6 times in this list, all of which have no NBT, block or metadata.
+			// We'll just register these manually.
+			continue
+		}
 		if data.Block.Version != 0 {
 			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
 			// have their metadata sent, but we still need to get that metadata in order to be able to register
@@ -90,4 +98,7 @@ func init() {
 		}
 		RegisterItem(item.NewStack(it, 1))
 	}
+	RegisterItem(item.NewStack(item.Bucket{}, 1))
+	RegisterItem(item.NewStack(item.Bucket{Content: block.Water{}}, 1))
+	RegisterItem(item.NewStack(item.Bucket{Content: block.Lava{}}, 1))
 }
