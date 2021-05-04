@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/colour"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -15,7 +14,7 @@ type ConcretePowder struct {
 	snare
 
 	// Colour is the colour of the concrete powder.
-	Colour colour.Colour
+	Colour Colour
 }
 
 // Solidifies ...
@@ -58,7 +57,7 @@ func (c ConcretePowder) EncodeBlock() (name string, properties map[string]interf
 // allConcretePowder returns concrete powder with all possible colours.
 func allConcretePowder() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range colour.All() {
+	for _, c := range Colours() {
 		b = append(b, ConcretePowder{Colour: c})
 	}
 	return b

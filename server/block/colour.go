@@ -1,4 +1,4 @@
-package colour
+package block
 
 import "fmt"
 
@@ -7,91 +7,91 @@ type Colour struct {
 	colour
 }
 
-// White returns the white colour.
-func White() Colour {
+// ColourWhite returns the white colour.
+func ColourWhite() Colour {
 	return Colour{colour(0)}
 }
 
-// Orange returns the orange colour.
-func Orange() Colour {
+// ColourOrange returns the orange colour.
+func ColourOrange() Colour {
 	return Colour{colour(1)}
 }
 
-// Magenta returns the magenta colour.
-func Magenta() Colour {
+// ColourMagenta returns the magenta colour.
+func ColourMagenta() Colour {
 	return Colour{colour(2)}
 }
 
-// LightBlue returns the light blue colour.
-func LightBlue() Colour {
+// ColourLightBlue returns the light blue colour.
+func ColourLightBlue() Colour {
 	return Colour{colour(3)}
 }
 
-// Yellow returns the yellow colour.
-func Yellow() Colour {
+// ColourYellow returns the yellow colour.
+func ColourYellow() Colour {
 	return Colour{colour(4)}
 }
 
-// Lime returns the lime colour.
-func Lime() Colour {
+// ColourLime returns the lime colour.
+func ColourLime() Colour {
 	return Colour{colour(5)}
 }
 
-// Pink returns the pink colour.
-func Pink() Colour {
+// ColourPink returns the pink colour.
+func ColourPink() Colour {
 	return Colour{colour(6)}
 }
 
-// Grey returns the grey colour.
-func Grey() Colour {
+// ColourGrey returns the grey colour.
+func ColourGrey() Colour {
 	return Colour{colour(7)}
 }
 
-// LightGrey returns the light grey colour.
-func LightGrey() Colour {
+// ColourLightGrey returns the light grey colour.
+func ColourLightGrey() Colour {
 	return Colour{colour(8)}
 }
 
-// Cyan returns the cyan colour.
-func Cyan() Colour {
+// ColourCyan returns the cyan colour.
+func ColourCyan() Colour {
 	return Colour{colour(9)}
 }
 
-// Purple returns the purple colour.
-func Purple() Colour {
+// ColourPurple returns the purple colour.
+func ColourPurple() Colour {
 	return Colour{colour(10)}
 }
 
-// Blue returns the blue colour.
-func Blue() Colour {
+// ColourBlue returns the blue colour.
+func ColourBlue() Colour {
 	return Colour{colour(11)}
 }
 
-// Brown returns the brown colour.
-func Brown() Colour {
+// ColourBrown returns the brown colour.
+func ColourBrown() Colour {
 	return Colour{colour(12)}
 }
 
-// Green returns the green colour.
-func Green() Colour {
+// ColourGreen returns the green colour.
+func ColourGreen() Colour {
 	return Colour{colour(13)}
 }
 
-// Red returns the red colour.
-func Red() Colour {
+// ColourRed returns the red colour.
+func ColourRed() Colour {
 	return Colour{colour(14)}
 }
 
-// Black returns the black colour.
-func Black() Colour {
+// ColourBlack returns the black colour.
+func ColourBlack() Colour {
 	return Colour{colour(15)}
 }
 
-// All returns a list of all existing colours.
-func All() []Colour {
+// Colours returns a list of all existing colours.
+func Colours() []Colour {
 	return []Colour{
-		White(), Orange(), Magenta(), LightBlue(), Yellow(), Lime(), Pink(), Grey(),
-		LightGrey(), Cyan(), Purple(), Blue(), Brown(), Green(), Red(), Black(),
+		ColourWhite(), ColourOrange(), ColourMagenta(), ColourLightBlue(), ColourYellow(), ColourLime(), ColourPink(), ColourGrey(),
+		ColourLightGrey(), ColourCyan(), ColourPurple(), ColourBlue(), ColourBrown(), ColourGreen(), ColourRed(), ColourBlack(),
 	}
 }
 

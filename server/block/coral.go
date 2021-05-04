@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/coral"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
@@ -17,7 +16,7 @@ type Coral struct {
 	bassDrum
 
 	// Type is the type of coral of the block.
-	Type coral.Coral
+	Type CoralType
 	// Dead is whether the coral is dead.
 	Dead bool
 }
@@ -105,7 +104,7 @@ func (c Coral) BreakInfo() BreakInfo {
 
 // EncodeBlock ...
 func (c Coral) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:coral", map[string]interface{}{"coral_color": c.Type.Colour.String(), "dead_bit": c.Dead}
+	return "minecraft:coral", map[string]interface{}{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...
@@ -119,11 +118,9 @@ func (c Coral) EncodeItem() (name string, meta int16) {
 // allCoral returns a list of all coral block variants
 func allCoral() (c []world.Block) {
 	f := func(dead bool) {
-		c = append(c, Coral{Type: coral.Tube(), Dead: dead})
-		c = append(c, Coral{Type: coral.Brain(), Dead: dead})
-		c = append(c, Coral{Type: coral.Bubble(), Dead: dead})
-		c = append(c, Coral{Type: coral.Fire(), Dead: dead})
-		c = append(c, Coral{Type: coral.Horn(), Dead: dead})
+		for _, t := range CoralTypes() {
+			c = append(c, Coral{Type: t, Dead: dead})
+		}
 	}
 	f(true)
 	f(false)

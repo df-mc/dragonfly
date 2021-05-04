@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/colour"
 	"github.com/df-mc/dragonfly/server/block/fire"
 	"github.com/df-mc/dragonfly/server/block/grass"
 	"github.com/df-mc/dragonfly/server/block/wood"
@@ -160,7 +159,7 @@ func init() {
 	world.RegisterItem(Log{Wood: wood.Acacia(), Stripped: true})
 	world.RegisterItem(Log{Wood: wood.DarkOak(), Stripped: true})
 	world.RegisterItem(Log{Wood: wood.Oak(), Stripped: true})
-	for _, c := range colour.All() {
+	for _, c := range Colours() {
 		world.RegisterItem(Concrete{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(StainedTerracotta{Colour: c})

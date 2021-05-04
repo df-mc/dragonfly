@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/colour"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -14,7 +13,7 @@ type Carpet struct {
 	transparent
 
 	// Colour is the colour of the carpet.
-	Colour colour.Colour
+	Colour Colour
 }
 
 // FlammabilityInfo ...
@@ -86,7 +85,7 @@ func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // allCarpet ...
 func allCarpet() (carpets []world.Block) {
-	for _, c := range colour.All() {
+	for _, c := range Colours() {
 		carpets = append(carpets, Carpet{Colour: c})
 	}
 	return

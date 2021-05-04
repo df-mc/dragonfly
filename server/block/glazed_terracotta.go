@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/colour"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -14,7 +13,7 @@ type GlazedTerracotta struct {
 	bassDrum
 
 	// Colour specifies the colour of the block.
-	Colour colour.Colour
+	Colour Colour
 	// Facing specifies the face of the block.
 	Facing cube.Direction
 }
@@ -33,7 +32,7 @@ func (t GlazedTerracotta) BreakInfo() BreakInfo {
 func (t GlazedTerracotta) EncodeItem() (name string, meta int16) {
 	colourName := t.Colour.String()
 	// Item ID for glazed terracotta is equal to 220 + colour number, except for purple glazed terracotta.
-	if t.Colour == colour.Purple() {
+	if t.Colour == ColourPurple() {
 		return "minecraft:" + colourName + "_glazed_terracotta", 0
 	}
 	return "minecraft:" + colourName + "_glazed_terracotta", 0
@@ -59,7 +58,7 @@ func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
 func allGlazedTerracotta() (b []world.Block) {
 	for dir := cube.Direction(0); dir < 4; dir++ {
-		for _, c := range colour.All() {
+		for _, c := range Colours() {
 			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
 		}
 	}
