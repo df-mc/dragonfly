@@ -86,11 +86,21 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 	return rid, ok
 }
 
-// BlockByRuntimeID attempts to return a block by its runtime ID. If not found, the bool returned is
+// BlockByRuntimeID attempts to return a Block by its runtime ID. If not found, the bool returned is
 // false. If found, the block is non-nil and the bool true.
 func BlockByRuntimeID(rid uint32) (Block, bool) {
 	if rid >= uint32(len(blocks)) {
 		return air(), false
+	}
+	return blocks[rid], true
+}
+
+// BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
+// false.
+func BlockByName(name string, properties map[string]interface{}) (Block, bool) {
+	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
+	if !ok {
+		return nil, false
 	}
 	return blocks[rid], true
 }

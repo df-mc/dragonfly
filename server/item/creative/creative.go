@@ -32,11 +32,16 @@ var (
 	creativeItemStacks []item.Stack
 )
 
-//lint:ignore U1000 Type is used using compiler directives.
+// creativeItemEntry holds data of a creative item as present in the creative inventory.
 type creativeItemEntry struct {
-	Name string `json:"name" nbt:"name"`
-	Meta int16  `json:"meta" nbt:"meta"`
-	NBT  string `json:"nbt" nbt:"nbt"`
+	Name  string `nbt:"name"`
+	Meta  int32  `nbt:"meta"`
+	NBT   string `nbt:"nbt"`
+	Block struct {
+		Name       string                 `nbt:"name"`
+		Properties map[string]interface{} `nbt:"states"`
+		Version    int32                  `nbt:"version"`
+	} `nbt:"block"`
 }
 
 // init initialises the creative items, registering all creative items that have also been registered as
@@ -49,17 +54,31 @@ func init() {
 		panic(err)
 	}
 	for _, data := range m {
-		it, found := world.ItemByName(data.Name, data.Meta)
-		if !found {
-			// The item wasn't registered, so don't register it as a creative item.
-			continue
+		var (
+			it world.Item
+			ok bool
+		)
+		if data.Block.Version != 0 {
+			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
+			// have their metadata sent, but we still need to get that metadata in order to be able to register
+			// different block states as different items.
+			if b, ok := world.BlockByName(data.Block.Name, data.Block.Properties); ok {
+				if it, ok = b.(world.Item); !ok {
+					continue
+				}
+			}
+		} else {
+			if it, ok = world.ItemByName(data.Name, int16(data.Meta)); !ok {
+				// The item wasn't registered, so don't register it as a creative item.
+				continue
+			}
+			if _, _, resultingMeta := it.EncodeItem(); resultingMeta != int16(data.Meta) {
+				// We found an item registered with that ID and a meta of 0, but we only need items with strictly
+				// the same meta here.
+				continue
+			}
 		}
-		_, _, resultingMeta := it.EncodeItem()
-		if resultingMeta != data.Meta {
-			// We found an item registered with that ID and a meta of 0, but we only need items with strictly
-			// the same meta here.
-			continue
-		}
+
 		if n, ok := it.(world.NBTer); ok {
 			nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
 			if err := nbt.Unmarshal(nbtData, &temp); err != nil {
