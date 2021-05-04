@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -17,7 +16,7 @@ type WoodDoor struct {
 
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 	// Facing is the direction the door is facing.
 	Facing cube.Direction
 	// Open is whether or not the door is open.
@@ -133,21 +132,21 @@ func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // EncodeItem ...
 func (d WoodDoor) EncodeItem() (name string, meta int16) {
 	switch d.Wood {
-	case wood.Oak():
+	case OakWood():
 		return "minecraft:wooden_door", 0
-	case wood.Spruce():
+	case SpruceWood():
 		return "minecraft:spruce_door", 0
-	case wood.Birch():
+	case BirchWood():
 		return "minecraft:birch_door", 0
-	case wood.Jungle():
+	case JungleWood():
 		return "minecraft:jungle_door", 0
-	case wood.Acacia():
+	case AcaciaWood():
 		return "minecraft:acacia_door", 0
-	case wood.DarkOak():
+	case DarkOakWood():
 		return "minecraft:dark_oak_door", 0
-	case wood.Crimson():
+	case CrimsonWood():
 		return "minecraft:crimson_door", 0
-	case wood.Warped():
+	case WarpedWood():
 		return "minecraft:warped_door", 0
 	}
 	panic("invalid wood type")
@@ -166,7 +165,7 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 	}
 
 	switch d.Wood {
-	case wood.Oak():
+	case OakWood():
 		return "minecraft:wooden_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	default:
 		return "minecraft:" + d.Wood.String() + "_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
@@ -175,7 +174,7 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 
 // allDoors returns a list of all door types
 func allDoors() (doors []world.Block) {
-	for _, w := range wood.All() {
+	for _, w := range WoodTypes() {
 		for i := cube.Direction(0); i <= 3; i++ {
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: false, Right: false})
 			doors = append(doors, WoodDoor{Wood: w, Facing: i, Open: false, Top: true, Right: false})

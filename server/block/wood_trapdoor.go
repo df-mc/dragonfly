@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -18,7 +17,7 @@ type WoodTrapdoor struct {
 
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 	// Facing is the direction the trapdoor is facing.
 	Facing cube.Direction
 	// Open is whether or not the trapdoor is open.
@@ -84,7 +83,7 @@ func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // EncodeItem ...
 func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
-	if t.Wood == wood.Oak() {
+	if t.Wood == OakWood() {
 		return "minecraft:trapdoor", 0
 	}
 	return "minecraft:" + t.Wood.String() + "_trapdoor", 0
@@ -93,7 +92,7 @@ func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch t.Wood {
-	case wood.Oak():
+	case OakWood():
 		return "minecraft:trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	default:
 		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
@@ -102,7 +101,7 @@ func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interfac
 
 // allTrapdoors returns a list of all trapdoor types
 func allTrapdoors() (trapdoors []world.Block) {
-	for _, w := range wood.All() {
+	for _, w := range WoodTypes() {
 		for i := cube.Direction(0); i <= 3; i++ {
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: false})
 			trapdoors = append(trapdoors, WoodTrapdoor{Wood: w, Facing: i, Open: false, Top: true})

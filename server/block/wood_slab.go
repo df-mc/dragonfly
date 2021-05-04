@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
@@ -17,7 +16,7 @@ type WoodSlab struct {
 
 	// Wood is the type of wood of the slabs. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 	// Top specifies if the slab is in the top part of the block.
 	Top bool
 	// Double specifies if the slab is a double slab. These double slabs can be made by placing another slab
@@ -117,17 +116,17 @@ func (s WoodSlab) AABB(cube.Pos, *world.World) []physics.AABB {
 // EncodeItem ...
 func (s WoodSlab) EncodeItem() (name string, meta int16) {
 	switch s.Wood {
-	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle(), wood.Acacia(), wood.DarkOak():
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		if s.Double {
 			return "minecraft:double_wooden_slab", int16(s.Wood.Uint8())
 		}
 		return "minecraft:wooden_slab", int16(s.Wood.Uint8())
-	case wood.Crimson():
+	case CrimsonWood():
 		if s.Double {
 			return "minecraft:crimson_double_slab", 0
 		}
 		return "minecraft:crimson_slab", 0
-	case wood.Warped():
+	case WarpedWood():
 		if s.Double {
 			return "minecraft:warped_double_slab", 0
 		}
@@ -139,12 +138,12 @@ func (s WoodSlab) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Double {
-		if s.Wood == wood.Crimson() || s.Wood == wood.Warped() {
+		if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
 			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]interface{}{"top_slot_bit": s.Top}
 		}
 		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 	}
-	if s.Wood == wood.Crimson() || s.Wood == wood.Warped() {
+	if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
 		return "minecraft:" + s.Wood.String() + "_slab", map[string]interface{}{"top_slot_bit": s.Top}
 	}
 	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
@@ -165,7 +164,7 @@ func (s WoodSlab) SideClosed(pos, side cube.Pos, _ *world.World) bool {
 // allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
-		for _, w := range wood.All() {
+		for _, w := range WoodTypes() {
 			slabs = append(slabs, WoodSlab{Double: double, Top: upsideDown, Wood: w})
 		}
 	}

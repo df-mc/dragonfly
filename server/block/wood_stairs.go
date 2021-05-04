@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -16,7 +15,7 @@ type WoodStairs struct {
 
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part
 	// of the block.
 	UpsideDown bool
@@ -96,7 +95,7 @@ func (s WoodStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 // allWoodStairs returns all states of wood stairs.
 func allWoodStairs() (stairs []world.Block) {
 	f := func(facing cube.Direction, upsideDown bool) {
-		for _, w := range wood.All() {
+		for _, w := range WoodTypes() {
 			stairs = append(stairs, WoodStairs{Facing: facing, UpsideDown: upsideDown, Wood: w})
 		}
 	}

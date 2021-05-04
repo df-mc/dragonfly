@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -17,7 +16,7 @@ type WoodFenceGate struct {
 
 	// Wood is the type of wood of the fence gate. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 	// Facing is the direction the fence gate swings open.
 	Facing cube.Direction
 	// Open is whether the fence gate is open.
@@ -84,7 +83,7 @@ func (f WoodFenceGate) SideClosed(pos, side cube.Pos, w *world.World) bool {
 
 // EncodeItem ...
 func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
-	if f.Wood == wood.Oak() {
+	if f.Wood == OakWood() {
 		return "minecraft:fence_gate", 0
 	}
 	return "minecraft:" + f.Wood.String() + "_fence_gate", 0
@@ -103,7 +102,7 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interfa
 	}
 
 	switch f.Wood {
-	case wood.Oak():
+	case OakWood():
 		return "minecraft:fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	default:
 		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
@@ -117,7 +116,7 @@ func (f WoodFenceGate) Model() world.BlockModel {
 
 // allFenceGates returns a list of all trapdoor types.
 func allFenceGates() (fenceGates []world.Block) {
-	for _, w := range wood.All() {
+	for _, w := range WoodTypes() {
 		for i := cube.Direction(0); i <= 3; i++ {
 			fenceGates = append(fenceGates, WoodFenceGate{Wood: w, Facing: i, Open: false, Lowered: false})
 			fenceGates = append(fenceGates, WoodFenceGate{Wood: w, Facing: i, Open: false, Lowered: true})

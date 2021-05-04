@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
@@ -11,7 +10,7 @@ import (
 	"math/rand"
 )
 
-// CocoaBean is a crop block found in Jungle biomes.
+// CocoaBean is a crop block found in jungle biomes.
 type CocoaBean struct {
 	transparent
 
@@ -38,7 +37,7 @@ func (c CocoaBean) HasLiquidDrops() bool {
 
 // NeighbourUpdateTick ...
 func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != wood.Jungle() || log.Stripped {
+	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != JungleWood() || log.Stripped {
 		w.BreakBlockWithoutParticles(pos)
 	}
 }
@@ -54,7 +53,7 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 	if log, ok := w.Block(pos.Side(face.Opposite())).(Log); ok {
-		if log.Wood == wood.Jungle() && !log.Stripped {
+		if log.Wood == JungleWood() && !log.Stripped {
 			c.Facing = face.Opposite().Direction()
 			ctx.IgnoreAABB = true
 

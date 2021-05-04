@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
@@ -15,7 +14,7 @@ type Leaves struct {
 
 	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 	// Persistent specifies if the leaves are persistent, meaning they will not decay as a result of no wood
 	// being nearby.
 	Persistent bool
@@ -89,7 +88,7 @@ func (l Leaves) BreakInfo() BreakInfo {
 				return []item.Stack{item.NewStack(l, 1)}
 			}
 			var drops []item.Stack
-			if (l.Wood == wood.Oak() || l.Wood == wood.DarkOak()) && rand.Float64() < 0.005 {
+			if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
 				drops = append(drops, item.NewStack(item.Apple{}, 1))
 			}
 			// TODO: Saplings and sticks can drop along with apples
@@ -101,9 +100,9 @@ func (l Leaves) BreakInfo() BreakInfo {
 // EncodeItem ...
 func (l Leaves) EncodeItem() (name string, meta int16) {
 	switch l.Wood {
-	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle():
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
 		return "minecraft:leaves", int16(l.Wood.Uint8())
-	case wood.Acacia(), wood.DarkOak():
+	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", int16(l.Wood.Uint8() - 4)
 	}
 	panic("invalid wood type")
@@ -128,9 +127,9 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {
-	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle():
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
 		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
-	case wood.Acacia(), wood.DarkOak():
+	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
 	}
 	panic("invalid wood type")
@@ -139,12 +138,12 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
-		leaves = append(leaves, Leaves{Wood: wood.Oak(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: wood.Spruce(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: wood.Birch(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: wood.Jungle(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: wood.Acacia(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: wood.DarkOak(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: OakWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: SpruceWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: BirchWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: JungleWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: AcaciaWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: DarkOakWood(), Persistent: persistent, shouldUpdate: update})
 	}
 	f(true, true)
 	f(true, false)

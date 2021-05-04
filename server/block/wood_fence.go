@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -16,7 +15,7 @@ type WoodFence struct {
 
 	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 }
 
 // BreakInfo ...
@@ -54,7 +53,7 @@ func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
 
 // EncodeBlock ...
 func (w WoodFence) EncodeBlock() (name string, properties map[string]interface{}) {
-	if w.Wood == wood.Crimson() || w.Wood == wood.Warped() {
+	if w.Wood == CrimsonWood() || w.Wood == WarpedWood() {
 		return "minecraft:" + w.Wood.String() + "_fence", nil
 	}
 	return "minecraft:fence", map[string]interface{}{"wood_type": w.Wood.String()}
@@ -68,9 +67,9 @@ func (w WoodFence) Model() world.BlockModel {
 // EncodeItem ...
 func (w WoodFence) EncodeItem() (name string, meta int16) {
 	switch w.Wood {
-	case wood.Crimson():
+	case CrimsonWood():
 		return "minecraft:crimson_fence", 0
-	case wood.Warped():
+	case WarpedWood():
 		return "minecraft:warped_fence", 0
 	default:
 		return "minecraft:fence", int16(w.Wood.Uint8())
@@ -79,7 +78,7 @@ func (w WoodFence) EncodeItem() (name string, meta int16) {
 
 // allFence ...
 func allFence() (fence []world.Block) {
-	for _, w := range wood.All() {
+	for _, w := range WoodTypes() {
 		fence = append(fence, WoodFence{Wood: w})
 	}
 	return

@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/wood"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -13,7 +12,7 @@ type Planks struct {
 
 	// Wood is the type of wood of the planks. This field must have one of the values found in the material
 	// package.
-	Wood wood.Wood
+	Wood WoodType
 }
 
 // FlammabilityInfo ...
@@ -41,11 +40,11 @@ func (p Planks) BreakInfo() BreakInfo {
 // EncodeItem ...
 func (p Planks) EncodeItem() (name string, meta int16) {
 	switch p.Wood {
-	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle(), wood.Acacia(), wood.DarkOak():
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		return "minecraft:planks", int16(p.Wood.Uint8())
-	case wood.Crimson():
+	case CrimsonWood():
 		return "minecraft:" + p.Wood.String() + "_planks", 0
-	case wood.Warped():
+	case WarpedWood():
 		return "minecraft:" + p.Wood.String() + "_planks", 0
 	}
 	panic("invalid wood type")
@@ -54,9 +53,9 @@ func (p Planks) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch p.Wood {
-	case wood.Crimson():
+	case CrimsonWood():
 		return "minecraft:crimson_planks", nil
-	case wood.Warped():
+	case WarpedWood():
 		return "minecraft:warped_planks", nil
 	default:
 		return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
@@ -65,7 +64,7 @@ func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
 
 // allPlanks returns all planks types.
 func allPlanks() (planks []world.Block) {
-	for _, w := range wood.All() {
+	for _, w := range WoodTypes() {
 		planks = append(planks, Planks{Wood: w})
 	}
 	return
