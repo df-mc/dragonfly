@@ -1,9 +1,9 @@
 package world
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/resource"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -37,6 +37,8 @@ type itemHash struct {
 }
 
 var (
+	//go:embed name_runtime_id_map.json
+	itemRuntimeIDData []byte
 	// items holds a list of all registered items, indexed using the itemHash created when calling
 	// Item.EncodeItem.
 	items = map[itemHash]Item{}
@@ -48,17 +50,14 @@ var (
 
 // init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 func init() {
-	var m []struct {
-		Name string `json:"name"`
-		ID   int32  `json:"id"`
-	}
-	err := json.Unmarshal([]byte(resource.ItemEntries), &m)
+	var m map[string]int32
+	err := json.Unmarshal(itemRuntimeIDData, &m)
 	if err != nil {
 		panic(err)
 	}
-	for _, i := range m {
-		itemNamesToRuntimeIDs[i.Name] = i.ID
-		itemRuntimeIDsToNames[i.ID] = i.Name
+	for name, rid := range m {
+		itemNamesToRuntimeIDs[name] = rid
+		itemRuntimeIDsToNames[rid] = name
 	}
 }
 

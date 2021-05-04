@@ -34,7 +34,7 @@ type Liquid interface {
 	LiquidFalling() bool
 	// LiquidType returns an int unique for the liquid, used to check if two liquids are considered to be
 	// of the same type.
-	LiquidType() int
+	LiquidType() string
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, w *World, flownIntoBy *cube.Pos) bool

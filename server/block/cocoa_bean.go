@@ -91,7 +91,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c CocoaBean) EncodeItem() (id int32, name string, meta int16) {
-	return 351, "minecraft:dye", 3
+	return 351, "minecraft:cocoa_beans", 0
 }
 
 // EncodeBlock ...
