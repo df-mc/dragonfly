@@ -131,8 +131,7 @@ func (w *World) Name() string {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos cube.Pos) Block {
-	y := pos[1]
-	if w == nil || y > 255 || y < 0 {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return air()
 	}
@@ -178,7 +177,7 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func runtimeID(w *World, pos cube.Pos) uint32 {
-	if w == nil || pos[1] < 0 || pos[1] > 255 {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return world_internal.AirRuntimeID
 	}
@@ -231,8 +230,7 @@ func (w *World) HighestBlock(x, z int) int {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block) {
-	y := pos[1]
-	if w == nil || y > 255 || y < 0 {
+	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
 		return
 	}
@@ -382,10 +380,10 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 						continue
 					}
 					for y := 0; y < height; y++ {
-						if y+pos[1] > 255 {
+						if y+pos[1] > cube.MaxY {
 							// We've hit the height limit for blocks.
 							break
-						} else if y+pos[1] < 0 {
+						} else if y+pos[1] < cube.MinY {
 							// We've got a block below the minimum, but other blocks might still reach above
 							// it, so don't break but continue.
 							continue
@@ -583,11 +581,11 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos cube.Pos) uint8 {
-	if w == nil || pos[1] > 255 {
+	if w == nil || pos[1] > cube.MaxY {
 		// Above the rest of the world, so full sky light.
 		return 15
 	}
-	if pos[1] < 0 {
+	if pos[1] < cube.MinY {
 		// Fast way out.
 		return 0
 	}
@@ -605,11 +603,11 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] > 255 {
+	if w == nil || pos[1] > cube.MaxY {
 		// Above the rest of the world, so full sky light.
 		return 15
 	}
-	if pos[1] < 0 {
+	if pos[1] < cube.MinY {
 		// Fast way out.
 		return 0
 	}

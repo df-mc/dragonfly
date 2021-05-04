@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"sync"
 )
 
@@ -25,7 +26,7 @@ func (n lightNode) neighbours(q *nodeQueue) []lightNode {
 	q.neighbours[1].x, q.neighbours[1].y, q.neighbours[1].z = n.x+1, n.y, n.z
 	q.neighbours[2].x, q.neighbours[2].y, q.neighbours[2].z = n.x, n.y, n.z-1
 	q.neighbours[3].x, q.neighbours[3].y, q.neighbours[3].z = n.x, n.y, n.z+1
-	if n.y == 255 {
+	if n.y == cube.MaxY {
 		q.neighbours[4].x, q.neighbours[4].y, q.neighbours[4].z = n.x, n.y-1, n.z
 		return q.neighbours[:5]
 	} else if n.y == 0 {

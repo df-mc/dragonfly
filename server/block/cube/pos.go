@@ -112,11 +112,11 @@ func (p Pos) Neighbours(f func(neighbour Pos)) {
 	f(p)
 	p[0]++
 	p[1]++
-	if p[1] <= 255 {
+	if p[1] <= MaxY {
 		f(p)
 	}
 	p[1] -= 2
-	if p[1] >= 0 {
+	if p[1] >= MinY {
 		f(p)
 	}
 	p[1]++
