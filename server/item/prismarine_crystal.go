@@ -4,6 +4,6 @@ package item
 type PrismarineCrystals struct{}
 
 // EncodeItem ...
-func (p PrismarineCrystals) EncodeItem() (id int32, name string, meta int16) {
-	return 422, "minecraft:prismarine_crystals", 0
+func (p PrismarineCrystals) EncodeItem() (name string, meta int16) {
+	return "minecraft:prismarine_crystals", 0
 }

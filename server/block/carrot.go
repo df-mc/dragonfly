@@ -72,8 +72,8 @@ func (c Carrot) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Carrot) EncodeItem() (id int32, name string, meta int16) {
-	return 391, "minecraft:carrot", 0
+func (c Carrot) EncodeItem() (name string, meta int16) {
+	return "minecraft:carrot", 0
 }
 
 // RandomTick ...

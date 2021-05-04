@@ -39,11 +39,11 @@ func (d Dirt) Shovel() (world.Block, bool) {
 }
 
 // EncodeItem ...
-func (d Dirt) EncodeItem() (id int32, name string, meta int16) {
+func (d Dirt) EncodeItem() (name string, meta int16) {
 	if d.Coarse {
 		meta = 1
 	}
-	return 3, "minecraft:dirt", meta
+	return "minecraft:dirt", meta
 }
 
 // EncodeBlock ...

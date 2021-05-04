@@ -39,6 +39,6 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 }
 
 // EncodeItem ...
-func (f FlintAndSteel) EncodeItem() (id int32, name string, meta int16) {
-	return 259, "minecraft:flint_and_steel", 0
+func (f FlintAndSteel) EncodeItem() (name string, meta int16) {
+	return "minecraft:flint_and_steel", 0
 }

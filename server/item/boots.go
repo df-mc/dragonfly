@@ -56,21 +56,6 @@ func (b Boots) KnockBackResistance() float64 {
 }
 
 // EncodeItem ...
-func (b Boots) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + b.Tier.Name + "_boots"
-	switch b.Tier {
-	case armour.TierLeather:
-		return 301, name, 0
-	case armour.TierGold:
-		return 317, name, 0
-	case armour.TierChain:
-		return 305, name, 0
-	case armour.TierIron:
-		return 309, name, 0
-	case armour.TierDiamond:
-		return 313, name, 0
-	case armour.TierNetherite:
-		return 751, name, 0
-	}
-	panic("invalid boots tier")
+func (b Boots) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + b.Tier.Name + "_boots", 0
 }

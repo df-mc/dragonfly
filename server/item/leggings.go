@@ -60,21 +60,6 @@ func (l Leggings) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (l Leggings) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + l.Tier.Name + "_leggings"
-	switch l.Tier {
-	case armour.TierLeather:
-		return 300, name, 0
-	case armour.TierGold:
-		return 316, name, 0
-	case armour.TierChain:
-		return 304, name, 0
-	case armour.TierIron:
-		return 308, name, 0
-	case armour.TierDiamond:
-		return 312, name, 0
-	case armour.TierNetherite:
-		return 750, name, 0
-	}
-	panic("invalid leggings tier")
+func (l Leggings) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + l.Tier.Name + "_leggings", 0
 }

@@ -25,6 +25,6 @@ func (b Beetroot) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (b Beetroot) EncodeItem() (id int32, name string, meta int16) {
-	return 457, "minecraft:beetroot", 0
+func (b Beetroot) EncodeItem() (name string, meta int16) {
+	return "minecraft:beetroot", 0
 }

@@ -64,8 +64,8 @@ func (b BeetrootSeeds) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (b BeetrootSeeds) EncodeItem() (id int32, name string, meta int16) {
-	return 458, "minecraft:beetroot_seeds", 0
+func (b BeetrootSeeds) EncodeItem() (name string, meta int16) {
+	return "minecraft:beetroot_seeds", 0
 }
 
 // RandomTick ...

@@ -49,8 +49,8 @@ func (k Kelp) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Kelp) EncodeItem() (id int32, name string, meta int16) {
-	return 335, "minecraft:kelp", 0
+func (Kelp) EncodeItem() (name string, meta int16) {
+	return "minecraft:kelp", 0
 }
 
 // EncodeBlock ...

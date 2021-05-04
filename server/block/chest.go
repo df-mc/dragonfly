@@ -193,8 +193,8 @@ func (c Chest) EncodeNBT() map[string]interface{} {
 }
 
 // EncodeItem ...
-func (Chest) EncodeItem() (id int32, name string, meta int16) {
-	return 54, "minecraft:chest", 0
+func (Chest) EncodeItem() (name string, meta int16) {
+	return "minecraft:chest", 0
 }
 
 // EncodeBlock ...

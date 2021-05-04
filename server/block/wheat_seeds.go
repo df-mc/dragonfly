@@ -61,8 +61,8 @@ func (s WheatSeeds) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (s WheatSeeds) EncodeItem() (id int32, name string, meta int16) {
-	return 295, "minecraft:wheat_seeds", 0
+func (s WheatSeeds) EncodeItem() (name string, meta int16) {
+	return "minecraft:wheat_seeds", 0
 }
 
 // RandomTick ...

@@ -10,17 +10,17 @@ import (
 type EnchantedApple struct{}
 
 // AlwaysConsumable ...
-func (e EnchantedApple) AlwaysConsumable() bool {
+func (EnchantedApple) AlwaysConsumable() bool {
 	return true
 }
 
 // ConsumeDuration ...
-func (e EnchantedApple) ConsumeDuration() time.Duration {
+func (EnchantedApple) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
 }
 
 // Consume ...
-func (e EnchantedApple) Consume(_ *world.World, c Consumer) Stack {
+func (EnchantedApple) Consume(_ *world.World, c Consumer) Stack {
 	c.Saturate(4, 9.6)
 	c.AddEffect(effect.Absorption{}.WithSettings(time.Duration(2)*time.Minute, 4, false))
 	c.AddEffect(effect.Regeneration{}.WithSettings(time.Duration(30)*time.Second, 5, false))
@@ -30,6 +30,6 @@ func (e EnchantedApple) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (e EnchantedApple) EncodeItem() (id int32, name string, meta int16) {
-	return 466, "minecraft:enchanted_golden_apple", 0
+func (EnchantedApple) EncodeItem() (name string, meta int16) {
+	return "minecraft:enchanted_golden_apple", 0
 }

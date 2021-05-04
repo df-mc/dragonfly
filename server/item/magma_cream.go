@@ -4,6 +4,6 @@ package item
 type MagmaCream struct{}
 
 // EncodeItem ...
-func (m MagmaCream) EncodeItem() (id int32, name string, meta int16) {
-	return 378, "minecraft:magma_cream", 0
+func (m MagmaCream) EncodeItem() (name string, meta int16) {
+	return "minecraft:magma_cream", 0
 }

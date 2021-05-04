@@ -23,8 +23,8 @@ func (Barrier) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 }
 
 // EncodeItem ...
-func (Barrier) EncodeItem() (id int32, name string, meta int16) {
-	return -161, "minecraft:barrier", 0
+func (Barrier) EncodeItem() (name string, meta int16) {
+	return "minecraft:barrier", 0
 }
 
 // EncodeBlock ...

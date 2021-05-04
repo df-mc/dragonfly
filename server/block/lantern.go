@@ -90,12 +90,12 @@ func (l Lantern) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (l Lantern) EncodeItem() (id int32, name string, meta int16) {
+func (l Lantern) EncodeItem() (name string, meta int16) {
 	switch l.Type {
 	case fire.Normal():
-		return -208, "minecraft:lantern", 0
+		return "minecraft:lantern", 0
 	case fire.Soul():
-		return -269, "minecraft:soul_lantern", 0
+		return "minecraft:soul_lantern", 0
 	}
 	panic("invalid fire type")
 }

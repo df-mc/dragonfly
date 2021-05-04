@@ -26,8 +26,8 @@ func (c Clay) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (c Clay) EncodeItem() (id int32, name string, meta int16) {
-	return 82, "minecraft:clay", 0
+func (c Clay) EncodeItem() (name string, meta int16) {
+	return "minecraft:clay", 0
 }
 
 // EncodeBlock ...

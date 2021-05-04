@@ -20,8 +20,8 @@ func (s SoulSoil) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (SoulSoil) EncodeItem() (id int32, name string, meta int16) {
-	return -236, "minecraft:soul_soil", 0
+func (SoulSoil) EncodeItem() (name string, meta int16) {
+	return "minecraft:soul_soil", 0
 }
 
 // EncodeBlock ...

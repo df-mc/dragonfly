@@ -65,6 +65,6 @@ func (s Shears) MaxCount() int {
 }
 
 // EncodeItem ...
-func (s Shears) EncodeItem() (id int32, name string, meta int16) {
-	return 359, "minecraft:shears", 0
+func (s Shears) EncodeItem() (name string, meta int16) {
+	return "minecraft:shears", 0
 }

@@ -76,8 +76,7 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		m = nbt.EncodeNBT()
 	}
 	if !network {
-		_, name, damage := s.Item().EncodeItem()
-		m["Name"], m["Damage"] = name, damage
+		m["Name"], m["Damage"] = s.Item().EncodeItem()
 		m["Count"] = byte(s.Count())
 		if _, ok := s.Item().(item.Durable); ok {
 			m["Damage"] = int16(s.MaxDurability() - s.Durability())

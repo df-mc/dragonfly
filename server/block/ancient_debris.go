@@ -23,8 +23,8 @@ func (a AncientDebris) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (AncientDebris) EncodeItem() (id int32, name string, meta int16) {
-	return -271, "minecraft:ancient_debris", 0
+func (AncientDebris) EncodeItem() (name string, meta int16) {
+	return "minecraft:ancient_debris", 0
 }
 
 // EncodeBlock ...

@@ -41,8 +41,8 @@ func (p StainedGlassPane) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (p StainedGlassPane) EncodeItem() (id int32, name string, meta int16) {
-	return 160, "minecraft:stained_glass_pane", int16(p.Colour.Uint8())
+func (p StainedGlassPane) EncodeItem() (name string, meta int16) {
+	return "minecraft:stained_glass_pane", int16(p.Colour.Uint8())
 }
 
 // EncodeBlock ...

@@ -4,6 +4,6 @@ package item
 type Stick struct{}
 
 // EncodeItem ...
-func (s Stick) EncodeItem() (id int32, name string, meta int16) {
-	return 280, "minecraft:stick", 0
+func (s Stick) EncodeItem() (name string, meta int16) {
+	return "minecraft:stick", 0
 }

@@ -26,8 +26,8 @@ func (l LapisOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (LapisOre) EncodeItem() (id int32, name string, meta int16) {
-	return 21, "minecraft:lapis_ore", 0
+func (LapisOre) EncodeItem() (name string, meta int16) {
+	return "minecraft:lapis_ore", 0
 }
 
 // EncodeBlock ...

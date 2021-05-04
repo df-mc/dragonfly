@@ -79,7 +79,7 @@ func init() {
 				// The item wasn't registered, so don't register it as a creative item.
 				continue
 			}
-			if _, _, resultingMeta := it.EncodeItem(); resultingMeta != int16(data.Meta) {
+			if _, resultingMeta := it.EncodeItem(); resultingMeta != int16(data.Meta) {
 				// We found an item registered with that ID and a meta of 0, but we only need items with strictly
 				// the same meta here.
 				continue

@@ -68,11 +68,11 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 }
 
 // EncodeItem ...
-func (b Bucket) EncodeItem() (id int32, name string, meta int16) {
+func (b Bucket) EncodeItem() (name string, meta int16) {
 	if !b.Empty() {
-		return 325, "minecraft:" + b.Content.LiquidType() + "_bucket", 0
+		return "minecraft:" + b.Content.LiquidType() + "_bucket", 0
 	}
-	return 325, "minecraft:bucket", 0
+	return "minecraft:bucket", 0
 }
 
 type replaceable interface {

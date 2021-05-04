@@ -34,8 +34,8 @@ func (EmeraldBlock) PowersBeacon() bool {
 }
 
 // EncodeItem ...
-func (EmeraldBlock) EncodeItem() (id int32, name string, meta int16) {
-	return 133, "minecraft:emerald_block", 0
+func (EmeraldBlock) EncodeItem() (name string, meta int16) {
+	return "minecraft:emerald_block", 0
 }
 
 // EncodeBlock ...

@@ -21,8 +21,8 @@ func (m Melon) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Melon) EncodeItem() (id int32, name string, meta int16) {
-	return 103, "minecraft:melon_block", 0
+func (Melon) EncodeItem() (name string, meta int16) {
+	return "minecraft:melon_block", 0
 }
 
 // EncodeBlock ...

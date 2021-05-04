@@ -72,8 +72,8 @@ func (n NoteBlock) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (n NoteBlock) EncodeItem() (id int32, name string, meta int16) {
-	return 25, "minecraft:noteblock", 0
+func (n NoteBlock) EncodeItem() (name string, meta int16) {
+	return "minecraft:noteblock", 0
 }
 
 // EncodeBlock ...

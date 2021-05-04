@@ -29,8 +29,8 @@ func (g StainedGlass) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (g StainedGlass) EncodeItem() (id int32, name string, meta int16) {
-	return 241, "minecraft:stained_glass", int16(g.Colour.Uint8())
+func (g StainedGlass) EncodeItem() (name string, meta int16) {
+	return "minecraft:stained_glass", int16(g.Colour.Uint8())
 }
 
 // EncodeBlock ...

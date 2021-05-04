@@ -32,8 +32,8 @@ func (c CoalBlock) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (CoalBlock) EncodeItem() (id int32, name string, meta int16) {
-	return 173, "minecraft:coal_block", 0
+func (CoalBlock) EncodeItem() (name string, meta int16) {
+	return "minecraft:coal_block", 0
 }
 
 // EncodeBlock ...

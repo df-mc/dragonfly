@@ -68,8 +68,8 @@ func (n NetherWart) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (NetherWart) EncodeItem() (id int32, name string, meta int16) {
-	return 372, "minecraft:nether_wart", 0
+func (NetherWart) EncodeItem() (name string, meta int16) {
+	return "minecraft:nether_wart", 0
 }
 
 // EncodeBlock ...

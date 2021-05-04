@@ -22,8 +22,8 @@ func (t Terracotta) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Terracotta) EncodeItem() (id int32, name string, meta int16) {
-	return 172, "minecraft:hardened_clay", meta
+func (Terracotta) EncodeItem() (name string, meta int16) {
+	return "minecraft:hardened_clay", meta
 }
 
 // EncodeBlock ...

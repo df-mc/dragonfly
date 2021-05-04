@@ -11,14 +11,14 @@ import (
 type Item interface {
 	// EncodeItem encodes the item to its Minecraft representation, which consists of a numerical ID and a
 	// metadata value.
-	EncodeItem() (id int32, name string, meta int16)
+	EncodeItem() (name string, meta int16)
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
 // ID and metadata value using itemByID().
 // If an item with the ID and meta passed already exists, RegisterItem panics.
 func RegisterItem(item Item) {
-	_, name, meta := item.EncodeItem()
+	name, meta := item.EncodeItem()
 	h := itemHash{name: name, meta: meta}
 
 	if _, ok := items[h]; ok {
@@ -74,7 +74,7 @@ func ItemByName(name string, meta int16) (Item, bool) {
 // ItemRuntimeID attempts to return the runtime ID of the Item passed. False is returned if the Item is not
 // registered.
 func ItemRuntimeID(i Item) (rid int32, meta int16, ok bool) {
-	_, name, meta := i.EncodeItem()
+	name, meta := i.EncodeItem()
 	rid, ok = itemNamesToRuntimeIDs[name]
 	return rid, meta, ok
 }

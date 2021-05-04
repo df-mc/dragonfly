@@ -29,8 +29,8 @@ func (NetheriteBlock) PowersBeacon() bool {
 }
 
 // EncodeItem ...
-func (NetheriteBlock) EncodeItem() (id int32, name string, meta int16) {
-	return -270, "minecraft:netherite_block", 0
+func (NetheriteBlock) EncodeItem() (name string, meta int16) {
+	return "minecraft:netherite_block", 0
 }
 
 // EncodeBlock ...

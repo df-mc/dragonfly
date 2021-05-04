@@ -29,8 +29,8 @@ func (c CryingObsidian) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (CryingObsidian) EncodeItem() (id int32, name string, meta int16) {
-	return -289, "minecraft:crying_obsidian", 0
+func (CryingObsidian) EncodeItem() (name string, meta int16) {
+	return "minecraft:crying_obsidian", 0
 }
 
 // EncodeBlock ...

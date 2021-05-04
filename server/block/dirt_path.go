@@ -32,8 +32,8 @@ func (p DirtPath) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (DirtPath) EncodeItem() (id int32, name string, meta int16) {
-	return 198, "minecraft:grass_path", 0
+func (DirtPath) EncodeItem() (name string, meta int16) {
+	return "minecraft:grass_path", 0
 }
 
 // EncodeBlock ...

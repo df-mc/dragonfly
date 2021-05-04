@@ -4,6 +4,6 @@ package item
 type Coal struct{} //TODO: Fuel
 
 // EncodeItem ...
-func (Coal) EncodeItem() (id int32, name string, meta int16) {
-	return 263, "minecraft:coal", 0
+func (Coal) EncodeItem() (name string, meta int16) {
+	return "minecraft:coal", 0
 }

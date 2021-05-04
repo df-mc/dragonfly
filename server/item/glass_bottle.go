@@ -22,6 +22,6 @@ func (g GlassBottle) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *worl
 }
 
 // EncodeItem ...
-func (g GlassBottle) EncodeItem() (id int32, name string, meta int16) {
-	return 374, "minecraft:glass_bottle", 0
+func (g GlassBottle) EncodeItem() (name string, meta int16) {
+	return "minecraft:glass_bottle", 0
 }

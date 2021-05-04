@@ -71,8 +71,8 @@ func (d DragonEgg) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (DragonEgg) EncodeItem() (id int32, name string, meta int16) {
-	return 122, "minecraft:dragon_egg", 0
+func (DragonEgg) EncodeItem() (name string, meta int16) {
+	return "minecraft:dragon_egg", 0
 }
 
 // EncodeBlock ...

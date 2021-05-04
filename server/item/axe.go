@@ -72,21 +72,6 @@ func (a Axe) BaseMiningEfficiency(world.Block) float64 {
 }
 
 // EncodeItem ...
-func (a Axe) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + a.Tier.Name + "_axe"
-	switch a.Tier {
-	case tool.TierWood:
-		return 271, name, 0
-	case tool.TierGold:
-		return 286, name, 0
-	case tool.TierStone:
-		return 275, name, 0
-	case tool.TierIron:
-		return 258, name, 0
-	case tool.TierDiamond:
-		return 279, name, 0
-	case tool.TierNetherite:
-		return 746, name, 0
-	}
-	panic("invalid axe tier")
+func (a Axe) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + a.Tier.Name + "_axe", 0
 }

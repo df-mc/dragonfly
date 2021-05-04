@@ -25,6 +25,6 @@ func (a Apple) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (a Apple) EncodeItem() (id int32, name string, meta int16) {
-	return 260, "minecraft:apple", 0
+func (a Apple) EncodeItem() (name string, meta int16) {
+	return "minecraft:apple", 0
 }

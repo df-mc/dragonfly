@@ -28,6 +28,6 @@ func (e GoldenApple) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (e GoldenApple) EncodeItem() (id int32, name string, meta int16) {
-	return 322, "minecraft:golden_apple", 0
+func (e GoldenApple) EncodeItem() (name string, meta int16) {
+	return "minecraft:golden_apple", 0
 }

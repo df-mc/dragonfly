@@ -27,8 +27,8 @@ func (g Glowstone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Glowstone) EncodeItem() (id int32, name string, meta int16) {
-	return 89, "minecraft:glowstone", 0
+func (Glowstone) EncodeItem() (name string, meta int16) {
+	return "minecraft:glowstone", 0
 }
 
 // EncodeBlock ...

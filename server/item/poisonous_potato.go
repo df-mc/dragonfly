@@ -30,6 +30,6 @@ func (p PoisonousPotato) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (p PoisonousPotato) EncodeItem() (id int32, name string, meta int16) {
-	return 394, "minecraft:poisonous_potato", 0
+func (p PoisonousPotato) EncodeItem() (name string, meta int16) {
+	return "minecraft:poisonous_potato", 0
 }

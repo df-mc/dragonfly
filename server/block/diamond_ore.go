@@ -25,8 +25,8 @@ func (d DiamondOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (DiamondOre) EncodeItem() (id int32, name string, meta int16) {
-	return 56, "minecraft:diamond_ore", 0
+func (DiamondOre) EncodeItem() (name string, meta int16) {
+	return "minecraft:diamond_ore", 0
 }
 
 // EncodeBlock ...

@@ -4,8 +4,8 @@ package item
 type GoldIngot struct{}
 
 // EncodeItem ...
-func (GoldIngot) EncodeItem() (id int32, name string, meta int16) {
-	return 266, "minecraft:gold_ingot", 0
+func (GoldIngot) EncodeItem() (name string, meta int16) {
+	return "minecraft:gold_ingot", 0
 }
 
 // PayableForBeacon ...

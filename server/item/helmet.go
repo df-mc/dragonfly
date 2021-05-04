@@ -56,21 +56,6 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (h Helmet) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + h.Tier.Name + "_helmet"
-	switch h.Tier {
-	case armour.TierLeather:
-		return 298, name, 0
-	case armour.TierGold:
-		return 314, name, 0
-	case armour.TierChain:
-		return 302, name, 0
-	case armour.TierIron:
-		return 306, name, 0
-	case armour.TierDiamond:
-		return 310, name, 0
-	case armour.TierNetherite:
-		return 748, name, 0
-	}
-	panic("invalid helmet tier")
+func (h Helmet) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + h.Tier.Name + "_helmet", 0
 }

@@ -73,12 +73,12 @@ func (t Torch) HasLiquidDrops() bool {
 }
 
 // EncodeItem ...
-func (t Torch) EncodeItem() (id int32, name string, meta int16) {
+func (t Torch) EncodeItem() (name string, meta int16) {
 	switch t.Type {
 	case fire.Normal():
-		return 50, "minecraft:torch", 0
+		return "minecraft:torch", 0
 	case fire.Soul():
-		return -268, "minecraft:soul_torch", 0
+		return "minecraft:soul_torch", 0
 	}
 	panic("invalid fire type")
 }

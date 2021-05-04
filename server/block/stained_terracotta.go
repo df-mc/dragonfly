@@ -27,8 +27,8 @@ func (t StainedTerracotta) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (t StainedTerracotta) EncodeItem() (id int32, name string, meta int16) {
-	return 159, "minecraft:stained_hardened_clay", int16(t.Colour.Uint8())
+func (t StainedTerracotta) EncodeItem() (name string, meta int16) {
+	return "minecraft:stained_hardened_clay", int16(t.Colour.Uint8())
 }
 
 // EncodeBlock ...

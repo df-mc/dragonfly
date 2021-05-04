@@ -34,8 +34,8 @@ func (i IronBars) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 }
 
 // EncodeItem ...
-func (IronBars) EncodeItem() (id int32, name string, meta int16) {
-	return 101, "minecraft:iron_bars", 0
+func (IronBars) EncodeItem() (name string, meta int16) {
+	return "minecraft:iron_bars", 0
 }
 
 // EncodeBlock ...

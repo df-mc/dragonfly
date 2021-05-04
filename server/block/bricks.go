@@ -21,8 +21,8 @@ func (b Bricks) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Bricks) EncodeItem() (id int32, name string, meta int16) {
-	return 45, "minecraft:brick_block", 0
+func (Bricks) EncodeItem() (name string, meta int16) {
+	return "minecraft:brick_block", 0
 }
 
 // EncodeBlock ...

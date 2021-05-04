@@ -49,21 +49,6 @@ func (s Sword) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (s Sword) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + s.Tier.Name + "_sword"
-	switch s.Tier {
-	case tool.TierWood:
-		return 268, name, 0
-	case tool.TierGold:
-		return 283, name, 0
-	case tool.TierStone:
-		return 272, name, 0
-	case tool.TierIron:
-		return 267, name, 0
-	case tool.TierDiamond:
-		return 276, name, 0
-	case tool.TierNetherite:
-		return 743, name, 0
-	}
-	panic("invalid sword tier")
+func (s Sword) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + s.Tier.Name + "_sword", 0
 }

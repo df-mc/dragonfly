@@ -34,8 +34,8 @@ func (GoldBlock) PowersBeacon() bool {
 }
 
 // EncodeItem ...
-func (GoldBlock) EncodeItem() (id int32, name string, meta int16) {
-	return 41, "minecraft:gold_block", 0
+func (GoldBlock) EncodeItem() (name string, meta int16) {
+	return "minecraft:gold_block", 0
 }
 
 // EncodeBlock ...

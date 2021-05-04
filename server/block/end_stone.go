@@ -19,8 +19,8 @@ func (e EndStone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (EndStone) EncodeItem() (id int32, name string, meta int16) {
-	return 121, "minecraft:end_stone", 0
+func (EndStone) EncodeItem() (name string, meta int16) {
+	return "minecraft:end_stone", 0
 }
 
 // EncodeBlock ...

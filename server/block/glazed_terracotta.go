@@ -30,13 +30,13 @@ func (t GlazedTerracotta) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (t GlazedTerracotta) EncodeItem() (id int32, name string, meta int16) {
+func (t GlazedTerracotta) EncodeItem() (name string, meta int16) {
 	colourName := t.Colour.String()
 	// Item ID for glazed terracotta is equal to 220 + colour number, except for purple glazed terracotta.
 	if t.Colour == colour.Purple() {
-		return 219, "minecraft:" + colourName + "_glazed_terracotta", 0
+		return "minecraft:" + colourName + "_glazed_terracotta", 0
 	}
-	return int32(220 + t.Colour.Uint8()), "minecraft:" + colourName + "_glazed_terracotta", 0
+	return "minecraft:" + colourName + "_glazed_terracotta", 0
 }
 
 // EncodeBlock ...

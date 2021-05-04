@@ -37,8 +37,8 @@ func (p GlassPane) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (GlassPane) EncodeItem() (id int32, name string, meta int16) {
-	return 102, "minecraft:glass_pane", meta
+func (GlassPane) EncodeItem() (name string, meta int16) {
+	return "minecraft:glass_pane", meta
 }
 
 // EncodeBlock ...

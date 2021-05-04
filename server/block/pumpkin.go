@@ -54,11 +54,11 @@ func (p Pumpkin) Carve(f cube.Face) (world.Block, bool) {
 }
 
 // EncodeItem ...
-func (p Pumpkin) EncodeItem() (id int32, name string, meta int16) {
+func (p Pumpkin) EncodeItem() (name string, meta int16) {
 	if p.Carved {
-		return -155, "minecraft:carved_pumpkin", 0
+		return "minecraft:carved_pumpkin", 0
 	}
-	return 86, "minecraft:pumpkin", 0
+	return "minecraft:pumpkin", 0
 }
 
 // EncodeBlock ...

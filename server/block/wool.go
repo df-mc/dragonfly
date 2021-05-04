@@ -40,8 +40,8 @@ func (w Wool) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (w Wool) EncodeItem() (id int32, name string, meta int16) {
-	return 35, "minecraft:wool", int16(w.Colour.Uint8())
+func (w Wool) EncodeItem() (name string, meta int16) {
+	return "minecraft:wool", int16(w.Colour.Uint8())
 }
 
 // EncodeBlock ...

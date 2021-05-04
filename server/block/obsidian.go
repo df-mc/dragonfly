@@ -13,8 +13,8 @@ type Obsidian struct {
 }
 
 // EncodeItem ...
-func (Obsidian) EncodeItem() (id int32, name string, meta int16) {
-	return 49, "minecraft:obsidian", 0
+func (Obsidian) EncodeItem() (name string, meta int16) {
+	return "minecraft:obsidian", 0
 }
 
 // EncodeBlock ...

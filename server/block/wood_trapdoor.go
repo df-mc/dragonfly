@@ -83,26 +83,11 @@ func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 }
 
 // EncodeItem ...
-func (t WoodTrapdoor) EncodeItem() (id int32, name string, meta int16) {
-	switch t.Wood {
-	case wood.Oak():
-		return 96, "minecraft:trapdoor", 0
-	case wood.Spruce():
-		return -149, "minecraft:spruce_trapdoor", 0
-	case wood.Birch():
-		return -146, "minecraft:birch_trapdoor", 0
-	case wood.Jungle():
-		return -148, "minecraft:jungle_trapdoor", 0
-	case wood.Acacia():
-		return -145, "minecraft:acacia_trapdoor", 0
-	case wood.DarkOak():
-		return -147, "minecraft:dark_oak_trapdoor", 0
-	case wood.Crimson():
-		return -246, "minecraft:crimson_trapdoor", 0
-	case wood.Warped():
-		return -247, "minecraft:warped_trapdoor", 0
+func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
+	if t.Wood == wood.Oak() {
+		return "minecraft:trapdoor", 0
 	}
-	panic("invalid wood type")
+	return "minecraft:" + t.Wood.String() + "_trapdoor", 0
 }
 
 // EncodeBlock ...

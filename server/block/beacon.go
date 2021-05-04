@@ -218,8 +218,8 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 }
 
 // EncodeItem ...
-func (Beacon) EncodeItem() (id int32, name string, meta int16) {
-	return 138, "minecraft:beacon", 0
+func (Beacon) EncodeItem() (name string, meta int16) {
+	return "minecraft:beacon", 0
 }
 
 // EncodeBlock ...

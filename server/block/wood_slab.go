@@ -115,23 +115,23 @@ func (s WoodSlab) AABB(cube.Pos, *world.World) []physics.AABB {
 }
 
 // EncodeItem ...
-func (s WoodSlab) EncodeItem() (id int32, name string, meta int16) {
+func (s WoodSlab) EncodeItem() (name string, meta int16) {
 	switch s.Wood {
 	case wood.Oak(), wood.Spruce(), wood.Birch(), wood.Jungle(), wood.Acacia(), wood.DarkOak():
 		if s.Double {
-			return 157, "minecraft:double_wooden_slab", int16(s.Wood.Uint8())
+			return "minecraft:double_wooden_slab", int16(s.Wood.Uint8())
 		}
-		return 158, "minecraft:wooden_slab", int16(s.Wood.Uint8())
+		return "minecraft:wooden_slab", int16(s.Wood.Uint8())
 	case wood.Crimson():
 		if s.Double {
-			return -266, "minecraft:crimson_double_slab", 0
+			return "minecraft:crimson_double_slab", 0
 		}
-		return -264, "minecraft:crimson_slab", 0
+		return "minecraft:crimson_slab", 0
 	case wood.Warped():
 		if s.Double {
-			return -267, "minecraft:warped_double_slab", 0
+			return "minecraft:warped_double_slab", 0
 		}
-		return -265, "minecraft:warped_slab", 0
+		return "minecraft:warped_slab", 0
 	}
 	panic("invalid wood type")
 }

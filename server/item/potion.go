@@ -36,6 +36,6 @@ func (p Potion) Consume(_ *world.World, c Consumer) Stack {
 }
 
 // EncodeItem ...
-func (p Potion) EncodeItem() (id int32, name string, meta int16) {
-	return 424, "minecraft:potion", int16(p.Type.Uint8())
+func (p Potion) EncodeItem() (name string, meta int16) {
+	return "minecraft:potion", int16(p.Type.Uint8())
 }

@@ -81,21 +81,6 @@ func (s Shovel) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (s Shovel) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + s.Tier.Name + "_shovel"
-	switch s.Tier {
-	case tool.TierWood:
-		return 269, name, 0
-	case tool.TierGold:
-		return 284, name, 0
-	case tool.TierStone:
-		return 273, name, 0
-	case tool.TierIron:
-		return 256, name, 0
-	case tool.TierDiamond:
-		return 277, name, 0
-	case tool.TierNetherite:
-		return 744, name, 0
-	}
-	panic("invalid shovel tier")
+func (s Shovel) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + s.Tier.Name + "_shovel", 0
 }

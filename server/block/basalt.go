@@ -41,11 +41,11 @@ func (b Basalt) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (b Basalt) EncodeItem() (id int32, name string, meta int16) {
+func (b Basalt) EncodeItem() (name string, meta int16) {
 	if b.Polished {
-		return -235, "minecraft:polished_basalt", 0
+		return "minecraft:polished_basalt", 0
 	}
-	return -234, "minecraft:basalt", 0
+	return "minecraft:basalt", 0
 }
 
 // EncodeBlock ...

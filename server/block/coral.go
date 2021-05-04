@@ -109,11 +109,11 @@ func (c Coral) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // EncodeItem ...
-func (c Coral) EncodeItem() (id int32, name string, meta int16) {
+func (c Coral) EncodeItem() (name string, meta int16) {
 	if c.Dead {
-		return -131, "minecraft:coral", int16(c.Type.Uint8() | 8)
+		return "minecraft:coral", int16(c.Type.Uint8() | 8)
 	}
-	return -131, "minecraft:coral", int16(c.Type.Uint8())
+	return "minecraft:coral", int16(c.Type.Uint8())
 }
 
 // allCoral returns a list of all coral block variants

@@ -74,21 +74,6 @@ func (h Hoe) DurabilityInfo() DurabilityInfo {
 }
 
 // EncodeItem ...
-func (h Hoe) EncodeItem() (id int32, name string, meta int16) {
-	name = "minecraft:" + h.Tier.Name + "_hoe"
-	switch h.Tier {
-	case tool.TierWood:
-		return 290, name, 0
-	case tool.TierGold:
-		return 294, name, 0
-	case tool.TierStone:
-		return 291, name, 0
-	case tool.TierIron:
-		return 292, name, 0
-	case tool.TierDiamond:
-		return 293, name, 0
-	case tool.TierNetherite:
-		return 747, name, 0
-	}
-	panic("invalid hoe tier")
+func (h Hoe) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + h.Tier.Name + "_hoe", 0
 }

@@ -4,8 +4,8 @@ package item
 type NetheriteIngot struct{}
 
 // EncodeItem ...
-func (NetheriteIngot) EncodeItem() (id int32, name string, meta int16) {
-	return 742, "minecraft:netherite_ingot", 0
+func (NetheriteIngot) EncodeItem() (name string, meta int16) {
+	return "minecraft:netherite_ingot", 0
 }
 
 // PayableForBeacon ...

@@ -116,18 +116,18 @@ func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 }
 
 // EncodeItem ...
-func (g GrassPlant) EncodeItem() (id int32, name string, meta int16) {
+func (g GrassPlant) EncodeItem() (name string, meta int16) {
 	switch g.Type {
 	case grass.SmallGrass():
-		return 31, "minecraft:tallgrass", 1
+		return "minecraft:tallgrass", 1
 	case grass.Fern():
-		return 31, "minecraft:tallgrass", 2
+		return "minecraft:tallgrass", 2
 	case grass.TallGrass():
-		return 175, "minecraft:double_plant", 2
+		return "minecraft:double_plant", 2
 	case grass.LargeFern():
-		return 175, "minecraft:double_plant", 3
+		return "minecraft:double_plant", 3
 	case grass.NetherSprouts():
-		return 760, "minecraft:nether_sprouts", 0
+		return "minecraft:nether_sprouts", 0
 	}
 	panic("should never happen")
 }

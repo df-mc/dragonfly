@@ -4,6 +4,6 @@ package item
 type LapisLazuli struct{}
 
 // EncodeItem ...
-func (LapisLazuli) EncodeItem() (id int32, name string, meta int16) {
-	return 351, "minecraft:dye", 4
+func (LapisLazuli) EncodeItem() (name string, meta int16) {
+	return "minecraft:dye", 4
 }

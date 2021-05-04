@@ -97,8 +97,8 @@ func (p PumpkinSeeds) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (p PumpkinSeeds) EncodeItem() (id int32, name string, meta int16) {
-	return 361, "minecraft:pumpkin_seeds", 0
+func (p PumpkinSeeds) EncodeItem() (name string, meta int16) {
+	return "minecraft:pumpkin_seeds", 0
 }
 
 // EncodeBlock ...
