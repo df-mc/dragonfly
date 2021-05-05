@@ -133,7 +133,10 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	// actual substantial changes, so we don't check this.
 	_, err = p.db.Get(append(key, keyVersion), nil)
 	if err == leveldb.ErrNotFound {
-		return nil, false, nil
+		// The new key was not found, so we try the old key.
+		if _, err = p.db.Get(append(key, keyVersionOld), nil); err != nil {
+			return nil, false, nil
+		}
 	} else if err != nil {
 		return nil, true, fmt.Errorf("error reading version: %w", err)
 	}
