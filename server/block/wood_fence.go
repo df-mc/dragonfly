@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -20,12 +19,7 @@ type WoodFence struct {
 
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(w, 1)),
-	}
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
 // CanDisplace ...

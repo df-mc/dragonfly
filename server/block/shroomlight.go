@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/item"
-)
-
 // Shroomlight are light-emitting blocks that generate in huge fungi.
 type Shroomlight struct {
 	solid
@@ -16,12 +12,7 @@ func (Shroomlight) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (s Shroomlight) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1,
-		Harvestable: alwaysHarvestable,
-		Effective:   hoeEffective,
-		Drops:       simpleDrops(item.NewStack(s, 1)),
-	}
+	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(s))
 }
 
 // EncodeItem ...

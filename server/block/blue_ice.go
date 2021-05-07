@@ -14,12 +14,7 @@ func (BlueIce) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (b BlueIce) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2.8,
-		Harvestable: alwaysHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(),
-	}
+	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, simpleDrops())
 }
 
 // EncodeItem ...

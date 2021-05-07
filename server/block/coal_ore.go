@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/item"
-)
-
 // CoalOre is a common ore.
 type CoalOre struct {
 	solid
@@ -12,13 +8,10 @@ type CoalOre struct {
 
 // BreakInfo ...
 func (c CoalOre) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(item.Coal{}, 1)), //TODO: Silk Touch
-		XPDrops:     XPDropRange{0, 2},
-	}
+	// TODO: Silk touch.
+	b := newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	b.XPDrops = XPDropRange{0, 2}
+	return b
 }
 
 // EncodeItem ...

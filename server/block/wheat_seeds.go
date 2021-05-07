@@ -47,17 +47,12 @@ func (s WheatSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // BreakInfo ...
 func (s WheatSeeds) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops: func(t tool.Tool) []item.Stack {
-			if s.Growth < 7 {
-				return []item.Stack{item.NewStack(s, 1)}
-			}
-			return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.Intn(4)+1)}
-		},
-	}
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
+		if s.Growth < 7 {
+			return []item.Stack{item.NewStack(s, 1)}
+		}
+		return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.Intn(4)+1)}
+	})
 }
 
 // EncodeItem ...

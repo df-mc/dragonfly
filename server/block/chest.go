@@ -150,12 +150,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2.5,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(append(c.inventory.Contents(), item.NewStack(c, 1))...),
-	}
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Contents(), item.NewStack(c, 1))...))
 }
 
 // Drops returns the drops of the chest. This includes all items held in the inventory and the chest itself.

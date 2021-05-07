@@ -79,19 +79,14 @@ func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 
 // BreakInfo ...
 func (s WoodSlab) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops: func(t tool.Tool) []item.Stack {
-			if s.Double {
-				s.Double = false
-				// If the slab is double, it should drop two single slabs.
-				return []item.Stack{item.NewStack(s, 2)}
-			}
-			return []item.Stack{item.NewStack(s, 1)}
-		},
-	}
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t tool.Tool) []item.Stack {
+		if s.Double {
+			s.Double = false
+			// If the slab is double, it should drop two single slabs.
+			return []item.Stack{item.NewStack(s, 2)}
+		}
+		return []item.Stack{item.NewStack(s, 1)}
+	})
 }
 
 // LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.

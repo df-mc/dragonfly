@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/item"
-)
-
 // Bricks are decorative building blocks.
 type Bricks struct {
 	solid
@@ -12,12 +8,7 @@ type Bricks struct {
 
 // BreakInfo ...
 func (b Bricks) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(b, 1)),
-	}
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
 // EncodeItem ...

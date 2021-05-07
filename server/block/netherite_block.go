@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -13,14 +12,9 @@ type NetheriteBlock struct {
 
 // BreakInfo ...
 func (n NetheriteBlock) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 50,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
-		},
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(n, 1)),
-	}
+	return newBreakInfo(50, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+	}, pickaxeEffective, oneOf(n))
 }
 
 // PowersBeacon ...

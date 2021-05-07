@@ -42,12 +42,7 @@ func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	return placed(ctx)
 }
 
-var quartzBreakInfo = BreakInfo{
-	Hardness:    0.8,
-	Harvestable: pickaxeHarvestable,
-	Effective:   pickaxeEffective,
-	Drops:       simpleDrops(item.NewStack(Quartz{}, 1)),
-}
+var quartzBreakInfo = newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(Quartz{}))
 
 // BreakInfo ...
 func (q Quartz) BreakInfo() BreakInfo {

@@ -34,12 +34,7 @@ func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // BreakInfo ...
 func (l LitPumpkin) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(l, 1)),
-	}
+	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(l))
 }
 
 // EncodeItem ...

@@ -80,12 +80,7 @@ func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (l Lantern) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3.5,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(l, 1)),
-	}
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
 }
 
 // EncodeItem ...

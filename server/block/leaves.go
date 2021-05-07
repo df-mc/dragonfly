@@ -77,24 +77,19 @@ func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.2,
-		Harvestable: alwaysHarvestable,
-		Effective: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
-		},
-		Drops: func(t tool.Tool) []item.Stack {
-			if t.ToolType() == tool.TypeShears { // TODO: Silk Touch
-				return []item.Stack{item.NewStack(l, 1)}
-			}
-			var drops []item.Stack
-			if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
-				drops = append(drops, item.NewStack(item.Apple{}, 1))
-			}
-			// TODO: Saplings and sticks can drop along with apples
-			return drops
-		},
-	}
+	return newBreakInfo(0.2, alwaysHarvestable, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
+	}, func(t tool.Tool) []item.Stack {
+		if t.ToolType() == tool.TypeShears { // TODO: Silk Touch
+			return []item.Stack{item.NewStack(l, 1)}
+		}
+		var drops []item.Stack
+		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
+			drops = append(drops, item.NewStack(item.Apple{}, 1))
+		}
+		// TODO: Saplings and sticks can drop along with apples
+		return drops
+	})
 }
 
 // EncodeItem ...

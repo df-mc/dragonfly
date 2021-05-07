@@ -40,20 +40,16 @@ func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g GrassPlant) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops: func(t tool.Tool) []item.Stack {
-			if g.Type == grass.NetherSprouts() {
-				return []item.Stack{item.NewStack(g, 1)}
-			}
-			if rand.Float32() > 0.57 {
-				return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
-			}
-			return []item.Stack{}
-		},
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
+		if g.Type == grass.NetherSprouts() {
+			return []item.Stack{item.NewStack(g, 1)}
+		}
+		if rand.Float32() > 0.57 {
+			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
+		}
+		return []item.Stack{}
+	})
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.

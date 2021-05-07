@@ -62,12 +62,7 @@ func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 
 // BreakInfo ...
 func (d DragonEgg) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(d, 1)),
-	}
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d))
 }
 
 // EncodeItem ...

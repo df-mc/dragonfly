@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/item"
-)
-
 // Terracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. For colouring it,
 // take a look at StainedTerracotta.
 type Terracotta struct {
@@ -13,12 +9,7 @@ type Terracotta struct {
 
 // BreakInfo ...
 func (t Terracotta) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1.25,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(t, 1)),
-	}
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
 }
 
 // EncodeItem ...

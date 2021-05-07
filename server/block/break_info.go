@@ -81,6 +81,16 @@ type BreakInfo struct {
 	XPDrops XPDropRange
 }
 
+// newBreakInfo creates a BreakInfo struct with the properties passed. The XPDrops field is 0 by default.
+func newBreakInfo(hardness float64, harvestable func(tool.Tool) bool, effective func(tool.Tool) bool, drops func(tool2 tool.Tool) []item.Stack) BreakInfo {
+	return BreakInfo{
+		Hardness:    hardness,
+		Harvestable: harvestable,
+		Effective:   effective,
+		Drops:       drops,
+	}
+}
+
 // XPDropRange holds the min & max XP drop amounts of blocks.
 type XPDropRange [2]int
 
@@ -119,12 +129,28 @@ var alwaysHarvestable = func(t tool.Tool) bool {
 	return true
 }
 
+// neverHarvestable is a convenience function for blocks that are not harvestable by any item.
+var neverHarvestable = func(t tool.Tool) bool {
+	return false
+}
+
 // pickaxeHarvestable is a convenience function for blocks that are harvestable using any kind of pickaxe.
 var pickaxeHarvestable = pickaxeEffective
 
 // simpleDrops returns a drops function that returns the items passed.
 func simpleDrops(s ...item.Stack) func(t tool.Tool) []item.Stack {
 	return func(t tool.Tool) []item.Stack {
+		return s
+	}
+}
+
+// oneOf returns a drops function that returns one of each of the item types passed.
+func oneOf(i ...world.Item) func(t tool.Tool) []item.Stack {
+	return func(t tool.Tool) []item.Stack {
+		var s []item.Stack
+		for _, it := range i {
+			s = append(s, item.NewStack(it, 1))
+		}
 		return s
 	}
 }

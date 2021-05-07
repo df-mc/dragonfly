@@ -22,17 +22,12 @@ func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (g Gravel) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.6,
-		Harvestable: alwaysHarvestable,
-		Effective:   shovelEffective,
-		Drops: func(t tool.Tool) []item.Stack {
-			if rand.Float64() < 0.1 {
-				return []item.Stack{item.NewStack(item.Flint{}, 1)}
-			}
-			return []item.Stack{item.NewStack(g, 1)}
-		},
-	}
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, func(t tool.Tool) []item.Stack {
+		if rand.Float64() < 0.1 {
+			return []item.Stack{item.NewStack(item.Flint{}, 1)}
+		}
+		return []item.Stack{item.NewStack(g, 1)}
+	})
 }
 
 // EncodeItem ...

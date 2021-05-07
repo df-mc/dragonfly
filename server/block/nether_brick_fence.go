@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -14,12 +13,7 @@ type NetherBrickFence struct {
 
 // BreakInfo ...
 func (n NetherBrickFence) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(n, 1)),
-	}
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n))
 }
 
 // CanDisplace ...

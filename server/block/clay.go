@@ -17,12 +17,8 @@ func (c Clay) Instrument() instrument.Instrument {
 
 // BreakInfo ...
 func (c Clay) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.6,
-		Harvestable: alwaysHarvestable,
-		Effective:   shovelEffective,
-		Drops:       simpleDrops(item.NewStack(item.ClayBall{}, 4)), //TODO: Drops itself if mined with silk touch
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, simpleDrops(item.NewStack(item.ClayBall{}, 4)))
 }
 
 // EncodeItem ...

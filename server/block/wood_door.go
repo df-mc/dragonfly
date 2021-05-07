@@ -110,12 +110,7 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Use
 
 // BreakInfo ...
 func (d WoodDoor) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(d, 1)),
-	}
+	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
 }
 
 // CanDisplace ...

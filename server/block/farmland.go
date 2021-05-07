@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 )
@@ -66,12 +65,7 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 
 // BreakInfo ...
 func (f Farmland) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.6,
-		Harvestable: alwaysHarvestable,
-		Effective:   shovelEffective,
-		Drops:       simpleDrops(item.NewStack(Dirt{}, 1)),
-	}
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
 }
 
 // EncodeBlock ...

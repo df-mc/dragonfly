@@ -38,12 +38,7 @@ func (Carpet) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (c Carpet) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.1,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(c, 1)),
-	}
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c))
 }
 
 // EncodeItem ...

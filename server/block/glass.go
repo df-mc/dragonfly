@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/item/tool"
-)
-
 // Glass is a decorative, fully transparent solid block that can be dyed into stained glass.
 type Glass struct {
 	solid
@@ -13,14 +9,8 @@ type Glass struct {
 
 // BreakInfo ...
 func (g Glass) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 0.3,
-		Drops:    simpleDrops(),
-		Harvestable: func(t tool.Tool) bool {
-			return true
-		},
-		Effective: nothingEffective,
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, simpleDrops())
 }
 
 // EncodeItem ...

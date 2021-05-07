@@ -1,7 +1,5 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/item"
-
 // EndBricks is a block made from combining four endstone blocks together.
 type EndBricks struct {
 	solid
@@ -9,13 +7,8 @@ type EndBricks struct {
 }
 
 // BreakInfo ...
-func (c EndBricks) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.8,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(c, 1)),
-	}
+func (e EndBricks) BreakInfo() BreakInfo {
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(e))
 }
 
 // EncodeItem ...

@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -10,26 +9,37 @@ import (
 type Obsidian struct {
 	solid
 	bassDrum
+	// Crying specifies if the block is a crying obsidian block. If true, the block is blue and emits light.
+	Crying bool
+}
+
+// LightEmissionLevel ...
+func (o Obsidian) LightEmissionLevel() uint8 {
+	if o.Crying {
+		return 10
+	}
+	return 0
 }
 
 // EncodeItem ...
-func (Obsidian) EncodeItem() (name string, meta int16) {
+func (o Obsidian) EncodeItem() (name string, meta int16) {
+	if o.Crying {
+		return "minecraft:crying_obsidian", 0
+	}
 	return "minecraft:obsidian", 0
 }
 
 // EncodeBlock ...
-func (Obsidian) EncodeBlock() (string, map[string]interface{}) {
+func (o Obsidian) EncodeBlock() (string, map[string]interface{}) {
+	if o.Crying {
+		return "minecraft:crying_obsidian", nil
+	}
 	return "minecraft:obsidian", nil
 }
 
 // BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 50,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
-		},
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(o, 1)),
-	}
+	return newBreakInfo(50, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+	}, pickaxeEffective, oneOf(o))
 }

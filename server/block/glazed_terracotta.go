@@ -20,12 +20,7 @@ type GlazedTerracotta struct {
 
 // BreakInfo ...
 func (t GlazedTerracotta) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1.4,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(t, 1)),
-	}
+	return newBreakInfo(1.4, pickaxeHarvestable, pickaxeEffective, oneOf(t))
 }
 
 // EncodeItem ...

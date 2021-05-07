@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -17,12 +16,7 @@ type StainedTerracotta struct {
 
 // BreakInfo ...
 func (t StainedTerracotta) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1.25,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(t, 1)),
-	}
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
 }
 
 // EncodeItem ...

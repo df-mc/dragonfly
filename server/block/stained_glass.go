@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -17,14 +16,8 @@ type StainedGlass struct {
 
 // BreakInfo ...
 func (g StainedGlass) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 0.3,
-		Harvestable: func(t tool.Tool) bool {
-			return true // TODO(lhochbaum): Glass can be silk touched, implement silk touch.
-		},
-		Effective: nothingEffective,
-		Drops:     simpleDrops(),
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, simpleDrops())
 }
 
 // EncodeItem ...

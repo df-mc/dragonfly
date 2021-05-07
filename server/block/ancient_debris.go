@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -12,14 +11,9 @@ type AncientDebris struct {
 
 // BreakInfo ...
 func (a AncientDebris) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 30,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
-		},
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(a, 1)),
-	}
+	return newBreakInfo(30, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+	}, pickaxeEffective, oneOf(a))
 }
 
 // EncodeItem ...

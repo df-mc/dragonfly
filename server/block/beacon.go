@@ -31,12 +31,7 @@ type Beacon struct {
 
 // BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(b, 1)),
-	}
+	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
 }
 
 // UseOnBlock ...

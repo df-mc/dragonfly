@@ -88,12 +88,7 @@ func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // BreakInfo ...
 func (p PumpkinSeeds) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(p, 1)),
-	}
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
 }
 
 // EncodeItem ...

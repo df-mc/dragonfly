@@ -1,7 +1,5 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/item"
-
 // QuartzBricks is a mineral block used only for decoration.
 type QuartzBricks struct {
 	solid
@@ -10,12 +8,7 @@ type QuartzBricks struct {
 
 // BreakInfo ...
 func (q QuartzBricks) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.8,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(q, 1)),
-	}
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(q))
 }
 
 // EncodeItem ...

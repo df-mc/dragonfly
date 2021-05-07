@@ -1,7 +1,5 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/item"
-
 // EndStone is a block found in The End.
 type EndStone struct {
 	solid
@@ -10,12 +8,7 @@ type EndStone struct {
 
 // BreakInfo ...
 func (e EndStone) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(e, 1)),
-	}
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(e))
 }
 
 // EncodeItem ...

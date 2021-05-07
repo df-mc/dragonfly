@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -14,12 +13,7 @@ type IronBars struct {
 
 // BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    5,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(i, 1)),
-	}
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i))
 }
 
 // CanDisplace ...

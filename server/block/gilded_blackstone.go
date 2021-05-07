@@ -13,17 +13,12 @@ type GildedBlackstone struct {
 
 // BreakInfo ...
 func (b GildedBlackstone) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1.5,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops: func(t tool.Tool) []item.Stack {
-			if rand.Float64() < 0.1 {
-				return []item.Stack{item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)}
-			}
-			return []item.Stack{item.NewStack(b, 1)}
-		},
-	}
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, func(t tool.Tool) []item.Stack {
+		if rand.Float64() < 0.1 {
+			return []item.Stack{item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)}
+		}
+		return []item.Stack{item.NewStack(b, 1)}
+	})
 }
 
 // EncodeItem ...

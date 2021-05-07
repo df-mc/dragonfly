@@ -18,6 +18,11 @@ type Torch struct {
 	Type FireType
 }
 
+// BreakInfo ...
+func (t Torch) BreakInfo() BreakInfo {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
+}
+
 // LightEmissionLevel ...
 func (t Torch) LightEmissionLevel() uint8 {
 	switch t.Type {

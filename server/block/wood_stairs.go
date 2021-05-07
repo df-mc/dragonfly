@@ -58,12 +58,7 @@ func (s WoodStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s WoodStairs) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(s, 1)),
-	}
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(s))
 }
 
 // EncodeItem ...

@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
@@ -92,14 +91,8 @@ func (c Coral) ScheduledTick(pos cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (c Coral) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 0,
-		Harvestable: func(t tool.Tool) bool {
-			return false //TODO: Silk touch
-		},
-		Effective: nothingEffective,
-		Drops:     simpleDrops(),
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0, neverHarvestable, nothingEffective, simpleDrops())
 }
 
 // EncodeBlock ...

@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -17,12 +16,7 @@ type Dirt struct {
 
 // BreakInfo ...
 func (d Dirt) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.5,
-		Harvestable: alwaysHarvestable,
-		Effective:   shovelEffective,
-		Drops:       simpleDrops(item.NewStack(d, 1)),
-	}
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d))
 }
 
 // Till ...

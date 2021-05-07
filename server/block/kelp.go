@@ -39,13 +39,7 @@ func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // BreakInfo ...
 func (k Kelp) BreakInfo() BreakInfo {
-	// Kelp can be instantly destroyed.
-	return BreakInfo{
-		Hardness:    0.0,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(k, 1)),
-	}
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(k))
 }
 
 // EncodeItem ...

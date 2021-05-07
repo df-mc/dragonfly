@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/instrument"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -30,12 +29,7 @@ func (w Wool) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (w Wool) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.8,
-		Harvestable: alwaysHarvestable,
-		Effective:   shearsEffective,
-		Drops:       simpleDrops(item.NewStack(w, 1)),
-	}
+	return newBreakInfo(0.8, alwaysHarvestable, shearsEffective, oneOf(w))
 }
 
 // EncodeItem ...

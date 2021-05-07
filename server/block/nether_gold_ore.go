@@ -12,13 +12,10 @@ type NetherGoldOre struct {
 
 // BreakInfo ...
 func (n NetherGoldOre) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)), //TODO: Silk Touch
-		XPDrops:     XPDropRange{0, 1},
-	}
+	// TODO: Silk touch.
+	i := newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)))
+	i.XPDrops = XPDropRange{0, 1}
+	return i
 }
 
 // EncodeItem ...

@@ -19,12 +19,8 @@ func (SeaLantern) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (s SeaLantern) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.3,
-		Harvestable: alwaysHarvestable,
-		Effective:   nothingEffective,
-		Drops:       simpleDrops(item.NewStack(item.PrismarineCrystals{}, rand.Intn(2)+2)), //TODO: Silk Touch
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(item.PrismarineCrystals{}, rand.Intn(2)+2)))
 }
 
 // EncodeItem ...

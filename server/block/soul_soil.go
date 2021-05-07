@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/item"
-)
-
 // SoulSoil is a block naturally found only in the soul sand valley.
 type SoulSoil struct {
 	solid
@@ -11,12 +7,7 @@ type SoulSoil struct {
 
 // BreakInfo ...
 func (s SoulSoil) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.5,
-		Harvestable: alwaysHarvestable,
-		Effective:   shovelEffective,
-		Drops:       simpleDrops(item.NewStack(s, 1)),
-	}
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
 }
 
 // EncodeItem ...

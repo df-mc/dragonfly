@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -21,14 +20,9 @@ func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (c CoalBlock) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 5,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierWood.HarvestLevel
-		},
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(c, 1)),
-	}
+	return newBreakInfo(5, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierWood.HarvestLevel
+	}, pickaxeEffective, oneOf(c))
 }
 
 // EncodeItem ...

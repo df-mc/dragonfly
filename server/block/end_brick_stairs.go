@@ -42,12 +42,7 @@ func (s EndBrickStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s EndBrickStairs) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(s, 1)),
-	}
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // EncodeItem ...

@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -23,12 +22,8 @@ func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (p DirtPath) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.6,
-		Harvestable: alwaysHarvestable,
-		Effective:   shovelEffective,
-		Drops:       simpleDrops(item.NewStack(Dirt{}, 1)), //TODO: Silk Touch
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
 }
 
 // EncodeItem ...

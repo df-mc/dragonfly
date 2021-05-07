@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -17,12 +16,7 @@ type Concrete struct {
 
 // BreakInfo ...
 func (c Concrete) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    1.8,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(c, 1)),
-	}
+	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
 // EncodeItem ...

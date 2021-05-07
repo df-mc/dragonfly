@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/instrument"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -18,14 +17,9 @@ func (i IronBlock) Instrument() instrument.Instrument {
 
 // BreakInfo ...
 func (i IronBlock) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness: 5,
-		Harvestable: func(t tool.Tool) bool {
-			return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
-		},
-		Effective: pickaxeEffective,
-		Drops:     simpleDrops(item.NewStack(i, 1)),
-	}
+	return newBreakInfo(5, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(i))
 }
 
 // PowersBeacon ...

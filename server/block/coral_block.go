@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"time"
 )
@@ -48,12 +47,8 @@ func (c CoralBlock) ScheduledTick(pos cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (c CoralBlock) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    7,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(CoralBlock{Type: c.Type, Dead: true}, 1)), //TODO: Not dead coral blocks should drop itself if mined with silk touch
-	}
+	// TODO: Silk touch.
+	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, oneOf(CoralBlock{Type: c.Type, Dead: true}))
 }
 
 // EncodeBlock ...
