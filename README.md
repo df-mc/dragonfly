@@ -39,6 +39,9 @@ may be found [here](https://pkg.go.dev/github.com/df-mc/dragonfly/dragonfly?tab=
 found by clicking 'Subdirectories'.
 The GitHub wiki will hold examples of frequently used functionality.
 
+Publishing your project on GitHub? Consider adding the [#df-mc](https://github.com/topic/df-mc) topic to your
+repository to improve visibility of your project.
+
 ## Contributing
 We use JetBrains Space to manage our issues, pull requests and code reviews, but we welcome contributions
 through GitHub issues and pull requests.
