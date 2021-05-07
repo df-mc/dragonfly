@@ -3,6 +3,7 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -57,7 +58,15 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 		}
 	}
 	if customData, ok := data["dragonflyData"]; ok {
-		d, _ := customData.([]byte)
+		d, ok := customData.([]byte)
+		if !ok {
+			if itf, ok := customData.([]interface{}); ok {
+				for _, v := range itf {
+					b, _ := v.(byte)
+					d = append(d, b)
+				}
+			}
+		}
 		var m map[string]interface{}
 		if err := gob.NewDecoder(bytes.NewBuffer(d)).Decode(&m); err != nil {
 			panic("error decoding item user data: " + err.Error())
@@ -113,6 +122,7 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		if err := gob.NewEncoder(buf).Encode(s.Values()); err != nil {
 			panic("error encoding item user data: " + err.Error())
 		}
+		fmt.Printf("%x\n", buf.Bytes())
 		m["dragonflyData"] = buf.Bytes()
 	}
 	return m
