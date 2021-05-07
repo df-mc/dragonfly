@@ -447,8 +447,8 @@ func (s *Session) removeFromPlayerList(session *Session) {
 	c := session.c
 
 	s.entityMutex.Lock()
-	delete(s.entityRuntimeIDs, c)
 	delete(s.entities, s.entityRuntimeIDs[c])
+	delete(s.entityRuntimeIDs, c)
 	s.entityMutex.Unlock()
 
 	s.writePacket(&packet.PlayerList{
