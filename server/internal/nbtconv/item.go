@@ -3,7 +3,6 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -122,7 +121,6 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		if err := gob.NewEncoder(buf).Encode(s.Values()); err != nil {
 			panic("error encoding item user data: " + err.Error())
 		}
-		fmt.Printf("%x\n", buf.Bytes())
 		m["dragonflyData"] = buf.Bytes()
 	}
 	return m
