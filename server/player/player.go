@@ -411,6 +411,7 @@ func (p *Player) Heal(health float64, source healing.Source) {
 
 // updateFallState is called to update the entities falling state.
 func (p *Player) updateFallState(distanceThisTick float64) {
+	p.onGround.Store(p.checkOnGround())
 	if p.OnGround() {
 		if p.fallDistance.Load() > 0 {
 			p.fall(p.fallDistance.Load())
