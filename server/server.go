@@ -396,6 +396,7 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	playerSkin.Pix = skinData
 	playerSkin.Model = modelData
 	playerSkin.ModelConfig = modelConfig
+	playerSkin.PlayFabID = data.PlayFabID
 
 	for _, animation := range data.AnimatedImageData {
 		var t skin.AnimationType
