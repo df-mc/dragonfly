@@ -233,13 +233,13 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 	for {
 		select {
 		case <-t.C:
-			if s.chunkLoader.World() != s.c.World() {
-				s.chunkLoader.ChangeWorld(s.c.World())
-			}
 			s.blobMu.Lock()
+			if s.chunkLoader.World() != s.c.World() {
+				s.handleWorldSwitch()
+			}
+
 			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 			s.blobMu.Unlock()
-
 			if toLoad > 4 {
 				toLoad = 4
 			}
@@ -253,6 +253,21 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 			return
 		}
 	}
+}
+
+// handleWorldSwitch handles the player of the Session switching worlds.
+func (s *Session) handleWorldSwitch() {
+	// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
+	resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
+	for h, blob := range s.blobs {
+		resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: h, Payload: blob})
+	}
+	s.writePacket(resp)
+
+	s.blobs = map[uint64][]byte{}
+	s.openChunkTransactions = nil
+
+	s.chunkLoader.ChangeWorld(s.c.World())
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was

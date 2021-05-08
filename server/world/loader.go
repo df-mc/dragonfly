@@ -44,8 +44,8 @@ func (l *Loader) World() *World {
 // is done from the new World.
 func (l *Loader) ChangeWorld(new *World) {
 	l.mu.Lock()
-	l.reset()
 	l.w.removeWorldViewer(l.viewer)
+	l.reset()
 	l.world(new)
 	l.mu.Unlock()
 }
