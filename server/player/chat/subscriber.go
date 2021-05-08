@@ -23,5 +23,10 @@ func (c StdoutSubscriber) Message(a ...interface{}) {
 	for i, b := range a {
 		s[i] = fmt.Sprint(b)
 	}
-	fmt.Print(text.ANSI(strings.Join(s, " ")))
+	t := text.ANSI(strings.Join(s, " "))
+	if !strings.HasSuffix(t, "\n") {
+		fmt.Println(t)
+		return
+	}
+	fmt.Print(t)
 }
