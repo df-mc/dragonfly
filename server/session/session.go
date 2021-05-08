@@ -303,7 +303,7 @@ func (s *Session) registerHandlers() {
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
-		packet.IDLevelSoundEvent:       nil,
+		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,

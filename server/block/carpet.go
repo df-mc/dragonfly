@@ -18,11 +18,7 @@ type Carpet struct {
 
 // FlammabilityInfo ...
 func (c Carpet) FlammabilityInfo() FlammabilityInfo {
-	return FlammabilityInfo{
-		Encouragement: 30,
-		Flammability:  60,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(30, 60, true)
 }
 
 // CanDisplace ...

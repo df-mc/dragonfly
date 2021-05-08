@@ -12,10 +12,7 @@ type CoalBlock struct {
 
 // FlammabilityInfo ...
 func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
-	return FlammabilityInfo{
-		Encouragement: 5,
-		Flammability:  5,
-	}
+	return newFlammabilityInfo(5, 5, false)
 }
 
 // BreakInfo ...
