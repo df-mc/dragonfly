@@ -1096,13 +1096,13 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 
 		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
-		living.KnockBack(p.Position(), 0.45, 0.3608)
 
 		if mgl64.FloatEqual(healthBefore, living.Health()) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
 		} else {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
 			p.Exhaust(0.1)
+			living.KnockBack(p.Position(), 0.45, 0.3608)
 		}
 
 		if durable, ok := i.Item().(item.Durable); ok {
