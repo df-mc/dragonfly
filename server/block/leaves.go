@@ -68,11 +68,7 @@ func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // FlammabilityInfo ...
 func (l Leaves) FlammabilityInfo() FlammabilityInfo {
-	return FlammabilityInfo{
-		Encouragement: 30,
-		Flammability:  60,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(30, 60, true)
 }
 
 // BreakInfo ...

@@ -17,13 +17,9 @@ type Planks struct {
 // FlammabilityInfo ...
 func (p Planks) FlammabilityInfo() FlammabilityInfo {
 	if !p.Wood.Flammable() {
-		return FlammabilityInfo{}
+		return newFlammabilityInfo(0, 0, false)
 	}
-	return FlammabilityInfo{
-		Encouragement: 5,
-		Flammability:  20,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(5, 20, true)
 }
 
 // BreakInfo ...

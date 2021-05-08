@@ -25,11 +25,7 @@ type Log struct {
 
 // FlammabilityInfo ...
 func (l Log) FlammabilityInfo() FlammabilityInfo {
-	return FlammabilityInfo{
-		Encouragement: 5,
-		Flammability:  5,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(5, 5, true)
 }
 
 // UseOnBlock handles the rotational placing of logs.

@@ -20,11 +20,7 @@ func (w Wool) Instrument() instrument.Instrument {
 
 // FlammabilityInfo ...
 func (w Wool) FlammabilityInfo() FlammabilityInfo {
-	return FlammabilityInfo{
-		Encouragement: 30,
-		Flammability:  60,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(30, 60, true)
 }
 
 // BreakInfo ...
