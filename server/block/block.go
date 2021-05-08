@@ -174,10 +174,10 @@ type FlammabilityInfo struct {
 }
 
 // newFlammabilityInfo creates a FlammabilityInfo struct with the properties passed.
-func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool)  FlammabilityInfo {
+func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) FlammabilityInfo {
 	return FlammabilityInfo{
 		Encouragement: encouragement,
-		Flammability: flammability,
+		Flammability:  flammability,
 		LavaFlammable: lavaFlammable,
 	}
 }
