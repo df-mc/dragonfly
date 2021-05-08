@@ -37,7 +37,7 @@ type Chest struct {
 
 // FlammabilityInfo ...
 func (c Chest) FlammabilityInfo() FlammabilityInfo {
-	return FlammabilityInfo{LavaFlammable: true}
+	return newFlammabilityInfo(0, 0, true)
 }
 
 // NewChest creates a new initialised chest. The inventory is properly initialised.

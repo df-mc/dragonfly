@@ -30,9 +30,9 @@ type WoodDoor struct {
 // FlammabilityInfo ...
 func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 	if !d.Wood.Flammable() {
-		return FlammabilityInfo{}
+		return newFlammabilityInfo(0,0, false)
 	}
-	return FlammabilityInfo{LavaFlammable: true}
+	return newFlammabilityInfo(0, 0, true)
 }
 
 // Model ...

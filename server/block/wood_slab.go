@@ -27,13 +27,9 @@ type WoodSlab struct {
 // FlammabilityInfo ...
 func (s WoodSlab) FlammabilityInfo() FlammabilityInfo {
 	if !s.Wood.Flammable() {
-		return FlammabilityInfo{}
+		return newFlammabilityInfo(0,0, false)
 	}
-	return FlammabilityInfo{
-		Encouragement: 5,
-		Flammability:  20,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(5, 20, true)
 }
 
 // Model ...

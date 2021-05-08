@@ -173,6 +173,15 @@ type FlammabilityInfo struct {
 	LavaFlammable bool
 }
 
+// newFlammabilityInfo creates a FlammabilityInfo struct with the properties passed.
+func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool)  FlammabilityInfo {
+	return FlammabilityInfo{
+		Encouragement: encouragement,
+		Flammability: flammability,
+		LavaFlammable: lavaFlammable,
+	}
+}
+
 // EntityCollider is an interface for blocks with special behaviors on entity collision.
 type EntityCollider interface {
 	// EntityCollide is called on entity collision.

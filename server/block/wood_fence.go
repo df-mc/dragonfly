@@ -35,14 +35,10 @@ func (WoodFence) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // FlammabilityInfo ...
 func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
-	if w.Wood.Flammable() {
-		return FlammabilityInfo{}
+	if !w.Wood.Flammable() {
+		return newFlammabilityInfo(0,0, false)
 	}
-	return FlammabilityInfo{
-		Encouragement: 5,
-		Flammability:  20,
-		LavaFlammable: true,
-	}
+	return newFlammabilityInfo(5, 20, true)
 }
 
 // EncodeBlock ...
