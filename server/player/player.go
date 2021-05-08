@@ -927,7 +927,7 @@ func (p *Player) UseItem() {
 			if usable.Use(p.World(), p, ctx) {
 				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 				// reason to swing the arm.
-				p.swingArm()
+				p.SwingArm()
 
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
@@ -993,7 +993,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which the block will activated as usual.
 			if !p.Sneaking() || i.Empty() {
-				p.swingArm()
+				p.SwingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
 				// used.
 				activatable.Activate(pos, face, p.World(), p)
@@ -1007,7 +1007,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The item does something when used on a block.
 			ctx := &item.UseContext{}
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
-				p.swingArm()
+				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
@@ -1053,7 +1053,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
 			ctx := &item.UseContext{}
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
-				p.swingArm()
+				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
@@ -1075,7 +1075,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e)
 	ctx.Continue(func() {
-		p.swingArm()
+		p.SwingArm()
 		living, ok := e.(entity.Living)
 		if !ok {
 			return
@@ -1131,14 +1131,14 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.handler().HandleStartBreak(ctx, pos)
 	ctx.Continue(func() {
 		if punchable, ok := p.World().Block(pos).(block.Punchable); ok {
-			p.swingArm()
+			p.SwingArm()
 			punchable.Punch(pos, face, p.World(), p)
 		}
 
 		p.breaking.Store(true)
 		p.breakingPos.Store(pos)
 
-		p.swingArm()
+		p.SwingArm()
 
 		breakTime := p.breakTime(pos)
 		for _, viewer := range p.World().Viewers(pos.Vec3()) {
@@ -1205,7 +1205,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	}
 	pos := p.breakingPos.Load().(cube.Pos)
 
-	p.swingArm()
+	p.SwingArm()
 
 	b := p.World().Block(pos)
 	p.World().AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
@@ -1258,7 +1258,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 	ctx.Continue(func() {
 		p.World().PlaceBlock(pos, b)
 		p.World().PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
-		p.swingArm()
+		p.SwingArm()
 		success = true
 	})
 	ctx.Stop(func() {
@@ -1313,7 +1313,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	p.handler().HandleBlockBreak(ctx, pos)
 
 	ctx.Continue(func() {
-		p.swingArm()
+		p.SwingArm()
 		p.World().BreakBlock(pos)
 		held, left := p.HeldItems()
 
@@ -1786,8 +1786,8 @@ func (p *Player) canBreathe() bool {
 	return !submerged
 }
 
-// swingArm makes the player swing its arm.
-func (p *Player) swingArm() {
+// SwingArm makes the player swing its arm.
+func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}

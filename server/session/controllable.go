@@ -37,6 +37,7 @@ type Controllable interface {
 	PickBlock(pos cube.Pos)
 	AttackEntity(e world.Entity)
 	Drop(s item.Stack) (n int)
+	SwingArm()
 
 	Respawn()
 
