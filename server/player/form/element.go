@@ -13,6 +13,11 @@ type Label struct {
 	Text string
 }
 
+// NewLabel creates and returns a new Label with the values passed.
+func NewLabel(text string) Label {
+	return Label{Text: text}
+}
+
 // Input represents a text input box element. Submitters may write any text in these boxes with no specific
 // length.
 type Input struct {
@@ -26,6 +31,11 @@ type Input struct {
 	Placeholder string
 
 	value string
+}
+
+// NewInput creates and returns a new Input with the values passed.
+func NewInput(text, defaultValue, placeholder string) Input {
+	return Input{Text: text, Default: defaultValue, Placeholder: placeholder}
 }
 
 // Value returns the value filled out by the user.
@@ -43,6 +53,11 @@ type Toggle struct {
 	Default bool
 
 	value bool
+}
+
+// NewToggle creates and returns a new Toggle with the values passed.
+func NewToggle(text string, defaultValue bool) Toggle {
+	return Toggle{Text: text, Default: defaultValue}
 }
 
 // Value returns the value filled out by the user.
@@ -67,6 +82,11 @@ type Slider struct {
 	value float64
 }
 
+// NewSlider creates and returns a new Slider using the values passed.
+func NewSlider(text string, min, max, stepSize, defaultValue float64) Slider {
+	return Slider{Text: text, Min: min, Max: max, StepSize: stepSize, Default: defaultValue}
+}
+
 // Value returns the value filled out by the user.
 func (s Slider) Value() float64 {
 	return s.value
@@ -87,6 +107,11 @@ type Dropdown struct {
 	value int
 }
 
+// NewDropdown creates and returns new Dropdown using the values passed.
+func NewDropdown(text string, options []string, defaultIndex int) Dropdown {
+	return Dropdown{Text: text, Options: options, DefaultIndex: defaultIndex}
+}
+
 // Value returns the value that the Submitter submitted. The value is an index pointing to the selected option
 // in the Options slice.
 func (d Dropdown) Value() int {
@@ -97,10 +122,32 @@ func (d Dropdown) Value() int {
 // combination of a Dropdown and a Slider, looking like a slider but having properties like a dropdown.
 type StepSlider Dropdown
 
+// NewStepSlider creates and returns new StepSlider using the values passed.
+func NewStepSlider(text string, options []string, defaultIndex int) StepSlider {
+	return StepSlider{Text: text, Options: options, DefaultIndex: defaultIndex}
+}
+
 // Value returns the value that the Submitter submitted. The value is an index pointing to the selected option
 // in the Options slice.
 func (s StepSlider) Value() int {
 	return s.value
+}
+
+// Button represents a button added to a Menu or Modal form. The button has text on it and an optional image,
+// which may be either retrieved from a website or the local assets of the game.
+type Button struct {
+	// Text holds the text displayed on the button. It may use Minecraft formatting codes and may have
+	// newlines.
+	Text string
+	// Image holds a path to an image for the button. The Image may either be an URL pointing to an image,
+	// such as 'https://someimagewebsite.com/someimage.png', or a path pointing to a local asset, such as
+	// 'textures/blocks/grass_carried'.
+	Image string
+}
+
+// NewButton creates and returns a new Button using the text and image passed.
+func NewButton(text, image string) Button {
+	return Button{Text: text, Image: image}
 }
 
 func (Label) __()      {}

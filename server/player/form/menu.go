@@ -15,18 +15,6 @@ type Menu struct {
 	buttons     []Button
 }
 
-// Button represents a button added to a Menu form. The button has text on it and an optional image, which
-// may be either retrieved from a website or the local assets of the game.
-type Button struct {
-	// Text holds the text displayed on the button. It may use Minecraft formatting codes and may have
-	// newlines.
-	Text string
-	// Image holds a path to an image for the button. The Image may either be an URL pointing to an image,
-	// such as 'https://someimagewebsite.com/someimage.png', or a path pointing to a local asset, such as
-	// 'textures/blocks/grass_carried'.
-	Image string
-}
-
 // NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
 // title passed is formatted following the rules of fmt.Sprintln.
 func NewMenu(submittable MenuSubmittable, title ...interface{}) Menu {
@@ -69,7 +57,7 @@ func (m Menu) Buttons() []Button {
 	v := reflect.ValueOf(m.submittable)
 	t := reflect.TypeOf(m.submittable)
 
-	buttons := m.buttons
+	var buttons []Button
 	for i := 0; i < v.NumField(); i++ {
 		fieldT := t.Field(i)
 		fieldV := v.Field(i)
@@ -79,6 +67,7 @@ func (m Menu) Buttons() []Button {
 		// Each exported field is guaranteed to be of type Button.
 		buttons = append(buttons, fieldV.Interface().(Button))
 	}
+	buttons = append(buttons, m.buttons...)
 	return buttons
 }
 
