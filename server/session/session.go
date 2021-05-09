@@ -17,6 +17,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
+	"net"
 	"sync"
 	"time"
 )
@@ -183,6 +184,11 @@ func (s *Session) Close() error {
 // eventually.
 func (s *Session) CloseConnection() {
 	_ = s.conn.Close()
+}
+
+// Addr returns the net.Addr of the client.
+func (s *Session) Addr() net.Addr {
+	return s.conn.RemoteAddr()
 }
 
 // Latency returns the latency of the connection.
