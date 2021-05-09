@@ -48,12 +48,12 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		s.teleportMu.Unlock()
 	}
 
-	_, submergedBefore := s.c.World().Liquid(cube.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
+	_, submergedBefore := s.c.World().Liquid(cube.PosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
 
 	s.c.Move(deltaPos)
 	s.c.Rotate(deltaYaw, deltaPitch)
 
-	_, submergedAfter := s.c.World().Liquid(cube.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
+	_, submergedAfter := s.c.World().Liquid(cube.PosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
 
 	if submergedBefore != submergedAfter {
 		// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,

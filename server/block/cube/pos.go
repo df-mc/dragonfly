@@ -126,7 +126,7 @@ func (p Pos) Neighbours(f func(neighbour Pos)) {
 	f(p)
 }
 
-// BlockPosFromVec3 returns a block position by a Vec3, rounding the values down adequately.
-func BlockPosFromVec3(vec3 mgl64.Vec3) Pos {
+// PosFromVec3 returns a block position by a Vec3, rounding the values down adequately.
+func PosFromVec3(vec3 mgl64.Vec3) Pos {
 	return Pos{int(math.Floor(vec3[0])), int(math.Floor(vec3[1])), int(math.Floor(vec3[2]))}
 }

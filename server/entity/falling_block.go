@@ -36,7 +36,7 @@ func (f *FallingBlock) Block() world.Block {
 func (f *FallingBlock) Tick(_ int64) {
 	f.pos.Store(f.tickMovement(f))
 
-	pos := cube.BlockPosFromVec3(f.Position())
+	pos := cube.PosFromVec3(f.Position())
 
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.OnGround() {
 		b := f.World().Block(pos)

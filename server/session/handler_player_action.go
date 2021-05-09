@@ -41,7 +41,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStopSneak:
 		s.c.StopSneaking()
 	case protocol.PlayerActionStartSwimming:
-		if _, ok := s.c.World().Liquid(cube.BlockPosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()}))); ok {
+		if _, ok := s.c.World().Liquid(cube.PosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()}))); ok {
 			s.c.StartSwimming()
 		}
 	case protocol.PlayerActionStopSwimming:

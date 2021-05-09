@@ -1157,7 +1157,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	if _, ok := p.World().Liquid(cube.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -1566,7 +1566,7 @@ func (p *Player) Tick(current int64) {
 	if p.Dead() {
 		return
 	}
-	if _, ok := p.World().Liquid(cube.BlockPosFromVec3(p.Position())); !ok {
+	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 	}
 	p.onGround.Store(p.checkOnGround())
@@ -1588,7 +1588,7 @@ func (p *Player) Tick(current int64) {
 
 	// TODO: Move to Move()
 	aabb := p.AABB().Translate(p.Position())
-	min, max := cube.BlockPosFromVec3(aabb.Min()), cube.BlockPosFromVec3(aabb.Max())
+	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
 	for x := min[0]; x <= max[0]; x++ {
 		for y := min[1]; y <= max[1]; y++ {
 			for z := min[2]; z <= max[2]; z++ {
@@ -1658,7 +1658,7 @@ func (p *Player) checkOnGround() bool {
 	for x := min[0]; x <= max[0]+1; x++ {
 		for z := min[2]; z <= max[2]+1; z++ {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
-				bPos := cube.BlockPosFromVec3(mgl64.Vec3{x, y, z})
+				bPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
 				b := p.World().Block(bPos)
 				aabbList := b.Model().AABB(bPos, p.World())
 				for _, aabb := range aabbList {
@@ -1783,7 +1783,7 @@ func (p *Player) canBreathe() bool {
 			return true
 		}
 	}
-	_, submerged := p.World().Liquid(cube.BlockPosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
+	_, submerged := p.World().Liquid(cube.PosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
 	return !submerged
 }
 
