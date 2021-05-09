@@ -49,7 +49,6 @@ type Player struct {
 	name                                string
 	uuid                                uuid.UUID
 	xuid                                string
-	addr                                net.Addr
 	locale                              language.Tag
 	pos, velocity                       atomic.Value
 	nameTag                             atomic.String
@@ -136,7 +135,6 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	p.addr = s.Addr()
 
 	chat.Global.Subscribe(p)
 	return p
@@ -168,7 +166,10 @@ func (p *Player) XUID() string {
 
 // Addr returns the net.Addr of the Player. If the Player is not connected to a network session, nil is returned.
 func (p *Player) Addr() net.Addr {
-	return p.addr
+	if p.session() == session.Nop {
+		return nil
+	}
+	return p.session().Addr()
 }
 
 // Skin returns the skin that a player joined with. This skin will be visible to other players that the player
