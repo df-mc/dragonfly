@@ -27,6 +27,16 @@ func NewMenu(submittable MenuSubmittable, title ...interface{}) Menu {
 	return m
 }
 
+// MarshalJSON ...
+func (m Menu) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "form",
+		"title":   m.title,
+		"content": m.body,
+		"buttons": m.Buttons(),
+	})
+}
+
 // WithBody creates a copy of the Menu form and changes its body to the body passed, after which the new Menu
 // form is returned. The text is formatted following the rules of fmt.Sprintln.
 func (m Menu) WithBody(body ...interface{}) Menu {

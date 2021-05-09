@@ -1,9 +1,15 @@
 package form
 
+import (
+	"encoding/json"
+	"strings"
+)
+
 // Element represents an element that may be added to a Form. Any of the types in this package that implement
 // the element interface may be used as struct fields when passing the form structure to form.New().
 type Element interface {
-	__()
+	json.Marshaler
+	elem()
 }
 
 // Label represents a static label on a form. It serves only to display a box of text, and users cannot
@@ -16,6 +22,14 @@ type Label struct {
 // NewLabel creates and returns a new Label with the values passed.
 func NewLabel(text string) Label {
 	return Label{Text: text}
+}
+
+// MarshalJSON ...
+func (l Label) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type": "label",
+		"text": l.Text,
+	})
 }
 
 // Input represents a text input box element. Submitters may write any text in these boxes with no specific
@@ -38,6 +52,16 @@ func NewInput(text, defaultValue, placeholder string) Input {
 	return Input{Text: text, Default: defaultValue, Placeholder: placeholder}
 }
 
+// MarshalJSON ...
+func (i Input) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":        "input",
+		"text":        i.Text,
+		"default":     i.Default,
+		"placeholder": i.Placeholder,
+	})
+}
+
 // Value returns the value filled out by the user.
 func (i Input) Value() string {
 	return i.value
@@ -58,6 +82,15 @@ type Toggle struct {
 // NewToggle creates and returns a new Toggle with the values passed.
 func NewToggle(text string, defaultValue bool) Toggle {
 	return Toggle{Text: text, Default: defaultValue}
+}
+
+// MarshalJSON ...
+func (t Toggle) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "toggle",
+		"text":    t.Text,
+		"default": t.Default,
+	})
 }
 
 // Value returns the value filled out by the user.
@@ -87,6 +120,18 @@ func NewSlider(text string, min, max, stepSize, defaultValue float64) Slider {
 	return Slider{Text: text, Min: min, Max: max, StepSize: stepSize, Default: defaultValue}
 }
 
+// MarshalJSON ...
+func (s Slider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "slider",
+		"text":    s.Text,
+		"min":     s.Min,
+		"max":     s.Max,
+		"step":    s.StepSize,
+		"default": s.Default,
+	})
+}
+
 // Value returns the value filled out by the user.
 func (s Slider) Value() float64 {
 	return s.value
@@ -112,6 +157,16 @@ func NewDropdown(text string, options []string, defaultIndex int) Dropdown {
 	return Dropdown{Text: text, Options: options, DefaultIndex: defaultIndex}
 }
 
+// MarshalJSON ...
+func (d Dropdown) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "dropdown",
+		"text":    d.Text,
+		"default": d.DefaultIndex,
+		"options": d.Options,
+	})
+}
+
 // Value returns the value that the Submitter submitted. The value is an index pointing to the selected option
 // in the Options slice.
 func (d Dropdown) Value() int {
@@ -125,6 +180,16 @@ type StepSlider Dropdown
 // NewStepSlider creates and returns new StepSlider using the values passed.
 func NewStepSlider(text string, options []string, defaultIndex int) StepSlider {
 	return StepSlider{Text: text, Options: options, DefaultIndex: defaultIndex}
+}
+
+// MarshalJSON ...
+func (s StepSlider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "step_slider",
+		"text":    s.Text,
+		"default": s.DefaultIndex,
+		"steps":   s.Options,
+	})
 }
 
 // Value returns the value that the Submitter submitted. The value is an index pointing to the selected option
@@ -150,9 +215,22 @@ func NewButton(text, image string) Button {
 	return Button{Text: text, Image: image}
 }
 
-func (Label) __()      {}
-func (Input) __()      {}
-func (Toggle) __()     {}
-func (Slider) __()     {}
-func (Dropdown) __()   {}
-func (StepSlider) __() {}
+// MarshalJSON ...
+func (b Button) MarshalJSON() ([]byte, error) {
+	m := map[string]interface{}{"text": b.Text}
+	if b.Image != "" {
+		buttonType := "path"
+		if strings.HasPrefix(b.Image, "http:") || strings.HasPrefix(b.Image, "https:") {
+			buttonType = "url"
+		}
+		m["image"] = map[string]interface{}{"type": buttonType, "data": b.Image}
+	}
+	return json.Marshal(m)
+}
+
+func (Label) elem()      {}
+func (Input) elem()      {}
+func (Toggle) elem()     {}
+func (Slider) elem()     {}
+func (Dropdown) elem()   {}
+func (StepSlider) elem() {}

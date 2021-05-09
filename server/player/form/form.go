@@ -13,6 +13,7 @@ import (
 // Form represents a form that may be sent to a Submitter. The three types of forms, custom forms, menu forms
 // and modal forms implement this interface.
 type Form interface {
+	json.Marshaler
 	SubmitJSON(b []byte, submitter Submitter) error
 	__()
 }
@@ -22,6 +23,15 @@ type Form interface {
 type Custom struct {
 	title       string
 	submittable Submittable
+}
+
+// MarshalJSON ...
+func (f Custom) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "custom_form",
+		"title":   f.title,
+		"content": f.Elements(),
+	})
 }
 
 // New creates a new (custom) form with the title passed and returns it. The title is formatted according to

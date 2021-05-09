@@ -39,6 +39,17 @@ func NoButton() Button {
 	return Button{Text: "gui.no"}
 }
 
+// MarshalJSON ...
+func (m Modal) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"type":    "modal",
+		"title":   m.title,
+		"content": m.body,
+		"button1": m.Buttons()[0].Text,
+		"button2": m.Buttons()[1].Text,
+	})
+}
+
 // WithBody creates a copy of the Modal form and changes its body to the body passed, after which the new Modal
 // form is returned. The text is formatted following the rules of fmt.Sprintln.
 func (m Modal) WithBody(body ...interface{}) Modal {

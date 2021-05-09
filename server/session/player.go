@@ -176,36 +176,7 @@ func (s *Session) SendVelocity(velocity mgl64.Vec3) {
 // SendForm sends a form to the client of the connection. The Submit method of the form is called when the
 // client submits the form.
 func (s *Session) SendForm(f form.Form) {
-	var n []map[string]interface{}
-	m := map[string]interface{}{}
-
-	switch frm := f.(type) {
-	case form.Custom:
-		m["type"], m["title"] = "custom_form", frm.Title()
-		for _, e := range frm.Elements() {
-			n = append(n, elemToMap(e))
-		}
-		m["content"] = n
-	case form.Menu:
-		m["type"], m["title"], m["content"] = "form", frm.Title(), frm.Body()
-		for _, button := range frm.Buttons() {
-			v := map[string]interface{}{"text": button.Text}
-			if button.Image != "" {
-				buttonType := "path"
-				if strings.HasPrefix(button.Image, "http:") || strings.HasPrefix(button.Image, "https:") {
-					buttonType = "url"
-				}
-				v["image"] = map[string]interface{}{"type": buttonType, "data": button.Image}
-			}
-			n = append(n, v)
-		}
-		m["buttons"] = n
-	case form.Modal:
-		m["type"], m["title"], m["content"] = "modal", frm.Title(), frm.Body()
-		buttons := frm.Buttons()
-		m["button1"], m["button2"] = buttons[0].Text, buttons[1].Text
-	}
-	b, _ := json.Marshal(m)
+	b, _ := json.Marshal(f)
 
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
 	id := h.currentID.Add(1)
@@ -225,54 +196,6 @@ func (s *Session) SendForm(f form.Form) {
 		FormID:   id,
 		FormData: b,
 	})
-}
-
-// elemToMap encodes a form element to its representation as a map to be encoded to JSON for the client.
-func elemToMap(e form.Element) map[string]interface{} {
-	switch element := e.(type) {
-	case form.Toggle:
-		return map[string]interface{}{
-			"type":    "toggle",
-			"text":    element.Text,
-			"default": element.Default,
-		}
-	case form.Input:
-		return map[string]interface{}{
-			"type":        "input",
-			"text":        element.Text,
-			"default":     element.Default,
-			"placeholder": element.Placeholder,
-		}
-	case form.Label:
-		return map[string]interface{}{
-			"type": "label",
-			"text": element.Text,
-		}
-	case form.Slider:
-		return map[string]interface{}{
-			"type":    "slider",
-			"text":    element.Text,
-			"min":     element.Min,
-			"max":     element.Max,
-			"step":    element.StepSize,
-			"default": element.Default,
-		}
-	case form.Dropdown:
-		return map[string]interface{}{
-			"type":    "dropdown",
-			"text":    element.Text,
-			"default": element.DefaultIndex,
-			"options": element.Options,
-		}
-	case form.StepSlider:
-		return map[string]interface{}{
-			"type":    "step_slider",
-			"text":    element.Text,
-			"default": element.DefaultIndex,
-			"steps":   element.Options,
-		}
-	}
-	panic("should never happen")
 }
 
 // Transfer transfers the player to a server with the IP and port passed.
