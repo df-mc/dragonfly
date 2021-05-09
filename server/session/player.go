@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/entity_internal"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
@@ -229,7 +229,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 }
 
 // SendHealth sends the health and max health to the player.
-func (s *Session) SendHealth(health *entity_internal.HealthManager) {
+func (s *Session) SendHealth(health *entity.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{

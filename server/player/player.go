@@ -14,7 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/entity_internal"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
@@ -80,7 +79,7 @@ type Player struct {
 	fallDistance atomic.Float64
 
 	speed    atomic.Float64
-	health   *entity_internal.HealthManager
+	health   *entity.HealthManager
 	effects  *entity.EffectManager
 	immunity atomic.Value
 
@@ -107,7 +106,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		offHand:  inventory.New(2, p.broadcastItems),
 		armour:   inventory.NewArmour(p.broadcastArmour),
 		hunger:   newHungerManager(),
-		health:   entity_internal.NewHealthManager(),
+		health:   entity.NewHealthManager(),
 		effects:  entity.NewEffectManager(),
 		gameMode: world.GameModeAdventure{},
 		h:        NopHandler{},
