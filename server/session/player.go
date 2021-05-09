@@ -21,7 +21,6 @@ import (
 	"go.uber.org/atomic"
 	"math"
 	"net"
-	"strings"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
