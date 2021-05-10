@@ -218,6 +218,7 @@ func (b *hashBuilder) findFields(structName string) []*ast.Field {
 		if nested, ok := b.aliases[structName]; ok {
 			// The alias itself was an alias, so continue with the next.
 			structName = nested
+			continue
 		}
 		// Neither an alias nor a struct: Break as this isn't going to go anywhere.
 		return nil
