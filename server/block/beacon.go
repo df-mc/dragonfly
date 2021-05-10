@@ -23,7 +23,7 @@ type Beacon struct {
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
-	Primary, Secondary effect.Effect `nbt:""`
+	Primary, Secondary effect.Effect
 	// level is the amount of the pyramid's levels, it is defined by the mineral blocks which build up the
 	// pyramid, and can be 0-4.
 	level int

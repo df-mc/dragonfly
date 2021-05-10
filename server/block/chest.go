@@ -28,7 +28,7 @@ type Chest struct {
 	Facing cube.Direction
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
 	// include colour codes.
-	CustomName string `nbt:""`
+	CustomName string
 
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex

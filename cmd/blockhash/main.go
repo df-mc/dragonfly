@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -10,7 +11,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 )
 
 func main() {
@@ -20,7 +20,8 @@ func main() {
 	if len(flag.Args()) != 1 {
 		log.Fatalln("Must pass one package to produce block hashes for.")
 	}
-	packages, err := parser.ParseDir(token.NewFileSet(), flag.Args()[0], nil, parser.ParseComments)
+	fs := token.NewFileSet()
+	packages, err := parser.ParseDir(fs, flag.Args()[0], nil, parser.ParseComments)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -28,19 +29,20 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
 	for _, pkg := range packages {
-		procPackage(pkg, f)
+		procPackage(pkg, fs, f)
 	}
+	_ = f.Close()
 }
 
-func procPackage(pkg *ast.Package, w io.Writer) {
+func procPackage(pkg *ast.Package, fs *token.FileSet, w io.Writer) {
 	b := &hashBuilder{
+		fs:          fs,
 		pkg:         pkg,
 		fields:      make(map[string][]*ast.Field),
 		aliases:     make(map[string]string),
 		handled:     map[string]struct{}{},
-		funcs:       map[string]string{},
+		funcs:       map[string]*ast.FuncDecl{},
 		blockFields: map[string][]*ast.Field{},
 	}
 	b.readStructFields(pkg)
@@ -59,9 +61,10 @@ var (
 )
 
 type hashBuilder struct {
+	fs          *token.FileSet
 	pkg         *ast.Package
 	fields      map[string][]*ast.Field
-	funcs       map[string]string
+	funcs       map[string]*ast.FuncDecl
 	aliases     map[string]string
 	handled     map[string]struct{}
 	blockFields map[string][]*ast.Field
@@ -89,13 +92,35 @@ func (b *hashBuilder) writeMethods(w io.Writer) {
 	for name, fields := range b.blockFields {
 		h := "hash" + name + "<<48"
 		bitSize := 0
-		x := b.funcs[name]
+
+		fun := b.funcs[name]
+		var recvName string
+		for _, n := range fun.Recv.List[0].Names {
+			recvName = n.Name
+		}
+		pos := b.fs.Position(fun.Body.Pos())
+		f, err := os.Open(pos.Filename)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		body := make([]byte, fun.Body.End()-fun.Body.Pos())
+
+		if _, err := f.ReadAt(body, int64(pos.Offset)); err != nil {
+			log.Fatalln(err)
+		}
+		_ = f.Close()
+
 		for _, field := range fields {
 			for _, fieldName := range field.Names {
+				if !bytes.Contains(body, []byte(fieldName.Name)) {
+					// Field was not used in the EncodeBlock method, so we can assume it's not a property and thus
+					// should not be in the Hash method.
+					continue
+				}
 				if !fieldName.IsExported() {
 					continue
 				}
-				str, v := b.ftype(name, x+"."+fieldName.Name, field.Type)
+				str, v := b.ftype(name, recvName+"."+fieldName.Name, field.Type)
 				if v == 0 {
 					// Assume this field is not used in the hash.
 					continue
@@ -107,7 +132,7 @@ func (b *hashBuilder) writeMethods(w io.Writer) {
 				bitSize += v
 			}
 		}
-		if _, err := fmt.Fprintf(w, methodFormat, x, name, h); err != nil {
+		if _, err := fmt.Fprintf(w, methodFormat, recvName, name, h); err != nil {
 			log.Fatalln(err)
 		}
 	}
@@ -164,13 +189,7 @@ func (b *hashBuilder) readFuncDecls(node ast.Node) bool {
 		// If the function is called 'EncodeBlock' and the receiver is not nil, meaning the function is a method, this
 		// is an implementation of the world.Block interface.
 		if fun.Name.Name == "EncodeBlock" && fun.Recv != nil {
-			var name string
-			for _, n := range fun.Recv.List[0].Names {
-				name = n.Name
-			}
-			b.funcs[fun.Recv.List[0].Type.(*ast.Ident).Name] = name
-		} else if fun.Name.Name == "EncodeNBT" && fun.Recv != nil {
-			log.Println("Block", fun.Recv.List[0].Type.(*ast.Ident).Name, "has NBT: Make sure to mark all exported NBT-saved fields with the `nbt:\"\"` tag.")
+			b.funcs[fun.Recv.List[0].Type.(*ast.Ident).Name] = fun
 		}
 	}
 	return true
@@ -241,13 +260,7 @@ func (b *hashBuilder) readStructs(node ast.Node) bool {
 	if s, ok := node.(*ast.TypeSpec); ok {
 		switch t := s.Type.(type) {
 		case *ast.StructType:
-			fields := make([]*ast.Field, 0, len(t.Fields.List))
-			for _, f := range t.Fields.List {
-				if f.Tag == nil || !strings.Contains(f.Tag.Value, "nbt:\"") {
-					fields = append(fields, f)
-				}
-			}
-			b.fields[s.Name.Name] = fields
+			b.fields[s.Name.Name] = t.Fields.List
 		case *ast.Ident:
 			// This is a type created something like 'type Andesite polishable': A type alias. We need to handle
 			// these later, first parse all struct types.
