@@ -19,7 +19,7 @@ type Leaves struct {
 	// being nearby.
 	Persistent bool
 
-	shouldUpdate bool
+	ShouldUpdate bool
 }
 
 // findLog ...
@@ -48,9 +48,9 @@ func findLog(pos cube.Pos, w *world.World, visited *[]cube.Pos, distance int) bo
 
 // RandomTick ...
 func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	if !l.Persistent && l.shouldUpdate {
+	if !l.Persistent && l.ShouldUpdate {
 		if findLog(pos, w, &[]cube.Pos{}, 0) {
-			l.shouldUpdate = false
+			l.ShouldUpdate = false
 			w.PlaceBlock(pos, l)
 		} else {
 			w.BreakBlockWithoutParticles(pos)
@@ -60,8 +60,8 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 
 // NeighbourUpdateTick ...
 func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !l.Persistent && !l.shouldUpdate {
-		l.shouldUpdate = true
+	if !l.Persistent && !l.ShouldUpdate {
+		l.ShouldUpdate = true
 		w.PlaceBlock(pos, l)
 	}
 }
@@ -119,9 +119,9 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch l.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
+		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	case AcaciaWood(), DarkOakWood():
-		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.shouldUpdate}
+		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	}
 	panic("invalid wood type")
 }
@@ -129,12 +129,12 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
-		leaves = append(leaves, Leaves{Wood: OakWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: SpruceWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: BirchWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: JungleWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: AcaciaWood(), Persistent: persistent, shouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: DarkOakWood(), Persistent: persistent, shouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: OakWood(), Persistent: persistent, ShouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: SpruceWood(), Persistent: persistent, ShouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: BirchWood(), Persistent: persistent, ShouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: JungleWood(), Persistent: persistent, ShouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: AcaciaWood(), Persistent: persistent, ShouldUpdate: update})
+		leaves = append(leaves, Leaves{Wood: DarkOakWood(), Persistent: persistent, ShouldUpdate: update})
 	}
 	f(true, true)
 	f(true, false)

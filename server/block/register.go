@@ -8,6 +8,8 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
+//go:generate go run ../../cmd/blockhash -o hash.go .
+
 // init registers all blocks implemented by Dragonfly.
 func init() {
 	world.RegisterBlock(Air{})

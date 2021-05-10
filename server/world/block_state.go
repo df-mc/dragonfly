@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"math"
 	"sort"
 	"strings"
 	"unsafe"
@@ -87,6 +88,11 @@ func (b unknownBlock) EncodeBlock() (string, map[string]interface{}) {
 // Model ...
 func (unknownBlock) Model() BlockModel {
 	return unknownModel{}
+}
+
+// Hash ...
+func (b unknownBlock) Hash() uint64 {
+	return math.MaxUint64
 }
 
 // blockState holds a combination of a name and properties, together with a version.
