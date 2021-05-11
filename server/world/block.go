@@ -19,7 +19,7 @@ type Block interface {
 	// Hash returns a unique identifier of the block including the block states. This function is used internally to
 	// convert a block to a single integer which can be used in map lookups. The hash produced therefore does not need
 	// to match anything in the game, but it must be unique among all registered blocks.
-	// The tool in `/tool/blockhash` may be used to automatically generate block hashes of blocks in a package.
+	// The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
 	Hash() uint64
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
