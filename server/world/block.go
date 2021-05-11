@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -48,7 +49,7 @@ type Liquid interface {
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to lookup a block's runtime ID quickly.
-var hashes = map[uint64]uint32{}
+var hashes = intintmap.New(8000, 0.95)
 
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
@@ -65,12 +66,12 @@ func RegisterBlock(b Block) {
 	if _, ok := blocks[rid].(unknownBlock); !ok {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
-	hash := b.Hash()
-	if _, ok := hashes[hash]; ok {
+	hash := int64(b.Hash())
+	if _, ok := hashes.Get(hash); ok {
 		panic(fmt.Sprintf("block %#v with hash %v already registered", b, hash))
 	}
 	blocks[rid] = b
-	hashes[hash] = rid
+	hashes.Put(hash, int64(rid))
 
 	if diffuser, ok := b.(lightDiffuser); ok {
 		chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
@@ -103,11 +104,11 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 
 // fastBlockRuntimeID finds the runtime ID of a Block by looking it up in the hashes map.
 func fastBlockRuntimeID(b Block) (uint32, bool) {
-	rid, ok := hashes[b.Hash()]
+	rid, ok := hashes.Get(int64(b.Hash()))
 	if !ok {
 		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
 	}
-	return rid, ok
+	return uint32(rid), ok
 }
 
 // slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the
