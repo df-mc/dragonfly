@@ -125,9 +125,13 @@ func (b *hashBuilder) writeMethods(w io.Writer) {
 					// Assume this field is not used in the hash.
 					continue
 				}
-				h += "|" + str + "<<" + strconv.Itoa(bitSize)
+
 				if bitSize > 48 {
 					log.Println("Hash size of block properties of", name, "exceeds 48 bits. Please look at this manually.")
+				} else if bitSize == 0 {
+					h += "|" + str
+				} else {
+					h += "|" + str + "<<" + strconv.Itoa(bitSize)
 				}
 				bitSize += v
 			}
