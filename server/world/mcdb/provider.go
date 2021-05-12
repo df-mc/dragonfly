@@ -12,6 +12,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -81,6 +82,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.DrowningDamage = true
 	p.d.CommandsEnabled = true
 	p.d.MultiPlayerGame = true
+	p.d.SpawnY = math.MaxInt32
 }
 
 // LoadTime returns the time as it was stored in the level.dat of the world loaded.

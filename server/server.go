@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
@@ -25,7 +24,6 @@ import (
 	"go.uber.org/atomic"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -368,17 +366,12 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 func (server *Server) loadWorld() {
 	server.log.Debug("Loading world...")
 
-	_, firstLoad := os.Stat(filepath.Join(server.c.World.Folder, "level.dat"))
-
 	p, err := mcdb.New(server.c.World.Folder)
 	if err != nil {
 		server.log.Fatalf("error loading world: %v", err)
 	}
 	server.world.Provider(p)
 	server.world.Generator(generator.Flat{})
-	if os.IsNotExist(firstLoad) || p.WorldSpawn().Y() > 256 {
-		server.world.SetSpawn(cube.Pos{0, server.world.HighestBlock(0, 0), 0})
-	}
 
 	server.log.Debugf("Loaded world '%v'.", server.world.Name())
 }

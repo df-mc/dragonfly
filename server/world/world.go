@@ -834,7 +834,11 @@ func (w *World) Spawn() cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
-	return w.provider().WorldSpawn()
+	s := w.provider().WorldSpawn()
+	if s[1] > cube.MaxY {
+		s[1] = w.HighestBlock(s[0], s[2])
+	}
+	return s
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player will be spawned in the center of
