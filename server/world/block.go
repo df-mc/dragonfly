@@ -97,18 +97,13 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 		return world_internal.AirRuntimeID, true
 	}
 	if h := b.Hash(); h != math.MaxUint64 {
-		return fastBlockRuntimeID(b)
+		rid, ok := hashes.Get(int64(h))
+		if !ok {
+			panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
+		}
+		return uint32(rid), ok
 	}
 	return slowBlockRuntimeID(b)
-}
-
-// fastBlockRuntimeID finds the runtime ID of a Block by looking it up in the hashes map.
-func fastBlockRuntimeID(b Block) (uint32, bool) {
-	rid, ok := hashes.Get(int64(b.Hash()))
-	if !ok {
-		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
-	}
-	return uint32(rid), ok
 }
 
 // slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the
