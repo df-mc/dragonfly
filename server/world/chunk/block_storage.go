@@ -65,14 +65,18 @@ func (storage *BlockStorage) SetRuntimeID(x, y, z byte, runtimeID uint32) {
 	if index == -1 {
 		// The runtime ID was not yet available in the palette. We add it, then check if the block storage
 		// needs to be resized for the palette pointers to fit.
-		var resize bool
-		index, resize = storage.palette.Add(runtimeID)
-
-		if resize {
-			storage.resize(storage.palette.size)
-		}
+		index = storage.addNew(runtimeID)
 	}
 	storage.setPaletteOffset(x&15, y&15, z&15, uint16(index))
+}
+
+// addNew adds a new runtime ID to the BlockStorage's palette and returns its index. If needed, the storage is resized.
+func (storage *BlockStorage) addNew(runtimeID uint32) int16 {
+	index, resize := storage.palette.Add(runtimeID)
+	if resize {
+		storage.resize(storage.palette.size)
+	}
+	return index
 }
 
 // paletteOffset looks up the palette offset at a given x, y and z value in the block storage. This palette
