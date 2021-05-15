@@ -143,7 +143,7 @@ func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
 	if w.SkyLight(pos.Add(cube.Pos{0, 1})) == 15 {
 		return false
 		// Slow obstructed light calculation, if the fast way out failed.
-	} else if world_highestLightBlocker(w, pos.X(), pos.Z()) <= uint8(pos.Y()) {
+	} else if w.HighestLightBlocker(pos.X(), pos.Z()) <= uint8(pos.Y()) {
 		return false
 	}
 	return true
@@ -221,7 +221,3 @@ func (Beacon) EncodeItem() (name string, meta int16) {
 func (Beacon) EncodeBlock() (string, map[string]interface{}) {
 	return "minecraft:beacon", nil
 }
-
-//go:linkname world_highestLightBlocker github.com/df-mc/dragonfly/server/world.highestLightBlocker
-//noinspection ALL
-func world_highestLightBlocker(w *world.World, x, z int) uint8

@@ -191,11 +191,9 @@ func runtimeID(w *World, pos cube.Pos) uint32 {
 	return rid
 }
 
-// highestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
+// HighestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
 // passed in the world.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func highestLightBlocker(w *World, x, z int) uint8 {
+func (w *World) HighestLightBlocker(x, z int) uint8 {
 	if w == nil {
 		return 0
 	}

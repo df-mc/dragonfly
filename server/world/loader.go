@@ -36,16 +36,17 @@ func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
 // World returns the World that the Loader is in.
 func (l *Loader) World() *World {
 	l.mu.RLock()
-	defer l.mu.RUnlock()
-	return l.w
+	w := l.w
+	l.mu.RUnlock()
+	return w
 }
 
 // ChangeWorld changes the World of the Loader. The currently loaded chunks are reset and any future loading
 // is done from the new World.
 func (l *Loader) ChangeWorld(new *World) {
 	l.mu.Lock()
-	l.w.removeWorldViewer(l.viewer)
 	l.reset()
+	l.w.removeWorldViewer(l.viewer)
 	l.world(new)
 	l.mu.Unlock()
 }
