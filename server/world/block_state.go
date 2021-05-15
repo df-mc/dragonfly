@@ -68,7 +68,6 @@ func registerBlockState(s blockState) {
 	blocks = append(blocks, unknownBlock{s})
 
 	nbtBlocks = append(nbtBlocks, false)
-	world_internal.LiquidRemovable = append(world_internal.LiquidRemovable, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 }

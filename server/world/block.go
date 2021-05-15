@@ -79,9 +79,6 @@ func RegisterBlock(b Block) {
 	if emitter, ok := b.(lightEmitter); ok {
 		chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
 	}
-	if _, ok := b.(liquidRemovable); ok {
-		world_internal.LiquidRemovable[rid] = true
-	}
 	if _, ok := b.(NBTer); ok {
 		nbtBlocks[rid] = true
 	}
@@ -196,11 +193,6 @@ type lightEmitter interface {
 // lightDiffuser is identical to a block.LightDiffuser.
 type lightDiffuser interface {
 	LightDiffusionLevel() uint8
-}
-
-// liquidRemovable is identical to a block.LiquidRemovable.
-type liquidRemovable interface {
-	HasLiquidDrops() bool
 }
 
 // replaceableBlock represents a block that may be replaced by another block automatically. An example is

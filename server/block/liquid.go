@@ -4,8 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/block_internal"
-	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -244,17 +242,21 @@ func spreadNeighbour(b world.Liquid, src cube.Pos, w *world.World, node liquidNo
 
 // canFlowInto checks if a liquid can flow into the block present in the world at a specific block position.
 func canFlowInto(b world.Liquid, w *world.World, pos cube.Pos, sideways bool) bool {
-	rid := block_internal.World_runtimeID(w, pos)
-	if rid == world_internal.AirRuntimeID {
+	bl := w.Block(pos)
+	if _, air := bl.(Air); air {
+		// Fast route for air: A type assert to a concrete type is much faster than a type assert to an interface.
 		return true
 	}
-	ok := world_internal.LiquidRemovable[rid]
-	if ok && sideways {
-		if liq, ok := w.Block(pos).(world.Liquid); ok && ((liq.LiquidDepth() == 8 && !liq.LiquidFalling()) || liq.LiquidType() != b.LiquidType()) {
-			return false
+	if _, ok := b.(LiquidRemovable); ok {
+		if liq, ok := bl.(world.Liquid); ok && sideways {
+			if (liq.LiquidDepth() == 8 && !liq.LiquidFalling()) || liq.LiquidType() != b.LiquidType() {
+				// Can't flow into a liquid if it has a depth of 8 or if it doesn't have the same type.
+				return false
+			}
 		}
+		return true
 	}
-	return ok
+	return false
 }
 
 // liquidNode represents a position that is part of a flow path for a liquid.
