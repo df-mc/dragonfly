@@ -360,11 +360,12 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				continue
 			}
 			f := func(x, y, z int) Block {
-				if x>>4 == chunkX && z>>4 == chunkZ {
-					b, _ := w.blockInChunk(c, cube.Pos{x, y, z})
+				actualX, actualZ := chunkX+x, chunkZ+z
+				if actualX>>4 == chunkX && actualZ>>4 == chunkZ {
+					b, _ := w.blockInChunk(c, cube.Pos{actualX, y, actualZ})
 					return b
 				}
-				return w.Block(cube.Pos{x, y, z})
+				return w.Block(cube.Pos{actualX, y, actualZ})
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			for localX := 0; localX < 16; localX++ {
