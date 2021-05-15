@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"math"
 )
 
 // PlayerAuthInputHandler handles the PlayerAuthInput packet.
@@ -23,6 +24,13 @@ func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
 
 // handleMovement handles the movement part of the packet.PlayerAuthInput.
 func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Session) error {
+	for _, v := range [...]float32{pk.Pitch, pk.Yaw, pk.HeadYaw, pk.Position[0], pk.Position[1], pk.Position[2]} {
+		f := float64(v)
+		if math.IsNaN(f) || math.IsInf(f, 1) || math.IsInf(f, 0) {
+			return fmt.Errorf("player auth input packet must never send nan/inf values")
+		}
+	}
+
 	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
 
 	newPos := vec32To64(pk.Position)
