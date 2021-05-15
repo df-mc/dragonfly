@@ -82,9 +82,6 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(liquidRemovable); ok {
 		world_internal.LiquidRemovable[rid] = true
 	}
-	if source, ok := b.(beaconSource); ok {
-		world_internal.BeaconSource[rid] = source.PowersBeacon()
-	}
 	if _, ok := b.(NBTer); ok {
 		nbtBlocks[rid] = true
 	}
@@ -204,13 +201,6 @@ type lightDiffuser interface {
 // liquidRemovable is identical to a block.LiquidRemovable.
 type liquidRemovable interface {
 	HasLiquidDrops() bool
-}
-
-// beaconSource represents a block which is capable of contributing to powering a beacon pyramid.
-type beaconSource interface {
-	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
-	// beacon pyramid.
-	PowersBeacon() bool
 }
 
 // replaceableBlock represents a block that may be replaced by another block automatically. An example is

@@ -4,8 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/internal/block_internal"
-	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -126,7 +124,7 @@ func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
 	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if !world_internal.BeaconSource[block_internal.World_runtimeID(w, cube.Pos{x, y, z})] {
+				if s, ok := w.Block(pos).(BeaconSource); !ok || !s.PowersBeacon() {
 					return lvl
 				}
 			}

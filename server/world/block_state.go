@@ -71,7 +71,6 @@ func registerBlockState(s blockState) {
 	world_internal.LiquidRemovable = append(world_internal.LiquidRemovable, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
-	world_internal.BeaconSource = append(world_internal.BeaconSource, false)
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block
