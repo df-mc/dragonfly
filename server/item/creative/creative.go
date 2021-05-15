@@ -3,9 +3,6 @@ package creative
 import (
 	_ "embed"
 	"encoding/base64"
-	"github.com/df-mc/dragonfly/server/block"
-	"strings"
-
 	// The following three imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all items are registered before the creative items are registered
 	// in the init function in this package.
@@ -37,7 +34,7 @@ var (
 // creativeItemEntry holds data of a creative item as present in the creative inventory.
 type creativeItemEntry struct {
 	Name  string `nbt:"name"`
-	Meta  int32  `nbt:"meta"`
+	Meta  int16  `nbt:"meta"`
 	NBT   string `nbt:"nbt"`
 	Block struct {
 		Name       string                 `nbt:"name"`
@@ -60,11 +57,6 @@ func init() {
 			it world.Item
 			ok bool
 		)
-		if strings.Contains(data.Name, "bucket") {
-			// Buckets for some reason occur 6 times in this list, all of which have no NBT, block or metadata.
-			// We'll just register these manually.
-			continue
-		}
 		if data.Block.Version != 0 {
 			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
 			// have their metadata sent, but we still need to get that metadata in order to be able to register
@@ -75,11 +67,11 @@ func init() {
 				}
 			}
 		} else {
-			if it, ok = world.ItemByName(data.Name, int16(data.Meta)); !ok {
+			if it, ok = world.ItemByName(data.Name, data.Meta); !ok {
 				// The item wasn't registered, so don't register it as a creative item.
 				continue
 			}
-			if _, resultingMeta := it.EncodeItem(); resultingMeta != int16(data.Meta) {
+			if _, resultingMeta := it.EncodeItem(); resultingMeta != data.Meta {
 				// We found an item registered with that ID and a meta of 0, but we only need items with strictly
 				// the same meta here.
 				continue
@@ -97,7 +89,4 @@ func init() {
 		}
 		RegisterItem(item.NewStack(it, 1))
 	}
-	RegisterItem(item.NewStack(item.Bucket{}, 1))
-	RegisterItem(item.NewStack(item.Bucket{Content: block.Water{}}, 1))
-	RegisterItem(item.NewStack(item.Bucket{Content: block.Lava{}}, 1))
 }
