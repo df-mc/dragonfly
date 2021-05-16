@@ -325,10 +325,6 @@ func init() {
 		p, ok := b.(Pumpkin)
 		return ok && p.Carved
 	}
-	item_internal.IsWater = func(b world.Block) bool {
-		_, ok := b.(Water)
-		return ok
-	}
 	item_internal.Fire = Fire{Type: NormalFire(), Age: 0}
 }
 
