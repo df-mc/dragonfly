@@ -4,7 +4,6 @@ package block_internal
 //lint:file-ignore ST1020 Exported functions in this package have compiler directives. These functions are not otherwise exposed to users.
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	_ "unsafe" // Imported for compiler directives.
@@ -13,10 +12,6 @@ import (
 //go:linkname world_breakParticle github.com/df-mc/dragonfly/server/world.breakParticle
 //noinspection ALL
 var world_breakParticle func(b world.Block) world.Particle
-
-//go:linkname World_runtimeID github.com/df-mc/dragonfly/server/world.runtimeID
-//noinspection ALL
-func World_runtimeID(w *world.World, pos cube.Pos) uint32
 
 func init() {
 	world_breakParticle = func(b world.Block) world.Particle {
