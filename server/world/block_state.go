@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"math"
@@ -25,6 +24,8 @@ var (
 	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a nil implementation in
 	// this slice.
 	nbtBlocks []bool
+	// airRID is the runtime ID of an air block.
+	airRID uint32
 )
 
 func init() {
@@ -62,7 +63,7 @@ func registerBlockState(s blockState) {
 	}
 	rid := uint32(len(blocks))
 	if s.Name == "minecraft:air" {
-		world_internal.AirRuntimeID = rid
+		airRID = rid
 	}
 	stateRuntimeIDs[h] = rid
 	blocks = append(blocks, unknownBlock{s})

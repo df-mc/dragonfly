@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"math"
 	"math/rand"
@@ -88,7 +87,7 @@ func RegisterBlock(b Block) {
 // If the runtime ID is found, the bool returned is true. It is otherwise false.
 func BlockRuntimeID(b Block) (uint32, bool) {
 	if b == nil {
-		return world_internal.AirRuntimeID, true
+		return airRID, true
 	}
 	if h := b.Hash(); h != math.MaxUint64 {
 		rid, ok := hashes.Get(int64(h))
@@ -130,7 +129,7 @@ func BlockByName(name string, properties map[string]interface{}) (Block, bool) {
 
 // air returns an air block.
 func air() Block {
-	b, _ := BlockByRuntimeID(world_internal.AirRuntimeID)
+	b, _ := BlockByRuntimeID(airRID)
 	return b
 }
 

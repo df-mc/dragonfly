@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"sync"
@@ -182,7 +181,12 @@ func DiskEncode(c *Chunk, blob bool) (d SerialisedData) {
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
 // invalid, an error is returned.
 func DiskDecode(data SerialisedData) (*Chunk, error) {
-	c := New(world_internal.AirRuntimeID)
+	air, ok := StateToRuntimeID("minecraft:air", nil)
+	if ok {
+		panic("cannot find air runtime ID")
+	}
+
+	c := New(air)
 	copy(c.biomes[:], data.Data2D[512:])
 
 	for y, sub := range data.SubChunks {
@@ -195,7 +199,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading version: %w", err)
 		}
-		c.sub[y] = NewSubChunk(world_internal.AirRuntimeID)
+		c.sub[y] = NewSubChunk(air)
 		switch ver {
 		default:
 			return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)

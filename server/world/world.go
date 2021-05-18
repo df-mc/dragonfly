@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/internal/world_internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sirupsen/logrus"
@@ -179,11 +178,11 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 func runtimeID(w *World, pos cube.Pos) uint32 {
 	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
-		return world_internal.AirRuntimeID
+		return airRID
 	}
 	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if err != nil {
-		return world_internal.AirRuntimeID
+		return airRID
 	}
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
@@ -402,7 +401,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 							}
 							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, runtimeID)
 						} else {
-							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, world_internal.AirRuntimeID)
+							c.SetRuntimeID(uint8(xOffset), uint8(y+pos[1]), uint8(zOffset), 1, airRID)
 						}
 					}
 				}
@@ -547,10 +546,10 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x, y, z, layer uint8) (bool,
 		return false, false
 	}
 	if _, ok := b.(Liquid); ok {
-		c.SetRuntimeID(x, y, z, layer, world_internal.AirRuntimeID)
+		c.SetRuntimeID(x, y, z, layer, airRID)
 		return true, true
 	}
-	return id == world_internal.AirRuntimeID, false
+	return id == airRID, false
 }
 
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
@@ -1227,7 +1226,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 				layer := layers[0]
 				p := layer.Palette()
-				if p.Len() == 1 && p.RuntimeID(0) == world_internal.AirRuntimeID {
+				if p.Len() == 1 && p.RuntimeID(0) == airRID {
 					// Empty layer present, so skip it right away.
 					continue
 				}
@@ -1238,7 +1237,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
 				rid := layer.RuntimeID(uint8(x), uint8(y), uint8(z))
-				if rid == world_internal.AirRuntimeID {
+				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
 				}
@@ -1548,7 +1547,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New(world_internal.AirRuntimeID)
+		c = chunk.New(airRID)
 		w.generator().GenerateChunk(pos, c)
 		for _, sub := range c.Sub() {
 			if sub == nil {
