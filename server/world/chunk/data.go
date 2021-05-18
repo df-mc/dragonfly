@@ -182,7 +182,7 @@ func DiskEncode(c *Chunk, blob bool) (d SerialisedData) {
 // invalid, an error is returned.
 func DiskDecode(data SerialisedData) (*Chunk, error) {
 	air, ok := StateToRuntimeID("minecraft:air", nil)
-	if ok {
+	if !ok {
 		panic("cannot find air runtime ID")
 	}
 
