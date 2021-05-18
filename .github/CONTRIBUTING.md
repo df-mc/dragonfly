@@ -1,10 +1,21 @@
 # Contributing to Dragonfly
 
-First of all, thank you for your interest in contributing to Dragonfly. :+1:
+First, thank you for your interest in contributing to Dragonfly. :tada:
 
 The following is a set of guidelines for contributing to Dragonfly. These are guidelines and in
 general it is recommended to stick to them when contributing, but you should use your best
 judgement. Feel free to propose changes to this document in our Discord.
+
+### Issues
+Issues are very welcome, both in the form of bug reports and feature requests. 
+
+When opening a bug report, please try to provide as much information as you can to reproduce the issue. When opening a 
+feature request, please be as clear as you can and provide concrete examples of how you think the proposed feature 
+should work. The more precise you are, the easier it is for someone to pick up your request. Don't be afraid to propose
+any ideas you might have, they may help people looking to pick up your feature request!
+
+As soon as a maintainer sees your issue and has enough information, your issue will be added to a milestone that
+indicates when we hope to have your issue resolved.
 
 ### Pull Requests
 In general, it is recommended to discuss any changes you would like to make in our Discord to
