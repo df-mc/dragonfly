@@ -48,6 +48,21 @@ func (p Pumpkin) Carve(f cube.Face) (world.Block, bool) {
 	return Pumpkin{Facing: f.Direction(), Carved: true}, !p.Carved
 }
 
+// Helmet ...
+func (p Pumpkin) Helmet() bool {
+	return p.Carved
+}
+
+// DefencePoints ...
+func (p Pumpkin) DefencePoints() float64 {
+	return 0
+}
+
+// KnockBackResistance ...
+func (p Pumpkin) KnockBackResistance() float64 {
+	return 0
+}
+
 // EncodeItem ...
 func (p Pumpkin) EncodeItem() (name string, meta int16) {
 	if p.Carved {

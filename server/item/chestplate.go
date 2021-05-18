@@ -57,6 +57,11 @@ func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// Chestplate ...
+func (c Chestplate) Chestplate() bool {
+	return true
+}
+
 // EncodeItem ...
 func (c Chestplate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Tier.Name + "_chestplate", 0

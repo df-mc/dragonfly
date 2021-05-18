@@ -322,10 +322,6 @@ func init() {
 
 func init() {
 	item_internal.Air = Air{}
-	item_internal.IsCarvedPumpkin = func(b world.Item) bool {
-		p, ok := b.(Pumpkin)
-		return ok && p.Carved
-	}
 	item_internal.Fire = Fire{Type: NormalFire(), Age: 0}
 }
 

@@ -55,6 +55,11 @@ func (b Boots) KnockBackResistance() float64 {
 	return b.Tier.KnockBackResistance
 }
 
+// Boots ...
+func (b Boots) Boots() bool {
+	return true
+}
+
 // EncodeItem ...
 func (b Boots) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + b.Tier.Name + "_boots", 0

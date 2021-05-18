@@ -55,6 +55,11 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// Helmet ...
+func (h Helmet) Helmet() bool {
+	return true
+}
+
 // EncodeItem ...
 func (h Helmet) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + h.Tier.Name + "_helmet", 0

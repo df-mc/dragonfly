@@ -51,6 +51,11 @@ func (l Leggings) KnockBackResistance() float64 {
 	return l.Tier.KnockBackResistance
 }
 
+// Leggings ...
+func (l Leggings) Leggings() bool {
+	return true
+}
+
 // DurabilityInfo ...
 func (l Leggings) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{

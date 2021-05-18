@@ -2,8 +2,8 @@ package inventory
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -31,18 +31,13 @@ func canAddArmour(s item.Stack, slot int) bool {
 	i := s.Item()
 	switch slot {
 	case 0:
-		_, ok = i.(item.Helmet)
-		if !ok {
-			ok = item_internal.IsCarvedPumpkin(i)
-		}
-		// TODO: Allow turtle helmets and mob skulls here.
+		_, ok = i.(armour.Helmet)
 	case 1:
-		_, ok = i.(item.Chestplate)
-		// TODO: Allow elytra here.
+		_, ok = i.(armour.Chestplate)
 	case 2:
-		_, ok = i.(item.Leggings)
+		_, ok = i.(armour.Leggings)
 	case 3:
-		_, ok = i.(item.Boots)
+		_, ok = i.(armour.Boots)
 	}
 	return ok
 }
