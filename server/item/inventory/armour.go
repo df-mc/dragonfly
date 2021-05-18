@@ -24,22 +24,28 @@ func NewArmour(f func(slot int, item item.Stack)) *Armour {
 
 // canAddArmour checks if the item passed can be worn as armour in the slot passed.
 func canAddArmour(s item.Stack, slot int) bool {
-	ok := s.Empty()
-	if ok {
+	if s.Empty() {
 		return true
 	}
-	i := s.Item()
 	switch slot {
 	case 0:
-		_, ok = i.(armour.Helmet)
+		if h, ok := s.Item().(armour.Helmet); ok && h.Helmet() {
+			return true
+		}
 	case 1:
-		_, ok = i.(armour.Chestplate)
+		if c, ok := s.Item().(armour.Chestplate); ok && c.Chestplate() {
+			return true
+		}
 	case 2:
-		_, ok = i.(armour.Leggings)
+		if l, ok := s.Item().(armour.Leggings); ok && l.Leggings() {
+			return true
+		}
 	case 3:
-		_, ok = i.(armour.Boots)
+		if b, ok := s.Item().(armour.Boots); ok && b.Boots() {
+			return true
+		}
 	}
-	return ok
+	return false
 }
 
 // SetHelmet sets the item stack passed as the helmet in the inventory.
