@@ -57,6 +57,8 @@ type Session struct {
 	inv, offHand, ui *inventory.Inventory
 	armour           *inventory.Armour
 
+	breakingPos cube.Pos
+
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
 	openedWindow, openedPos        atomic.Value

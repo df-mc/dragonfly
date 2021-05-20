@@ -46,23 +46,29 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		}
 	case protocol.PlayerActionStopSwimming:
 		s.c.StopSwimming()
-	case protocol.PlayerActionContinueDestroyBlock:
-		fallthrough
-	case protocol.PlayerActionStartBreak:
+	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.c.StartBreaking(cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}, cube.Face(face))
+		s.breakingPos = cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+		s.c.StartBreaking(s.breakingPos, cube.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
-	case protocol.PlayerActionPredictDestroyBlock:
-		fallthrough
-	case protocol.PlayerActionStopBreak:
+	case protocol.PlayerActionPredictDestroyBlock, protocol.PlayerActionStopBreak:
 		s.c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
+		newPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+
+		// Sometimes no new position will be sent using a StartBreak action, so we need to detect a change in the
+		// block to be broken by comparing positions.
+		if newPos != s.breakingPos {
+			s.breakingPos = newPos
+			s.c.StartBreaking(newPos, cube.Face(face))
+			return nil
+		}
 		s.c.ContinueBreaking(cube.Face(face))
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
