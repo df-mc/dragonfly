@@ -218,7 +218,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		}
 		fieldType := signature.Type().Field(i)
 		parser.currentField = fieldType.Name
-		if err := parser.parseArgument(arguments, field, optional(fieldType)); err != nil {
+		if err := parser.parseArgument(arguments, field, optional(fieldType), source); err != nil {
 			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
 			return arguments, err
 		}
