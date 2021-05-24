@@ -18,7 +18,7 @@ type Line struct {
 	src  Source
 }
 
-// Next takes the next argument from the command line and returns it. If there were no more arguments to
+// Next reads the next argument from the command line and returns it. If there were no more arguments to
 // consume, false is returned.
 func (line *Line) Next() (string, bool) {
 	v, ok := line.NextN(1)
@@ -28,15 +28,24 @@ func (line *Line) Next() (string, bool) {
 	return v[0], true
 }
 
-// NextN takes the next N arguments from the command line and returns them. If there were not enough arguments
+// NextN reads the next N arguments from the command line and returns them. If there were not enough arguments
 // (n arguments), false is returned.
 func (line *Line) NextN(n int) ([]string, bool) {
 	if len(line.args) < n {
 		return nil, false
 	}
 	v := line.args[:n]
-	line.args = line.args[n:]
 	return v, true
+}
+
+// RemoveNext consumes the next argument from the command line.
+func (line *Line) RemoveNext() {
+	line.RemoveN(1)
+}
+
+// RemoveN consumes the next N arguments from the command line.
+func (line *Line) RemoveN(n int) {
+	line.args = line.args[n:]
 }
 
 // Leftover takes the leftover arguments from the command line.
@@ -93,7 +102,10 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 		}
 		panic(fmt.Sprintf("non-command parameter type %T in command structure", i))
 	}
-	if err == ErrInsufficientArgs && optional {
+	if err == nil {
+		// The argument was parsed successfully, so it needs to be removed from the command line.
+		line.RemoveNext()
+	} else if err == ErrInsufficientArgs && optional {
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
 		// not matter. Make sure to clear the value though.
 		v.Set(reflect.Zero(v.Type()))
