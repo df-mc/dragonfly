@@ -96,7 +96,10 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 
 	e, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
 	if !ok {
-		return fmt.Errorf("invalid entity interaction: no entity found with runtime ID %v", data.TargetEntityRuntimeID)
+		// In some cases, for example when a falling block entity solidifies, latency may allow attacking an entity that
+		// no longer exists server side. This is expected, so we shouldn't kick the player.
+		s.log.Debugf("invalid entity interaction: no entity found with runtime ID %v", data.TargetEntityRuntimeID)
+		return nil
 	}
 	if data.TargetEntityRuntimeID == selfEntityRuntimeID {
 		return fmt.Errorf("invalid entity interaction: players cannot interact with themselves")
