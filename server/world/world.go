@@ -2,7 +2,6 @@ package world
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
@@ -1486,11 +1485,6 @@ func showEntity(e Entity, viewer Viewer) {
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
 func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
-	if w == nil {
-		return nil, errors.New("world is nil")
-	}
-	var err error
-
 	w.chunkMu.Lock()
 	if pos == w.lastPos && w.lastChunk != nil {
 		c := w.lastChunk
@@ -1500,6 +1494,8 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	}
 	c, ok := w.chunks[pos]
 	if !ok {
+		var err error
+
 		c, err = w.loadChunk(pos)
 		if err != nil {
 			w.chunkMu.Unlock()

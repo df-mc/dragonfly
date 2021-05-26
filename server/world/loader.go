@@ -82,7 +82,7 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 // An error is returned if one of the chunks could not be loaded.
 func (l *Loader) Load(n int) error {
 	l.mu.Lock()
-	if l.closed {
+	if l.closed || l.w == nil {
 		l.mu.Unlock()
 		return nil
 	}
