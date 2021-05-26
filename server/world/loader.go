@@ -1,7 +1,6 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"sync"
@@ -18,7 +17,7 @@ type Loader struct {
 	mu        sync.RWMutex
 	pos       ChunkPos
 	loadQueue []ChunkPos
-	loaded    map[ChunkPos]*chunk.Chunk
+	loaded    map[ChunkPos]struct{}
 
 	closed bool
 }
@@ -28,7 +27,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunk.Chunk), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]struct{}), viewer: v}
 	l.world(world)
 	return l
 }
@@ -99,7 +98,7 @@ func (l *Loader) Load(n int) error {
 		l.viewer.ViewChunk(pos, c.Chunk, c.e)
 		l.w.addViewer(c, l.viewer)
 
-		l.loaded[pos] = c.Chunk
+		l.loaded[pos] = struct{}{}
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
@@ -126,7 +125,7 @@ func (l *Loader) reset() {
 	for pos := range l.loaded {
 		l.w.removeViewer(pos, l.viewer)
 	}
-	l.loaded = map[ChunkPos]*chunk.Chunk{}
+	l.loaded = map[ChunkPos]struct{}{}
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
