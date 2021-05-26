@@ -48,7 +48,7 @@ type Liquid interface {
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to lookup a block's runtime ID quickly.
-var hashes = intintmap.New(8000, 0.95)
+var hashes = intintmap.New(7000, 0.999)
 
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.

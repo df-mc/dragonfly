@@ -90,9 +90,8 @@ func (b *hashBuilder) writeConstants(w io.Writer) {
 
 func (b *hashBuilder) writeMethods(w io.Writer) {
 	for name, fields := range b.blockFields {
-		c := "hash" + name
-		h := c + "<<48"
-		bitSize := 0
+		h := "hash" + name
+		bitSize := 16
 
 		fun := b.funcs[name]
 		var recvName string
@@ -127,10 +126,8 @@ func (b *hashBuilder) writeMethods(w io.Writer) {
 					continue
 				}
 
-				if bitSize > 48 {
+				if bitSize > 64 {
 					log.Println("Hash size of block properties of", name, "exceeds 48 bits. Please look at this manually.")
-				} else if bitSize == 0 {
-					h += " | " + str
 				} else {
 					h += " | " + str + "<<" + strconv.Itoa(bitSize)
 				}
@@ -140,10 +137,6 @@ func (b *hashBuilder) writeMethods(w io.Writer) {
 
 		if recvName != "" {
 			recvName += " "
-		}
-
-		if h == c+"<<48" {
-			h = c + " << 48"
 		}
 
 		if _, err := fmt.Fprintf(w, methodFormat, recvName, name, h); err != nil {
