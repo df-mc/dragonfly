@@ -47,4 +47,4 @@ We use JetBrains Space to manage our issues, pull requests and code reviews, but
 through GitHub issues and pull requests.
 
 ## Contact
-[![Chat on Discord](https://img.shields.io/badge/Chat-On%20Discord-738BD7.svg?style=for-the-badge)](https://discord.gg/kNaScn8D)
+[![Chat on Discord](https://img.shields.io/badge/Chat-On%20Discord-738BD7.svg?style=for-the-badge)](https://discord.com/invite/U4kFWHhTNR)

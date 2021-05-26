@@ -51,7 +51,7 @@ type World struct {
 	genMu sync.RWMutex
 	gen   Generator
 
-	chunkMu sync.RWMutex
+	chunkMu sync.Mutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
 	// of not being used.
 	chunks map[ChunkPos]*chunkData
@@ -251,8 +251,10 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	} else {
 		delete(c.e, pos)
 	}
+
+	v := c.v
 	c.Unlock()
-	for _, viewer := range c.v {
+	for _, viewer := range v {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
 }
@@ -1181,7 +1183,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		})
 	}
 
-	w.chunkMu.RLock()
+	w.chunkMu.Lock()
 	for pos, c := range w.chunks {
 		withinSimDist := false
 		for _, chunkPos := range w.positionCache {
@@ -1249,7 +1251,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		}
 		c.Unlock()
 	}
-	w.chunkMu.RUnlock()
+	w.chunkMu.Unlock()
 
 	for _, a := range w.toTick {
 		a.b.RandomTick(a.pos, w, w.r)
@@ -1273,7 +1275,7 @@ func (w *World) tickEntities(tick int64) {
 	var entitiesToMove []entityToMove
 
 	w.ePosMu.Lock()
-	w.chunkMu.RLock()
+	w.chunkMu.Lock()
 	for e, lastPos := range w.lastEntityPositions {
 		chunkPos := chunkPosFromVec3(e.Position())
 
@@ -1312,7 +1314,7 @@ func (w *World) tickEntities(tick int64) {
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: append([]Viewer(nil), lastC.v...), after: newC})
 		}
 	}
-	w.chunkMu.RUnlock()
+	w.chunkMu.Unlock()
 	w.ePosMu.Unlock()
 
 	for _, move := range entitiesToMove {
@@ -1462,9 +1464,9 @@ func (w *World) generator() Generator {
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the
 // chunk returned is nil and false is returned.
 func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
-	w.chunkMu.RLock()
+	w.chunkMu.Lock()
 	c, ok := w.chunks[pos]
-	w.chunkMu.RUnlock()
+	w.chunkMu.Unlock()
 	return c, ok
 }
 
