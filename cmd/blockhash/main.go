@@ -9,6 +9,7 @@ import (
 	"go/token"
 	"io"
 	"log"
+	"math/bits"
 	"os"
 	"strconv"
 )
@@ -50,8 +51,8 @@ func procPackage(pkg *ast.Package, fs *token.FileSet, w io.Writer) {
 	b.resolveBlocks()
 
 	b.writePackage(w)
-	b.writeConstants(w)
-	b.writeMethods(w)
+	i := b.writeConstants(w)
+	b.writeMethods(w, i)
 }
 
 var (
@@ -78,20 +79,22 @@ func (b *hashBuilder) writePackage(w io.Writer) {
 }
 
 // writeConstants writes hash constants for every block to a file.
-func (b *hashBuilder) writeConstants(w io.Writer) {
-	i := 0
+func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
+	var i uint64
 	for name := range b.blockFields {
 		if _, err := fmt.Fprintf(w, constFormat, name, i); err != nil {
 			log.Fatalln(err)
 		}
 		i++
 	}
+
+	return bits.Len64(i)
 }
 
-func (b *hashBuilder) writeMethods(w io.Writer) {
+func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 	for name, fields := range b.blockFields {
 		h := "hash" + name
-		bitSize := 16
+		bitSize := baseBits
 
 		fun := b.funcs[name]
 		var recvName string
@@ -127,7 +130,7 @@ func (b *hashBuilder) writeMethods(w io.Writer) {
 				}
 
 				if bitSize > 64 {
-					log.Println("Hash size of block properties of", name, "exceeds 48 bits. Please look at this manually.")
+					log.Println("Hash size of block properties of", name, "exceeds", 64-baseBits, "bits. Please look at this manually.")
 				} else {
 					h += " | " + str + "<<" + strconv.Itoa(bitSize)
 				}
