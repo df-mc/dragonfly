@@ -1037,6 +1037,7 @@ func (w *World) Close() error {
 	w.log.Debug("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
+	w.lastChunk = nil
 	chunksToSave := make(map[ChunkPos]*chunkData, len(w.chunks))
 	for pos, c := range w.chunks {
 		// We delete all chunks from the cache and save them to the provider.
@@ -1712,6 +1713,9 @@ func (w *World) chunkCacheJanitor() {
 				if len(c.v) == 0 {
 					chunksToRemove[pos] = c
 					delete(w.chunks, pos)
+					if w.lastPos == pos {
+						w.lastChunk = nil
+					}
 				}
 			}
 			w.chunkMu.Unlock()
