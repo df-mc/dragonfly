@@ -54,6 +54,9 @@ func (l *Loader) ChangeWorld(new *World) {
 func (l *Loader) ChangeRadius(new int) {
 	l.mu.Lock()
 	l.r = new
+
+	l.evictUnused()
+	l.populateLoadQueue()
 	l.mu.Unlock()
 }
 
