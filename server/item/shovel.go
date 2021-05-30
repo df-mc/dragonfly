@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -24,7 +23,7 @@ func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 				// Dirt paths are not created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Add(cube.Pos{0, 1})) != item_internal.Air {
+			if w.Block(pos.Add(cube.Pos{0, 1})) != air() {
 				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}

@@ -242,7 +242,7 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 		select {
 		case <-t.C:
 			s.blobMu.Lock()
-			if s.chunkLoader.World() != s.c.World() {
+			if s.chunkLoader.World() != s.c.World() && s.c.World() != nil {
 				s.handleWorldSwitch()
 			}
 

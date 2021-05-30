@@ -117,7 +117,6 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 		_, _ = s.chunkBuf.Write(data.SubChunks[y])
 	}
 	_, _ = s.chunkBuf.Write(data.Data2D)
-	_, _ = s.chunkBuf.Write(data.BlockNBT)
 
 	enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
 	for pos, b := range blockEntities {

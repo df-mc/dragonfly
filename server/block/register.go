@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/grass"
 	_ "github.com/df-mc/dragonfly/server/internal/block_internal"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	_ "unsafe" // Imported for compiler directives.
@@ -318,11 +317,6 @@ func init() {
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
-}
-
-func init() {
-	item_internal.Air = Air{}
-	item_internal.Fire = Fire{Type: NormalFire(), Age: 0}
 }
 
 // readSlice reads an interface slice from a map at the key passed.
