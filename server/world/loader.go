@@ -45,7 +45,6 @@ func (l *Loader) World() *World {
 func (l *Loader) ChangeWorld(new *World) {
 	l.mu.Lock()
 	l.reset()
-	l.w.removeWorldViewer(l.viewer)
 	l.world(new)
 	l.mu.Unlock()
 }
@@ -83,6 +82,9 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 // The function f must not hold the chunk beyond the function scope.
 // An error is returned if one of the chunks could not be loaded.
 func (l *Loader) Load(n int) error {
+	if n == 0 {
+		return nil
+	}
 	l.mu.Lock()
 	if l.closed || l.w == nil {
 		l.mu.Unlock()
@@ -116,7 +118,6 @@ func (l *Loader) Load(n int) error {
 func (l *Loader) Close() error {
 	l.mu.Lock()
 	l.reset()
-	l.w.removeWorldViewer(l.viewer)
 	l.closed = true
 	l.viewer = nil
 	l.mu.Unlock()
@@ -129,6 +130,7 @@ func (l *Loader) reset() {
 		l.w.removeViewer(pos, l.viewer)
 	}
 	l.loaded = map[ChunkPos]struct{}{}
+	l.w.removeWorldViewer(l.viewer)
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
