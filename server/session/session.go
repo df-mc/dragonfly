@@ -265,15 +265,17 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch() {
-	// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
-	resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
-	for h, blob := range s.blobs {
-		resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: h, Payload: blob})
-	}
-	s.writePacket(resp)
+	if s.conn.ClientCacheEnabled() {
+		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
+		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
+		for h, blob := range s.blobs {
+			resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: h, Payload: blob})
+		}
+		s.writePacket(resp)
 
-	s.blobs = map[uint64][]byte{}
-	s.openChunkTransactions = nil
+		s.blobs = map[uint64][]byte{}
+		s.openChunkTransactions = nil
+	}
 
 	s.chunkLoader.ChangeWorld(s.c.World())
 }

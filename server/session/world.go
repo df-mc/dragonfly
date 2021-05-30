@@ -724,7 +724,7 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a blockAction.Action) {
 		})
 	case blockAction.ContinueCrack:
 		s.writePacket(&packet.LevelEvent{
-			EventType: 3602,
+			EventType: packet.EventUpdateBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
 		})
