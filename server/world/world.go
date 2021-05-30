@@ -140,7 +140,6 @@ func (w *World) Block(pos cube.Pos) Block {
 		return air()
 	}
 	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
-	c.Unlock()
 
 	b, _ := BlockByRuntimeID(rid)
 	if nbtBlocks[rid] {
@@ -149,6 +148,8 @@ func (w *World) Block(pos cube.Pos) Block {
 			return nbtB
 		}
 	}
+	c.Unlock()
+
 	return b
 }
 
@@ -159,9 +160,10 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		// Fast way out.
 		return air(), nil
 	}
-	b, _ := BlockByRuntimeID(c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0))
+	rid := c.RuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0)
+	b, _ := BlockByRuntimeID(rid)
 
-	if _, ok := b.(NBTer); ok {
+	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		b, ok := c.e[pos]
 		if ok {
@@ -251,11 +253,10 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		delete(c.e, pos)
 	}
 
-	v := c.v
-	c.Unlock()
-	for _, viewer := range v {
+	for _, viewer := range c.v {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
+	c.Unlock()
 }
 
 // setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
@@ -267,7 +268,7 @@ func (w *World) setBlockInChunk(c *chunkData, pos cube.Pos, b Block) error {
 	}
 	c.SetRuntimeID(uint8(pos[0]), uint8(pos[1]), uint8(pos[2]), 0, rid)
 
-	if _, hasNBT := b.(NBTer); hasNBT {
+	if nbtBlocks[rid] {
 		c.e[pos] = b
 	} else {
 		delete(c.e, pos)
@@ -708,21 +709,18 @@ func (w *World) AddEntity(e Entity) {
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error loading chunk to add entity: %v", err)
-		c.Unlock()
 		return
 	}
-	viewers := c.v
 	c.entities = append(c.entities, e)
+	for _, viewer := range c.v {
+		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
+		showEntity(e, viewer)
+	}
 	c.Unlock()
 
 	w.ePosMu.Lock()
 	w.lastEntityPositions[e] = chunkPos
 	w.ePosMu.Unlock()
-
-	for _, viewer := range viewers {
-		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
-		showEntity(e, viewer)
-	}
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -1383,12 +1381,11 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	c.v = append(c.v, viewer)
 	// After adding the viewer to the chunk, we also need to send all entities currently in the chunk that the
 	// viewer is added to.
-	entities := c.entities
-	c.Unlock()
-
-	for _, entity := range entities {
+	for _, entity := range c.entities {
 		showEntity(entity, viewer)
 	}
+	c.Unlock()
+
 	viewer.ViewTime(w.Time())
 }
 
