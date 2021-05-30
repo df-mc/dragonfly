@@ -20,8 +20,9 @@ type Enum interface {
 	// where parameter types otherwise are.
 	Type() string
 	// Options should return a list of options that show up on the client side. The command will ensure that
-	// the argument passed to the enum parameter will be equal to one of these options.
-	Options() []string
+	// the argument passed to the enum parameter will be equal to one of these options. The provided Source
+	// can also be used to change the enums for each player.
+	Options(source Source) []string
 	// SetOption sets the option that was selected in the argument. It is guaranteed to be one of the options
 	// obtained using Enum.Options().
 	SetOption(option string, v reflect.Value)

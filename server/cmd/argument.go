@@ -68,7 +68,7 @@ type parser struct {
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
 // parsing was not successful, an error is returned.
-func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err error) {
+func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source Source) (err error) {
 	i := v.Interface()
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
@@ -93,7 +93,7 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool) (err e
 			break
 		}
 		if enum, ok := i.(Enum); ok {
-			err = p.enum(line, v, enum)
+			err = p.enum(line, v, enum, source)
 			break
 		}
 		if sub, ok := i.(SubCommand); ok {
@@ -185,13 +185,13 @@ func (p parser) bool(line *Line, v reflect.Value) error {
 }
 
 // enum ...
-func (p parser) enum(line *Line, val reflect.Value, v Enum) error {
+func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
 	}
 	found := ""
-	for _, option := range v.Options() {
+	for _, option := range v.Options(source) {
 		if strings.EqualFold(option, arg) {
 			found = option
 		}
