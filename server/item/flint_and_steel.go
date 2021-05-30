@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -29,9 +28,9 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 // UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	if w.Block(pos.Side(face)) == item_internal.Air {
+	if w.Block(pos.Side(face)) == air() {
 		w.PlaySound(pos.Vec3(), sound.Ignite{})
-		w.PlaceBlock(pos.Side(face), item_internal.Fire)
+		w.PlaceBlock(pos.Side(face), fire())
 		w.ScheduleBlockUpdate(pos.Side(face), time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true
 	}
@@ -41,4 +40,22 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 // EncodeItem ...
 func (f FlintAndSteel) EncodeItem() (name string, meta int16) {
 	return "minecraft:flint_and_steel", 0
+}
+
+// air returns an air block.
+func air() world.Block {
+	a, ok := world.BlockByName("minecraft:air", nil)
+	if !ok {
+		panic("could not find air block")
+	}
+	return a
+}
+
+// fire returns a fire block.
+func fire() world.Block {
+	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	if !ok {
+		panic("could not find fire block")
+	}
+	return f
 }
