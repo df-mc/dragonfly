@@ -1379,12 +1379,12 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 		return
 	}
 	c.v = append(c.v, viewer)
-	// After adding the viewer to the chunk, we also need to send all entities currently in the chunk that the
-	// viewer is added to.
-	for _, entity := range c.entities {
+	entities := c.entities
+	c.Unlock()
+
+	for _, entity := range entities {
 		showEntity(entity, viewer)
 	}
-	c.Unlock()
 
 	viewer.ViewTime(w.Time())
 }
