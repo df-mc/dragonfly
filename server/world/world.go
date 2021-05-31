@@ -713,11 +713,15 @@ func (w *World) AddEntity(e Entity) {
 		return
 	}
 	c.entities = append(c.entities, e)
-	for _, viewer := range c.v {
+
+	viewers := make([]Viewer, len(c.v))
+	copy(viewers, c.v)
+	c.Unlock()
+
+	for _, viewer := range viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
-	c.Unlock()
 
 	w.ePosMu.Lock()
 	w.lastEntityPositions[e] = chunkPos
