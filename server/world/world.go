@@ -74,7 +74,7 @@ type World struct {
 	entityMu sync.RWMutex
 	entities map[Entity]struct{}
 
-	viewersMu sync.RWMutex
+	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
 }
 
@@ -137,6 +137,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
+			c.Unlock()
 			return nbtB
 		}
 	}
@@ -1349,12 +1350,12 @@ func (w *World) tickEntities(tick int64) {
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
 func (w *World) allViewers() []Viewer {
-	w.viewersMu.RLock()
+	w.viewersMu.Lock()
 	v := make([]Viewer, 0, len(w.viewers))
 	for viewer := range w.viewers {
 		v = append(v, viewer)
 	}
-	w.viewersMu.RUnlock()
+	w.viewersMu.Unlock()
 	return v
 }
 
