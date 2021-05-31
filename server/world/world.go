@@ -20,12 +20,13 @@ import (
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 // A nil *World is safe to use but not functional.
 type World struct {
-	name atomic.String
-	log  *logrus.Logger
+	log *logrus.Logger
 
-	currentTick, time atomic.Int64
-	timeStopped       atomic.Bool
-	rdonly            atomic.Bool
+	mu   sync.Mutex
+	set  Settings
+	prov Provider
+
+	rdonly atomic.Bool
 
 	lastPos   ChunkPos
 	lastChunk *chunkData
@@ -35,17 +36,8 @@ type World struct {
 	stopCacheJanitor chan struct{}
 	doneTicking      chan struct{}
 
-	gameModeMu      sync.RWMutex
-	defaultGameMode GameMode
-
-	difficultyMu sync.RWMutex
-	difficulty   Difficulty
-
 	handlerMu sync.RWMutex
 	handler   Handler
-
-	providerMu sync.RWMutex
-	prov       Provider
 
 	genMu sync.RWMutex
 	gen   Generator
@@ -97,8 +89,6 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		lastEntityPositions: map[Entity]ChunkPos{},
 		entities:            map[Entity]struct{}{},
 		viewers:             map[Viewer]struct{}{},
-		defaultGameMode:     GameModeSurvival{},
-		difficulty:          DifficultyNormal{},
 		prov:                NoIOProvider{},
 		gen:                 NopGenerator{},
 		handler:             NopHandler{},
@@ -109,7 +99,7 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 		log:                 log,
 		stopTick:            ctx,
 		cancelTick:          cancel,
-		name:                *atomic.NewString("World"),
+		set:                 defaultSettings(),
 	}
 
 	w.initChunkCache()
@@ -122,7 +112,9 @@ func New(log *logrus.Logger, simulationDistance int) *World {
 // in the pause screen in-game.
 // If a provider is set, the name will be updated according to the name that it provides.
 func (w *World) Name() string {
-	return w.name.Load()
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.set.Name
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -627,7 +619,9 @@ func (w *World) Time() int {
 	if w == nil {
 		return 0
 	}
-	return int(w.time.Load())
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return int(w.set.Time)
 }
 
 // SetTime sets the new time of the world. SetTime will always work, regardless of whether the time is stopped
@@ -636,7 +630,9 @@ func (w *World) SetTime(new int) {
 	if w == nil {
 		return
 	}
-	w.time.Store(int64(new))
+	w.mu.Lock()
+	w.set.Time = int64(new)
+	w.mu.Unlock()
 	for _, viewer := range w.allViewers() {
 		viewer.ViewTime(new)
 	}
@@ -646,20 +642,24 @@ func (w *World) SetTime(new int) {
 // at the time when StopTime is called. The time may be restarted by calling World.StartTime().
 // StopTime will not do anything if the time is already stopped.
 func (w *World) StopTime() {
-	if w == nil {
-		return
-	}
-	w.timeStopped.Store(true)
+	w.enableTimeCycle(false)
 }
 
 // StartTime restarts the time in the world. When called, the time will start cycling again and the day/night
 // cycle will continue. The time may be stopped again by calling World.StopTime().
 // StartTime will not do anything if the time is already started.
 func (w *World) StartTime() {
+	w.enableTimeCycle(true)
+}
+
+// enableTimeCycle enables or disables the time cycling of tthe World.
+func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
 		return
 	}
-	w.timeStopped.Store(false)
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.TimeCycle = v
 }
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
@@ -831,7 +831,9 @@ func (w *World) Spawn() cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
-	s := w.provider().WorldSpawn()
+	w.mu.Lock()
+	s := w.set.Spawn
+	w.mu.Unlock()
 	if s[1] > cube.MaxY {
 		s[1] = w.HighestBlock(s[0], s[2])
 	}
@@ -844,7 +846,9 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	w.provider().SetWorldSpawn(pos)
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.Spawn = pos
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game
@@ -854,9 +858,9 @@ func (w *World) DefaultGameMode() GameMode {
 	if w == nil {
 		return GameModeSurvival{}
 	}
-	w.gameModeMu.RLock()
-	defer w.gameModeMu.RUnlock()
-	return w.defaultGameMode
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.set.DefaultGameMode
 }
 
 // SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
@@ -865,9 +869,9 @@ func (w *World) SetDefaultGameMode(mode GameMode) {
 	if w == nil {
 		return
 	}
-	w.gameModeMu.Lock()
-	defer w.gameModeMu.Unlock()
-	w.defaultGameMode = mode
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.DefaultGameMode = mode
 }
 
 // Difficulty returns the difficulty of the world. Properties of mobs in the world and the player's hunger
@@ -876,9 +880,9 @@ func (w *World) Difficulty() Difficulty {
 	if w == nil {
 		return DifficultyNormal{}
 	}
-	w.difficultyMu.RLock()
-	defer w.difficultyMu.RUnlock()
-	return w.difficulty
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.set.Difficulty
 }
 
 // SetDifficulty changes the difficulty of a world.
@@ -886,9 +890,9 @@ func (w *World) SetDifficulty(d Difficulty) {
 	if w == nil {
 		return
 	}
-	w.difficultyMu.Lock()
-	defer w.difficultyMu.Unlock()
-	w.difficulty = d
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.Difficulty = d
 }
 
 // SetRandomTickSpeed sets the random tick speed of blocks. By default, each sub chunk has 3 blocks randomly
@@ -912,7 +916,11 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 		w.updateMu.Unlock()
 		return
 	}
-	w.blockUpdates[pos] = w.currentTick.Load() + delay.Nanoseconds()/int64(time.Second/20)
+	w.mu.Lock()
+	t := w.set.CurrentTick
+	w.mu.Unlock()
+
+	w.blockUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
 	w.updateMu.Unlock()
 }
 
@@ -948,22 +956,16 @@ func (w *World) Provider(p Provider) {
 	if w == nil {
 		return
 	}
-	w.providerMu.Lock()
-	defer w.providerMu.Unlock()
-
 	if p == nil {
 		p = NoIOProvider{}
 	}
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.set = p.Settings()
 	w.prov = p
-	w.name.Store(p.WorldName())
-	w.gameModeMu.Lock()
-	w.defaultGameMode = p.LoadDefaultGameMode()
-	w.gameModeMu.Unlock()
-	w.difficultyMu.Lock()
-	w.difficulty = p.LoadDifficulty()
-	w.difficultyMu.Unlock()
-	w.time.Store(p.LoadTime())
-	w.timeStopped.Store(!p.LoadTimeCycle())
+
 	w.initChunkCache()
 }
 
@@ -1050,15 +1052,7 @@ func (w *World) Close() error {
 
 	if !w.rdonly.Load() {
 		w.log.Debug("Updating level.dat values...")
-		w.provider().SaveTime(w.time.Load())
-		w.provider().SaveTimeCycle(!w.timeStopped.Load())
-
-		w.gameModeMu.RLock()
-		w.provider().SaveDefaultGameMode(w.defaultGameMode)
-		w.gameModeMu.RUnlock()
-		w.difficultyMu.RLock()
-		w.provider().SaveDifficulty(w.difficulty)
-		w.difficultyMu.RUnlock()
+		w.provider().SaveSettings(w.set)
 	}
 
 	w.log.Debug("Closing provider...")
@@ -1094,16 +1088,22 @@ func (w *World) tick() {
 		return
 	}
 
-	tick := w.currentTick.Add(1)
+	w.mu.Lock()
+	tick := w.set.CurrentTick
+	w.set.CurrentTick++
 
-	if !w.timeStopped.Load() {
-		w.time.Add(1)
+	if w.set.TimeCycle {
+		w.set.Time++
 	}
+	t := int(w.set.Time)
+	w.mu.Unlock()
+
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			viewer.ViewTime(int(w.time.Load()))
+			viewer.ViewTime(t)
 		}
 	}
+
 	w.tickEntities(tick)
 	w.tickRandomBlocks(viewers, tick)
 	w.tickScheduledBlocks(tick)
@@ -1431,10 +1431,9 @@ func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
 // provider returns the provider of the world. It should always be used, rather than direct field access, in
 // order to provide synchronisation safety.
 func (w *World) provider() Provider {
-	w.providerMu.RLock()
-	provider := w.prov
-	w.providerMu.RUnlock()
-	return provider
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.prov
 }
 
 // Handler returns the Handler of the world. It should always be used, rather than direct field access, in
