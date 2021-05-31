@@ -140,11 +140,9 @@ func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
 	// Fast obstructed light calculation.
 	if w.SkyLight(pos.Add(cube.Pos{0, 1})) == 15 {
 		return false
-		// Slow obstructed light calculation, if the fast way out failed.
-	} else if w.HighestLightBlocker(pos.X(), pos.Z()) <= uint8(pos.Y()) {
-		return false
 	}
-	return true
+	// Slow obstructed light calculation, if the fast way out didn't suffice.
+	return w.HighestLightBlocker(pos.X(), pos.Z()) > int16(pos[1])
 }
 
 // broadcastBeaconEffects determines the entities in range which could receive the beacon's powers, and
