@@ -47,7 +47,7 @@ func (l Lava) EntityCollide(e world.Entity) {
 		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
 			l.Hurt(4, damage.SourceLava{})
 		}
-		flammable.SetOnFire(time.Duration(15) * time.Second)
+		flammable.SetOnFire(15 * time.Second)
 	}
 }
 

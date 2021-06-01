@@ -170,7 +170,7 @@ func (f Fire) EntityCollide(e world.Entity) {
 		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
 			l.Hurt(1, damage.SourceFire{})
 		}
-		flammable.SetOnFire(time.Duration(8) * time.Second)
+		flammable.SetOnFire(8 * time.Second)
 	}
 }
 
