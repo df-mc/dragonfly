@@ -17,11 +17,7 @@ type Sandstone struct {
 
 // BreakInfo ...
 func (s Sandstone) BreakInfo() BreakInfo {
-	i := newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(s))
-	if s.Type == SmoothSandstone() {
-		i.Hardness = 2.0
-	}
-	return i
+	return newBreakInfo(s.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // EncodeItem ...

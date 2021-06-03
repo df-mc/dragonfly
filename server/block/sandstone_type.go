@@ -34,6 +34,15 @@ func (s sandstone) Uint8() uint8 {
 	return uint8(s)
 }
 
+// Hardness ...
+func (s sandstone) Hardness() float64 {
+	switch s {
+	case 3:
+		return 2.0
+	}
+	return 0.8
+}
+
 // Name ...
 func (s sandstone) Name() string {
 	switch s {
