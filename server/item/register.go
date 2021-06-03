@@ -68,4 +68,5 @@ func init() {
 	world.RegisterItem(EnchantedApple{})
 	world.RegisterItem(Pufferfish{})
 	world.RegisterItem(Clock{})
+	world.RegisterItem(Compass{})
 }
