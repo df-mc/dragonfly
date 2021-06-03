@@ -21,14 +21,6 @@ func init() {
 	world.RegisterBlock(Diorite{Polished: true})
 	world.RegisterBlock(Andesite{})
 	world.RegisterBlock(Andesite{Polished: true})
-	world.RegisterBlock(Sandstone{})
-	world.RegisterBlock(Sandstone{Red: true})
-	world.RegisterBlock(ChiseledSandstone{})
-	world.RegisterBlock(ChiseledSandstone{Red: true})
-	world.RegisterBlock(CutSandstone{})
-	world.RegisterBlock(CutSandstone{Red: true})
-	world.RegisterBlock(SmoothSandstone{})
-	world.RegisterBlock(SmoothSandstone{Red: true})
 	world.RegisterBlock(Grass{})
 	world.RegisterBlock(DirtPath{})
 	world.RegisterBlock(Dirt{})
@@ -128,6 +120,7 @@ func init() {
 	registerAll(allQuartz())
 	registerAll(allNetherWart())
 	registerAll(allGrassPlants())
+	registerAll(allSandstones())
 }
 
 func init() {
@@ -140,14 +133,6 @@ func init() {
 	world.RegisterItem(Diorite{Polished: true})
 	world.RegisterItem(Andesite{})
 	world.RegisterItem(Andesite{Polished: true})
-	world.RegisterItem(Sandstone{})
-	world.RegisterItem(Sandstone{Red: true})
-	world.RegisterItem(ChiseledSandstone{})
-	world.RegisterItem(ChiseledSandstone{Red: true})
-	world.RegisterItem(CutSandstone{})
-	world.RegisterItem(CutSandstone{Red: true})
-	world.RegisterItem(SmoothSandstone{})
-	world.RegisterItem(SmoothSandstone{Red: true})
 	world.RegisterItem(Grass{})
 	world.RegisterItem(DirtPath{})
 	world.RegisterItem(Dirt{})
@@ -277,6 +262,9 @@ func init() {
 	}
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem(c.(world.Item))
+	}
+	for _, s := range allSandstones() {
+		world.RegisterItem(s.(world.Item))
 	}
 	world.RegisterItem(Pumpkin{})
 	world.RegisterItem(LitPumpkin{})
