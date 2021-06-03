@@ -1186,6 +1186,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		})
 	}
 
+	var g randUint4
+
 	w.chunkMu.Lock()
 	for pos, c := range w.chunks {
 		withinSimDist := false
@@ -1213,13 +1215,14 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		}
 
 		subChunks := c.Sub()
-		// In total we generate 3 random blocks per sub chunk.
+		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
+
+		// We generate a random block in every chunk
 		for j := uint32(0); j < tickSpeed; j++ {
-			// We generate 3 random uint64s. Out of a single uint64, we can pull 16 uint4s, which means we can
-			// obtain a total of 16 coordinates on one axis from one uint64. One for each sub chunk.
-			ra, rb, rc := int(w.r.Uint64()), int(w.r.Uint64()), int(w.r.Uint64())
-			for i := 0; i < 64; i += 4 {
-				sub := subChunks[i>>2]
+			generateNew := true
+			var x, y, z int
+			for subY := 0; subY <= chunk.MaxSubChunkIndex; subY++ {
+				sub := subChunks[subY]
 				if sub == nil {
 					// No sub chunk present, so skip it right away.
 					continue
@@ -1235,8 +1238,9 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					// Empty layer present, so skip it right away.
 					continue
 				}
-
-				x, y, z := (ra>>i)&0xf, (rb>>i)&0xf, (rc>>i)&0xf
+				if generateNew {
+					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
+				}
 
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
@@ -1248,8 +1252,13 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 
 				if randomTicker, ok := blocks[rid].(RandomTicker); ok {
-					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: cube.Pos{int(pos[0]<<4) + x, y + i<<2, int(pos[1]<<4) + z}})
+					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: cube.Pos{cx + x, subY<<4 + y, cz + z}})
+					generateNew = true
+					continue
 				}
+				// No block at this position that was a RandomTicker. In this case, we can actually just move one sub
+				// chunk up and try again, without generating any new positions. This one wasn't used, after all.
+				generateNew = false
 			}
 		}
 		c.Unlock()
@@ -1265,6 +1274,25 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 	w.toTick = w.toTick[:0]
 	w.blockEntitiesToTick = w.blockEntitiesToTick[:0]
 	w.positionCache = w.positionCache[:0]
+}
+
+// randUint4 is a structure used to generate random uint4s.
+type randUint4 struct {
+	x uint64
+	n int
+}
+
+// uint4 returns a random uint4.
+func (g *randUint4) uint4(r *rand.Rand) int {
+	if g.n == 0 {
+		g.x = r.Uint64()
+		g.n = 16
+	}
+	val := g.x & 0b1111
+
+	g.x >>= 4
+	g.n--
+	return int(val)
 }
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
