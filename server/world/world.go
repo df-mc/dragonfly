@@ -1130,11 +1130,11 @@ func (w *World) tickScheduledBlocks(tick int64) {
 
 	for _, pos := range w.updatePositions {
 		if ticker, ok := w.Block(pos).(ScheduledTicker); ok {
-			ticker.ScheduledTick(pos, w)
+			ticker.ScheduledTick(pos, w, w.r)
 		}
 		if liquid, ok := w.additionalLiquid(pos); ok {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
-				ticker.ScheduledTick(pos, w)
+				ticker.ScheduledTick(pos, w, w.r)
 			}
 		}
 	}

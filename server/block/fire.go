@@ -61,16 +61,14 @@ func infinitelyBurning(pos cube.Pos, w *world.World) bool {
 }
 
 // burn attempts to burn a block.
-func (f Fire) burn(pos cube.Pos, w *world.World, chanceBound int) {
-	if flammable, ok := w.Block(pos).(Flammable); ok && rand.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
+func (f Fire) burn(pos cube.Pos, w *world.World, r *rand.Rand, chanceBound int) {
+	if flammable, ok := w.Block(pos).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		//TODO: Check if not raining
-		if rand.Intn(f.Age+10) < 5 {
-			age := f.Age + rand.Intn(5)/4
-			if age > 15 {
-				age = 15
-			}
+		if r.Intn(f.Age+10) < 5 {
+			age := min(15, f.Age+r.Intn(5)/4)
+
 			w.PlaceBlock(pos, Fire{Type: f.Type, Age: age})
-			w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
+			w.ScheduleBlockUpdate(pos, time.Duration(30+r.Intn(10))*time.Second/20)
 		} else {
 			w.BreakBlockWithoutParticles(pos)
 		}
@@ -79,18 +77,18 @@ func (f Fire) burn(pos cube.Pos, w *world.World, chanceBound int) {
 }
 
 // tick ...
-func (f Fire) tick(pos cube.Pos, w *world.World) {
+func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if f.Type == NormalFire() {
 		infinitelyBurns := infinitelyBurning(pos, w)
 
 		// TODO: !infinitelyBurning && raining && exposed to rain && 20 + age * 3% = extinguish & return
 
-		if f.Age < 15 && rand.Intn(3) == 0 {
+		if f.Age < 15 && r.Intn(3) == 0 {
 			f.Age++
 			w.PlaceBlock(pos, f)
 		}
 
-		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
+		w.ScheduleBlockUpdate(pos, time.Duration(30+r.Intn(10))*time.Second/20)
 
 		if !infinitelyBurns {
 			_, waterBelow := w.Block(pos.Side(cube.FaceDown)).(Water)
@@ -104,7 +102,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World) {
 				}
 				return
 			}
-			if !FlammableBlock(w.Block(pos.Side(cube.FaceDown))) && f.Age == 15 && rand.Intn(4) == 0 {
+			if !FlammableBlock(w.Block(pos.Side(cube.FaceDown))) && f.Age == 15 && r.Intn(4) == 0 {
 				w.BreakBlockWithoutParticles(pos)
 				return
 			}
@@ -113,9 +111,9 @@ func (f Fire) tick(pos cube.Pos, w *world.World) {
 		//TODO: If high humidity, chance should be subtracted by 50
 		for face := cube.Face(0); face < 6; face++ {
 			if face == cube.FaceUp || face == cube.FaceDown {
-				f.burn(pos.Side(face), w, 300)
+				f.burn(pos.Side(face), w, r, 300)
 			} else {
-				f.burn(pos.Side(face), w, 250)
+				f.burn(pos.Side(face), w, r, 250)
 			}
 		}
 
@@ -150,13 +148,11 @@ func (f Fire) tick(pos cube.Pos, w *world.World) {
 					maxChance := (encouragement + 40 + w.Difficulty().FireSpreadIncrease()) / (f.Age + 30)
 
 					//TODO: Check if exposed to rain
-					if maxChance > 0 && rand.Intn(randomBound) <= maxChance {
-						age := f.Age + rand.Intn(5)/4
-						if age > 15 {
-							age = 15
-						}
+					if maxChance > 0 && r.Intn(randomBound) <= maxChance {
+						age := min(15, f.Age+r.Intn(5)/4)
+
 						w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
-						w.ScheduleBlockUpdate(blockPos, time.Duration(30+rand.Intn(10))*time.Second/20)
+						w.ScheduleBlockUpdate(blockPos, time.Duration(30+r.Intn(10))*time.Second/20)
 					}
 				}
 			}
@@ -175,13 +171,13 @@ func (f Fire) EntityCollide(e world.Entity) {
 }
 
 // ScheduledTick ...
-func (f Fire) ScheduledTick(pos cube.Pos, w *world.World) {
-	f.tick(pos, w)
+func (f Fire) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+	f.tick(pos, w, r)
 }
 
 // RandomTick ...
-func (f Fire) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	f.tick(pos, w)
+func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+	f.tick(pos, w, r)
 }
 
 // NeighbourUpdateTick ...

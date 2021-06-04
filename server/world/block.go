@@ -145,8 +145,9 @@ type RandomTicker interface {
 // when a block adjacent to it is broken.
 type ScheduledTicker interface {
 	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
-	// when a block is placed or broken.
-	ScheduledTick(pos cube.Pos, w *World)
+	// when a block is placed or broken. Additionally, a rand.Rand instance is passed which may be used to
+	// generate values randomly without locking.
+	ScheduledTick(pos cube.Pos, w *World, r *rand.Rand)
 }
 
 // TickerBlock is an implementation of NBTer with an additional Tick method that is called on every world
