@@ -120,6 +120,7 @@ func init() {
 	registerAll(allQuartz())
 	registerAll(allNetherWart())
 	registerAll(allGrassPlants())
+	registerAll(allSandstones())
 }
 
 func init() {
@@ -261,6 +262,9 @@ func init() {
 	}
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem(c.(world.Item))
+	}
+	for _, s := range allSandstones() {
+		world.RegisterItem(s.(world.Item))
 	}
 	world.RegisterItem(Pumpkin{})
 	world.RegisterItem(LitPumpkin{})
