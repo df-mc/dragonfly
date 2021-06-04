@@ -14,12 +14,12 @@ func NormalSandstone() SandstoneType {
 	return SandstoneType{sandstone(0)}
 }
 
-// CutSandstone is the chiseled variant of sandstone.
+// CutSandstone is the cut variant of sandstone.
 func CutSandstone() SandstoneType {
 	return SandstoneType{sandstone(1)}
 }
 
-// ChiseledSandstone is the cut variant of sandstone.
+// ChiseledSandstone is the chiseled variant of sandstone.
 func ChiseledSandstone() SandstoneType {
 	return SandstoneType{sandstone(2)}
 }
