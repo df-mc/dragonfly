@@ -121,7 +121,7 @@ func (server *Server) Run() error {
 
 // Start runs the server but does not block, unlike Run, but instead accepts connections on a different
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
-// One started, players may be accepted using Server.Accept().
+// Once started, players may be accepted using Server.Accept().
 func (server *Server) Start() error {
 	if !server.started.CAS(false, true) {
 		panic("server already running")
