@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/bits"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -49,6 +50,7 @@ func procPackage(pkg *ast.Package, fs *token.FileSet, w io.Writer) {
 	b.readStructFields(pkg)
 	b.readFuncs(pkg)
 	b.resolveBlocks()
+	b.sortNames()
 
 	b.writePackage(w)
 	i := b.writeConstants(w)
@@ -69,6 +71,18 @@ type hashBuilder struct {
 	aliases     map[string]string
 	handled     map[string]struct{}
 	blockFields map[string][]*ast.Field
+	names       []string
+}
+
+// sortNames sorts the names of the blockFields map and stores them in a slice.
+func (b *hashBuilder) sortNames() {
+	b.names = make([]string, 0, len(b.blockFields))
+	for name := range b.blockFields {
+		b.names = append(b.names, name)
+	}
+	sort.Slice(b.names, func(i, j int) bool {
+		return b.names[i] < b.names[j]
+	})
 }
 
 // writePackage writes the package at the top of the file.
@@ -81,7 +95,7 @@ func (b *hashBuilder) writePackage(w io.Writer) {
 // writeConstants writes hash constants for every block to a file.
 func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
 	var i uint64
-	for name := range b.blockFields {
+	for _, name := range b.names {
 		if _, err := fmt.Fprintf(w, constFormat, name, i); err != nil {
 			log.Fatalln(err)
 		}
@@ -92,7 +106,9 @@ func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
 }
 
 func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
-	for name, fields := range b.blockFields {
+	for _, name := range b.names {
+		fields := b.blockFields[name]
+
 		h := "hash" + name
 		bitSize := baseBits
 
