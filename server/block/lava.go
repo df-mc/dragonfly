@@ -103,7 +103,7 @@ func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // ScheduledTick ...
-func (l Lava) ScheduledTick(pos cube.Pos, w *world.World) {
+func (l Lava) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if !l.Harden(pos, w, nil) {
 		tickLiquid(l, pos, w)
 	}
