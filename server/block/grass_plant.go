@@ -23,9 +23,9 @@ type GrassPlant struct {
 // FlammabilityInfo ...
 func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
 	if g.Type == grass.NetherSprouts() {
-		return newFlammabilityInfo(60, 0, true)
+		return newFlammabilityInfo(0, 0, true)
 	}
-	return newFlammabilityInfo(60, 100, true)
+	return newFlammabilityInfo(30, 100, false)
 }
 
 // BreakInfo ...

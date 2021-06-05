@@ -21,6 +21,11 @@ type DoublePlant struct {
 	Type DoublePlantType
 }
 
+// FlammabilityInfo ...
+func (d DoublePlant) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(60, 100, true)
+}
+
 // ReplaceableBy ...
 func (d DoublePlant) ReplaceableBy(world.Block) bool {
 	return d.Type == TallGrass() || d.Type == LargeFern()
