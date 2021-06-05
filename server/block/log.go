@@ -28,6 +28,7 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 	if !l.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
 	}
+	
 	return newFlammabilityInfo(5, 5, true)
 }
 
