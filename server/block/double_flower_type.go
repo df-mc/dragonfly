@@ -79,7 +79,7 @@ func (d doubleFlower) String() string {
 	panic("unknown double plant type")
 }
 
-// DoublePlantTypes ...
-func DoublePlantTypes() []DoubleFlowerType {
+// DoubleFlowerTypes ...
+func DoubleFlowerTypes() []DoubleFlowerType {
 	return []DoubleFlowerType{Sunflower(), Lilac(), RoseBush(), Peony()}
 }

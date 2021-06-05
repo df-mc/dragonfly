@@ -94,7 +94,7 @@ func (d DoubleFlower) EncodeBlock() (string, map[string]interface{}) {
 
 // allDoubleFlowers ...
 func allDoubleFlowers() (b []world.Block) {
-	for _, d := range DoublePlantTypes() {
+	for _, d := range DoubleFlowerTypes() {
 		b = append(b, DoubleFlower{Type: d, UpperPart: true})
 		b = append(b, DoubleFlower{Type: d, UpperPart: false})
 	}
