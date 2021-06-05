@@ -26,7 +26,6 @@ func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g TallGrass) BreakInfo() BreakInfo {
-
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
 		// TODO: Silk touch
 		if t.ToolType() == tool.TypeShears {
@@ -41,21 +40,11 @@ func (g TallGrass) BreakInfo() BreakInfo {
 
 // BoneMeal attempts to affect the block using a bone meal item.
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
-	switch g.Type {
-	case NormalGrass():
-		upper := DoubleTallGrass{Type: NormalGrass(), UpperPart: true}
-		if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-			w.SetBlock(pos, DoubleTallGrass{Type: NormalGrass()})
-			w.SetBlock(pos.Side(cube.FaceUp), upper)
-			return true
-		}
-	case Fern():
-		upper := DoubleTallGrass{Type: Fern(), UpperPart: true}
-		if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-			w.SetBlock(pos, DoubleTallGrass{Type: Fern()})
-			w.SetBlock(pos.Side(cube.FaceUp), upper)
-			return true
-		}
+	upper := DoubleTallGrass{Type: g.Type, UpperPart: true}
+	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
+		w.SetBlock(pos, DoubleTallGrass{Type: g.Type})
+		w.SetBlock(pos.Side(cube.FaceUp), upper)
+		return true
 	}
 	return false
 }
