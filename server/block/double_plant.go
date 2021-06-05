@@ -103,10 +103,12 @@ func (d DoublePlant) EncodeItem() (name string, meta int16) {
 	return "minecraft:double_plant", int16(d.Type.Uint8())
 }
 
+// EncodeBlock ...
 func (d DoublePlant) EncodeBlock() (string, map[string]interface{}) {
 	return "minecraft:double_plant", map[string]interface{}{"double_flower_type": d.Type.String(), "upper_block_bit": d.UpperPart}
 }
 
+// allDoublePlants ...
 func allDoublePlants() (b []world.Block) {
 	for _, d := range DoublePlantTypes() {
 		b = append(b, DoublePlant{Type: d, UpperPart: true})
