@@ -21,6 +21,11 @@ type DoubleTallGrass struct {
 	Type GrassType
 }
 
+// HasLiquidDrops ...
+func (d DoubleTallGrass) HasLiquidDrops() bool {
+	return true
+}
+
 // NeighbourUpdateTick ...
 func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.UpperPart {
