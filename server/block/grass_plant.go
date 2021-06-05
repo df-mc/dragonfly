@@ -32,8 +32,11 @@ func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
 func (g GrassPlant) BreakInfo() BreakInfo {
 	// TODO: Silk touch.
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
-		if g.Type == grass.NetherSprouts() {
+		if g.Type == grass.NetherSprouts() { //TODO: Silk Touch
 			return []item.Stack{item.NewStack(g, 1)}
+		}
+		if t.ToolType() == tool.TypeShears {
+			return []item.Stack{item.NewStack(g, 2)}
 		}
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}

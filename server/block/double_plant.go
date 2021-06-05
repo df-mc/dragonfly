@@ -83,10 +83,13 @@ func (d DoublePlant) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
 		switch d.Type {
 		case TallGrass(), LargeFern():
+			if t.ToolType() == tool.TypeShears { //TODO: Silk Touch
+				return []item.Stack{item.NewStack(d, 1)}
+			}
 			if rand.Float32() > 0.57 {
 				return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 			}
-			return []item.Stack{} //TODO: Silk Touch
+			return []item.Stack{}
 		default:
 			return []item.Stack{item.NewStack(d, 1)}
 		}
