@@ -42,7 +42,6 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session) error {
 				}
 				s.c.World().SetBlock(blockPosition, v)
 			}
-			break
 		}
 	}
 	return nil
