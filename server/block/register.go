@@ -122,7 +122,7 @@ func init() {
 	registerAll(allTallGrass())
 	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
-	registerAll(allDoublePlants())
+	registerAll(allDoubleFlowers())
 }
 
 func init() {
@@ -318,10 +318,10 @@ func init() {
 	world.RegisterItem(TallGrass{Type: Fern()})
 	world.RegisterItem(DoubleTallGrass{})
 	world.RegisterItem(DoubleTallGrass{Type: Fern()})
-	world.RegisterItem(DoublePlant{Type: Sunflower()})
-	world.RegisterItem(DoublePlant{Type: Lilac()})
-	world.RegisterItem(DoublePlant{Type: RoseBush()})
-	world.RegisterItem(DoublePlant{Type: Peony()})
+	world.RegisterItem(DoubleFlower{Type: Sunflower()})
+	world.RegisterItem(DoubleFlower{Type: Lilac()})
+	world.RegisterItem(DoubleFlower{Type: RoseBush()})
+	world.RegisterItem(DoubleFlower{Type: Peony()})
 	world.RegisterItem(NetherSprouts{})
 	world.RegisterItem(Farmland{})
 

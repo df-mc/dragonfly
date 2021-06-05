@@ -32,7 +32,7 @@ const hashDiamondOre = 26
 const hashDiorite = 27
 const hashDirt = 28
 const hashDirtPath = 29
-const hashDoublePlant = 30
+const hashDoubleFlower = 30
 const hashDoubleTallGrass = 31
 const hashDragonEgg = 32
 const hashEmeraldBlock = 33
@@ -227,8 +227,8 @@ func (DirtPath) Hash() uint64 {
 	return hashDirtPath
 }
 
-func (d DoublePlant) Hash() uint64 {
-	return hashDoublePlant | uint64(boolByte(d.UpperPart))<<7 | uint64(d.Type.Uint8())<<8
+func (d DoubleFlower) Hash() uint64 {
+	return hashDoubleFlower | uint64(boolByte(d.UpperPart))<<7
 }
 
 func (d DoubleTallGrass) Hash() uint64 {
