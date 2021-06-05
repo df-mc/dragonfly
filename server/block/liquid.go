@@ -247,8 +247,8 @@ func canFlowInto(b world.Liquid, w *world.World, pos cube.Pos, sideways bool) bo
 		// Fast route for air: A type assert to a concrete type is much faster than a type assert to an interface.
 		return true
 	}
-	if _, ok := b.(LiquidRemovable); ok && sideways {
-		if liq, ok := bl.(world.Liquid); ok {
+	if _, ok := bl.(LiquidRemovable); ok {
+		if liq, ok := bl.(world.Liquid); ok && sideways {
 			if (liq.LiquidDepth() == 8 && !liq.LiquidFalling()) || liq.LiquidType() != b.LiquidType() {
 				// Can't flow into a liquid if it has a depth of 8 or if it doesn't have the same type.
 				return false
