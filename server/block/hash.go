@@ -228,7 +228,7 @@ func (DirtPath) Hash() uint64 {
 }
 
 func (d DoubleFlower) Hash() uint64 {
-	return hashDoubleFlower | uint64(boolByte(d.UpperPart))<<7
+	return hashDoubleFlower | uint64(boolByte(d.UpperPart))<<7 | uint64(d.Type.Uint8())<<8
 }
 
 func (d DoubleTallGrass) Hash() uint64 {
