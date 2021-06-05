@@ -19,24 +19,14 @@ func Fern() Grass {
 	return Grass{1}
 }
 
-// TallGrass returns the tall grass variant of grass.
-func TallGrass() Grass {
-	return Grass{2}
-}
-
-// LargeFern returns the large fern variant of grass.
-func LargeFern() Grass {
-	return Grass{3}
-}
-
 // NetherSprouts returns the nether sprouts variant of grass.
 func NetherSprouts() Grass {
-	return Grass{4}
+	return Grass{2}
 }
 
 // All returns all variants of grass.
 func All() []Grass {
-	return []Grass{SmallGrass(), Fern(), TallGrass(), LargeFern(), NetherSprouts()}
+	return []Grass{SmallGrass(), Fern(), NetherSprouts()}
 }
 
 type grass uint8
@@ -54,10 +44,6 @@ func (g grass) Name() string {
 	case 1:
 		return "Fern"
 	case 2:
-		return "Tall Grass"
-	case 3:
-		return "Large Fern"
-	case 4:
 		return "Nether Sprouts"
 	}
 	panic("unknown grass type")
@@ -70,14 +56,10 @@ func (g grass) FromString(s string) (interface{}, error) {
 		return SmallGrass(), nil
 	case "fern":
 		return Fern(), nil
-	case "tall grass":
-		return TallGrass(), nil
-	case "large fern":
-		return LargeFern(), nil
 	case "nether sprouts":
 		return NetherSprouts(), nil
 	}
-	return nil, fmt.Errorf("unexpected grass type '%v', expecting one of 'grass', 'fern', or 'tall grass'", s)
+	return nil, fmt.Errorf("unexpected grass type '%v', expecting one of 'grass', 'fern', or 'nether sprouts'", s)
 }
 
 // String ...
@@ -88,10 +70,6 @@ func (g grass) String() string {
 	case 1:
 		return "fern"
 	case 2:
-		return "tall grass"
-	case 3:
-		return "large fern"
-	case 4:
 		return "nether sprouts"
 	}
 	panic("unknown grass type")

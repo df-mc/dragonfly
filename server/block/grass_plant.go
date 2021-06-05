@@ -12,11 +12,9 @@ import (
 
 // GrassPlant is a transparent plant block which can be used to obtain seeds and as decoration.
 type GrassPlant struct {
+	replaceable
 	transparent
 	empty
-
-	// UpperPart is set if the plant is the upper part, for things like tall plants.
-	UpperPart bool
 
 	// Type is the type of grass that the plant represents.
 	Type grass.Grass
@@ -48,34 +46,25 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 func (g GrassPlant) BoneMeal(pos cube.Pos, w *world.World) bool {
 	switch g.Type {
 	case grass.SmallGrass():
-		w.SetBlock(pos, GrassPlant{Type: grass.TallGrass()})
-		w.SetBlock(pos.Side(cube.FaceUp), GrassPlant{Type: grass.TallGrass(), UpperPart: true})
-		return true
+		upper := DoublePlant{Type: TallGrass(), UpperPart: true}
+		if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
+			w.SetBlock(pos, DoublePlant{Type: TallGrass()})
+			w.SetBlock(pos.Side(cube.FaceUp), upper)
+			return true
+		}
 	case grass.Fern():
-		w.SetBlock(pos, GrassPlant{Type: grass.LargeFern()})
-		w.SetBlock(pos.Side(cube.FaceUp), GrassPlant{Type: grass.LargeFern(), UpperPart: true})
-		return true
+		upper := DoublePlant{Type: LargeFern(), UpperPart: true}
+		if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
+			w.SetBlock(pos, DoublePlant{Type: LargeFern()})
+			w.SetBlock(pos.Side(cube.FaceUp), upper)
+			return true
+		}
 	}
 	return false
 }
 
 // NeighbourUpdateTick ...
 func (g GrassPlant) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if p, ok := w.Block(pos).(GrassPlant); ok {
-		if p.Type == grass.TallGrass() || p.Type == grass.LargeFern() {
-			if p.UpperPart {
-				if _, ok := w.Block(pos.Side(cube.FaceDown)).(GrassPlant); !ok {
-					w.BreakBlock(pos)
-				}
-			} else {
-				if _, ok := w.Block(pos.Side(cube.FaceUp)).(GrassPlant); !ok {
-					w.BreakBlock(pos)
-				}
-			}
-		}
-		return
-	}
-
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
 		w.BreakBlock(pos)
 	}
@@ -97,9 +86,6 @@ func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	}
 
 	place(w, pos, g, user, ctx)
-	if g.Type == grass.TallGrass() || g.Type == grass.LargeFern() {
-		place(w, pos.Side(cube.FaceUp), GrassPlant{Type: g.Type, UpperPart: true}, user, ctx)
-	}
 	return placed(ctx)
 }
 
@@ -110,10 +96,6 @@ func (g GrassPlant) EncodeItem() (name string, meta int16) {
 		return "minecraft:tallgrass", 1
 	case grass.Fern():
 		return "minecraft:tallgrass", 2
-	case grass.TallGrass():
-		return "minecraft:double_plant", 2
-	case grass.LargeFern():
-		return "minecraft:double_plant", 3
 	case grass.NetherSprouts():
 		return "minecraft:nether_sprouts", 0
 	}
@@ -127,10 +109,6 @@ func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
 	case grass.Fern():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
-	case grass.TallGrass():
-		return "minecraft:double_plant", map[string]interface{}{"double_plant_type": "grass", "upper_block_bit": g.UpperPart}
-	case grass.LargeFern():
-		return "minecraft:double_plant", map[string]interface{}{"double_plant_type": "fern", "upper_block_bit": g.UpperPart}
 	case grass.NetherSprouts():
 		return "minecraft:nether_sprouts", map[string]interface{}{}
 	}
@@ -140,10 +118,7 @@ func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{
 // allGrassPlants ...
 func allGrassPlants() (grasses []world.Block) {
 	for _, g := range grass.All() {
-		grasses = append(grasses, GrassPlant{Type: g, UpperPart: false})
-		if g == grass.TallGrass() || g == grass.LargeFern() {
-			grasses = append(grasses, GrassPlant{Type: g, UpperPart: true})
-		}
+		grasses = append(grasses, GrassPlant{Type: g})
 	}
 	return
 }
