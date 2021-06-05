@@ -66,7 +66,9 @@ func (g GrassPlant) BoneMeal(pos cube.Pos, w *world.World) bool {
 // NeighbourUpdateTick ...
 func (g GrassPlant) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
-		w.BreakBlock(pos)
+		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Dirt); !ok {
+			w.BreakBlock(pos)
+		}
 	}
 }
 
@@ -82,7 +84,9 @@ func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 		return false
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
-		return false
+		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Dirt); !ok {
+			return false
+		}
 	}
 
 	place(w, pos, g, user, ctx)
