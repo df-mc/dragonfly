@@ -22,9 +22,6 @@ type GrassPlant struct {
 
 // FlammabilityInfo ...
 func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
-	if g.Type == grass.NetherSprouts() {
-		return newFlammabilityInfo(0, 0, true)
-	}
 	return newFlammabilityInfo(30, 100, false)
 }
 
@@ -32,9 +29,6 @@ func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
 func (g GrassPlant) BreakInfo() BreakInfo {
 	// TODO: Silk touch.
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
-		if g.Type == grass.NetherSprouts() { //TODO: Silk Touch
-			return []item.Stack{item.NewStack(g, 1)}
-		}
 		if t.ToolType() == tool.TypeShears {
 			return []item.Stack{item.NewStack(g, 2)}
 		}
@@ -103,8 +97,6 @@ func (g GrassPlant) EncodeItem() (name string, meta int16) {
 		return "minecraft:tallgrass", 1
 	case grass.Fern():
 		return "minecraft:tallgrass", 2
-	case grass.NetherSprouts():
-		return "minecraft:nether_sprouts", 0
 	}
 	panic("should never happen")
 }
@@ -116,8 +108,6 @@ func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
 	case grass.Fern():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
-	case grass.NetherSprouts():
-		return "minecraft:nether_sprouts", map[string]interface{}{}
 	}
 	panic("should never happen")
 }

@@ -76,6 +76,7 @@ func init() {
 	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(DragonEgg{})
 	world.RegisterBlock(NoteBlock{})
+	world.RegisterBlock(NetherSprouts{})
 
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -314,7 +315,6 @@ func init() {
 	world.RegisterItem(NoteBlock{Pitch: 24})
 	world.RegisterItem(DragonEgg{})
 	world.RegisterItem(GrassPlant{})
-	world.RegisterItem(GrassPlant{Type: grass.NetherSprouts()})
 	world.RegisterItem(GrassPlant{Type: grass.Fern()})
 	world.RegisterItem(DoublePlant{Type: Sunflower()})
 	world.RegisterItem(DoublePlant{Type: Lilac()})
@@ -322,6 +322,7 @@ func init() {
 	world.RegisterItem(DoublePlant{Type: LargeFern()})
 	world.RegisterItem(DoublePlant{Type: RoseBush()})
 	world.RegisterItem(DoublePlant{Type: Peony()})
+	world.RegisterItem(NetherSprouts{})
 	world.RegisterItem(Farmland{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})

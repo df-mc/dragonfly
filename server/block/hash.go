@@ -70,40 +70,41 @@ const hashMelonSeeds = 64
 const hashNetherBrickFence = 65
 const hashNetherGoldOre = 66
 const hashNetherQuartzOre = 67
-const hashNetherWart = 68
-const hashNetheriteBlock = 69
-const hashNetherrack = 70
-const hashNoteBlock = 71
-const hashObsidian = 72
-const hashPlanks = 73
-const hashPotato = 74
-const hashPumpkin = 75
-const hashPumpkinSeeds = 76
-const hashQuartz = 77
-const hashQuartzBricks = 78
-const hashQuartzPillar = 79
-const hashSand = 80
-const hashSandstone = 81
-const hashSeaLantern = 82
-const hashShroomlight = 83
-const hashSoulSand = 84
-const hashSoulSoil = 85
-const hashSponge = 86
-const hashStainedGlass = 87
-const hashStainedGlassPane = 88
-const hashStainedTerracotta = 89
-const hashStone = 90
-const hashTerracotta = 91
-const hashTorch = 92
-const hashWater = 93
-const hashWheatSeeds = 94
-const hashWoodDoor = 95
-const hashWoodFence = 96
-const hashWoodFenceGate = 97
-const hashWoodSlab = 98
-const hashWoodStairs = 99
-const hashWoodTrapdoor = 100
-const hashWool = 101
+const hashNetherSprouts = 68
+const hashNetherWart = 69
+const hashNetheriteBlock = 70
+const hashNetherrack = 71
+const hashNoteBlock = 72
+const hashObsidian = 73
+const hashPlanks = 74
+const hashPotato = 75
+const hashPumpkin = 76
+const hashPumpkinSeeds = 77
+const hashQuartz = 78
+const hashQuartzBricks = 79
+const hashQuartzPillar = 80
+const hashSand = 81
+const hashSandstone = 82
+const hashSeaLantern = 83
+const hashShroomlight = 84
+const hashSoulSand = 85
+const hashSoulSoil = 86
+const hashSponge = 87
+const hashStainedGlass = 88
+const hashStainedGlassPane = 89
+const hashStainedTerracotta = 90
+const hashStone = 91
+const hashTerracotta = 92
+const hashTorch = 93
+const hashWater = 94
+const hashWheatSeeds = 95
+const hashWoodDoor = 96
+const hashWoodFence = 97
+const hashWoodFenceGate = 98
+const hashWoodSlab = 99
+const hashWoodStairs = 100
+const hashWoodTrapdoor = 101
+const hashWool = 102
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -226,7 +227,7 @@ func (DirtPath) Hash() uint64 {
 }
 
 func (d DoublePlant) Hash() uint64 {
-	return hashDoublePlant | uint64(d.Type.Uint8())<<7 | uint64(boolByte(d.UpperPart))<<11
+	return hashDoublePlant | uint64(boolByte(d.UpperPart))<<7 | uint64(d.Type.Uint8())<<8
 }
 
 func (DragonEgg) Hash() uint64 {
@@ -375,6 +376,10 @@ func (NetherGoldOre) Hash() uint64 {
 
 func (NetherQuartzOre) Hash() uint64 {
 	return hashNetherQuartzOre
+}
+
+func (n NetherSprouts) Hash() uint64 {
+	return hashNetherSprouts
 }
 
 func (n NetherWart) Hash() uint64 {
