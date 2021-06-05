@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/grass"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
@@ -10,27 +9,28 @@ import (
 	"math/rand"
 )
 
-// GrassPlant is a transparent plant block which can be used to obtain seeds and as decoration.
-type GrassPlant struct {
+// TallGrass is a transparent plant block which can be used to obtain seeds and as decoration.
+type TallGrass struct {
 	replaceable
 	transparent
 	empty
 
 	// Type is the type of grass that the plant represents.
-	Type grass.Grass
+	Type GrassType
 }
 
 // FlammabilityInfo ...
-func (g GrassPlant) FlammabilityInfo() FlammabilityInfo {
+func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 100, false)
 }
 
 // BreakInfo ...
-func (g GrassPlant) BreakInfo() BreakInfo {
-	// TODO: Silk touch.
+func (g TallGrass) BreakInfo() BreakInfo {
+
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
+		// TODO: Silk touch
 		if t.ToolType() == tool.TypeShears {
-			return []item.Stack{item.NewStack(g, 2)}
+			return []item.Stack{item.NewStack(g, 1)}
 		}
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
@@ -40,19 +40,19 @@ func (g GrassPlant) BreakInfo() BreakInfo {
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
-func (g GrassPlant) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 	switch g.Type {
-	case grass.SmallGrass():
-		upper := DoublePlant{Type: TallGrass(), UpperPart: true}
+	case NormalGrass():
+		upper := DoubleTallGrass{Type: NormalGrass(), UpperPart: true}
 		if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-			w.SetBlock(pos, DoublePlant{Type: TallGrass()})
+			w.SetBlock(pos, DoubleTallGrass{Type: NormalGrass()})
 			w.SetBlock(pos.Side(cube.FaceUp), upper)
 			return true
 		}
-	case grass.Fern():
-		upper := DoublePlant{Type: LargeFern(), UpperPart: true}
+	case Fern():
+		upper := DoubleTallGrass{Type: Fern(), UpperPart: true}
 		if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-			w.SetBlock(pos, DoublePlant{Type: LargeFern()})
+			w.SetBlock(pos, DoubleTallGrass{Type: Fern()})
 			w.SetBlock(pos.Side(cube.FaceUp), upper)
 			return true
 		}
@@ -61,7 +61,7 @@ func (g GrassPlant) BoneMeal(pos cube.Pos, w *world.World) bool {
 }
 
 // NeighbourUpdateTick ...
-func (g GrassPlant) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
 		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Dirt); !ok {
 			w.BreakBlock(pos)
@@ -70,12 +70,12 @@ func (g GrassPlant) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // HasLiquidDrops ...
-func (g GrassPlant) HasLiquidDrops() bool {
+func (g TallGrass) HasLiquidDrops() bool {
 	return true
 }
 
 // UseOnBlock ...
-func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (g TallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, g)
 	if !used {
 		return false
@@ -91,31 +91,25 @@ func (g GrassPlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 }
 
 // EncodeItem ...
-func (g GrassPlant) EncodeItem() (name string, meta int16) {
-	switch g.Type {
-	case grass.SmallGrass():
-		return "minecraft:tallgrass", 1
-	case grass.Fern():
-		return "minecraft:tallgrass", 2
-	}
-	panic("should never happen")
+func (g TallGrass) EncodeItem() (name string, meta int16) {
+	return "minecraft:tallgrass", int16(g.Type.Uint8() + 1)
 }
 
 // EncodeBlock ...
-func (g GrassPlant) EncodeBlock() (name string, properties map[string]interface{}) {
+func (g TallGrass) EncodeBlock() (name string, properties map[string]interface{}) {
 	switch g.Type {
-	case grass.SmallGrass():
+	case NormalGrass():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
-	case grass.Fern():
+	case Fern():
 		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
 	}
 	panic("should never happen")
 }
 
-// allGrassPlants ...
-func allGrassPlants() (grasses []world.Block) {
-	for _, g := range grass.All() {
-		grasses = append(grasses, GrassPlant{Type: g})
+// allTallGrass ...
+func allTallGrass() (grasses []world.Block) {
+	for _, g := range GrassTypes() {
+		grasses = append(grasses, TallGrass{Type: g})
 	}
 	return
 }

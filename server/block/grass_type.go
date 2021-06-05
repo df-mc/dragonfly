@@ -1,27 +1,27 @@
-package grass
+package block
 
 import (
 	"fmt"
 )
 
-// Grass represents a grass plant, which can be placed on top of grass blocks.
-type Grass struct {
+// GrassType represents a grass plant, which can be placed on top of grass blocks.
+type GrassType struct {
 	grass
 }
 
-// SmallGrass returns the small grass variant of grass.
-func SmallGrass() Grass {
-	return Grass{0}
+// NormalGrass returns the grass variant of grass.
+func NormalGrass() GrassType {
+	return GrassType{0}
 }
 
 // Fern returns the fern variant of grass.
-func Fern() Grass {
-	return Grass{1}
+func Fern() GrassType {
+	return GrassType{1}
 }
 
-// All returns all variants of grass.
-func All() []Grass {
-	return []Grass{SmallGrass(), Fern()}
+// GrassTypes returns all variants of grass.
+func GrassTypes() []GrassType {
+	return []GrassType{NormalGrass(), Fern()}
 }
 
 type grass uint8
@@ -46,7 +46,7 @@ func (g grass) Name() string {
 func (g grass) FromString(s string) (interface{}, error) {
 	switch s {
 	case "grass":
-		return SmallGrass(), nil
+		return NormalGrass(), nil
 	case "fern":
 		return Fern(), nil
 	}

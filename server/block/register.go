@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/grass"
 	_ "github.com/df-mc/dragonfly/server/internal/block_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -120,7 +119,8 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allQuartz())
 	registerAll(allNetherWart())
-	registerAll(allGrassPlants())
+	registerAll(allTallGrass())
+	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
 	registerAll(allDoublePlants())
 }
@@ -314,12 +314,12 @@ func init() {
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(NoteBlock{Pitch: 24})
 	world.RegisterItem(DragonEgg{})
-	world.RegisterItem(GrassPlant{})
-	world.RegisterItem(GrassPlant{Type: grass.Fern()})
+	world.RegisterItem(TallGrass{})
+	world.RegisterItem(TallGrass{Type: Fern()})
+	world.RegisterItem(DoubleTallGrass{})
+	world.RegisterItem(DoubleTallGrass{Type: Fern()})
 	world.RegisterItem(DoublePlant{Type: Sunflower()})
 	world.RegisterItem(DoublePlant{Type: Lilac()})
-	world.RegisterItem(DoublePlant{Type: TallGrass()})
-	world.RegisterItem(DoublePlant{Type: LargeFern()})
 	world.RegisterItem(DoublePlant{Type: RoseBush()})
 	world.RegisterItem(DoublePlant{Type: Peony()})
 	world.RegisterItem(NetherSprouts{})

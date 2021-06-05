@@ -33,24 +33,24 @@ const hashDiorite = 27
 const hashDirt = 28
 const hashDirtPath = 29
 const hashDoublePlant = 30
-const hashDragonEgg = 31
-const hashEmeraldBlock = 32
-const hashEmeraldOre = 33
-const hashEndBrickStairs = 34
-const hashEndBricks = 35
-const hashEndStone = 36
-const hashFarmland = 37
-const hashFire = 38
-const hashGildedBlackstone = 39
-const hashGlass = 40
-const hashGlassPane = 41
-const hashGlazedTerracotta = 42
-const hashGlowstone = 43
-const hashGoldBlock = 44
-const hashGoldOre = 45
-const hashGranite = 46
-const hashGrass = 47
-const hashGrassPlant = 48
+const hashDoubleTallGrass = 31
+const hashDragonEgg = 32
+const hashEmeraldBlock = 33
+const hashEmeraldOre = 34
+const hashEndBrickStairs = 35
+const hashEndBricks = 36
+const hashEndStone = 37
+const hashFarmland = 38
+const hashFire = 39
+const hashGildedBlackstone = 40
+const hashGlass = 41
+const hashGlassPane = 42
+const hashGlazedTerracotta = 43
+const hashGlowstone = 44
+const hashGoldBlock = 45
+const hashGoldOre = 46
+const hashGranite = 47
+const hashGrass = 48
 const hashGravel = 49
 const hashInvisibleBedrock = 50
 const hashIronBars = 51
@@ -94,17 +94,18 @@ const hashStainedGlass = 88
 const hashStainedGlassPane = 89
 const hashStainedTerracotta = 90
 const hashStone = 91
-const hashTerracotta = 92
-const hashTorch = 93
-const hashWater = 94
-const hashWheatSeeds = 95
-const hashWoodDoor = 96
-const hashWoodFence = 97
-const hashWoodFenceGate = 98
-const hashWoodSlab = 99
-const hashWoodStairs = 100
-const hashWoodTrapdoor = 101
-const hashWool = 102
+const hashTallGrass = 92
+const hashTerracotta = 93
+const hashTorch = 94
+const hashWater = 95
+const hashWheatSeeds = 96
+const hashWoodDoor = 97
+const hashWoodFence = 98
+const hashWoodFenceGate = 99
+const hashWoodSlab = 100
+const hashWoodStairs = 101
+const hashWoodTrapdoor = 102
+const hashWool = 103
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -230,6 +231,10 @@ func (d DoublePlant) Hash() uint64 {
 	return hashDoublePlant | uint64(boolByte(d.UpperPart))<<7 | uint64(d.Type.Uint8())<<8
 }
 
+func (d DoubleTallGrass) Hash() uint64 {
+	return hashDoubleTallGrass | uint64(boolByte(d.UpperPart))<<7 | uint64(d.Type.Uint8())<<8
+}
+
 func (DragonEgg) Hash() uint64 {
 	return hashDragonEgg
 }
@@ -296,10 +301,6 @@ func (g Granite) Hash() uint64 {
 
 func (Grass) Hash() uint64 {
 	return hashGrass
-}
-
-func (g GrassPlant) Hash() uint64 {
-	return hashGrassPlant | uint64(g.Type.Uint8())<<7
 }
 
 func (Gravel) Hash() uint64 {
@@ -472,6 +473,10 @@ func (t StainedTerracotta) Hash() uint64 {
 
 func (s Stone) Hash() uint64 {
 	return hashStone | uint64(boolByte(s.Smooth))<<7
+}
+
+func (g TallGrass) Hash() uint64 {
+	return hashTallGrass | uint64(g.Type.Uint8())<<7
 }
 
 func (Terracotta) Hash() uint64 {

@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -26,22 +25,12 @@ func (d DoublePlant) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 100, true)
 }
 
-// ReplaceableBy ...
-func (d DoublePlant) ReplaceableBy(world.Block) bool {
-	return d.Type == TallGrass() || d.Type == LargeFern()
-}
-
 // BoneMeal ...
 func (d DoublePlant) BoneMeal(pos cube.Pos, w *world.World) bool {
-	switch d.Type {
-	case TallGrass(), LargeFern():
-		return false
-	default:
-		itemEntity := entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre())
-		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		w.AddEntity(itemEntity)
-		return true
-	}
+	itemEntity := entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre())
+	itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+	w.AddEntity(itemEntity)
+	return true
 }
 
 // NeighbourUpdateTick ...
@@ -85,20 +74,7 @@ func (d DoublePlant) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *w
 
 // BreakInfo ...
 func (d DoublePlant) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
-		switch d.Type {
-		case TallGrass(), LargeFern():
-			if t.ToolType() == tool.TypeShears { //TODO: Silk Touch
-				return []item.Stack{item.NewStack(d, 1)}
-			}
-			if rand.Float32() > 0.57 {
-				return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
-			}
-			return []item.Stack{}
-		default:
-			return []item.Stack{item.NewStack(d, 1)}
-		}
-	})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(d))
 }
 
 // HasLiquidDrops ...

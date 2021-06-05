@@ -19,16 +19,6 @@ func Lilac() DoublePlantType {
 	return DoublePlantType{doublePlant(1)}
 }
 
-// TallGrass is a tall grass plant.
-func TallGrass() DoublePlantType {
-	return DoublePlantType{doublePlant(2)}
-}
-
-// LargeFern is a large fern plant.
-func LargeFern() DoublePlantType {
-	return DoublePlantType{doublePlant(3)}
-}
-
 // RoseBush is a rose bush plant.
 func RoseBush() DoublePlantType {
 	return DoublePlantType{doublePlant(4)}
@@ -51,10 +41,6 @@ func (d doublePlant) Name() string {
 		return "Sunflower"
 	case 1:
 		return "Lilac"
-	case 2:
-		return "Tall Grass"
-	case 3:
-		return "Large Fern"
 	case 4:
 		return "Rose Bush"
 	case 5:
@@ -70,16 +56,12 @@ func (d doublePlant) FromString(s string) (interface{}, error) {
 		return DoublePlantType{doublePlant(0)}, nil
 	case "syringa":
 		return DoublePlantType{doublePlant(1)}, nil
-	case "grass":
-		return DoublePlantType{doublePlant(2)}, nil
-	case "fern":
-		return DoublePlantType{doublePlant(3)}, nil
 	case "rose":
 		return DoublePlantType{doublePlant(4)}, nil
 	case "paeonia":
 		return DoublePlantType{doublePlant(5)}, nil
 	}
-	return nil, fmt.Errorf("unexpected double plant type '%v', expecting one of 'sunflower', 'syringa', 'grass', 'fern', 'rose', or 'paeonia'", s)
+	return nil, fmt.Errorf("unexpected double plant type '%v', expecting one of 'sunflower', 'syringa', 'rose', or 'paeonia'", s)
 }
 
 // String ...
@@ -89,10 +71,6 @@ func (d doublePlant) String() string {
 		return "sunflower"
 	case 1:
 		return "syringa"
-	case 2:
-		return "grass"
-	case 3:
-		return "fern"
 	case 4:
 		return "rose"
 	case 5:
@@ -103,5 +81,5 @@ func (d doublePlant) String() string {
 
 // DoublePlantTypes ...
 func DoublePlantTypes() []DoublePlantType {
-	return []DoublePlantType{Sunflower(), Lilac(), TallGrass(), LargeFern(), RoseBush(), Peony()}
+	return []DoublePlantType{Sunflower(), Lilac(), RoseBush(), Peony()}
 }
