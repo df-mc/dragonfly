@@ -77,7 +77,7 @@ func init() {
 	world.RegisterBlock(DragonEgg{})
 	world.RegisterBlock(NoteBlock{})
 
-	registerAll(AllSigns())
+	registerAll(allSigns())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
 	registerAll(allBoneBlock())
