@@ -99,10 +99,11 @@ const hashWheatSeeds = 93
 const hashWoodDoor = 94
 const hashWoodFence = 95
 const hashWoodFenceGate = 96
-const hashWoodSlab = 97
-const hashWoodStairs = 98
-const hashWoodTrapdoor = 99
-const hashWool = 100
+const hashWoodSign = 97
+const hashWoodSlab = 98
+const hashWoodStairs = 99
+const hashWoodTrapdoor = 100
+const hashWool = 101
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -490,6 +491,10 @@ func (w WoodFence) Hash() uint64 {
 
 func (f WoodFenceGate) Hash() uint64 {
 	return hashWoodFenceGate | uint64(f.Wood.Uint8())<<7 | uint64(f.Facing)<<11 | uint64(boolByte(f.Open))<<13 | uint64(boolByte(f.Lowered))<<14
+}
+
+func (s WoodSign) Hash() uint64 {
+	return hashWoodSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Facing)<<11 | uint64(boolByte(s.Standing))<<19
 }
 
 func (s WoodSlab) Hash() uint64 {
