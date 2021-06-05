@@ -2,7 +2,6 @@ package session
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
 	blockAction "github.com/df-mc/dragonfly/server/block/action"
