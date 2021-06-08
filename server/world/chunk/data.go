@@ -10,6 +10,13 @@ import (
 	"sync"
 )
 
+const (
+	// CurrentBlockVersion is the current version of blocks (states) of the game. This version is composed
+	// of 4 bytes indicating a version, interpreted as a big endian int. The current version represents
+	// 1.16.0.14 {1, 16, 0, 14}.
+	CurrentBlockVersion int32 = 17825806
+)
+
 // RuntimeIDToState must hold a function to convert a runtime ID to a name and its state properties.
 var RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]interface{}, found bool)
 
@@ -262,7 +269,7 @@ func diskEncodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage, blob bool)
 		blocks[index] = blockEntry{
 			Name:    name,
 			State:   props,
-			Version: protocol.CurrentBlockVersion,
+			Version: CurrentBlockVersion,
 		}
 	}
 	var encoding nbt.Encoding = nbt.LittleEndian

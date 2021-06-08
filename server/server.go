@@ -323,7 +323,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
 		Time:                         int64(server.world.Time()),
-		GameRules:                    map[string]interface{}{"naturalregeneration": false},
+		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 		Difficulty:                   2,
 		Items:                        server.itemEntries(),
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
