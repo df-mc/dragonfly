@@ -286,14 +286,14 @@ func (s *Session) SendEffectRemoval(e effect.Effect) {
 
 // SendGameRules sends all the provided game rules to the player. Once sent, they will be immediately updated
 // on the client if they are valid.
-func (s *Session) sendGameRules(gameRules map[string]interface{}) {
+func (s *Session) sendGameRules(gameRules []protocol.GameRule) {
 	s.writePacket(&packet.GameRulesChanged{GameRules: gameRules})
 }
 
 // EnableCoordinates will either enable or disable coordinates for the player depending on the value given.
 func (s *Session) EnableCoordinates(enable bool) {
 	//noinspection SpellCheckingInspection
-	s.sendGameRules(map[string]interface{}{"showcoordinates": enable})
+	s.sendGameRules([]protocol.GameRule{{Name: "showcoordinates", Value: enable}})
 }
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
