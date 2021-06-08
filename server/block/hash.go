@@ -91,19 +91,20 @@ const hashSponge = 85
 const hashStainedGlass = 86
 const hashStainedGlassPane = 87
 const hashStainedTerracotta = 88
-const hashStone = 89
-const hashTerracotta = 90
-const hashTorch = 91
-const hashWater = 92
-const hashWheatSeeds = 93
-const hashWoodDoor = 94
-const hashWoodFence = 95
-const hashWoodFenceGate = 96
-const hashWoodSign = 97
-const hashWoodSlab = 98
-const hashWoodStairs = 99
-const hashWoodTrapdoor = 100
-const hashWool = 101
+const hashStandingSign = 89
+const hashStone = 90
+const hashTerracotta = 91
+const hashTorch = 92
+const hashWallSign = 93
+const hashWater = 94
+const hashWheatSeeds = 95
+const hashWoodDoor = 96
+const hashWoodFence = 97
+const hashWoodFenceGate = 98
+const hashWoodSlab = 99
+const hashWoodStairs = 100
+const hashWoodTrapdoor = 101
+const hashWool = 102
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -461,6 +462,10 @@ func (t StainedTerracotta) Hash() uint64 {
 	return hashStainedTerracotta | uint64(t.Colour.Uint8())<<7
 }
 
+func (s StandingSign) Hash() uint64 {
+	return hashStandingSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Orientation)<<11
+}
+
 func (s Stone) Hash() uint64 {
 	return hashStone | uint64(boolByte(s.Smooth))<<7
 }
@@ -471,6 +476,10 @@ func (Terracotta) Hash() uint64 {
 
 func (t Torch) Hash() uint64 {
 	return hashTorch | uint64(t.Facing)<<7 | uint64(t.Type.Uint8())<<10
+}
+
+func (s WallSign) Hash() uint64 {
+	return hashWallSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Facing)<<11
 }
 
 func (w Water) Hash() uint64 {
@@ -491,10 +500,6 @@ func (w WoodFence) Hash() uint64 {
 
 func (f WoodFenceGate) Hash() uint64 {
 	return hashWoodFenceGate | uint64(f.Wood.Uint8())<<7 | uint64(f.Facing)<<11 | uint64(boolByte(f.Open))<<13 | uint64(boolByte(f.Lowered))<<14
-}
-
-func (s WoodSign) Hash() uint64 {
-	return hashWoodSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Facing)<<11 | uint64(boolByte(s.Standing))<<19
 }
 
 func (s WoodSlab) Hash() uint64 {
