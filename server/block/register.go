@@ -52,13 +52,7 @@ func init() {
 	world.RegisterBlock(QuartzBricks{})
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(AncientDebris{})
-	world.RegisterBlock(EmeraldOre{})
-	world.RegisterBlock(DiamondOre{})
-	world.RegisterBlock(LapisOre{})
 	world.RegisterBlock(NetherGoldOre{})
-	world.RegisterBlock(GoldOre{})
-	world.RegisterBlock(IronOre{})
-	world.RegisterBlock(CoalOre{})
 	world.RegisterBlock(NetherQuartzOre{})
 	world.RegisterBlock(Melon{})
 	world.RegisterBlock(Sand{})
@@ -76,9 +70,18 @@ func init() {
 	world.RegisterBlock(DragonEgg{})
 	world.RegisterBlock(NoteBlock{})
 	world.RegisterBlock(NetherSprouts{})
-	world.RegisterBlock(CopperOre{})
 	world.RegisterBlock(Tuff{})
 	world.RegisterBlock(Calcite{})
+
+	for _, ore := range OreTypes() {
+		world.RegisterBlock(CoalOre{Type: ore})
+		world.RegisterBlock(IronOre{Type: ore})
+		world.RegisterBlock(GoldOre{Type: ore})
+		world.RegisterBlock(CopperOre{Type: ore})
+		world.RegisterBlock(LapisOre{Type: ore})
+		world.RegisterBlock(DiamondOre{Type: ore})
+		world.RegisterBlock(EmeraldOre{Type: ore})
+	}
 
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -271,6 +274,15 @@ func init() {
 	for _, s := range allSandstones() {
 		world.RegisterItem(s.(world.Item))
 	}
+	for _, ore := range OreTypes() {
+		world.RegisterItem(CoalOre{Type: ore})
+		world.RegisterItem(IronOre{Type: ore})
+		world.RegisterItem(GoldOre{Type: ore})
+		world.RegisterItem(CopperOre{Type: ore})
+		world.RegisterItem(LapisOre{Type: ore})
+		world.RegisterItem(DiamondOre{Type: ore})
+		world.RegisterItem(EmeraldOre{Type: ore})
+	}
 	world.RegisterItem(Pumpkin{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Pumpkin{Carved: true})
@@ -281,13 +293,7 @@ func init() {
 	world.RegisterItem(Lantern{Type: NormalFire()})
 	world.RegisterItem(Lantern{Type: SoulFire()})
 	world.RegisterItem(AncientDebris{})
-	world.RegisterItem(EmeraldOre{})
-	world.RegisterItem(DiamondOre{})
-	world.RegisterItem(LapisOre{})
 	world.RegisterItem(NetherGoldOre{})
-	world.RegisterItem(GoldOre{})
-	world.RegisterItem(IronOre{})
-	world.RegisterItem(CoalOre{})
 	world.RegisterItem(NetherQuartzOre{})
 	world.RegisterItem(CocoaBean{})
 	world.RegisterItem(WheatSeeds{})
@@ -327,7 +333,6 @@ func init() {
 	world.RegisterItem(DoubleFlower{Type: Peony()})
 	world.RegisterItem(NetherSprouts{})
 	world.RegisterItem(Farmland{})
-	world.RegisterItem(CopperOre{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(Calcite{})
 

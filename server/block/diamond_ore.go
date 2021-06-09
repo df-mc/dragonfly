@@ -9,12 +9,15 @@ import (
 type DiamondOre struct {
 	solid
 	bassDrum
+
+	// Type is the type of diamond ore.
+	Type OreType
 }
 
 // BreakInfo ...
 func (d DiamondOre) BreakInfo() BreakInfo {
 	// TODO: Silk touch.
-	i := newBreakInfo(3, func(t tool.Tool) bool {
+	i := newBreakInfo(d.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
 	}, pickaxeEffective, oneOf(item.Diamond{}))
 	i.XPDrops = XPDropRange{3, 7}
@@ -22,11 +25,23 @@ func (d DiamondOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (DiamondOre) EncodeItem() (name string, meta int16) {
-	return "minecraft:diamond_ore", 0
+func (d DiamondOre) EncodeItem() (name string, meta int16) {
+	switch d.Type {
+	case StoneOre():
+		return "minecraft:diamond_ore", 0
+	case DeepslateOre():
+		return "minecraft:deepslate_diamond_ore", 0
+	}
+	panic("unknown ore type")
 }
 
 // EncodeBlock ...
-func (DiamondOre) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:diamond_ore", nil
+func (d DiamondOre) EncodeBlock() (string, map[string]interface{}) {
+	switch d.Type {
+	case StoneOre():
+		return "minecraft:diamond_ore", nil
+	case DeepslateOre():
+		return "minecraft:deepslate_diamond_ore", nil
+	}
+	panic("unknown ore type")
 }

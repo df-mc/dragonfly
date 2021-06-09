@@ -10,12 +10,15 @@ import (
 type LapisOre struct {
 	solid
 	bassDrum
+
+	// Type is the type of lapis ore.
+	Type OreType
 }
 
 // BreakInfo ...
 func (l LapisOre) BreakInfo() BreakInfo {
 	// TODO: Silk touch.
-	i := newBreakInfo(3, func(t tool.Tool) bool {
+	i := newBreakInfo(l.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
 	}, pickaxeEffective, simpleDrops(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4)))
 	i.XPDrops = XPDropRange{2, 5}
@@ -23,11 +26,23 @@ func (l LapisOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (LapisOre) EncodeItem() (name string, meta int16) {
-	return "minecraft:lapis_ore", 0
+func (l LapisOre) EncodeItem() (name string, meta int16) {
+	switch l.Type {
+	case StoneOre():
+		return "minecraft:lapis_ore", 0
+	case DeepslateOre():
+		return "minecraft:deepslate_lapis_ore", 0
+	}
+	panic("unknown ore type")
 }
 
 // EncodeBlock ...
-func (LapisOre) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:lapis_ore", nil
+func (l LapisOre) EncodeBlock() (string, map[string]interface{}) {
+	switch l.Type {
+	case StoneOre():
+		return "minecraft:lapis_ore", nil
+	case DeepslateOre():
+		return "minecraft:deepslate_lapis_ore", nil
+	}
+	panic("unknown ore type")
 }

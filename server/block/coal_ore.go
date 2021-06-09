@@ -4,22 +4,37 @@ package block
 type CoalOre struct {
 	solid
 	bassDrum
+
+	// Type is the type of coal ore.
+	Type OreType
 }
 
 // BreakInfo ...
 func (c CoalOre) BreakInfo() BreakInfo {
 	// TODO: Silk touch.
-	b := newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	b := newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(c))
 	b.XPDrops = XPDropRange{0, 2}
 	return b
 }
 
 // EncodeItem ...
-func (CoalOre) EncodeItem() (name string, meta int16) {
-	return "minecraft:coal_ore", 0
+func (c CoalOre) EncodeItem() (name string, meta int16) {
+	switch c.Type {
+	case StoneOre():
+		return "minecraft:coal_ore", 0
+	case DeepslateOre():
+		return "minecraft:deepslate_coal_ore", 0
+	}
+	panic("unknown ore type")
 }
 
 // EncodeBlock ...
-func (CoalOre) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:coal_ore", nil
+func (c CoalOre) EncodeBlock() (string, map[string]interface{}) {
+	switch c.Type {
+	case StoneOre():
+		return "minecraft:coal_ore", nil
+	case DeepslateOre():
+		return "minecraft:deepslate_coal_ore", nil
+	}
+	panic("unknown ore type")
 }

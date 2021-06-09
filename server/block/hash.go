@@ -186,8 +186,8 @@ func (CoalBlock) Hash() uint64 {
 	return hashCoalBlock
 }
 
-func (CoalOre) Hash() uint64 {
-	return hashCoalOre
+func (c CoalOre) Hash() uint64 {
+	return hashCoalOre | uint64(c.Type.Uint8())<<7
 }
 
 func (c Cobblestone) Hash() uint64 {
@@ -207,7 +207,7 @@ func (c ConcretePowder) Hash() uint64 {
 }
 
 func (c CopperOre) Hash() uint64 {
-	return hashCopperOre
+	return hashCopperOre | uint64(c.Type.Uint8())<<7
 }
 
 func (c Coral) Hash() uint64 {
@@ -222,8 +222,8 @@ func (DiamondBlock) Hash() uint64 {
 	return hashDiamondBlock
 }
 
-func (DiamondOre) Hash() uint64 {
-	return hashDiamondOre
+func (d DiamondOre) Hash() uint64 {
+	return hashDiamondOre | uint64(d.Type.Uint8())<<7
 }
 
 func (d Diorite) Hash() uint64 {
@@ -254,8 +254,8 @@ func (EmeraldBlock) Hash() uint64 {
 	return hashEmeraldBlock
 }
 
-func (EmeraldOre) Hash() uint64 {
-	return hashEmeraldOre
+func (e EmeraldOre) Hash() uint64 {
+	return hashEmeraldOre | uint64(e.Type.Uint8())<<7
 }
 
 func (s EndBrickStairs) Hash() uint64 {
@@ -302,8 +302,8 @@ func (GoldBlock) Hash() uint64 {
 	return hashGoldBlock
 }
 
-func (GoldOre) Hash() uint64 {
-	return hashGoldOre
+func (g GoldOre) Hash() uint64 {
+	return hashGoldOre | uint64(g.Type.Uint8())<<7
 }
 
 func (g Granite) Hash() uint64 {
@@ -330,8 +330,8 @@ func (IronBlock) Hash() uint64 {
 	return hashIronBlock
 }
 
-func (IronOre) Hash() uint64 {
-	return hashIronOre
+func (i IronOre) Hash() uint64 {
+	return hashIronOre | uint64(i.Type.Uint8())<<7
 }
 
 func (k Kelp) Hash() uint64 {
@@ -346,8 +346,8 @@ func (LapisBlock) Hash() uint64 {
 	return hashLapisBlock
 }
 
-func (LapisOre) Hash() uint64 {
-	return hashLapisOre
+func (l LapisOre) Hash() uint64 {
+	return hashLapisOre | uint64(l.Type.Uint8())<<7
 }
 
 func (l Lava) Hash() uint64 {

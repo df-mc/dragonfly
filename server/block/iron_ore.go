@@ -8,21 +8,36 @@ import (
 type IronOre struct {
 	solid
 	bassDrum
+
+	// Type is the type of iron ore.
+	Type OreType
 }
 
 // BreakInfo ...
 func (i IronOre) BreakInfo() BreakInfo {
-	return newBreakInfo(3, func(t tool.Tool) bool {
+	return newBreakInfo(i.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
 	}, pickaxeEffective, oneOf(i))
 }
 
 // EncodeItem ...
-func (IronOre) EncodeItem() (name string, meta int16) {
-	return "minecraft:iron_ore", 0
+func (i IronOre) EncodeItem() (name string, meta int16) {
+	switch i.Type {
+	case StoneOre():
+		return "minecraft:iron_ore", 0
+	case DeepslateOre():
+		return "minecraft:deepslate_iron_ore", 0
+	}
+	panic("unknown ore type")
 }
 
 // EncodeBlock ...
-func (IronOre) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:iron_ore", nil
+func (i IronOre) EncodeBlock() (string, map[string]interface{}) {
+	switch i.Type {
+	case StoneOre():
+		return "minecraft:iron_ore", nil
+	case DeepslateOre():
+		return "minecraft:deepslate_iron_ore", nil
+	}
+	panic("unknown ore type")
 }
