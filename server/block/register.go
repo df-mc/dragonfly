@@ -84,8 +84,6 @@ func init() {
 	world.RegisterBlock(RawIronBlock{})
 	world.RegisterBlock(RawGoldBlock{})
 	world.RegisterBlock(RawCopperBlock{})
-	world.RegisterBlock(RootedDirt{})
-	world.RegisterBlock(HangingRoots{})
 
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -342,8 +340,6 @@ func init() {
 	world.RegisterItem(RawIronBlock{})
 	world.RegisterItem(RawGoldBlock{})
 	world.RegisterItem(RawCopperBlock{})
-	world.RegisterItem(RootedDirt{})
-	world.RegisterItem(HangingRoots{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
