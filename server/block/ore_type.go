@@ -2,7 +2,7 @@ package block
 
 import "fmt"
 
-// OreTypes represents a variant of ore blocks.
+// OreType represents a variant of ore blocks.
 type OreType struct {
 	ore
 }
@@ -17,7 +17,7 @@ func DeepslateOre() OreType {
 	return OreType{ore(1)}
 }
 
-// OreType returns a list of all ore types
+// OreTypes returns a list of all ore types
 func OreTypes() []OreType {
 	return []OreType{StoneOre(), DeepslateOre()}
 }
