@@ -13,6 +13,11 @@ type HangingRoots struct {
 	transparent
 }
 
+// FlammabilityInfo ...
+func (h HangingRoots) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(30, 60, true)
+}
+
 // UseOnBlock ...
 func (h HangingRoots) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, h)
