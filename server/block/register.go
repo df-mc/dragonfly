@@ -76,6 +76,9 @@ func init() {
 	world.RegisterBlock(DragonEgg{})
 	world.RegisterBlock(NoteBlock{})
 	world.RegisterBlock(NetherSprouts{})
+	world.RegisterBlock(CopperOre{})
+	world.RegisterBlock(Tuff{})
+	world.RegisterBlock(Calcite{})
 
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -324,6 +327,9 @@ func init() {
 	world.RegisterItem(DoubleFlower{Type: Peony()})
 	world.RegisterItem(NetherSprouts{})
 	world.RegisterItem(Farmland{})
+	world.RegisterItem(CopperOre{})
+	world.RegisterItem(Tuff{})
+	world.RegisterItem(Calcite{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
