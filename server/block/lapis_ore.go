@@ -27,22 +27,10 @@ func (l LapisOre) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (l LapisOre) EncodeItem() (name string, meta int16) {
-	switch l.Type {
-	case StoneOre():
-		return "minecraft:lapis_ore", 0
-	case DeepslateOre():
-		return "minecraft:deepslate_lapis_ore", 0
-	}
-	panic("unknown ore type")
+	return "minecraft:" + l.Type.Prefix() + "lapis_ore", 0
 }
 
 // EncodeBlock ...
 func (l LapisOre) EncodeBlock() (string, map[string]interface{}) {
-	switch l.Type {
-	case StoneOre():
-		return "minecraft:lapis_ore", nil
-	case DeepslateOre():
-		return "minecraft:deepslate_lapis_ore", nil
-	}
-	panic("unknown ore type")
+	return "minecraft:" + l.Type.Prefix() + "lapis_ore", nil
 }

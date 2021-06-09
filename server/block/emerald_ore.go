@@ -26,22 +26,10 @@ func (e EmeraldOre) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (e EmeraldOre) EncodeItem() (name string, meta int16) {
-	switch e.Type {
-	case StoneOre():
-		return "minecraft:emerald_ore", 0
-	case DeepslateOre():
-		return "minecraft:deepslate_emerald_ore", 0
-	}
-	panic("unknown ore type")
+	return "minecraft:" + e.Type.Prefix() + "emerald_ore", 0
 }
 
 // EncodeBlock ...
 func (e EmeraldOre) EncodeBlock() (string, map[string]interface{}) {
-	switch e.Type {
-	case StoneOre():
-		return "minecraft:emerald_ore", nil
-	case DeepslateOre():
-		return "minecraft:deepslate_emerald_ore", nil
-	}
-	panic("unknown ore type")
+	return "minecraft:" + e.Type.Prefix() + "emerald_ore", nil
 }

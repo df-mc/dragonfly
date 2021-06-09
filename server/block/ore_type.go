@@ -62,6 +62,17 @@ func (o ore) String() string {
 	panic("unknown ore type")
 }
 
+// Prefix ...
+func (o ore) Prefix() string {
+	switch o {
+	case 0:
+		return ""
+	case 1:
+		return "deepslate_"
+	}
+	panic("unknown ore type")
+}
+
 // Hardness ...
 func (o ore) Hardness() float64 {
 	switch o {

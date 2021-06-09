@@ -26,22 +26,10 @@ func (d DiamondOre) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (d DiamondOre) EncodeItem() (name string, meta int16) {
-	switch d.Type {
-	case StoneOre():
-		return "minecraft:diamond_ore", 0
-	case DeepslateOre():
-		return "minecraft:deepslate_diamond_ore", 0
-	}
-	panic("unknown ore type")
+	return "minecraft:" + d.Type.Prefix() + "diamond_ore", 0
 }
 
 // EncodeBlock ...
 func (d DiamondOre) EncodeBlock() (string, map[string]interface{}) {
-	switch d.Type {
-	case StoneOre():
-		return "minecraft:diamond_ore", nil
-	case DeepslateOre():
-		return "minecraft:deepslate_diamond_ore", nil
-	}
-	panic("unknown ore type")
+	return "minecraft:" + d.Type.Prefix() + "diamond_ore", nil
 }

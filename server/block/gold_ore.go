@@ -23,22 +23,10 @@ func (g GoldOre) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (g GoldOre) EncodeItem() (name string, meta int16) {
-	switch g.Type {
-	case StoneOre():
-		return "minecraft:gold_ore", 0
-	case DeepslateOre():
-		return "minecraft:deepslate_gold_ore", 0
-	}
-	panic("unknown ore type")
+	return "minecraft:" + g.Type.Prefix() + "gold_ore", 0
 }
 
 // EncodeBlock ...
 func (g GoldOre) EncodeBlock() (string, map[string]interface{}) {
-	switch g.Type {
-	case StoneOre():
-		return "minecraft:gold_ore", nil
-	case DeepslateOre():
-		return "minecraft:deepslate_gold_ore", nil
-	}
-	panic("unknown ore type")
+	return "minecraft:" + g.Type.Prefix() + "gold_ore", nil
 }

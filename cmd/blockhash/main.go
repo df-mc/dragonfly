@@ -183,9 +183,11 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 		return "uint64(boolByte(" + s + "))", 1
 	case "int":
 		return "uint64(" + s + ")", 8
-	case "WoodType", "FireType", "CoralType", "SandstoneType", "DoubleFlowerType", "GrassType", "OreType", "Colour":
+	case "WoodType", "FireType", "CoralType", "SandstoneType", "DoubleFlowerType", "GrassType", "Colour":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
+	case "OreType":
+		return "uint64(" + s + ".Uint8())", 1
 	case "Direction", "Axis":
 		return "uint64(" + s + ")", 2
 	case "Face":
