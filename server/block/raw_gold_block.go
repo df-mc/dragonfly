@@ -7,6 +7,7 @@ import (
 // RawGoldBlock is a raw metal block equivalent to nine raw gold.
 type RawGoldBlock struct {
 	solid
+	bassDrum
 }
 
 // BreakInfo ...
