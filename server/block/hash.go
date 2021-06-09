@@ -54,22 +54,22 @@ const hashGoldOre = 48
 const hashGranite = 49
 const hashGrass = 50
 const hashGravel = 51
-const hashHangingRoots = 52
-const hashInvisibleBedrock = 53
-const hashIronBars = 54
-const hashIronBlock = 55
-const hashIronOre = 56
-const hashKelp = 57
-const hashLantern = 58
-const hashLapisBlock = 59
-const hashLapisOre = 60
-const hashLava = 61
-const hashLeaves = 62
-const hashLight = 63
-const hashLitPumpkin = 64
-const hashLog = 65
-const hashMelon = 66
-const hashMelonSeeds = 67
+const hashInvisibleBedrock = 52
+const hashIronBars = 53
+const hashIronBlock = 54
+const hashIronOre = 55
+const hashKelp = 56
+const hashLantern = 57
+const hashLapisBlock = 58
+const hashLapisOre = 59
+const hashLava = 60
+const hashLeaves = 61
+const hashLight = 62
+const hashLitPumpkin = 63
+const hashLog = 64
+const hashMelon = 65
+const hashMelonSeeds = 66
+const hashMossCarpet = 67
 const hashNetherBrickFence = 68
 const hashNetherGoldOre = 69
 const hashNetherQuartzOre = 70
@@ -89,14 +89,14 @@ const hashQuartzPillar = 83
 const hashRawCopperBlock = 84
 const hashRawGoldBlock = 85
 const hashRawIronBlock = 86
-const hashRootedDirt = 87
-const hashSand = 88
-const hashSandstone = 89
-const hashSeaLantern = 90
-const hashShroomlight = 91
-const hashSoulSand = 92
-const hashSoulSoil = 93
-const hashSponge = 94
+const hashSand = 87
+const hashSandstone = 88
+const hashSeaLantern = 89
+const hashShroomlight = 90
+const hashSoulSand = 91
+const hashSoulSoil = 92
+const hashSponge = 93
+const hashSporeBlossom = 94
 const hashStainedGlass = 95
 const hashStainedGlassPane = 96
 const hashStainedTerracotta = 97
@@ -323,10 +323,6 @@ func (Gravel) Hash() uint64 {
 	return hashGravel
 }
 
-func (h HangingRoots) Hash() uint64 {
-	return hashHangingRoots
-}
-
 func (InvisibleBedrock) Hash() uint64 {
 	return hashInvisibleBedrock
 }
@@ -385,6 +381,10 @@ func (Melon) Hash() uint64 {
 
 func (m MelonSeeds) Hash() uint64 {
 	return hashMelonSeeds | uint64(m.Growth)<<7 | uint64(m.Direction)<<15
+}
+
+func (m MossCarpet) Hash() uint64 {
+	return hashMossCarpet
 }
 
 func (NetherBrickFence) Hash() uint64 {
@@ -463,10 +463,6 @@ func (RawIronBlock) Hash() uint64 {
 	return hashRawIronBlock
 }
 
-func (r RootedDirt) Hash() uint64 {
-	return hashRootedDirt
-}
-
 func (s Sand) Hash() uint64 {
 	return hashSand | uint64(boolByte(s.Red))<<7
 }
@@ -493,6 +489,10 @@ func (SoulSoil) Hash() uint64 {
 
 func (s Sponge) Hash() uint64 {
 	return hashSponge | uint64(boolByte(s.Wet))<<7
+}
+
+func (s SporeBlossom) Hash() uint64 {
+	return hashSporeBlossom
 }
 
 func (g StainedGlass) Hash() uint64 {
