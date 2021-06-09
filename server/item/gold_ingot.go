@@ -1,6 +1,6 @@
 package item
 
-// GoldIngot is a rare mineral melted from golden ore or obtained from loot chests.
+// GoldIngot is a metal ingot melted from raw gold or obtained from loot chests.
 type GoldIngot struct{}
 
 // EncodeItem ...

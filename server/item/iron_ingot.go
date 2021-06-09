@@ -1,6 +1,6 @@
 package item
 
-// IronIngot is a rare mineral melted from iron ore or obtained from loot chests.
+// IronIngot is a metal ingot melted from raw iron or obtained from loot chests.
 type IronIngot struct{}
 
 // EncodeItem ...

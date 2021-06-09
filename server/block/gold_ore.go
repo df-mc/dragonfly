@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -14,7 +15,7 @@ type GoldOre struct {
 func (g GoldOre) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
-	}, pickaxeEffective, oneOf(g))
+	}, pickaxeEffective, oneOf(item.RawGold{})) //TODO: Silk Touch
 }
 
 // EncodeItem ...

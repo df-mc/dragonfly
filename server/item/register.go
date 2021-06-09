@@ -69,4 +69,7 @@ func init() {
 	world.RegisterItem(Pufferfish{})
 	world.RegisterItem(Clock{})
 	world.RegisterItem(Compass{})
+
+	world.RegisterItem(RawIron{})
+	world.RegisterItem(RawGold{})
 }
