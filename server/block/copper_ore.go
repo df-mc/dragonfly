@@ -18,7 +18,7 @@ type CopperOre struct {
 func (c CopperOre) BreakInfo() BreakInfo {
 	return newBreakInfo(c.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(item.RawCopper{}))
+	}, pickaxeEffective, oneOf(item.RawCopper{})) //TODO: Silk Touch
 }
 
 // EncodeItem ...

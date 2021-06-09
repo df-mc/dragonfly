@@ -15,7 +15,7 @@ type HangingRoots struct {
 
 // UseOnBlock ...
 func (h HangingRoots) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, h)
+	pos, _, used := firstReplaceable(w, pos, face, h)
 	if !used {
 		return false
 	}
