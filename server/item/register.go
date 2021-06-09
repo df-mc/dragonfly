@@ -72,4 +72,6 @@ func init() {
 
 	world.RegisterItem(CopperIngot{})
 	world.RegisterItem(RawCopper{})
+	world.RegisterItem(RawIron{})
+	world.RegisterItem(RawGold{})
 }
