@@ -72,7 +72,6 @@ func init() {
 	world.RegisterBlock(NetherSprouts{})
 	world.RegisterBlock(Tuff{})
 	world.RegisterBlock(Calcite{})
-
 	for _, ore := range OreTypes() {
 		world.RegisterBlock(CoalOre{Type: ore})
 		world.RegisterBlock(IronOre{Type: ore})
@@ -82,6 +81,9 @@ func init() {
 		world.RegisterBlock(DiamondOre{Type: ore})
 		world.RegisterBlock(EmeraldOre{Type: ore})
 	}
+	world.RegisterBlock(RawIronBlock{})
+	world.RegisterBlock(RawGoldBlock{})
+	world.RegisterBlock(RawCopperBlock{})
 
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -335,6 +337,9 @@ func init() {
 	world.RegisterItem(Farmland{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(Calcite{})
+	world.RegisterItem(RawIronBlock{})
+	world.RegisterItem(RawGoldBlock{})
+	world.RegisterItem(RawCopperBlock{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})

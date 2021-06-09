@@ -85,30 +85,33 @@ const hashPumpkinSeeds = 79
 const hashQuartz = 80
 const hashQuartzBricks = 81
 const hashQuartzPillar = 82
-const hashSand = 83
-const hashSandstone = 84
-const hashSeaLantern = 85
-const hashShroomlight = 86
-const hashSoulSand = 87
-const hashSoulSoil = 88
-const hashSponge = 89
-const hashStainedGlass = 90
-const hashStainedGlassPane = 91
-const hashStainedTerracotta = 92
-const hashStone = 93
-const hashTallGrass = 94
-const hashTerracotta = 95
-const hashTorch = 96
-const hashTuff = 97
-const hashWater = 98
-const hashWheatSeeds = 99
-const hashWoodDoor = 100
-const hashWoodFence = 101
-const hashWoodFenceGate = 102
-const hashWoodSlab = 103
-const hashWoodStairs = 104
-const hashWoodTrapdoor = 105
-const hashWool = 106
+const hashRawCopperBlock = 83
+const hashRawGoldBlock = 84
+const hashRawIronBlock = 85
+const hashSand = 86
+const hashSandstone = 87
+const hashSeaLantern = 88
+const hashShroomlight = 89
+const hashSoulSand = 90
+const hashSoulSoil = 91
+const hashSponge = 92
+const hashStainedGlass = 93
+const hashStainedGlassPane = 94
+const hashStainedTerracotta = 95
+const hashStone = 96
+const hashTallGrass = 97
+const hashTerracotta = 98
+const hashTorch = 99
+const hashTuff = 100
+const hashWater = 101
+const hashWheatSeeds = 102
+const hashWoodDoor = 103
+const hashWoodFence = 104
+const hashWoodFenceGate = 105
+const hashWoodSlab = 106
+const hashWoodStairs = 107
+const hashWoodTrapdoor = 108
+const hashWool = 109
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -440,6 +443,18 @@ func (QuartzBricks) Hash() uint64 {
 
 func (q QuartzPillar) Hash() uint64 {
 	return hashQuartzPillar | uint64(q.Axis)<<7
+}
+
+func (RawCopperBlock) Hash() uint64 {
+	return hashRawCopperBlock
+}
+
+func (RawGoldBlock) Hash() uint64 {
+	return hashRawGoldBlock
+}
+
+func (RawIronBlock) Hash() uint64 {
+	return hashRawIronBlock
 }
 
 func (s Sand) Hash() uint64 {
