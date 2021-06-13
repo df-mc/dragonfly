@@ -1,50 +1,46 @@
+<img height="310" alt="image" src="https://user-images.githubusercontent.com/16114089/121789898-32c4cf00-cbda-11eb-86e7-9397118c152e.png" align="right">
+
 # Dragonfly
+
 Dragonfly is a server software for Minecraft Bedrock Edition written in Go. It was written with scalability
-and simplicity in mind and aims to make the process of setting up a server and modifying it easy.
+and simplicity in mind and aims to make the process of setting up a server and modifying it easy. Unlike other
+Minecraft server software, Dragonfly is generally used as a library to extend.
 
-## Setup
-There are currently no prebuilt executables available. These may be provided later once Dragonfly moves to a
-more stable stage.
+[![Discord Banner 2](https://discordapp.com/api/guilds/623638955262345216/widget.png?style=banner2)](https://discord.gg/U4kFWHhTNR)
 
-### Development setup
-Installing/compiling Dragonfly requires at least Go 1.16.
+## Getting started
+Running Dragonfly requires at least **Go 1.16**. After starting the server through one of the methods below,
+**ctrl+c** may be used to shut down the server. Also check out the [wiki](https://github.com/df-mc/dragonfly/wiki) for
+more detailed info.
 
-##### Instant install, when GOPATH/bin is added to $PATH:
+#### Installation as library
 ```
-go install github.com/df-mc/dragonfly
-```
-Running:
-```
-dragonfly
+go mod init github.com/<user>/<module name>
+go get github.com/df-mc/dragonfly
 ```
 
-##### Installation for editing Dragonfly:
+![SetupLibrary](https://user-images.githubusercontent.com/16114089/121804512-0f843900-cc47-11eb-9320-d195393b5a1f.gif)
+
+#### Installation of the latest commit
 ```
 git clone https://github.com/df-mc/dragonfly
 cd dragonfly
-```
-Running:
-```
 go run main.go
 ```
 
-## Usage
-After starting the Dragonfly server, messages will be logged to the console. Console commands are currently
-not implemented in Dragonfly, so writing commands will not do anything. The server may be stopped by running
-`ctrl+c` at any time.
+![SetupClone](https://user-images.githubusercontent.com/16114089/121804495-ff6c5980-cc46-11eb-8e31-df4d94782e5b.gif)
+
 
 ## Developer info
-Dragonfly features a well-documented codebase with an easy to use API. Automatically generated documentation
-may be found [here](https://pkg.go.dev/github.com/df-mc/dragonfly/dragonfly?tab=doc) and in the subpackages
-found by clicking 'Subdirectories'.
-The GitHub wiki will hold examples of frequently used functionality.
+[![Go Reference](https://pkg.go.dev/badge/github.com/df-mc/dragonfly.svg)](https://pkg.go.dev/github.com/df-mc/dragonfly)
 
-Publishing your project on GitHub? Consider adding the [#df-mc](https://github.com/topic/df-mc) topic to your
+Dragonfly features a well-documented codebase with an easy-to-use API. Documentation may be found
+[here](https://pkg.go.dev/github.com/df-mc/dragonfly/server) and in the subpackages found by clicking *Directories*.
+
+Publishing your project on GitHub? Consider adding the **[#df-mc](https://github.com/topic/df-mc)** topic to your
 repository to improve visibility of your project.
 
 ## Contributing
-We use JetBrains Space to manage our issues, pull requests and code reviews, but we welcome contributions
-through GitHub issues and pull requests.
-
-## Contact
-[![Chat on Discord](https://img.shields.io/badge/Chat-On%20Discord-738BD7.svg?style=for-the-badge)](https://discord.com/invite/U4kFWHhTNR)
+Contributions are very welcome! Issues, pull requests and feature requests are highly appreciated. Opening a pull
+request? Consider joining our [Discord server](https://discord.gg/U4kFWHhTNR) to discuss your changes! Also have a read through the
+[CONTRIBUTING.md](https://github.com/df-mc/dragonfly/blob/master/.github/CONTRIBUTING.md) for more info.
