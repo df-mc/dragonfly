@@ -37,6 +37,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	it := &Item{i: i, MovementComputer: &MovementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,
+		drag:              0.02,
 	}}
 	it.SetPickupDelay(time.Second / 2)
 	it.pos.Store(pos)
