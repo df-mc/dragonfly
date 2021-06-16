@@ -246,10 +246,16 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		delete(c.e, pos)
 	}
 
-	for _, viewer := range c.v {
-		viewer.ViewBlockUpdate(pos, b, 0)
+	var viewers []Viewer
+	if len(c.v) > 0 {
+		viewers = make([]Viewer, len(c.v))
+		copy(viewers, c.v)
 	}
 	c.Unlock()
+
+	for _, viewer := range viewers {
+		viewer.ViewBlockUpdate(pos, b, 0)
+	}
 }
 
 // setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
@@ -714,8 +720,11 @@ func (w *World) AddEntity(e Entity) {
 	}
 	c.entities = append(c.entities, e)
 
-	viewers := make([]Viewer, len(c.v))
-	copy(viewers, c.v)
+	var viewers []Viewer
+	if len(c.v) > 0 {
+		viewers = make([]Viewer, len(c.v))
+		copy(viewers, c.v)
+	}
 	c.Unlock()
 
 	for _, viewer := range viewers {
@@ -768,10 +777,17 @@ func (w *World) RemoveEntity(e Entity) {
 		}
 	}
 	c.entities = n
-	for _, viewer := range c.v {
-		viewer.HideEntity(e)
+
+	var viewers []Viewer
+	if len(c.v) > 0 {
+		viewers = make([]Viewer, len(c.v))
+		copy(viewers, c.v)
 	}
 	c.Unlock()
+
+	for _, viewer := range viewers {
+		viewer.HideEntity(e)
+	}
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
@@ -1016,7 +1032,7 @@ func (w *World) Handle(h Handler) {
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
-func (w *World) Viewers(pos mgl64.Vec3) []Viewer {
+func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	if w == nil {
 		return nil
 	}
@@ -1025,10 +1041,12 @@ func (w *World) Viewers(pos mgl64.Vec3) []Viewer {
 		return nil
 	}
 	c.Lock()
-	viewers := make([]Viewer, len(c.v))
-	copy(viewers, c.v)
+	if len(c.v) > 0 {
+		viewers = make([]Viewer, len(c.v))
+		copy(viewers, c.v)
+	}
 	c.Unlock()
-	return viewers
+	return
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -1310,14 +1328,14 @@ func (w *World) tickEntities(tick int64) {
 	for e, lastPos := range w.lastEntityPositions {
 		chunkPos := chunkPosFromVec3(e.Position())
 
-		newC, ok := w.chunks[chunkPos]
+		c, ok := w.chunks[chunkPos]
 		if !ok {
 			continue
 		}
 
-		newC.Lock()
-		v := len(newC.v)
-		newC.Unlock()
+		c.Lock()
+		v := len(c.v)
+		c.Unlock()
 
 		if v > 0 {
 			if ticker, ok := e.(TickerEntity); ok {
@@ -1330,19 +1348,25 @@ func (w *World) tickEntities(tick int64) {
 			// for viewers to view it.
 			w.lastEntityPositions[e] = chunkPos
 
-			lastC := w.chunks[lastPos]
-			lastC.Lock()
-			chunkEntities := make([]Entity, 0, len(lastC.entities)-1)
-			for _, entity := range lastC.entities {
+			oldChunk := w.chunks[lastPos]
+			oldChunk.Lock()
+			chunkEntities := make([]Entity, 0, len(oldChunk.entities)-1)
+			for _, entity := range oldChunk.entities {
 				if entity == e {
 					continue
 				}
 				chunkEntities = append(chunkEntities, entity)
 			}
-			lastC.entities = chunkEntities
-			lastC.Unlock()
+			oldChunk.entities = chunkEntities
 
-			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: append([]Viewer(nil), lastC.v...), after: newC})
+			var viewers []Viewer
+			if len(c.v) > 0 {
+				viewers = make([]Viewer, len(c.v))
+				copy(viewers, c.v)
+			}
+			oldChunk.Unlock()
+
+			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
 	w.chunkMu.Unlock()
@@ -1381,14 +1405,16 @@ func (w *World) tickEntities(tick int64) {
 }
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() []Viewer {
+func (w *World) allViewers() (v []Viewer) {
 	w.viewersMu.Lock()
-	v := make([]Viewer, 0, len(w.viewers))
-	for viewer := range w.viewers {
-		v = append(v, viewer)
+	if len(w.viewers) > 0 {
+		v = make([]Viewer, 0, len(w.viewers))
+		for viewer := range w.viewers {
+			v = append(v, viewer)
+		}
 	}
 	w.viewersMu.Unlock()
-	return v
+	return
 }
 
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
@@ -1412,7 +1438,12 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 		return
 	}
 	c.v = append(c.v, viewer)
-	entities := c.entities
+
+	var entities []Entity
+	if len(c.entities) > 0 {
+		entities = make([]Entity, len(c.entities))
+		copy(entities, c.entities)
+	}
 	c.Unlock()
 
 	for _, entity := range entities {
@@ -1441,11 +1472,18 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 		}
 	}
 	c.v = n
-	// After removing the viewer from the chunk, we also need to hide all entities from the viewer.
-	for _, entity := range c.entities {
-		viewer.HideEntity(entity)
+
+	var entities []Entity
+	if len(c.entities) > 0 {
+		entities = make([]Entity, len(c.entities))
+		copy(entities, c.entities)
 	}
 	c.Unlock()
+
+	// After removing the viewer from the chunk, we also need to hide all entities from the viewer.
+	for _, entity := range entities {
+		viewer.HideEntity(entity)
+	}
 }
 
 // hasViewer checks if a chunk at a particular chunk position has the viewer passed. If so, true is returned.
