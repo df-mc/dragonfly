@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/state"
@@ -77,7 +78,7 @@ func (it *Item) Name() string {
 
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(current int64) {
-	if it.Position()[1] < 0 && current%10 == 0 {
+	if it.Position()[1] < cube.MinY && current%10 == 0 {
 		_ = it.Close()
 		return
 	}
