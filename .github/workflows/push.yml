@@ -74,7 +74,7 @@ jobs:
         env:
           HOST: ${{ secrets.HOST }}
         run: |
-          ssh -i ~/.ssh/id_rsa $HOST screen -S dragonfly -X stuff '^C'
+          ssh -i ~/.ssh/id_rsa $HOST screen -S -D -R dragonfly -X stuff '^C'
           ssh -i ~/.ssh/id_rsa $HOST rm -f dragonfly_exe
 
       - name: Transfer executable
