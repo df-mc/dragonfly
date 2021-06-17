@@ -562,7 +562,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	velocity[1] = height
 
 	resistance := 0.0
-	for _, i := range p.armour.All() {
+	for _, i := range p.armour.Items() {
 		if a, ok := i.Item().(armour.Armour); ok {
 			resistance += a.KnockBackResistance()
 		}

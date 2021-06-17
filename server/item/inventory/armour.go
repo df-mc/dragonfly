@@ -92,10 +92,10 @@ func (a *Armour) Boots() item.Stack {
 	return i
 }
 
-// All returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,
+// Items returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,
 // boots.
-func (a *Armour) All() []item.Stack {
-	return a.inv.All()
+func (a *Armour) Items() []item.Stack {
+	return a.inv.Items()
 }
 
 // Clear clears the armour inventory, removing all items currently present.

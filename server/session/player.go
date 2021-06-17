@@ -52,7 +52,7 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 		WindowID: windowID,
 		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
 	}
-	for _, i := range inv.All() {
+	for _, i := range inv.Items() {
 		pk.Content = append(pk.Content, instanceFromItem(i))
 	}
 	s.writePacket(pk)
