@@ -81,8 +81,8 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	return nil
 }
 
-// All returns the full content of the inventory, copying all items into a new slice.
-func (inv *Inventory) All() []item.Stack {
+// Items returns the full content of the inventory, copying all items into a new slice.
+func (inv *Inventory) Items() []item.Stack {
 	r := make([]item.Stack, inv.Size())
 	inv.mu.RLock()
 	copy(r, inv.slots)
@@ -92,7 +92,7 @@ func (inv *Inventory) All() []item.Stack {
 
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
-	for slot, it := range inv.All() {
+	for slot, it := range inv.Items() {
 		if !it.Empty() && it.Comparable(item) {
 			return slot, true
 		}
@@ -102,7 +102,7 @@ func (inv *Inventory) First(item item.Stack) (int, bool) {
 
 // FirstEmpty returns the first empty slot if found. Second return value describes whether an empty slot was found.
 func (inv *Inventory) FirstEmpty() (int, bool) {
-	for slot, it := range inv.All() {
+	for slot, it := range inv.Items() {
 		if it.Empty() {
 			return slot, true
 		}
@@ -159,7 +159,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 	}
 	for slot, invIt := range inv.slots {
 		if !invIt.Empty() || inv.SlotLocked(slot) {
-			// We can only use empty slots now: All existing stacks have already been filled up.
+			// We can only use empty slots now: Items existing stacks have already been filled up.
 			continue
 		}
 		a, b := it.Grow(-math.MaxInt32).AddStack(it)
@@ -256,7 +256,7 @@ func (inv *Inventory) Empty() bool {
 	return true
 }
 
-// Clear clears the entire inventory. All items are removed, except for items in locked slots.
+// Clear clears the entire inventory. Items items are removed, except for items in locked slots.
 func (inv *Inventory) Clear() {
 	inv.mu.Lock()
 	for slot := range inv.slots {
