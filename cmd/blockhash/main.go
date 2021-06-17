@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/bits"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -49,6 +50,7 @@ func procPackage(pkg *ast.Package, fs *token.FileSet, w io.Writer) {
 	b.readStructFields(pkg)
 	b.readFuncs(pkg)
 	b.resolveBlocks()
+	b.sortNames()
 
 	b.writePackage(w)
 	i := b.writeConstants(w)
@@ -69,6 +71,18 @@ type hashBuilder struct {
 	aliases     map[string]string
 	handled     map[string]struct{}
 	blockFields map[string][]*ast.Field
+	names       []string
+}
+
+// sortNames sorts the names of the blockFields map and stores them in a slice.
+func (b *hashBuilder) sortNames() {
+	b.names = make([]string, 0, len(b.blockFields))
+	for name := range b.blockFields {
+		b.names = append(b.names, name)
+	}
+	sort.Slice(b.names, func(i, j int) bool {
+		return b.names[i] < b.names[j]
+	})
 }
 
 // writePackage writes the package at the top of the file.
@@ -81,7 +95,7 @@ func (b *hashBuilder) writePackage(w io.Writer) {
 // writeConstants writes hash constants for every block to a file.
 func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
 	var i uint64
-	for name := range b.blockFields {
+	for _, name := range b.names {
 		if _, err := fmt.Fprintf(w, constFormat, name, i); err != nil {
 			log.Fatalln(err)
 		}
@@ -92,7 +106,9 @@ func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
 }
 
 func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
-	for name, fields := range b.blockFields {
+	for _, name := range b.names {
+		fields := b.blockFields[name]
+
 		h := "hash" + name
 		bitSize := baseBits
 
@@ -167,9 +183,15 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 		return "uint64(boolByte(" + s + "))", 1
 	case "int":
 		return "uint64(" + s + ")", 8
-	case "WoodType", "FireType", "CoralType", "Colour", "Grass":
+	case "DoubleFlowerType", "Colour":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
+	case "WoodType", "CoralType":
+		return "uint64(" + s + ".Uint8())", 3
+	case "SandstoneType":
+		return "uint64(" + s + ".Uint8())", 2
+	case "OreType", "FireType", "GrassType":
+		return "uint64(" + s + ".Uint8())", 1
 	case "Direction", "Axis":
 		return "uint64(" + s + ")", 2
 	case "Face":

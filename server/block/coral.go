@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"time"
 )
 
@@ -70,7 +71,7 @@ func (c Coral) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.Worl
 }
 
 // ScheduledTick ...
-func (c Coral) ScheduledTick(pos cube.Pos, w *world.World) {
+func (c Coral) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if c.Dead {
 		return
 	}

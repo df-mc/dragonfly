@@ -93,7 +93,30 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 			return err
 		}
 	}
+	h.handleInputFlags(pk.InputData, s)
 	return nil
+}
+
+// handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
+func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
+	if flags&packet.InputFlagStartSprinting != 0 {
+		s.c.StartSprinting()
+	}
+	if flags&packet.InputFlagStopSprinting != 0 {
+		s.c.StopSprinting()
+	}
+	if flags&packet.InputFlagStartSneaking != 0 {
+		s.c.StartSneaking()
+	}
+	if flags&packet.InputFlagStopSneaking != 0 {
+		s.c.StopSneaking()
+	}
+	if flags&packet.InputFlagStartSwimming != 0 {
+		s.c.StartSwimming()
+	}
+	if flags&packet.InputFlagStopSwimming != 0 {
+		s.c.StopSwimming()
+	}
 }
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.

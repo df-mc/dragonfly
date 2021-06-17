@@ -9,12 +9,15 @@ import (
 type EmeraldOre struct {
 	solid
 	bassDrum
+
+	// Type is the type of emerald ore.
+	Type OreType
 }
 
 // BreakInfo ...
 func (e EmeraldOre) BreakInfo() BreakInfo {
 	// TODO: Silk touch.
-	i := newBreakInfo(3, func(t tool.Tool) bool {
+	i := newBreakInfo(e.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
 	}, pickaxeEffective, oneOf(item.Emerald{}))
 	i.XPDrops = XPDropRange{3, 7}
@@ -22,11 +25,11 @@ func (e EmeraldOre) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (EmeraldOre) EncodeItem() (name string, meta int16) {
-	return "minecraft:emerald_ore", 0
+func (e EmeraldOre) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + e.Type.Prefix() + "emerald_ore", 0
 }
 
 // EncodeBlock ...
-func (EmeraldOre) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:emerald_ore", nil
+func (e EmeraldOre) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:" + e.Type.Prefix() + "emerald_ore", nil
 }

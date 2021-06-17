@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"math/rand"
 	"time"
 )
 
@@ -78,7 +79,7 @@ func (Water) LightDiffusionLevel() uint8 {
 }
 
 // ScheduledTick ...
-func (w Water) ScheduledTick(pos cube.Pos, wo *world.World) {
+func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 	if w.Depth == 7 {
 		// Attempt to form new water source blocks.
 		count := 0

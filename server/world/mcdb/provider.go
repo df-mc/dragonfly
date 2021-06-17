@@ -85,44 +85,28 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.SpawnY = math.MaxInt32
 }
 
-// LoadTime returns the time as it was stored in the level.dat of the world loaded.
-func (p *Provider) LoadTime() int64 {
-	return p.d.Time
+// Settings returns the world.Settings of the world loaded by the Provider.
+func (p *Provider) Settings() world.Settings {
+	return world.Settings{
+		Name:            p.d.LevelName,
+		Spawn:           cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)},
+		Time:            p.d.Time,
+		TimeCycle:       p.d.DoDayLightCycle,
+		CurrentTick:     p.d.CurrentTick,
+		DefaultGameMode: p.LoadDefaultGameMode(),
+		Difficulty:      p.LoadDifficulty(),
+	}
 }
 
-// SaveTime saves the time to the level.dat of the world.
-func (p *Provider) SaveTime(time int64) {
-	p.d.Time = time
-}
-
-// LoadTimeCycle returns whether the time is cycling or not.
-func (p *Provider) LoadTimeCycle() bool {
-	return p.d.DoDayLightCycle
-}
-
-// SaveTimeCycle saves the state of the time cycle, either running or stopped, to the level.dat.
-func (p *Provider) SaveTimeCycle(running bool) {
-	p.d.DoDayLightCycle = running
-}
-
-// WorldName returns the name of the world that the provider provides data for.
-func (p *Provider) WorldName() string {
-	return p.d.LevelName
-}
-
-// SetWorldName sets the name of the world to the string passed.
-func (p *Provider) SetWorldName(name string) {
-	p.d.LevelName = name
-}
-
-// WorldSpawn returns the spawn of the world as present in the level.dat.
-func (p *Provider) WorldSpawn() cube.Pos {
-	return cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)}
-}
-
-// SetWorldSpawn sets the spawn of the world to a new one.
-func (p *Provider) SetWorldSpawn(pos cube.Pos) {
-	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
+// SaveSettings saves the world.Settings passed to the level.dat.
+func (p *Provider) SaveSettings(s world.Settings) {
+	p.d.LevelName = s.Name
+	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
+	p.d.Time = s.Time
+	p.d.DoDayLightCycle = s.TimeCycle
+	p.d.CurrentTick = s.CurrentTick
+	p.SaveDefaultGameMode(s.DefaultGameMode)
+	p.SaveDifficulty(s.Difficulty)
 }
 
 // LoadChunk loads a chunk at the position passed from the leveldb database. If it doesn't exist, exists is
