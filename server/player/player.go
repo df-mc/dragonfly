@@ -1579,7 +1579,7 @@ func (p *Player) Tick(current int64) {
 	p.onGround.Store(p.checkOnGround())
 	p.tickFood()
 	p.effects.Tick(p)
-	if p.Position()[1] < 0 && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < cube.MinY && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 

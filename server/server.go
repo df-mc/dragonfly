@@ -323,7 +323,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
 		Time:                         int64(server.world.Time()),
-		GameRules:                    map[string]interface{}{"naturalregeneration": false},
+		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 		Difficulty:                   2,
 		Items:                        server.itemEntries(),
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
@@ -380,6 +380,7 @@ func (server *Server) loadWorld() {
 func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	// gopher tunnel guarantees the following values are valid data and are of the correct size.
 	skinData, _ := base64.StdEncoding.DecodeString(data.SkinData)
+	capeData, _ := base64.StdEncoding.DecodeString(data.CapeData)
 	modelData, _ := base64.StdEncoding.DecodeString(data.SkinGeometry)
 	skinResourcePatch, _ := base64.StdEncoding.DecodeString(data.SkinResourcePatch)
 	modelConfig, _ := skin.DecodeModelConfig(skinResourcePatch)
@@ -390,6 +391,9 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 	playerSkin.Model = modelData
 	playerSkin.ModelConfig = modelConfig
 	playerSkin.PlayFabID = data.PlayFabID
+
+	playerSkin.Cape = skin.NewCape(data.CapeImageWidth, data.CapeImageHeight)
+	playerSkin.Cape.Pix = capeData
 
 	for _, animation := range data.AnimatedImageData {
 		var t skin.AnimationType

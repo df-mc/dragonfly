@@ -67,7 +67,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
 		return false
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
+	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
 	d.Facing = user.Facing()

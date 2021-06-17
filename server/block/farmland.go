@@ -46,9 +46,7 @@ func (f Farmland) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 
 // hydrated checks for water within 4 blocks in each direction from the farmland.
 func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
-	posX := pos.X()
-	posY := pos.Y()
-	posZ := pos.Z()
+	posX, posY, posZ := pos.X(), pos.Y(), pos.Z()
 	for y := 0; y <= 1; y++ {
 		for x := -4; x <= 4; x++ {
 			for z := -4; z <= 4; z++ {

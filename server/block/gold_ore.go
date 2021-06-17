@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
@@ -8,21 +9,24 @@ import (
 type GoldOre struct {
 	solid
 	bassDrum
+
+	// Type is the type of gold ore.
+	Type OreType
 }
 
 // BreakInfo ...
 func (g GoldOre) BreakInfo() BreakInfo {
-	return newBreakInfo(3, func(t tool.Tool) bool {
+	return newBreakInfo(g.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
-	}, pickaxeEffective, oneOf(g))
+	}, pickaxeEffective, oneOf(item.RawGold{})) //TODO: Silk Touch
 }
 
 // EncodeItem ...
-func (GoldOre) EncodeItem() (name string, meta int16) {
-	return "minecraft:gold_ore", 0
+func (g GoldOre) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + g.Type.Prefix() + "gold_ore", 0
 }
 
 // EncodeBlock ...
-func (GoldOre) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:gold_ore", nil
+func (g GoldOre) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:" + g.Type.Prefix() + "gold_ore", nil
 }

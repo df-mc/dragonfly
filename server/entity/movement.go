@@ -19,6 +19,7 @@ type MovementComputer struct {
 	onGround          bool
 	gravity           float64
 	dragBeforeGravity bool
+	drag              float64
 }
 
 // tickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
@@ -45,25 +46,24 @@ func (c *MovementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
 func (c *MovementComputer) applyGravity(e world.Entity) mgl64.Vec3 {
 	velocity := e.Velocity()
 	if c.dragBeforeGravity {
-		velocity[1] *= 0.98
+		velocity[1] *= 1 - c.drag
 	}
 	velocity[1] -= c.gravity
 	if !c.dragBeforeGravity {
-		velocity[1] *= 0.98
+		velocity[1] *= 1 - c.drag
 	}
 	return velocity
 }
 
 // applyFriction applies friction to the entity, reducing its velocity on the X and Z axes.
 func (c *MovementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
+	friction := 1 - c.drag
 	velocity := e.Velocity()
 	if c.onGround {
-		velocity[0] *= 0.6
-		velocity[2] *= 0.6
-		return velocity
+		friction = 0.6
 	}
-	velocity[0] *= 0.91
-	velocity[2] *= 0.91
+	velocity[0] *= friction
+	velocity[2] *= friction
 	return velocity
 }
 
@@ -147,7 +147,7 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				boxes := boxes(e.World().Block(pos), pos, w)
+				boxes := boxes(w.Block(pos), pos, w)
 				for _, box := range boxes {
 					blockAABBs = append(blockAABBs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
 				}

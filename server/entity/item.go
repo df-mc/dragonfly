@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/state"
@@ -36,6 +37,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	it := &Item{i: i, MovementComputer: &MovementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,
+		drag:              0.02,
 	}}
 	it.SetPickupDelay(time.Second / 2)
 	it.pos.Store(pos)
@@ -77,7 +79,7 @@ func (it *Item) Name() string {
 
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(current int64) {
-	if it.Position()[1] < 0 && current%10 == 0 {
+	if it.Position()[1] < cube.MinY && current%10 == 0 {
 		_ = it.Close()
 		return
 	}
