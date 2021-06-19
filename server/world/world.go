@@ -1563,13 +1563,13 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	c, ok := w.chunks[pos]
 	if !ok {
 		var err error
-
 		c, err = w.loadChunk(pos)
 		if err != nil {
-			w.chunkMu.Unlock()
 			return nil, err
 		}
-		w.chunks[pos] = c
+
+		w.chunkMu.Lock()
+		c.Unlock()
 		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos
@@ -1607,13 +1607,18 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
-
 	if err != nil {
 		return nil, fmt.Errorf("error loading chunk %v: %w", pos, err)
 	}
+
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
 		c = chunk.New(airRID)
+		data := newChunkData(c)
+		w.chunks[pos] = data
+		c.Lock()
+		w.chunkMu.Unlock()
+
 		w.generator().GenerateChunk(pos, c)
 		for _, sub := range c.Sub() {
 			if sub == nil {
@@ -1623,9 +1628,13 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 			// light updates aren't happening (yet).
 			sub.ClearLight()
 		}
-		return newChunkData(c), nil
+		return data, nil
 	}
 	data := newChunkData(c)
+	w.chunks[pos] = data
+	c.Lock()
+	w.chunkMu.Unlock()
+
 	entities, err := w.provider().LoadEntities(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
