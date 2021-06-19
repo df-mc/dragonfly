@@ -739,6 +739,17 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 	})
 }
 
+// ViewSkin ...
+func (s *Session) ViewSkin(e world.Entity) {
+	switch v := e.(type) {
+	case Controllable:
+		s.writePacket(&packet.PlayerSkin{
+			UUID: v.UUID(),
+			Skin: skinToProtocol(v.Skin()),
+		})
+	}
+}
+
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
 	if s.openedWindowID.CAS(99, 1) {
