@@ -1236,26 +1236,28 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 
 		// We generate a random block in every chunk
-		for j := uint32(0); j < tickSpeed; j++ {
-			generateNew := true
-			var x, y, z int
-			for subY := 0; subY <= chunk.MaxSubChunkIndex; subY++ {
-				sub := subChunks[subY]
-				if sub == nil {
-					// No sub chunk present, so skip it right away.
-					continue
-				}
-				layers := sub.Layers()
-				if len(layers) == 0 {
-					// No layers present, so skip it right away.
-					continue
-				}
-				layer := layers[0]
-				p := layer.Palette()
-				if p.Len() == 1 && p.RuntimeID(0) == airRID {
-					// Empty layer present, so skip it right away.
-					continue
-				}
+		generateNew := true
+		var x, y, z uint8
+		for subY := 0; subY <= chunk.MaxSubChunkIndex; subY++ {
+			sub := subChunks[subY]
+			if sub == nil {
+				// No sub chunk present, so skip it right away.
+				continue
+			}
+
+			layers := sub.Layers()
+			if len(layers) == 0 {
+				// No layers present, so skip it right away.
+				continue
+			}
+			layer := layers[0]
+			p := layer.Palette()
+			if p.Len() == 1 && p.RuntimeID(0) == airRID {
+				// Empty layer present, so skip it right away.
+				continue
+			}
+
+			for j := uint32(0); j < tickSpeed; j++ {
 				if generateNew {
 					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
@@ -1263,14 +1265,14 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.RuntimeID(uint8(x), uint8(y), uint8(z))
+				rid := layer.RuntimeID(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
 				}
 
 				if randomTicker, ok := blocks[rid].(RandomTicker); ok {
-					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: cube.Pos{cx + x, subY<<4 + y, cz + z}})
+					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: cube.Pos{cx + int(x), subY<<4 + int(y), cz + int(z)}})
 					generateNew = true
 					continue
 				}
@@ -1301,7 +1303,7 @@ type randUint4 struct {
 }
 
 // uint4 returns a random uint4.
-func (g *randUint4) uint4(r *rand.Rand) int {
+func (g *randUint4) uint4(r *rand.Rand) uint8 {
 	if g.n == 0 {
 		g.x = r.Uint64()
 		g.n = 16
@@ -1310,7 +1312,7 @@ func (g *randUint4) uint4(r *rand.Rand) int {
 
 	g.x >>= 4
 	g.n--
-	return int(val)
+	return uint8(val)
 }
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
