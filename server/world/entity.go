@@ -21,12 +21,10 @@ type Entity interface {
 	// World returns the current world of the entity. This is always the world that the entity can actually be
 	// found in.
 	World() *World
-	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
-	// is 0 when the entity faces forward.
-	Yaw() float64
-	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
-	// and is 0 when the entity faces forward.
-	Pitch() float64
+	// Rotation returns the yaw and pitch of the entity in degrees. Yaw is horizontal rotation (rotation around the
+	// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
+	// when facing forward).
+	Rotation() (yaw, pitch float64)
 	// State returns a list of entity states which the entity is currently subject to. Generally, these states
 	// alter the way the entity looks.
 	State() []state.State
