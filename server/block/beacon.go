@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
@@ -108,7 +107,6 @@ func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 		if before != b.level {
 			w.SetBlock(pos, b)
 		}
-		fmt.Println(b.level)
 		if b.level == 0 {
 			return
 		}
