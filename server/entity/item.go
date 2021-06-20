@@ -183,9 +183,6 @@ func (it *Item) SetVelocity(v mgl64.Vec3) {
 // Rotation always returns 0.
 func (it *Item) Rotation() (float64, float64) { return 0, 0 }
 
-// Pitch always returns 0.
-func (it *Item) Pitch() float64 { return 0 }
-
 // AABB ...
 func (it *Item) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
