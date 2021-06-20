@@ -333,7 +333,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 	id, err := uuid.Parse(conn.IdentityData().Identity)
 	if err != nil {
 		_ = conn.Close()
-		server.log.Warnf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
+		server.log.Debugf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
 	if p, ok := server.Player(id); ok {
