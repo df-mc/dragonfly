@@ -234,22 +234,22 @@ func (server *Server) Close() error {
 		panic("server not yet running")
 	}
 
-	server.log.Info("Server shutting down...")
-	defer server.log.Info("Server stopped.")
+	server.log.Infof("Server shutting down...")
+	defer server.log.Infof("Server stopped.")
 
-	server.log.Debug("Disconnecting players...")
+	server.log.Debugf("Disconnecting players...")
 	server.playerMutex.RLock()
 	for _, p := range server.p {
 		p.Disconnect(text.Colourf("<yellow>%v</yellow>", server.c.Server.ShutdownMessage))
 	}
 	server.playerMutex.RUnlock()
 
-	server.log.Debug("Closing world...")
+	server.log.Debugf("Closing world...")
 	if err := server.world.Close(); err != nil {
 		return err
 	}
 
-	server.log.Debug("Closing listener...")
+	server.log.Debugf("Closing listener...")
 	return server.listener.Close()
 }
 
@@ -360,7 +360,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 
 // loadWorld loads the world of the server, ending the program if the world could not be loaded.
 func (server *Server) loadWorld() {
-	server.log.Debug("Loading world...")
+	server.log.Debugf("Loading world...")
 
 	p, err := mcdb.New(server.c.World.Folder)
 	if err != nil {

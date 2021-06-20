@@ -1057,7 +1057,7 @@ func (w *World) Close() error {
 	w.cancelTick()
 	<-w.doneTicking
 
-	w.log.Debug("Saving chunks in memory to disk...")
+	w.log.Debugf("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
 	w.lastChunk = nil
@@ -1074,11 +1074,11 @@ func (w *World) Close() error {
 	}
 
 	if !w.rdonly.Load() {
-		w.log.Debug("Updating level.dat values...")
+		w.log.Debugf("Updating level.dat values...")
 		w.provider().SaveSettings(w.set)
 	}
 
-	w.log.Debug("Closing provider...")
+	w.log.Debugf("Closing provider...")
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
