@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 	"math/rand"
 	"sync"
@@ -20,7 +20,7 @@ import (
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 // A nil *World is safe to use but not functional.
 type World struct {
-	log *logrus.Logger
+	log internal.Logger
 
 	mu   sync.Mutex
 	set  Settings
@@ -81,7 +81,7 @@ type World struct {
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log *logrus.Logger, simulationDistance int) *World {
+func New(log internal.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
 		r:                   rand.New(rand.NewSource(time.Now().Unix())),
@@ -1057,7 +1057,7 @@ func (w *World) Close() error {
 	w.cancelTick()
 	<-w.doneTicking
 
-	w.log.Debug("Saving chunks in memory to disk...")
+	w.log.Debugf("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
 	w.lastChunk = nil
@@ -1074,11 +1074,11 @@ func (w *World) Close() error {
 	}
 
 	if !w.rdonly.Load() {
-		w.log.Debug("Updating level.dat values...")
+		w.log.Debugf("Updating level.dat values...")
 		w.provider().SaveSettings(w.set)
 	}
 
-	w.log.Debug("Closing provider...")
+	w.log.Debugf("Closing provider...")
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
