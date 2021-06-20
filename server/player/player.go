@@ -1447,9 +1447,10 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 	if p.Dead() || p.immobile.Load() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
+	yaw, pitch := p.Rotation()
 
 	ctx := event.C()
-	p.handler().HandleMove(ctx, p.Position().Add(deltaPos), p.Yaw(), p.Pitch())
+	p.handler().HandleMove(ctx, p.Position().Add(deltaPos), yaw, pitch)
 	ctx.Continue(func() {
 		for _, v := range p.World().Viewers(p.Position()) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
@@ -1477,15 +1478,16 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 	if p.Dead() || (mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
 		return
 	}
+	yaw, pitch := p.Rotation()
 
-	p.handler().HandleMove(event.C(), p.Position(), p.Yaw()+deltaYaw, p.Pitch()+deltaPitch)
+	p.handler().HandleMove(event.C(), p.Position(), yaw+deltaYaw, pitch+deltaPitch)
 
 	// Cancelling player rotation is rather scuffed, so we don't do that.
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityMovement(p, mgl64.Vec3{}, deltaYaw, deltaPitch)
 	}
-	p.yaw.Store(p.Yaw() + deltaYaw)
-	p.pitch.Store(p.Pitch() + deltaPitch)
+	p.yaw.Store(yaw + deltaYaw)
+	p.pitch.Store(pitch + deltaPitch)
 }
 
 // Facing returns the horizontal direction that the player is facing.
@@ -1505,16 +1507,11 @@ func (p *Player) Position() mgl64.Vec3 {
 	return p.pos.Load().(mgl64.Vec3)
 }
 
-// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
-// is 0 when the entity faces forward.
-func (p *Player) Yaw() float64 {
-	return p.yaw.Load()
-}
-
-// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
-// and is 0 when the entity faces forward.
-func (p *Player) Pitch() float64 {
-	return p.pitch.Load()
+// Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
+// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
+// when facing forward).
+func (p *Player) Rotation() (float64, float64) {
+	return p.yaw.Load(), p.pitch.Load()
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.

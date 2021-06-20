@@ -87,14 +87,9 @@ func (f *FallingBlock) World() *world.World {
 	return w
 }
 
-// Yaw ...
-func (f *FallingBlock) Yaw() float64 {
-	return 0
-}
-
-// Pitch ...
-func (f *FallingBlock) Pitch() float64 {
-	return 0
+// Rotation ...
+func (f *FallingBlock) Rotation() (float64, float64) {
+	return 0, 0
 }
 
 // State ...
