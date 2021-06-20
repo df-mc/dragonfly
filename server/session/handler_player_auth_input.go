@@ -77,7 +77,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	return nil
 }
 
-// handleInteractions handles the actions with the world that are present in the PlayerAuthInput packet.
+// handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session) error {
 	if pk.InputData&packet.InputFlagPerformItemInteraction != 0 {
 		if err := h.handleUseItemData(pk.ItemInteractionData, s); err != nil {
