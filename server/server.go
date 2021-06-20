@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -39,7 +40,7 @@ type Server struct {
 	joinMessage, quitMessage atomic.String
 
 	c        Config
-	log      *logrus.Logger
+	log      internal.Logger
 	listener *minecraft.Listener
 	world    *world.World
 	players  chan *player.Player
@@ -58,7 +59,7 @@ type Server struct {
 // used by calling logrus.New().
 // Note that no two servers should be active at the same time. Doing so anyway will result in unexpected
 // behaviour.
-func New(c *Config, log *logrus.Logger) *Server {
+func New(c *Config, log internal.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
@@ -273,11 +274,6 @@ func (server *Server) running() bool {
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
 	server.startTime = time.Now()
-
-	w := server.log.Writer()
-	defer func() {
-		_ = w.Close()
-	}()
 
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         server.c.Server.MaximumPlayers,
