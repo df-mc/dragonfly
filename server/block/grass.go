@@ -23,9 +23,16 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		// Don't attempt to spread if the light level is lower than 9.
 		return
 	}
+
+	// Generate a single uint32 as we only need 28 bits (7 bits each iteration).
+	n := r.Uint32()
+
 	// Four attempts to spread to another block.
 	for i := 0; i < 4; i++ {
-		spreadPos := pos.Add(cube.Pos{r.Intn(3) - 1, r.Intn(5) - 3, r.Intn(3) - 1})
+		x, y, z := int(n)%3, int(n>>2)%5, int(n>>5)%3
+		n >>= 7
+
+		spreadPos := pos.Add(cube.Pos{x - 1, y - 3, z - 1})
 		b := w.Block(spreadPos)
 		if dirt, ok := b.(Dirt); !ok || dirt.Coarse {
 			continue
