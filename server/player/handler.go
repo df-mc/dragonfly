@@ -42,9 +42,9 @@ type Handler interface {
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos.
 	HandleRespawn(pos *mgl64.Vec3)
-	// HandleChangeSkin handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
+	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
-	HandleChangeSkin(ctx *event.Context, skin skin.Skin)
+	HandleSkinChange(ctx *event.Context, skin skin.Skin)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
@@ -129,8 +129,8 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 // HandleChat ...
 func (NopHandler) HandleChat(*event.Context, *string) {}
 
-// HandleChangeSkin ...
-func (NopHandler) HandleChangeSkin(*event.Context, skin.Skin) {}
+// HandleSkinChange ...
+func (NopHandler) HandleSkinChange(ctx *event.Context, skin skin.Skin) {}
 
 // HandleStartBreak ...
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
@@ -151,8 +151,7 @@ func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
 func (NopHandler) HandleItemUse(*event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3) {
-}
+func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3) {}
 
 // HandleItemUseOnEntity ...
 func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}

@@ -172,8 +172,8 @@ func (p *Player) Addr() net.Addr {
 	return p.session().Addr()
 }
 
-// Skin returns the skin that a player joined with. This skin will be visible to other players that the player
-// is shown to.
+// Skin returns the skin that a player is currently using. This skin will be visible to other players
+// that the player is shown to.
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
 	p.skinMu.RLock()
@@ -181,14 +181,15 @@ func (p *Player) Skin() skin.Skin {
 	return p.skin
 }
 
-// ChangeSkin ...
-func (p *Player) ChangeSkin(skin skin.Skin) {
+// SetSkin changes the skin of the player. This skin will be visible to other players that the player
+// is shown to.
+func (p *Player) SetSkin(skin skin.Skin) {
 	if p.Dead() {
 		return
 	}
 
 	ctx := event.C()
-	p.handler().HandleChangeSkin(ctx, skin)
+	p.handler().HandleSkinChange(ctx, skin)
 	ctx.Continue(func() {
 		p.skinMu.Lock()
 		p.skin = skin

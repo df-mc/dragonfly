@@ -85,7 +85,7 @@ func (PlayerSkinHandler) Handle(p packet.Packet, s *Session) error {
 		playerSkin.Animations = append(playerSkin.Animations, anim)
 	}
 
-	s.c.ChangeSkin(playerSkin)
+	s.c.SetSkin(playerSkin)
 
 	return nil
 }
