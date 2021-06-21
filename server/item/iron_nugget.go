@@ -1,6 +1,6 @@
 package item
 
-// Iron nuggets are pieces of iron that can be obtained by smelting iron tools/weapons or iron/chainmail armor.
+// IronNugget is a piece of iron that can be obtained by smelting iron tools/weapons or iron/chainmail armor.
 type IronNugget struct{}
 
 // EncodeItem ...

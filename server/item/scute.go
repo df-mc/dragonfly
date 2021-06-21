@@ -1,6 +1,6 @@
 package item
 
-// Scutes are items that baby turtles drop when they grow into adults.
+// Scute is an item that baby turtles drop when they grow into adults.
 type Scute struct{}
 
 // EncodeItem ...

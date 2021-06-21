@@ -1,6 +1,6 @@
 package item
 
-// Ghast tears are brewing items dropped by ghasts.
+// GhastTear is a brewing item dropped by ghasts.
 type GhastTear struct{}
 
 // EncodeItem ...

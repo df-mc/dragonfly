@@ -1,6 +1,6 @@
 package item
 
-// A fermented spider eye is a brewing ingredient.
+// FermentedSpiderEye is a brewing ingredient.
 type FermentedSpiderEye struct{}
 
 // EncodeItem ...

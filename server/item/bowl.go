@@ -1,6 +1,6 @@
 package item
 
-// Bowls are containers that can hold certain foods.
+// Bowl is a container that can hold certain foods.
 type Bowl struct{}
 
 // EncodeItem ...

@@ -1,6 +1,6 @@
 package item
 
-// Dried kelp is a food item that can be quickly eaten by the player.
+// DriedKelp is a food item that can be quickly eaten by the player.
 type DriedKelp struct{}
 
 // EncodeItem ...

@@ -1,6 +1,6 @@
 package item
 
-// Honeycombs are items obtained from bee nests and beehives.
+// Honeycomb is an item obtained from bee nests and beehives.
 type Honeycomb struct{}
 
 // EncodeItem ...

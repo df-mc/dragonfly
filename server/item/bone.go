@@ -1,6 +1,6 @@
 package item
 
-// A bone is an item primarily obtained as a drop from skeletons and their variants.
+// Bone is an item primarily obtained as a drop from skeletons and their variants.
 type Bone struct{}
 
 // EncodeItem ...

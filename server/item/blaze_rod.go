@@ -1,6 +1,6 @@
 package item
 
-// BlazeRods are items exclusively obtained from blazes.
+// BlazeRod is an item exclusively obtained from blazes.
 type BlazeRod struct{}
 
 // EncodeItem ...

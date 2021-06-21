@@ -1,6 +1,6 @@
 package item
 
-// Netherite scrap is a material smelted from ancient debris, which is found in the Nether.
+// NetheriteScrap is a material smelted from ancient debris, which is found in the Nether.
 type NetheriteScrap struct{}
 
 // EncodeItem ...

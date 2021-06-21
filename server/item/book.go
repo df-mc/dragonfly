@@ -1,6 +1,6 @@
 package item
 
-// Books are items used in enchanting and crafting.
+// Book is an item used in enchanting and crafting.
 type Book struct{}
 
 // EncodeItem ...
