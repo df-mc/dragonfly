@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // PumpkinPie is a food item that can be eaten by the player.
-type PumpkinPie struct{}
-
-// AlwaysConsumable ...
-func (PumpkinPie) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (PumpkinPie) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type PumpkinPie struct {
+	defaultFood
 }
 
 // Consume ...

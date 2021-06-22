@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // RawRabbit is a food item that can be eaten by the player, or cooked in a furnace or a campfire to make cooked rabbit.
-type RawRabbit struct{}
-
-// AlwaysConsumable ...
-func (RawRabbit) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (RawRabbit) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type RawRabbit struct {
+	defaultFood
 }
 
 // Consume ...

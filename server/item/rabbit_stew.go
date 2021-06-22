@@ -2,25 +2,16 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // RabbitStew is a food item that can be eaten by the player.
-type RabbitStew struct{}
+type RabbitStew struct {
+	defaultFood
+}
 
 // MaxCount ...
 func (RabbitStew) MaxCount() int {
 	return 1
-}
-
-// AlwaysConsumable ...
-func (RabbitStew) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (RabbitStew) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
 }
 
 // Consume ...

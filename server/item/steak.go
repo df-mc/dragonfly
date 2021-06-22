@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // Steak is a food item obtained from cows or from cooking raw beef.
-type Steak struct{}
-
-// AlwaysConsumable ...
-func (Steak) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (Steak) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type Steak struct {
+	defaultFood
 }
 
 // Consume ...

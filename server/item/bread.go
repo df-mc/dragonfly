@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // Bread is a food item that can be eaten by the player.
-type Bread struct{}
-
-// AlwaysConsumable ...
-func (Bread) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (Bread) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type Bread struct {
+	defaultFood
 }
 
 // Consume ...

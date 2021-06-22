@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // CookedCod is a food item obtained by cooking raw cod.
-type CookedCod struct{}
-
-// AlwaysConsumable ...
-func (CookedCod) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (CookedCod) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type CookedCod struct {
+	defaultFood
 }
 
 // Consume ...

@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // RawCod is a food item.
-type RawCod struct{}
-
-// AlwaysConsumable ...
-func (RawCod) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (RawCod) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type RawCod struct {
+	defaultFood
 }
 
 // Consume ...

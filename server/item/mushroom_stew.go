@@ -2,25 +2,16 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // MushroomStew is a food item.
-type MushroomStew struct{}
+type MushroomStew struct {
+	defaultFood
+}
 
 // MaxCount ...
 func (MushroomStew) MaxCount() int {
 	return 1
-}
-
-// AlwaysConsumable ...
-func (MushroomStew) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (MushroomStew) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
 }
 
 // Consume ...

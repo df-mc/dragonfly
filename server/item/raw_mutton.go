@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // RawMutton is a food item dropped by sheep when killed.
-type RawMutton struct{}
-
-// AlwaysConsumable ...
-func (RawMutton) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (RawMutton) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type RawMutton struct {
+	defaultFood
 }
 
 // Consume ...

@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // RawBeef is a food item that can be eaten by the player or cooked in a furnace, smoker, or campfire to make steak.
-type RawBeef struct{}
-
-// AlwaysConsumable ...
-func (RawBeef) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (RawBeef) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type RawBeef struct {
+	defaultFood
 }
 
 // Consume ...

@@ -2,25 +2,16 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // BeetrootSoup is an unstackable food item.
-type BeetrootSoup struct{}
+type BeetrootSoup struct {
+	defaultFood
+}
 
 // MaxCount ...
 func (BeetrootSoup) MaxCount() int {
 	return 1
-}
-
-// AlwaysConsumable ...
-func (BeetrootSoup) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (BeetrootSoup) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
 }
 
 // Consume ...

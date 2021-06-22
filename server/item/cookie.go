@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // Cookie is a food item that can be obtained in large quantities, but do not restore hunger or saturation significantly.
-type Cookie struct{}
-
-// AlwaysConsumable ...
-func (Cookie) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (Cookie) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type Cookie struct {
+	defaultFood
 }
 
 // Consume ...

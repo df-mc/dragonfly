@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
-// GoldenCarrot is a valuable food item and brewing ingredient.
-type GoldenCarrot struct{}
-
-// AlwaysConsumable ...
-func (GoldenCarrot) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (GoldenCarrot) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+// GoldenCarrot is a valuable food item and brewing ingredient. It provides the second most saturation in the game, behind Suspicious Stew crafted with either a Dandelion or Blue Orchid.
+type GoldenCarrot struct {
+	defaultFood
 }
 
 // Consume ...

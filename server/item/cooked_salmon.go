@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
-// CookedSalmon is a food item obtained by cooking raw salmon.
-type CookedSalmon struct{}
-
-// AlwaysConsumable ...
-func (CookedSalmon) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (CookedSalmon) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+// CookedSalmon is a food item obtained by cooking raw salmon. It is a nutritious and easily obtainable early-game food source.
+type CookedSalmon struct {
+	defaultFood
 }
 
 // Consume ...

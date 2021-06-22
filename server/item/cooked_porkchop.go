@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // CookedPorkchop is a food item that can be eaten by the player.
-type CookedPorkchop struct{}
-
-// AlwaysConsumable ...
-func (CookedPorkchop) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (CookedPorkchop) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type CookedPorkchop struct {
+	defaultFood
 }
 
 // Consume ...

@@ -1,21 +1,10 @@
 package item
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-	"time"
-)
+import "github.com/df-mc/dragonfly/server/world"
 
 // BakedPotato is a food item that can be eaten by the player.
-type BakedPotato struct{}
-
-// AlwaysConsumable ...
-func (BakedPotato) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (BakedPotato) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type BakedPotato struct {
+	defaultFood
 }
 
 // Consume ...
