@@ -129,4 +129,5 @@ func init() {
 	world.RegisterItem(MushroomStew{})
 	world.RegisterItem(BeetrootSoup{})
 	world.RegisterItem(RabbitStew{})
+	world.RegisterItem(PoppedChorusFruit{})
 }
