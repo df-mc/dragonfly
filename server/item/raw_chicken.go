@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-// RawChicken is a food item that can be eaten by the player. It can be cooked in a furnace, smoker, or a campfire to make cooked chicken.
+// RawChicken is a food item that can be eaten by the player. It can be cooked in a furnace, smoker, or a campfire
+// to make cooked chicken.
 type RawChicken struct {
 	defaultFood
 }

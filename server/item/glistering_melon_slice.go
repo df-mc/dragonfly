@@ -1,6 +1,7 @@
 package item
 
-// GlisteringMelonSlice is an inedible item used for brewing potions of healing. It is also one of the many potion ingredients that can be used to make mundane potions.
+// GlisteringMelonSlice is an inedible item used for brewing potions of healing. It is also one of the many potion
+// ingredients that can be used to make mundane potions.
 type GlisteringMelonSlice struct{}
 
 // EncodeItem ...
