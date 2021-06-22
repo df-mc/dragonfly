@@ -418,14 +418,14 @@ func (p *Player) Heal(health float64, source healing.Source) {
 
 // updateFallState is called to update the entities falling state.
 func (p *Player) updateFallState(distanceThisTick float64) {
-	p.onGround.Store(p.checkOnGround())
+	fallDistance := p.fallDistance.Load()
 	if p.OnGround() {
-		if p.fallDistance.Load() > 0 {
-			p.fall(p.fallDistance.Load())
+		if fallDistance > 0 {
+			p.fall(fallDistance)
 			p.ResetFallDistance()
 		}
-	} else if distanceThisTick < p.fallDistance.Load() {
-		p.fallDistance.Store(p.fallDistance.Load() - distanceThisTick)
+	} else if distanceThisTick < fallDistance {
+		p.fallDistance.Sub(distanceThisTick)
 	} else {
 		p.ResetFallDistance()
 	}
@@ -1447,18 +1447,24 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 	if p.Dead() || p.immobile.Load() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
+
+	pos := p.Position()
 	yaw, pitch := p.Rotation()
 
 	ctx := event.C()
-	p.handler().HandleMove(ctx, p.Position().Add(deltaPos), yaw, pitch)
+	p.handler().HandleMove(ctx, pos.Add(deltaPos), yaw, pitch)
 	ctx.Continue(func() {
-		for _, v := range p.World().Viewers(p.Position()) {
+		for _, v := range p.World().Viewers(pos) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
 		}
 
-		p.updateFallState(p.Position().Add(deltaPos).Y() - p.Position().Y())
+		p.pos.Store(pos.Add(deltaPos))
 
-		p.pos.Store(p.Position().Add(deltaPos))
+		if !p.OnGround() || !mgl64.FloatEqual(deltaPos[1], 0) {
+			p.onGround.Store(p.checkOnGround())
+		}
+
+		p.updateFallState(deltaPos[1])
 
 		// The vertical axis isn't relevant for calculation of exhaustion points.
 		deltaPos[1] = 0
@@ -1469,7 +1475,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 		}
 	})
 	ctx.Stop(func() {
-		p.teleport(p.Position())
+		p.teleport(pos)
 	})
 }
 
