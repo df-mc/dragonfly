@@ -134,6 +134,7 @@ func init() {
 	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
 	registerAll(allDoubleFlowers())
+	registerAll(allFlowers())
 }
 
 func init() {
@@ -346,6 +347,18 @@ func init() {
 	world.RegisterItem(MossCarpet{})
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(Dripstone{})
+	world.RegisterItem(Flower{Type: Dandelion()})
+	world.RegisterItem(Flower{Type: Poppy()})
+	world.RegisterItem(Flower{Type: BlueOrchid()})
+	world.RegisterItem(Flower{Type: Allium()})
+	world.RegisterItem(Flower{Type: AzureBluet()})
+	world.RegisterItem(Flower{Type: RedTulip()})
+	world.RegisterItem(Flower{Type: OrangeTulip()})
+	world.RegisterItem(Flower{Type: WhiteTulip()})
+	world.RegisterItem(Flower{Type: PinkTulip()})
+	world.RegisterItem(Flower{Type: Cornflower()})
+	world.RegisterItem(Flower{Type: LilyOfTheValley()})
+	world.RegisterItem(Flower{Type: WitherRose()})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
