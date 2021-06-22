@@ -1568,8 +1568,8 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 			return nil, err
 		}
 
-		w.chunkMu.Lock()
 		c.Unlock()
+		w.chunkMu.Lock()
 		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos
@@ -1616,7 +1616,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		c = chunk.New(airRID)
 		data := newChunkData(c)
 		w.chunks[pos] = data
-		c.Lock()
+		data.Lock()
 		w.chunkMu.Unlock()
 
 		w.generator().GenerateChunk(pos, c)
@@ -1632,7 +1632,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	data := newChunkData(c)
 	w.chunks[pos] = data
-	c.Lock()
+	data.Lock()
 	w.chunkMu.Unlock()
 
 	entities, err := w.provider().LoadEntities(pos)
