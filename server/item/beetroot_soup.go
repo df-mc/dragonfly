@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Beetroot soup is an unstackable food item.
+// BeetrootSoup is an unstackable food item.
 type BeetrootSoup struct{}
 
 // MaxCount ...

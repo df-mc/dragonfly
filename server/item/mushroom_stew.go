@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Mushroom stew is a food item.
+// MushroomStew is a food item.
 type MushroomStew struct{}
 
 // MaxCount ...

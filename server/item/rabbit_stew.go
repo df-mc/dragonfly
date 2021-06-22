@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Rabbit stew is a food item that can be eaten by the player.
+// RabbitStew is a food item that can be eaten by the player.
 type RabbitStew struct{}
 
 // MaxCount ...
