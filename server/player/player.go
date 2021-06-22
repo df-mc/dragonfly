@@ -1460,9 +1460,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 
 		p.pos.Store(pos.Add(deltaPos))
 
-		if !p.OnGround() || !mgl64.FloatEqual(deltaPos[1], 0) {
-			p.onGround.Store(p.checkOnGround())
-		}
+		p.checkCollisions()
 
 		p.updateFallState(deltaPos[1])
 
@@ -1579,7 +1577,7 @@ func (p *Player) Tick(current int64) {
 	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 	}
-	p.onGround.Store(p.checkOnGround())
+	p.checkCollisions()
 	p.tickFood()
 	p.effects.Tick(p)
 	if p.Position()[1] < cube.MinY && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
@@ -1593,19 +1591,6 @@ func (p *Player) Tick(current int64) {
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
 			p.Hurt(1, damage.SourceFireTick{})
-		}
-	}
-
-	// TODO: Move to Move()
-	aabb := p.AABB().Translate(p.Position())
-	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
-	for x := min[0]; x <= max[0]; x++ {
-		for y := min[1]; y <= max[1]; y++ {
-			for z := min[2]; z <= max[2]; z++ {
-				if collide, ok := p.World().Block(cube.Pos{x, y, z}).(block.EntityCollider); ok {
-					collide.EntityCollide(p)
-				}
-			}
 		}
 	}
 
@@ -1659,8 +1644,12 @@ func (p *Player) starve() {
 	}
 }
 
-// checkOnGround checks if the player is currently considered to be on the ground.
-func (p *Player) checkOnGround() bool {
+// checkCollisions checks the player's block collisions, including whether the player
+// is currently considered to be on the ground or not.
+func (p *Player) checkCollisions() {
+	var onGround bool
+
+	w := p.World()
 	pos := p.Position()
 	pAABB := p.AABB().Translate(pos)
 	min, max := pAABB.Min(), pAABB.Max()
@@ -1669,17 +1658,23 @@ func (p *Player) checkOnGround() bool {
 		for z := min[2]; z <= max[2]+1; z++ {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
 				bPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
-				b := p.World().Block(bPos)
-				aabbList := b.Model().AABB(bPos, p.World())
-				for _, aabb := range aabbList {
-					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
-						return true
+				b := w.Block(bPos)
+				if !onGround {
+					aabbList := b.Model().AABB(bPos, w)
+					for _, aabb := range aabbList {
+						if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+							onGround = true
+							p.onGround.Store(onGround)
+						}
 					}
+				}
+
+				if collide, ok := b.(block.EntityCollider); ok {
+					collide.EntityCollide(p)
 				}
 			}
 		}
 	}
-	return false
 }
 
 // Velocity returns the current velocity of the player.
