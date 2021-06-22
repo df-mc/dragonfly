@@ -580,13 +580,13 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos cube.Pos) uint8 {
-	if w == nil || pos[1] > cube.MaxY {
-		// Above the rest of the world, so full sky light.
-		return 15
-	}
-	if pos[1] < cube.MinY {
+	if w == nil || pos[1] < cube.MinY {
 		// Fast way out.
 		return 0
+	}
+	if pos[1] > cube.MaxY {
+		// Above the rest of the world, so full sky light.
+		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
@@ -602,13 +602,13 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] > cube.MaxY {
-		// Above the rest of the world, so full sky light.
-		return 15
-	}
-	if pos[1] < cube.MinY {
+	if w == nil || pos[1] < cube.MinY {
 		// Fast way out.
 		return 0
+	}
+	if pos[1] > cube.MaxY {
+		// Above the rest of the world, so full sky light.
+		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
