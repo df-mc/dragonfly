@@ -45,10 +45,8 @@ func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		w.BreakBlock(pos)
 		return
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
-		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Dirt); !ok {
-			w.BreakBlock(pos)
-		}
+	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+		w.BreakBlock(pos)
 	}
 }
 
@@ -61,10 +59,8 @@ func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Grass); !ok {
-		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Dirt); !ok {
-			return false
-		}
+	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+		return false
 	}
 
 	place(w, pos, d, user, ctx)
