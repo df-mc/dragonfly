@@ -7,16 +7,8 @@ import (
 )
 
 // SpiderEye is a poisonous food and brewing item.
-type SpiderEye struct{}
-
-// AlwaysConsumable ...
-func (SpiderEye) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (SpiderEye) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type SpiderEye struct {
+	defaultFood
 }
 
 // Consume ...
