@@ -29,12 +29,11 @@ func (f Flower) EntityCollide(e world.Entity) {
 }
 
 // BoneMeal ...
-func (f Flower) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 	if f.Type == WitherRose() {
-		return false
+		return
 	}
 
-	successful := false
 	for i := 0; i < 8; i++ {
 		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
 		if _, ok := w.Block(p).(Air); !ok {
@@ -52,9 +51,9 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) bool {
 			}
 		}
 		w.PlaceBlock(p, Flower{Type: flowerType})
-		successful = true
+		success = true
 	}
-	return successful
+	return
 }
 
 // NeighbourUpdateTick ...
