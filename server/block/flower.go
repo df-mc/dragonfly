@@ -37,20 +37,22 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) bool {
 	successful := false
 	for i := 0; i < 8; i++ {
 		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
-		if _, ok := w.Block(p).(Air); ok {
-			if _, ok := w.Block(p.Side(cube.FaceDown)).(Grass); ok {
-				flowerType := f.Type
-				if rand.Float64() < 0.1 {
-					if f.Type == Dandelion() {
-						flowerType = Poppy()
-					} else if f.Type == Poppy() {
-						flowerType = Dandelion()
-					}
-				}
-				w.PlaceBlock(p, Flower{Type: flowerType})
-				successful = true
+		if _, ok := w.Block(p).(Air); !ok {
+			continue
+		}
+		if _, ok := w.Block(p.Side(cube.FaceDown)).(Grass); !ok {
+			continue
+		}
+		flowerType := f.Type
+		if rand.Float64() < 0.1 {
+			if f.Type == Dandelion() {
+				flowerType = Poppy()
+			} else if f.Type == Poppy() {
+				flowerType = Dandelion()
 			}
 		}
+		w.PlaceBlock(p, Flower{Type: flowerType})
+		successful = true
 	}
 	return successful
 }
