@@ -2,7 +2,7 @@ package item
 
 import "github.com/df-mc/dragonfly/server/world"
 
-// Dyes are made up of 16 different type of colours which allows you to dye blocks like concrete and sheep
+// Dyes are made up of 16 different type of colours which allows you to dye blocks like concrete and sheep.
 type Dyes struct {
 	Colour Colour
 }
