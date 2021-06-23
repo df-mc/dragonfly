@@ -116,31 +116,31 @@ func (f flower) Name() string {
 func (f flower) FromString(s string) (interface{}, error) {
 	switch s {
 	case "dandelion":
-		return DoubleFlowerType{doubleFlower(0)}, nil
+		return FlowerType{flower(0)}, nil
 	case "poppy":
-		return DoubleFlowerType{doubleFlower(1)}, nil
+		return FlowerType{flower(1)}, nil
 	case "orchid":
-		return DoubleFlowerType{doubleFlower(2)}, nil
+		return FlowerType{flower(2)}, nil
 	case "allium":
-		return DoubleFlowerType{doubleFlower(3)}, nil
+		return FlowerType{flower(3)}, nil
 	case "houstonia":
-		return DoubleFlowerType{doubleFlower(4)}, nil
+		return FlowerType{flower(4)}, nil
 	case "tulip_red":
-		return DoubleFlowerType{doubleFlower(5)}, nil
+		return FlowerType{flower(5)}, nil
 	case "tulip_orange":
-		return DoubleFlowerType{doubleFlower(6)}, nil
+		return FlowerType{flower(6)}, nil
 	case "tulip_white":
-		return DoubleFlowerType{doubleFlower(7)}, nil
+		return FlowerType{flower(7)}, nil
 	case "tulip_pink":
-		return DoubleFlowerType{doubleFlower(8)}, nil
+		return FlowerType{flower(8)}, nil
 	case "oxeye":
-		return DoubleFlowerType{doubleFlower(9)}, nil
+		return FlowerType{flower(9)}, nil
 	case "cornflower":
-		return DoubleFlowerType{doubleFlower(10)}, nil
+		return FlowerType{flower(10)}, nil
 	case "lily_of_the_valley":
-		return DoubleFlowerType{doubleFlower(11)}, nil
+		return FlowerType{flower(11)}, nil
 	case "wither_rose":
-		return DoubleFlowerType{doubleFlower(12)}, nil
+		return FlowerType{flower(12)}, nil
 	}
 	return nil, fmt.Errorf("unexpected flower type '%v', expecting one of 'dandelion', 'poppy', 'orchid', 'allium', 'houstonia', 'tulip_red', 'tulip_orange', 'tulip_white', 'tulip_pink', 'oxeye', 'cornflower', 'lily_of_the_valley', or 'wither_rose'", s)
 }
