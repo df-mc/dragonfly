@@ -14,6 +14,7 @@ import (
 // and crafted into dyes.
 type Flower struct {
 	empty
+	transparent
 
 	// Type is the type of flower.
 	Type FlowerType
