@@ -14,6 +14,15 @@ type Dirt struct {
 	Coarse bool
 }
 
+// SoilFor ...
+func (d Dirt) SoilFor(block world.Block) bool {
+	switch block.(type) {
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+		return true
+	}
+	return false
+}
+
 // BreakInfo ...
 func (d Dirt) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d))

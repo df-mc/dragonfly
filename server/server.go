@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -24,7 +25,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -77,6 +80,8 @@ func New(c *Config, log internal.Logger) *Server {
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
+
+	s.checkNetIsolation()
 	return s
 }
 
@@ -340,6 +345,21 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		p.Disconnect("Logged in from another location.")
 	}
 	server.players <- server.createPlayer(id, conn)
+}
+
+// checkNetIsolation checks if a loopback exempt is in place to allow the hosting device to join the server. This is
+// only relevant on Windows. It will never log anything for anything but Windows.
+func (server *Server) checkNetIsolation() {
+	if runtime.GOOS != "windows" {
+		// Only an issue on Windows.
+		return
+	}
+	data, _ := exec.Command("CheckNetIsolation", "LoopbackExempt", "-s", `-n="microsoft.minecraftuwp_8wekyb3d8bbwe"`).CombinedOutput()
+	if bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe")) {
+		return
+	}
+	const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
+	server.log.Infof("You are currently unable to join the server on this machine. Run %v in an admin PowerShell session to be able to.\n", loopbackExemptCmd)
 }
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.

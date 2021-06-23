@@ -130,4 +130,7 @@ func init() {
 	world.RegisterItem(BeetrootSoup{})
 	world.RegisterItem(RabbitStew{})
 	world.RegisterItem(PoppedChorusFruit{})
+	for _, dye := range AllDyes() {
+		world.RegisterItem(dye)
+	}
 }
