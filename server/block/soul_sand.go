@@ -12,7 +12,7 @@ type SoulSand struct {
 
 // TODO: Implement bubble columns.
 
-// SoilFor
+// SoilFor ...
 func (s SoulSand) SoilFor(block world.Block) bool {
 	flower, ok := block.(Flower)
 	return ok && flower.Type == WitherRose()
