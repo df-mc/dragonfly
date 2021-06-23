@@ -135,6 +135,7 @@ func init() {
 	registerAll(allSandstones())
 	registerAll(allDoubleFlowers())
 	registerAll(allFlowers())
+	registerAll(allPrismarine())
 }
 
 func init() {
@@ -359,6 +360,9 @@ func init() {
 	world.RegisterItem(Flower{Type: Cornflower()})
 	world.RegisterItem(Flower{Type: LilyOfTheValley()})
 	world.RegisterItem(Flower{Type: WitherRose()})
+	world.RegisterItem(Prismarine{Type: NormalPrismarine()})
+	world.RegisterItem(Prismarine{Type: DarkPrismarine()})
+	world.RegisterItem(Prismarine{Type: BrickPrismarine()})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
