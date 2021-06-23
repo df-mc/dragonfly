@@ -47,8 +47,8 @@ func ColourGrey() Colour {
 	return Colour{colour(7)}
 }
 
-// ColourLightGray returns the light gray colour.
-func ColourLightGray() Colour {
+// ColourLightGrey returns the light gray colour.
+func ColourLightGrey() Colour {
 	return Colour{colour(8)}
 }
 
@@ -91,7 +91,7 @@ func ColourBlack() Colour {
 func Colours() []Colour {
 	return []Colour{
 		ColourWhite(), ColourOrange(), ColourMagenta(), ColourLightBlue(), ColourYellow(), ColourLime(), ColourPink(), ColourGrey(),
-		ColourLightGray(), ColourCyan(), ColourPurple(), ColourBlue(), ColourBrown(), ColourGreen(), ColourRed(), ColourBlack(),
+		ColourLightGrey(), ColourCyan(), ColourPurple(), ColourBlue(), ColourBrown(), ColourGreen(), ColourRed(), ColourBlack(),
 	}
 }
 
@@ -117,7 +117,7 @@ func (c colour) String() string {
 	case 7:
 		return "gray"
 	case 8:
-		return "light_gray"
+		return "silver"
 	case 9:
 		return "cyan"
 	case 10:

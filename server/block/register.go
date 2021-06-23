@@ -175,7 +175,7 @@ func init() {
 	world.RegisterItem(Log{Wood: AcaciaWood(), Stripped: true})
 	world.RegisterItem(Log{Wood: DarkOakWood(), Stripped: true})
 	world.RegisterItem(Log{Wood: OakWood(), Stripped: true})
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		world.RegisterItem(Concrete{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(StainedTerracotta{Colour: c})

@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -11,7 +12,7 @@ type StainedTerracotta struct {
 	bassDrum
 
 	// Colour specifies the colour of the block.
-	Colour Colour
+	Colour item.Colour
 }
 
 // BreakInfo ...
@@ -32,7 +33,7 @@ func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]int
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.
 func allStainedTerracotta() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		b = append(b, StainedTerracotta{Colour: c})
 	}
 	return b
