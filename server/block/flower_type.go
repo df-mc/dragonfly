@@ -29,7 +29,7 @@ func Allium() FlowerType {
 	return FlowerType{flower(3)}
 }
 
-// Azure Bluet is an azure bluet flower.
+// AzureBluet is an azure bluet flower.
 func AzureBluet() FlowerType {
 	return FlowerType{flower(4)}
 }
@@ -39,7 +39,7 @@ func RedTulip() FlowerType {
 	return FlowerType{flower(5)}
 }
 
-// RedTulip is an orange tulip flower.
+// OrangeTulip is an orange tulip flower.
 func OrangeTulip() FlowerType {
 	return FlowerType{flower(6)}
 }
