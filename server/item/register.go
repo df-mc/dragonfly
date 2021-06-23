@@ -105,4 +105,7 @@ func init() {
 	world.RegisterItem(Slimeball{})
 	world.RegisterItem(SpiderEye{})
 	world.RegisterItem(Sugar{})
+	for _, dye := range AllDyes() {
+		world.RegisterItem(dye)
+	}
 }

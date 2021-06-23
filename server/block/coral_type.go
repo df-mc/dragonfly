@@ -2,6 +2,7 @@ package block
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // CoralType represents a type of coral of a block. CoralType, coral fans, and coral blocks carry one of these types.
@@ -47,18 +48,18 @@ func (c coral) Uint8() uint8 {
 }
 
 // Colour returns the colour of the CoralType.
-func (c coral) Colour() Colour {
+func (c coral) Colour() item.Colour {
 	switch c {
 	case 0:
-		return ColourBlue()
+		return item.ColourBlue()
 	case 1:
-		return ColourPink()
+		return item.ColourPink()
 	case 2:
-		return ColourPurple()
+		return item.ColourPurple()
 	case 3:
-		return ColourRed()
+		return item.ColourRed()
 	case 4:
-		return ColourYellow()
+		return item.ColourYellow()
 	}
 	panic("unknown coral type")
 }
