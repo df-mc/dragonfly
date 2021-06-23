@@ -868,8 +868,11 @@ func (w *World) SetSpawn(pos cube.Pos) {
 		return
 	}
 	w.mu.Lock()
-	defer w.mu.Unlock()
 	w.set.Spawn = pos
+	w.mu.Unlock()
+	for _, viewer := range w.allViewers() {
+		viewer.ViewWorldSpawn(pos)
+	}
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game
@@ -1422,6 +1425,8 @@ func (w *World) addWorldViewer(viewer Viewer) {
 	w.viewersMu.Lock()
 	w.viewers[viewer] = struct{}{}
 	w.viewersMu.Unlock()
+	viewer.ViewTime(w.Time())
+	viewer.ViewWorldSpawn(w.Spawn())
 }
 
 // removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
@@ -1449,8 +1454,6 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	for _, entity := range entities {
 		showEntity(entity, viewer)
 	}
-
-	viewer.ViewTime(w.Time())
 }
 
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
