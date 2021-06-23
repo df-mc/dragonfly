@@ -45,7 +45,7 @@ func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		w.BreakBlock(pos)
 		return
 	}
-	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
 		w.BreakBlock(pos)
 	}
 }
@@ -59,7 +59,7 @@ func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

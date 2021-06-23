@@ -51,7 +51,7 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // NeighbourUpdateTick ...
 func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
 		w.BreakBlock(pos)
 	}
 }
@@ -67,7 +67,7 @@ func (g TallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	if !used {
 		return false
 	}
-	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

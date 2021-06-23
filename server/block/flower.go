@@ -57,8 +57,8 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 }
 
 // NeighbourUpdateTick ...
-func (Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
 		w.BreakBlock(pos)
 	}
 }
@@ -69,7 +69,7 @@ func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	if !used {
 		return false
 	}
-	if !supportsVegetation(w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
