@@ -744,6 +744,17 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 	})
 }
 
+// ViewWorldSpawn ...
+func (s *Session) ViewWorldSpawn(pos cube.Pos) {
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	s.writePacket(&packet.SetSpawnPosition{
+		SpawnType:     packet.SpawnTypeWorld,
+		Position:      blockPos,
+		Dimension:     1,
+		SpawnPosition: blockPos,
+	})
+}
+
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
 	if s.openedWindowID.CAS(99, 1) {
