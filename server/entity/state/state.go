@@ -56,6 +56,11 @@ type Scaled struct {
 	Scale float64
 }
 
+type Primed struct {
+	// Time is the ticks before the tnt fuse explodes
+	Time uint8
+}
+
 func (Sneaking) __()      {}
 func (Swimming) __()      {}
 func (Breathing) __()     {}
@@ -67,3 +72,4 @@ func (EffectBearing) __() {}
 func (UsingItem) __()     {}
 func (OnFire) __()        {}
 func (Scaled) __()        {}
+func (Primed) __()        {}
