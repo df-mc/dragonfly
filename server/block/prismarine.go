@@ -28,7 +28,7 @@ func (p Prismarine) EncodeBlock() (name string, properties map[string]interface{
 	return "minecraft:prismarine", map[string]interface{}{"prismarine_block_type": p.Type.String()}
 }
 
-// allPrismarine returns a list of all sandstone block variants.
+// allPrismarine returns a list of all prismarine block variants.
 func allPrismarine() (c []world.Block) {
 	for _, t := range PrismarineTypes() {
 		c = append(c, Prismarine{Type: t})
