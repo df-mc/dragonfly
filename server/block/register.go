@@ -134,6 +134,7 @@ func init() {
 	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
 	registerAll(allDoubleFlowers())
+	registerAll(allPrismarine())
 }
 
 func init() {
