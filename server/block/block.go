@@ -238,14 +238,14 @@ type effectHolder interface {
 	AddEffect(effect.Effect)
 }
 
-// supportsVegetation checks if a block is grass or dirt.
-func supportsVegetation(block world.Block) bool {
-	if _, ok := block.(Grass); ok {
-		return true
-	}
-	if _, ok := block.(Dirt); ok {
-		return true
-	}
-	//TODO: Rooted Dirt & Podzol
-	return false
+// supportsVegetation checks if the vegetation can exist on the block.
+func supportsVegetation(vegetation, block world.Block) bool {
+	soil, ok := block.(Soil)
+	return ok && soil.SoilFor(vegetation)
+}
+
+// Soil represents a block that can support vegetation.
+type Soil interface {
+	// SoilFor returns whether the vegetation can exist on the block.
+	SoilFor(world.Block) bool
 }

@@ -357,6 +357,7 @@ func init() {
 	world.RegisterItem(Flower{Type: OrangeTulip()})
 	world.RegisterItem(Flower{Type: WhiteTulip()})
 	world.RegisterItem(Flower{Type: PinkTulip()})
+	world.RegisterItem(Flower{Type: OxeyeDaisy()})
 	world.RegisterItem(Flower{Type: Cornflower()})
 	world.RegisterItem(Flower{Type: LilyOfTheValley()})
 	world.RegisterItem(Flower{Type: WitherRose()})
