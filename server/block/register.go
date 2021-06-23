@@ -347,6 +347,9 @@ func init() {
 	world.RegisterItem(MossCarpet{})
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(Dripstone{})
+	world.RegisterItem(Prismarine{Type: NormalPrismarine()})
+	world.RegisterItem(Prismarine{Type: DarkPrismarine()})
+	world.RegisterItem(Prismarine{Type: BrickPrismarine()})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
