@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Flower is a non-solid plant that occur in a variety of shapes and colors. They are primarily used for decoration
+// Flower is a non-solid plant that occur in a variety of shapes and colours. They are primarily used for decoration
 // and crafted into dyes.
 type Flower struct {
 	empty
