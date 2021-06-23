@@ -750,7 +750,7 @@ func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 	s.writePacket(&packet.SetSpawnPosition{
 		SpawnType:     packet.SpawnTypeWorld,
 		Position:      blockPos,
-		Dimension:     1,
+		Dimension:     packet.DimensionOverworld,
 		SpawnPosition: blockPos,
 	})
 }

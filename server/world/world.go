@@ -1425,6 +1425,8 @@ func (w *World) addWorldViewer(viewer Viewer) {
 	w.viewersMu.Lock()
 	w.viewers[viewer] = struct{}{}
 	w.viewersMu.Unlock()
+	viewer.ViewTime(w.Time())
+	viewer.ViewWorldSpawn(w.Spawn())
 }
 
 // removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
@@ -1452,9 +1454,6 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	for _, entity := range entities {
 		showEntity(entity, viewer)
 	}
-
-	viewer.ViewTime(w.Time())
-	viewer.ViewWorldSpawn(w.Spawn())
 }
 
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
