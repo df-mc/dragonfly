@@ -11,6 +11,11 @@ type DirtPath struct {
 	transparent
 }
 
+// Till ...
+func (p DirtPath) Till() (world.Block, bool) {
+	return Farmland{}, true
+}
+
 // NeighbourUpdateTick handles the turning from dirt path into dirt if a block is placed on top of it.
 func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	up := pos.Add(cube.Pos{0, 1})
