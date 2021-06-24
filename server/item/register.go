@@ -62,6 +62,8 @@ func init() {
 
 	world.RegisterItem(FlintAndSteel{})
 
+	world.RegisterItem(CarrotOnAStick{})
+
 	world.RegisterItem(PrismarineCrystals{})
 
 	world.RegisterItem(PoisonousPotato{})
