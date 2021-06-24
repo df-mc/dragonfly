@@ -13,7 +13,7 @@ type GlazedTerracotta struct {
 	bassDrum
 
 	// Colour specifies the colour of the block.
-	Colour Colour
+	Colour item.Colour
 	// Facing specifies the face of the block.
 	Facing cube.Direction
 }
@@ -48,7 +48,7 @@ func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
 func allGlazedTerracotta() (b []world.Block) {
 	for dir := cube.Direction(0); dir < 4; dir++ {
-		for _, c := range Colours() {
+		for _, c := range item.Colours() {
 			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
 		}
 	}
