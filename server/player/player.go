@@ -137,20 +137,11 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	p.Provider(provider)
+	p.provider = provider
 	p.load()
 
 	chat.Global.Subscribe(p)
 	return p
-}
-
-// Provider changes the data provider of a player to the provider passed.
-// If nil is passed, the NopProvider will be used which does not read or write any data.
-func (p *Player) Provider(i Provider) {
-	if i == nil {
-		i = NopProvider{}
-	}
-	p.provider = i
 }
 
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
