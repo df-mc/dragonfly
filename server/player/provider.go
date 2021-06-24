@@ -12,7 +12,7 @@ type Provider interface {
 }
 
 // NopProvider is a player data provider that won't store any data and instead always return default values
-type NopProvider struct {}
+type NopProvider struct{}
 
 // Save ...
 func (NopProvider) Save(Data) {}

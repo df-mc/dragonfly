@@ -41,6 +41,7 @@ type Server struct {
 	name    atomic.String
 
 	joinMessage, quitMessage atomic.String
+	playerProvider           player.Provider
 
 	c        Config
 	log      internal.Logger
@@ -71,12 +72,13 @@ func New(c *Config, log internal.Logger) *Server {
 		c = &conf
 	}
 	s := &Server{
-		c:       *c,
-		log:     log,
-		players: make(chan *player.Player),
-		world:   world.New(log, c.World.SimulationDistance),
-		p:       make(map[uuid.UUID]*player.Player),
-		name:    *atomic.NewString(c.Server.Name),
+		c:              *c,
+		log:            log,
+		players:        make(chan *player.Player),
+		world:          world.New(log, c.World.SimulationDistance),
+		p:              make(map[uuid.UUID]*player.Player),
+		name:           *atomic.NewString(c.Server.Name),
+		playerProvider: player.NopProvider{},
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
@@ -207,6 +209,16 @@ func (server *Server) PlayerByName(name string) (*player.Player, bool) {
 		}
 	}
 	return nil, false
+}
+
+// PlayerProvider changes the data provider of a player to the provider passed. The provider will dictate
+// the behaviour of player saving and loading. If nil is passed, the NopProvider will be used
+// which does not read or write any data.
+func (server *Server) PlayerProvider(provider player.Provider) {
+	if provider == nil {
+		provider = player.NopProvider{}
+	}
+	server.playerProvider = provider
 }
 
 // SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
@@ -372,7 +384,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
 	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), server.playerProvider)
 	s.Start(p, server.world, server.handleSessionClose)
 
 	return p

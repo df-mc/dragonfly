@@ -90,6 +90,8 @@ type Player struct {
 	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
+
+	provider Provider
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -117,6 +119,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		heldSlot: atomic.NewUint32(0),
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
+		provider: NopProvider{},
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
@@ -129,14 +132,25 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, provider Provider) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
+	p.Provider(provider)
+	p.load()
 
 	chat.Global.Subscribe(p)
 	return p
+}
+
+// Provider changes the data provider of a player to the provider passed.
+// If nil is passed, the NopProvider will be used which does not read or write any data.
+func (p *Player) Provider(i Provider) {
+	if i == nil {
+		i = NopProvider{}
+	}
+	p.provider = i
 }
 
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
@@ -1909,7 +1923,82 @@ func (p *Player) close() {
 		p.World().RemoveEntity(p)
 	} else {
 		s.CloseConnection()
+		p.Save()
 	}
+}
+
+// load reads the player data from the provider. It uses the default values if the provider
+// returns false.
+func (p *Player) load() {
+	data, ok := p.provider.Load(p.XUID())
+	if !ok {
+		return
+	}
+
+	p.pos.Store(data.Position)
+	p.pitch.Store(data.Pitch)
+	p.yaw.Store(data.Yaw)
+	p.velocity.Store(data.Velocity)
+
+	p.health.SetMaxHealth(data.MaxHealth)
+	p.health.AddHealth(data.Health - p.Health())
+
+	p.hunger.foodLevel = data.Hunger
+	p.hunger.foodTick = data.FoodTick
+	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
+
+	p.gameMode = data.Gamemode
+	for slot, stack := range data.Inventory.Items {
+		_ = p.Inventory().SetItem(slot, stack)
+	}
+	_ = p.offHand.SetItem(1, data.Inventory.Offhand)
+	p.Armour().SetBoots(data.Inventory.Armor[0])
+	p.Armour().SetLeggings(data.Inventory.Armor[1])
+	p.Armour().SetChestplate(data.Inventory.Armor[2])
+	p.Armour().SetHelmet(data.Inventory.Armor[3])
+
+	for _, potion := range data.Effects {
+		p.AddEffect(potion)
+	}
+
+	p.fireTicks.Store(data.FireTicks)
+	p.fallDistance.Store(data.FallDistance)
+}
+
+// Save saves the player data to the provider.
+func (p *Player) Save() {
+	yaw, pitch := p.Rotation()
+	offHand, _ := p.offHand.Item(1)
+
+	p.provider.Save(Data{
+		XUID:            p.XUID(),
+		Username:        p.Name(),
+		Position:        p.Position(),
+		Velocity:        p.Velocity(),
+		Yaw:             yaw,
+		Pitch:           pitch,
+		Health:          p.Health(),
+		MaxHealth:       p.MaxHealth(),
+		Hunger:          p.hunger.Food(),
+		FoodTick:        p.hunger.foodTick,
+		ExhaustionLevel: p.hunger.exhaustionLevel,
+		SaturationLevel: p.hunger.saturationLevel,
+		Gamemode:        p.GameMode(),
+		Inventory: InventoryData{
+			Items: p.Inventory().Items(),
+			Armor: [4]item.Stack{
+				p.armour.Boots(),
+				p.armour.Leggings(),
+				p.armour.Chestplate(),
+				p.armour.Helmet(),
+			},
+			Offhand:  offHand,
+			Mainhand: p.heldSlot.Load(),
+		},
+		Effects:      p.Effects(),
+		FireTicks:    p.fireTicks.Load(),
+		FallDistance: p.fallDistance.Load(),
+	})
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
