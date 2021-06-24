@@ -56,7 +56,8 @@ type Player struct {
 	gameModeMu sync.RWMutex
 	gameMode   world.GameMode
 
-	skin skin.Skin
+	skinMu sync.RWMutex
+	skin   skin.Skin
 
 	sMutex sync.RWMutex
 	// s holds the session of the player. This field should not be used directly, but instead,
@@ -171,11 +172,36 @@ func (p *Player) Addr() net.Addr {
 	return p.session().Addr()
 }
 
-// Skin returns the skin that a player joined with. This skin will be visible to other players that the player
-// is shown to.
+// Skin returns the skin that a player is currently using. This skin will be visible to other players
+// that the player is shown to.
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
+	p.skinMu.RLock()
+	defer p.skinMu.RUnlock()
 	return p.skin
+}
+
+// SetSkin changes the skin of the player. This skin will be visible to other players that the player
+// is shown to.
+func (p *Player) SetSkin(skin skin.Skin) {
+	if p.Dead() {
+		return
+	}
+
+	ctx := event.C()
+	p.handler().HandleSkinChange(ctx, skin)
+	ctx.Continue(func() {
+		p.skinMu.Lock()
+		p.skin = skin
+		p.skinMu.Unlock()
+
+		for _, v := range p.World().Viewers(p.Position()) {
+			v.ViewSkin(p)
+		}
+	})
+	ctx.Stop(func() {
+		p.session().ViewSkin(p)
+	})
 }
 
 // Locale returns the language and locale of the Player, as selected in the Player's settings.

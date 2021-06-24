@@ -744,6 +744,17 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 	})
 }
 
+// ViewSkin ...
+func (s *Session) ViewSkin(e world.Entity) {
+	switch v := e.(type) {
+	case Controllable:
+		s.writePacket(&packet.PlayerSkin{
+			UUID: v.UUID(),
+			Skin: skinToProtocol(v.Skin()),
+		})
+	}
+}
+
 // ViewWorldSpawn ...
 func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}

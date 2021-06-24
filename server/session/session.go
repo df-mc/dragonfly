@@ -319,6 +319,7 @@ func (s *Session) registerHandlers() {
 		packet.IDMovePlayer:            nil,
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
+		packet.IDPlayerSkin:            &PlayerSkinHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDText:                  &TextHandler{},
