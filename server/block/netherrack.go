@@ -1,9 +1,17 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Netherrack is a block found in The Nether.
 type Netherrack struct {
 	solid
 	bassDrum
+}
+
+// SoilFor ...
+func (n Netherrack) SoilFor(block world.Block) bool {
+	flower, ok := block.(Flower)
+	return ok && flower.Type == WitherRose()
 }
 
 // BreakInfo ...

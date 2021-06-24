@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -11,7 +12,7 @@ type StainedGlass struct {
 	clicksAndSticks
 
 	// Colour specifies the colour of the block.
-	Colour Colour
+	Colour item.Colour
 }
 
 // BreakInfo ...
@@ -33,7 +34,7 @@ func (g StainedGlass) EncodeBlock() (name string, properties map[string]interfac
 // allStainedGlass returns stained glass blocks with all possible colours.
 func allStainedGlass() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		b = append(b, StainedGlass{Colour: c})
 	}
 	return b

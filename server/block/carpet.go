@@ -13,7 +13,7 @@ type Carpet struct {
 	transparent
 
 	// Colour is the colour of the carpet.
-	Colour Colour
+	Colour item.Colour
 }
 
 // FlammabilityInfo ...
@@ -76,7 +76,7 @@ func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // allCarpet ...
 func allCarpet() (carpets []world.Block) {
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		carpets = append(carpets, Carpet{Colour: c})
 	}
 	return

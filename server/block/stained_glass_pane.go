@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -12,7 +13,7 @@ type StainedGlassPane struct {
 	clicksAndSticks
 
 	// Colour specifies the colour of the block.
-	Colour Colour
+	Colour item.Colour
 }
 
 // CanDisplace ...
@@ -45,7 +46,7 @@ func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]inte
 // allStainedGlassPane returns stained glass panes with all possible colours.
 func allStainedGlassPane() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		b = append(b, StainedGlassPane{Colour: c})
 	}
 	return b
