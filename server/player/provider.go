@@ -9,6 +9,8 @@ type Provider interface {
 	// It expects to the player data, and a bool that indicates whether or not the player has played before.
 	// If this bool is false the player will use default values and you can use an empty Data struct.
 	Load(XUID string) (Data, bool)
+	// Close is called when the server closes and is useful to safely close your database.
+	Close()
 }
 
 // NopProvider is a player data provider that won't store any data and instead always return default values
@@ -21,3 +23,6 @@ func (NopProvider) Save(Data) {}
 func (NopProvider) Load(string) (Data, bool) {
 	return Data{}, false
 }
+
+// Close ...
+func (NopProvider) Close() {}

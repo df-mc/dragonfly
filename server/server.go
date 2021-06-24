@@ -261,6 +261,8 @@ func (server *Server) Close() error {
 	}
 	server.playerMutex.RUnlock()
 
+	server.playerProvider.Close()
+
 	server.log.Debugf("Closing world...")
 	if err := server.world.Close(); err != nil {
 		return err
