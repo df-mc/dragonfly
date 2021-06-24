@@ -130,7 +130,7 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 func (NopHandler) HandleChat(*event.Context, *string) {}
 
 // HandleSkinChange ...
-func (NopHandler) HandleSkinChange(ctx *event.Context, skin skin.Skin) {}
+func (NopHandler) HandleSkinChange(*event.Context, skin.Skin) {}
 
 // HandleStartBreak ...
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
@@ -142,7 +142,7 @@ func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos) {}
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
 
 // HandleBlockPick ...
-func (NopHandler) HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block) {}
+func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
