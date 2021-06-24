@@ -7,16 +7,8 @@ import (
 )
 
 // Pufferfish is a poisonous type of fish that is used to brew water breathing potions.
-type Pufferfish struct{}
-
-// AlwaysConsumable ...
-func (p Pufferfish) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (p Pufferfish) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type Pufferfish struct {
+	defaultFood
 }
 
 // Consume ...

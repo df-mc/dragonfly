@@ -11,6 +11,15 @@ type Grass struct {
 	solid
 }
 
+// SoilFor ...
+func (g Grass) SoilFor(block world.Block) bool {
+	switch block.(type) {
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+		return true
+	}
+	return false
+}
+
 // RandomTick handles the ticking of grass, which may or may not result in the spreading of grass onto dirt.
 func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	aboveLight := w.Light(pos.Add(cube.Pos{0, 1}))

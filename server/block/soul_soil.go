@@ -1,8 +1,16 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // SoulSoil is a block naturally found only in the soul sand valley.
 type SoulSoil struct {
 	solid
+}
+
+// SoilFor ...
+func (s SoulSoil) SoilFor(block world.Block) bool {
+	_, ok := block.(NetherSprouts)
+	return ok
 }
 
 // BreakInfo ...

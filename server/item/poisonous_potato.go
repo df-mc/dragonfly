@@ -8,16 +8,8 @@ import (
 )
 
 // PoisonousPotato is a type of potato that can poison the player.
-type PoisonousPotato struct{}
-
-// AlwaysConsumable ...
-func (p PoisonousPotato) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (p PoisonousPotato) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type PoisonousPotato struct {
+	defaultFood
 }
 
 // Consume ...

@@ -61,4 +61,6 @@ type Viewer interface {
 	ViewEmote(player Entity, emote uuid.UUID)
 	// ViewSkin views the current skin of a player.
 	ViewSkin(e Entity)
+	// ViewWorldSpawn views the current spawn location of the world.
+	ViewWorldSpawn(pos cube.Pos)
 }

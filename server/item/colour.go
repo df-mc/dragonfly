@@ -1,4 +1,4 @@
-package block
+package item
 
 import "fmt"
 
@@ -47,7 +47,7 @@ func ColourGrey() Colour {
 	return Colour{colour(7)}
 }
 
-// ColourLightGrey returns the light grey colour.
+// ColourLightGrey returns the light gray colour.
 func ColourLightGrey() Colour {
 	return Colour{colour(8)}
 }

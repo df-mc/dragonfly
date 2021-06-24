@@ -19,6 +19,15 @@ type Farmland struct {
 
 //TODO: Add crop trampling
 
+// SoilFor ...
+func (f Farmland) SoilFor(block world.Block) bool {
+	switch block.(type) {
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+		return true
+	}
+	return false
+}
+
 // NeighbourUpdateTick ...
 func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if solid := w.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, w); solid {
