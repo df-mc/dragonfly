@@ -22,6 +22,7 @@ func init() {
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
 	}
+	world.RegisterItem(TurtleShell{})
 
 	world.RegisterItem(Bucket{})
 
