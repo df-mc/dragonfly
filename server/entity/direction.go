@@ -9,7 +9,8 @@ import (
 
 // Facing returns the horizontal direction that an entity is facing.
 func Facing(e world.Entity) cube.Direction {
-	yaw := math.Mod(e.Yaw()-90, 360)
+	yaw, _ := e.Rotation()
+	yaw = math.Mod(yaw-90, 360)
 	if yaw < 0 {
 		yaw += 360
 	}
@@ -29,13 +30,14 @@ func Facing(e world.Entity) cube.Direction {
 // DirectionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
 // returned is always 1.
 func DirectionVector(e world.Entity) mgl64.Vec3 {
-	yaw, pitch := mgl64.DegToRad(e.Yaw()), mgl64.DegToRad(e.Pitch())
-	m := math.Cos(pitch)
+	yaw, pitch := e.Rotation()
+	yawRad, pitchRad := mgl64.DegToRad(yaw), mgl64.DegToRad(pitch)
+	m := math.Cos(pitchRad)
 
 	return mgl64.Vec3{
-		-m * math.Sin(yaw),
-		-math.Sin(pitch),
-		m * math.Cos(yaw),
+		-m * math.Sin(yawRad),
+		-math.Sin(pitchRad),
+		m * math.Cos(yawRad),
 	}.Normalize()
 }
 

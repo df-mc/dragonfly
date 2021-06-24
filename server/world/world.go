@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 	"math/rand"
 	"sync"
@@ -20,7 +20,7 @@ import (
 // world, so World ensures that all its methods will always be safe for simultaneous calls.
 // A nil *World is safe to use but not functional.
 type World struct {
-	log *logrus.Logger
+	log internal.Logger
 
 	mu   sync.Mutex
 	set  Settings
@@ -81,7 +81,7 @@ type World struct {
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log *logrus.Logger, simulationDistance int) *World {
+func New(log internal.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
 		r:                   rand.New(rand.NewSource(time.Now().Unix())),
@@ -580,13 +580,13 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos cube.Pos) uint8 {
-	if w == nil || pos[1] > cube.MaxY {
-		// Above the rest of the world, so full sky light.
-		return 15
-	}
-	if pos[1] < cube.MinY {
+	if w == nil || pos[1] < cube.MinY {
 		// Fast way out.
 		return 0
+	}
+	if pos[1] > cube.MaxY {
+		// Above the rest of the world, so full sky light.
+		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
@@ -602,13 +602,13 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] > cube.MaxY {
-		// Above the rest of the world, so full sky light.
-		return 15
-	}
-	if pos[1] < cube.MinY {
+	if w == nil || pos[1] < cube.MinY {
 		// Fast way out.
 		return 0
+	}
+	if pos[1] > cube.MaxY {
+		// Above the rest of the world, so full sky light.
+		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
 	if err != nil {
@@ -1057,7 +1057,7 @@ func (w *World) Close() error {
 	w.cancelTick()
 	<-w.doneTicking
 
-	w.log.Debug("Saving chunks in memory to disk...")
+	w.log.Debugf("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
 	w.lastChunk = nil
@@ -1074,11 +1074,11 @@ func (w *World) Close() error {
 	}
 
 	if !w.rdonly.Load() {
-		w.log.Debug("Updating level.dat values...")
+		w.log.Debugf("Updating level.dat values...")
 		w.provider().SaveSettings(w.set)
 	}
 
-	w.log.Debug("Closing provider...")
+	w.log.Debugf("Closing provider...")
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
@@ -1563,13 +1563,13 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	c, ok := w.chunks[pos]
 	if !ok {
 		var err error
-
 		c, err = w.loadChunk(pos)
 		if err != nil {
-			w.chunkMu.Unlock()
 			return nil, err
 		}
-		w.chunks[pos] = c
+
+		c.Unlock()
+		w.chunkMu.Lock()
 		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos
@@ -1607,13 +1607,18 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
-
 	if err != nil {
 		return nil, fmt.Errorf("error loading chunk %v: %w", pos, err)
 	}
+
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
 		c = chunk.New(airRID)
+		data := newChunkData(c)
+		w.chunks[pos] = data
+		data.Lock()
+		w.chunkMu.Unlock()
+
 		w.generator().GenerateChunk(pos, c)
 		for _, sub := range c.Sub() {
 			if sub == nil {
@@ -1623,9 +1628,13 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 			// light updates aren't happening (yet).
 			sub.ClearLight()
 		}
-		return newChunkData(c), nil
+		return data, nil
 	}
 	data := newChunkData(c)
+	w.chunks[pos] = data
+	data.Lock()
+	w.chunkMu.Unlock()
+
 	entities, err := w.provider().LoadEntities(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)

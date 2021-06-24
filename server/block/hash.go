@@ -82,39 +82,40 @@ const hashNoteBlock = 76
 const hashObsidian = 77
 const hashPlanks = 78
 const hashPotato = 79
-const hashPumpkin = 80
-const hashPumpkinSeeds = 81
-const hashQuartz = 82
-const hashQuartzBricks = 83
-const hashQuartzPillar = 84
-const hashRawCopperBlock = 85
-const hashRawGoldBlock = 86
-const hashRawIronBlock = 87
-const hashSand = 88
-const hashSandstone = 89
-const hashSeaLantern = 90
-const hashShroomlight = 91
-const hashSoulSand = 92
-const hashSoulSoil = 93
-const hashSponge = 94
-const hashSporeBlossom = 95
-const hashStainedGlass = 96
-const hashStainedGlassPane = 97
-const hashStainedTerracotta = 98
-const hashStone = 99
-const hashTallGrass = 100
-const hashTerracotta = 101
-const hashTorch = 102
-const hashTuff = 103
-const hashWater = 104
-const hashWheatSeeds = 105
-const hashWoodDoor = 106
-const hashWoodFence = 107
-const hashWoodFenceGate = 108
-const hashWoodSlab = 109
-const hashWoodStairs = 110
-const hashWoodTrapdoor = 111
-const hashWool = 112
+const hashPrismarine = 80
+const hashPumpkin = 81
+const hashPumpkinSeeds = 82
+const hashQuartz = 83
+const hashQuartzBricks = 84
+const hashQuartzPillar = 85
+const hashRawCopperBlock = 86
+const hashRawGoldBlock = 87
+const hashRawIronBlock = 88
+const hashSand = 89
+const hashSandstone = 90
+const hashSeaLantern = 91
+const hashShroomlight = 92
+const hashSoulSand = 93
+const hashSoulSoil = 94
+const hashSponge = 95
+const hashSporeBlossom = 96
+const hashStainedGlass = 97
+const hashStainedGlassPane = 98
+const hashStainedTerracotta = 99
+const hashStone = 100
+const hashTallGrass = 101
+const hashTerracotta = 102
+const hashTorch = 103
+const hashTuff = 104
+const hashWater = 105
+const hashWheatSeeds = 106
+const hashWoodDoor = 107
+const hashWoodFence = 108
+const hashWoodFenceGate = 109
+const hashWoodSlab = 110
+const hashWoodStairs = 111
+const hashWoodTrapdoor = 112
+const hashWool = 113
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -434,6 +435,10 @@ func (p Planks) Hash() uint64 {
 
 func (p Potato) Hash() uint64 {
 	return hashPotato | uint64(p.Growth)<<7
+}
+
+func (p Prismarine) Hash() uint64 {
+	return hashPrismarine | uint64(p.Type.Uint8())<<7
 }
 
 func (p Pumpkin) Hash() uint64 {

@@ -113,18 +113,10 @@ type nameable interface {
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
+	Carrier
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
-	// Position returns the current position of the user in the world.
-	Position() mgl64.Vec3
-	// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
-	// is 0 when the entity faces forward.
-	Yaw() float64
-	// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
-	// and is 0 when the entity faces forward.
-	Pitch() float64
-	HeldItems() (right, left Stack)
-	SetHeldItems(right, left Stack)
+	SetHeldItems(mainHand, offHand Stack)
 }
 
 // Carrier represents an entity that is able to carry an item.

@@ -124,7 +124,7 @@ func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
 	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if s, ok := w.Block(pos).(BeaconSource); !ok || !s.PowersBeacon() {
+				if s, ok := w.Block(cube.Pos{x, y, z}).(BeaconSource); !ok || !s.PowersBeacon() {
 					return lvl
 				}
 			}
