@@ -327,11 +327,10 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	var animations []protocol.SkinAnimation
 	for _, animation := range s.Animations {
 		protocolAnim := protocol.SkinAnimation{
-			ImageWidth:    uint32(animation.Bounds().Max.X),
-			ImageHeight:   uint32(animation.Bounds().Max.Y),
-			ImageData:     animation.Pix,
-			AnimationType: 0,
-			FrameCount:    float32(animation.FrameCount),
+			ImageWidth:  uint32(animation.Bounds().Max.X),
+			ImageHeight: uint32(animation.Bounds().Max.Y),
+			ImageData:   animation.Pix,
+			FrameCount:  float32(animation.FrameCount),
 		}
 		switch animation.Type() {
 		case skin.AnimationHead:
@@ -535,6 +534,8 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 
 	s = skin.New(int(sk.SkinImageWidth), int(sk.SkinImageHeight))
 	s.Persona = sk.PersonaSkin
+	s.Pix = sk.SkinData
+	s.Model = sk.SkinGeometry
 	s.PlayFabID = sk.PlayFabID
 
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
@@ -563,6 +564,8 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 
 		animation := skin.NewAnimation(int(anim.ImageWidth), int(anim.ImageHeight), int(anim.ExpressionType), t)
 		animation.FrameCount = int(anim.FrameCount)
+		animation.Pix = anim.ImageData
+
 		s.Animations = append(s.Animations, animation)
 	}
 	return
