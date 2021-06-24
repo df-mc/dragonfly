@@ -72,7 +72,7 @@ type Player struct {
 	heldSlot     *atomic.Uint32
 
 	sneaking, sprinting, swimming, invisible,
-	immobile, canClimb, onGround, usingItem atomic.Bool
+	immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
 	fireTicks    atomic.Int64
@@ -117,7 +117,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		heldSlot: atomic.NewUint32(0),
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
-		canClimb: *atomic.NewBool(true),
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
@@ -836,27 +835,6 @@ func (p *Player) SetImmobile() {
 // SetMobile allows the player to freely move around again after being immobile.
 func (p *Player) SetMobile() {
 	if !p.immobile.CAS(true, false) {
-		return
-	}
-	p.updateState()
-}
-
-// CanClimb checks if the player can climb ladders & vines.
-func (p *Player) CanClimb() bool {
-	return p.canClimb.Load()
-}
-
-// SetCanClimb allows a player to climb ladders & vines.
-func (p *Player) SetCanClimb() {
-	if !p.canClimb.CAS(false, true) {
-		return
-	}
-	p.updateState()
-}
-
-// SetCantClimb disallows a player from climbing ladders & vines.
-func (p *Player) SetCantClimb() {
-	if !p.canClimb.CAS(true, false) {
 		return
 	}
 	p.updateState()
@@ -1777,9 +1755,6 @@ func (p *Player) State() (s []state.State) {
 	if p.immobile.Load() {
 		s = append(s, state.Immobile{})
 	}
-	if p.canClimb.Load() {
-		s = append(s, state.CanClimb{})
-	}
 	if p.usingItem.Load() {
 		s = append(s, state.UsingItem{})
 	}
@@ -1792,6 +1767,7 @@ func (p *Player) State() (s []state.State) {
 	}
 	s = append(s, state.Named{NameTag: p.nameTag.Load()})
 	s = append(s, state.Scaled{Scale: p.scale.Load()})
+	s = append(s, state.CanClimb{})
 	return
 }
 
