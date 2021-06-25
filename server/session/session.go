@@ -147,6 +147,10 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
 
+	s.sendInv(s.inv, protocol.WindowIDInventory)
+	s.sendInv(s.ui, protocol.WindowIDUI)
+	s.sendInv(s.offHand, protocol.WindowIDOffHand)
+	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
 

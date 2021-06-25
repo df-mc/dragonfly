@@ -144,8 +144,7 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.provider = provider
 	chat.Global.Subscribe(p)
 	if data != nil {
-		// todo: find a way to load inventories
-		//p.loadInventory(data.Inventory)
+		p.loadInventory(data.Inventory)
 	}
 	return p
 }
