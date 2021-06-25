@@ -138,7 +138,6 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	p.provider = provider
-	p.load()
 
 	chat.Global.Subscribe(p)
 	return p
@@ -1918,23 +1917,23 @@ func (p *Player) close() {
 	}
 }
 
-// load reads the player data from the provider. It uses the default values if the provider
+// Load reads the player data from the provider. It uses the default values if the provider
 // returns false.
-func (p *Player) load() {
+func (p *Player) Load() {
 	data, ok := p.provider.Load(p.XUID())
 	if !ok {
 		return
 	}
 
-	p.pos.Store(data.Position)
-	p.pitch.Store(data.Pitch)
-	p.yaw.Store(data.Yaw)
-	p.velocity.Store(data.Velocity)
+	//p.pos.Store(data.Position)
+	p.Teleport(data.Position.Sub(mgl64.Vec3{0.5, 0, 0.5}))
+	p.Rotate(data.Yaw-p.yaw.Load(), data.Pitch-p.pitch.Load())
+	p.SetVelocity(data.Velocity)
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
 
-	p.hunger.foodLevel = data.Hunger
+	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 

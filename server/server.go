@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/player/provider"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
@@ -82,6 +83,11 @@ func New(c *Config, log internal.Logger) *Server {
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
+	if p, err := provider.NewDBProvider("players"); err == nil {
+		s.PlayerProvider(p)
+	} else {
+		log.Errorf("Error starting player provider: %v", err)
+	}
 
 	s.checkNetIsolation()
 	return s
@@ -389,6 +395,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.P
 	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), server.playerProvider)
 	s.Start(p, server.world, server.handleSessionClose)
+	p.Load()
 
 	return p
 }
