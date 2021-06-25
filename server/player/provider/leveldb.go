@@ -29,7 +29,7 @@ func (p *DBProvider) Save(d player.Data) {
 	if err != nil {
 		return
 	}
-	err = p.db.Put([]byte(d.XUID), jsondata, nil)
+	_ = p.db.Put([]byte(d.XUID), jsondata, nil)
 }
 
 // Load ...
