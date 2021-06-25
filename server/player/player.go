@@ -1447,9 +1447,6 @@ func (p *Player) PickBlock(pos cube.Pos) {
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
-	// Generally it is expected you are teleported to the middle of the block.
-	pos = pos.Add(mgl64.Vec3{0.5, 0, 0.5})
-
 	ctx := event.C()
 	p.handler().HandleTeleport(ctx, pos)
 	ctx.Continue(func() {
