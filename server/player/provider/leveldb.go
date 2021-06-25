@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+// DBProvider ...
 type DBProvider struct {
 	db *leveldb.DB
 }

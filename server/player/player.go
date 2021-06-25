@@ -96,7 +96,7 @@ type Player struct {
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network.
-func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
+func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 	p := &Player{}
 	*p = Player{
 		inv: inventory.New(36, func(slot int, item item.Stack) {
@@ -125,6 +125,10 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.velocity.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
+	if data != nil {
+		p.load(*data)
+		p.loadInventory(data.Inventory)
+	}
 	return p
 }
 
@@ -132,14 +136,17 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, provider Provider) *Player {
-	p := New(name, skin, pos)
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, provider Provider, data *Data) *Player {
+	p := New(name, skin, pos, data)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	p.provider = provider
-
 	chat.Global.Subscribe(p)
+	if data != nil {
+		// todo: find a way to load inventories
+		//p.loadInventory(data.Inventory)
+	}
 	return p
 }
 
@@ -1917,18 +1924,13 @@ func (p *Player) close() {
 	}
 }
 
-// Load reads the player data from the provider. It uses the default values if the provider
+// load reads the player data from the provider. It uses the default values if the provider
 // returns false.
-func (p *Player) Load() {
-	data, ok := p.provider.Load(p.UUID())
-	if !ok {
-		return
-	}
-
-	//p.pos.Store(data.Position)
-	p.Teleport(data.Position.Sub(mgl64.Vec3{0.5, 0, 0.5}))
-	p.Rotate(data.Yaw-p.yaw.Load(), data.Pitch-p.pitch.Load())
-	p.SetVelocity(data.Velocity)
+func (p *Player) load(data Data) {
+	p.yaw.Store(data.Yaw)
+	p.pitch.Store(data.Pitch)
+	p.velocity.Store(data.Velocity)
+	p.pos.Store(data.Position)
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
@@ -1938,21 +1940,23 @@ func (p *Player) Load() {
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
 	p.gameMode = data.Gamemode
-	for slot, stack := range data.Inventory.Items {
-		_ = p.Inventory().SetItem(slot, stack)
-	}
-	_ = p.offHand.SetItem(1, data.Inventory.Offhand)
-	p.Armour().SetBoots(data.Inventory.Armor[0])
-	p.Armour().SetLeggings(data.Inventory.Armor[1])
-	p.Armour().SetChestplate(data.Inventory.Armor[2])
-	p.Armour().SetHelmet(data.Inventory.Armor[3])
-
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
 	}
-
 	p.fireTicks.Store(data.FireTicks)
 	p.fallDistance.Store(data.FallDistance)
+}
+
+// loadInventory loads all the data associated with the player inventory.
+func (p *Player) loadInventory(data InventoryData) {
+	for slot, stack := range data.Items {
+		_ = p.Inventory().SetItem(slot, stack)
+	}
+	_ = p.offHand.SetItem(1, data.Offhand)
+	p.Armour().SetBoots(data.Armor[0])
+	p.Armour().SetLeggings(data.Armor[1])
+	p.Armour().SetChestplate(data.Armor[2])
+	p.Armour().SetHelmet(data.Armor[3])
 }
 
 // Save saves the player data to the provider.

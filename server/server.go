@@ -351,21 +351,27 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
 	}
-	if err := conn.StartGame(data); err != nil {
-		_ = server.listener.Disconnect(conn, "Connection timeout.")
-		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
-		return
-	}
 	id, err := uuid.Parse(conn.IdentityData().Identity)
 	if err != nil {
 		_ = conn.Close()
 		server.log.Debugf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
+	var playerData *player.Data
+	if d, ok := server.playerProvider.Load(id); ok {
+		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
+		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
+		playerData = &d
+	}
+	if err = conn.StartGame(data); err != nil {
+		_ = server.listener.Disconnect(conn, "Connection timeout.")
+		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
+		return
+	}
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
-	server.players <- server.createPlayer(id, conn)
+	server.players <- server.createPlayer(id, conn, playerData)
 }
 
 // checkNetIsolation checks if a loopback exempt is in place to allow the hosting device to join the server. This is
@@ -391,12 +397,10 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
+func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
 	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), server.playerProvider)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), server.playerProvider, data)
 	s.Start(p, server.world, server.handleSessionClose)
-	p.Load()
-
 	return p
 }
 
