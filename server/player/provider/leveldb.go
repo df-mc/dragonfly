@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/google/uuid"
 	"os"
 )
 
@@ -31,12 +32,12 @@ func (p *DBProvider) Save(d player.Data) {
 	if err != nil {
 		return
 	}
-	_ = p.db.Put([]byte(d.XUID), jsondata, nil)
+	_ = p.db.Put([]byte(data.UUID), jsondata, nil)
 }
 
 // Load ...
-func (p *DBProvider) Load(XUID string) (player.Data, bool) {
-	jsondata, err := p.db.Get([]byte(XUID), nil)
+func (p *DBProvider) Load(UUID uuid.UUID) (player.Data, bool) {
+	jsondata, err := p.db.Get([]byte(UUID.String()), nil)
 	if err != nil {
 		return player.Data{}, false
 	}

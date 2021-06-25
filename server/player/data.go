@@ -5,12 +5,13 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // Data is a struct that contains all the data of that player to be passed on to the Provider and saved.
 type Data struct {
-	// XUID is the player's Xbox ID used as a unique identifier for their account
-	XUID string
+	// UUID is the player's unique identifier for their account
+	UUID uuid.UUID
 	// Username is the last username the player joined with.
 	Username string
 	// Position is the last position the player was located at.

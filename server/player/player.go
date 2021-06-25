@@ -1920,7 +1920,7 @@ func (p *Player) close() {
 // Load reads the player data from the provider. It uses the default values if the provider
 // returns false.
 func (p *Player) Load() {
-	data, ok := p.provider.Load(p.XUID())
+	data, ok := p.provider.Load(p.UUID())
 	if !ok {
 		return
 	}
@@ -1961,7 +1961,7 @@ func (p *Player) Save() {
 	offHand, _ := p.offHand.Item(1)
 
 	p.provider.Save(Data{
-		XUID:            p.XUID(),
+		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
 		Velocity:        p.Velocity(),

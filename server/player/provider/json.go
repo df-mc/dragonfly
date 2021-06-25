@@ -3,12 +3,13 @@ package provider
 import (
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"time"
 )
 
 func fromJson(d jsonData) player.Data {
 	return player.Data{
-		XUID:            d.XUID,
+		UUID:            uuid.MustParse(d.UUID),
 		Username:        d.Username,
 		Position:        d.Position,
 		Velocity:        d.Velocity,
@@ -30,7 +31,7 @@ func fromJson(d jsonData) player.Data {
 
 func toJson(d player.Data) jsonData {
 	return jsonData{
-		XUID:            d.XUID,
+		UUID:            d.UUID.String(),
 		Username:        d.Username,
 		Position:        d.Position,
 		Velocity:        d.Velocity,
@@ -51,7 +52,7 @@ func toJson(d player.Data) jsonData {
 }
 
 type jsonData struct {
-	XUID                             string
+	UUID                             string
 	Username                         string
 	Position, Velocity               mgl64.Vec3
 	Yaw, Pitch                       float64
