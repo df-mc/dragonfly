@@ -11,6 +11,8 @@ type DBProvider struct {
 	db *leveldb.DB
 }
 
+// NewDBProvider creates a new player data provider that saves and loads data using
+// a LevelDB database.
 func NewDBProvider(path string) (*DBProvider, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		_ = os.Mkdir(path, 0777)
