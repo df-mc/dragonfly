@@ -140,6 +140,9 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.c.SetGameMode(gm)
 	s.SendAvailableCommands()
 	s.SendSpeed(0.1)
+	for _, e := range s.c.Effects() {
+		s.SendEffect(e)
+	}
 
 	go s.handlePackets()
 

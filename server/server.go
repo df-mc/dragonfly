@@ -405,9 +405,6 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *pla
 		gm = data.Gamemode
 	}
 	s.Start(p, server.world, gm, server.handleSessionClose)
-	for _, e := range p.Effects() {
-		s.SendEffect(e)
-	}
 	return p
 }
 

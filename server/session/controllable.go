@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -28,6 +29,7 @@ type Controllable interface {
 	ExecuteCommand(commandLine string)
 	GameMode() world.GameMode
 	SetGameMode(mode world.GameMode)
+	Effects() []effect.Effect
 
 	UseItem()
 	ReleaseItem()
