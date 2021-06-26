@@ -21,13 +21,26 @@ type Data struct {
 	Yaw, Pitch float64
 	// Health, MaxHealth ...
 	Health, MaxHealth float64
-	// Hunger is the amount of hunger points the player currently has.
+	// Hunger is the amount of hunger points the player currently has, shown on the hunger bar.
 	// This should be between 0-20.
 	Hunger int
-	// FoodTick see player.hungerManager
+	// FoodTick this variable is used when the hunger exceeds 17 or is equal to 0. It is used to heal
+	// the player using saturation or make the player starve and receive damage if the hunger is at 0.
+	// This value should be between 0-80.
 	FoodTick int
-	// ExhaustionLevel, SaturationLevel see player.hungerManager
+	// ExhaustionLevel determines how fast the hunger level depletes and is controlled by the kinds
+	// of food the player has eaten. SaturationLevel determines how fast the saturation level depletes.
 	ExhaustionLevel, SaturationLevel float64
+	// XpLevel is the current xp level the player has, XpTotal is the total amount of xp the
+	// player has collected during their lifetime, which is used to display score upon player death.
+	// These are currently not implemented in DF.
+	XpLevel, XpTotal int
+	// XpPercentage is the player's current progress towards the next level.
+	// This is currently not implemented in DF.
+	XpPercentage float64
+	// XpSeed is the random seed used to determine the next enchantment in enchantment tables.
+	// This is currently not implemented in DF.
+	XpSeed int
 	// Gamemode is the last gamemode the user had, like creative or survival.
 	Gamemode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.

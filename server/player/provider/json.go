@@ -21,6 +21,10 @@ func fromJson(d jsonData) player.Data {
 		FoodTick:        d.FoodTick,
 		ExhaustionLevel: d.ExhaustionLevel,
 		SaturationLevel: d.SaturationLevel,
+		XpLevel:         d.XpLevel,
+		XpTotal:         d.XpTotal,
+		XpPercentage:    d.XpPercentage,
+		XpSeed:          d.XpSeed,
 		Gamemode:        dataToGamemode(d.Gamemode),
 		Effects:         dataToEffects(d.Effects),
 		FireTicks:       d.FireTicks,
@@ -43,6 +47,10 @@ func toJson(d player.Data) jsonData {
 		FoodTick:        d.FoodTick,
 		ExhaustionLevel: d.ExhaustionLevel,
 		SaturationLevel: d.SaturationLevel,
+		XpLevel:         d.XpLevel,
+		XpTotal:         d.XpTotal,
+		XpPercentage:    d.XpPercentage,
+		XpSeed:          d.XpSeed,
 		Gamemode:        gamemodeToData(d.Gamemode),
 		Effects:         effectsToData(d.Effects),
 		FireTicks:       d.FireTicks,
@@ -60,6 +68,9 @@ type jsonData struct {
 	Hunger                           int
 	FoodTick                         int
 	ExhaustionLevel, SaturationLevel float64
+	XpLevel, XpTotal                 int
+	XpPercentage                     float64
+	XpSeed                           int
 	Gamemode                         uint8
 	Inventory                        jsonInventoryData
 	Effects                          []jsonEffect
