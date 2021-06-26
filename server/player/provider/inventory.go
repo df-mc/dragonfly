@@ -8,8 +8,8 @@ import (
 
 func invToData(data player.InventoryData) jsonInventoryData {
 	d := jsonInventoryData{
-		Mainhand: data.Mainhand,
-		Offhand:  itemToData(data.Offhand),
+		MainHand: data.MainHand,
+		OffHand:  itemToData(data.OffHand),
 	}
 	for slot, i := range data.Items {
 		itemData := itemToData(i)
@@ -19,22 +19,18 @@ func invToData(data player.InventoryData) jsonInventoryData {
 		itemData["slot"] = slot
 		d.Items = append(d.Items, itemData)
 	}
-	for slot, i := range data.Armour {
-		itemData := itemToData(i)
-		if itemData == nil {
-			d.Armour[slot] = nil
-		}
-		d.Armour[slot] = itemData
-	}
+	d.Boots = itemToData(data.Boots)
+	d.Leggings = itemToData(data.Leggings)
+	d.Chestplate = itemToData(data.Chestplate)
+	d.Helmet = itemToData(data.Helmet)
 	return d
 }
 
 func dataToInv(data jsonInventoryData) player.InventoryData {
 	d := player.InventoryData{
-		Mainhand: data.Mainhand,
-		Offhand:  dataToItem(data.Offhand),
+		MainHand: data.MainHand,
+		OffHand:  dataToItem(data.OffHand),
 		Items:    make([]item.Stack, 36),
-		Armour:   [4]item.Stack{},
 	}
 	for _, i := range data.Items {
 		slot, ok := readInt("slot", i)
@@ -43,9 +39,10 @@ func dataToInv(data jsonInventoryData) player.InventoryData {
 		}
 		d.Items[slot] = dataToItem(i)
 	}
-	for slot, i := range data.Armour {
-		d.Armour[slot] = dataToItem(i)
-	}
+	d.Boots = dataToItem(data.Boots)
+	d.Leggings = dataToItem(data.Leggings)
+	d.Chestplate = dataToItem(data.Chestplate)
+	d.Helmet = dataToItem(data.Helmet)
 	return d
 }
 
@@ -63,7 +60,7 @@ func itemToData(stack item.Stack) map[string]interface{} {
 
 	data["count"] = stack.Count()
 	if len(stack.Values()) > 0 {
-		data["nbt"] = stack.Values()
+		data["dragonflyData"] = stack.Values()
 	}
 	if stack.CustomName() != "" {
 		data["customname"] = stack.CustomName()
@@ -129,7 +126,7 @@ func dataToItem(data map[string]interface{}) item.Stack {
 	if lore, ok := data["customname"].([]string); ok {
 		stack = stack.WithLore(lore...)
 	}
-	if values, ok := data["nbt"].(map[string]interface{}); ok {
+	if values, ok := data["dragonflyData"].(map[string]interface{}); ok {
 		for key, value := range values {
 			stack = stack.WithValue(key, value)
 		}

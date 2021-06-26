@@ -406,7 +406,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *pla
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), server.playerProvider, data)
 	gm := server.world.DefaultGameMode()
 	if data != nil {
-		gm = data.Gamemode
+		gm = data.GameMode
 	}
 	s.Start(p, server.world, gm, server.handleSessionClose)
 	return p

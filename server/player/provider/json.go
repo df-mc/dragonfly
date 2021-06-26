@@ -25,7 +25,7 @@ func fromJson(d jsonData) player.Data {
 		XpTotal:         d.XpTotal,
 		XpPercentage:    d.XpPercentage,
 		XpSeed:          d.XpSeed,
-		Gamemode:        dataToGamemode(d.Gamemode),
+		GameMode:        dataToGameMode(d.GameMode),
 		Effects:         dataToEffects(d.Effects),
 		FireTicks:       d.FireTicks,
 		FallDistance:    d.FallDistance,
@@ -51,7 +51,7 @@ func toJson(d player.Data) jsonData {
 		XpTotal:         d.XpTotal,
 		XpPercentage:    d.XpPercentage,
 		XpSeed:          d.XpSeed,
-		Gamemode:        gamemodeToData(d.Gamemode),
+		GameMode:        gameModeToData(d.GameMode),
 		Effects:         effectsToData(d.Effects),
 		FireTicks:       d.FireTicks,
 		FallDistance:    d.FallDistance,
@@ -71,7 +71,7 @@ type jsonData struct {
 	XpLevel, XpTotal                 int
 	XpPercentage                     float64
 	XpSeed                           int
-	Gamemode                         uint8
+	GameMode                         uint8
 	Inventory                        jsonInventoryData
 	Effects                          []jsonEffect
 	FireTicks                        int64
@@ -79,10 +79,13 @@ type jsonData struct {
 }
 
 type jsonInventoryData struct {
-	Items    []map[string]interface{}
-	Armour   [4]map[string]interface{}
-	Offhand  map[string]interface{}
-	Mainhand uint32
+	Items      []map[string]interface{}
+	Boots      map[string]interface{}
+	Leggings   map[string]interface{}
+	Chestplate map[string]interface{}
+	Helmet     map[string]interface{}
+	OffHand    map[string]interface{}
+	MainHand   uint32
 }
 
 type jsonEffect struct {

@@ -33,12 +33,12 @@ func (p *DBProvider) Save(d player.Data) {
 	if err != nil {
 		return
 	}
-	_ = p.db.Put([]byte(data.UUID), jsondata, nil)
+	_ = p.db.Put(d.UUID[:], jsondata, nil)
 }
 
 // Load ...
 func (p *DBProvider) Load(UUID uuid.UUID) (player.Data, bool) {
-	jsondata, err := p.db.Get([]byte(UUID.String()), nil)
+	jsondata, err := p.db.Get(UUID[:], nil)
 	if err != nil {
 		return player.Data{}, false
 	}

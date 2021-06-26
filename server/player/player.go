@@ -1938,7 +1938,7 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.gameMode = data.Gamemode
+	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
 	}
@@ -1951,11 +1951,11 @@ func (p *Player) loadInventory(data InventoryData) {
 	for slot, stack := range data.Items {
 		_ = p.Inventory().SetItem(slot, stack)
 	}
-	_ = p.offHand.SetItem(1, data.Offhand)
-	p.Armour().SetBoots(data.Armour[0])
-	p.Armour().SetLeggings(data.Armour[1])
-	p.Armour().SetChestplate(data.Armour[2])
-	p.Armour().SetHelmet(data.Armour[3])
+	_ = p.offHand.SetItem(1, data.OffHand)
+	p.Armour().SetBoots(data.Boots)
+	p.Armour().SetLeggings(data.Leggings)
+	p.Armour().SetChestplate(data.Chestplate)
+	p.Armour().SetHelmet(data.Helmet)
 }
 
 // Save saves the player data to the provider.
@@ -1976,17 +1976,15 @@ func (p *Player) Save() {
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
-		Gamemode:        p.GameMode(),
+		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
-			Items: p.Inventory().Items(),
-			Armour: [4]item.Stack{
-				p.armour.Boots(),
-				p.armour.Leggings(),
-				p.armour.Chestplate(),
-				p.armour.Helmet(),
-			},
-			Offhand:  offHand,
-			Mainhand: p.heldSlot.Load(),
+			Items:      p.Inventory().Items(),
+			Boots:      p.armour.Boots(),
+			Leggings:   p.armour.Leggings(),
+			Chestplate: p.armour.Chestplate(),
+			Helmet:     p.armour.Helmet(),
+			OffHand:    offHand,
+			MainHand:   p.heldSlot.Load(),
 		},
 		Effects:      p.Effects(),
 		FireTicks:    p.fireTicks.Load(),

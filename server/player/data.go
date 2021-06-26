@@ -41,8 +41,8 @@ type Data struct {
 	// XpSeed is the random seed used to determine the next enchantment in enchantment tables.
 	// This is currently not implemented in DF.
 	XpSeed int
-	// Gamemode is the last gamemode the user had, like creative or survival.
-	Gamemode world.GameMode
+	// GameMode is the last gamemode the user had, like creative or survival.
+	GameMode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.
 	Inventory InventoryData
 	// Effects contains all the currently active potions effects the player has.
@@ -59,11 +59,14 @@ type InventoryData struct {
 	// Items contains all the items in the player's main inventory.
 	// This excludes armor and offhand.
 	Items []item.Stack
-	// Armour contains all armor items the player is wearing.
-	Armour [4]item.Stack
-	// Offhand is what the player is carrying in their non-main hand, like a shield or arrows.
-	Offhand item.Stack
-	// Mainhand saves the slot in the hotbar that the player is currently switched to.
+	// Boots, Leggings, Chestplate, Helmet are armor pieces that belong to the slot corresponding to the name.
+	Boots      item.Stack
+	Leggings   item.Stack
+	Chestplate item.Stack
+	Helmet     item.Stack
+	// OffHand is what the player is carrying in their non-main hand, like a shield or arrows.
+	OffHand item.Stack
+	// MainHand saves the slot in the hotbar that the player is currently switched to.
 	// Should be between 0-8.
-	Mainhand uint32
+	MainHand uint32
 }

@@ -9,19 +9,20 @@ const (
 	spectator
 )
 
-func gamemodeToData(mode world.GameMode) uint8 {
+func gameModeToData(mode world.GameMode) uint8 {
 	gm := survival
-	if _, ok := mode.(world.GameModeCreative); ok {
+	switch mode.(type) {
+	case world.GameModeCreative:
 		gm = creative
-	} else if _, ok := mode.(world.GameModeAdventure); ok {
+	case world.GameModeAdventure:
 		gm = adventure
-	} else if _, ok := mode.(world.GameModeSpectator); ok {
+	case world.GameModeSpectator:
 		gm = spectator
 	}
 	return gm
 }
 
-func dataToGamemode(mode uint8) world.GameMode {
+func dataToGameMode(mode uint8) world.GameMode {
 	var gm world.GameMode
 	switch mode {
 	case creative:
