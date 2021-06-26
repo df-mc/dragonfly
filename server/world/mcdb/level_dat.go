@@ -115,4 +115,6 @@ type data struct {
 	UseMSAGamerTagsOnly            bool                   `nbt:"useMsaGamertagsOnly"`
 	WorldStartCount                int64                  `nbt:"worldStartCount"`
 	Experiments                    map[string]interface{} `nbt:"experiments"`
+	FreezeDamage                   uint8                  `nbt:"freezedamage"`
+	WorldPolicies                  map[string]interface{} `nbt:"world_policies"`
 }

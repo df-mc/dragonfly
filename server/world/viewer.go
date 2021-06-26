@@ -59,4 +59,8 @@ type Viewer interface {
 	ViewBlockAction(pos cube.Pos, a blockAction.Action)
 	// ViewEmote views an emote being performed by another entity.
 	ViewEmote(player Entity, emote uuid.UUID)
+	// ViewSkin views the current skin of a player.
+	ViewSkin(e Entity)
+	// ViewWorldSpawn views the current spawn location of the world.
+	ViewWorldSpawn(pos cube.Pos)
 }

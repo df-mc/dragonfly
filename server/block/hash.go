@@ -2,210 +2,123 @@
 
 package block
 
-const hashAir = 0
-const hashAncientDebris = 1
-const hashAndesite = 2
-const hashBarrier = 3
-const hashBasalt = 4
-const hashBeacon = 5
-const hashBedrock = 6
-const hashBeetrootSeeds = 7
-const hashBlueIce = 8
-const hashBoneBlock = 9
-const hashBricks = 10
-const hashCake = 11
-const hashCarpet = 12
-const hashCarrot = 13
-const hashChest = 14
-const hashChiseledQuartz = 15
-const hashClay = 16
-const hashCoalBlock = 17
-const hashCoalOre = 18
-const hashCobblestone = 19
-const hashCocoaBean = 20
-const hashConcrete = 21
-const hashConcretePowder = 22
-const hashCoral = 23
-const hashCoralBlock = 24
-const hashDiamondBlock = 25
-const hashDiamondOre = 26
-const hashDiorite = 27
-const hashDirt = 28
-const hashDirtPath = 29
-const hashDragonEgg = 30
-const hashEmeraldBlock = 31
-const hashEmeraldOre = 32
-const hashEndBrickStairs = 33
-const hashEndBricks = 34
-const hashEndStone = 35
-const hashFarmland = 36
-const hashFire = 37
-const hashGildedBlackstone = 38
-const hashGlass = 39
-const hashGlassPane = 40
-const hashGlazedTerracotta = 41
-const hashGlowstone = 42
-const hashGoldBlock = 43
-const hashGoldOre = 44
-const hashGranite = 45
-const hashGrass = 46
-const hashGrassPlant = 47
-const hashGravel = 48
-const hashInvisibleBedrock = 49
-const hashIronBars = 50
-const hashIronBlock = 51
-const hashIronOre = 52
-const hashKelp = 53
-const hashLantern = 54
-const hashLapisBlock = 55
-const hashLapisOre = 56
-const hashLava = 57
-const hashLeaves = 58
-const hashLight = 59
-const hashLitPumpkin = 60
-const hashLog = 61
-const hashMelon = 62
-const hashMelonSeeds = 63
-const hashNetherBrickFence = 64
-const hashNetherGoldOre = 65
-const hashNetherQuartzOre = 66
-const hashNetherWart = 67
-const hashNetheriteBlock = 68
-const hashNetherrack = 69
-const hashNoteBlock = 70
-const hashObsidian = 71
-const hashPlanks = 72
-const hashPotato = 73
-const hashPumpkin = 74
-const hashPumpkinSeeds = 75
-const hashQuartz = 76
-const hashQuartzBricks = 77
-const hashQuartzPillar = 78
-const hashSand = 79
-const hashSandstone = 80
-const hashSeaLantern = 81
-const hashShroomlight = 82
-const hashSoulSand = 83
-const hashSoulSoil = 84
-const hashSponge = 85
-const hashStainedGlass = 86
-const hashStainedGlassPane = 87
-const hashStainedTerracotta = 88
-const hashStandingSign = 89
-const hashStone = 90
-const hashTerracotta = 91
-const hashTorch = 92
-const hashWallSign = 93
-const hashWater = 94
-const hashWheatSeeds = 95
-const hashWoodDoor = 96
-const hashWoodFence = 97
-const hashWoodFenceGate = 98
-const hashWoodSlab = 99
-const hashWoodStairs = 100
-const hashWoodTrapdoor = 101
-const hashWool = 102
-const hashCalcite = 12
-const hashCarpet = 13
-const hashCarrot = 14
-const hashChest = 15
-const hashChiseledQuartz = 16
-const hashClay = 17
-const hashCoalBlock = 18
-const hashCoalOre = 19
-const hashCobblestone = 20
-const hashCocoaBean = 21
-const hashConcrete = 22
-const hashConcretePowder = 23
-const hashCopperOre = 24
-const hashCoral = 25
-const hashCoralBlock = 26
-const hashDiamondBlock = 27
-const hashDiamondOre = 28
-const hashDiorite = 29
-const hashDirt = 30
-const hashDirtPath = 31
-const hashDoubleFlower = 32
-const hashDoubleTallGrass = 33
-const hashDragonEgg = 34
-const hashDripstone = 35
-const hashEmeraldBlock = 36
-const hashEmeraldOre = 37
-const hashEndBrickStairs = 38
-const hashEndBricks = 39
-const hashEndStone = 40
-const hashFarmland = 41
-const hashFire = 42
-const hashGildedBlackstone = 43
-const hashGlass = 44
-const hashGlassPane = 45
-const hashGlazedTerracotta = 46
-const hashGlowstone = 47
-const hashGoldBlock = 48
-const hashGoldOre = 49
-const hashGranite = 50
-const hashGrass = 51
-const hashGravel = 52
-const hashInvisibleBedrock = 53
-const hashIronBars = 54
-const hashIronBlock = 55
-const hashIronOre = 56
-const hashKelp = 57
-const hashLantern = 58
-const hashLapisBlock = 59
-const hashLapisOre = 60
-const hashLava = 61
-const hashLeaves = 62
-const hashLight = 63
-const hashLitPumpkin = 64
-const hashLog = 65
-const hashMelon = 66
-const hashMelonSeeds = 67
-const hashMossCarpet = 68
-const hashNetherBrickFence = 69
-const hashNetherGoldOre = 70
-const hashNetherQuartzOre = 71
-const hashNetherSprouts = 72
-const hashNetherWart = 73
-const hashNetheriteBlock = 74
-const hashNetherrack = 75
-const hashNoteBlock = 76
-const hashObsidian = 77
-const hashPlanks = 78
-const hashPotato = 79
-const hashPumpkin = 80
-const hashPumpkinSeeds = 81
-const hashQuartz = 82
-const hashQuartzBricks = 83
-const hashQuartzPillar = 84
-const hashRawCopperBlock = 85
-const hashRawGoldBlock = 86
-const hashRawIronBlock = 87
-const hashSand = 88
-const hashSandstone = 89
-const hashSeaLantern = 90
-const hashShroomlight = 91
-const hashSoulSand = 92
-const hashSoulSoil = 93
-const hashSponge = 94
-const hashSporeBlossom = 95
-const hashStainedGlass = 96
-const hashStainedGlassPane = 97
-const hashStainedTerracotta = 98
-const hashStone = 99
-const hashTallGrass = 100
-const hashTerracotta = 101
-const hashTorch = 102
-const hashTuff = 103
-const hashWater = 104
-const hashWheatSeeds = 105
-const hashWoodDoor = 106
-const hashWoodFence = 107
-const hashWoodFenceGate = 108
-const hashWoodSlab = 109
-const hashWoodStairs = 110
-const hashWoodTrapdoor = 111
-const hashWool = 112
+const (
+	hashAir = iota
+	hashAncientDebris
+	hashAndesite
+	hashBarrier
+	hashBasalt
+	hashBeacon
+	hashBedrock
+	hashBeetrootSeeds
+	hashBlueIce
+	hashBoneBlock
+	hashBricks
+	hashCake
+	hashCalcite
+	hashCarpet
+	hashCarrot
+	hashChest
+	hashChiseledQuartz
+	hashClay
+	hashCoalBlock
+	hashCoalOre
+	hashCobblestone
+	hashCocoaBean
+	hashConcrete
+	hashConcretePowder
+	hashCopperOre
+	hashCoral
+	hashCoralBlock
+	hashDiamondBlock
+	hashDiamondOre
+	hashDiorite
+	hashDirt
+	hashDirtPath
+	hashDoubleFlower
+	hashDoubleTallGrass
+	hashDragonEgg
+	hashDripstone
+	hashEmeraldBlock
+	hashEmeraldOre
+	hashEndBrickStairs
+	hashEndBricks
+	hashEndStone
+	hashFarmland
+	hashFire
+	hashFlower
+	hashGildedBlackstone
+	hashGlass
+	hashGlassPane
+	hashGlazedTerracotta
+	hashGlowstone
+	hashGoldBlock
+	hashGoldOre
+	hashGranite
+	hashGrass
+	hashGravel
+	hashInvisibleBedrock
+	hashIronBars
+	hashIronBlock
+	hashIronOre
+	hashKelp
+	hashLantern
+	hashLapisBlock
+	hashLapisOre
+	hashLava
+	hashLeaves
+	hashLight
+	hashLitPumpkin
+	hashLog
+	hashMelon
+	hashMelonSeeds
+	hashMossCarpet
+	hashNetherBrickFence
+	hashNetherGoldOre
+	hashNetherQuartzOre
+	hashNetherSprouts
+	hashNetherWart
+	hashNetheriteBlock
+	hashNetherrack
+	hashNoteBlock
+	hashObsidian
+	hashPlanks
+	hashPotato
+	hashPrismarine
+	hashPumpkin
+	hashPumpkinSeeds
+	hashQuartz
+	hashQuartzBricks
+	hashQuartzPillar
+	hashRawCopperBlock
+	hashRawGoldBlock
+	hashRawIronBlock
+	hashSand
+	hashSandstone
+	hashSeaLantern
+	hashShroomlight
+	hashSoulSand
+	hashSoulSoil
+	hashSponge
+	hashSporeBlossom
+	hashStainedGlass
+	hashStainedGlassPane
+	hashStainedTerracotta
+	hashStone
+	hashTallGrass
+	hashTerracotta
+	hashTorch
+	hashTuff
+	hashWater
+	hashWheatSeeds
+	hashWoodDoor
+	hashWoodFence
+	hashWoodFenceGate
+	hashWoodSlab
+	hashWoodStairs
+	hashWoodTrapdoor
+	hashWool
+)
 
 func (Air) Hash() uint64 {
 	return hashAir
@@ -379,6 +292,10 @@ func (f Fire) Hash() uint64 {
 	return hashFire | uint64(f.Type.Uint8())<<7 | uint64(f.Age)<<8
 }
 
+func (f Flower) Hash() uint64 {
+	return hashFlower | uint64(f.Type.Uint8())<<7
+}
+
 func (GildedBlackstone) Hash() uint64 {
 	return hashGildedBlackstone
 }
@@ -527,6 +444,10 @@ func (p Potato) Hash() uint64 {
 	return hashPotato | uint64(p.Growth)<<7
 }
 
+func (p Prismarine) Hash() uint64 {
+	return hashPrismarine | uint64(p.Type.Uint8())<<7
+}
+
 func (p Pumpkin) Hash() uint64 {
 	return hashPumpkin | uint64(boolByte(p.Carved))<<7 | uint64(p.Facing)<<8
 }
@@ -603,10 +524,6 @@ func (t StainedTerracotta) Hash() uint64 {
 	return hashStainedTerracotta | uint64(t.Colour.Uint8())<<7
 }
 
-func (s StandingSign) Hash() uint64 {
-	return hashStandingSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Orientation)<<11
-}
-
 func (s Stone) Hash() uint64 {
 	return hashStone | uint64(boolByte(s.Smooth))<<7
 }
@@ -621,10 +538,6 @@ func (Terracotta) Hash() uint64 {
 
 func (t Torch) Hash() uint64 {
 	return hashTorch | uint64(t.Facing)<<7 | uint64(t.Type.Uint8())<<10
-}
-
-func (s WallSign) Hash() uint64 {
-	return hashWallSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Facing)<<11
 }
 
 func (t Tuff) Hash() uint64 {

@@ -155,6 +155,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 	}
 	s.entityMutex.Unlock()
 
+	yaw, pitch := e.Rotation()
+
 	switch v := e.(type) {
 	case Controllable:
 		actualPlayer := false
@@ -181,9 +183,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
 			Position:        vec64To32(e.Position()),
-			Pitch:           float32(e.Pitch()),
-			Yaw:             float32(e.Yaw()),
-			HeadYaw:         float32(e.Yaw()),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -204,9 +206,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityType:      "minecraft:falling_block",
 			EntityMetadata:  map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))},
 			Position:        vec64To32(e.Position()),
-			Pitch:           float32(e.Pitch()),
-			Yaw:             float32(e.Yaw()),
-			HeadYaw:         float32(e.Yaw()),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
 		})
 	default:
 		s.writePacket(&packet.AddActor{
@@ -214,9 +216,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityRuntimeID: runtimeID,
 			EntityType:      e.EncodeEntity(),
 			Position:        vec64To32(e.Position()),
-			Pitch:           float32(e.Pitch()),
-			Yaw:             float32(e.Yaw()),
-			HeadYaw:         float32(e.Yaw()),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
 		})
 	}
 }
@@ -248,15 +250,16 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 	if id == selfEntityRuntimeID {
 		return
 	}
+	yaw, pitch := e.Rotation()
 
 	switch e.(type) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
-			Pitch:           float32(e.Pitch() + deltaPitch),
-			Yaw:             float32(e.Yaw() + deltaYaw),
-			HeadYaw:         float32(e.Yaw() + deltaYaw),
+			Pitch:           float32(pitch + deltaPitch),
+			Yaw:             float32(yaw + deltaYaw),
+			HeadYaw:         float32(yaw + deltaYaw),
 			OnGround:        e.OnGround(),
 		})
 	default:
@@ -267,7 +270,7 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
 			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{e.Pitch() + deltaPitch, e.Yaw() + deltaYaw}),
+			Rotation:        vec64To32(mgl64.Vec3{pitch + deltaPitch, yaw + deltaYaw}),
 			Flags:           flags,
 		})
 	}
@@ -311,21 +314,23 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.teleportMu.Unlock()
 	}
 
+	yaw, pitch := e.Rotation()
+
 	switch e.(type) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
-			Pitch:           float32(e.Pitch()),
-			Yaw:             float32(e.Yaw()),
-			HeadYaw:         float32(e.Yaw()),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
 		})
 	default:
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{e.Pitch(), e.Yaw()}),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw}),
 			Flags:           packet.MoveFlagTeleport,
 		})
 	}
@@ -738,6 +743,28 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 		EntityRuntimeID: s.entityRuntimeID(player),
 		EmoteID:         emote.String(),
 		Flags:           packet.EmoteFlagServerSide,
+	})
+}
+
+// ViewSkin ...
+func (s *Session) ViewSkin(e world.Entity) {
+	switch v := e.(type) {
+	case Controllable:
+		s.writePacket(&packet.PlayerSkin{
+			UUID: v.UUID(),
+			Skin: skinToProtocol(v.Skin()),
+		})
+	}
+}
+
+// ViewWorldSpawn ...
+func (s *Session) ViewWorldSpawn(pos cube.Pos) {
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	s.writePacket(&packet.SetSpawnPosition{
+		SpawnType:     packet.SpawnTypeWorld,
+		Position:      blockPos,
+		Dimension:     packet.DimensionOverworld,
+		SpawnPosition: blockPos,
 	})
 }
 

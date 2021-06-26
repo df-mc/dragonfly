@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/instrument"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -10,7 +11,7 @@ type Wool struct {
 	solid
 
 	// Colour is the colour of the wool.
-	Colour Colour
+	Colour item.Colour
 }
 
 // Instrument ...
@@ -41,7 +42,7 @@ func (w Wool) EncodeBlock() (name string, properties map[string]interface{}) {
 // allWool returns wool blocks with all possible colours.
 func allWool() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		b = append(b, Wool{Colour: c})
 	}
 	return b

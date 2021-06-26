@@ -34,7 +34,8 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
 
 	newPos := vec32To64(pk.Position)
-	deltaPos, deltaYaw, deltaPitch := newPos.Sub(s.c.Position()), float64(pk.Yaw)-s.c.Yaw(), float64(pk.Pitch)-s.c.Pitch()
+	yaw, pitch := s.c.Rotation()
+	deltaPos, deltaYaw, deltaPitch := newPos.Sub(s.c.Position()), float64(pk.Yaw)-yaw, float64(pk.Pitch)-pitch
 	if mgl64.FloatEqual(deltaPos.Len(), 0) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
 		// The PlayerAuthInput packet is sent every tick, so don't do anything if the position and rotation
 		// were unchanged.
@@ -77,7 +78,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	return nil
 }
 
-// handleInteractions handles the actions with the world that are present in the PlayerAuthInput packet.
+// handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session) error {
 	if pk.InputData&packet.InputFlagPerformItemInteraction != 0 {
 		if err := h.handleUseItemData(pk.ItemInteractionData, s); err != nil {

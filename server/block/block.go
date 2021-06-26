@@ -231,3 +231,21 @@ type bassDrum struct{}
 func (bassDrum) Instrument() instrument.Instrument {
 	return instrument.BassDrum()
 }
+
+// effectHolder represents an entity that can obtain effects.
+type effectHolder interface {
+	// AddEffect ...
+	AddEffect(effect.Effect)
+}
+
+// supportsVegetation checks if the vegetation can exist on the block.
+func supportsVegetation(vegetation, block world.Block) bool {
+	soil, ok := block.(Soil)
+	return ok && soil.SoilFor(vegetation)
+}
+
+// Soil represents a block that can support vegetation.
+type Soil interface {
+	// SoilFor returns whether the vegetation can exist on the block.
+	SoilFor(world.Block) bool
+}

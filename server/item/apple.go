@@ -2,20 +2,11 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // Apple is a food item that can be eaten by the player.
-type Apple struct{}
-
-// AlwaysConsumable ...
-func (a Apple) AlwaysConsumable() bool {
-	return false
-}
-
-// ConsumeDuration ...
-func (a Apple) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
+type Apple struct {
+	defaultFood
 }
 
 // Consume ...

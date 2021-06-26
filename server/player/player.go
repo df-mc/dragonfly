@@ -56,7 +56,8 @@ type Player struct {
 	gameModeMu sync.RWMutex
 	gameMode   world.GameMode
 
-	skin skin.Skin
+	skinMu sync.RWMutex
+	skin   skin.Skin
 
 	sMutex sync.RWMutex
 	// s holds the session of the player. This field should not be used directly, but instead,
@@ -171,11 +172,36 @@ func (p *Player) Addr() net.Addr {
 	return p.session().Addr()
 }
 
-// Skin returns the skin that a player joined with. This skin will be visible to other players that the player
-// is shown to.
+// Skin returns the skin that a player is currently using. This skin will be visible to other players
+// that the player is shown to.
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
+	p.skinMu.RLock()
+	defer p.skinMu.RUnlock()
 	return p.skin
+}
+
+// SetSkin changes the skin of the player. This skin will be visible to other players that the player
+// is shown to.
+func (p *Player) SetSkin(skin skin.Skin) {
+	if p.Dead() {
+		return
+	}
+
+	ctx := event.C()
+	p.handler().HandleSkinChange(ctx, skin)
+	ctx.Continue(func() {
+		p.skinMu.Lock()
+		p.skin = skin
+		p.skinMu.Unlock()
+
+		for _, v := range p.World().Viewers(p.Position()) {
+			v.ViewSkin(p)
+		}
+	})
+	ctx.Stop(func() {
+		p.session().ViewSkin(p)
+	})
 }
 
 // Locale returns the language and locale of the Player, as selected in the Player's settings.
@@ -418,14 +444,14 @@ func (p *Player) Heal(health float64, source healing.Source) {
 
 // updateFallState is called to update the entities falling state.
 func (p *Player) updateFallState(distanceThisTick float64) {
-	p.onGround.Store(p.checkOnGround())
+	fallDistance := p.fallDistance.Load()
 	if p.OnGround() {
-		if p.fallDistance.Load() > 0 {
-			p.fall(p.fallDistance.Load())
+		if fallDistance > 0 {
+			p.fall(fallDistance)
 			p.ResetFallDistance()
 		}
-	} else if distanceThisTick < p.fallDistance.Load() {
-		p.fallDistance.Store(p.fallDistance.Load() - distanceThisTick)
+	} else if distanceThisTick < fallDistance {
+		p.fallDistance.Sub(distanceThisTick)
 	} else {
 		p.ResetFallDistance()
 	}
@@ -1421,9 +1447,6 @@ func (p *Player) PickBlock(pos cube.Pos) {
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
-	// Generally it is expected you are teleported to the middle of the block.
-	pos = pos.Add(mgl64.Vec3{0.5, 0, 0.5})
-
 	ctx := event.C()
 	p.handler().HandleTeleport(ctx, pos)
 	ctx.Continue(func() {
@@ -1448,16 +1471,21 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 		return
 	}
 
+	pos := p.Position()
+	yaw, pitch := p.Rotation()
+
 	ctx := event.C()
-	p.handler().HandleMove(ctx, p.Position().Add(deltaPos), p.Yaw(), p.Pitch())
+	p.handler().HandleMove(ctx, pos.Add(deltaPos), yaw, pitch)
 	ctx.Continue(func() {
-		for _, v := range p.World().Viewers(p.Position()) {
+		for _, v := range p.World().Viewers(pos) {
 			v.ViewEntityMovement(p, deltaPos, 0, 0)
 		}
 
-		p.updateFallState(p.Position().Add(deltaPos).Y() - p.Position().Y())
+		p.pos.Store(pos.Add(deltaPos))
 
-		p.pos.Store(p.Position().Add(deltaPos))
+		p.checkCollisions()
+
+		p.updateFallState(deltaPos[1])
 
 		// The vertical axis isn't relevant for calculation of exhaustion points.
 		deltaPos[1] = 0
@@ -1468,7 +1496,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 		}
 	})
 	ctx.Stop(func() {
-		p.teleport(p.Position())
+		p.teleport(pos)
 	})
 }
 
@@ -1477,15 +1505,16 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 	if p.Dead() || (mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
 		return
 	}
+	yaw, pitch := p.Rotation()
 
-	p.handler().HandleMove(event.C(), p.Position(), p.Yaw()+deltaYaw, p.Pitch()+deltaPitch)
+	p.handler().HandleMove(event.C(), p.Position(), yaw+deltaYaw, pitch+deltaPitch)
 
 	// Cancelling player rotation is rather scuffed, so we don't do that.
 	for _, v := range p.World().Viewers(p.Position()) {
 		v.ViewEntityMovement(p, mgl64.Vec3{}, deltaYaw, deltaPitch)
 	}
-	p.yaw.Store(p.Yaw() + deltaYaw)
-	p.pitch.Store(p.Pitch() + deltaPitch)
+	p.yaw.Store(yaw + deltaYaw)
+	p.pitch.Store(pitch + deltaPitch)
 }
 
 // Facing returns the horizontal direction that the player is facing.
@@ -1505,16 +1534,11 @@ func (p *Player) Position() mgl64.Vec3 {
 	return p.pos.Load().(mgl64.Vec3)
 }
 
-// Yaw returns the yaw of the entity. This is horizontal rotation (rotation around the vertical axis), and
-// is 0 when the entity faces forward.
-func (p *Player) Yaw() float64 {
-	return p.yaw.Load()
-}
-
-// Pitch returns the pitch of the entity. This is vertical rotation (rotation around the horizontal axis),
-// and is 0 when the entity faces forward.
-func (p *Player) Pitch() float64 {
-	return p.pitch.Load()
+// Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
+// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
+// when facing forward).
+func (p *Player) Rotation() (float64, float64) {
+	return p.yaw.Load(), p.pitch.Load()
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
@@ -1575,8 +1599,11 @@ func (p *Player) Tick(current int64) {
 	}
 	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
+		if _, ok2 := p.Armour().Helmet().Item().(item.TurtleShell); ok2 {
+			p.AddEffect(effect.WaterBreathing{}.WithSettings(time.Second*10, 1, true))
+		}
 	}
-	p.onGround.Store(p.checkOnGround())
+	p.checkCollisions()
 	p.tickFood()
 	p.effects.Tick(p)
 	if p.Position()[1] < cube.MinY && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
@@ -1590,19 +1617,6 @@ func (p *Player) Tick(current int64) {
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
 			p.Hurt(1, damage.SourceFireTick{})
-		}
-	}
-
-	// TODO: Move to Move()
-	aabb := p.AABB().Translate(p.Position())
-	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
-	for x := min[0]; x <= max[0]; x++ {
-		for y := min[1]; y <= max[1]; y++ {
-			for z := min[2]; z <= max[2]; z++ {
-				if collide, ok := p.World().Block(cube.Pos{x, y, z}).(block.EntityCollider); ok {
-					collide.EntityCollide(p)
-				}
-			}
 		}
 	}
 
@@ -1656,8 +1670,12 @@ func (p *Player) starve() {
 	}
 }
 
-// checkOnGround checks if the player is currently considered to be on the ground.
-func (p *Player) checkOnGround() bool {
+// checkCollisions checks the player's block collisions, including whether the player
+// is currently considered to be on the ground or not.
+func (p *Player) checkCollisions() {
+	var onGround bool
+
+	w := p.World()
 	pos := p.Position()
 	pAABB := p.AABB().Translate(pos)
 	min, max := pAABB.Min(), pAABB.Max()
@@ -1666,17 +1684,23 @@ func (p *Player) checkOnGround() bool {
 		for z := min[2]; z <= max[2]+1; z++ {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
 				bPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
-				b := p.World().Block(bPos)
-				aabbList := b.Model().AABB(bPos, p.World())
-				for _, aabb := range aabbList {
-					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
-						return true
+				b := w.Block(bPos)
+				if !onGround {
+					aabbList := b.Model().AABB(bPos, w)
+					for _, aabb := range aabbList {
+						if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+							onGround = true
+							p.onGround.Store(onGround)
+						}
 					}
+				}
+
+				if collide, ok := b.(block.EntityCollider); ok {
+					collide.EntityCollide(p)
 				}
 			}
 		}
 	}
-	return false
 }
 
 // Velocity returns the current velocity of the player.

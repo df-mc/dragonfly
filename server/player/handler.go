@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"net"
@@ -41,6 +42,9 @@ type Handler interface {
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos.
 	HandleRespawn(pos *mgl64.Vec3)
+	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
+	// change.
+	HandleSkinChange(ctx *event.Context, skin skin.Skin)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
@@ -125,6 +129,9 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
 // HandleChat ...
 func (NopHandler) HandleChat(*event.Context, *string) {}
 
+// HandleSkinChange ...
+func (NopHandler) HandleSkinChange(*event.Context, skin.Skin) {}
+
 // HandleStartBreak ...
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
 
@@ -135,7 +142,7 @@ func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos) {}
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
 
 // HandleBlockPick ...
-func (NopHandler) HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block) {}
+func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
@@ -144,8 +151,7 @@ func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
 func (NopHandler) HandleItemUse(*event.Context) {}
 
 // HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3) {
-}
+func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3) {}
 
 // HandleItemUseOnEntity ...
 func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}

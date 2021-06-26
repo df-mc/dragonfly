@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -11,7 +12,7 @@ type Concrete struct {
 	bassDrum
 
 	// Colour is the colour of the concrete block.
-	Colour Colour
+	Colour item.Colour
 }
 
 // BreakInfo ...
@@ -32,7 +33,7 @@ func (c Concrete) EncodeBlock() (name string, properties map[string]interface{})
 // allConcrete returns concrete blocks with all possible colours.
 func allConcrete() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range Colours() {
+	for _, c := range item.Colours() {
 		b = append(b, Concrete{Colour: c})
 	}
 	return b

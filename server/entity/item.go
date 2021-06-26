@@ -180,11 +180,8 @@ func (it *Item) SetVelocity(v mgl64.Vec3) {
 	it.velocity.Store(v)
 }
 
-// Yaw always returns 0.
-func (it *Item) Yaw() float64 { return 0 }
-
-// Pitch always returns 0.
-func (it *Item) Pitch() float64 { return 0 }
+// Rotation always returns 0.
+func (it *Item) Rotation() (float64, float64) { return 0, 0 }
 
 // AABB ...
 func (it *Item) AABB() physics.AABB {
