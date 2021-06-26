@@ -79,13 +79,18 @@ type jsonData struct {
 }
 
 type jsonInventoryData struct {
-	Items      []map[string]interface{}
-	Boots      map[string]interface{}
-	Leggings   map[string]interface{}
-	Chestplate map[string]interface{}
-	Helmet     map[string]interface{}
-	OffHand    map[string]interface{}
+	Items      []jsonSlot
+	Boots      []byte
+	Leggings   []byte
+	Chestplate []byte
+	Helmet     []byte
+	OffHand    []byte
 	MainHand   uint32
+}
+
+type jsonSlot struct {
+	Item []byte
+	Slot int
 }
 
 type jsonEffect struct {
