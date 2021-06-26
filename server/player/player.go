@@ -1952,10 +1952,10 @@ func (p *Player) loadInventory(data InventoryData) {
 		_ = p.Inventory().SetItem(slot, stack)
 	}
 	_ = p.offHand.SetItem(1, data.Offhand)
-	p.Armour().SetBoots(data.Armor[0])
-	p.Armour().SetLeggings(data.Armor[1])
-	p.Armour().SetChestplate(data.Armor[2])
-	p.Armour().SetHelmet(data.Armor[3])
+	p.Armour().SetBoots(data.Armour[0])
+	p.Armour().SetLeggings(data.Armour[1])
+	p.Armour().SetChestplate(data.Armour[2])
+	p.Armour().SetHelmet(data.Armour[3])
 }
 
 // Save saves the player data to the provider.
@@ -1979,7 +1979,7 @@ func (p *Player) Save() {
 		Gamemode:        p.GameMode(),
 		Inventory: InventoryData{
 			Items: p.Inventory().Items(),
-			Armor: [4]item.Stack{
+			Armour: [4]item.Stack{
 				p.armour.Boots(),
 				p.armour.Leggings(),
 				p.armour.Chestplate(),

@@ -59,8 +59,8 @@ type InventoryData struct {
 	// Items contains all the items in the player's main inventory.
 	// This excludes armor and offhand.
 	Items []item.Stack
-	// Armor contains all armor items the player is wearing.
-	Armor [4]item.Stack
+	// Armour contains all armor items the player is wearing.
+	Armour [4]item.Stack
 	// Offhand is what the player is carrying in their non-main hand, like a shield or arrows.
 	Offhand item.Stack
 	// Mainhand saves the slot in the hotbar that the player is currently switched to.

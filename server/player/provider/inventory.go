@@ -19,12 +19,12 @@ func invToData(data player.InventoryData) jsonInventoryData {
 		itemData["slot"] = slot
 		d.Items = append(d.Items, itemData)
 	}
-	for slot, i := range data.Armor {
+	for slot, i := range data.Armour {
 		itemData := itemToData(i)
 		if itemData == nil {
-			d.Armor[slot] = nil
+			d.Armour[slot] = nil
 		}
-		d.Armor[slot] = itemData
+		d.Armour[slot] = itemData
 	}
 	return d
 }
@@ -34,7 +34,7 @@ func dataToInv(data jsonInventoryData) player.InventoryData {
 		Mainhand: data.Mainhand,
 		Offhand:  dataToItem(data.Offhand),
 		Items:    make([]item.Stack, 36),
-		Armor:    [4]item.Stack{},
+		Armour:   [4]item.Stack{},
 	}
 	for _, i := range data.Items {
 		slot, ok := readInt("slot", i)
@@ -43,8 +43,8 @@ func dataToInv(data jsonInventoryData) player.InventoryData {
 		}
 		d.Items[slot] = dataToItem(i)
 	}
-	for slot, i := range data.Armor {
-		d.Armor[slot] = dataToItem(i)
+	for slot, i := range data.Armour {
+		d.Armour[slot] = dataToItem(i)
 	}
 	return d
 }

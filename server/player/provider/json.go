@@ -80,7 +80,7 @@ type jsonData struct {
 
 type jsonInventoryData struct {
 	Items    []map[string]interface{}
-	Armor    [4]map[string]interface{}
+	Armour   [4]map[string]interface{}
 	Offhand  map[string]interface{}
 	Mainhand uint32
 }
