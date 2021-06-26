@@ -125,7 +125,7 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log internal.Logger, joinMess
 // Start makes the session start handling incoming packets from the client and initialises the controllable of
 // the session in the world.
 // The function passed will be called when the session stops running.
-func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable Controllable)) {
+func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
@@ -137,7 +137,7 @@ func (s *Session) Start(c Controllable, w *world.World, onStop func(controllable
 	s.initPlayerList()
 
 	w.AddEntity(s.c)
-	s.c.SetGameMode(w.DefaultGameMode())
+	s.c.SetGameMode(gm)
 	s.SendAvailableCommands()
 	s.SendSpeed(0.1)
 
