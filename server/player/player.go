@@ -95,7 +95,8 @@ type Player struct {
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
-// identified over network.
+// identified over network. You can either pass on player data you want to load or
+// you can leave the data as nil to use default data.
 func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 	p := &Player{}
 	*p = Player{
@@ -135,7 +136,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 // NewWithSession returns a new player for a network session, so that the network session can control the
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
-// name and the skin of the player.
+// name and the skin of the player. You can either pass on player data you want to load or
+// you can leave the data as nil to use default data.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, provider Provider, data *Data) *Player {
 	p := New(name, skin, pos, data)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
