@@ -26,6 +26,10 @@ type Config struct {
 		// QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
 		// %v is the placeholder for the username of the player
 		QuitMessage string
+		// SavePlayerData controls whether or not a player's data will be saved and loaded. If true, the server
+		// will use the default LevelDB data provider and if false, an empty provider will be used. To use your
+		// own provider, turn this value to false as you will still be able to pass your own provider.
+		SavePlayerData bool
 	}
 	World struct {
 		// Name is the name of the world that the server holds. A world with this name will be loaded and
@@ -51,6 +55,7 @@ func DefaultConfig() Config {
 	c.Server.AuthEnabled = true
 	c.Server.JoinMessage = "%v has joined the game"
 	c.Server.QuitMessage = "%v has left the game"
+	c.Server.SavePlayerData = true
 	c.World.Name = "World"
 	c.World.Folder = "world"
 	c.World.MaximumChunkRadius = 32

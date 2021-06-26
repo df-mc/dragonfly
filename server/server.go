@@ -83,13 +83,17 @@ func New(c *Config, log internal.Logger) *Server {
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
-	if p, err := provider.NewDBProvider("players"); err == nil {
-		s.PlayerProvider(p)
-	} else {
-		log.Errorf("Error starting player provider: %v", err)
-	}
 
 	s.checkNetIsolation()
+
+	if !c.Server.SavePlayerData {
+		return s
+	}
+	p, err := provider.NewDBProvider("players")
+	if err != nil {
+		panic(err)
+	}
+	s.PlayerProvider(p)
 	return s
 }
 
