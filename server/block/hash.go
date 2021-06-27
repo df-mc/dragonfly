@@ -39,6 +39,7 @@ const (
 	hashDoubleFlower
 	hashDoubleTallGrass
 	hashDragonEgg
+	hashDriedKelpBlock
 	hashDripstone
 	hashEmeraldBlock
 	hashEmeraldOre
@@ -263,6 +264,10 @@ func (d DoubleTallGrass) Hash() uint64 {
 
 func (DragonEgg) Hash() uint64 {
 	return hashDragonEgg
+}
+
+func (DriedKelpBlock) Hash() uint64 {
+	return hashDriedKelpBlock
 }
 
 func (d Dripstone) Hash() uint64 {

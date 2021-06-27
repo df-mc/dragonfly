@@ -87,6 +87,7 @@ func init() {
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(SporeBlossom{})
 	world.RegisterBlock(Dripstone{})
+	world.RegisterBlock(DriedKelpBlock{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -366,6 +367,7 @@ func init() {
 	world.RegisterItem(Prismarine{Type: NormalPrismarine()})
 	world.RegisterItem(Prismarine{Type: DarkPrismarine()})
 	world.RegisterItem(Prismarine{Type: BrickPrismarine()})
+	world.RegisterItem(DriedKelpBlock{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
