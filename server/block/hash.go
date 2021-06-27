@@ -6,6 +6,7 @@ const (
 	hashAir = iota
 	hashAncientDebris
 	hashAndesite
+	hashBarrel
 	hashBarrier
 	hashBasalt
 	hashBeacon
@@ -130,6 +131,10 @@ func (AncientDebris) Hash() uint64 {
 
 func (a Andesite) Hash() uint64 {
 	return hashAndesite | uint64(boolByte(a.Polished))<<7
+}
+
+func (b Barrel) Hash() uint64 {
+	return hashBarrel | uint64(b.Facing)<<7 | uint64(boolByte(b.Open))<<10
 }
 
 func (Barrier) Hash() uint64 {

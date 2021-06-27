@@ -67,6 +67,7 @@ const (
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
+	containerBarrel         = 57
 	containerCursor         = 58
 	containerCreativeOutput = 59
 )
@@ -91,6 +92,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load().(*inventory.Inventory), true
+			}
+		}
+	case containerBarrel:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			if _, barrel := b.(block.Barrel); barrel {
 				return s.openedWindow.Load().(*inventory.Inventory), true
 			}
 		}

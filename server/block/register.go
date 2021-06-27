@@ -88,6 +88,7 @@ func init() {
 	world.RegisterBlock(SporeBlossom{})
 	world.RegisterBlock(Dripstone{})
 
+	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
 	registerAll(allBoneBlock())
@@ -281,6 +282,7 @@ func init() {
 	for _, s := range allSandstones() {
 		world.RegisterItem(s.(world.Item))
 	}
+	world.RegisterItem(Barrel{})
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})

@@ -68,6 +68,31 @@ type beaconAffected interface {
 	BeaconAffected() bool
 }
 
+func calculateFace(user item.User, placePos cube.Pos) cube.Face {
+	userPos := user.Position()
+	pos := cube.PosFromVec3(userPos)
+	if abs(pos[0]-placePos[0]) < 2 && abs(pos[2]-placePos[2]) < 2 {
+		y := userPos[1]
+		if eyed, ok := user.(entity.Eyed); ok {
+			y += eyed.EyeHeight()
+		}
+
+		if y-float64(placePos[1]) > 2.0 {
+			return cube.FaceUp
+		} else if float64(placePos[1])-y > 0.0 {
+			return cube.FaceDown
+		}
+	}
+	return user.Facing().Opposite().Face()
+}
+
+func abs(x int) int {
+	if x > 0 {
+		return x
+	}
+	return -x
+}
+
 // replaceableWith checks if the block at the position passed is replaceable with the block passed.
 func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 	if pos.OutOfBounds() {
