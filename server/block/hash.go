@@ -59,6 +59,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashHoneycombBlock
 	hashInvisibleBedrock
 	hashIronBars
 	hashIronBlock
@@ -344,6 +345,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (HoneycombBlock) Hash() uint64 {
+	return hashHoneycombBlock
 }
 
 func (InvisibleBedrock) Hash() uint64 {
