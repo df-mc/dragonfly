@@ -138,4 +138,5 @@ func init() {
 		world.RegisterItem(dye)
 	}
 	world.RegisterItem(TropicalFish{})
+	world.RegisterItem(AmethystShard{})
 }
