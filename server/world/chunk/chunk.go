@@ -98,8 +98,8 @@ func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtime
 		sub.skyLight = fullSkyLight
 		chunk.sub[i] = sub
 	}
-	if len(sub.storages) < 2 && runtimeID == chunk.air && layer == 1 {
-		// Air was set at the second layer, but there were less than 2 layers, so there already was air there.
+	if len(sub.storages) < int(layer+1) && runtimeID == chunk.air {
+		// Air was set at n layer, but there were less than n layers, so there already was air there.
 		// Don't do anything with this, just return.
 		return
 	}
