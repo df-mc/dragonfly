@@ -1955,9 +1955,9 @@ func (p *Player) loadInventory(data InventoryData) {
 	p.Armour().SetHelmet(data.Helmet)
 }
 
-// GetSaveData returns the player data that needs to be saved. This is used when the player
+// Data returns the player data that needs to be saved. This is used when the player
 // gets disconnected and the player provider needs to save the data.
-func (p *Player) GetSaveData() Data {
+func (p *Player) Data() Data {
 	yaw, pitch := p.Rotation()
 	offHand, _ := p.offHand.Item(1)
 
@@ -1976,13 +1976,13 @@ func (p *Player) GetSaveData() Data {
 		SaturationLevel: p.hunger.saturationLevel,
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
-			Items:      p.Inventory().Items(),
-			Boots:      p.armour.Boots(),
-			Leggings:   p.armour.Leggings(),
-			Chestplate: p.armour.Chestplate(),
-			Helmet:     p.armour.Helmet(),
-			OffHand:    offHand,
-			MainHand:   p.heldSlot.Load(),
+			Items:        p.Inventory().Items(),
+			Boots:        p.armour.Boots(),
+			Leggings:     p.armour.Leggings(),
+			Chestplate:   p.armour.Chestplate(),
+			Helmet:       p.armour.Helmet(),
+			OffHand:      offHand,
+			MainHandSlot: p.heldSlot.Load(),
 		},
 		Effects:      p.Effects(),
 		FireTicks:    p.fireTicks.Load(),

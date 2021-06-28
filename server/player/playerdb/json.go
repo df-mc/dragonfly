@@ -21,10 +21,10 @@ func fromJson(d jsonData) player.Data {
 		FoodTick:        d.FoodTick,
 		ExhaustionLevel: d.ExhaustionLevel,
 		SaturationLevel: d.SaturationLevel,
-		XpLevel:         d.XpLevel,
-		XpTotal:         d.XpTotal,
-		XpPercentage:    d.XpPercentage,
-		XpSeed:          d.XpSeed,
+		XPLevel:         d.XPLevel,
+		XPTotal:         d.XPTotal,
+		XPPercentage:    d.XPPercentage,
+		XPSeed:          d.XPSeed,
 		GameMode:        dataToGameMode(d.GameMode),
 		Effects:         dataToEffects(d.Effects),
 		FireTicks:       d.FireTicks,
@@ -47,10 +47,10 @@ func toJson(d player.Data) jsonData {
 		FoodTick:        d.FoodTick,
 		ExhaustionLevel: d.ExhaustionLevel,
 		SaturationLevel: d.SaturationLevel,
-		XpLevel:         d.XpLevel,
-		XpTotal:         d.XpTotal,
-		XpPercentage:    d.XpPercentage,
-		XpSeed:          d.XpSeed,
+		XPLevel:         d.XPLevel,
+		XPTotal:         d.XPTotal,
+		XPPercentage:    d.XPPercentage,
+		XPSeed:          d.XPSeed,
 		GameMode:        gameModeToData(d.GameMode),
 		Effects:         effectsToData(d.Effects),
 		FireTicks:       d.FireTicks,
@@ -68,9 +68,9 @@ type jsonData struct {
 	Hunger                           int
 	FoodTick                         int
 	ExhaustionLevel, SaturationLevel float64
-	XpLevel, XpTotal                 int
-	XpPercentage                     float64
-	XpSeed                           int
+	XPLevel, XPTotal                 int
+	XPPercentage                     float64
+	XPSeed                           int
 	GameMode                         uint8
 	Inventory                        jsonInventoryData
 	Effects                          []jsonEffect
@@ -79,13 +79,13 @@ type jsonData struct {
 }
 
 type jsonInventoryData struct {
-	Items      []jsonSlot
-	Boots      []byte
-	Leggings   []byte
-	Chestplate []byte
-	Helmet     []byte
-	OffHand    []byte
-	MainHand   uint32
+	Items        []jsonSlot
+	Boots        []byte
+	Leggings     []byte
+	Chestplate   []byte
+	Helmet       []byte
+	OffHand      []byte
+	MainHandSlot uint32
 }
 
 type jsonSlot struct {

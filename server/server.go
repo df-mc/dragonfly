@@ -397,7 +397,7 @@ func (server *Server) checkNetIsolation() {
 func (server *Server) handleSessionClose(controllable session.Controllable) {
 	server.playerMutex.Lock()
 	if p, ok := server.p[controllable.UUID()]; ok {
-		err := server.playerProvider.Save(controllable.UUID(), p.GetSaveData())
+		err := server.playerProvider.Save(controllable.UUID(), p.Data())
 		if err != nil {
 			server.log.Errorf("Error while saving data: %v", err)
 		}

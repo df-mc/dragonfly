@@ -10,8 +10,8 @@ import (
 
 func invToData(data player.InventoryData) jsonInventoryData {
 	d := jsonInventoryData{
-		MainHand: data.MainHand,
-		OffHand:  encodeItem(data.OffHand),
+		MainHandSlot: data.MainHandSlot,
+		OffHand:      encodeItem(data.OffHand),
 	}
 	for slot, i := range data.Items {
 		itemData := encodeItem(i)
@@ -32,9 +32,9 @@ func invToData(data player.InventoryData) jsonInventoryData {
 
 func dataToInv(data jsonInventoryData) player.InventoryData {
 	d := player.InventoryData{
-		MainHand: data.MainHand,
-		OffHand:  decodeItem(data.OffHand),
-		Items:    make([]item.Stack, 36),
+		MainHandSlot: data.MainHandSlot,
+		OffHand:      decodeItem(data.OffHand),
+		Items:        make([]item.Stack, 36),
 	}
 	for _, i := range data.Items {
 		d.Items[i.Slot] = decodeItem(i.Item)

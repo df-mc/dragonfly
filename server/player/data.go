@@ -31,16 +31,16 @@ type Data struct {
 	// ExhaustionLevel determines how fast the hunger level depletes and is controlled by the kinds
 	// of food the player has eaten. SaturationLevel determines how fast the saturation level depletes.
 	ExhaustionLevel, SaturationLevel float64
-	// XpLevel is the current xp level the player has, XpTotal is the total amount of xp the
+	// XPLevel is the current xp level the player has, XPTotal is the total amount of xp the
 	// player has collected during their lifetime, which is used to display score upon player death.
 	// These are currently not implemented in DF.
-	XpLevel, XpTotal int
-	// XpPercentage is the player's current progress towards the next level.
+	XPLevel, XPTotal int
+	// XPPercentage is the player's current progress towards the next level.
 	// This is currently not implemented in DF.
-	XpPercentage float64
-	// XpSeed is the random seed used to determine the next enchantment in enchantment tables.
+	XPPercentage float64
+	// XPSeed is the random seed used to determine the next enchantment in enchantment tables.
 	// This is currently not implemented in DF.
-	XpSeed int
+	XPSeed int
 	// GameMode is the last gamemode the user had, like creative or survival.
 	GameMode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.
@@ -66,7 +66,7 @@ type InventoryData struct {
 	Helmet     item.Stack
 	// OffHand is what the player is carrying in their non-main hand, like a shield or arrows.
 	OffHand item.Stack
-	// MainHand saves the slot in the hotbar that the player is currently switched to.
+	// MainHandSlot saves the slot in the hotbar that the player is currently switched to.
 	// Should be between 0-8.
-	MainHand uint32
+	MainHandSlot uint32
 }
