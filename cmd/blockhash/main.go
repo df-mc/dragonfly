@@ -94,15 +94,18 @@ func (b *hashBuilder) writePackage(w io.Writer) {
 
 // writeConstants writes hash constants for every block to a file.
 func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
+	if _, err := fmt.Fprintln(w, "const ("); err != nil {
+		log.Fatalln(err)
+	}
+
 	var i uint64
 	for _, name := range b.names {
 		c := constFormat
 		if i == 0 {
-			c = "const (\n" + c + " = iota"
+			c += " = iota"
 		}
-		c += "\n"
 
-		if _, err := fmt.Fprintf(w, c, name); err != nil {
+		if _, err := fmt.Fprintf(w, c+"\n", name); err != nil {
 			log.Fatalln(err)
 		}
 		i++
