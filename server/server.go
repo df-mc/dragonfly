@@ -86,10 +86,10 @@ func New(c *Config, log internal.Logger) *Server {
 
 	s.checkNetIsolation()
 
-	if !c.Server.SavePlayerData {
+	if !c.Players.SaveData {
 		return s
 	}
-	p, err := playerdb.NewProvider("players")
+	p, err := playerdb.NewProvider(c.Players.Folder)
 	if err != nil {
 		panic(err)
 	}
@@ -178,10 +178,10 @@ func (server *Server) PlayerCount() int {
 // time. Players trying to join when the server is full will be refused to enter.
 // If the config has a maximum player count set to 0, MaxPlayerCount will return Server.PlayerCount + 1.
 func (server *Server) MaxPlayerCount() int {
-	if server.c.Server.MaximumPlayers == 0 {
+	if server.c.Players.MaxCount == 0 {
 		return server.PlayerCount() + 1
 	}
-	return server.c.Server.MaximumPlayers
+	return server.c.Players.MaxCount
 }
 
 // Players returns a list of all players currently connected to the server. Note that the slice returned is
@@ -306,7 +306,7 @@ func (server *Server) startListening() error {
 	server.startTime = time.Now()
 
 	cfg := minecraft.ListenConfig{
-		MaximumPlayers:         server.c.Server.MaximumPlayers,
+		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 	}
@@ -408,7 +408,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
-	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
+	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), data)
 	gm := server.world.DefaultGameMode()
 	if data != nil {
