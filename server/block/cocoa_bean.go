@@ -53,7 +53,7 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 	if log, ok := w.Block(pos.Side(face.Opposite())).(Log); ok {
-		if log.Wood == JungleWood() && !log.Stripped {
+		if log.Wood == JungleWood() {
 			c.Facing = face.Opposite().Direction()
 			ctx.IgnoreAABB = true
 

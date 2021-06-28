@@ -39,6 +39,7 @@ const (
 	hashDoubleFlower
 	hashDoubleTallGrass
 	hashDragonEgg
+	hashDriedKelpBlock
 	hashDripstone
 	hashEmeraldBlock
 	hashEmeraldOre
@@ -58,6 +59,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashHoneycombBlock
 	hashInvisibleBedrock
 	hashIronBars
 	hashIronBlock
@@ -265,6 +267,10 @@ func (DragonEgg) Hash() uint64 {
 	return hashDragonEgg
 }
 
+func (DriedKelpBlock) Hash() uint64 {
+	return hashDriedKelpBlock
+}
+
 func (d Dripstone) Hash() uint64 {
 	return hashDripstone
 }
@@ -339,6 +345,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (HoneycombBlock) Hash() uint64 {
+	return hashHoneycombBlock
 }
 
 func (InvisibleBedrock) Hash() uint64 {

@@ -137,4 +137,6 @@ func init() {
 	for _, dye := range AllDyes() {
 		world.RegisterItem(dye)
 	}
+	world.RegisterItem(TropicalFish{})
+	world.RegisterItem(AmethystShard{})
 }
