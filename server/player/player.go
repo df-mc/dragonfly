@@ -90,8 +90,6 @@ type Player struct {
 	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
-
-	provider Provider
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -120,7 +118,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 		heldSlot: atomic.NewUint32(0),
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
-		provider: NopProvider{},
 	}
 	p.pos.Store(pos)
 	p.velocity.Store(mgl64.Vec3{})
@@ -138,12 +135,11 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, provider Provider, data *Data) *Player {
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos, data)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	p.provider = provider
 	chat.Global.Subscribe(p)
 	if data != nil {
 		p.loadInventory(data.Inventory)
@@ -1921,7 +1917,6 @@ func (p *Player) close() {
 		p.World().RemoveEntity(p)
 	} else {
 		s.CloseConnection()
-		p.Save()
 	}
 }
 
@@ -1960,12 +1955,13 @@ func (p *Player) loadInventory(data InventoryData) {
 	p.Armour().SetHelmet(data.Helmet)
 }
 
-// Save saves the player data to the provider.
-func (p *Player) Save() {
+// GetSaveData returns the player data that needs to be saved. This is used when the player
+// gets disconnected and the player provider needs to save the data.
+func (p *Player) GetSaveData() Data {
 	yaw, pitch := p.Rotation()
 	offHand, _ := p.offHand.Item(1)
 
-	p.provider.Save(Data{
+	return Data{
 		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
@@ -1991,7 +1987,7 @@ func (p *Player) Save() {
 		Effects:      p.Effects(),
 		FireTicks:    p.fireTicks.Load(),
 		FallDistance: p.fallDistance.Load(),
-	})
+	}
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session

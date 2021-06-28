@@ -10,7 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
-	"github.com/df-mc/dragonfly/server/player/provider"
+	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
@@ -89,7 +89,7 @@ func New(c *Config, log internal.Logger) *Server {
 	if !c.Server.SavePlayerData {
 		return s
 	}
-	p, err := provider.NewDBProvider("players")
+	p, err := playerdb.NewProvider("players")
 	if err != nil {
 		panic(err)
 	}
@@ -362,7 +362,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		return
 	}
 	var playerData *player.Data
-	if d, ok := server.playerProvider.Load(id); ok {
+	if d, err := server.playerProvider.Load(id); err == nil {
 		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 		playerData = &d
@@ -396,6 +396,12 @@ func (server *Server) checkNetIsolation() {
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(controllable session.Controllable) {
 	server.playerMutex.Lock()
+	if p, ok := server.p[controllable.UUID()]; ok {
+		err := server.playerProvider.Save(controllable.UUID(), p.GetSaveData())
+		if err != nil {
+			server.log.Errorf("Error while saving data: %v", err)
+		}
+	}
 	delete(server.p, controllable.UUID())
 	server.playerMutex.Unlock()
 }
@@ -403,7 +409,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection passed.
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
 	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), server.playerProvider, data)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), data)
 	gm := server.world.DefaultGameMode()
 	if data != nil {
 		gm = data.GameMode

@@ -1,4 +1,4 @@
-package provider
+package playerdb
 
 import (
 	"github.com/df-mc/dragonfly/server/player"

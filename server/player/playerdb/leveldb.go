@@ -1,4 +1,4 @@
-package provider
+package playerdb
 
 import (
 	"encoding/json"
@@ -8,14 +8,14 @@ import (
 	"os"
 )
 
-// DBProvider ...
-type DBProvider struct {
+// Provider ...
+type Provider struct {
 	db *leveldb.DB
 }
 
-// NewDBProvider creates a new player data provider that saves and loads data using
+// NewProvider creates a new player data provider that saves and loads data using
 // a LevelDB database.
-func NewDBProvider(path string) (*DBProvider, error) {
+func NewProvider(path string) (*Provider, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		_ = os.Mkdir(path, 0777)
 	}
@@ -23,35 +23,36 @@ func NewDBProvider(path string) (*DBProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DBProvider{db: db}, nil
+	return &Provider{db: db}, nil
 }
 
 // Save ...
-func (p *DBProvider) Save(d player.Data) {
+func (p *Provider) Save(UUID uuid.UUID, d player.Data) error {
 	data := toJson(d)
 	jsondata, err := json.Marshal(data)
 	if err != nil {
-		return
+		return err
 	}
 	_ = p.db.Put(d.UUID[:], jsondata, nil)
+	return nil
 }
 
 // Load ...
-func (p *DBProvider) Load(UUID uuid.UUID) (player.Data, bool) {
+func (p *Provider) Load(UUID uuid.UUID) (player.Data, error) {
 	jsondata, err := p.db.Get(UUID[:], nil)
 	if err != nil {
-		return player.Data{}, false
+		return player.Data{}, err
 	}
 	d := jsonData{}
 	err = json.Unmarshal(jsondata, &d)
 	if err != nil {
-		return player.Data{}, false
+		return player.Data{}, err
 	}
 
-	return fromJson(d), true
+	return fromJson(d), nil
 }
 
 // Close ...
-func (p *DBProvider) Close() {
+func (p *Provider) Close() {
 	_ = p.db.Close()
 }
