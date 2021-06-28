@@ -33,7 +33,7 @@ func (p *Provider) Save(UUID uuid.UUID, d player.Data) error {
 	if err != nil {
 		return err
 	}
-	_ = p.db.Put(d.UUID[:], jsondata, nil)
+	_ = p.db.Put(UUID[:], jsondata, nil)
 	return nil
 }
 
