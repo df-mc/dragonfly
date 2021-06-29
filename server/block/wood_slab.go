@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -74,7 +75,7 @@ func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 
 // BreakInfo ...
 func (s WoodSlab) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(item.Stack) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
 		if s.Double {
 			s.Double = false
 			// If the slab is double, it should drop two single slabs.
