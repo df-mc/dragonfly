@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -50,7 +49,7 @@ func (b BeetrootSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 
 // BreakInfo ...
 func (b BeetrootSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Stack) []item.Stack {
 		if b.Growth < 7 {
 			return []item.Stack{item.NewStack(b, 1)}
 		}

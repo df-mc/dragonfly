@@ -27,7 +27,7 @@ type (
 	}
 )
 
-var stoneBreakInfo = newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(Cobblestone{}))
+var stoneBreakInfo = newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}))
 
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
