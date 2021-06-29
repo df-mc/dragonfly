@@ -1,6 +1,9 @@
 package player
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"io"
+)
 
 // Provider represents a value that may provide data to a Player value. It usually does the reading and
 // writing of the player data so that the Player may use it.
@@ -11,8 +14,9 @@ type Provider interface {
 	// It expects to the player data, and a bool that indicates whether or not the player has played before.
 	// If this bool is false the player will use default values and you can use an empty Data struct.
 	Load(UUID uuid.UUID) (Data, error)
-	// Close is called when the server closes and is useful to safely close your database.
-	Close()
+	// Closer is used on server close when the server calls calls Provider.Close() and
+	// is useful to safely close your database.
+	io.Closer
 }
 
 // NopProvider is a player data provider that won't store any data and instead always return default values
@@ -29,4 +33,6 @@ func (NopProvider) Load(uuid.UUID) (Data, error) {
 }
 
 // Close ...
-func (NopProvider) Close() {}
+func (NopProvider) Close() error {
+	return nil
+}

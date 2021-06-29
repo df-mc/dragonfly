@@ -142,6 +142,8 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	chat.Global.Subscribe(p)
 	if data != nil {
+		// Player inventories get overwritten by s.HandleInventories(), so we need to make sure we load
+		// the inventory again for players that have sessions.
 		p.loadInventory(data.Inventory)
 	}
 	return p

@@ -53,6 +53,6 @@ func (p *Provider) Load(UUID uuid.UUID) (player.Data, error) {
 }
 
 // Close ...
-func (p *Provider) Close() {
-	_ = p.db.Close()
+func (p *Provider) Close() error {
+	return p.db.Close()
 }

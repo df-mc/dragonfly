@@ -272,10 +272,13 @@ func (server *Server) Close() error {
 	server.playerMutex.RUnlock()
 
 	server.log.Debugf("Closing player provider...")
-	server.playerProvider.Close()
+	err := server.playerProvider.Close()
+	if err != nil {
+		server.log.Errorf("Error while closing player provider: %v", err)
+	}
 
 	server.log.Debugf("Closing world...")
-	if err := server.world.Close(); err != nil {
+	if err = server.world.Close(); err != nil {
 		return err
 	}
 
@@ -395,13 +398,13 @@ func (server *Server) checkNetIsolation() {
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(controllable session.Controllable) {
-	server.playerMutex.Lock()
 	if p, ok := server.p[controllable.UUID()]; ok {
 		err := server.playerProvider.Save(controllable.UUID(), p.Data())
 		if err != nil {
 			server.log.Errorf("Error while saving data: %v", err)
 		}
 	}
+	server.playerMutex.Lock()
 	delete(server.p, controllable.UUID())
 	server.playerMutex.Unlock()
 }
