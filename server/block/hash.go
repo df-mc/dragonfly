@@ -86,6 +86,7 @@ const (
 	hashNoteBlock
 	hashObsidian
 	hashPlanks
+	hashPodzol
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -453,6 +454,10 @@ func (o Obsidian) Hash() uint64 {
 
 func (p Planks) Hash() uint64 {
 	return hashPlanks | uint64(p.Wood.Uint8())<<7
+}
+
+func (Podzol) Hash() uint64 {
+	return hashPodzol
 }
 
 func (p Potato) Hash() uint64 {

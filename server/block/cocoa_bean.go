@@ -37,7 +37,7 @@ func (c CocoaBean) HasLiquidDrops() bool {
 
 // NeighbourUpdateTick ...
 func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != JungleWood() || log.Stripped {
+	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != JungleWood() {
 		w.BreakBlockWithoutParticles(pos)
 	}
 }
