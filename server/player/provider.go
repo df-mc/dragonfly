@@ -14,7 +14,7 @@ type Provider interface {
 	// It expects to the player data, and a bool that indicates whether or not the player has played before.
 	// If this bool is false the player will use default values and you can use an empty Data struct.
 	Load(UUID uuid.UUID) (Data, error)
-	// Closer is used on server close when the server calls calls Provider.Close() and
+	// Closer is used on server close when the server calls Provider.Close() and
 	// is useful to safely close your database.
 	io.Closer
 }
