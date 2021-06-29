@@ -398,15 +398,16 @@ func (server *Server) checkNetIsolation() {
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(controllable session.Controllable) {
-	if p, ok := server.p[controllable.UUID()]; ok {
+	server.playerMutex.Lock()
+	p, ok := server.p[controllable.UUID()]
+	delete(server.p, controllable.UUID())
+	server.playerMutex.Unlock()
+	if ok {
 		err := server.playerProvider.Save(controllable.UUID(), p.Data())
 		if err != nil {
 			server.log.Errorf("Error while saving data: %v", err)
 		}
 	}
-	server.playerMutex.Lock()
-	delete(server.p, controllable.UUID())
-	server.playerMutex.Unlock()
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
