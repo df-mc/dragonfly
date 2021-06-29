@@ -1383,13 +1383,13 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		drops = container.Inventory().Contents()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
-				drops = breakable.BreakInfo().Drops(t)
+				drops = breakable.BreakInfo().Drops(held)
 			}
 		}
 		container.Inventory().Clear()
 	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
-			drops = breakable.BreakInfo().Drops(t)
+			drops = breakable.BreakInfo().Drops(held)
 		}
 	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
 		drops = []item.Stack{item.NewStack(it, 1)}
