@@ -34,4 +34,3 @@ func dataToGameMode(mode uint8) world.GameMode {
 		return world.GameModeSurvival{}
 	}
 }
-
