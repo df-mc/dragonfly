@@ -8,7 +8,9 @@ import (
 	"os"
 )
 
-// Provider ...
+// Provider is a player data provider that uses a LevelDB database to store data. The data passed on
+// will first be converted to make sure it can be marshaled into JSON. This JSON (in bytes) will then
+// be stored in the database under a key that is the byte representation of the player's UUID.
 type Provider struct {
 	db *leveldb.DB
 }

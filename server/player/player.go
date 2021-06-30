@@ -95,7 +95,7 @@ type Player struct {
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
-func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
+func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
 		inv: inventory.New(36, func(slot int, item item.Stack) {
@@ -123,10 +123,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 	p.velocity.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
-	if data != nil {
-		p.load(*data)
-		p.loadInventory(data.Inventory)
-	}
 	return p
 }
 
@@ -136,15 +132,13 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, data *Data) *Player {
 // name and the skin of the player. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
-	p := New(name, skin, pos, data)
+	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	chat.Global.Subscribe(p)
 	if data != nil {
-		// Player inventories get overwritten by s.HandleInventories(), so we need to make sure we load
-		// the inventory again for players that have sessions.
-		p.loadInventory(data.Inventory)
+		p.load(*data)
 	}
 	return p
 }
@@ -1943,6 +1937,8 @@ func (p *Player) load(data Data) {
 	}
 	p.fireTicks.Store(data.FireTicks)
 	p.fallDistance.Store(data.FallDistance)
+
+	p.loadInventory(data.Inventory)
 }
 
 // loadInventory loads all the data associated with the player inventory.
