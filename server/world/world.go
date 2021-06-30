@@ -708,6 +708,7 @@ func (w *World) AddEntity(e Entity) {
 	chunkPos := chunkPosFromVec3(e.Position())
 	w.entityMu.Lock()
 	w.entities[e] = chunkPos
+	w.entityMu.Unlock()
 
 	c, err := w.chunk(chunkPos)
 	if err != nil {
@@ -722,7 +723,6 @@ func (w *World) AddEntity(e Entity) {
 		copy(viewers, c.v)
 	}
 	c.Unlock()
-	w.entityMu.Unlock()
 
 	for _, viewer := range viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
@@ -743,10 +743,11 @@ func (w *World) RemoveEntity(e Entity) {
 	w.entityMu.Lock()
 	chunkPos, found := w.entities[e]
 	if !found {
+		w.entityMu.Unlock()
 		// The entity currently isn't in this world.
 		return
 	}
-	delete(w.entities, e)
+	w.entityMu.Unlock()
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
@@ -773,6 +774,9 @@ func (w *World) RemoveEntity(e Entity) {
 		copy(viewers, c.v)
 	}
 	c.Unlock()
+
+	w.entityMu.Lock()
+	delete(w.entities, e)
 	w.entityMu.Unlock()
 
 	for _, viewer := range viewers {
