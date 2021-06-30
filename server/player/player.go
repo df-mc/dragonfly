@@ -1997,7 +1997,7 @@ func (p *Player) Data() Data {
 		Pitch:           pitch,
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
-		Hunger:          p.hunger.Food(),
+		Hunger:          p.hunger.foodLevel,
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
