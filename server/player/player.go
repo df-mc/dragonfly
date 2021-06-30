@@ -1985,6 +1985,9 @@ func (p *Player) Data() Data {
 	yaw, pitch := p.Rotation()
 	offHand, _ := p.offHand.Item(1)
 
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+
 	return Data{
 		UUID:            p.UUID(),
 		Username:        p.Name(),
