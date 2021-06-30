@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/google/uuid"
 	"os"
 )
@@ -21,7 +22,9 @@ func NewProvider(path string) (*Provider, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		_ = os.Mkdir(path, 0777)
 	}
-	db, err := leveldb.OpenFile(path, nil)
+	db, err := leveldb.OpenFile(path, &opt.Options{
+		Compression: opt.SnappyCompression,
+	})
 	if err != nil {
 		return nil, err
 	}
