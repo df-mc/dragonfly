@@ -12,8 +12,7 @@ type Melon struct {
 
 // BreakInfo ...
 func (m Melon) BreakInfo() BreakInfo {
-	// TODO: Silk touch.
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, simpleDrops(item.NewStack(item.MelonSlice{}, rand.Intn(5)+3)))
+	return newBreakInfo(1, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.MelonSlice{}, rand.Intn(5)+3), item.NewStack(m, 1)))
 }
 
 // EncodeItem ...

@@ -26,9 +26,8 @@ func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g TallGrass) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool) []item.Stack {
-		// TODO: Silk touch
-		if t.ToolType() == tool.TypeShears {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == tool.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(g, 1)}
 		}
 		if rand.Float32() > 0.57 {

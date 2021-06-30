@@ -145,7 +145,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 	}
 	if removable.HasLiquidDrops() {
 		if b, ok := existing.(Breakable); ok {
-			for _, d := range b.BreakInfo().Drops(tool.None{}) {
+			for _, d := range b.BreakInfo().Drops(tool.None{}, nil) {
 				itemEntity := entity.NewItem(d, pos.Vec3Centre())
 				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 				w.AddEntity(itemEntity)

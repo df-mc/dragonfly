@@ -14,7 +14,7 @@ func (q NetherQuartzOre) BreakInfo() BreakInfo {
 		Hardness:    3,
 		Harvestable: pickaxeHarvestable,
 		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(item.NetherQuartz{}, 1)),
+		Drops:       silkTouchOneOf(item.NetherQuartz{}, q),
 		XPDrops:     XPDropRange{0, 3},
 	}
 }

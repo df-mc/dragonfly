@@ -75,7 +75,7 @@ func (c CocoaBean) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(t tool.Tool) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
 		if c.Age == 2 {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}

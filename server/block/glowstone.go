@@ -18,8 +18,7 @@ func (g Glowstone) Instrument() instrument.Instrument {
 
 // BreakInfo ...
 func (g Glowstone) BreakInfo() BreakInfo {
-	// TODO: Silk touch.
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(item.GlowstoneDust{}, rand.Intn(3)+2)))
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchDrop(item.NewStack(item.GlowstoneDust{}, rand.Intn(3)+2), item.NewStack(g, 1)))
 }
 
 // EncodeItem ...
