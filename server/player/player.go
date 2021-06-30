@@ -357,7 +357,6 @@ func (p *Player) Transfer(address string) (err error) {
 
 	ctx.Continue(func() {
 		p.session().Transfer(addr.IP, addr.Port)
-		err = p.Close()
 	})
 	return
 }
