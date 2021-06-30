@@ -13,9 +13,22 @@ import (
 func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 	disk := s == nil
 	if disk {
-		it, ok := world.ItemByName(readString(data, "Name"), readInt16(data, "Damage"))
-		if !ok {
-			return item.Stack{}
+		name := readString(data, "Name")
+		var it world.Item
+		if states, ok := data["States"].(map[string]interface{}); ok {
+			block, ok := world.BlockByName(name, states)
+			if !ok {
+				return item.Stack{}
+			}
+			it, ok = block.(world.Item)
+			if !ok {
+				return item.Stack{}
+			}
+		} else {
+			it, ok = world.ItemByName(name, readInt16(data, "Damage"))
+			if !ok {
+				return item.Stack{}
+			}
 		}
 		if nbt, ok := it.(world.NBTer); ok {
 			it = nbt.DecodeNBT(data).(world.Item)
@@ -25,7 +38,7 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 		if _, ok := s.Item().(item.Durable); ok {
 			*s = s.Damage(int(readInt16(data, "Damage")))
 		}
-	} else if !disk {
+	} else {
 		if _, ok := s.Item().(item.Durable); ok {
 			*s = s.Damage(int(readInt32(data, "Damage")))
 		}
@@ -84,12 +97,16 @@ func ItemToNBT(s item.Stack, network bool) map[string]interface{} {
 		m = nbt.EncodeNBT()
 	}
 	if !network {
-		m["Name"], m["Damage"] = s.Item().EncodeItem()
+		if b, ok := s.Item().(world.Block); ok {
+			m["Name"], m["States"] = b.EncodeBlock()
+		} else {
+			m["Name"], m["Damage"] = s.Item().EncodeItem()
+		}
 		m["Count"] = byte(s.Count())
 		if _, ok := s.Item().(item.Durable); ok {
 			m["Damage"] = int16(s.MaxDurability() - s.Durability())
 		}
-	} else if network {
+	} else {
 		if _, ok := s.Item().(item.Durable); ok {
 			m["Damage"] = int32(s.MaxDurability() - s.Durability())
 		}

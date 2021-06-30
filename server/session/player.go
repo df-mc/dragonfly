@@ -393,6 +393,9 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		if slot == int(s.heldSlot.Load()) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
@@ -407,6 +410,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
 		}
@@ -421,6 +427,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
 		}
