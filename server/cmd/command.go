@@ -198,7 +198,8 @@ func (cmd Command) String() string {
 // leftover command line.
 func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
-		return nil, fmt.Errorf("source %T cannot execute this command", source)
+		//goland:noinspection GoErrorStringFormat
+		return nil, fmt.Errorf("You cannot execute this command.")
 	}
 
 	var argFrags []string
