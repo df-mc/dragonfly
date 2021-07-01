@@ -162,19 +162,27 @@ type ParamInfo struct {
 
 // Params returns a list of all parameters of the runnables. No assumptions should be done on the values that
 // they hold: Only the types are guaranteed to be consistent.
-func (cmd Command) Params() [][]ParamInfo {
-	params := make([][]ParamInfo, len(cmd.v))
-	for index, runnable := range cmd.v {
+func (cmd Command) Params(src Source) [][]ParamInfo {
+	params := make([][]ParamInfo, 0, len(cmd.v))
+	for _, runnable := range cmd.v {
+		if allower, ok := runnable.Interface().(Allower); ok && !allower.Allow(src) {
+			// This source cannot execute this runnable.
+			continue
+		}
 		elem := runnable.Elem()
-		for i := 0; i < elem.NumField(); i++ {
+
+		n := elem.NumField()
+		fields := make([]ParamInfo, n)
+		for i := 0; i < n; i++ {
 			fieldType := elem.Type().Field(i)
-			params[index] = append(params[index], ParamInfo{
+			fields[i] = ParamInfo{
 				Name:     name(fieldType),
 				Value:    reflect.New(elem.Field(i).Type()).Elem().Interface(),
 				Optional: optional(fieldType),
 				Suffix:   suffix(fieldType),
-			})
+			}
 		}
+		params = append(params, fields)
 	}
 	return params
 }

@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -18,6 +19,7 @@ type Controllable interface {
 	world.Entity
 	item.Carrier
 	form.Submitter
+	cmd.Source
 	SetHeldItems(right, left item.Stack)
 
 	Move(deltaPos mgl64.Vec3)

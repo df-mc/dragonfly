@@ -46,7 +46,7 @@ func (s *Session) SendAvailableCommands() {
 			// Don't add duplicate entries for aliases.
 			continue
 		}
-		params := c.Params()
+		params := c.Params(s.c)
 		overloads := make([]protocol.CommandOverload, len(params))
 		for i, params := range params {
 			for _, paramInfo := range params {
@@ -67,12 +67,14 @@ func (s *Session) SendAvailableCommands() {
 				})
 			}
 		}
-		pk.Commands = append(pk.Commands, protocol.Command{
-			Name:        c.Name(),
-			Description: c.Description(),
-			Aliases:     c.Aliases(),
-			Overloads:   overloads,
-		})
+		if len(params) > 0 {
+			pk.Commands = append(pk.Commands, protocol.Command{
+				Name:        c.Name(),
+				Description: c.Description(),
+				Aliases:     c.Aliases(),
+				Overloads:   overloads,
+			})
+		}
 	}
 	s.writePacket(pk)
 }
