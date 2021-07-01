@@ -60,9 +60,7 @@ func (f *FallingBlock) Tick(_ int64) {
 
 // Close ...
 func (f *FallingBlock) Close() error {
-	if f.World() != nil {
-		f.World().RemoveEntity(f)
-	}
+	f.World().RemoveEntity(f)
 	return nil
 }
 

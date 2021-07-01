@@ -200,9 +200,7 @@ func (it *Item) EncodeEntity() string {
 
 // Close closes the item, removing it from the world that it is currently in.
 func (it *Item) Close() error {
-	if it.World() != nil {
-		it.World().RemoveEntity(it)
-	}
+	it.World().RemoveEntity(it)
 	return nil
 }
 
