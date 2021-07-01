@@ -198,6 +198,7 @@ func (cmd Command) String() string {
 // leftover command line.
 func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
+		//lint:ignore ST1005 Error string is capitalised because it is shown to the player.
 		//goland:noinspection GoErrorStringFormat
 		return nil, fmt.Errorf("You cannot execute this command.")
 	}
