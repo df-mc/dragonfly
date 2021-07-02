@@ -58,7 +58,7 @@ type Handler interface {
 	// may be called to cancel the block being picked.
 	HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block)
 	// HandleSwingArm handles the player swinging their arm. ctx.Cancel() may be called to prevent
-	// the animation from being displayed. SwingArm is also called when breaking blocks.
+	// the animation from being displayed.
 	HandleSwingArm(ctx *event.Context)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
