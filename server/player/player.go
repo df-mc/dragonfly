@@ -1826,9 +1826,13 @@ func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}
-	for _, v := range p.World().Viewers(p.Position()) {
-		v.ViewEntityAction(p, action.SwingArm{})
-	}
+	ctx := event.C()
+	p.handler().HandleSwingArm(ctx)
+	ctx.Continue(func (){
+		for _, v := range p.World().Viewers(p.Position()) {
+			v.ViewEntityAction(p, action.SwingArm{})
+		}
+	})
 }
 
 // EncodeEntity ...

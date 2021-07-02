@@ -57,6 +57,9 @@ type Handler interface {
 	// HandleBlockPick handles the player picking a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being picked.
 	HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block)
+	// HandleSwingArm handles arm swinging. This isn't limited to Animate packets, but rather LevelSoundEvent packets
+	// with the sound SoundAttackNoDamage.
+	HandleSwingArm(ctx *event.Context)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -146,6 +149,9 @@ func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
+
+// HandleSwingArm ...
+func (NopHandler) HandleSwingArm(*event.Context) {}
 
 // HandleItemUse ...
 func (NopHandler) HandleItemUse(*event.Context) {}
