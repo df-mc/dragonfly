@@ -79,6 +79,36 @@ func (f Face) Axis() Axis {
 	}
 }
 
+// RotateRight rotates the face 90 degrees to the right horizontally and returns the new face.
+func (f Face) RotateRight() Face {
+	switch f {
+	case FaceNorth:
+		return FaceEast
+	case FaceEast:
+		return FaceSouth
+	case FaceSouth:
+		return FaceWest
+	case FaceWest:
+		return FaceNorth
+	}
+	return f
+}
+
+// RotateLeft rotates the face 90 degrees to the left horizontally and returns the new face.
+func (f Face) RotateLeft() Face {
+	switch f {
+	case FaceNorth:
+		return FaceWest
+	case FaceEast:
+		return FaceNorth
+	case FaceSouth:
+		return FaceEast
+	case FaceWest:
+		return FaceSouth
+	}
+	return f
+}
+
 // String returns the Face as a string.
 func (f Face) String() string {
 	switch f {

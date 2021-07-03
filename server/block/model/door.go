@@ -19,9 +19,9 @@ type Door struct {
 func (d Door) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	if d.Open {
 		if d.Right {
-			return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.RotateLeft90().Face(), -0.8125)}
+			return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.RotateLeft().Face(), -0.8125)}
 		}
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.RotateRight90().Face(), -0.8125)}
+		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.RotateRight().Face(), -0.8125)}
 	}
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.Face(), -0.8125)}
 }

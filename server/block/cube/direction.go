@@ -34,8 +34,8 @@ func (d Direction) Face() Face {
 	return Face(d + 2)
 }
 
-// RotateRight90 rotates the direction 90 degrees to the right horizontally and returns the new direction.
-func (d Direction) RotateRight90() Direction {
+// RotateRight rotates the direction 90 degrees to the right horizontally and returns the new direction.
+func (d Direction) RotateRight() Direction {
 	switch d {
 	case North:
 		return East
@@ -49,8 +49,8 @@ func (d Direction) RotateRight90() Direction {
 	panic("invalid direction")
 }
 
-// RotateLeft90 rotates the direction 90 degrees to the left horizontally and returns the new direction.
-func (d Direction) RotateLeft90() Direction {
+// RotateLeft rotates the direction 90 degrees to the left horizontally and returns the new direction.
+func (d Direction) RotateLeft() Direction {
 	switch d {
 	case North:
 		return West

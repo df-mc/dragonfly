@@ -26,24 +26,24 @@ func (s Stair) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	if t == noCorner || t == cornerRightInner || t == cornerLeftInner {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
 			ExtendTowards(face, 0.5).
-			Stretch(s.Facing.RotateRight90().Face().Axis(), 0.5))
+			Stretch(s.Facing.RotateRight().Face().Axis(), 0.5))
 	}
 	if t == cornerRightOuter {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
 			ExtendTowards(face, 0.5).
-			ExtendTowards(s.Facing.RotateLeft90().Face(), 0.5))
+			ExtendTowards(s.Facing.RotateLeft().Face(), 0.5))
 	} else if t == cornerLeftOuter {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
 			ExtendTowards(face, 0.5).
-			ExtendTowards(s.Facing.RotateRight90().Face(), 0.5))
+			ExtendTowards(s.Facing.RotateRight().Face(), 0.5))
 	} else if t == cornerRightInner {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
 			ExtendTowards(oppositeFace, 0.5).
-			ExtendTowards(s.Facing.RotateRight90().Face(), 0.5))
+			ExtendTowards(s.Facing.RotateRight().Face(), 0.5))
 	} else if t == cornerLeftInner {
 		b = append(b, physics.NewAABB(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
 			ExtendTowards(oppositeFace, 0.5).
-			ExtendTowards(s.Facing.RotateLeft90().Face(), 0.5))
+			ExtendTowards(s.Facing.RotateLeft().Face(), 0.5))
 	}
 	if s.UpsideDown {
 		for i := range b[1:] {
@@ -71,9 +71,9 @@ func (s Stair) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
 		return s.Facing.Face() == face
 	}
 	if t == cornerRightInner {
-		return face == s.Facing.RotateRight90().Face() || face == s.Facing.Face()
+		return face == s.Facing.RotateRight().Face() || face == s.Facing.Face()
 	}
-	return face == s.Facing.RotateLeft90().Face() || face == s.Facing.Face()
+	return face == s.Facing.RotateLeft().Face() || face == s.Facing.Face()
 }
 
 const (
@@ -87,14 +87,14 @@ const (
 // cornerType returns the type of the corner that the stairs form, or 0 if it does not form a corner with any
 // other stairs.
 func (s Stair) cornerType(pos cube.Pos, w *world.World) uint8 {
-	rotatedFacing := s.Facing.RotateRight90()
+	rotatedFacing := s.Facing.RotateRight()
 	if closedSide, ok := w.Block(pos.Side(s.Facing.Face())).Model().(Stair); ok && closedSide.UpsideDown == s.UpsideDown {
 		if closedSide.Facing == rotatedFacing {
 			return cornerLeftOuter
 		} else if closedSide.Facing == rotatedFacing.Opposite() {
 			// This will only form a corner if there is not a stair on the right of this one with the same
 			// direction.
-			if side, ok := w.Block(pos.Side(s.Facing.RotateRight90().Face())).Model().(Stair); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
+			if side, ok := w.Block(pos.Side(s.Facing.RotateRight().Face())).Model().(Stair); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
 				return cornerRightOuter
 			}
 			return noCorner
@@ -104,7 +104,7 @@ func (s Stair) cornerType(pos cube.Pos, w *world.World) uint8 {
 		if openSide.Facing == rotatedFacing {
 			// This will only form a corner if there is not a stair on the right of this one with the same
 			// direction.
-			if side, ok := w.Block(pos.Side(s.Facing.RotateRight90().Face())).Model().(Stair); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
+			if side, ok := w.Block(pos.Side(s.Facing.RotateRight().Face())).Model().(Stair); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
 				return cornerRightInner
 			}
 		} else if openSide.Facing == rotatedFacing.Opposite() {
