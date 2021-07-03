@@ -30,7 +30,7 @@ func (NopProvider) Save(uuid.UUID, Data) error {
 
 // Load ...
 func (NopProvider) Load(uuid.UUID) (Data, error) {
-	return Data{}, errors.New("player provider is not implemented")
+	return Data{}, errors.New("player provider is disabled")
 }
 
 // Close ...
