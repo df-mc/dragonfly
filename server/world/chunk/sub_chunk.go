@@ -67,19 +67,17 @@ func (sub *SubChunk) ClearLight() {
 // setBlockLight sets the block light value at a specific position in the sub chunk.
 func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
+
 	i := index >> 1
-	bit := index & 1
-	sub.blockLight[i] = ((0xF << uint(bit<<2)) & sub.blockLight[i]) | ((level & 0xf) << uint((1^bit)<<2))
+	bit := (index & 1) << 2
+	sub.blockLight[i] = (sub.blockLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
 // blockLightAt returns the block light value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) blockLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
-	i := index >> 1
-	if index&1 == 0 {
-		return sub.blockLight[i] >> 4
-	}
-	return sub.blockLight[i] & 0xf
+
+	return (sub.blockLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
 // setSkyLight sets the sky light value at a specific position in the sub chunk.
@@ -87,18 +85,15 @@ func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
 	i := index >> 1
-	bit := index & 1
-	sub.skyLight[i] = ((0xF << uint(bit<<2)) & sub.skyLight[i]) | ((level & 0xf) << uint((1^bit)<<2))
+	bit := (index & 1) << 2
+	sub.skyLight[i] = (sub.skyLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
 // SkyLightAt returns the sky light value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) SkyLightAt(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
-	i := index >> 1
-	if index&1 == 0 {
-		return sub.skyLight[i] >> 4
-	}
-	return sub.skyLight[i] & 0xf
+
+	return (sub.skyLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
 // Compact cleans the garbage from all block storages that sub chunk contains, so that they may be

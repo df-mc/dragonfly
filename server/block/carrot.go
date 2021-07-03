@@ -64,7 +64,7 @@ func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (c Carrot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(tool2 tool.Tool) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
 		if c.Growth < 7 {
 			return []item.Stack{item.NewStack(c, 1)}
 		}

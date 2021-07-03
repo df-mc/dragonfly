@@ -40,6 +40,22 @@ func (a Axis) FromString(s string) (interface{}, error) {
 	return nil, fmt.Errorf("unexpected axis '%v', expecting one of 'x', 'y' or 'z'", s)
 }
 
+// RotateLeft rotates an Axis from X to Z or from Z to X.
+func (a Axis) RotateLeft() Axis {
+	if a == X {
+		return Z
+	} else if a == Z {
+		return X
+	}
+	return 0
+}
+
+// RotateRight rotates an Axis from X to Z or from Z to X.
+func (a Axis) RotateRight() Axis {
+	// No difference in rotating left or right for an Axis.
+	return a.RotateLeft()
+}
+
 // Axes return all possible axes. (x, y, z)
 func Axes() []Axis {
 	return []Axis{X, Y, Z}

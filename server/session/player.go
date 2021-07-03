@@ -67,6 +67,7 @@ const (
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
+	containerBarrel         = 57
 	containerCursor         = 58
 	containerCreativeOutput = 59
 )
@@ -91,6 +92,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load().(*inventory.Inventory), true
+			}
+		}
+	case containerBarrel:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			if _, barrel := b.(block.Barrel); barrel {
 				return s.openedWindow.Load().(*inventory.Inventory), true
 			}
 		}
@@ -385,6 +393,9 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		if slot == int(s.heldSlot.Load()) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
@@ -399,6 +410,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
 		}
@@ -413,6 +427,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
 		}

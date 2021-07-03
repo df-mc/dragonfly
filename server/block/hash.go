@@ -6,6 +6,7 @@ const (
 	hashAir = iota
 	hashAncientDebris
 	hashAndesite
+	hashBarrel
 	hashBarrier
 	hashBasalt
 	hashBeacon
@@ -38,6 +39,7 @@ const (
 	hashDoubleFlower
 	hashDoubleTallGrass
 	hashDragonEgg
+	hashDriedKelpBlock
 	hashDripstone
 	hashEmeraldBlock
 	hashEmeraldOre
@@ -57,6 +59,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashHoneycombBlock
 	hashInvisibleBedrock
 	hashIronBars
 	hashIronBlock
@@ -83,6 +86,7 @@ const (
 	hashNoteBlock
 	hashObsidian
 	hashPlanks
+	hashPodzol
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -130,6 +134,10 @@ func (AncientDebris) Hash() uint64 {
 
 func (a Andesite) Hash() uint64 {
 	return hashAndesite | uint64(boolByte(a.Polished))<<7
+}
+
+func (b Barrel) Hash() uint64 {
+	return hashBarrel | uint64(b.Facing)<<7 | uint64(boolByte(b.Open))<<10
 }
 
 func (Barrier) Hash() uint64 {
@@ -260,6 +268,10 @@ func (DragonEgg) Hash() uint64 {
 	return hashDragonEgg
 }
 
+func (DriedKelpBlock) Hash() uint64 {
+	return hashDriedKelpBlock
+}
+
 func (d Dripstone) Hash() uint64 {
 	return hashDripstone
 }
@@ -334,6 +346,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (HoneycombBlock) Hash() uint64 {
+	return hashHoneycombBlock
 }
 
 func (InvisibleBedrock) Hash() uint64 {
@@ -438,6 +454,10 @@ func (o Obsidian) Hash() uint64 {
 
 func (p Planks) Hash() uint64 {
 	return hashPlanks | uint64(p.Wood.Uint8())<<7
+}
+
+func (Podzol) Hash() uint64 {
+	return hashPodzol
 }
 
 func (p Potato) Hash() uint64 {

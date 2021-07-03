@@ -87,7 +87,11 @@ func init() {
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(SporeBlossom{})
 	world.RegisterBlock(Dripstone{})
+	world.RegisterBlock(DriedKelpBlock{})
+	world.RegisterBlock(HoneycombBlock{})
+	world.RegisterBlock(Podzol{})
 
+	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
 	registerAll(allBoneBlock())
@@ -281,6 +285,7 @@ func init() {
 	for _, s := range allSandstones() {
 		world.RegisterItem(s.(world.Item))
 	}
+	world.RegisterItem(Barrel{})
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})
@@ -364,6 +369,9 @@ func init() {
 	world.RegisterItem(Prismarine{Type: NormalPrismarine()})
 	world.RegisterItem(Prismarine{Type: DarkPrismarine()})
 	world.RegisterItem(Prismarine{Type: BrickPrismarine()})
+	world.RegisterItem(DriedKelpBlock{})
+	world.RegisterItem(HoneycombBlock{})
+	world.RegisterItem(Podzol{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})

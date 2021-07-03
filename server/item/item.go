@@ -117,6 +117,7 @@ type User interface {
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
+	Position() mgl64.Vec3
 }
 
 // Carrier represents an entity that is able to carry an item.

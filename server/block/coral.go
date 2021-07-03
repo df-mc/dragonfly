@@ -92,8 +92,7 @@ func (c Coral) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 
 // BreakInfo ...
 func (c Coral) BreakInfo() BreakInfo {
-	// TODO: Silk touch.
-	return newBreakInfo(0, neverHarvestable, nothingEffective, simpleDrops())
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(c))
 }
 
 // EncodeBlock ...

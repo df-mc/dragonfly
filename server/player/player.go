@@ -94,7 +94,8 @@ type Player struct {
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
-// identified over network.
+// identified over network. You can either pass on player data you want to load or
+// you can leave the data as nil to use default data.
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
@@ -129,14 +130,17 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // NewWithSession returns a new player for a network session, so that the network session can control the
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
-// name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
+// name and the skin of the player. You can either pass on player data you want to load or
+// you can leave the data as nil to use default data.
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-
 	chat.Global.Subscribe(p)
+	if data != nil {
+		p.load(*data)
+	}
 	return p
 }
 
@@ -353,7 +357,6 @@ func (p *Player) Transfer(address string) (err error) {
 
 	ctx.Continue(func() {
 		p.session().Transfer(addr.IP, addr.Port)
-		err = p.Close()
 	})
 	return
 }
@@ -1383,13 +1386,13 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		drops = container.Inventory().Contents()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
-				drops = breakable.BreakInfo().Drops(t)
+				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 			}
 		}
 		container.Inventory().Clear()
 	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
-			drops = breakable.BreakInfo().Drops(t)
+			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 		}
 	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
 		drops = []item.Stack{item.NewStack(it, 1)}
@@ -1935,6 +1938,81 @@ func (p *Player) close() {
 		p.World().RemoveEntity(p)
 	} else {
 		s.CloseConnection()
+	}
+}
+
+// load reads the player data from the provider. It uses the default values if the provider
+// returns false.
+func (p *Player) load(data Data) {
+	p.yaw.Store(data.Yaw)
+	p.pitch.Store(data.Pitch)
+	p.velocity.Store(data.Velocity)
+	p.pos.Store(data.Position)
+
+	p.health.SetMaxHealth(data.MaxHealth)
+	p.health.AddHealth(data.Health - p.Health())
+
+	p.hunger.SetFood(data.Hunger)
+	p.hunger.foodTick = data.FoodTick
+	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
+
+	p.gameMode = data.GameMode
+	for _, potion := range data.Effects {
+		p.AddEffect(potion)
+	}
+	p.fireTicks.Store(data.FireTicks)
+	p.fallDistance.Store(data.FallDistance)
+
+	p.loadInventory(data.Inventory)
+}
+
+// loadInventory loads all the data associated with the player inventory.
+func (p *Player) loadInventory(data InventoryData) {
+	for slot, stack := range data.Items {
+		_ = p.Inventory().SetItem(slot, stack)
+	}
+	_ = p.offHand.SetItem(1, data.OffHand)
+	p.Armour().SetBoots(data.Boots)
+	p.Armour().SetLeggings(data.Leggings)
+	p.Armour().SetChestplate(data.Chestplate)
+	p.Armour().SetHelmet(data.Helmet)
+}
+
+// Data returns the player data that needs to be saved. This is used when the player
+// gets disconnected and the player provider needs to save the data.
+func (p *Player) Data() Data {
+	yaw, pitch := p.Rotation()
+	offHand, _ := p.offHand.Item(1)
+
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+
+	return Data{
+		UUID:            p.UUID(),
+		Username:        p.Name(),
+		Position:        p.Position(),
+		Velocity:        p.Velocity(),
+		Yaw:             yaw,
+		Pitch:           pitch,
+		Health:          p.Health(),
+		MaxHealth:       p.MaxHealth(),
+		Hunger:          p.hunger.foodLevel,
+		FoodTick:        p.hunger.foodTick,
+		ExhaustionLevel: p.hunger.exhaustionLevel,
+		SaturationLevel: p.hunger.saturationLevel,
+		GameMode:        p.GameMode(),
+		Inventory: InventoryData{
+			Items:        p.Inventory().Items(),
+			Boots:        p.armour.Boots(),
+			Leggings:     p.armour.Leggings(),
+			Chestplate:   p.armour.Chestplate(),
+			Helmet:       p.armour.Helmet(),
+			OffHand:      offHand,
+			MainHandSlot: p.heldSlot.Load(),
+		},
+		Effects:      p.Effects(),
+		FireTicks:    p.fireTicks.Load(),
+		FallDistance: p.fallDistance.Load(),
 	}
 }
 
