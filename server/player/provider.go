@@ -1,6 +1,7 @@
 package player
 
 import (
+	"errors"
 	"github.com/google/uuid"
 	"io"
 )
@@ -29,7 +30,7 @@ func (NopProvider) Save(uuid.UUID, Data) error {
 
 // Load ...
 func (NopProvider) Load(uuid.UUID) (Data, error) {
-	return Data{}, nil
+	return Data{}, errors.New("player provider is not implemented")
 }
 
 // Close ...
