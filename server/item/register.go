@@ -94,6 +94,7 @@ func init() {
 	world.RegisterItem(HeartOfTheSea{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(InkSac{})
+	world.RegisterItem(InkSac{Glow: true})
 	world.RegisterItem(IronNugget{})
 	world.RegisterItem(NautilusShell{})
 	world.RegisterItem(NetherBrick{})
