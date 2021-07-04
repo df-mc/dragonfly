@@ -47,10 +47,10 @@ type World struct {
 	// of not being used.
 	chunks map[ChunkPos]*chunkData
 
-	ePosMu sync.Mutex
-	// lastEntityPositions holds a map of the last ChunkPos that an Entity was in. These are tracked so that
-	// a call to RemoveEntity can find the correct entity.
-	lastEntityPositions map[Entity]ChunkPos
+	entityMu sync.RWMutex
+	// entities holds a map of entities currently loaded and the last ChunkPos that the Entity was in.
+	// These are tracked so that a call to RemoveEntity can find the correct entity.
+	entities map[Entity]ChunkPos
 
 	r         *rand.Rand
 	simDistSq int32
@@ -71,9 +71,6 @@ type World struct {
 	positionCache       []ChunkPos
 	entitiesToTick      []TickerEntity
 
-	entityMu sync.RWMutex
-	entities map[Entity]struct{}
-
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
 }
@@ -84,22 +81,21 @@ type World struct {
 func New(log internal.Logger, simulationDistance int) *World {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		r:                   rand.New(rand.NewSource(time.Now().Unix())),
-		blockUpdates:        map[cube.Pos]int64{},
-		lastEntityPositions: map[Entity]ChunkPos{},
-		entities:            map[Entity]struct{}{},
-		viewers:             map[Viewer]struct{}{},
-		prov:                NoIOProvider{},
-		gen:                 NopGenerator{},
-		handler:             NopHandler{},
-		doneTicking:         make(chan struct{}),
-		stopCacheJanitor:    make(chan struct{}),
-		simDistSq:           int32(simulationDistance * simulationDistance),
-		randomTickSpeed:     *atomic.NewUint32(3),
-		log:                 log,
-		stopTick:            ctx,
-		cancelTick:          cancel,
-		set:                 defaultSettings(),
+		r:                rand.New(rand.NewSource(time.Now().Unix())),
+		blockUpdates:     map[cube.Pos]int64{},
+		entities:         map[Entity]ChunkPos{},
+		viewers:          map[Viewer]struct{}{},
+		prov:             NoIOProvider{},
+		gen:              NopGenerator{},
+		handler:          NopHandler{},
+		doneTicking:      make(chan struct{}),
+		stopCacheJanitor: make(chan struct{}),
+		simDistSq:        int32(simulationDistance * simulationDistance),
+		randomTickSpeed:  *atomic.NewUint32(3),
+		log:              log,
+		stopTick:         ctx,
+		cancelTick:       cancel,
+		set:              defaultSettings(),
 	}
 
 	w.initChunkCache()
@@ -708,11 +704,12 @@ func (w *World) AddEntity(e Entity) {
 	worldsMu.Lock()
 	entityWorlds[e] = w
 	worldsMu.Unlock()
-	w.entityMu.Lock()
-	w.entities[e] = struct{}{}
-	w.entityMu.Unlock()
 
 	chunkPos := chunkPosFromVec3(e.Position())
+	w.entityMu.Lock()
+	w.entities[e] = chunkPos
+	w.entityMu.Unlock()
+
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error loading chunk to add entity: %v", err)
@@ -731,10 +728,6 @@ func (w *World) AddEntity(e Entity) {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
-
-	w.ePosMu.Lock()
-	w.lastEntityPositions[e] = chunkPos
-	w.ePosMu.Unlock()
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -747,21 +740,18 @@ func (w *World) RemoveEntity(e Entity) {
 	if w == nil {
 		return
 	}
-	w.ePosMu.Lock()
-	chunkPos, found := w.lastEntityPositions[e]
+	w.entityMu.Lock()
+	chunkPos, found := w.entities[e]
 	if !found {
-		chunkPos = chunkPosFromVec3(e.Position())
-	} else {
-		delete(w.lastEntityPositions, e)
+		w.entityMu.Unlock()
+		// The entity currently isn't in this world.
+		return
 	}
-	w.ePosMu.Unlock()
+	w.entityMu.Unlock()
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
 	worldsMu.Unlock()
-	w.entityMu.Lock()
-	delete(w.entities, e)
-	w.entityMu.Unlock()
 
 	c, ok := w.chunkFromCache(chunkPos)
 	if !ok {
@@ -784,6 +774,10 @@ func (w *World) RemoveEntity(e Entity) {
 		copy(viewers, c.v)
 	}
 	c.Unlock()
+
+	w.entityMu.Lock()
+	delete(w.entities, e)
+	w.entityMu.Unlock()
 
 	for _, viewer := range viewers {
 		viewer.HideEntity(e)
@@ -1326,9 +1320,9 @@ func (w *World) tickEntities(tick int64) {
 	}
 	var entitiesToMove []entityToMove
 
-	w.ePosMu.Lock()
+	w.entityMu.Lock()
 	w.chunkMu.Lock()
-	for e, lastPos := range w.lastEntityPositions {
+	for e, lastPos := range w.entities {
 		chunkPos := chunkPosFromVec3(e.Position())
 
 		c, ok := w.chunks[chunkPos]
@@ -1349,7 +1343,7 @@ func (w *World) tickEntities(tick int64) {
 		if lastPos != chunkPos {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for viewers to view it.
-			w.lastEntityPositions[e] = chunkPos
+			w.entities[e] = chunkPos
 
 			oldChunk := w.chunks[lastPos]
 			oldChunk.Lock()
@@ -1373,7 +1367,7 @@ func (w *World) tickEntities(tick int64) {
 		}
 	}
 	w.chunkMu.Unlock()
-	w.ePosMu.Unlock()
+	w.entityMu.Unlock()
 
 	for _, move := range entitiesToMove {
 		move.after.Lock()

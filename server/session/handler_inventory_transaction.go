@@ -28,6 +28,10 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 			return nil
 		}
 		return nil
+	case *protocol.MismatchTransactionData:
+		// Just resend the inventory and don't do anything.
+		h.resendInventories(s)
+		return nil
 	case *protocol.UseItemOnEntityTransactionData:
 		held, _ := s.c.HeldItems()
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {

@@ -22,6 +22,7 @@ func init() {
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
 	}
+	world.RegisterItem(TurtleShell{})
 
 	world.RegisterItem(Bucket{})
 
@@ -60,6 +61,9 @@ func init() {
 	}
 
 	world.RegisterItem(FlintAndSteel{})
+
+	world.RegisterItem(CarrotOnAStick{})
+	world.RegisterItem(WarpedFungusOnAStick{})
 
 	world.RegisterItem(PrismarineCrystals{})
 
@@ -133,4 +137,6 @@ func init() {
 	for _, dye := range AllDyes() {
 		world.RegisterItem(dye)
 	}
+	world.RegisterItem(TropicalFish{})
+	world.RegisterItem(AmethystShard{})
 }

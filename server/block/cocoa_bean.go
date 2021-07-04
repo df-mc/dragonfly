@@ -37,7 +37,7 @@ func (c CocoaBean) HasLiquidDrops() bool {
 
 // NeighbourUpdateTick ...
 func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != JungleWood() || log.Stripped {
+	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != JungleWood() {
 		w.BreakBlockWithoutParticles(pos)
 	}
 }
@@ -53,7 +53,7 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 	if log, ok := w.Block(pos.Side(face.Opposite())).(Log); ok {
-		if log.Wood == JungleWood() && !log.Stripped {
+		if log.Wood == JungleWood() {
 			c.Facing = face.Opposite().Direction()
 			ctx.IgnoreAABB = true
 
@@ -75,7 +75,7 @@ func (c CocoaBean) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(t tool.Tool) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
 		if c.Age == 2 {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}

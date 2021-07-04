@@ -56,7 +56,8 @@ type Player struct {
 	gameModeMu sync.RWMutex
 	gameMode   world.GameMode
 
-	skin skin.Skin
+	skinMu sync.RWMutex
+	skin   skin.Skin
 
 	sMutex sync.RWMutex
 	// s holds the session of the player. This field should not be used directly, but instead,
@@ -93,7 +94,8 @@ type Player struct {
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
-// identified over network.
+// identified over network. You can either pass on player data you want to load or
+// you can leave the data as nil to use default data.
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
@@ -128,14 +130,17 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // NewWithSession returns a new player for a network session, so that the network session can control the
 // player.
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
-// name and the skin of the player.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3) *Player {
+// name and the skin of the player. You can either pass on player data you want to load or
+// you can leave the data as nil to use default data.
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-
 	chat.Global.Subscribe(p)
+	if data != nil {
+		p.load(*data)
+	}
 	return p
 }
 
@@ -171,11 +176,36 @@ func (p *Player) Addr() net.Addr {
 	return p.session().Addr()
 }
 
-// Skin returns the skin that a player joined with. This skin will be visible to other players that the player
-// is shown to.
+// Skin returns the skin that a player is currently using. This skin will be visible to other players
+// that the player is shown to.
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
+	p.skinMu.RLock()
+	defer p.skinMu.RUnlock()
 	return p.skin
+}
+
+// SetSkin changes the skin of the player. This skin will be visible to other players that the player
+// is shown to.
+func (p *Player) SetSkin(skin skin.Skin) {
+	if p.Dead() {
+		return
+	}
+
+	ctx := event.C()
+	p.handler().HandleSkinChange(ctx, skin)
+	ctx.Continue(func() {
+		p.skinMu.Lock()
+		p.skin = skin
+		p.skinMu.Unlock()
+
+		for _, v := range p.World().Viewers(p.Position()) {
+			v.ViewSkin(p)
+		}
+	})
+	ctx.Stop(func() {
+		p.session().ViewSkin(p)
+	})
 }
 
 // Locale returns the language and locale of the Player, as selected in the Player's settings.
@@ -327,7 +357,6 @@ func (p *Player) Transfer(address string) (err error) {
 
 	ctx.Continue(func() {
 		p.session().Transfer(addr.IP, addr.Port)
-		err = p.Close()
 	})
 	return
 }
@@ -1357,13 +1386,13 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		drops = container.Inventory().Contents()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
-				drops = breakable.BreakInfo().Drops(t)
+				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 			}
 		}
 		container.Inventory().Clear()
 	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
-			drops = breakable.BreakInfo().Drops(t)
+			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 		}
 	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
 		drops = []item.Stack{item.NewStack(it, 1)}
@@ -1421,9 +1450,6 @@ func (p *Player) PickBlock(pos cube.Pos) {
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
-	// Generally it is expected you are teleported to the middle of the block.
-	pos = pos.Add(mgl64.Vec3{0.5, 0, 0.5})
-
 	ctx := event.C()
 	p.handler().HandleTeleport(ctx, pos)
 	ctx.Continue(func() {
@@ -1576,6 +1602,9 @@ func (p *Player) Tick(current int64) {
 	}
 	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
+		if _, ok2 := p.Armour().Helmet().Item().(item.TurtleShell); ok2 {
+			p.AddEffect(effect.WaterBreathing{}.WithSettings(time.Second*10, 1, true))
+		}
 	}
 	p.checkCollisions()
 	p.tickFood()
@@ -1910,6 +1939,81 @@ func (p *Player) close() {
 		p.World().RemoveEntity(p)
 	} else {
 		s.CloseConnection()
+	}
+}
+
+// load reads the player data from the provider. It uses the default values if the provider
+// returns false.
+func (p *Player) load(data Data) {
+	p.yaw.Store(data.Yaw)
+	p.pitch.Store(data.Pitch)
+	p.velocity.Store(data.Velocity)
+	p.pos.Store(data.Position)
+
+	p.health.SetMaxHealth(data.MaxHealth)
+	p.health.AddHealth(data.Health - p.Health())
+
+	p.hunger.SetFood(data.Hunger)
+	p.hunger.foodTick = data.FoodTick
+	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
+
+	p.gameMode = data.GameMode
+	for _, potion := range data.Effects {
+		p.AddEffect(potion)
+	}
+	p.fireTicks.Store(data.FireTicks)
+	p.fallDistance.Store(data.FallDistance)
+
+	p.loadInventory(data.Inventory)
+}
+
+// loadInventory loads all the data associated with the player inventory.
+func (p *Player) loadInventory(data InventoryData) {
+	for slot, stack := range data.Items {
+		_ = p.Inventory().SetItem(slot, stack)
+	}
+	_ = p.offHand.SetItem(1, data.OffHand)
+	p.Armour().SetBoots(data.Boots)
+	p.Armour().SetLeggings(data.Leggings)
+	p.Armour().SetChestplate(data.Chestplate)
+	p.Armour().SetHelmet(data.Helmet)
+}
+
+// Data returns the player data that needs to be saved. This is used when the player
+// gets disconnected and the player provider needs to save the data.
+func (p *Player) Data() Data {
+	yaw, pitch := p.Rotation()
+	offHand, _ := p.offHand.Item(1)
+
+	p.hunger.mu.RLock()
+	defer p.hunger.mu.RUnlock()
+
+	return Data{
+		UUID:            p.UUID(),
+		Username:        p.Name(),
+		Position:        p.Position(),
+		Velocity:        p.Velocity(),
+		Yaw:             yaw,
+		Pitch:           pitch,
+		Health:          p.Health(),
+		MaxHealth:       p.MaxHealth(),
+		Hunger:          p.hunger.foodLevel,
+		FoodTick:        p.hunger.foodTick,
+		ExhaustionLevel: p.hunger.exhaustionLevel,
+		SaturationLevel: p.hunger.saturationLevel,
+		GameMode:        p.GameMode(),
+		Inventory: InventoryData{
+			Items:        p.Inventory().Items(),
+			Boots:        p.armour.Boots(),
+			Leggings:     p.armour.Leggings(),
+			Chestplate:   p.armour.Chestplate(),
+			Helmet:       p.armour.Helmet(),
+			OffHand:      offHand,
+			MainHandSlot: p.heldSlot.Load(),
+		},
+		Effects:      p.Effects(),
+		FireTicks:    p.fireTicks.Load(),
+		FallDistance: p.fallDistance.Load(),
 	}
 }
 

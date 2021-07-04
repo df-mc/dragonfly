@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
@@ -41,6 +42,7 @@ type Server struct {
 	name    atomic.String
 
 	joinMessage, quitMessage atomic.String
+	playerProvider           player.Provider
 
 	c        Config
 	log      internal.Logger
@@ -71,17 +73,27 @@ func New(c *Config, log internal.Logger) *Server {
 		c = &conf
 	}
 	s := &Server{
-		c:       *c,
-		log:     log,
-		players: make(chan *player.Player),
-		world:   world.New(log, c.World.SimulationDistance),
-		p:       make(map[uuid.UUID]*player.Player),
-		name:    *atomic.NewString(c.Server.Name),
+		c:              *c,
+		log:            log,
+		players:        make(chan *player.Player),
+		world:          world.New(log, c.World.SimulationDistance),
+		p:              make(map[uuid.UUID]*player.Player),
+		name:           *atomic.NewString(c.Server.Name),
+		playerProvider: player.NopProvider{},
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
 
 	s.checkNetIsolation()
+
+	if !c.Players.SaveData {
+		return s
+	}
+	p, err := playerdb.NewProvider(c.Players.Folder)
+	if err != nil {
+		panic(err)
+	}
+	s.PlayerProvider(p)
 	return s
 }
 
@@ -166,10 +178,10 @@ func (server *Server) PlayerCount() int {
 // time. Players trying to join when the server is full will be refused to enter.
 // If the config has a maximum player count set to 0, MaxPlayerCount will return Server.PlayerCount + 1.
 func (server *Server) MaxPlayerCount() int {
-	if server.c.Server.MaximumPlayers == 0 {
+	if server.c.Players.MaxCount == 0 {
 		return server.PlayerCount() + 1
 	}
-	return server.c.Server.MaximumPlayers
+	return server.c.Players.MaxCount
 }
 
 // Players returns a list of all players currently connected to the server. Note that the slice returned is
@@ -207,6 +219,16 @@ func (server *Server) PlayerByName(name string) (*player.Player, bool) {
 		}
 	}
 	return nil, false
+}
+
+// PlayerProvider changes the data provider of a player to the provider passed. The provider will dictate
+// the behaviour of player saving and loading. If nil is passed, the NopProvider will be used
+// which does not read or write any data.
+func (server *Server) PlayerProvider(provider player.Provider) {
+	if provider == nil {
+		provider = player.NopProvider{}
+	}
+	server.playerProvider = provider
 }
 
 // SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
@@ -249,8 +271,14 @@ func (server *Server) Close() error {
 	}
 	server.playerMutex.RUnlock()
 
+	server.log.Debugf("Closing player provider...")
+	err := server.playerProvider.Close()
+	if err != nil {
+		server.log.Errorf("Error while closing player provider: %v", err)
+	}
+
 	server.log.Debugf("Closing world...")
-	if err := server.world.Close(); err != nil {
+	if err = server.world.Close(); err != nil {
 		return err
 	}
 
@@ -281,7 +309,7 @@ func (server *Server) startListening() error {
 	server.startTime = time.Now()
 
 	cfg := minecraft.ListenConfig{
-		MaximumPlayers:         server.c.Server.MaximumPlayers,
+		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 	}
@@ -330,21 +358,27 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
 	}
-	if err := conn.StartGame(data); err != nil {
-		_ = server.listener.Disconnect(conn, "Connection timeout.")
-		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
-		return
-	}
 	id, err := uuid.Parse(conn.IdentityData().Identity)
 	if err != nil {
 		_ = conn.Close()
 		server.log.Debugf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
 		return
 	}
+	var playerData *player.Data
+	if d, err := server.playerProvider.Load(id); err == nil {
+		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
+		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
+		playerData = &d
+	}
+	if err = conn.StartGame(data); err != nil {
+		_ = server.listener.Disconnect(conn, "Connection timeout.")
+		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
+		return
+	}
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
-	server.players <- server.createPlayer(id, conn)
+	server.players <- server.createPlayer(id, conn, playerData)
 }
 
 // checkNetIsolation checks if a loopback exempt is in place to allow the hosting device to join the server. This is
@@ -365,16 +399,26 @@ func (server *Server) checkNetIsolation() {
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(controllable session.Controllable) {
 	server.playerMutex.Lock()
+	p, ok := server.p[controllable.UUID()]
 	delete(server.p, controllable.UUID())
 	server.playerMutex.Unlock()
+	if ok {
+		err := server.playerProvider.Save(controllable.UUID(), p.Data())
+		if err != nil {
+			server.log.Errorf("Error while saving data: %v", err)
+		}
+	}
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn) *player.Player {
-	s := session.New(conn, server.c.World.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle())
-	s.Start(p, server.world, server.handleSessionClose)
-
+func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
+	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), data)
+	gm := server.world.DefaultGameMode()
+	if data != nil {
+		gm = data.GameMode
+	}
+	s.Start(p, server.world, gm, server.handleSessionClose)
 	return p
 }
 

@@ -56,8 +56,7 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
-	// TODO: Silk touch.
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
 }
 
 // EncodeItem ...

@@ -13,7 +13,7 @@ type GildedBlackstone struct {
 
 // BreakInfo ...
 func (b GildedBlackstone) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, func(t tool.Tool) []item.Stack {
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
 		if rand.Float64() < 0.1 {
 			return []item.Stack{item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)}
 		}

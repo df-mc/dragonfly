@@ -22,6 +22,5 @@ func (*RespawnHandler) Handle(p packet.Packet, s *Session) error {
 		return fmt.Errorf("State must always be %v, but got %v", packet.RespawnStateClientReadyToSpawn, pk.State)
 	}
 	s.c.Respawn()
-	s.SendRespawn()
 	return nil
 }

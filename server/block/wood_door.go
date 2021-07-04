@@ -71,8 +71,8 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 		return false
 	}
 	d.Facing = user.Facing()
-	left := w.Block(pos.Side(d.Facing.RotateLeft90().Face()))
-	right := w.Block(pos.Side(d.Facing.RotateRight90().Face()))
+	left := w.Block(pos.Side(d.Facing.RotateLeft().Face()))
+	right := w.Block(pos.Side(d.Facing.RotateRight().Face()))
 	if door, ok := left.(WoodDoor); ok {
 		if door.Wood == d.Wood {
 			d.Right = true

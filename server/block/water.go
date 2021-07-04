@@ -93,14 +93,11 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 			}
 		})
 		if count >= 2 {
-			func() {
-				if canFlowInto(w, wo, pos.Side(cube.FaceDown), true) {
-					return
-				}
+			if !canFlowInto(w, wo, pos.Side(cube.FaceDown), true) {
 				// Only form a new source block if there either is no water below this block, or if the water
 				// below this is not falling (full source block).
 				wo.SetLiquid(pos, Water{Depth: 8, Still: true})
-			}()
+			}
 		}
 	}
 	tickLiquid(w, pos, wo)

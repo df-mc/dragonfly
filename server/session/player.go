@@ -67,6 +67,7 @@ const (
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
+	containerBarrel         = 57
 	containerCursor         = 58
 	containerCreativeOutput = 59
 )
@@ -91,6 +92,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load().(*inventory.Inventory), true
+			}
+		}
+	case containerBarrel:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			if _, barrel := b.(block.Barrel); barrel {
 				return s.openedWindow.Load().(*inventory.Inventory), true
 			}
 		}
@@ -327,11 +335,10 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	var animations []protocol.SkinAnimation
 	for _, animation := range s.Animations {
 		protocolAnim := protocol.SkinAnimation{
-			ImageWidth:    uint32(animation.Bounds().Max.X),
-			ImageHeight:   uint32(animation.Bounds().Max.Y),
-			ImageData:     animation.Pix,
-			AnimationType: 0,
-			FrameCount:    float32(animation.FrameCount),
+			ImageWidth:  uint32(animation.Bounds().Max.X),
+			ImageHeight: uint32(animation.Bounds().Max.Y),
+			ImageData:   animation.Pix,
+			FrameCount:  float32(animation.FrameCount),
 		}
 		switch animation.Type() {
 		case skin.AnimationHead:
@@ -386,6 +393,9 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		if slot == int(s.heldSlot.Load()) {
 			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 				viewer.ViewEntityItems(s.c)
@@ -400,6 +410,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityItems(s.c)
 		}
@@ -414,6 +427,9 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 		}
 	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
 		}
@@ -525,6 +541,52 @@ func creativeItems() []protocol.CreativeItem {
 		})
 	}
 	return it
+}
+
+// protocolToSkin converts protocol.Skin to skin.Skin.
+func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
+	if sk.SkinID == "" {
+		return skin.Skin{}, fmt.Errorf("SkinID must not be an empty string")
+	}
+
+	s = skin.New(int(sk.SkinImageWidth), int(sk.SkinImageHeight))
+	s.Persona = sk.PersonaSkin
+	s.Pix = sk.SkinData
+	s.Model = sk.SkinGeometry
+	s.PlayFabID = sk.PlayFabID
+
+	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
+	s.Cape.Pix = sk.CapeData
+
+	m := make(map[string]interface{})
+	if err = json.Unmarshal(sk.SkinGeometry, &m); err != nil {
+		return skin.Skin{}, fmt.Errorf("SkinGeometry was not a valid JSON string: %v", err)
+	}
+
+	if s.ModelConfig, err = skin.DecodeModelConfig(sk.SkinResourcePatch); err != nil {
+		return skin.Skin{}, fmt.Errorf("SkinResourcePatch was not a valid JSON string: %v", err)
+	}
+
+	for _, anim := range sk.Animations {
+		var t skin.AnimationType
+		switch anim.AnimationType {
+		case protocol.SkinAnimationHead:
+			t = skin.AnimationHead
+		case protocol.SkinAnimationBody32x32:
+			t = skin.AnimationBody32x32
+		case protocol.SkinAnimationBody128x128:
+			t = skin.AnimationBody128x128
+		default:
+			return skin.Skin{}, fmt.Errorf("invalid animation type: %v", anim.AnimationType)
+		}
+
+		animation := skin.NewAnimation(int(anim.ImageWidth), int(anim.ImageHeight), int(anim.ExpressionType), t)
+		animation.FrameCount = int(anim.FrameCount)
+		animation.Pix = anim.ImageData
+
+		s.Animations = append(s.Animations, animation)
+	}
+	return
 }
 
 // CameraShakeType is the type of camera shake that the player receives

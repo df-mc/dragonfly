@@ -75,7 +75,7 @@ func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 
 // BreakInfo ...
 func (s WoodSlab) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t tool.Tool) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
 		if s.Double {
 			s.Double = false
 			// If the slab is double, it should drop two single slabs.

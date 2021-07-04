@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // BlastProtection is an armour enchantment that decreases explosion damage.
@@ -26,17 +27,13 @@ func (e BlastProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e BlastProtection) CompatibleWith(s item.Stack) bool {
-	it := s.Item()
-	_, helmet := it.(item.Helmet)
-	_, chestplate := it.(item.Chestplate)
-	_, leggings := it.(item.Leggings)
-	_, boots := it.(item.Boots)
+	_, armour := s.Item().(armour.Armour)
 
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
 	_, prot := s.Enchantment(Protection{})
 
-	return (helmet || chestplate || leggings || boots) && !fireProt && !projectileProt && !prot
+	return armour && !fireProt && !projectileProt && !prot
 }
 
 // FireProtection is an armour enchantment that decreases fire damage.
@@ -61,17 +58,13 @@ func (e FireProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e FireProtection) CompatibleWith(s item.Stack) bool {
-	it := s.Item()
-	_, helmet := it.(item.Helmet)
-	_, chestplate := it.(item.Chestplate)
-	_, leggings := it.(item.Leggings)
-	_, boots := it.(item.Boots)
+	_, armour := s.Item().(armour.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
 	_, prot := s.Enchantment(Protection{})
 
-	return (helmet || chestplate || leggings || boots) && !blastProt && !projectileProt && !prot
+	return armour && !blastProt && !projectileProt && !prot
 }
 
 // ProjectileProtection is an armour enchantment that reduces damage from projectiles.
@@ -96,17 +89,13 @@ func (e ProjectileProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e ProjectileProtection) CompatibleWith(s item.Stack) bool {
-	it := s.Item()
-	_, helmet := it.(item.Helmet)
-	_, chestplate := it.(item.Chestplate)
-	_, leggings := it.(item.Leggings)
-	_, boots := it.(item.Boots)
+	_, armour := s.Item().(armour.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, prot := s.Enchantment(Protection{})
 
-	return (helmet || chestplate || leggings || boots) && !blastProt && !fireProt && !prot
+	return armour && !blastProt && !fireProt && !prot
 }
 
 // Protection is an armour enchantment which increases the damage reduction.
@@ -131,15 +120,11 @@ func (e Protection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Protection) CompatibleWith(s item.Stack) bool {
-	it := s.Item()
-	_, helmet := it.(item.Helmet)
-	_, chestplate := it.(item.Chestplate)
-	_, leggings := it.(item.Leggings)
-	_, boots := it.(item.Boots)
+	_, armour := s.Item().(armour.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
 
-	return (helmet || chestplate || leggings || boots) && !blastProt && !fireProt && !projectileProt
+	return armour && !blastProt && !fireProt && !projectileProt
 }

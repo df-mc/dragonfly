@@ -45,6 +45,10 @@ func (line *Line) RemoveNext() {
 
 // RemoveN consumes the next N arguments from the command line.
 func (line *Line) RemoveN(n int) {
+	if len(line.args) < n {
+		line.args = nil
+		return
+	}
 	line.args = line.args[n:]
 }
 

@@ -27,8 +27,7 @@ func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (p DirtPath) BreakInfo() BreakInfo {
-	// TODO: Silk touch.
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
 }
 
 // EncodeItem ...

@@ -32,25 +32,20 @@ type Chest struct {
 
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
-	viewers   *[]ContainerViewer
-}
-
-// FlammabilityInfo ...
-func (c Chest) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(0, 0, true)
+	viewers   map[ContainerViewer]struct{}
 }
 
 // NewChest creates a new initialised chest. The inventory is properly initialised.
 func NewChest() Chest {
 	m := new(sync.RWMutex)
-	v := new([]ContainerViewer)
+	v := make(map[ContainerViewer]struct{}, 1)
 	return Chest{
 		inventory: inventory.New(27, func(slot int, item item.Stack) {
 			m.RLock()
-			for _, viewer := range *v {
+			defer m.RUnlock()
+			for viewer := range v {
 				viewer.ViewSlotChange(slot, item)
 			}
-			m.RUnlock()
 		}),
 		viewerMu: m,
 		viewers:  v,
@@ -99,32 +94,25 @@ func (c Chest) close(w *world.World, pos cube.Pos) {
 // AddViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
 func (c Chest) AddViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	c.viewerMu.Lock()
-	if len(*c.viewers) == 0 {
+	defer c.viewerMu.Unlock()
+	if len(c.viewers) == 0 {
 		c.open(w, pos)
 	}
-	*c.viewers = append(*c.viewers, v)
-	c.viewerMu.Unlock()
+	c.viewers[v] = struct{}{}
 }
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to
 // it.
 func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	c.viewerMu.Lock()
-	if len(*c.viewers) == 0 {
-		c.viewerMu.Unlock()
+	defer c.viewerMu.Unlock()
+	if len(c.viewers) == 0 {
 		return
 	}
-	newViewers := make([]ContainerViewer, 0, len(*c.viewers)-1)
-	for _, viewer := range *c.viewers {
-		if viewer != v {
-			newViewers = append(newViewers, viewer)
-		}
-	}
-	*c.viewers = newViewers
-	if len(*c.viewers) == 0 {
+	delete(c.viewers, v)
+	if len(c.viewers) == 0 {
 		c.close(w, pos)
 	}
-	c.viewerMu.Unlock()
 }
 
 // Activate ...
@@ -151,6 +139,11 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Contents(), item.NewStack(c, 1))...))
+}
+
+// FlammabilityInfo ...
+func (c Chest) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(0, 0, true)
 }
 
 // Drops returns the drops of the chest. This includes all items held in the inventory and the chest itself.
