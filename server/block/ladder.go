@@ -34,7 +34,17 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 	if _, ok := w.Block(pos.Side(face.Opposite())).(LightDiffuser); ok {
-		return false
+		found := false
+		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceNorth, cube.FaceEast, cube.FaceWest} {
+			if _, ok := w.Block(pos.Side(i)).(LightDiffuser); !ok {
+				found = true
+				face = i.Opposite()
+				break
+			}
+		}
+		if !found {
+			return false
+		}
 	}
 	l.Facing = face.Direction()
 
