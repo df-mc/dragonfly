@@ -32,17 +32,6 @@ func (b Beacon) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
 }
 
-// UseOnBlock ...
-func (b Beacon) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, b)
-	if !used {
-		return
-	}
-
-	place(w, pos, b, user, ctx)
-	return placed(ctx)
-}
-
 // Activate manages the opening of a beacon by activating it.
 func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
 	if opener, ok := u.(ContainerOpener); ok {
