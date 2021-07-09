@@ -1,6 +1,9 @@
 package item
 
-import "fmt"
+import (
+	"fmt"
+	"image/color"
+)
 
 // Colour represents the colour of a block. Typically, Minecraft blocks have a total of 16 different colours.
 type Colour struct {
@@ -96,6 +99,17 @@ func Colours() []Colour {
 }
 
 type colour uint8
+
+// RGBA returns the colour as RGBA. The alpha channel is always set to the maximum value. Colour values as returned here
+// were obtained from the Minecraft wiki (https://minecraft.fandom.com/wiki/Formatting_codes#Color_codes).
+func (c colour) RGBA() color.RGBA {
+	// TODO: Work out the correct values for this.
+	switch c {
+	// ...
+	default:
+		return color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
+	}
+}
 
 // String ...
 func (c colour) String() string {

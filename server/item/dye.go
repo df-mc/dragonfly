@@ -1,23 +1,44 @@
 package item
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
+)
 
-// Dyes are made up of 16 different type of colours which allows you to dye blocks like concrete and sheep.
-type Dyes struct {
+// Dye is an item that comes in 16 colours which allows you to colour blocks like concrete and sheep.
+type Dye struct {
+	// Colour is the colour of the dye.
 	Colour Colour
+}
+
+// UseOnBlock implements the colouring behaviour of signs.
+func (d Dye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+	if dyeable, ok := w.Block(pos).(Dyeable); ok {
+		w.SetBlock(pos, dyeable.Dye(d.Colour))
+		ctx.SubtractFromCount(1)
+		return true
+	}
+	return false
+}
+
+// Dyeable represents a block that may be dyed by clicking it with a dye item.
+type Dyeable interface {
+	// Dye uses a dye with the Colour passed on the block. The resulting block is returned.
+	Dye(c Colour) world.Block
 }
 
 // AllDyes returns all 16 dye items
 func AllDyes() []world.Item {
 	b := make([]world.Item, 0, 16)
 	for _, c := range Colours() {
-		b = append(b, Dyes{Colour: c})
+		b = append(b, Dye{Colour: c})
 	}
 	return b
 }
 
 // EncodeItem ...
-func (d Dyes) EncodeItem() (name string, meta int16) {
+func (d Dye) EncodeItem() (name string, meta int16) {
 	if d.Colour.String() == "silver" {
 		return "minecraft:light_gray_dye", 0
 	}
