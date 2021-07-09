@@ -31,7 +31,8 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session) error {
 func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session) error {
 	sign, ok := s.c.World().Block(pos).(block.Sign)
 	if !ok {
-		return fmt.Errorf("sign block actor data for position without sign %v", pos)
+		s.log.Debugf("sign block actor data for position without sign %v", pos)
+		return nil
 	}
 	// TODO: Make sure only the owner of the sign can edit it.
 
