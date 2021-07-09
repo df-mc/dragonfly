@@ -5,25 +5,6 @@ import "math"
 // Orientation represents the orientation of a sign
 type Orientation int
 
-const (
-	south Orientation = iota
-	southSouthWest
-	southWest
-	westSouthwest
-	west
-	westNorthwest
-	northwest
-	northNorthwest
-	north
-	northNortheast
-	northeast
-	eastNortheast
-	east
-	eastSoutheast
-	southeast
-	southSoutheast
-)
-
 // OrientationFromYaw returns an Orientation value that (roughly) matches the yaw passed.
 func OrientationFromYaw(yaw float64) Orientation {
 	yaw = math.Mod(yaw, 360)
