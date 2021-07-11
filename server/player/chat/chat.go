@@ -33,8 +33,7 @@ func (chat *Chat) Write(p []byte) (n int, err error) {
 func (chat *Chat) WriteString(s string) (n int, err error) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
-
-	for subscriber, _ := range chat.subscribers {
+	for subscriber := range chat.subscribers {
 		subscriber.Message(s)
 	}
 	return len(s), nil
