@@ -48,6 +48,14 @@ func (chat *Chat) Subscribe(s Subscriber) {
 	chat.subscribers[s] = struct{}{}
 }
 
+// Subscribed checks if a subscriber is currently subscribed to the chat.
+func (chat *Chat) Subscribed(s Subscriber) bool {
+	chat.m.Lock()
+	defer chat.m.Unlock()
+	_, ok := chat.subscribers[s]
+	return ok
+}
+
 // Unsubscribe removes a subscriber from the chat, so that messages written to the chat will no longer be
 // sent to it.
 func (chat *Chat) Unsubscribe(s Subscriber) {
