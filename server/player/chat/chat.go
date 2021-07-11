@@ -18,9 +18,9 @@ type Chat struct {
 	subscribers map[Subscriber]struct{}
 }
 
-// New returns a new chat. A zero value is, however, usually sufficient for use.
+// New returns a new chat.
 func New() *Chat {
-	return &Chat{}
+	return &Chat{subscribers: map[Subscriber]struct{}{}}
 }
 
 // Write writes the byte slice p as a string to the chat. It is equivalent to calling
