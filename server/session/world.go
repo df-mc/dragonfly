@@ -330,7 +330,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw}),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
 			Flags:           packet.MoveFlagTeleport,
 		})
 	}

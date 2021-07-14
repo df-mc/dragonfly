@@ -140,6 +140,7 @@ func init() {
 	registerAll(allDoubleFlowers())
 	registerAll(allFlowers())
 	registerAll(allPrismarine())
+	registerAll(allLight())
 	registerAll(allLadders())
 }
 
