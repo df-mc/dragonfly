@@ -8,14 +8,17 @@
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the
   # name of the server.
   Name = "Dragonfly Server"
-  # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
-  # player count will increase as more players join.
-  MaximumPlayers = 0
   # The message shown to players when the server is shutting down. The message may be left empty to direct
   # players to the server list directly.
   ShutdownMessage = "Server closed."
   # AuthEnabled controls whether or not players must be connected to Xbox Live in order to join the server.
   AuthEnabled = true
+  # JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
+  # %v is the placeholder for the username of the player. Set this to "" to disable.
+  JoinMessage = "%v has joined the game"
+  # QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
+  # %v is the placeholder for the username of the player. Set this to "" to disable.
+  QuitMessage = "%v has left the game"
 
 [World]
   # The name of the world of the server. The name will show up at the top of the player list in the in-game
@@ -24,10 +27,21 @@
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
   # present, the folder will be made.
   Folder = "world"
-  # The  maximum chunk radius that players may set in their settings. If they try to set it above this number,
-  # it will be capped and set to the max.
-  MaximumChunkRadius = 32
   # SimulationDistance is the maximum distance in chunks that a chunk must be to a player in order for
   # it to receive random ticks. This field may be set to 0 to disable random block updates altogether.
   SimulationDistance = 8
 
+[Players]
+  # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
+  # player count will increase as more players join.
+  MaxCount = 0
+  # The  maximum chunk radius that players may set in their settings. If they try to set it above this number,
+  # it will be capped and set to the max.
+  MaximumChunkRadius = 32
+  # whether or not a player's data will be saved and loaded. If true, the server will use the
+  # default LevelDB data provider and if false, an empty provider will be used. To use your
+  # own provider, turn this value to false as you will still be able to pass your own provider.
+  SaveData = true
+  # Folder controls where the player data will be stored by the default LevelDB
+  # player provider if it is enabled.
+  Folder = "players"
