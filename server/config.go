@@ -50,7 +50,7 @@ type Config struct {
 		Folder string
 	}
 	Resources struct {
-		// AutoBuildPack is if the should automatically generate a resource pack for custom features.
+		// AutoBuildPack is if the server should automatically generate a resource pack for custom features.
 		AutoBuildPack bool
 	}
 }
