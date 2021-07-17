@@ -45,3 +45,7 @@
   # Folder controls where the player data will be stored by the default LevelDB
   # player provider if it is enabled.
   Folder = "players"
+
+[Resources]
+  # AutoBuildPack is if the should automatically generate a resource pack for custom features.
+  AutoBuildPack = true
