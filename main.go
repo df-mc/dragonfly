@@ -3,21 +3,17 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
 )
 
-import _ "net/http/pprof"
-
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
@@ -28,6 +24,10 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	// Following lines are for testing custom item implementation.
+	world.RegisterItem(item.Strawberry{})
+	creative.RegisterItem(item.NewStack(item.Strawberry{}, 1))
 
 	srv := server.New(&config, log)
 	srv.CloseOnProgramEnd()

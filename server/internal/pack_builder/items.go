@@ -3,8 +3,7 @@ package pack_builder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/dragonfly/world"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/df-mc/dragonfly/server/world"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -14,6 +13,8 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
+// buildItems builds all of the item-related files for the resource pack. This includes textures, language
+// entries and item atlas.
 func buildItems(dir string) (count int, lang []string) {
 	if err := os.Mkdir(filepath.Join(dir, "items"), os.ModePerm); err != nil {
 		panic(err)
@@ -23,7 +24,8 @@ func buildItems(dir string) (count int, lang []string) {
 	}
 
 	textureData := make(map[string]interface{})
-	for identifier, item := range world_allCustomItems() {
+	for _, item := range world_allCustomItems() {
+		identifier, _ := item.EncodeItem()
 		lang = append(lang, fmt.Sprintf("item.%s.name=%s", identifier, item.Name()))
 
 		name := strings.Split(identifier, ":")[1]
@@ -43,6 +45,7 @@ func buildItems(dir string) (count int, lang []string) {
 	return
 }
 
+// buildItemTexture creates a PNG file for the item from the provided image and name and writes it to the pack.
 func buildItemTexture(dir, name string, img image.Image) {
 	texture, err := os.Create(filepath.Join(dir, "textures/items", name+".png"))
 	if err != nil {
@@ -57,9 +60,10 @@ func buildItemTexture(dir, name string, img image.Image) {
 	}
 }
 
+// buildItem creases an item JSON file for the provided item and its properties and writes it to the pack.
 func buildItem(dir, identifier, name string, item world.CustomItem) {
 	itemData, err := json.Marshal(map[string]interface{}{
-		"format_version": protocol.CurrentVersion,
+		"format_version": formatVersion,
 		"minecraft:item": map[string]interface{}{
 			"description": map[string]interface{}{
 				"identifier": identifier,
@@ -79,6 +83,7 @@ func buildItem(dir, identifier, name string, item world.CustomItem) {
 	}
 }
 
+// buildItemAtlas creates the identifier to texture mapping and writes it to the pack.
 func buildItemAtlas(dir string, atlas map[string]interface{}) {
 	b, err := json.Marshal(atlas)
 	if err != nil {
@@ -89,6 +94,6 @@ func buildItemAtlas(dir string, atlas map[string]interface{}) {
 	}
 }
 
-//go:linkname world_allCustomItems github.com/df-mc/dragonfly/dragonfly/world.allCustomItems
+//go:linkname world_allCustomItems github.com/df-mc/dragonfly/server/world.allCustomItems
 //noinspection ALL
-func world_allCustomItems() map[string]world.CustomItem
+func world_allCustomItems() []world.CustomItem

@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+// buildManifest creates a JSON manifest file for the client to be able to read the resource pack. It creates
+// basic information and writes it to the pack.
 func buildManifest(dir string, headerUUID uuid.UUID) {
 	m, err := json.Marshal(resource.Manifest{
 		FormatVersion: 2,

@@ -1,22 +1,27 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/dragonfly/item/category"
+	"github.com/df-mc/dragonfly/server/item/category"
 	"image"
 	"image/png"
 	"os"
 )
 
+// Strawberry is a custom item used only to test the custom item functionality. This will not remain as a
+// dragonfly feature in the future.
 type Strawberry struct{}
 
-func (Strawberry) EncodeItem() (id int32, meta int16) {
-	return 1000, 0
+// EncodeItem ...
+func (Strawberry) EncodeItem() (name string, meta int16) {
+	return "dragonfly:strawberry", 0
 }
 
+// Name ...
 func (Strawberry) Name() string {
 	return "Strawberry"
 }
 
+// Texture ...
 func (Strawberry) Texture() image.Image {
 	texture, err := os.OpenFile("./resources/strawberry.png", os.O_RDONLY, os.ModePerm)
 	if err != nil {
@@ -30,6 +35,7 @@ func (Strawberry) Texture() image.Image {
 	return img
 }
 
+// Category ...
 func (Strawberry) Category() category.Category {
 	return category.Nature()
 }

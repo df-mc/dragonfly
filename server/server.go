@@ -5,10 +5,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/dragonfly/internal/pack_builder"
 	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/pack_builder"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
@@ -23,6 +23,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
+	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -57,8 +58,6 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
-
-	resourcePackGenerated bool
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -103,13 +102,6 @@ func New(c *Config, log internal.Logger) *Server {
 // Accept accepts an incoming player into the server. It blocks until a player connects to the server.
 // Accept returns an error if the Server is closed using a call to Close.
 func (server *Server) Accept() (*player.Player, error) {
-	if !server.resourcePackGenerated {
-		if pack := pack_builder.BuildResourcePack(); pack != nil {
-			server.listener.AddResourcePack(pack)
-		}
-		server.resourcePackGenerated = true
-	}
-
 	p, ok := <-server.players
 	if !ok {
 		return nil, errors.New("server closed")
@@ -318,10 +310,19 @@ func (server *Server) running() bool {
 func (server *Server) startListening() error {
 	server.startTime = time.Now()
 
+	var packs []*resource.Pack
+	if server.c.Resources.AutoBuildPack {
+		if pack := pack_builder.BuildResourcePack(); pack != nil {
+			packs = append(packs, pack)
+		}
+	}
+	// TODO: Support loading user-provided resource packs.
+
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
+		ResourcePacks:          packs,
 		TexturePacksRequired:   true,
 	}
 

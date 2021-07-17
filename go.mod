@@ -14,6 +14,7 @@ require (
 	github.com/pelletier/go-toml v1.9.2
 	github.com/sandertv/go-raknet v1.10.0 // indirect
 	github.com/sandertv/gophertunnel v1.13.1
+	github.com/sger/go-hashdir v0.0.1
 	github.com/sirupsen/logrus v1.8.1
 	go.uber.org/atomic v1.7.0
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect

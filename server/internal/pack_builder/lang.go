@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// buildLanguageFile creates a lang file and writes all of the language entries to the pack.
 func buildLanguageFile(dir string, lang []string) {
 	if err := os.Mkdir(filepath.Join(dir, "texts"), os.ModePerm); err != nil {
 		panic(err)
