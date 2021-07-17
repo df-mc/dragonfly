@@ -117,7 +117,7 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		place(w, pos, s, user, ctx)
 		return
 	}
-	s.Attach = WallAttachment(user.Facing())
+	s.Attach = WallAttachment(face.Direction())
 	place(w, pos, s, user, ctx)
 	return placed(ctx)
 }
