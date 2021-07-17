@@ -80,10 +80,12 @@ func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT ...
 func (s Sign) EncodeNBT() map[string]interface{} {
 	m := map[string]interface{}{
-		"id":                          "Sign",
-		"SignTextColor":               nbtconv.Int32FromRGBA(s.BaseColour),
-		"TextOwner":                   s.TextOwner,
-		"IgnoreLighting":              boolByte(s.Glowing),
+		"id":             "Sign",
+		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
+		"TextOwner":      s.TextOwner,
+		"IgnoreLighting": boolByte(s.Glowing),
+		// This is some top class Mojang garbage. The client needs it to render the glowing text. Omitting this field
+		// will just result in normal text being displayed.
 		"TextIgnoreLegacyBugResolved": boolByte(s.Glowing),
 	}
 	if s.Text != "" {
@@ -95,9 +97,12 @@ func (s Sign) EncodeNBT() map[string]interface{} {
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
-func (s Sign) Dye(c item.Colour) world.Block {
+func (s Sign) Dye(c item.Colour) (world.Block, bool) {
+	if s.BaseColour == c.RGBA() {
+		return s, false
+	}
 	s.BaseColour = c.RGBA()
-	return s
+	return s, true
 }
 
 // UseOnBlock ...
