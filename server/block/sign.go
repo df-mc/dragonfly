@@ -26,7 +26,11 @@ type Sign struct {
 	// BaseColour is the base colour of the text on the sign, changed when using a dye on the sign. The default colour
 	// is black.
 	BaseColour color.RGBA
-	// TextOwner holds the XUID of the player that initially placed the sign.
+	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark and it
+	// will have an outline to improve visibility.
+	Glowing bool
+	// TextOwner holds the XUID of the player that initially placed the sign. It is used to check if a player can edit
+	// a sign. If left empty, nobody can edit the sign.
 	TextOwner string
 }
 
@@ -68,6 +72,7 @@ func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
 	s.Text = readString(data, "Text")
 	s.BaseColour = nbtconv.RGBAFromInt32(readInt32(data, "SignTextColor"))
 	s.TextOwner = readString(data, "TextOwner")
+	s.Glowing = readByte(data, "IgnoreLighting") == 1
 
 	return s
 }
@@ -75,9 +80,11 @@ func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT ...
 func (s Sign) EncodeNBT() map[string]interface{} {
 	m := map[string]interface{}{
-		"id":            "Sign",
-		"SignTextColor": nbtconv.Int32FromRGBA(s.BaseColour),
-		"TextOwner":     s.TextOwner,
+		"id":                          "Sign",
+		"SignTextColor":               nbtconv.Int32FromRGBA(s.BaseColour),
+		"TextOwner":                   s.TextOwner,
+		"IgnoreLighting":              boolByte(s.Glowing),
+		"TextIgnoreLegacyBugResolved": boolByte(s.Glowing),
 	}
 	if s.Text != "" {
 		// The client does not display the editing GUI if this tag is already set when no text is present, so just don't
