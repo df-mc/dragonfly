@@ -34,6 +34,11 @@ type Sign struct {
 	TextOwner string
 }
 
+// MaxCount ...
+func (s Sign) MaxCount() int {
+	return 16
+}
+
 // FlammabilityInfo ...
 func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
