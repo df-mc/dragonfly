@@ -36,7 +36,7 @@ type Sign struct {
 
 // FlammabilityInfo ...
 func (s Sign) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(0, 0, false)
+	return newFlammabilityInfo(0, 0, true)
 }
 
 // EncodeItem ...
