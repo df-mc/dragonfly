@@ -110,6 +110,15 @@ func (s Sign) Dye(c item.Colour) (world.Block, bool) {
 	return s, true
 }
 
+// Ink inks the sign either glowing or non-glowing.
+func (s Sign) Ink(glowing bool) (world.Block, bool) {
+	if s.Glowing == glowing {
+		return s, false
+	}
+	s.Glowing = glowing
+	return s, true
+}
+
 // UseOnBlock ...
 func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, s)
