@@ -34,7 +34,6 @@ func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Po
 		s.log.Debugf("sign block actor data for position without sign %v", pos)
 		return nil
 	}
-	// TODO: Make sure only the owner of the sign can edit it.
 
 	var text string
 	pkText, ok := pk.NBTData["Text"]
@@ -44,6 +43,8 @@ func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Po
 	if text, ok = pkText.(string); !ok {
 		return fmt.Errorf("sign block actor data 'Text' tag was not a string: %#v", pkText)
 	}
+
+	// Verify that the text was valid. It must be valid UTF8 and not more than 100 characters long.
 	text = strings.TrimRight(text, "\n")
 	if len(text) > 100 {
 		return fmt.Errorf("sign block actor data text was longer than 100 characters")
@@ -51,7 +52,13 @@ func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Po
 	if !utf8.ValidString(text) {
 		return fmt.Errorf("sign block actor data text was not valid UTF8")
 	}
-	sign.Text, sign.TextOwner = text, s.conn.IdentityData().XUID
-	s.c.World().SetBlock(pos, sign)
+	// The change of text length must never exceed one character.
+	diff := len(text) - len(sign.Text)
+	if diff != -1 && diff != 1 {
+		return fmt.Errorf("sign block actor data had more than one character length change: %v to %v", len(text), len(sign.Text))
+	}
+	if err := s.c.EditSign(pos, text); err != nil {
+		return err
+	}
 	return nil
 }
