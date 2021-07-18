@@ -7,11 +7,6 @@ type BlueIce struct {
 	solid
 }
 
-// LightEmissionLevel ...
-func (BlueIce) LightEmissionLevel() uint8 {
-	return 4
-}
-
 // BreakInfo ...
 func (b BlueIce) BreakInfo() BreakInfo {
 	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b))
