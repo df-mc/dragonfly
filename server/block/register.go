@@ -142,6 +142,7 @@ func init() {
 	registerAll(allPrismarine())
 	registerAll(allSigns())
 	registerAll(allLight())
+	registerAll(allLadders())
 }
 
 func init() {
@@ -238,6 +239,8 @@ func init() {
 	world.RegisterItem(DriedKelpBlock{})
 	world.RegisterItem(HoneycombBlock{})
 	world.RegisterItem(Podzol{})
+	world.RegisterItem(Ladder{})
+
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
 
