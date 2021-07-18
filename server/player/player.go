@@ -1801,6 +1801,7 @@ func (p *Player) State() (s []state.State) {
 	}
 	s = append(s, state.Named{NameTag: p.nameTag.Load()})
 	s = append(s, state.Scaled{Scale: p.scale.Load()})
+	s = append(s, state.CanClimb{})
 	return
 }
 
