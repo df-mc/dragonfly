@@ -38,7 +38,7 @@ type Controllable interface {
 	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity)
 	BreakBlock(pos cube.Pos)
-	PickBlock(pos cube.Pos, includeNBT bool)
+	PickBlock(pos cube.Pos)
 	AttackEntity(e world.Entity)
 	Drop(s item.Stack) (n int)
 	SwingArm()
