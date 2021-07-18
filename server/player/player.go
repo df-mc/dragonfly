@@ -14,7 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -1402,15 +1401,21 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
 // pick the block, the method returns immediately.
-func (p *Player) PickBlock(pos cube.Pos) {
+func (p *Player) PickBlock(pos cube.Pos, includeNBT bool) {
 	if !p.canReach(pos.Vec3()) {
 		return
 	}
 
 	b := p.World().Block(pos)
 	if i, ok := b.(world.Item); ok {
-		copiedItem := item.NewStack(i, 1)
-		copiedItem = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(copiedItem, false), nil)
+		var copiedItem item.Stack
+		if nbter, ok := i.(world.NBTer); ok && includeNBT {
+			it, _ := nbter.DecodeNBT(nbter.EncodeNBT()).(world.Item)
+			copiedItem = item.NewStack(it, 1).WithLore("+(DATA)")
+		} else {
+			it, _ := world.ItemByName(i.EncodeItem())
+			copiedItem = item.NewStack(it, 1)
+		}
 
 		slot, found := p.Inventory().First(copiedItem)
 
