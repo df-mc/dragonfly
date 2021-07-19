@@ -45,6 +45,8 @@ type Controllable interface {
 
 	Respawn()
 
+	CloseCurrentBlockContainer(pos cube.Pos)
+
 	StartSneaking()
 	Sneaking() bool
 	StopSneaking()

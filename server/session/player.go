@@ -30,8 +30,9 @@ func (s *Session) closeCurrentContainer() {
 	if !s.containerOpened.Load() {
 		return
 	}
-	s.closeWindow()
 	pos := s.openedPos.Load().(cube.Pos)
+	s.c.CloseCurrentBlockContainer(pos)
+	s.closeWindow()
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}

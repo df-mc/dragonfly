@@ -1581,7 +1581,17 @@ func (p *Player) OpenBlockContainer(pos cube.Pos) {
 	if p.session() == session.Nop {
 		return
 	}
-	p.session().OpenBlockContainer(pos)
+	ctx := event.C()
+	p.handler().HandleContainerOpen(ctx, pos)
+
+	ctx.Continue(func() {
+		p.session().OpenBlockContainer(pos)
+	})
+}
+
+// CloseCurrentBlockContainer handles the closing of a block container by the player at the position passed.
+func (p *Player) CloseCurrentBlockContainer(pos cube.Pos) {
+	p.handler().HandleContainerClose(pos)
 }
 
 // Latency returns a rolling average of latency between the sending and the receiving end of the connection of

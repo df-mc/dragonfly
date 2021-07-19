@@ -92,6 +92,12 @@ type Handler interface {
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
 	HandleItemDrop(ctx *event.Context, e *entity.Item)
+	// HandleContainerOpen handles the player opening a container in the world. The position of the opened
+	// container is passed. ctx.Cancel() may be called to cancel the opening of the container.
+	HandleContainerOpen(ctx *event.Context, pos cube.Pos)
+	// HandleContainerClose handles the player closing the player's currently opened container in the world.
+	// The position of the closed container is passed.
+	HandleContainerClose(pos cube.Pos)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -122,6 +128,12 @@ func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
 
 // HandleCommandExecution ...
 func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) {}
+
+// HandleContainerOpen ...
+func (NopHandler) HandleContainerOpen(*event.Context, cube.Pos) {}
+
+// HandleContainerClose ...
+func (NopHandler) HandleContainerClose(cube.Pos) {}
 
 // HandleTransfer ...
 func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
