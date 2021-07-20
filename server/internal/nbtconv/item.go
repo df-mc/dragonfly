@@ -54,18 +54,29 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 			if loreInterface, ok := display["Lore"]; ok {
 				if lore, ok := loreInterface.([]string); ok {
 					*s = s.WithLore(lore...)
+				} else if lore, ok := loreInterface.([]interface{}); ok {
+					loreLines := make([]string, 0, len(lore))
+					for _, l := range lore {
+						loreLines = append(loreLines, l.(string))
+					}
+					*s = s.WithLore(loreLines...)
 				}
 			}
 		}
 	}
 	if enchantmentList, ok := data["ench"]; ok {
 		enchantments, ok := enchantmentList.([]map[string]interface{})
-		if ok {
-			for _, ench := range enchantments {
-				if e, ok := item.EnchantmentByID(int(readInt16(ench, "id"))); ok {
-					e = e.WithLevel(int(readInt16(ench, "lvl")))
-					*s = s.WithEnchantment(e)
+		if !ok {
+			if enchantments2, ok := enchantmentList.([]interface{}); ok {
+				for _, e := range enchantments2 {
+					enchantments = append(enchantments, e.(map[string]interface{}))
 				}
+			}
+		}
+		for _, ench := range enchantments {
+			if e, ok := item.EnchantmentByID(int(readInt16(ench, "id"))); ok {
+				e = e.WithLevel(int(readInt16(ench, "lvl")))
+				*s = s.WithEnchantment(e)
 			}
 		}
 	}
