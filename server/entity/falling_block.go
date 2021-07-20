@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -88,11 +87,6 @@ func (f *FallingBlock) World() *world.World {
 // Rotation ...
 func (f *FallingBlock) Rotation() (float64, float64) {
 	return 0, 0
-}
-
-// State ...
-func (f *FallingBlock) State() []state.State {
-	return nil
 }
 
 // Velocity ...

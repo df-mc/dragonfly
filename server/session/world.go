@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/action"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -599,44 +598,10 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 }
 
 // ViewEntityState ...
-func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
-	m := defaultEntityMetadata(e)
-	for _, eState := range states {
-		switch st := eState.(type) {
-		case state.Sneaking:
-			m.setFlag(dataKeyFlags, dataFlagSneaking)
-		case state.Sprinting:
-			m.setFlag(dataKeyFlags, dataFlagSprinting)
-		case state.Breathing:
-			m.setFlag(dataKeyFlags, dataFlagBreathing)
-		case state.Invisible:
-			m.setFlag(dataKeyFlags, dataFlagInvisible)
-		case state.Immobile:
-			m.setFlag(dataKeyFlags, dataFlagNoAI)
-		case state.Swimming:
-			m.setFlag(dataKeyFlags, dataFlagSwimming)
-		case state.CanClimb:
-			m.setFlag(dataKeyFlags, dataFlagCanClimb)
-		case state.UsingItem:
-			m.setFlag(dataKeyFlags, dataFlagUsingItem)
-		case state.Scaled:
-			m[dataKeyScale] = float32(st.Scale)
-		case state.Named:
-			m[dataKeyNameTag] = st.NameTag
-		case state.EffectBearing:
-			m[dataKeyPotionColour] = (int32(st.ParticleColour.A) << 24) | (int32(st.ParticleColour.R) << 16) | (int32(st.ParticleColour.G) << 8) | int32(st.ParticleColour.B)
-			if st.Ambient {
-				m[dataKeyPotionAmbient] = byte(1)
-			} else {
-				m[dataKeyPotionAmbient] = byte(0)
-			}
-		case state.OnFire:
-			m.setFlag(dataKeyFlags, dataFlagOnFire)
-		}
-	}
+func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  m,
+		EntityMetadata:  parseEntityMetadata(e),
 	})
 }
 

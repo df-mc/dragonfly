@@ -2,7 +2,6 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/go-gl/mathgl/mgl64"
 	"io"
 )
@@ -25,9 +24,6 @@ type Entity interface {
 	// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 	// when facing forward).
 	Rotation() (yaw, pitch float64)
-	// State returns a list of entity states which the entity is currently subject to. Generally, these states
-	// alter the way the entity looks.
-	State() []state.State
 
 	Velocity() mgl64.Vec3
 	SetVelocity(v mgl64.Vec3)

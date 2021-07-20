@@ -67,7 +67,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	if submergedBefore != submergedAfter {
 		// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,
 		// so send the updated metadata.
-		s.ViewEntityState(s.c, s.c.State())
+		s.ViewEntityState(s.c)
 	}
 
 	s.chunkLoader.Move(s.c.Position())

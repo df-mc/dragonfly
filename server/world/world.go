@@ -1540,7 +1540,7 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
 // items held, is shown.
 func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntity(e)
-	viewer.ViewEntityState(e, e.State())
+	viewer.ViewEntityState(e)
 	viewer.ViewEntityItems(e)
 	viewer.ViewEntityArmour(e)
 }

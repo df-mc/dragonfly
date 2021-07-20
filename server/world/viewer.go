@@ -4,7 +4,6 @@ import (
 	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -45,7 +44,7 @@ type Viewer interface {
 	ViewEntityAction(e Entity, a action.Action)
 	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
 	// physical appearance, for example when sprinting.
-	ViewEntityState(e Entity, s []state.State)
+	ViewEntityState(e Entity)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)

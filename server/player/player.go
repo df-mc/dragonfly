@@ -12,7 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -33,7 +32,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
-	"image/color"
 	"math"
 	"math/rand"
 	"net"
@@ -390,6 +388,11 @@ func (p *Player) HideCoordinates() {
 func (p *Player) SetNameTag(name string) {
 	p.nameTag.Store(name)
 	p.updateState()
+}
+
+// NameTag returns the current name tag of the Player as shown in-game. It can be changed using SetNameTag.
+func (p *Player) NameTag() string {
+	return p.nameTag.Load()
 }
 
 // SetSpeed sets the speed of the player. The value passed is the blocks/tick speed that the player will then
@@ -853,6 +856,11 @@ func (p *Player) SetVisible() {
 	p.updateState()
 }
 
+// Invisible checks if the Player is currently invisible.
+func (p *Player) Invisible() bool {
+	return p.invisible.Load()
+}
+
 // SetImmobile prevents the player from moving around, but still allows them to look around.
 func (p *Player) SetImmobile() {
 	if !p.immobile.CAS(false, true) {
@@ -867,6 +875,11 @@ func (p *Player) SetMobile() {
 		return
 	}
 	p.updateState()
+}
+
+// Immobile checks if the Player is currently immobile.
+func (p *Player) Immobile() bool {
+	return p.immobile.Load()
 }
 
 // OnFireDuration ...
@@ -1010,6 +1023,12 @@ func (p *Player) ReleaseItem() {
 
 		// TODO: Release items such as bows.
 	}
+}
+
+// UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an
+// item or using it over a longer duration such as when using a bow.
+func (p *Player) UsingItem() bool {
+	return p.usingItem.Load()
 }
 
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
@@ -1790,53 +1809,20 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 	return nil
 }
 
-// State returns the current state of the player. Types from the `entity/state` package are returned
-// depending on what the player is currently doing.
-func (p *Player) State() (s []state.State) {
-	if p.Sneaking() {
-		s = append(s, state.Sneaking{})
-	}
-	if p.Sprinting() {
-		s = append(s, state.Sprinting{})
-	}
-	if p.Swimming() {
-		s = append(s, state.Swimming{})
-	}
-	if p.canBreathe() || !p.GameMode().AllowsTakingDamage() {
-		s = append(s, state.Breathing{})
-	}
-	if p.invisible.Load() {
-		s = append(s, state.Invisible{})
-	}
-	if p.immobile.Load() {
-		s = append(s, state.Immobile{})
-	}
-	if p.usingItem.Load() {
-		s = append(s, state.UsingItem{})
-	}
-	if p.OnFireDuration() > 0 {
-		s = append(s, state.OnFire{})
-	}
-	colour, ambient := effect.ResultingColour(p.Effects())
-	if (colour != color.RGBA{}) {
-		s = append(s, state.EffectBearing{ParticleColour: colour, Ambient: ambient})
-	}
-	s = append(s, state.Named{NameTag: p.nameTag.Load()})
-	s = append(s, state.Scaled{Scale: p.scale.Load()})
-	s = append(s, state.CanClimb{})
-	return
-}
-
 // updateState updates the state of the player to all viewers of the player.
 func (p *Player) updateState() {
 	for _, v := range p.World().Viewers(p.Position()) {
-		v.ViewEntityState(p, p.State())
+		v.ViewEntityState(p)
 	}
 }
 
-// canBreathe checks if the player is currently able to breathe. If it's underwater and the player does not
+// Breathing checks if the player is currently able to breathe. If it's underwater and the player does not
 // have the water breathing or conduit power effect, this returns false.
-func (p *Player) canBreathe() bool {
+// If the player is in creative or spectator mode, Breathing always returns true.
+func (p *Player) Breathing() bool {
+	if !p.GameMode().AllowsTakingDamage() {
+		return true
+	}
 	for _, e := range p.Effects() {
 		if _, waterBreathing := e.(effect.WaterBreathing); waterBreathing {
 			return true

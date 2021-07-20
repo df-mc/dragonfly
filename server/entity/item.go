@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -186,11 +185,6 @@ func (it *Item) Rotation() (float64, float64) { return 0, 0 }
 // AABB ...
 func (it *Item) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
-}
-
-// State ...
-func (it *Item) State() []state.State {
-	return nil
 }
 
 // EncodeEntity ...
