@@ -118,6 +118,7 @@ type User interface {
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
 	Position() mgl64.Vec3
+	Rotation() (yaw, pitch float64)
 }
 
 // Carrier represents an entity that is able to carry an item.

@@ -140,6 +140,7 @@ func init() {
 	registerAll(allDoubleFlowers())
 	registerAll(allFlowers())
 	registerAll(allPrismarine())
+	registerAll(allSigns())
 	registerAll(allLight())
 	registerAll(allLadders())
 }
@@ -161,66 +162,8 @@ func init() {
 	world.RegisterItem(Cobblestone{})
 	world.RegisterItem(Bedrock{})
 	world.RegisterItem(Kelp{})
-	world.RegisterItem(Log{Wood: OakWood()})
-	world.RegisterItem(Log{Wood: SpruceWood()})
-	world.RegisterItem(Log{Wood: BirchWood()})
-	world.RegisterItem(Log{Wood: JungleWood()})
-	world.RegisterItem(Leaves{Wood: OakWood(), Persistent: true})
-	world.RegisterItem(Leaves{Wood: SpruceWood(), Persistent: true})
-	world.RegisterItem(Leaves{Wood: BirchWood(), Persistent: true})
-	world.RegisterItem(Leaves{Wood: JungleWood(), Persistent: true})
 	world.RegisterItem(Chest{})
 	world.RegisterItem(Cobblestone{Mossy: true})
-	world.RegisterItem(Leaves{Wood: AcaciaWood(), Persistent: true})
-	world.RegisterItem(Leaves{Wood: DarkOakWood(), Persistent: true})
-	world.RegisterItem(Log{Wood: AcaciaWood()})
-	world.RegisterItem(Log{Wood: DarkOakWood()})
-	world.RegisterItem(Log{Wood: SpruceWood(), Stripped: true})
-	world.RegisterItem(Log{Wood: BirchWood(), Stripped: true})
-	world.RegisterItem(Log{Wood: JungleWood(), Stripped: true})
-	world.RegisterItem(Log{Wood: AcaciaWood(), Stripped: true})
-	world.RegisterItem(Log{Wood: DarkOakWood(), Stripped: true})
-	world.RegisterItem(Log{Wood: OakWood(), Stripped: true})
-	for _, c := range item.Colours() {
-		world.RegisterItem(Concrete{Colour: c})
-		world.RegisterItem(ConcretePowder{Colour: c})
-		world.RegisterItem(StainedTerracotta{Colour: c})
-		world.RegisterItem(Carpet{Colour: c})
-		world.RegisterItem(Wool{Colour: c})
-		world.RegisterItem(StainedGlass{Colour: c})
-		world.RegisterItem(StainedGlassPane{Colour: c})
-		world.RegisterItem(GlazedTerracotta{Colour: c})
-	}
-	for _, b := range allLight() {
-		world.RegisterItem(b.(world.Item))
-	}
-	for _, w := range WoodTypes() {
-		world.RegisterItem(Planks{Wood: w})
-	}
-	world.RegisterItem(WoodStairs{Wood: OakWood()})
-	world.RegisterItem(WoodStairs{Wood: SpruceWood()})
-	world.RegisterItem(WoodStairs{Wood: BirchWood()})
-	world.RegisterItem(WoodStairs{Wood: JungleWood()})
-	world.RegisterItem(WoodStairs{Wood: AcaciaWood()})
-	world.RegisterItem(WoodStairs{Wood: DarkOakWood()})
-	world.RegisterItem(WoodStairs{Wood: CrimsonWood()})
-	world.RegisterItem(WoodStairs{Wood: WarpedWood()})
-	world.RegisterItem(WoodSlab{Wood: OakWood()})
-	world.RegisterItem(WoodSlab{Wood: SpruceWood()})
-	world.RegisterItem(WoodSlab{Wood: BirchWood()})
-	world.RegisterItem(WoodSlab{Wood: JungleWood()})
-	world.RegisterItem(WoodSlab{Wood: AcaciaWood()})
-	world.RegisterItem(WoodSlab{Wood: DarkOakWood()})
-	world.RegisterItem(WoodSlab{Wood: CrimsonWood()})
-	world.RegisterItem(WoodSlab{Wood: WarpedWood()})
-	world.RegisterItem(WoodSlab{Wood: OakWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: SpruceWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: BirchWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: JungleWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: AcaciaWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: DarkOakWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: CrimsonWood(), Double: true})
-	world.RegisterItem(WoodSlab{Wood: WarpedWood(), Double: true})
 	world.RegisterItem(Obsidian{})
 	world.RegisterItem(Obsidian{Crying: true})
 	world.RegisterItem(DiamondBlock{})
@@ -245,58 +188,8 @@ func init() {
 	world.RegisterItem(QuartzBricks{})
 	world.RegisterItem(GlassPane{})
 	world.RegisterItem(IronBars{})
-	world.RegisterItem(WoodFence{Wood: OakWood()})
-	world.RegisterItem(WoodFence{Wood: SpruceWood()})
-	world.RegisterItem(WoodFence{Wood: BirchWood()})
-	world.RegisterItem(WoodFence{Wood: JungleWood()})
-	world.RegisterItem(WoodFence{Wood: AcaciaWood()})
-	world.RegisterItem(WoodFence{Wood: DarkOakWood()})
-	world.RegisterItem(WoodFence{Wood: CrimsonWood()})
-	world.RegisterItem(WoodFence{Wood: WarpedWood()})
 	world.RegisterItem(NetherBrickFence{})
-	world.RegisterItem(WoodFenceGate{Wood: OakWood()})
-	world.RegisterItem(WoodFenceGate{Wood: SpruceWood()})
-	world.RegisterItem(WoodFenceGate{Wood: BirchWood()})
-	world.RegisterItem(WoodFenceGate{Wood: JungleWood()})
-	world.RegisterItem(WoodFenceGate{Wood: AcaciaWood()})
-	world.RegisterItem(WoodFenceGate{Wood: DarkOakWood()})
-	world.RegisterItem(WoodFenceGate{Wood: CrimsonWood()})
-	world.RegisterItem(WoodFenceGate{Wood: WarpedWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: OakWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: SpruceWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: BirchWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: JungleWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: AcaciaWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: DarkOakWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: CrimsonWood()})
-	world.RegisterItem(WoodTrapdoor{Wood: WarpedWood()})
-	world.RegisterItem(WoodDoor{Wood: OakWood()})
-	world.RegisterItem(WoodDoor{Wood: SpruceWood()})
-	world.RegisterItem(WoodDoor{Wood: BirchWood()})
-	world.RegisterItem(WoodDoor{Wood: JungleWood()})
-	world.RegisterItem(WoodDoor{Wood: AcaciaWood()})
-	world.RegisterItem(WoodDoor{Wood: DarkOakWood()})
-	world.RegisterItem(WoodDoor{Wood: CrimsonWood()})
-	world.RegisterItem(WoodDoor{Wood: WarpedWood()})
-	for _, c := range allCoral() {
-		world.RegisterItem(c.(world.Item))
-	}
-	for _, c := range allCoralBlocks() {
-		world.RegisterItem(c.(world.Item))
-	}
-	for _, s := range allSandstones() {
-		world.RegisterItem(s.(world.Item))
-	}
 	world.RegisterItem(Barrel{})
-	for _, ore := range OreTypes() {
-		world.RegisterItem(CoalOre{Type: ore})
-		world.RegisterItem(IronOre{Type: ore})
-		world.RegisterItem(GoldOre{Type: ore})
-		world.RegisterItem(CopperOre{Type: ore})
-		world.RegisterItem(LapisOre{Type: ore})
-		world.RegisterItem(DiamondOre{Type: ore})
-		world.RegisterItem(EmeraldOre{Type: ore})
-	}
 	world.RegisterItem(Pumpkin{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Pumpkin{Carved: true})
@@ -304,8 +197,6 @@ func init() {
 	world.RegisterItem(Netherrack{})
 	world.RegisterItem(Clay{})
 	world.RegisterItem(BoneBlock{})
-	world.RegisterItem(Lantern{Type: NormalFire()})
-	world.RegisterItem(Lantern{Type: SoulFire()})
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(NetherGoldOre{})
 	world.RegisterItem(NetherQuartzOre{})
@@ -330,21 +221,11 @@ func init() {
 	world.RegisterItem(BlueIce{})
 	world.RegisterItem(GildedBlackstone{})
 	world.RegisterItem(Shroomlight{})
-	world.RegisterItem(Torch{Type: NormalFire()})
-	world.RegisterItem(Torch{Type: SoulFire()})
 	world.RegisterItem(Cake{})
 	world.RegisterItem(NetherWart{})
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(NoteBlock{Pitch: 24})
 	world.RegisterItem(DragonEgg{})
-	world.RegisterItem(TallGrass{})
-	world.RegisterItem(TallGrass{Type: Fern()})
-	world.RegisterItem(DoubleTallGrass{})
-	world.RegisterItem(DoubleTallGrass{Type: Fern()})
-	world.RegisterItem(DoubleFlower{Type: Sunflower()})
-	world.RegisterItem(DoubleFlower{Type: Lilac()})
-	world.RegisterItem(DoubleFlower{Type: RoseBush()})
-	world.RegisterItem(DoubleFlower{Type: Peony()})
 	world.RegisterItem(NetherSprouts{})
 	world.RegisterItem(Farmland{})
 	world.RegisterItem(Tuff{})
@@ -355,22 +236,6 @@ func init() {
 	world.RegisterItem(MossCarpet{})
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(Dripstone{})
-	world.RegisterItem(Flower{Type: Dandelion()})
-	world.RegisterItem(Flower{Type: Poppy()})
-	world.RegisterItem(Flower{Type: BlueOrchid()})
-	world.RegisterItem(Flower{Type: Allium()})
-	world.RegisterItem(Flower{Type: AzureBluet()})
-	world.RegisterItem(Flower{Type: RedTulip()})
-	world.RegisterItem(Flower{Type: OrangeTulip()})
-	world.RegisterItem(Flower{Type: WhiteTulip()})
-	world.RegisterItem(Flower{Type: PinkTulip()})
-	world.RegisterItem(Flower{Type: OxeyeDaisy()})
-	world.RegisterItem(Flower{Type: Cornflower()})
-	world.RegisterItem(Flower{Type: LilyOfTheValley()})
-	world.RegisterItem(Flower{Type: WitherRose()})
-	world.RegisterItem(Prismarine{Type: NormalPrismarine()})
-	world.RegisterItem(Prismarine{Type: DarkPrismarine()})
-	world.RegisterItem(Prismarine{Type: BrickPrismarine()})
 	world.RegisterItem(DriedKelpBlock{})
 	world.RegisterItem(HoneycombBlock{})
 	world.RegisterItem(Podzol{})
@@ -378,6 +243,71 @@ func init() {
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
+
+	for _, b := range allLight() {
+		world.RegisterItem(b.(world.Item))
+	}
+	for _, c := range allCoral() {
+		world.RegisterItem(c.(world.Item))
+	}
+	for _, c := range allCoralBlocks() {
+		world.RegisterItem(c.(world.Item))
+	}
+	for _, s := range allSandstones() {
+		world.RegisterItem(s.(world.Item))
+	}
+	for _, c := range item.Colours() {
+		world.RegisterItem(Concrete{Colour: c})
+		world.RegisterItem(ConcretePowder{Colour: c})
+		world.RegisterItem(StainedTerracotta{Colour: c})
+		world.RegisterItem(Carpet{Colour: c})
+		world.RegisterItem(Wool{Colour: c})
+		world.RegisterItem(StainedGlass{Colour: c})
+		world.RegisterItem(StainedGlassPane{Colour: c})
+		world.RegisterItem(GlazedTerracotta{Colour: c})
+	}
+	for _, w := range WoodTypes() {
+		world.RegisterItem(Log{Wood: w})
+		world.RegisterItem(Log{Wood: w, Stripped: true})
+		if w != WarpedWood() && w != CrimsonWood() {
+			world.RegisterItem(Leaves{Wood: w, Persistent: true})
+		}
+		world.RegisterItem(Planks{Wood: w})
+		world.RegisterItem(WoodStairs{Wood: w})
+		world.RegisterItem(WoodSlab{Wood: w})
+		world.RegisterItem(WoodSlab{Wood: w, Double: true})
+		world.RegisterItem(WoodFence{Wood: w})
+		world.RegisterItem(WoodFenceGate{Wood: w})
+		world.RegisterItem(WoodTrapdoor{Wood: w})
+		world.RegisterItem(WoodDoor{Wood: w})
+		world.RegisterItem(Sign{Wood: w})
+	}
+	for _, ore := range OreTypes() {
+		world.RegisterItem(CoalOre{Type: ore})
+		world.RegisterItem(IronOre{Type: ore})
+		world.RegisterItem(GoldOre{Type: ore})
+		world.RegisterItem(CopperOre{Type: ore})
+		world.RegisterItem(LapisOre{Type: ore})
+		world.RegisterItem(DiamondOre{Type: ore})
+		world.RegisterItem(EmeraldOre{Type: ore})
+	}
+	for _, f := range FireTypes() {
+		world.RegisterItem(Lantern{Type: f})
+		world.RegisterItem(Torch{Type: f})
+	}
+	for _, f := range FlowerTypes() {
+		world.RegisterItem(Flower{Type: f})
+	}
+	for _, f := range DoubleFlowerTypes() {
+		world.RegisterItem(DoubleFlower{Type: f})
+	}
+	for _, g := range GrassTypes() {
+		world.RegisterItem(TallGrass{Type: g})
+		world.RegisterItem(DoubleTallGrass{Type: g})
+	}
+	for _, p := range PrismarineTypes() {
+		world.RegisterItem(Prismarine{Type: p})
+	}
 }
 
 // readSlice reads an interface slice from a map at the key passed.

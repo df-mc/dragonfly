@@ -128,9 +128,16 @@ func (f Face) String() string {
 	panic("invalid face")
 }
 
+// Faces returns a list of all faces, starting with down, then up, then north to west.
+func Faces() []Face {
+	return faces[:]
+}
+
 // HorizontalFaces returns a list of all horizontal faces, from north to west.
 func HorizontalFaces() []Face {
 	return hFaces[:]
 }
 
 var hFaces = [...]Face{FaceNorth, FaceEast, FaceSouth, FaceWest}
+
+var faces = [...]Face{FaceDown, FaceUp, FaceNorth, FaceEast, FaceSouth, FaceWest}

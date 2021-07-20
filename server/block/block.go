@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/google/uuid"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -43,6 +44,11 @@ type LightDiffuser interface {
 	// this block. Some blocks, such as leaves, have this behaviour. A diffusion level of 15 means that all
 	// light will be completely blocked when it passes through the block.
 	LightDiffusionLevel() uint8
+}
+
+// SignEditor represents something that can edit a sign, typically players.
+type SignEditor interface {
+	UUID() uuid.UUID
 }
 
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,

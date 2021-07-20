@@ -80,6 +80,9 @@ type Handler interface {
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity)
+	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
+	// has both the old text passed and the text after the edit. This typically only has a change of one character.
+	HandleSignEdit(ctx *event.Context, oldText, newText string)
 	// HandleItemDamage handles the event wherein the item either held by the player or as armour takes
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
@@ -143,6 +146,9 @@ func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
 
 // HandleBlockPick ...
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block) {}
+
+// HandleSignEdit ...
+func (NopHandler) HandleSignEdit(*event.Context, string, string) {}
 
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}

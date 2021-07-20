@@ -196,6 +196,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 		return "uint64(boolByte(" + s + "))", 1
 	case "int":
 		return "uint64(" + s + ")", 8
+	case "Attachment":
+		return "uint64(" + s + ".Uint8())", 5
 	case "FlowerType", "DoubleFlowerType", "Colour":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
@@ -210,7 +212,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 	case "Face":
 		return "uint64(" + s + ")", 3
 	default:
-		log.Println("Found unhandled field type", "'"+name+"'", "in block", structName+".", "Assuming this field is not included in block states. Please make sure this is correct.")
+		log.Println("Found unhandled field type", "'"+name+"'", "in block", structName+".", "Assuming this field is not included in block states. Please make sure this is correct or add the type to cmd/blockhash.")
 	}
 	return "", 0
 }

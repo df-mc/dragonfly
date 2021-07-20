@@ -1763,6 +1763,28 @@ func (p *Player) PlaySound(sound world.Sound) {
 	p.session().ViewSound(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}), sound)
 }
 
+// EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
+// present or if the Player cannot edit it, an error is returned
+func (p *Player) EditSign(pos cube.Pos, text string) error {
+	w := p.World()
+	sign, ok := w.Block(pos).(block.Sign)
+	if !ok {
+		return fmt.Errorf("edit sign: no sign at position %v", pos)
+	}
+
+	if !sign.EditableBy(p) {
+		return fmt.Errorf("edit sign: sign text was already finalized")
+	}
+
+	ctx := event.C()
+	p.handler().HandleSignEdit(ctx, sign.Text, text)
+	ctx.Continue(func() {
+		sign.Text = text
+	})
+	w.SetBlock(pos, sign)
+	return nil
+}
+
 // State returns the current state of the player. Types from the `entity/state` package are returned
 // depending on what the player is currently doing.
 func (p *Player) State() (s []state.State) {

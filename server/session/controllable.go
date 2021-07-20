@@ -26,6 +26,7 @@ type Controllable interface {
 	Speed() float64
 	EyeHeight() float64
 	Rotate(deltaYaw, deltaPitch float64)
+	Facing() cube.Direction
 
 	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
@@ -61,6 +62,8 @@ type Controllable interface {
 	AbortBreaking()
 
 	Exhaust(points float64)
+
+	EditSign(pos cube.Pos, text string) error
 
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.

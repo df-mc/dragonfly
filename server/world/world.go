@@ -685,10 +685,12 @@ func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	}
 }
 
-// entityWorlds holds a list of all entities added to a world. It may be used to lookup the world that an
-// entity is currently in.
-var entityWorlds = map[Entity]*World{}
-var worldsMu sync.RWMutex
+var (
+	worldsMu sync.RWMutex
+	// entityWorlds holds a list of all entities added to a world. It may be used to lookup the world that an
+	// entity is currently in.
+	entityWorlds = map[Entity]*World{}
+)
 
 // AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to
 // all viewers of the world that have the chunk of the entity loaded.
