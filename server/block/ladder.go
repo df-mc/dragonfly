@@ -36,7 +36,7 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	if _, ok := w.Block(pos.Side(face.Opposite())).(LightDiffuser); ok {
 		found := false
 		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceNorth, cube.FaceEast, cube.FaceWest} {
-			if _, ok := w.Block(pos.Side(i)).(LightDiffuser); !ok {
+			if diffuser, ok := w.Block(pos.Side(i)).(LightDiffuser); !ok || diffuser.LightDiffusionLevel() == 15 {
 				found = true
 				face = i.Opposite()
 				break
