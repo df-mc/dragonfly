@@ -54,7 +54,7 @@ func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Po
 	}
 	// The change of text length must never exceed one character.
 	diff := len(text) - len(sign.Text)
-	if diff != -1 && diff != 1 {
+	if diff < -1 && diff > 1 {
 		return fmt.Errorf("sign block actor data had more than one character length change: %v to %v", len(text), len(sign.Text))
 	}
 	if err := s.c.EditSign(pos, text); err != nil {

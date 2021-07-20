@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"image/color"
 	"strings"
 )
@@ -29,9 +30,8 @@ type Sign struct {
 	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark and it
 	// will have an outline to improve visibility.
 	Glowing bool
-	// TextOwner holds the XUID of the player that initially placed the sign. It is used to check if a player can edit
-	// a sign. If left empty, nobody can edit the sign.
-	TextOwner string
+	// owner holds the UUID of the player that initially placed the sign.
+	owner *uuid.UUID
 }
 
 // MaxCount ...
@@ -60,47 +60,6 @@ func (s Sign) CanDisplace(l world.Liquid) bool {
 	return water
 }
 
-// EncodeBlock ...
-func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
-	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
-	if woodType == "oak_" {
-		woodType = ""
-	}
-	if s.Attach.hanging {
-		return "minecraft:" + woodType + "wall_sign", map[string]interface{}{"facing_direction": int32(s.Attach.facing + 2)}
-	}
-	return "minecraft:" + woodType + "standing_sign", map[string]interface{}{"ground_sign_direction": int32(s.Attach.o)}
-}
-
-// DecodeNBT ...
-func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Text = readString(data, "Text")
-	s.BaseColour = nbtconv.RGBAFromInt32(readInt32(data, "SignTextColor"))
-	s.TextOwner = readString(data, "TextOwner")
-	s.Glowing = readByte(data, "IgnoreLighting") == 1
-
-	return s
-}
-
-// EncodeNBT ...
-func (s Sign) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
-		"id":             "Sign",
-		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
-		"TextOwner":      s.TextOwner,
-		"IgnoreLighting": boolByte(s.Glowing),
-		// This is some top class Mojang garbage. The client needs it to render the glowing text. Omitting this field
-		// will just result in normal text being displayed.
-		"TextIgnoreLegacyBugResolved": boolByte(s.Glowing),
-	}
-	if s.Text != "" {
-		// The client does not display the editing GUI if this tag is already set when no text is present, so just don't
-		// send it while the text is empty.
-		m["Text"] = s.Text
-	}
-	return m
-}
-
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
 func (s Sign) Dye(c item.Colour) (world.Block, bool) {
 	if s.BaseColour == c.RGBA() {
@@ -119,12 +78,28 @@ func (s Sign) Ink(glowing bool) (world.Block, bool) {
 	return s, true
 }
 
+// CanEdit returns whether a SignEditor can edit the sign or not. This is based on whether the SignEditor
+// placed the sign and the sign's chunk has yet to be unloaded.
+func (s Sign) CanEdit(editor SignEditor) bool {
+	if s.owner == nil {
+		return false
+	}
+
+	return editor.UUID() == *s.owner
+}
+
 // UseOnBlock ...
 func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, s)
 	if !used || face == cube.FaceDown {
 		return false
 	}
+
+	if editer, ok := user.(SignEditor); ok {
+		id := editer.UUID()
+		s.owner = &id
+	}
+
 	if face == cube.FaceUp {
 		yaw, _ := user.Rotation()
 		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw).Opposite())
@@ -147,6 +122,45 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		w.BreakBlock(pos)
 	}
+}
+
+// EncodeBlock ...
+func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
+	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
+	if woodType == "oak_" {
+		woodType = ""
+	}
+	if s.Attach.hanging {
+		return "minecraft:" + woodType + "wall_sign", map[string]interface{}{"facing_direction": int32(s.Attach.facing + 2)}
+	}
+	return "minecraft:" + woodType + "standing_sign", map[string]interface{}{"ground_sign_direction": int32(s.Attach.o)}
+}
+
+// DecodeNBT ...
+func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
+	s.Text = readString(data, "Text")
+	s.BaseColour = nbtconv.RGBAFromInt32(readInt32(data, "SignTextColor"))
+	s.Glowing = readByte(data, "IgnoreLighting") == 1
+
+	return s
+}
+
+// EncodeNBT ...
+func (s Sign) EncodeNBT() map[string]interface{} {
+	m := map[string]interface{}{
+		"id":             "Sign",
+		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
+		"IgnoreLighting": boolByte(s.Glowing),
+		// This is some top class Mojang garbage. The client needs it to render the glowing text. Omitting this field
+		// will just result in normal text being displayed.
+		"TextIgnoreLegacyBugResolved": boolByte(s.Glowing),
+	}
+	if s.Text != "" {
+		// The client does not display the editing GUI if this tag is already set when no text is present, so just don't
+		// send it while the text is empty.
+		m["Text"] = s.Text
+	}
+	return m
 }
 
 // allSigns ...

@@ -1766,18 +1766,22 @@ func (p *Player) PlaySound(sound world.Sound) {
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present or if the Player cannot edit it, an error is returned
 func (p *Player) EditSign(pos cube.Pos, text string) error {
-	sign, ok := p.World().Block(pos).(block.Sign)
+	w := p.World()
+	sign, ok := w.Block(pos).(block.Sign)
 	if !ok {
 		return fmt.Errorf("sign block actor data for position without sign %v", pos)
 	}
-	// TODO: Make sure only the owner of the sign can edit it.
+
+	if !sign.CanEdit(p) {
+		return fmt.Errorf("sign text was already finalized")
+	}
 
 	ctx := event.C()
 	p.handler().HandleSignEdit(ctx, sign.Text, text)
 	ctx.Continue(func() {
-		sign.Text, sign.TextOwner = text, p.xuid
+		sign.Text = text
 	})
-	p.World().SetBlock(pos, sign)
+	w.SetBlock(pos, sign)
 	return nil
 }
 

@@ -26,6 +26,7 @@ type Controllable interface {
 	Speed() float64
 	EyeHeight() float64
 	Rotate(deltaYaw, deltaPitch float64)
+	Facing() cube.Direction
 
 	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
