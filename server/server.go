@@ -370,7 +370,7 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 		playerData = &d
 	}
-	if err = conn.StartGame(data); err != nil {
+	if err = conn.StartGameTimeout(data, time.Minute); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
