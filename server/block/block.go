@@ -106,7 +106,7 @@ func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 	}
 	b := w.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
-		return replaceable.ReplaceableBy(with)
+		return replaceable.ReplaceableBy(with) && b != with
 	}
 	return false
 }
