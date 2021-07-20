@@ -45,8 +45,8 @@ func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Po
 
 	// Verify that the text was valid. It must be valid UTF8 and not more than 100 characters long.
 	text = strings.TrimRight(text, "\n")
-	if len(text) > 100 {
-		return fmt.Errorf("sign block actor data text was longer than 100 characters")
+	if len(text) > 256 {
+		return fmt.Errorf("sign block actor data text was longer than 256 characters")
 	}
 	if !utf8.ValidString(text) {
 		return fmt.Errorf("sign block actor data text was not valid UTF8")
