@@ -31,7 +31,7 @@ type Sign struct {
 	// will have an outline to improve visibility.
 	Glowing bool
 	// owner holds the UUID of the player that initially placed the sign.
-	owner *uuid.UUID
+	owner uuid.UUID
 }
 
 // SideClosed ...
@@ -83,14 +83,10 @@ func (s Sign) Ink(glowing bool) (world.Block, bool) {
 	return s, true
 }
 
-// CanEdit returns whether a SignEditor can edit the sign or not. This is based on whether the SignEditor
+// EditableBy returns whether a SignEditor can edit the sign or not. This is based on whether the SignEditor
 // placed the sign and the sign's chunk has yet to be unloaded.
-func (s Sign) CanEdit(editor SignEditor) bool {
-	if s.owner == nil {
-		return false
-	}
-
-	return editor.UUID() == *s.owner
+func (s Sign) EditableBy(editor SignEditor) bool {
+	return editor.UUID() == s.owner
 }
 
 // UseOnBlock ...
@@ -100,9 +96,8 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return false
 	}
 
-	if editer, ok := user.(SignEditor); ok {
-		id := editer.UUID()
-		s.owner = &id
+	if editor, ok := user.(SignEditor); ok {
+		s.owner = editor.UUID()
 	}
 
 	if face == cube.FaceUp {

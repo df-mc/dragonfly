@@ -1769,11 +1769,11 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 	w := p.World()
 	sign, ok := w.Block(pos).(block.Sign)
 	if !ok {
-		return fmt.Errorf("sign block actor data for position without sign %v", pos)
+		return fmt.Errorf("edit sign: no sign at position %v", pos)
 	}
 
-	if !sign.CanEdit(p) {
-		return fmt.Errorf("sign text was already finalized")
+	if !sign.EditableBy(p) {
+		return fmt.Errorf("edit sign: sign text was already finalized")
 	}
 
 	ctx := event.C()
