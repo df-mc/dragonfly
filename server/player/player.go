@@ -13,7 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -1433,8 +1432,8 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 	b := p.World().Block(pos)
 	if i, ok := b.(world.Item); ok {
-		copiedItem := item.NewStack(i, 1)
-		copiedItem = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(copiedItem, false), nil)
+		it, _ := world.ItemByName(i.EncodeItem())
+		copiedItem := item.NewStack(it, 1)
 
 		slot, found := p.Inventory().First(copiedItem)
 
