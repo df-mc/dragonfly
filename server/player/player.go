@@ -1164,6 +1164,11 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		p.World().PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
+	held, _ := p.HeldItems()
+	if _, ok := held.Item().(item.Sword); ok {
+		// Can't break blocks with a sword.
+		return
+	}
 	ctx := event.C()
 	p.handler().HandleStartBreak(ctx, pos)
 	ctx.Continue(func() {
