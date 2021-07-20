@@ -1183,8 +1183,8 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	held, _ := p.HeldItems()
-	if _, ok := held.Item().(item.Sword); ok {
-		// Can't break blocks with a sword.
+	if _, ok := held.Item().(item.Sword); ok && !p.GameMode().AllowsTakingDamage() {
+		// Can't break blocks with a sword in creative mode.
 		return
 	}
 	ctx := event.C()
