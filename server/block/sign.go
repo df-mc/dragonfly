@@ -34,6 +34,11 @@ type Sign struct {
 	owner *uuid.UUID
 }
 
+// SideClosed ...
+func (s Sign) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
+}
+
 // MaxCount ...
 func (s Sign) MaxCount() int {
 	return 16
