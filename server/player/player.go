@@ -846,7 +846,7 @@ func (p *Player) SetInvisible() {
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, or if the player is in spectator mode, nothing happens.
 func (p *Player) SetVisible() {
-	if (p.GameMode() == world.GameModeSpectator{}) {
+	if !p.GameMode().AllowsInteraction() {
 		return
 	}
 	if !p.invisible.CAS(true, false) {
@@ -936,9 +936,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 
 	p.session().SendGameMode(mode)
 
-	if (mode == world.GameModeSpectator{}) {
+	if !mode.AllowsInteraction() {
 		p.SetInvisible()
-	} else if (mode != world.GameModeSpectator{}) && (previous == world.GameModeSpectator{}) {
+	} else if !previous.AllowsInteraction() {
 		for _, eff := range p.Effects() {
 			if _, ok := eff.(effect.Invisibility); ok {
 				return
@@ -1183,7 +1183,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	held, _ := p.HeldItems()
-	if _, ok := held.Item().(item.Sword); ok && !p.GameMode().AllowsTakingDamage() {
+	if _, ok := held.Item().(item.Sword); ok && !p.GameMode().CreativeInventory() {
 		// Can't break blocks with a sword in creative mode.
 		return
 	}
@@ -1437,7 +1437,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 		slot, found := p.Inventory().First(copiedItem)
 
-		if (!found && p.GameMode() != world.GameModeCreative{}) {
+		if !found && !p.GameMode().CreativeInventory() {
 			return
 		}
 
@@ -1450,21 +1450,21 @@ func (p *Player) PickBlock(pos cube.Pos) {
 			if found {
 				if slot < 9 {
 					_ = p.session().SetHeldSlot(slot)
-				} else {
-					_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+					return
 				}
-			} else {
-				firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+				_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+				return
+			}
+			firstEmpty, emptyFound := p.Inventory().FirstEmpty()
 
-				if !emptyFound {
-					p.SetHeldItems(copiedItem, offhand)
-				} else if firstEmpty < 8 {
-					_ = p.session().SetHeldSlot(firstEmpty)
-					_ = p.Inventory().SetItem(firstEmpty, copiedItem)
-				} else {
-					_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
-					p.SetHeldItems(copiedItem, offhand)
-				}
+			if !emptyFound {
+				p.SetHeldItems(copiedItem, offhand)
+			} else if firstEmpty < 8 {
+				_ = p.session().SetHeldSlot(firstEmpty)
+				_ = p.Inventory().SetItem(firstEmpty, copiedItem)
+			} else {
+				_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+				p.SetHeldItems(copiedItem, offhand)
 			}
 		})
 	}
@@ -1914,7 +1914,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
-	if (p.GameMode() == world.GameModeSpectator{}) {
+	if !p.GameMode().AllowsInteraction() {
 		return false
 	}
 	eyes := p.Position().Add(mgl64.Vec3{0, eyeHeight})

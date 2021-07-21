@@ -217,15 +217,33 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
 	flags, id := uint32(0), int32(packet.GameTypeSurvival)
-	switch mode.(type) {
-	case world.GameModeCreative:
-		flags = packet.AdventureFlagAllowFlight
-		id = packet.GameTypeCreative
-	case world.GameModeAdventure:
+	if mode.AllowsFlying() {
+		flags |= packet.AdventureFlagAllowFlight
+	}
+	if !mode.HasCollision() {
+		flags |= packet.AdventureFlagNoClip
+	}
+	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
+	}
+	if !mode.AllowsInteraction() {
+		flags |= packet.AdventureFlagMuted | packet.AdventureFlagNoPVP
+	}
+	// Find a game type that matches the game mode most closely. We assign some properties to specifically creative
+	// mode or spectator mode and assign game type based on those.
+	crea := mode.AllowsFlying() && mode.CreativeInventory()
+	spec := !mode.AllowsEditing() && !mode.AllowsInteraction()
+	switch {
+	case crea && !spec:
+		id = packet.GameTypeCreative
+	case crea && spec:
+		id = packet.GameTypeCreativeSpectator
+	case !crea && spec:
+		id = packet.GameTypeSurvivalSpectator
+	case !crea && mode.AllowsInteraction() && !mode.AllowsEditing():
 		id = packet.GameTypeAdventure
-	case world.GameModeSpectator:
-		flags, id = packet.AdventureFlagWorldImmutable|packet.AdventureFlagAllowFlight|packet.AdventureFlagMuted|packet.AdventureFlagNoClip|packet.AdventureFlagNoPVP, packet.GameTypeCreativeSpectator
+	default:
+		id = packet.GameTypeSurvival
 	}
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,

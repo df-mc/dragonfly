@@ -10,6 +10,13 @@ type GameMode interface {
 	AllowsTakingDamage() bool
 	// CreativeInventory specifies if a player with this GameMode has access to the creative inventory.
 	CreativeInventory() bool
+	// HasCollision specifies if a player with this GameMode can collide with blocks or entities in the world.
+	HasCollision() bool
+	// AllowsFlying specifies if a player with this GameMode can fly freely.
+	AllowsFlying() bool
+	// AllowsInteraction specifies if a player with this GameMode can interact with the world through entities or if it
+	// can use items in the world.
+	AllowsInteraction() bool
 }
 
 // GameModeSurvival represents the survival game mode: Players with this game mode have limited supplies and
@@ -31,6 +38,21 @@ func (GameModeSurvival) CreativeInventory() bool {
 	return false
 }
 
+// HasCollision ...
+func (GameModeSurvival) HasCollision() bool {
+	return true
+}
+
+// AllowsFlying ...
+func (GameModeSurvival) AllowsFlying() bool {
+	return false
+}
+
+// AllowsInteraction ...
+func (GameModeSurvival) AllowsInteraction() bool {
+	return true
+}
+
 // GameModeCreative represents the creative game mode: Players with this game mode have infinite blocks and
 // items and can break blocks instantly. Players with creative mode can also fly.
 type GameModeCreative struct{}
@@ -47,6 +69,21 @@ func (GameModeCreative) AllowsTakingDamage() bool {
 
 // CreativeInventory ...
 func (GameModeCreative) CreativeInventory() bool {
+	return true
+}
+
+// HasCollision ...
+func (GameModeCreative) HasCollision() bool {
+	return true
+}
+
+// AllowsFlying ...
+func (GameModeCreative) AllowsFlying() bool {
+	return true
+}
+
+// AllowsInteraction ...
+func (GameModeCreative) AllowsInteraction() bool {
 	return true
 }
 
@@ -69,6 +106,21 @@ func (GameModeAdventure) CreativeInventory() bool {
 	return false
 }
 
+// HasCollision ...
+func (GameModeAdventure) HasCollision() bool {
+	return true
+}
+
+// AllowsFlying ...
+func (GameModeAdventure) AllowsFlying() bool {
+	return false
+}
+
+// AllowsInteraction ...
+func (GameModeAdventure) AllowsInteraction() bool {
+	return true
+}
+
 // GameModeSpectator represents the spectator game mode: Players with this game mode cannot interact with the
 // world and cannot be seen by other players. GameModeSpectator players can fly, like creative mode, and can
 // move through blocks.
@@ -86,5 +138,20 @@ func (GameModeSpectator) AllowsTakingDamage() bool {
 
 // CreativeInventory ...
 func (GameModeSpectator) CreativeInventory() bool {
+	return true
+}
+
+// HasCollision ...
+func (GameModeSpectator) HasCollision() bool {
+	return false
+}
+
+// AllowsFlying ...
+func (GameModeSpectator) AllowsFlying() bool {
+	return true
+}
+
+// AllowsInteraction ...
+func (GameModeSpectator) AllowsInteraction() bool {
 	return true
 }
