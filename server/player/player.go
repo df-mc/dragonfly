@@ -846,8 +846,13 @@ func (p *Player) SetInvisible() {
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, or if the player is in spectator mode, nothing happens.
 func (p *Player) SetVisible() {
-	if !p.GameMode().AllowsInteraction() {
+	if !p.GameMode().Visible() {
 		return
+	}
+	for _, eff := range p.Effects() {
+		if _, ok := eff.(effect.Invisibility); ok {
+			return
+		}
 	}
 	if !p.invisible.CAS(true, false) {
 		return
@@ -936,14 +941,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 
 	p.session().SendGameMode(mode)
 
-	if !mode.AllowsInteraction() {
+	if !mode.Visible() {
 		p.SetInvisible()
-	} else if !previous.AllowsInteraction() {
-		for _, eff := range p.Effects() {
-			if _, ok := eff.(effect.Invisibility); ok {
-				return
-			}
-		}
+	} else if !previous.Visible() {
 		p.SetVisible()
 	}
 }

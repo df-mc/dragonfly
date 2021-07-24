@@ -227,7 +227,10 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		flags |= packet.AdventureFlagWorldImmutable
 	}
 	if !mode.AllowsInteraction() {
-		flags |= packet.AdventureFlagMuted | packet.AdventureFlagNoPVP
+		flags |= packet.AdventureFlagNoPVP
+	}
+	if !mode.Visible() {
+		flags |= packet.AdventureFlagMuted
 	}
 	// Find a game type that matches the game mode most closely. We assign some properties to specifically creative
 	// mode or spectator mode and assign game type based on those.

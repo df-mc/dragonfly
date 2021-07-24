@@ -17,6 +17,9 @@ type GameMode interface {
 	// AllowsInteraction specifies if a player with this GameMode can interact with the world through entities or if it
 	// can use items in the world.
 	AllowsInteraction() bool
+	// Visible specifies if a player with this GameMode can be visible to other players. If false, the player will be
+	// invisible under any circumstance.
+	Visible() bool
 }
 
 // GameModeSurvival represents the survival game mode: Players with this game mode have limited supplies and
@@ -50,6 +53,11 @@ func (GameModeSurvival) AllowsFlying() bool {
 
 // AllowsInteraction ...
 func (GameModeSurvival) AllowsInteraction() bool {
+	return true
+}
+
+// Visible ...
+func (GameModeSurvival) Visible() bool {
 	return true
 }
 
@@ -87,6 +95,11 @@ func (GameModeCreative) AllowsInteraction() bool {
 	return true
 }
 
+// Visible ...
+func (GameModeCreative) Visible() bool {
+	return true
+}
+
 // GameModeAdventure represents the adventure game mode: Players with this game mode cannot edit the world
 // (placing or breaking blocks).
 type GameModeAdventure struct{}
@@ -118,6 +131,11 @@ func (GameModeAdventure) AllowsFlying() bool {
 
 // AllowsInteraction ...
 func (GameModeAdventure) AllowsInteraction() bool {
+	return true
+}
+
+// Visible ...
+func (GameModeAdventure) Visible() bool {
 	return true
 }
 
@@ -153,5 +171,10 @@ func (GameModeSpectator) AllowsFlying() bool {
 
 // AllowsInteraction ...
 func (GameModeSpectator) AllowsInteraction() bool {
+	return true
+}
+
+// Visible ...
+func (GameModeSpectator) Visible() bool {
 	return true
 }
