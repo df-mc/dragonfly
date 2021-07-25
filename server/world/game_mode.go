@@ -176,5 +176,5 @@ func (GameModeSpectator) AllowsInteraction() bool {
 
 // Visible ...
 func (GameModeSpectator) Visible() bool {
-	return true
+	return false
 }
