@@ -34,9 +34,9 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
 
 	it := &Item{i: i, c: &MovementComputer{
-		gravity:           0.04,
-		dragBeforeGravity: true,
-		drag:              0.02,
+		Gravity:           0.04,
+		DragBeforeGravity: true,
+		Drag:              0.02,
 	}}
 	it.SetPickupDelay(time.Second / 2)
 	it.pos.Store(pos)

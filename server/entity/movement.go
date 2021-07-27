@@ -13,17 +13,18 @@ func boxes(b world.Block, pos cube.Pos, w *world.World) []physics.AABB {
 	return b.Model().AABB(pos, w)
 }
 
-// MovementComputer is used to compute movement of an entity. When constructed, the gravity of the entity
+// MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
 // the movement is computed for must be passed.
 type MovementComputer struct {
-	onGround          bool
-	gravity           float64
-	dragBeforeGravity bool
-	drag              float64
+	Gravity           float64
+	DragBeforeGravity bool
+	Drag              float64
+
+	onGround bool
 }
 
 // TickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
-// of its drag and gravity.
+// of its Drag and Gravity.
 // The new position of the entity after movement is returned.
 func (c *MovementComputer) TickMovement(e world.Entity) mgl64.Vec3 {
 	viewers := e.World().Viewers(e.Position())
@@ -45,19 +46,19 @@ func (c *MovementComputer) TickMovement(e world.Entity) mgl64.Vec3 {
 // a different value if the Gravity
 func (c *MovementComputer) applyGravity(e world.Entity) mgl64.Vec3 {
 	velocity := e.Velocity()
-	if c.dragBeforeGravity {
-		velocity[1] *= 1 - c.drag
+	if c.DragBeforeGravity {
+		velocity[1] *= 1 - c.Drag
 	}
-	velocity[1] -= c.gravity
-	if !c.dragBeforeGravity {
-		velocity[1] *= 1 - c.drag
+	velocity[1] -= c.Gravity
+	if !c.DragBeforeGravity {
+		velocity[1] *= 1 - c.Drag
 	}
 	return velocity
 }
 
 // applyFriction applies friction to the entity, reducing its velocity on the X and Z axes.
 func (c *MovementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
-	friction := 1 - c.drag
+	friction := 1 - c.Drag
 	velocity := e.Velocity()
 	if c.onGround {
 		friction = 0.6
