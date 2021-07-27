@@ -15,12 +15,12 @@ type FallingBlock struct {
 	block         world.Block
 	velocity, pos atomic.Value
 
-	*MovementComputer
+	c *MovementComputer
 }
 
 // NewFallingBlock ...
 func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
-	f := &FallingBlock{block: block, MovementComputer: &MovementComputer{
+	f := &FallingBlock{block: block, c: &MovementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,
 		drag:              0.02,
@@ -37,7 +37,7 @@ func (f *FallingBlock) Block() world.Block {
 
 // Tick ...
 func (f *FallingBlock) Tick(_ int64) {
-	f.pos.Store(f.tickMovement(f))
+	f.pos.Store(f.c.TickMovement(f))
 
 	pos := cube.PosFromVec3(f.Position())
 
@@ -55,6 +55,11 @@ func (f *FallingBlock) Tick(_ int64) {
 
 		_ = f.Close()
 	}
+}
+
+// OnGround ...
+func (f *FallingBlock) OnGround() bool {
+	return f.c.OnGround()
 }
 
 // Close ...

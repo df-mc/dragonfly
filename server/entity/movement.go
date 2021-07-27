@@ -22,10 +22,10 @@ type MovementComputer struct {
 	drag              float64
 }
 
-// tickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
+// TickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
 // of its drag and gravity.
 // The new position of the entity after movement is returned.
-func (c *MovementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
+func (c *MovementComputer) TickMovement(e world.Entity) mgl64.Vec3 {
 	viewers := e.World().Viewers(e.Position())
 	if !e.Velocity().ApproxEqualThreshold(mgl64.Vec3{}, 0.001) {
 		for _, v := range viewers {

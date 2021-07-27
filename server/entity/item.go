@@ -21,7 +21,7 @@ type Item struct {
 	i                item.Stack
 	velocity, pos    atomic.Value
 
-	*MovementComputer
+	c *MovementComputer
 }
 
 // NewItem creates a new item entity using the item stack passed. The item entity will be positioned at the
@@ -33,7 +33,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
 
-	it := &Item{i: i, MovementComputer: &MovementComputer{
+	it := &Item{i: i, c: &MovementComputer{
 		gravity:           0.04,
 		dragBeforeGravity: true,
 		drag:              0.02,
@@ -86,7 +86,7 @@ func (it *Item) Tick(current int64) {
 		_ = it.Close()
 		return
 	}
-	it.pos.Store(it.tickMovement(it))
+	it.pos.Store(it.c.TickMovement(it))
 
 	if it.pickupDelay == 0 {
 		it.checkNearby()
@@ -165,6 +165,11 @@ func (it *Item) collect(collector Collector) {
 	it.World().AddEntity(NewItem(it.i.Grow(-n), it.Position()))
 
 	_ = it.Close()
+}
+
+// OnGround ...
+func (it *Item) OnGround() bool {
+	return it.c.OnGround()
 }
 
 // Velocity returns the current velocity of the item. The values in the Vec3 returned represent the speed on
