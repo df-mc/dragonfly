@@ -37,11 +37,13 @@ func (f *FallingBlock) Block() world.Block {
 
 // Tick ...
 func (f *FallingBlock) Tick(_ int64) {
-	f.pos.Store(f.c.TickMovement(f))
+	p, vel := f.c.TickMovement(f, f.Position(), f.Velocity())
+	f.pos.Store(p)
+	f.velocity.Store(vel)
 
 	pos := cube.PosFromVec3(f.Position())
 
-	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.OnGround() {
+	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.c.OnGround() {
 		b := f.World().Block(pos)
 		if r, ok := b.(replaceable); ok && r.ReplaceableBy(f.block) {
 			f.World().PlaceBlock(pos, f.block)
@@ -57,9 +59,8 @@ func (f *FallingBlock) Tick(_ int64) {
 	}
 }
 
-// OnGround ...
-func (f *FallingBlock) OnGround() bool {
-	return f.c.OnGround()
+func (f *FallingBlock) Immobile() bool {
+	return false
 }
 
 // Close ...

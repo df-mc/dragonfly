@@ -243,7 +243,7 @@ func (s *Session) HideEntity(e world.Entity) {
 }
 
 // ViewEntityMovement ...
-func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
+func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64, onGround bool) {
 	id := s.entityRuntimeID(e)
 
 	if id == selfEntityRuntimeID {
@@ -259,11 +259,11 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 			Pitch:           float32(pitch + deltaPitch),
 			Yaw:             float32(yaw + deltaYaw),
 			HeadYaw:         float32(yaw + deltaYaw),
-			OnGround:        e.OnGround(),
+			OnGround:        onGround,
 		})
 	default:
 		flags := byte(0)
-		if e.OnGround() {
+		if onGround {
 			flags |= packet.MoveFlagOnGround
 		}
 		s.writePacket(&packet.MoveActorAbsolute{

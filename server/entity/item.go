@@ -40,7 +40,6 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}}
 	it.SetPickupDelay(time.Second / 2)
 	it.pos.Store(pos)
-	it.velocity.Store(mgl64.Vec3{})
 
 	return it
 }
@@ -86,7 +85,9 @@ func (it *Item) Tick(current int64) {
 		_ = it.Close()
 		return
 	}
-	it.pos.Store(it.c.TickMovement(it))
+	p, vel := it.c.TickMovement(it, it.Position(), it.Velocity())
+	it.pos.Store(p)
+	it.velocity.Store(vel)
 
 	if it.pickupDelay == 0 {
 		it.checkNearby()
@@ -165,11 +166,6 @@ func (it *Item) collect(collector Collector) {
 	it.World().AddEntity(NewItem(it.i.Grow(-n), it.Position()))
 
 	_ = it.Close()
-}
-
-// OnGround ...
-func (it *Item) OnGround() bool {
-	return it.c.OnGround()
 }
 
 // Velocity returns the current velocity of the item. The values in the Vec3 returned represent the speed on

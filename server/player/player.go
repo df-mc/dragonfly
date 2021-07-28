@@ -46,7 +46,7 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos, velocity                       atomic.Value
+	pos                                 atomic.Value
 	nameTag                             atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 
@@ -118,7 +118,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		scale:    *atomic.NewFloat64(1),
 	}
 	p.pos.Store(pos)
-	p.velocity.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
 	return p
@@ -1504,7 +1503,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 	p.handler().HandleMove(ctx, pos.Add(deltaPos), yaw, pitch)
 	ctx.Continue(func() {
 		for _, v := range p.World().Viewers(pos) {
-			v.ViewEntityMovement(p, deltaPos, 0, 0)
+			v.ViewEntityMovement(p, deltaPos, 0, 0, p.onGround.Load())
 		}
 
 		p.pos.Store(pos.Add(deltaPos))
@@ -1537,7 +1536,7 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 
 	// Cancelling player rotation is rather scuffed, so we don't do that.
 	for _, v := range p.World().Viewers(p.Position()) {
-		v.ViewEntityMovement(p, mgl64.Vec3{}, deltaYaw, deltaPitch)
+		v.ViewEntityMovement(p, mgl64.Vec3{}, deltaYaw, deltaPitch, p.onGround.Load())
 	}
 	p.yaw.Store(yaw + deltaYaw)
 	p.pitch.Store(pitch + deltaPitch)
@@ -1727,18 +1726,6 @@ func (p *Player) checkCollisions() {
 			}
 		}
 	}
-}
-
-// Velocity returns the current velocity of the player.
-func (p *Player) Velocity() mgl64.Vec3 {
-	// TODO: Implement server-side movement of player entities.
-	return p.velocity.Load().(mgl64.Vec3)
-}
-
-// SetVelocity sets the velocity of the player.
-func (p *Player) SetVelocity(v mgl64.Vec3) {
-	// TODO: Implement server-side movement of player entities.
-	p.velocity.Store(v)
 }
 
 // AABB returns the axis aligned bounding box of the player.
@@ -1959,7 +1946,6 @@ func (p *Player) close() {
 func (p *Player) load(data Data) {
 	p.yaw.Store(data.Yaw)
 	p.pitch.Store(data.Pitch)
-	p.velocity.Store(data.Velocity)
 	p.pos.Store(data.Position)
 
 	p.health.SetMaxHealth(data.MaxHealth)
@@ -2004,7 +1990,7 @@ func (p *Player) Data() Data {
 		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
-		Velocity:        p.Velocity(),
+		Velocity:        mgl64.Vec3{}, // TODO: Implement server-side movement of player entities.
 		Yaw:             yaw,
 		Pitch:           pitch,
 		Health:          p.Health(),
