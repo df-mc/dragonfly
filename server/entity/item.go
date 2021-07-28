@@ -32,11 +32,13 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
 
-	return &Item{i: i, transform: transform{pos: pos}, pickupDelay: 40, c: &MovementComputer{
+	it := &Item{i: i, pickupDelay: 40, c: &MovementComputer{
 		Gravity:           0.04,
 		DragBeforeGravity: true,
 		Drag:              0.02,
 	}}
+	it.transform = newTransform(it, pos)
+	return it
 }
 
 // Item returns the item stack that the item entity holds.
@@ -52,12 +54,6 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 		ticks = math.MaxInt16
 	}
 	it.pickupDelay = ticks
-}
-
-// World returns the world that the item entity is currently in, or nil if it is not added to a world.
-func (it *Item) World() *world.World {
-	w, _ := world.OfEntity(it)
-	return w
 }
 
 // Name ...
@@ -167,12 +163,6 @@ func (it *Item) AABB() physics.AABB {
 // EncodeEntity ...
 func (it *Item) EncodeEntity() string {
 	return "minecraft:item"
-}
-
-// Close closes the item, removing it from the world that it is currently in.
-func (it *Item) Close() error {
-	it.World().RemoveEntity(it)
-	return nil
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as

@@ -19,11 +19,28 @@ type FallingBlock struct {
 
 // NewFallingBlock ...
 func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
-	return &FallingBlock{block: block, transform: transform{pos: pos}, c: &MovementComputer{
+	b := &FallingBlock{block: block, c: &MovementComputer{
 		Gravity:           0.04,
 		DragBeforeGravity: true,
 		Drag:              0.02,
 	}}
+	b.transform = newTransform(b, pos)
+	return b
+}
+
+// Name ...
+func (f *FallingBlock) Name() string {
+	return fmt.Sprintf("%T", f.block)
+}
+
+// EncodeEntity ...
+func (f *FallingBlock) EncodeEntity() string {
+	return "minecraft:falling_block"
+}
+
+// AABB ...
+func (f *FallingBlock) AABB() physics.AABB {
+	return physics.NewAABB(mgl64.Vec3{-0.49, 0, -0.49}, mgl64.Vec3{0.49, 0.98, 0.49})
 }
 
 // Block ...
@@ -53,33 +70,6 @@ func (f *FallingBlock) Tick(_ int64) {
 
 		_ = f.Close()
 	}
-}
-
-// Close ...
-func (f *FallingBlock) Close() error {
-	f.World().RemoveEntity(f)
-	return nil
-}
-
-// Name ...
-func (f *FallingBlock) Name() string {
-	return fmt.Sprintf("%T", f.block)
-}
-
-// AABB ...
-func (f *FallingBlock) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.49, 0, -0.49}, mgl64.Vec3{0.49, 0.98, 0.49})
-}
-
-// World ...
-func (f *FallingBlock) World() *world.World {
-	w, _ := world.OfEntity(f)
-	return w
-}
-
-// EncodeEntity ...
-func (f *FallingBlock) EncodeEntity() string {
-	return "minecraft:falling_block"
 }
 
 // Solidifiable represents a block that can solidify by specific adjacent blocks. An example is concrete
