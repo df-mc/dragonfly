@@ -109,6 +109,9 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 	if err == nil {
 		// The argument was parsed successfully, so it needs to be removed from the command line.
 		line.RemoveNext()
+		if _, ok := i.(mgl64.Vec3); ok {
+			line.RemoveN(2)
+		}
 	} else if err == ErrInsufficientArgs && optional {
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
 		// not matter. Make sure to clear the value though.
