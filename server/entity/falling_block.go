@@ -59,10 +59,6 @@ func (f *FallingBlock) Tick(_ int64) {
 	}
 }
 
-func (f *FallingBlock) Immobile() bool {
-	return false
-}
-
 // Close ...
 func (f *FallingBlock) Close() error {
 	f.World().RemoveEntity(f)
