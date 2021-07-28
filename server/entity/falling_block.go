@@ -7,27 +7,23 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"sync/atomic"
 )
 
 // FallingBlock is the entity form of a block that appears when a gravity-affected block loses its support.
 type FallingBlock struct {
-	block         world.Block
-	velocity, pos atomic.Value
+	transform
+	block world.Block
 
 	c *MovementComputer
 }
 
 // NewFallingBlock ...
 func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
-	f := &FallingBlock{block: block, c: &MovementComputer{
+	return &FallingBlock{block: block, transform: transform{pos: pos}, c: &MovementComputer{
 		Gravity:           0.04,
 		DragBeforeGravity: true,
 		Drag:              0.02,
 	}}
-	f.pos.Store(pos)
-	f.velocity.Store(mgl64.Vec3{})
-	return f
 }
 
 // Block ...
@@ -37,21 +33,21 @@ func (f *FallingBlock) Block() world.Block {
 
 // Tick ...
 func (f *FallingBlock) Tick(_ int64) {
-	p, vel := f.c.TickMovement(f, f.Position(), f.Velocity())
-	f.pos.Store(p)
-	f.velocity.Store(vel)
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
-	pos := cube.PosFromVec3(f.Position())
+	f.pos, f.vel = f.c.TickMovement(f, f.pos, f.vel)
+	w := f.World()
 
-	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, f.World())) || f.c.OnGround() {
+	pos := cube.PosFromVec3(f.pos)
+
+	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {
 		b := f.World().Block(pos)
 		if r, ok := b.(replaceable); ok && r.ReplaceableBy(f.block) {
 			f.World().PlaceBlock(pos, f.block)
 		} else {
 			if i, ok := f.block.(world.Item); ok {
-				itemEntity := NewItem(item.NewStack(i, 1), f.Position())
-				itemEntity.SetVelocity(mgl64.Vec3{})
-				f.World().AddEntity(itemEntity)
+				f.World().AddEntity(NewItem(item.NewStack(i, 1), f.pos))
 			}
 		}
 
@@ -75,30 +71,10 @@ func (f *FallingBlock) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{-0.49, 0, -0.49}, mgl64.Vec3{0.49, 0.98, 0.49})
 }
 
-// Position ...
-func (f *FallingBlock) Position() mgl64.Vec3 {
-	return f.pos.Load().(mgl64.Vec3)
-}
-
 // World ...
 func (f *FallingBlock) World() *world.World {
 	w, _ := world.OfEntity(f)
 	return w
-}
-
-// Rotation ...
-func (f *FallingBlock) Rotation() (float64, float64) {
-	return 0, 0
-}
-
-// Velocity ...
-func (f *FallingBlock) Velocity() mgl64.Vec3 {
-	return f.velocity.Load().(mgl64.Vec3)
-}
-
-// SetVelocity ...
-func (f *FallingBlock) SetVelocity(v mgl64.Vec3) {
-	f.velocity.Store(v)
 }
 
 // EncodeEntity ...

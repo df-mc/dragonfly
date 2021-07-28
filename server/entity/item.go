@@ -10,16 +10,15 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"sync/atomic"
 	"time"
 )
 
 // Item represents an item entity which may be added to the world. Players and several humanoid entities such
 // as zombies are able to pick up these entities so that the items are added to their inventory.
 type Item struct {
+	transform
 	age, pickupDelay int
 	i                item.Stack
-	velocity, pos    atomic.Value
 
 	c *MovementComputer
 }
@@ -33,15 +32,11 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
 
-	it := &Item{i: i, c: &MovementComputer{
+	return &Item{i: i, transform: transform{pos: pos}, pickupDelay: 40, c: &MovementComputer{
 		Gravity:           0.04,
 		DragBeforeGravity: true,
 		Drag:              0.02,
 	}}
-	it.SetPickupDelay(time.Second / 2)
-	it.pos.Store(pos)
-
-	return it
 }
 
 // Item returns the item stack that the item entity holds.
@@ -59,11 +54,6 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 	it.pickupDelay = ticks
 }
 
-// Position returns the current position of the item entity.
-func (it *Item) Position() mgl64.Vec3 {
-	return it.pos.Load().(mgl64.Vec3)
-}
-
 // World returns the world that the item entity is currently in, or nil if it is not added to a world.
 func (it *Item) World() *world.World {
 	w, _ := world.OfEntity(it)
@@ -77,7 +67,10 @@ func (it *Item) Name() string {
 
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(current int64) {
-	if it.Position()[1] < cube.MinY && current%10 == 0 {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+
+	if it.pos[1] < cube.MinY && current%10 == 0 {
 		_ = it.Close()
 		return
 	}
@@ -85,9 +78,7 @@ func (it *Item) Tick(current int64) {
 		_ = it.Close()
 		return
 	}
-	p, vel := it.c.TickMovement(it, it.Position(), it.Velocity())
-	it.pos.Store(p)
-	it.velocity.Store(vel)
+	it.pos, it.vel = it.c.TickMovement(it, it.pos, it.vel)
 
 	if it.pickupDelay == 0 {
 		it.checkNearby()
@@ -100,8 +91,8 @@ func (it *Item) Tick(current int64) {
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby() {
-	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(it.Position())
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.Position()).Grow(2)) {
+	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(it.pos)
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.pos).Grow(2)) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
@@ -138,8 +129,8 @@ func (it *Item) merge(other *Item) bool {
 	it.World().AddEntity(newA)
 
 	if !b.Empty() {
-		newB := NewItem(b, it.Position())
-		newB.SetVelocity(it.Velocity())
+		newB := NewItem(b, it.pos)
+		newB.SetVelocity(it.vel)
 		it.World().AddEntity(newB)
 	}
 	_ = it.Close()
@@ -153,7 +144,7 @@ func (it *Item) collect(collector Collector) {
 	if n == 0 {
 		return
 	}
-	for _, viewer := range it.World().Viewers(it.Position()) {
+	for _, viewer := range it.World().Viewers(it.pos) {
 		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
 	}
 
@@ -163,25 +154,10 @@ func (it *Item) collect(collector Collector) {
 		return
 	}
 	// Create a new item entity and shrink it by the amount of items that the collector collected.
-	it.World().AddEntity(NewItem(it.i.Grow(-n), it.Position()))
+	it.World().AddEntity(NewItem(it.i.Grow(-n), it.pos))
 
 	_ = it.Close()
 }
-
-// Velocity returns the current velocity of the item. The values in the Vec3 returned represent the speed on
-// that axis in blocks/tick.
-func (it *Item) Velocity() mgl64.Vec3 {
-	return it.velocity.Load().(mgl64.Vec3)
-}
-
-// SetVelocity sets the velocity of the item entity. The values in the Vec3 passed represent the speed on
-// that axis in blocks/tick.
-func (it *Item) SetVelocity(v mgl64.Vec3) {
-	it.velocity.Store(v)
-}
-
-// Rotation always returns 0.
-func (it *Item) Rotation() (float64, float64) { return 0, 0 }
 
 // AABB ...
 func (it *Item) AABB() physics.AABB {
