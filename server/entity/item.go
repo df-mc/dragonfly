@@ -41,6 +41,21 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	return it
 }
 
+// Name ...
+func (it *Item) Name() string {
+	return fmt.Sprintf("%T", it.i.Item())
+}
+
+// EncodeEntity ...
+func (it *Item) EncodeEntity() string {
+	return "minecraft:item"
+}
+
+// AABB ...
+func (it *Item) AABB() physics.AABB {
+	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+}
+
 // Item returns the item stack that the item entity holds.
 func (it *Item) Item() item.Stack {
 	return it.i
@@ -54,11 +69,6 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 		ticks = math.MaxInt16
 	}
 	it.pickupDelay = ticks
-}
-
-// Name ...
-func (it *Item) Name() string {
-	return fmt.Sprintf("%T", it.i.Item())
 }
 
 // Tick ticks the entity, performing movement.
@@ -153,16 +163,6 @@ func (it *Item) collect(collector Collector) {
 	it.World().AddEntity(NewItem(it.i.Grow(-n), it.pos))
 
 	_ = it.Close()
-}
-
-// AABB ...
-func (it *Item) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
-}
-
-// EncodeEntity ...
-func (it *Item) EncodeEntity() string {
-	return "minecraft:item"
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as

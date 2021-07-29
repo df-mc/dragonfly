@@ -53,6 +53,9 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
+		m[dataKeyAlwaysShowNameTag] = uint8(1)
+		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
+		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
@@ -92,6 +95,7 @@ const (
 	dataKeyScale             = 38
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
+	dataKeyAlwaysShowNameTag = 81
 )
 
 //noinspection GoUnusedConst
@@ -102,6 +106,8 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagCanShowNameTag    = 14
+	dataFlagAlwaysShowNameTag = 15
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35

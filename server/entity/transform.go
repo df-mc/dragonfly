@@ -50,7 +50,8 @@ func (t *transform) World() *world.World {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.e != nil {
-		return t.e.World()
+		w, _ := world.OfEntity(t.e)
+		return w
 	}
 	return nil
 }

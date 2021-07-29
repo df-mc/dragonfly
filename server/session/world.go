@@ -156,6 +156,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 	yaw, pitch := e.Rotation()
 
+	metadata := map[uint32]interface{}{}
+
 	switch v := e.(type) {
 	case Controllable:
 		actualPlayer := false
@@ -191,6 +193,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				UUID: v.UUID(),
 			}}})
 		}
+		return
 	case *entity.Item:
 		s.writePacket(&packet.AddItemActor{
 			EntityUniqueID:  int64(runtimeID),
@@ -198,28 +201,22 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Item:            instanceFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
 		})
+		return
 	case *entity.FallingBlock:
-		s.writePacket(&packet.AddActor{
-			EntityUniqueID:  int64(runtimeID),
-			EntityRuntimeID: runtimeID,
-			EntityType:      "minecraft:falling_block",
-			EntityMetadata:  map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))},
-			Position:        vec64To32(e.Position()),
-			Pitch:           float32(pitch),
-			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-		})
-	default:
-		s.writePacket(&packet.AddActor{
-			EntityUniqueID:  int64(runtimeID),
-			EntityRuntimeID: runtimeID,
-			EntityType:      e.EncodeEntity(),
-			Position:        vec64To32(e.Position()),
-			Pitch:           float32(pitch),
-			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-		})
+		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))}
+	case *entity.Text:
+		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
 	}
+	s.writePacket(&packet.AddActor{
+		EntityUniqueID:  int64(runtimeID),
+		EntityRuntimeID: runtimeID,
+		EntityType:      e.EncodeEntity(),
+		EntityMetadata:  metadata,
+		Position:        vec64To32(e.Position()),
+		Pitch:           float32(pitch),
+		Yaw:             float32(yaw),
+		HeadYaw:         float32(yaw),
+	})
 }
 
 // HideEntity ...
