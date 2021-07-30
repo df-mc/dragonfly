@@ -51,9 +51,8 @@ func (t *Text) DecodeNBT(data map[string]interface{}) interface{} {
 
 // EncodeNBT encodes the Text entity to a map representation that can be encoded to NBT.
 func (t *Text) EncodeNBT() map[string]interface{} {
-	pos := t.Position()
 	return map[string]interface{}{
-		"Pos":  pos[:],
+		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
 		"Text": t.text,
 	}
 }

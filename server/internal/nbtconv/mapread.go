@@ -72,6 +72,7 @@ func MapVec3(x map[string]interface{}, k string) mgl64.Vec3 {
 				f32, _ := f.(float32)
 				v[index] = float64(f32)
 			}
+			return v
 		}
 		if i, ok := val.([]float32); ok {
 			if len(i) != 3 {

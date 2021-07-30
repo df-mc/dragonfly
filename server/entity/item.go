@@ -180,7 +180,6 @@ func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
 
 // EncodeNBT encodes the Item entity's properties as a map and returns it.
 func (it *Item) EncodeNBT() map[string]interface{} {
-	pos, vel := it.Position(), it.Velocity()
 	name, damage := it.i.Item().EncodeItem()
 	if _, ok := it.i.Item().(item.Durable); ok {
 		damage = int16(it.i.MaxDurability() - it.i.Durability())
@@ -201,8 +200,8 @@ func (it *Item) EncodeNBT() map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"Age":    int16(it.age),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(pos),
-		"Motion": nbtconv.Vec3ToFloat32Slice(vel),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(it.Velocity()),
 		"Health": int16(5),
 		"Item":   it,
 	}
