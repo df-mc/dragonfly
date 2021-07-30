@@ -92,8 +92,8 @@ func (f *FallingBlock) EncodeNBT() map[string]interface{} {
 	name, properties := f.block.EncodeBlock()
 	return map[string]interface{}{
 		"UniqueID": -rand.Int63(),
-		"Pos":      pos[:],
-		"Motion":   vel[:],
+		"Pos":      nbtconv.Vec3ToFloat32Slice(pos),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(vel),
 		"FallingBlock": map[string]interface{}{
 			"name":    name,
 			"states":  properties,

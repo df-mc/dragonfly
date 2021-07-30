@@ -83,6 +83,11 @@ func MapVec3(x map[string]interface{}, k string) mgl64.Vec3 {
 	return mgl64.Vec3{}
 }
 
+// Vec3ToFloat32Slice converts an mgl64.Vec3 to a []float32 with 3 elements.
+func Vec3ToFloat32Slice(x mgl64.Vec3) []float32 {
+	return []float32{float32(x[0]), float32(x[1]), float32(x[2])}
+}
+
 // MapBlock converts a block's name and properties in a map obtained by decoding NBT to a world.Block.
 func MapBlock(x map[string]interface{}, k string) world.Block {
 	if val, ok := x[k]; ok {
@@ -117,17 +122,3 @@ func MapItem(x map[string]interface{}, k string) item.Stack {
 	}
 	return item.Stack{}
 }
-
-// 'Item': TAG_Compound({
-//                'WasPickedUp': TAG_Byte(0x00),
-//                'Block': TAG_Compound({
-//                        'name': TAG_String(minecraft:sand),
-//                        'states': TAG_Compound({
-//                                'sand_type': TAG_String(normal),
-//                        }),
-//                        'version': TAG_Int(17879555),
-//                }),
-//                'Count': TAG_Byte(0x01),
-//                'Damage': TAG_Short(0),
-//                'Name': TAG_String(minecraft:sand),
-//        }),

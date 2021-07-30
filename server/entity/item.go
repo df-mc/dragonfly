@@ -201,8 +201,8 @@ func (it *Item) EncodeNBT() map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"Age":    int16(it.age),
-		"Pos":    pos[:],
-		"Motion": vel[:],
+		"Pos":    nbtconv.Vec3ToFloat32Slice(pos),
+		"Motion": nbtconv.Vec3ToFloat32Slice(vel),
 		"Health": int16(5),
 		"Item":   it,
 	}
