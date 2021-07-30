@@ -69,7 +69,6 @@ func MapVec3(x map[string]interface{}, k string) mgl64.Vec3 {
 			}
 			var v mgl64.Vec3
 			for index, f := range i {
-				//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 				f32, _ := f.(float32)
 				v[index] = float64(f32)
 			}
@@ -97,6 +96,7 @@ func MapBlock(x map[string]interface{}, k string) world.Block {
 			//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 			nameVal, _ := m["name"]
 			name, _ := nameVal.(string)
+			//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 			statesVal, _ := m["states"]
 			properties, _ := statesVal.(map[string]interface{})
 
