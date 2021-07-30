@@ -69,6 +69,7 @@ func MapVec3(x map[string]interface{}, k string) mgl64.Vec3 {
 			}
 			var v mgl64.Vec3
 			for index, f := range i {
+				//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 				f32, _ := f.(float32)
 				v[index] = float64(f32)
 			}
@@ -93,6 +94,7 @@ func Vec3ToFloat32Slice(x mgl64.Vec3) []float32 {
 func MapBlock(x map[string]interface{}, k string) world.Block {
 	if val, ok := x[k]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
+			//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 			nameVal, _ := m["name"]
 			name, _ := nameVal.(string)
 			statesVal, _ := m["states"]
