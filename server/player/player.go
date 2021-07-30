@@ -1533,14 +1533,16 @@ func (p *Player) Rotate(deltaYaw, deltaPitch float64) {
 	}
 	yaw, pitch := p.Rotation()
 
-	p.handler().HandleMove(event.C(), p.Position(), yaw+deltaYaw, pitch+deltaPitch)
+	pos := p.Position()
+	resYaw, resPitch := yaw+deltaYaw, pitch+deltaPitch
+	p.handler().HandleMove(event.C(), pos, resYaw, resPitch)
 
 	// Cancelling player rotation is rather scuffed, so we don't do that.
 	for _, v := range p.World().Viewers(p.Position()) {
-		v.ViewEntityMovement(p, mgl64.Vec3{}, deltaYaw, deltaPitch, p.onGround.Load())
+		v.ViewEntityMovement(p, pos, resYaw, resPitch, p.onGround.Load())
 	}
-	p.yaw.Store(yaw + deltaYaw)
-	p.pitch.Store(pitch + deltaPitch)
+	p.yaw.Store(resYaw)
+	p.pitch.Store(resPitch)
 }
 
 // Facing returns the horizontal direction that the player is facing.
