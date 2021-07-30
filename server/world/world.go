@@ -1634,11 +1634,14 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	data.Lock()
 	w.chunkMu.Unlock()
 
-	entities, err := w.provider().LoadEntities(pos)
+	ent, err := w.provider().LoadEntities(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
 	}
-	data.entities = entities
+	data.entities = make([]Entity, 0, len(ent))
+	for _, e := range ent {
+		data.entities = append(data.entities, e)
+	}
 	blockEntities, err := w.provider().LoadBlockNBT(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
@@ -1740,19 +1743,25 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 		if err := w.provider().SaveChunk(pos, c.Chunk); err != nil {
 			w.log.Errorf("error saving chunk %v to provider: %v", pos, err)
 		}
-		if err := w.provider().SaveEntities(pos, c.entities); err != nil {
+		s := make([]SaveableEntity, 0, len(c.entities))
+		for _, e := range c.entities {
+			if saveable, ok := e.(SaveableEntity); ok {
+				s = append(s, saveable)
+			}
+		}
+		if err := w.provider().SaveEntities(pos, s); err != nil {
 			w.log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
 		}
 		if err := w.provider().SaveBlockNBT(pos, m); err != nil {
 			w.log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
 		}
 	}
-	entities := c.entities
+	ent := c.entities
 	c.entities = nil
 	c.Unlock()
 
-	for _, entity := range entities {
-		_ = entity.Close()
+	for _, e := range ent {
+		_ = e.Close()
 	}
 }
 

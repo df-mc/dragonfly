@@ -310,41 +310,13 @@ func init() {
 	}
 }
 
-// readSlice reads an interface slice from a map at the key passed.
 //noinspection GoCommentLeadingSpace
-func readSlice(m map[string]interface{}, key string) []interface{} {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.([]interface{})
-	return b
-}
 
-// readString reads a string from a map at the key passed.
 //noinspection GoCommentLeadingSpace
-func readString(m map[string]interface{}, key string) string {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.(string)
-	return b
-}
 
-// readInt32 reads an int32 from a map at the key passed.
 //noinspection GoCommentLeadingSpace
-func readInt32(m map[string]interface{}, key string) int32 {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.(int32)
-	return b
-}
 
-// readByte reads a byte from a map at the key passed.
 //noinspection GoCommentLeadingSpace
-func readByte(m map[string]interface{}, key string) byte {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.(byte)
-	return b
-}
 
 func registerAll(blocks []world.Block) {
 	for _, b := range blocks {

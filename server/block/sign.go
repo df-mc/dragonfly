@@ -138,9 +138,9 @@ func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
 
 // DecodeNBT ...
 func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Text = readString(data, "Text")
-	s.BaseColour = nbtconv.RGBAFromInt32(readInt32(data, "SignTextColor"))
-	s.Glowing = readByte(data, "IgnoreLighting") == 1
+	s.Text = nbtconv.MapString(data, "Text")
+	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.MapInt32(data, "SignTextColor"))
+	s.Glowing = nbtconv.MapByte(data, "IgnoreLighting") == 1
 
 	return s
 }

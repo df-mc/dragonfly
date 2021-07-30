@@ -157,8 +157,8 @@ func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
 	c.Facing = facing
-	c.CustomName = readString(data, "CustomName")
-	nbtconv.InvFromNBT(c.inventory, readSlice(data, "Items"))
+	c.CustomName = nbtconv.MapString(data, "CustomName")
+	nbtconv.InvFromNBT(c.inventory, nbtconv.MapSlice(data, "Items"))
 	return c
 }
 

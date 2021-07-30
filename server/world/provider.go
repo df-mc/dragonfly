@@ -25,10 +25,10 @@ type Provider interface {
 	SaveChunk(position ChunkPos, c *chunk.Chunk) error
 	// LoadEntities loads all entities stored at a particular chunk position. If the entities cannot be read,
 	// LoadEntities returns a non-nil error.
-	LoadEntities(position ChunkPos) ([]Entity, error)
+	LoadEntities(position ChunkPos) ([]SaveableEntity, error)
 	// SaveEntities saves a list of entities in a chunk position. If writing is not successful, an error is
 	// returned.
-	SaveEntities(position ChunkPos, entities []Entity) error
+	SaveEntities(position ChunkPos, entities []SaveableEntity) error
 	// LoadBlockNBT loads the block NBT, also known as block entities, at a specific chunk position. If the
 	// NBT cannot be read, LoadBlockNBT returns a non-nil error.
 	LoadBlockNBT(position ChunkPos) ([]map[string]interface{}, error)
@@ -48,12 +48,12 @@ func (NoIOProvider) Settings() Settings { return defaultSettings() }
 func (NoIOProvider) SaveSettings(Settings) {}
 
 // LoadEntities ...
-func (NoIOProvider) LoadEntities(ChunkPos) ([]Entity, error) {
+func (NoIOProvider) LoadEntities(ChunkPos) ([]SaveableEntity, error) {
 	return nil, nil
 }
 
 // SaveEntities ...
-func (NoIOProvider) SaveEntities(ChunkPos, []Entity) error {
+func (NoIOProvider) SaveEntities(ChunkPos, []SaveableEntity) error {
 	return nil
 }
 

@@ -13,7 +13,7 @@ import (
 func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 	disk := s == nil
 	if disk {
-		name := readString(data, "Name")
+		name := MapString(data, "Name")
 		var it world.Item
 		if states, ok := data["States"].(map[string]interface{}); ok {
 			block, ok := world.BlockByName(name, states)
@@ -25,7 +25,7 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 				return item.Stack{}
 			}
 		} else {
-			it, ok = world.ItemByName(name, readInt16(data, "Damage"))
+			it, ok = world.ItemByName(name, MapInt16(data, "Damage"))
 			if !ok {
 				return item.Stack{}
 			}
@@ -33,14 +33,14 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 		if nbt, ok := it.(world.NBTer); ok {
 			it = nbt.DecodeNBT(data).(world.Item)
 		}
-		a := item.NewStack(it, int(readByte(data, "Count")))
+		a := item.NewStack(it, int(MapByte(data, "Count")))
 		s = &a
 		if _, ok := s.Item().(item.Durable); ok {
-			*s = s.Damage(int(readInt16(data, "Damage")))
+			*s = s.Damage(int(MapInt16(data, "Damage")))
 		}
 	} else {
 		if _, ok := s.Item().(item.Durable); ok {
-			*s = s.Damage(int(readInt32(data, "Damage")))
+			*s = s.Damage(int(MapInt32(data, "Damage")))
 		}
 	}
 	if displayInterface, ok := data["display"]; ok {
@@ -74,8 +74,8 @@ func ItemFromNBT(data map[string]interface{}, s *item.Stack) item.Stack {
 			}
 		}
 		for _, ench := range enchantments {
-			if e, ok := item.EnchantmentByID(int(readInt16(ench, "id"))); ok {
-				e = e.WithLevel(int(readInt16(ench, "lvl")))
+			if e, ok := item.EnchantmentByID(int(MapInt16(ench, "id"))); ok {
+				e = e.WithLevel(int(MapInt16(ench, "lvl")))
 				*s = s.WithEnchantment(e)
 			}
 		}
@@ -162,7 +162,7 @@ func InvFromNBT(inv *inventory.Inventory, items []interface{}) {
 		if it.Empty() {
 			continue
 		}
-		_ = inv.SetItem(int(readByte(data, "Slot")), it)
+		_ = inv.SetItem(int(MapByte(data, "Slot")), it)
 	}
 }
 
@@ -178,38 +178,4 @@ func InvToNBT(inv *inventory.Inventory) []map[string]interface{} {
 		items = append(items, data)
 	}
 	return items
-}
-
-// readByte reads a byte from a map at the key passed.
-func readByte(m map[string]interface{}, key string) byte {
-	v := m[key]
-	b, _ := v.(byte)
-	return b
-}
-
-// readInt16 reads an int16 from a map at the key passed.
-//noinspection GoCommentLeadingSpace
-func readInt16(m map[string]interface{}, key string) int16 {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.(int16)
-	return b
-}
-
-// readInt32 reads an int32 from a map at the key passed.
-//noinspection GoCommentLeadingSpace
-func readInt32(m map[string]interface{}, key string) int32 {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.(int32)
-	return b
-}
-
-// readString reads a string from a map at the key passed.
-//noinspection GoCommentLeadingSpace
-func readString(m map[string]interface{}, key string) string {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	v, _ := m[key]
-	b, _ := v.(string)
-	return b
 }

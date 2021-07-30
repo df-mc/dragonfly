@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
@@ -163,6 +164,48 @@ func (it *Item) collect(collector Collector) {
 	it.World().AddEntity(NewItem(it.i.Grow(-n), it.pos))
 
 	_ = it.Close()
+}
+
+// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
+func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
+	i := nbtconv.MapItem(data, "Item")
+	if i.Empty() {
+		return nil
+	}
+	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
+	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	n.age = int(nbtconv.MapInt16(data, "Age"))
+	return n
+}
+
+// EncodeNBT encodes the Item entity's properties as a map and returns it.
+func (it *Item) EncodeNBT() map[string]interface{} {
+	pos, vel := it.Position(), it.Velocity()
+	name, damage := it.i.Item().EncodeItem()
+	if _, ok := it.i.Item().(item.Durable); ok {
+		damage = int16(it.i.MaxDurability() - it.i.Durability())
+	}
+	i := make(map[string]interface{})
+	if n, ok := it.i.Item().(world.NBTer); ok {
+		i = n.EncodeNBT()
+	}
+	i["Damage"], i["Name"], i["Count"] = damage, name, byte(it.i.Count())
+
+	if b, ok := it.i.Item().(world.Block); ok {
+		name, properties := b.EncodeBlock()
+		i["Block"] = map[string]interface{}{
+			"name":    name,
+			"states":  properties,
+			"version": chunk.CurrentBlockVersion,
+		}
+	}
+	return map[string]interface{}{
+		"Age":    int16(it.age),
+		"Pos":    pos[:],
+		"Motion": vel[:],
+		"Health": int16(5),
+		"Item":   it,
+	}
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as

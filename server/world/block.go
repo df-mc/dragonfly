@@ -168,9 +168,10 @@ type NeighbourUpdateTicker interface {
 // NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
 // this is done to store additional data.
 type NBTer interface {
-	// DecodeNBT returns the item or block, depending on which of those the NBTer was, with the NBT data
+	// DecodeNBT returns the (new) item, block or entity, depending on which of those the NBTer was, with the NBT data
 	// decoded into it.
 	DecodeNBT(data map[string]interface{}) interface{}
+	// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
 	EncodeNBT() map[string]interface{}
 }
 
