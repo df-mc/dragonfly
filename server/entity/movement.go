@@ -32,7 +32,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3) (mg
 	if dPos.ApproxEqualThreshold(zeroVec3, epsilon) {
 		return pos, vel
 	}
-	return e.Position().Add(dPos), vel
+	return pos.Add(dPos), vel
 }
 
 // OnGround checks if the entity that this computer calculates is currently on the ground.
