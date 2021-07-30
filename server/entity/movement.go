@@ -21,13 +21,13 @@ type MovementComputer struct {
 // TickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
-func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3) (mgl64.Vec3, mgl64.Vec3) {
+func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) (mgl64.Vec3, mgl64.Vec3) {
 	viewers := e.World().Viewers(pos)
 
 	vel = c.applyHorizontalForces(c.applyVerticalForces(vel))
 	dPos, vel := c.checkCollision(e, pos, vel)
 
-	c.sendMovement(e, viewers, dPos, vel)
+	c.sendMovement(e, viewers, pos, dPos, vel, yaw, pitch)
 
 	if dPos.ApproxEqualThreshold(zeroVec3, epsilon) {
 		return pos, vel
@@ -47,7 +47,7 @@ var zeroVec3 mgl64.Vec3
 var epsilon = 0.001
 
 // sendMovement sends the movement of the world.Entity passed (dPos and vel) to all viewers passed.
-func (c *MovementComputer) sendMovement(e world.Entity, viewers []world.Viewer, dPos, vel mgl64.Vec3) {
+func (c *MovementComputer) sendMovement(e world.Entity, viewers []world.Viewer, pos, dPos, vel mgl64.Vec3, yaw, pitch float64) {
 	posChanged := !dPos.ApproxEqualThreshold(zeroVec3, epsilon)
 	velChanged := !vel.ApproxEqualThreshold(zeroVec3, epsilon)
 	for _, v := range viewers {
@@ -57,7 +57,7 @@ func (c *MovementComputer) sendMovement(e world.Entity, viewers []world.Viewer, 
 			v.ViewEntityVelocity(e, vel)
 		}
 		if posChanged {
-			v.ViewEntityMovement(e, dPos, 0, 0, c.onGround)
+			v.ViewEntityMovement(e, pos, yaw, pitch, c.onGround)
 		}
 	}
 }

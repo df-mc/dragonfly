@@ -56,7 +56,7 @@ func (f *FallingBlock) Tick(_ int64) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	f.pos, f.vel = f.c.TickMovement(f, f.pos, f.vel)
+	f.pos, f.vel = f.c.TickMovement(f, f.pos, f.vel, 0, 0)
 	w := f.World()
 
 	pos := cube.PosFromVec3(f.pos)

@@ -47,13 +47,8 @@ func (t *transform) Rotation() (float64, float64) { return 0, 0 }
 
 // World returns the world of the entity.
 func (t *transform) World() *world.World {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.e != nil {
-		w, _ := world.OfEntity(t.e)
-		return w
-	}
-	return nil
+	w, _ := world.OfEntity(t.e)
+	return w
 }
 
 // Close closes the transform and removes the associated entity from the world.

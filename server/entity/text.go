@@ -26,12 +26,7 @@ func (t *Text) Name() string {
 
 // EncodeEntity returns the ID for falling blocks.
 func (t *Text) EncodeEntity() string {
-	return "minecraft:ice_bomb"
-}
-
-// Invisible always returns true to make the entity itself invisible.
-func (t *Text) Invisible() bool {
-	return true
+	return "dragonfly:text"
 }
 
 // AABB returns an empty physics.AABB so that players cannot interact with the entity.

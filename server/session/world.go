@@ -158,6 +158,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 	metadata := map[uint32]interface{}{}
 
+	id := e.EncodeEntity()
 	switch v := e.(type) {
 	case Controllable:
 		actualPlayer := false
@@ -206,11 +207,12 @@ func (s *Session) ViewEntity(e world.Entity) {
 		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))}
 	case *entity.Text:
 		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
+		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
 	s.writePacket(&packet.AddActor{
 		EntityUniqueID:  int64(runtimeID),
 		EntityRuntimeID: runtimeID,
-		EntityType:      e.EncodeEntity(),
+		EntityType:      id,
 		EntityMetadata:  metadata,
 		Position:        vec64To32(e.Position()),
 		Pitch:           float32(pitch),
@@ -240,22 +242,21 @@ func (s *Session) HideEntity(e world.Entity) {
 }
 
 // ViewEntityMovement ...
-func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64, onGround bool) {
+func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool) {
 	id := s.entityRuntimeID(e)
 
 	if id == selfEntityRuntimeID {
 		return
 	}
-	yaw, pitch := e.Rotation()
 
 	switch e.(type) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
-			Pitch:           float32(pitch + deltaPitch),
-			Yaw:             float32(yaw + deltaYaw),
-			HeadYaw:         float32(yaw + deltaYaw),
+			Position:        vec64To32(pos.Add(entityOffset(e))),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
 			OnGround:        onGround,
 		})
 	default:
@@ -265,8 +266,8 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 		}
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch + deltaPitch, yaw + deltaYaw}),
+			Position:        vec64To32(pos.Add(entityOffset(e))),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw}),
 			Flags:           flags,
 		})
 	}

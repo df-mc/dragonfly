@@ -1639,9 +1639,22 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
 	}
 	data.entities = make([]Entity, 0, len(ent))
+
+	// Iterate through the entities twice and make sure they're added to all relevant maps. Note that this iteration
+	// happens twice to avoid having to lock both worldsMu and entityMu. This is intentional, to avoid deadlocks.
+	worldsMu.Lock()
 	for _, e := range ent {
 		data.entities = append(data.entities, e)
+		entityWorlds[e] = w
 	}
+	worldsMu.Unlock()
+
+	w.entityMu.Lock()
+	for _, e := range ent {
+		w.entities[e] = pos
+	}
+	w.entityMu.Unlock()
+
 	blockEntities, err := w.provider().LoadBlockNBT(pos)
 	if err != nil {
 		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)

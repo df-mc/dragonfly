@@ -85,7 +85,7 @@ func (it *Item) Tick(current int64) {
 		_ = it.Close()
 		return
 	}
-	it.pos, it.vel = it.c.TickMovement(it, it.pos, it.vel)
+	it.pos, it.vel = it.c.TickMovement(it, it.pos, it.vel, 0, 0)
 
 	if it.pickupDelay == 0 {
 		it.checkNearby()
