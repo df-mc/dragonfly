@@ -42,6 +42,15 @@ func MapInt32(m map[string]interface{}, key string) int32 {
 	return b
 }
 
+// MapInt64 reads an int64 from a map at the key passed.
+//noinspection GoCommentLeadingSpace
+func MapInt64(m map[string]interface{}, key string) int64 {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	v, _ := m[key]
+	b, _ := v.(int64)
+	return b
+}
+
 // MapByte reads a byte from a map at the key passed.
 //noinspection GoCommentLeadingSpace
 func MapByte(m map[string]interface{}, key string) byte {

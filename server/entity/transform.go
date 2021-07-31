@@ -9,8 +9,8 @@ import (
 // transform holds the base position and velocity of an entity. It holds several methods which can be used when
 // embedding the struct.
 type transform struct {
-	mu       sync.RWMutex
 	e        world.Entity
+	mu       sync.Mutex
 	vel, pos mgl64.Vec3
 }
 
@@ -40,6 +40,13 @@ func (t *transform) SetVelocity(v mgl64.Vec3) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.vel = v
+}
+
+// transform returns both the position and the velocity stored in the transform.
+func (t *transform) transform() (pos, vel mgl64.Vec3) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.pos, t.vel
 }
 
 // Rotation always returns 0.

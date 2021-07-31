@@ -75,9 +75,11 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(current int64) {
 	it.mu.Lock()
-	defer it.mu.Unlock()
+	it.pos, it.vel = it.c.TickMovement(it, it.pos, it.vel, 0, 0)
+	pos := it.pos
+	it.mu.Unlock()
 
-	if it.pos[1] < cube.MinY && current%10 == 0 {
+	if pos[1] < cube.MinY && current%10 == 0 {
 		_ = it.Close()
 		return
 	}
@@ -85,10 +87,9 @@ func (it *Item) Tick(current int64) {
 		_ = it.Close()
 		return
 	}
-	it.pos, it.vel = it.c.TickMovement(it, it.pos, it.vel, 0, 0)
 
 	if it.pickupDelay == 0 {
-		it.checkNearby()
+		it.checkNearby(pos)
 	} else if it.pickupDelay != math.MaxInt16 {
 		it.pickupDelay--
 	}
@@ -97,9 +98,9 @@ func (it *Item) Tick(current int64) {
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
-func (it *Item) checkNearby() {
-	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(it.pos)
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(it.pos).Grow(2)) {
+func (it *Item) checkNearby(pos mgl64.Vec3) {
+	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(pos).Grow(2)) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
@@ -107,11 +108,11 @@ func (it *Item) checkNearby() {
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				// A collector was within range to pick up the entity.
-				it.collect(collector)
+				it.collect(collector, pos)
 				return
 			} else if other, ok := e.(*Item); ok {
 				// Another item entity was in range to merge with.
-				if it.merge(other) {
+				if it.merge(other, pos) {
 					return
 				}
 			}
@@ -120,7 +121,7 @@ func (it *Item) checkNearby() {
 }
 
 // merge merges the item entity with another item entity.
-func (it *Item) merge(other *Item) bool {
+func (it *Item) merge(other *Item, pos mgl64.Vec3) bool {
 	if other.i.Count() == other.i.MaxCount() || it.i.Count() == it.i.MaxCount() {
 		// Either stack is already filled up to the maximum, meaning we can't change anything any way.
 		return false
@@ -136,7 +137,7 @@ func (it *Item) merge(other *Item) bool {
 	it.World().AddEntity(newA)
 
 	if !b.Empty() {
-		newB := NewItem(b, it.pos)
+		newB := NewItem(b, pos)
 		newB.SetVelocity(it.vel)
 		it.World().AddEntity(newB)
 	}
@@ -146,12 +147,12 @@ func (it *Item) merge(other *Item) bool {
 }
 
 // collect makes a collector collect the item (or at least part of it).
-func (it *Item) collect(collector Collector) {
+func (it *Item) collect(collector Collector, pos mgl64.Vec3) {
 	n := collector.Collect(it.i)
 	if n == 0 {
 		return
 	}
-	for _, viewer := range it.World().Viewers(it.pos) {
+	for _, viewer := range it.World().Viewers(pos) {
 		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
 	}
 
@@ -161,7 +162,7 @@ func (it *Item) collect(collector Collector) {
 		return
 	}
 	// Create a new item entity and shrink it by the amount of items that the collector collected.
-	it.World().AddEntity(NewItem(it.i.Grow(-n), it.pos))
+	it.World().AddEntity(NewItem(it.i.Grow(-n), pos))
 
 	_ = it.Close()
 }
@@ -175,6 +176,7 @@ func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
 	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
 	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
 	n.age = int(nbtconv.MapInt16(data, "Age"))
+	n.pickupDelay = int(nbtconv.MapInt64(data, "PickupDelay"))
 	return n
 }
 
@@ -199,11 +201,12 @@ func (it *Item) EncodeNBT() map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{
-		"Age":    int16(it.age),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(it.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(it.Velocity()),
-		"Health": int16(5),
-		"Item":   it,
+		"Age":         int16(it.age),
+		"PickupDelay": int64(it.pickupDelay),
+		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Health":      int16(5),
+		"Item":        it,
 	}
 }
 
