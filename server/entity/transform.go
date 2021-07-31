@@ -42,13 +42,6 @@ func (t *transform) SetVelocity(v mgl64.Vec3) {
 	t.vel = v
 }
 
-// transform returns both the position and the velocity stored in the transform.
-func (t *transform) transform() (pos, vel mgl64.Vec3) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	return t.pos, t.vel
-}
-
 // Rotation always returns 0.
 func (t *transform) Rotation() (float64, float64) { return 0, 0 }
 
