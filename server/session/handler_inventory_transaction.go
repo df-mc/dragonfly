@@ -72,15 +72,19 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if action.OldItem.Stack.Count != 0 || action.OldItem.Stack.NetworkID != 0 || action.OldItem.Stack.MetadataValue != 0 {
 				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
 			}
+			slot := int(action.InventorySlot)
 			newItem := stackToItem(action.NewItem.Stack)
-			actual, offHand := s.c.HeldItems()
+			if slot > 8 {
+				return fmt.Errorf("transaction action slot %v exceeds hotbar range 0-8", slot)
+			}
+			actual, _ := s.inv.Item(slot)
 			if !newItem.Comparable(actual) {
-				return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
+				return fmt.Errorf("different item thrown than held in slot: %#v was thrown but held %#v", newItem, actual)
 			}
 			if newItem.Count() > actual.Count() {
-				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())
+				return fmt.Errorf("tried to throw %v items, but held only %v in slot", newItem.Count(), actual.Count())
 			}
-			s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
+			_ = s.inv.SetItem(slot, actual.Grow(-newItem.Count()))
 			if newHeld, _ := s.c.HeldItems(); newHeld.Equal(actual.Grow(-newItem.Count())) {
 				// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
 				// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
