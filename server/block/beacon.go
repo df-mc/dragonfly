@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -41,11 +42,11 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 
 // DecodeNBT ...
 func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
-	b.level = int(readInt32(data, "Levels"))
-	if primary, ok := effect.ByID(int(readInt32(data, "Primary"))); ok {
+	b.level = int(nbtconv.MapInt32(data, "Levels"))
+	if primary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Primary"))); ok {
 		b.Primary = primary
 	}
-	if secondary, ok := effect.ByID(int(readInt32(data, "Secondary"))); ok {
+	if secondary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Secondary"))); ok {
 		b.Secondary = secondary
 	}
 	return b

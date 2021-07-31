@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -20,12 +21,12 @@ func NewText(text string, pos mgl64.Vec3) *Text {
 
 // Name returns the name of the text entity, including the text written on it.
 func (t *Text) Name() string {
-	return "Text(" + t.text + ")"
+	return "Text('" + t.text + "')"
 }
 
 // EncodeEntity returns the ID for falling blocks.
 func (t *Text) EncodeEntity() string {
-	return "minecraft:falling_block"
+	return "dragonfly:text"
 }
 
 // AABB returns an empty physics.AABB so that players cannot interact with the entity.
@@ -41,4 +42,17 @@ func (t *Text) Immobile() bool {
 // NameTag returns the text passed to NewText.
 func (t *Text) NameTag() string {
 	return t.text
+}
+
+// DecodeNBT decodes the data passed to create and return a new Text entity.
+func (t *Text) DecodeNBT(data map[string]interface{}) interface{} {
+	return NewText(nbtconv.MapString(data, "Text"), nbtconv.MapVec3(data, "Pos"))
+}
+
+// EncodeNBT encodes the Text entity to a map representation that can be encoded to NBT.
+func (t *Text) EncodeNBT() map[string]interface{} {
+	return map[string]interface{}{
+		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
+		"Text": t.text,
+	}
 }

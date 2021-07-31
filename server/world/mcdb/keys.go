@@ -7,4 +7,5 @@ const (
 	keySubChunkData  = 0x2f
 	keyFinalisation  = 0x36
 	keyBlockEntities = '1'
+	keyEntities      = '2'
 )

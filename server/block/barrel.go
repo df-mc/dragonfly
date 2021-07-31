@@ -135,8 +135,8 @@ func (b Barrel) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
 	b.Facing = facing
-	b.CustomName = readString(data, "CustomName")
-	nbtconv.InvFromNBT(b.inventory, readSlice(data, "Items"))
+	b.CustomName = nbtconv.MapString(data, "CustomName")
+	nbtconv.InvFromNBT(b.inventory, nbtconv.MapSlice(data, "Items"))
 	return b
 }
 

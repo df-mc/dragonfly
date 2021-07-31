@@ -9,8 +9,8 @@ import (
 // transform holds the base position and velocity of an entity. It holds several methods which can be used when
 // embedding the struct.
 type transform struct {
-	mu       sync.Mutex
 	e        world.Entity
+	mu       sync.Mutex
 	vel, pos mgl64.Vec3
 }
 
@@ -47,23 +47,13 @@ func (t *transform) Rotation() (float64, float64) { return 0, 0 }
 
 // World returns the world of the entity.
 func (t *transform) World() *world.World {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.e != nil {
-		w, _ := world.OfEntity(t.e)
-		return w
-	}
-	return nil
+	w, _ := world.OfEntity(t.e)
+	return w
 }
 
 // Close closes the transform and removes the associated entity from the world.
 func (t *transform) Close() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.e != nil {
-		w, _ := world.OfEntity(t.e)
-		w.RemoveEntity(t.e)
-		t.e = nil
-	}
+	w, _ := world.OfEntity(t.e)
+	w.RemoveEntity(t.e)
 	return nil
 }

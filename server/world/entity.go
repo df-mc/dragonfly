@@ -39,3 +39,31 @@ type TickerEntity interface {
 	// Tick ticks the entity with the current tick passed.
 	Tick(current int64)
 }
+
+// SaveableEntity is an Entity that can be saved and loaded with the World it was added to. These entities can be
+// registered on startup using RegisterEntity to allow loading them in a World.
+type SaveableEntity interface {
+	Entity
+	NBTer
+}
+
+// entities holds a map of name => SaveableEntity to be used for looking up the entity by a string ID. It is registered
+// to when calling RegisterEntity.
+var entities = map[string]SaveableEntity{}
+
+// RegisterEntity registers a SaveableEntity to the map so that it can be saved and loaded with the world.
+func RegisterEntity(e SaveableEntity) {
+	name := e.EncodeEntity()
+	if _, ok := entities[name]; ok {
+		panic("cannot register the same entity (" + name + ") twice")
+	}
+	entities[name] = e
+}
+
+// EntityByName looks up a SaveableEntity by the name (for example, 'minecraft:slime') and returns it if found.
+// EntityByName can only return entities previously registered using RegisterEntity. If not found, the bool returned is
+// false.
+func EntityByName(name string) (SaveableEntity, bool) {
+	e, ok := entities[name]
+	return e, ok
+}
