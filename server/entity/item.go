@@ -31,7 +31,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.Count() - i.MaxCount())
 	}
-	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
+	i = nbtconv.ReadItem(nbtconv.ItemToNBT(i, false), nil)
 
 	it := &Item{i: i, pickupDelay: 40, c: &MovementComputer{
 		Gravity:           0.04,

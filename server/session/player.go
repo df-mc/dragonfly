@@ -547,7 +547,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.ItemFromNBT(it.NBTData, &s)
+	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
 // creativeItems returns all creative inventory items as protocol item stacks.
