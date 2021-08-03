@@ -15,9 +15,10 @@ var FilteringBlocks = make([]uint8, 0, 7000)
 
 // lightNode is a node pushed to the queue which is used to propagate light.
 type lightNode struct {
-	x, z     int8
-	y, level uint8
-	first    bool
+	x, z  int8
+	y     int16
+	level uint8
+	first bool
 }
 
 // neighbours returns all neighbouring nodes of the current one.
@@ -212,10 +213,10 @@ func anyBlockLight(c *Chunk) bool {
 // chunk. In addition, any sky light above those nodes will be set to 15.
 func insertSkyLightNodes(queue *nodeQueue, c *Chunk) {
 	m := calculateHeightmap(c)
-	highestY := uint8(0)
-	for y := range c.sub {
-		if c.sub[y] != nil {
-			highestY = uint8((y << 4) + 15)
+	highestY := int16(cube.MinY)
+	for index := range c.sub {
+		if c.sub[index] != nil {
+			highestY = subY(int16(index)) + 15
 		}
 	}
 	for x := uint8(0); x < 16; x++ {
@@ -245,11 +246,11 @@ func insertSkyLightNodes(queue *nodeQueue, c *Chunk) {
 			}
 
 			// We can do a bit of an optimisation here: We don't need to insert nodes if the neighbours are
-			// lower than the current one, on the same y level, or one level higher, because light in this
+			// lower than the current one, on the same index level, or one level higher, because light in this
 			// column can't spread below that anyway.
 			for y := current; y < highestY; y++ {
 				if y == current {
-					level := filterLevel(c.sub[y>>4], x, y, z)
+					level := filterLevel(c.sub[subIndex(y)], x, uint8(y&0xf), z)
 					if level < 14 && level > 0 {
 						// If we hit a block like water or leaves, we need a node above this block regardless
 						// of the neighbours.
@@ -272,7 +273,7 @@ func insertSkyLightNodes(queue *nodeQueue, c *Chunk) {
 					continue
 				}
 				// Fill the rest of the column with sky light on full strength.
-				c.sub[(y+1)>>4].setSkyLight(x, (y+1)&0xf, z, 15)
+				c.sub[(y+1)>>4].setSkyLight(x, uint8((y+1)&0xf), z, 15)
 			}
 		}
 	}
@@ -281,14 +282,13 @@ func insertSkyLightNodes(queue *nodeQueue, c *Chunk) {
 // insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
 // If one is found, a node is added for it to the node queue.
 func insertBlockLightNodes(queue *nodeQueue, c *Chunk) {
-	for subY := 0; subY < 16; subY++ {
-		sub := c.sub[subY]
+	for index, sub := range c.sub {
 		if sub == nil {
 			continue
 		}
-		baseY := uint8(subY << 4)
+		baseY := subY(int16(index))
 		for y := uint8(0); y < 16; y++ {
-			actualY := y + baseY
+			actualY := int16(y) + baseY
 			for x := uint8(0); x < 16; x++ {
 				for z := uint8(0); z < 16; z++ {
 					if level := highestEmissionLevel(sub, x, y, z); level > 0 {
@@ -308,13 +308,13 @@ func insertBlockLightNodes(queue *nodeQueue, c *Chunk) {
 // insertSkyLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
 func insertSkyLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Chunk) {
-	for i, sub := range c.sub {
+	for index, sub := range c.sub {
 		if sub == nil {
 			continue
 		}
-		subY := uint8(i << 4)
+		baseY := subY(int16(index))
 		for y := uint8(0); y < 16; y++ {
-			totalY := y + subY
+			totalY := int16(y) + baseY
 			for x := uint8(0); x < 16; x++ {
 				for z := uint8(0); z < 16; z++ {
 					if z != 0 && z != 15 && x != 0 && x != 15 {
@@ -327,23 +327,23 @@ func insertSkyLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Chun
 					}
 					nodeNeeded := false
 					if x == 0 {
-						subNeighbour := neighbours[1].sub[i]
+						subNeighbour := neighbours[1].sub[index]
 						if subNeighbour != nil && subNeighbour.SkyLightAt(15, y, z) < l {
 							nodeNeeded = true
 						}
 					} else if x == 15 {
-						subNeighbour := neighbours[6].sub[i]
+						subNeighbour := neighbours[6].sub[index]
 						if subNeighbour != nil && subNeighbour.SkyLightAt(0, y, z) < l {
 							nodeNeeded = true
 						}
 					}
 					if z == 0 {
-						subNeighbour := neighbours[3].sub[i]
+						subNeighbour := neighbours[3].sub[index]
 						if subNeighbour != nil && subNeighbour.SkyLightAt(x, y, 15) < l {
 							nodeNeeded = true
 						}
 					} else if z == 15 {
-						subNeighbour := neighbours[4].sub[i]
+						subNeighbour := neighbours[4].sub[index]
 						if subNeighbour != nil && subNeighbour.SkyLightAt(x, y, 0) < l {
 							nodeNeeded = true
 						}
@@ -366,13 +366,13 @@ func insertSkyLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Chun
 // insertSkyLightSpreadingNodes inserts block light nodes into the node queue passed which, when propagated,
 // will spread into the neighbouring chunks.
 func insertBlockLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Chunk) {
-	for i, sub := range c.sub {
+	for index, sub := range c.sub {
 		if sub == nil {
 			continue
 		}
-		subY := uint8(i << 4)
+		baseY := subY(int16(index))
 		for y := uint8(0); y < 16; y++ {
-			totalY := y + subY
+			totalY := int16(y) + baseY
 			for x := uint8(0); x < 16; x++ {
 				for z := uint8(0); z < 16; z++ {
 					if z != 0 && z != 15 && x != 0 && x != 15 {
@@ -385,23 +385,23 @@ func insertBlockLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Ch
 					}
 					nodeNeeded := false
 					if x == 0 {
-						subNeighbour := neighbours[1].sub[i]
+						subNeighbour := neighbours[1].sub[index]
 						if subNeighbour != nil && subNeighbour.blockLightAt(15, y, z) < l {
 							nodeNeeded = true
 						}
 					} else if x == 15 {
-						subNeighbour := neighbours[6].sub[i]
+						subNeighbour := neighbours[6].sub[index]
 						if subNeighbour != nil && subNeighbour.blockLightAt(0, y, z) < l {
 							nodeNeeded = true
 						}
 					}
 					if z == 0 {
-						subNeighbour := neighbours[3].sub[i]
+						subNeighbour := neighbours[3].sub[index]
 						if subNeighbour != nil && subNeighbour.blockLightAt(x, y, 15) < l {
 							nodeNeeded = true
 						}
 					} else if z == 15 {
-						subNeighbour := neighbours[4].sub[i]
+						subNeighbour := neighbours[4].sub[index]
 						if subNeighbour != nil && subNeighbour.blockLightAt(x, y, 0) < l {
 							nodeNeeded = true
 						}
@@ -426,7 +426,7 @@ func insertBlockLightSpreadingNodes(queue *nodeQueue, c *Chunk, neighbours []*Ch
 func spreadPropagate(queue *nodeQueue, c *Chunk, neighbourChunks []*Chunk, skylight bool) {
 	node := queue.Front()
 	x, y, z := uint8(node.x&0xf), node.y, uint8(node.z&0xf)
-	yLocal := y & 0xf
+	yLocal := uint8(y & 0xf)
 	sub := subByY(y, chunkByNode(node, c, neighbourChunks))
 
 	if skylight {
@@ -469,7 +469,7 @@ func spreadPropagate(queue *nodeQueue, c *Chunk, neighbourChunks []*Chunk, skyli
 func fillPropagate(queue *nodeQueue, c *Chunk, skyLight bool) {
 	node := queue.Front()
 	x, y, z := uint8(node.x), node.y, uint8(node.z)
-	yLocal := y & 0xf
+	yLocal := uint8(y & 0xf)
 	sub := subByY(y, c)
 
 	if skyLight {
@@ -497,7 +497,7 @@ func fillPropagate(queue *nodeQueue, c *Chunk, skyLight bool) {
 				// In the fill stage, we don't propagate sky light out of the chunk.
 				continue
 			}
-			sub := filterLevel(subByY(neighbour.y, c), uint8(neighbour.x), neighbour.y&0xf, uint8(neighbour.z)) + 1
+			sub := filterLevel(subByY(neighbour.y, c), uint8(neighbour.x), uint8(neighbour.y&0xf), uint8(neighbour.z)) + 1
 			if sub >= node.level {
 				// No light left to propagate.
 				continue
@@ -509,8 +509,8 @@ func fillPropagate(queue *nodeQueue, c *Chunk, skyLight bool) {
 }
 
 // subByY returns a sub chunk in the chunk passed by a Y value. If one doesn't yet exist, it is created.
-func subByY(y uint8, c *Chunk) *SubChunk {
-	index := y >> 4
+func subByY(y int16, c *Chunk) *SubChunk {
+	index := subIndex(y)
 	sub := c.sub[index]
 
 	if sub == nil {
