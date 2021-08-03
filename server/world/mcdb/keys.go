@@ -1,5 +1,7 @@
 package mcdb
 
+//lint:file-ignore U1000 Unused unexported constants are present for future code using these.
+
 // Keys on a per-sub chunk basis. These are prefixed by the chunk coordinates and subchunk ID.
 const (
 	keySubChunkData = '/'
