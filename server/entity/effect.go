@@ -93,7 +93,7 @@ func (m *EffectManager) Tick(entity Living) {
 	for i, eff := range m.effects {
 		e = append(e, eff)
 
-		m.effects[i] = eff.WithSettings(eff.Duration()-time.Second/20, eff.Level(), eff.AmbientSource())
+		m.effects[i] = eff.WithSettings(eff.Duration()-time.Second/20, eff.Level(), !eff.ShowParticles(), eff.AmbientSource())
 		if m.expired(eff) {
 			delete(m.effects, i)
 			toEnd = append(toEnd, eff)

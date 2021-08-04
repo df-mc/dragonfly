@@ -24,8 +24,8 @@ func (w Wither) Apply(e world.Entity) {
 }
 
 // WithSettings ...
-func (w Wither) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Wither{w.withSettings(d, level, ambient)}
+func (w Wither) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Wither{w.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

@@ -29,7 +29,7 @@ func (i InstantDamage) Apply(e world.Entity) {
 }
 
 // WithSettings ...
-func (i InstantDamage) WithSettings(_ time.Duration, level int, _ bool) Effect {
+func (i InstantDamage) WithSettings(_ time.Duration, level int, _, _ bool) Effect {
 	i.Lvl = level
 	return i
 }

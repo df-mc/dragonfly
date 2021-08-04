@@ -22,7 +22,7 @@ type Effect interface {
 	// Duration returns the leftover duration of the effect.
 	Duration() time.Duration
 	// WithSettings returns the effect with a duration and level passed.
-	WithSettings(d time.Duration, level int, ambient bool) Effect
+	WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect
 	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
 	// together to form a new colour.
 	RGBA() color.RGBA
@@ -122,9 +122,10 @@ func (l lastingEffect) AmbientSource() bool {
 }
 
 // withSettings returns the lastingEffect with the duration passed.
-func (l lastingEffect) withSettings(d time.Duration, level int, ambient bool) lastingEffect {
+func (l lastingEffect) withSettings(d time.Duration, level int, hideParticles, ambient bool) lastingEffect {
 	l.Dur = d
 	l.Lvl = level
+	l.HideParticles = hideParticles
 	l.Ambient = ambient
 	return l
 }
@@ -136,7 +137,7 @@ func (lastingEffect) End(world.Entity) {}
 func (lastingEffect) Start(world.Entity) {}
 
 // Apply ...
-func (lastingEffect) Apply(living world.Entity) {}
+func (lastingEffect) Apply(world.Entity) {}
 
 // tickDuration returns the duration as in-game ticks.
 func tickDuration(d time.Duration) int {

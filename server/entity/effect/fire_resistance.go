@@ -11,8 +11,8 @@ type FireResistance struct {
 }
 
 // WithSettings ...
-func (f FireResistance) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return FireResistance{f.withSettings(d, level, ambient)}
+func (f FireResistance) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return FireResistance{f.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

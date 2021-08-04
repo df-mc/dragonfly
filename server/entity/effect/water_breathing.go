@@ -12,8 +12,8 @@ type WaterBreathing struct {
 }
 
 // WithSettings ...
-func (w WaterBreathing) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return WaterBreathing{w.withSettings(d, level, ambient)}
+func (w WaterBreathing) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return WaterBreathing{w.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

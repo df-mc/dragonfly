@@ -11,8 +11,8 @@ type Nausea struct {
 }
 
 // WithSettings ...
-func (n Nausea) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Nausea{n.withSettings(d, level, ambient)}
+func (n Nausea) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Nausea{n.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

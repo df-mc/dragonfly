@@ -24,7 +24,7 @@ type Flower struct {
 func (f Flower) EntityCollide(e world.Entity) {
 	if f.Type == WitherRose() {
 		if living, ok := e.(effectHolder); ok {
-			living.AddEffect(effect.Wither{}.WithSettings(2*time.Second, 1, false))
+			living.AddEffect(effect.Wither{}.WithSettings(2*time.Second, 1, false, false))
 		}
 	}
 }

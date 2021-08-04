@@ -21,8 +21,8 @@ func (s Saturation) Apply(e world.Entity) {
 }
 
 // WithSettings ...
-func (s Saturation) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Saturation{s.withSettings(d, level, ambient)}
+func (s Saturation) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Saturation{s.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

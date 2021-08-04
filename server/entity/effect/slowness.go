@@ -35,8 +35,8 @@ func (s Slowness) Stop(e world.Entity) {
 }
 
 // WithSettings ...
-func (s Slowness) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Slowness{s.withSettings(d, level, ambient)}
+func (s Slowness) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Slowness{s.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

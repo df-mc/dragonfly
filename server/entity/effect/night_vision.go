@@ -12,8 +12,8 @@ type NightVision struct {
 }
 
 // WithSettings ...
-func (n NightVision) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return NightVision{n.withSettings(d, level, ambient)}
+func (n NightVision) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return NightVision{n.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

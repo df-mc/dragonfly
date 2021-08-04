@@ -26,8 +26,8 @@ func (r Resistance) Multiplier(e damage.Source) float64 {
 }
 
 // WithSettings ...
-func (r Resistance) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Resistance{r.withSettings(d, level, ambient)}
+func (r Resistance) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Resistance{r.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

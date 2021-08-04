@@ -26,8 +26,8 @@ func (h HealthBoost) End(e world.Entity) {
 }
 
 // WithSettings ...
-func (h HealthBoost) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return HealthBoost{h.withSettings(d, level, ambient)}
+func (h HealthBoost) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return HealthBoost{h.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

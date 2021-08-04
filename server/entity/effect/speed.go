@@ -28,8 +28,8 @@ func (s Speed) End(e world.Entity) {
 }
 
 // WithSettings ...
-func (s Speed) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Speed{s.withSettings(d, level, ambient)}
+func (s Speed) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Speed{s.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

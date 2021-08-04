@@ -16,8 +16,8 @@ func (s Strength) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (s Strength) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Strength{s.withSettings(d, level, ambient)}
+func (s Strength) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Strength{s.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

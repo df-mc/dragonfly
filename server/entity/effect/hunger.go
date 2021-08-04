@@ -22,8 +22,8 @@ func (h Hunger) Apply(e world.Entity) {
 }
 
 // WithSettings ...
-func (h Hunger) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Hunger{h.withSettings(d, level, ambient)}
+func (h Hunger) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Hunger{h.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

@@ -20,8 +20,8 @@ func (w Weakness) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (w Weakness) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Weakness{w.withSettings(d, level, ambient)}
+func (w Weakness) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Weakness{w.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

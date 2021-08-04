@@ -16,7 +16,7 @@ type PoisonousPotato struct {
 func (p PoisonousPotato) Consume(_ *world.World, c Consumer) Stack {
 	c.Saturate(2, 1.2)
 	if rand.Float64() < 0.6 {
-		c.AddEffect(effect.Poison{}.WithSettings(5*time.Second, 1, false))
+		c.AddEffect(effect.Poison{}.WithSettings(5*time.Second, 1, false, false))
 	}
 	return Stack{}
 }

@@ -24,8 +24,8 @@ func (p FatalPoison) Apply(e world.Entity) {
 }
 
 // WithSettings ...
-func (p FatalPoison) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return FatalPoison{p.withSettings(d, level, ambient)}
+func (p FatalPoison) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return FatalPoison{p.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

@@ -21,8 +21,8 @@ func (c ConduitPower) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (c ConduitPower) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return ConduitPower{c.withSettings(d, level, ambient)}
+func (c ConduitPower) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return ConduitPower{c.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

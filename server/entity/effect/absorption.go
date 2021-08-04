@@ -41,8 +41,8 @@ func (a Absorption) Stop(e world.Entity) {
 }
 
 // WithSettings ...
-func (a Absorption) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Absorption{a.withSettings(d, level, ambient)}
+func (a Absorption) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Absorption{a.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

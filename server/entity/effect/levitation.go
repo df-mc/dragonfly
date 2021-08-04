@@ -12,8 +12,8 @@ type Levitation struct {
 }
 
 // WithSettings ...
-func (l Levitation) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Levitation{l.withSettings(d, level, ambient)}
+func (l Levitation) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Levitation{l.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

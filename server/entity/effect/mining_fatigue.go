@@ -18,8 +18,8 @@ func (m MiningFatigue) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (m MiningFatigue) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return MiningFatigue{m.withSettings(d, level, ambient)}
+func (m MiningFatigue) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return MiningFatigue{m.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

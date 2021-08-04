@@ -11,8 +11,8 @@ type Blindness struct {
 }
 
 // WithSettings ...
-func (b Blindness) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Blindness{b.withSettings(d, level, ambient)}
+func (b Blindness) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Blindness{b.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

@@ -1628,7 +1628,7 @@ func (p *Player) Tick(current int64) {
 	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok2 := p.Armour().Helmet().Item().(item.TurtleShell); ok2 {
-			p.AddEffect(effect.WaterBreathing{}.WithSettings(time.Second*10, 1, true))
+			p.AddEffect(effect.WaterBreathing{}.WithSettings(time.Second*10, 1, false, true))
 		}
 	}
 	p.checkCollisions()

@@ -11,8 +11,8 @@ type SlowFalling struct {
 }
 
 // WithSettings ...
-func (s SlowFalling) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return SlowFalling{s.withSettings(d, level, ambient)}
+func (s SlowFalling) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return SlowFalling{s.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

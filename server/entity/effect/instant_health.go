@@ -30,7 +30,7 @@ func (i InstantHealth) Apply(e world.Entity) {
 }
 
 // WithSettings ...
-func (i InstantHealth) WithSettings(_ time.Duration, level int, _ bool) Effect {
+func (i InstantHealth) WithSettings(_ time.Duration, level int, _, _ bool) Effect {
 	i.Lvl = level
 	return i
 }

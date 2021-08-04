@@ -33,8 +33,8 @@ func (Invisibility) End(e world.Entity) {
 }
 
 // WithSettings ...
-func (i Invisibility) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Invisibility{i.withSettings(d, level, ambient)}
+func (i Invisibility) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Invisibility{i.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

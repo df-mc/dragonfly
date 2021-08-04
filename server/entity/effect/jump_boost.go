@@ -12,8 +12,8 @@ type JumpBoost struct {
 }
 
 // WithSettings ...
-func (j JumpBoost) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return JumpBoost{j.withSettings(d, level, ambient)}
+func (j JumpBoost) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return JumpBoost{j.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...

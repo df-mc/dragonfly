@@ -20,8 +20,8 @@ func (h Haste) Multiplier() float64 {
 }
 
 // WithSettings ...
-func (h Haste) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Haste{h.withSettings(d, level, ambient)}
+func (h Haste) WithSettings(d time.Duration, level int, hideParticles, ambient bool) Effect {
+	return Haste{h.withSettings(d, level, hideParticles, ambient)}
 }
 
 // RGBA ...
