@@ -94,8 +94,9 @@ type jsonSlot struct {
 }
 
 type jsonEffect struct {
-	ID       int
-	Level    int
-	Duration time.Duration
-	Ambient  bool
+	ID            int
+	Level         int
+	Duration      time.Duration
+	HideParticles bool
+	Ambient       bool
 }

@@ -10,10 +10,11 @@ func effectsToData(effects []effect.Effect) []jsonEffect {
 			continue
 		}
 		data[key] = jsonEffect{
-			ID:       id,
-			Duration: eff.Duration(),
-			Level:    eff.Level(),
-			Ambient:  eff.AmbientSource(),
+			ID:            id,
+			Duration:      eff.Duration(),
+			Level:         eff.Level(),
+			HideParticles: !eff.ShowParticles(),
+			Ambient:       eff.AmbientSource(),
 		}
 	}
 	return data
@@ -26,7 +27,7 @@ func dataToEffects(data []jsonEffect) []effect.Effect {
 		if !ok {
 			continue
 		}
-		effects[key] = e.WithSettings(d.Duration, d.Level, d.Ambient)
+		effects[key] = e.WithSettings(d.Duration, d.Level, d.HideParticles, d.Ambient)
 	}
 	return effects
 }
