@@ -284,7 +284,13 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
 	inventory, _ := s.invByID(int32(slot.ContainerID))
-	if inventory.SlotLocked(int(slot.Slot)) {
+
+	sl := int(slot.Slot)
+	if inventory == s.offHand {
+		sl = 0
+	}
+
+	if inventory.SlotLocked(sl) {
 		return fmt.Errorf("slot in inventory was locked")
 	}
 	return nil
@@ -339,7 +345,13 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
 	}
-	i, err := inventory.Item(int(slot.Slot))
+
+	sl := int(slot.Slot)
+	if inventory == s.offHand {
+		sl = 0
+	}
+
+	i, err := inventory.Item(sl)
 	if err != nil {
 		return i, err
 	}
@@ -350,7 +362,12 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
 	inventory, _ := s.invByID(int32(slot.ContainerID))
 
-	_ = inventory.SetItem(int(slot.Slot), i)
+	sl := int(slot.Slot)
+	if inventory == s.offHand {
+		sl = 0
+	}
+
+	_ = inventory.SetItem(sl, i)
 
 	if h.changes[slot.ContainerID] == nil {
 		h.changes[slot.ContainerID] = map[byte]protocol.StackResponseSlotInfo{}
