@@ -332,8 +332,7 @@ func insertBlockLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Ch
 // spreadPropagate propagates a sky light node in the queue past through the chunk passed and its neighbours,
 // unlike fillPropagate, which only propagates within the chunk.
 func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, skylight bool) {
-	node := queue.Front().Value.(lightNode)
-	queue.Remove(queue.Front())
+	node := queue.Remove(queue.Front()).(lightNode)
 
 	x, y, z := uint8(node.x&0xf), node.y, uint8(node.z&0xf)
 	yLocal := uint8(y & 0xf)
@@ -377,8 +376,7 @@ func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, skyli
 // fillPropagate propagates a sky light node in the node queue passed within the chunk itself. It does not
 // spread the light beyond the chunk.
 func fillPropagate(queue *list.List, c *Chunk, skyLight bool) {
-	node := queue.Front().Value.(lightNode)
-	queue.Remove(queue.Front())
+	node := queue.Remove(queue.Front()).(lightNode)
 
 	x, y, z := uint8(node.x), node.y, uint8(node.z)
 	yLocal := uint8(y & 0xf)
