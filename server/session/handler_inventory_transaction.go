@@ -72,12 +72,8 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if action.OldItem.Stack.Count != 0 || action.OldItem.Stack.NetworkID != 0 || action.OldItem.Stack.MetadataValue != 0 {
 				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
 			}
-			slot := int(action.InventorySlot)
-			if slot > 8 {
-				return fmt.Errorf("transaction action slot %v exceeds hotbar range 0-8", slot)
-			}
 			thrown := stackToItem(action.NewItem.Stack)
-			held, _ := s.inv.Item(slot)
+			held, off := s.c.HeldItems()
 			if !thrown.Comparable(held) {
 				return fmt.Errorf("different item thrown than held in slot: %#v was thrown but held %#v", thrown, held)
 			}
@@ -88,7 +84,7 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
 			// Only grow or shrink the held item to prevent any such issues.
 			n := s.c.Drop(held.Grow(thrown.Count() - held.Count()))
-			_ = s.inv.SetItem(slot, held.Grow(-n))
+			s.c.SetHeldItems(held.Grow(-n), off)
 		default:
 			// Ignore inventory actions we don't explicitly handle.
 		}
