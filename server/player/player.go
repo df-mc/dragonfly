@@ -102,7 +102,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 			}
 		}),
 		uuid:     uuid.New(),
-		offHand:  inventory.New(2, p.broadcastItems),
+		offHand:  inventory.New(1, p.broadcastItems),
 		armour:   inventory.NewArmour(p.broadcastArmour),
 		hunger:   newHungerManager(),
 		health:   entity.NewHealthManager(),
@@ -918,7 +918,7 @@ func (p *Player) Armour() item.ArmourContainer {
 // If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
 // the hand held anything.
 func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
-	offHand, _ = p.offHand.Item(1)
+	offHand, _ = p.offHand.Item(0)
 	mainHand, _ = p.inv.Item(int(p.heldSlot.Load()))
 	return mainHand, offHand
 }
@@ -927,7 +927,7 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 // (Stack.Empty()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
-	_ = p.offHand.SetItem(1, offHand)
+	_ = p.offHand.SetItem(0, offHand)
 }
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
@@ -1975,7 +1975,7 @@ func (p *Player) loadInventory(data InventoryData) {
 	for slot, stack := range data.Items {
 		_ = p.Inventory().SetItem(slot, stack)
 	}
-	_ = p.offHand.SetItem(1, data.OffHand)
+	_ = p.offHand.SetItem(0, data.OffHand)
 	p.Armour().SetBoots(data.Boots)
 	p.Armour().SetLeggings(data.Leggings)
 	p.Armour().SetChestplate(data.Chestplate)
@@ -1986,7 +1986,7 @@ func (p *Player) loadInventory(data InventoryData) {
 // gets disconnected and the player provider needs to save the data.
 func (p *Player) Data() Data {
 	yaw, pitch := p.Rotation()
-	offHand, _ := p.offHand.Item(1)
+	offHand, _ := p.offHand.Item(0)
 
 	p.hunger.mu.RLock()
 	defer p.hunger.mu.RUnlock()
