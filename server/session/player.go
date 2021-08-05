@@ -430,7 +430,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -438,7 +438,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			viewer.ViewEntityItems(s.c)
 		}
 		if !s.inTransaction.Load() {
-			i, _ := s.offHand.Item(1)
+			i, _ := s.offHand.Item(0)
 			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
 				Content: []protocol.ItemInstance{
