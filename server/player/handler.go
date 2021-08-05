@@ -79,7 +79,8 @@ type Handler interface {
 	// and the target won't be knocked back.
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
-	HandleAttackEntity(ctx *event.Context, e world.Entity)
+	// The knock back force and height is also provided which can be modified.
+	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *event.Context, oldText, newText string)
@@ -166,7 +167,7 @@ func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 
 // HandleAttackEntity ...
-func (NopHandler) HandleAttackEntity(*event.Context, world.Entity) {}
+func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64) {}
 
 // HandleHurt ...
 func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source) {}

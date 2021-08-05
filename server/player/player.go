@@ -1126,8 +1126,10 @@ func (p *Player) AttackEntity(e world.Entity) {
 	}
 	i, left := p.HeldItems()
 
+	force, height := 0.45, 0.3608
+
 	ctx := event.C()
-	p.handler().HandleAttackEntity(ctx, e)
+	p.handler().HandleAttackEntity(ctx, e, &force, &height)
 	ctx.Continue(func() {
 		p.SwingArm()
 		living, ok := e.(entity.Living)
@@ -1156,7 +1158,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 		} else {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
 			p.Exhaust(0.1)
-			living.KnockBack(p.Position(), 0.45, 0.3608)
+			living.KnockBack(p.Position(), force, height)
 		}
 
 		if durable, ok := i.Item().(item.Durable); ok {
