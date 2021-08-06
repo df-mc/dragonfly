@@ -216,7 +216,7 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id := uint32(0), int32(packet.GameTypeSurvival)
+	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
 	}
@@ -225,34 +225,30 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
+	} else {
+		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
 	}
 	if !mode.AllowsInteraction() {
 		flags |= packet.AdventureFlagNoPVP
+	} else {
+		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
 	}
-	// Find a game type that matches the game mode most closely. We assign some properties to specifically creative
-	// mode or spectator mode and assign game type based on those.
-	crea := mode.AllowsFlying() && mode.CreativeInventory()
-	spec := !mode.AllowsEditing() && !mode.AllowsInteraction()
-	switch {
-	case crea && !spec:
+	// Creative or spectator players:
+	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-	case crea && spec:
-		id = packet.GameTypeCreativeSpectator
-	case !crea && spec:
-		id = packet.GameTypeSurvivalSpectator
-	case !crea && mode.AllowsInteraction() && !mode.AllowsEditing():
-		id = packet.GameTypeAdventure
-	default:
-		id = packet.GameTypeSurvival
+		// Cannot interact with the world, so this is a spectator.
+		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
+			id = packet.GameTypeCreativeSpectator
+		}
 	}
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
-		PlayerUniqueID:    1,
-		ActionPermissions: uint32(packet.ActionPermissionBuild | packet.ActionPermissionMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
+		PlayerUniqueID:    selfEntityRuntimeID,
+		ActionPermissions: perms,
 	})
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
