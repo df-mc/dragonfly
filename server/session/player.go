@@ -288,20 +288,20 @@ func (s *Session) SendAbsorption(value float64) {
 
 // SendEffect sends an effects passed to the player.
 func (s *Session) SendEffect(e effect.Effect) {
-	s.SendEffectRemoval(e)
-	id, _ := effect.ID(e)
+	s.SendEffectRemoval(e.Type())
+	id, _ := effect.ID(e.Type())
 	s.writePacket(&packet.MobEffect{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Operation:       packet.MobEffectAdd,
 		EffectType:      int32(id),
 		Amplifier:       int32(e.Level() - 1),
-		Particles:       e.ShowParticles(),
+		Particles:       true, // TODO: Make it possible to not show particles?
 		Duration:        int32(e.Duration() / (time.Second / 20)),
 	})
 }
 
 // SendEffectRemoval sends the removal of an effect passed.
-func (s *Session) SendEffectRemoval(e effect.Effect) {
+func (s *Session) SendEffectRemoval(e effect.Type) {
 	id, ok := effect.ID(e)
 	if !ok {
 		panic(fmt.Sprintf("unregistered effect type %T", e))

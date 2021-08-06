@@ -8,22 +8,16 @@ import (
 
 // Hunger is a lasting effect that causes an affected player to gradually lose saturation and food.
 type Hunger struct {
-	lastingEffect
+	nopLasting
 }
 
 // Apply ...
-func (h Hunger) Apply(e world.Entity) {
-	v := float64(h.Lvl) * 0.005
+func (Hunger) Apply(e world.Entity, lvl int, d time.Duration) {
 	if i, ok := e.(interface {
 		Exhaust(points float64)
 	}); ok {
-		i.Exhaust(v)
+		i.Exhaust(float64(lvl) * 0.005)
 	}
-}
-
-// WithSettings ...
-func (h Hunger) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Hunger{h.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

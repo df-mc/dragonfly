@@ -465,7 +465,7 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 func (p *Player) fall(fallDistance float64) {
 	fallDamage := fallDistance - 3
 	for _, e := range p.Effects() {
-		if _, ok := e.(effect.JumpBoost); ok {
+		if _, ok := e.Type().(effect.JumpBoost); ok {
 			fallDamage -= float64(e.Level())
 		}
 	}
@@ -487,7 +487,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 		return
 	}
 	for _, e := range p.Effects() {
-		if _, ok := e.(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+		if _, ok := e.Type().(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
 			return
 		}
 	}
@@ -548,8 +548,8 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		dmg -= dmg * 0.04 * defencePoints
 	}
 	for _, e := range p.Effects() {
-		if resistance, ok := e.(effect.Resistance); ok {
-			dmg *= resistance.Multiplier(src)
+		if resistance, ok := e.Type().(effect.Resistance); ok {
+			dmg *= resistance.Multiplier(src, e.Level())
 		}
 	}
 	// TODO: Account for enchantments.
@@ -649,7 +649,7 @@ func (p *Player) AddEffect(e effect.Effect) {
 }
 
 // RemoveEffect removes any effect that might currently be active on the Player.
-func (p *Player) RemoveEffect(e effect.Effect) {
+func (p *Player) RemoveEffect(e effect.Type) {
 	p.effects.Remove(e, p)
 	p.session().SendEffectRemoval(e)
 	p.updateState()
@@ -713,7 +713,7 @@ func (p *Player) kill(src damage.Source) {
 	p.armour.Clear()
 	p.offHand.Clear()
 	for _, e := range p.Effects() {
-		p.RemoveEffect(e)
+		p.RemoveEffect(e.Type())
 	}
 
 	p.handler().HandleDeath(src)
@@ -849,7 +849,7 @@ func (p *Player) SetVisible() {
 		return
 	}
 	for _, eff := range p.Effects() {
-		if _, ok := eff.(effect.Invisibility); ok {
+		if _, ok := eff.Type().(effect.Invisibility); ok {
 			return
 		}
 	}
@@ -1144,10 +1144,10 @@ func (p *Player) AttackEntity(e world.Entity) {
 		healthBefore := living.Health()
 		damageDealt := i.AttackDamage()
 		for _, e := range p.Effects() {
-			if strength, ok := e.(effect.Strength); ok {
-				damageDealt += damageDealt * strength.Multiplier()
-			} else if weakness, ok := e.(effect.Weakness); ok {
-				damageDealt += damageDealt * weakness.Multiplier()
+			if strength, ok := e.Type().(effect.Strength); ok {
+				damageDealt += damageDealt * strength.Multiplier(e.Level())
+			} else if weakness, ok := e.Type().(effect.Weakness); ok {
+				damageDealt += damageDealt * weakness.Multiplier(e.Level())
 			}
 		}
 
@@ -1221,12 +1221,14 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
-		if haste, ok := e.(effect.Haste); ok {
-			breakTime = time.Duration(float64(breakTime) * haste.Multiplier())
-		} else if fatigue, ok := e.(effect.MiningFatigue); ok {
-			breakTime = time.Duration(float64(breakTime) * fatigue.Multiplier())
-		} else if conduitPower, ok := e.(effect.ConduitPower); ok {
-			breakTime = time.Duration(float64(breakTime) * conduitPower.Multiplier())
+		lvl := e.Level()
+		switch v := e.Type().(type) {
+		case effect.Haste:
+			breakTime = time.Duration(float64(breakTime) * v.Multiplier(lvl))
+		case effect.MiningFatigue:
+			breakTime = time.Duration(float64(breakTime) * v.Multiplier(lvl))
+		case effect.ConduitPower:
+			breakTime = time.Duration(float64(breakTime) * v.Multiplier(lvl))
 		}
 	}
 	return breakTime
@@ -1630,7 +1632,7 @@ func (p *Player) Tick(current int64) {
 	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok2 := p.Armour().Helmet().Item().(item.TurtleShell); ok2 {
-			p.AddEffect(effect.WaterBreathing{}.WithSettings(time.Second*10, 1, true))
+			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
 		}
 	}
 	p.checkCollisions()
@@ -1815,10 +1817,10 @@ func (p *Player) Breathing() bool {
 		return true
 	}
 	for _, e := range p.Effects() {
-		if _, waterBreathing := e.(effect.WaterBreathing); waterBreathing {
+		if _, waterBreathing := e.Type().(effect.WaterBreathing); waterBreathing {
 			return true
 		}
-		if _, conduitPower := e.(effect.ConduitPower); conduitPower {
+		if _, conduitPower := e.Type().(effect.ConduitPower); conduitPower {
 			return true
 		}
 	}

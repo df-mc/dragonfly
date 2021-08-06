@@ -3,40 +3,34 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Slowness is a lasting effect that decreases the movement speed of a living entity by 15% for each level
 // that the effect has.
 type Slowness struct {
-	lastingEffect
+	nopLasting
 }
 
 // Start ...
-func (s Slowness) Start(e world.Entity) {
-	slowness := 1 - float64(s.Lvl)*0.15
+func (Slowness) Start(e world.Entity, lvl int) {
+	slowness := 1 - float64(lvl)*0.15
 	if slowness <= 0 {
 		slowness = 0.00001
 	}
-	if living, ok := e.(living); ok {
-		living.SetSpeed(living.Speed() * slowness)
+	if l, ok := e.(living); ok {
+		l.SetSpeed(l.Speed() * slowness)
 	}
 }
 
-// Stop ...
-func (s Slowness) Stop(e world.Entity) {
-	slowness := 1 - float64(s.Lvl)*0.15
+// End ...
+func (Slowness) End(e world.Entity, lvl int) {
+	slowness := 1 - float64(lvl)*0.15
 	if slowness <= 0 {
 		slowness = 0.00001
 	}
-	if living, ok := e.(living); ok {
-		living.SetSpeed(living.Speed() / slowness)
+	if l, ok := e.(living); ok {
+		l.SetSpeed(l.Speed() / slowness)
 	}
-}
-
-// WithSettings ...
-func (s Slowness) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Slowness{s.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

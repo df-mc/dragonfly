@@ -7,7 +7,7 @@ import (
 // Register registers an Effect with a specific ID to translate from and to on disk and network. An Effect
 // instance may be created by creating a struct instance in this package like
 // effect.Regeneration{}.
-func Register(id int, e Effect) {
+func Register(id int, e Type) {
 	effects[id] = e
 	effectIds[reflect.TypeOf(e)] = id
 }
@@ -46,20 +46,20 @@ func init() {
 }
 
 var (
-	effects   = map[int]Effect{}
+	effects   = map[int]Type{}
 	effectIds = map[reflect.Type]int{}
 )
 
 // ByID attempts to return an effect by the ID it was registered with. If found, the effect found
 // is returned and the bool true.
-func ByID(id int) (Effect, bool) {
+func ByID(id int) (Type, bool) {
 	effect, ok := effects[id]
 	return effect, ok
 }
 
 // ID attempts to return the ID an effect was registered with. If found, the id is returned and
 // the bool true.
-func ID(e Effect) (int, bool) {
+func ID(e Type) (int, bool) {
 	id, ok := effectIds[reflect.TypeOf(e)]
 	return id, ok
 }

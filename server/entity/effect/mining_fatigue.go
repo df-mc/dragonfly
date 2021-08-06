@@ -3,23 +3,17 @@ package effect
 import (
 	"image/color"
 	"math"
-	"time"
 )
 
 // MiningFatigue is a lasting effect that decreases the mining speed of a player by 10% for each level of the
 // effect.
 type MiningFatigue struct {
-	lastingEffect
+	nopLasting
 }
 
 // Multiplier returns the mining speed multiplier from this effect.
-func (m MiningFatigue) Multiplier() float64 {
-	return math.Pow(3, float64(m.Lvl))
-}
-
-// WithSettings ...
-func (m MiningFatigue) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return MiningFatigue{m.withSettings(d, level, ambient)}
+func (MiningFatigue) Multiplier(lvl int) float64 {
+	return math.Pow(3, float64(lvl))
 }
 
 // RGBA ...

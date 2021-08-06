@@ -198,8 +198,9 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
 	}
 
-	beacon.Primary, _ = effect.ByID(int(a.PrimaryEffect))
-	beacon.Secondary, _ = effect.ByID(int(a.SecondaryEffect))
+	primary, _ := effect.ByID(int(a.PrimaryEffect))
+	secondary, _ := effect.ByID(int(a.SecondaryEffect))
+	beacon.Primary, beacon.Secondary = primary.(effect.LastingType), secondary.(effect.LastingType)
 	s.c.World().SetBlock(pos, beacon)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
