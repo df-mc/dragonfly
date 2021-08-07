@@ -291,7 +291,7 @@ func (s *Session) SendEffect(e effect.Effect) {
 		Operation:       packet.MobEffectAdd,
 		EffectType:      int32(id),
 		Amplifier:       int32(e.Level() - 1),
-		Particles:       true, // TODO: Make it possible to not show particles?
+		Particles:       true,
 		Duration:        int32(e.Duration() / (time.Second / 20)),
 	})
 }
