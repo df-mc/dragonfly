@@ -206,7 +206,7 @@ func (it *Item) EncodeNBT() map[string]interface{} {
 		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
 		"Health":      int16(5),
-		"Item":        it,
+		"Item":        i,
 	}
 }
 
