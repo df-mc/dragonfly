@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -87,16 +86,11 @@ func (f *FallingBlock) DecodeNBT(data map[string]interface{}) interface{} {
 
 // EncodeNBT encodes the FallingBlock entity to a map that can be encoded for NBT.
 func (f *FallingBlock) EncodeNBT() map[string]interface{} {
-	name, properties := f.block.EncodeBlock()
 	return map[string]interface{}{
-		"UniqueID": -rand.Int63(),
-		"Pos":      nbtconv.Vec3ToFloat32Slice(f.Position()),
-		"Motion":   nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"FallingBlock": map[string]interface{}{
-			"name":    name,
-			"states":  properties,
-			"version": chunk.CurrentBlockVersion,
-		},
+		"UniqueID":     -rand.Int63(),
+		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
+		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),
+		"FallingBlock": nbtconv.WriteBlock(f.block),
 	}
 }
 

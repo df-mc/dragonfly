@@ -506,7 +506,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 		BlockRuntimeID: int32(blockRuntimeID),
 		HasNetworkID:   true,
 		Count:          uint16(it.Count()),
-		NBTData:        nbtconv.ItemToNBT(it, true),
+		NBTData:        nbtconv.WriteItem(it, false),
 	}
 }
 

@@ -15,10 +15,22 @@ func ReadItem(data map[string]interface{}, s *item.Stack) item.Stack {
 		s = &a
 	}
 	readDamage(data, s, disk)
-	readEnchantments(data, s)
 	readDisplay(data, s)
+	readEnchantments(data, s)
 	readDragonflyData(data, s)
 	return *s
+}
+
+// ReadBlock decodes the data of a block into a world.Block.
+func ReadBlock(m map[string]interface{}) world.Block {
+	nameVal, _ := m["name"]
+	name, _ := nameVal.(string)
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	statesVal, _ := m["states"]
+	properties, _ := statesVal.(map[string]interface{})
+
+	b, _ := world.BlockByName(name, properties)
+	return b
 }
 
 // readItemStack reads an item.Stack from the NBT in the map passed.
