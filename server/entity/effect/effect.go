@@ -33,10 +33,10 @@ type Type interface {
 // Effect is an effect that can be added to an entity. Effects are either instant (applying the effect only once) or
 // lasting (applying the effect every tick).
 type Effect struct {
-	t       Type
-	d       time.Duration
-	lvl     int
-	ambient bool
+	t                        Type
+	d                        time.Duration
+	lvl                      int
+	ambient, particlesHidden bool
 }
 
 // NewInstant returns a new instant Effect using the Type passed. The effect will be applied to an entity once
@@ -55,6 +55,13 @@ func New(t LastingType, lvl int, d time.Duration) Effect {
 // to an entity, the time.Duration passed will be ticked down by the entity until it reaches a duration of 0.
 func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
 	return Effect{t: t, lvl: lvl, d: d, ambient: true}
+}
+
+// WithoutParticles returns the same Effect with particles disabled. Adding the effect to players will not display the
+// particles around the player.
+func (e Effect) WithoutParticles() Effect {
+	e.particlesHidden = true
+	return e
 }
 
 // Level returns the level of the Effect.
@@ -104,23 +111,29 @@ func tickDuration(d time.Duration) int {
 // ResultingColour calculates the resulting colour of the effects passed and returns a bool specifying if the
 // effects were ambient effects, which will cause their particles to display less frequently.
 func ResultingColour(effects []Effect) (color.RGBA, bool) {
-	r, g, b, a, l := 0, 0, 0, 0, len(effects)
-	if l == 0 {
-		return color.RGBA{}, false
-	}
-
+	r, g, b, a, l := 0, 0, 0, 0, 0
 	ambient := true
 	for _, e := range effects {
+		if e.particlesHidden {
+			// Don't take effects with hidden particles into account for colour calculation: Their particles are hidden
+			// after all.
+			continue
+		}
 		if t, ok := e.Type().(LastingType); ok {
 			c := t.RGBA()
 			r += int(c.R)
 			g += int(c.G)
 			b += int(c.B)
 			a += int(c.A)
+			l++
 			if !e.Ambient() {
 				ambient = false
 			}
 		}
+	}
+	if l == 0 {
+		// Prevent division by 0 errors if no effects with particles were present.
+		return color.RGBA{}, false
 	}
 	return color.RGBA{R: uint8(r / l), G: uint8(g / l), B: uint8(b / l), A: uint8(a / l)}, ambient
 }
