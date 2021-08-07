@@ -1190,6 +1190,10 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	}
 	ctx := event.C()
 	p.handler().HandleStartBreak(ctx, pos)
+
+	// Note: We intentionally store this regardless of whether the breaking proceeds, so that we
+	// can resend the block to the client when it tries to break the block regardless.
+	p.breakingPos.Store(pos)
 	ctx.Continue(func() {
 		if punchable, ok := p.World().Block(pos).(block.Punchable); ok {
 			p.SwingArm()
@@ -1197,7 +1201,6 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		}
 
 		p.breaking.Store(true)
-		p.breakingPos.Store(pos)
 
 		p.SwingArm()
 
@@ -1238,11 +1241,13 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 // if the player isn't breaking anything.
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
+	pos := p.breakingPos.Load().(cube.Pos)
 	if !p.breaking.Load() {
+		p.World().SetBlock(pos, p.World().Block(pos))
 		return
 	}
 	p.AbortBreaking()
-	p.BreakBlock(p.breakingPos.Load().(cube.Pos))
+	p.BreakBlock(pos)
 }
 
 // AbortBreaking makes the player stop breaking the block it is currently breaking, or returns immediately
