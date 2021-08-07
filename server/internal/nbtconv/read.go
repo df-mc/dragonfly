@@ -68,7 +68,7 @@ func readDisplay(m map[string]interface{}, s *item.Stack) {
 		if display, ok := displayInterface.(map[string]interface{}); ok {
 			if _, ok := display["Name"]; ok {
 				// Only add the custom name if actually set.
-				*s = s.WithCustomName(MapString(m, "Name"))
+				*s = s.WithCustomName(MapString(display, "Name"))
 			}
 			if loreInterface, ok := display["Lore"]; ok {
 				if lore, ok := loreInterface.([]string); ok {
