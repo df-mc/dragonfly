@@ -23,6 +23,7 @@ func ReadItem(data map[string]interface{}, s *item.Stack) item.Stack {
 
 // ReadBlock decodes the data of a block into a world.Block.
 func ReadBlock(m map[string]interface{}) world.Block {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	nameVal, _ := m["name"]
 	name, _ := nameVal.(string)
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
