@@ -167,10 +167,6 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 	binary.LittleEndian.PutUint32(finalisation, 2)
 	_ = p.db.Put(append(key, keyFinalisation), finalisation, nil)
 
-	if len(data.BlockNBT) != 0 {
-		// We only write block NBT if there actually is any.
-		_ = p.db.Put(append(key, keyBlockEntities), data.BlockNBT, nil)
-	}
 	for y, sub := range data.SubChunks {
 		if len(sub) == 0 {
 			// No sub chunk here: Delete it from the database and continue.
