@@ -1184,7 +1184,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	held, _ := p.HeldItems()
-	if _, ok := held.Item().(item.Sword); ok && !p.GameMode().CreativeInventory() {
+	if _, ok := held.Item().(item.Sword); ok && p.GameMode().CreativeInventory() {
 		// Can't break blocks with a sword in creative mode.
 		return
 	}
