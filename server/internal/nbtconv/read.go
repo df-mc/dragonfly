@@ -36,9 +36,15 @@ func ReadBlock(m map[string]interface{}) world.Block {
 
 // readItemStack reads an item.Stack from the NBT in the map passed.
 func readItemStack(m map[string]interface{}) item.Stack {
-	it, _ := world.ItemByName(MapString(m, "Name"), MapInt16(m, "Damage"))
+	var it world.Item
 	if blockItem, ok := MapBlock(m, "Block").(world.Item); ok {
 		it = blockItem
+	}
+	if v, ok := world.ItemByName(MapString(m, "Name"), MapInt16(m, "Damage")); ok {
+		it = v
+	}
+	if it == nil {
+		return item.Stack{}
 	}
 	if n, ok := it.(world.NBTer); ok {
 		it = n.DecodeNBT(m).(world.Item)
