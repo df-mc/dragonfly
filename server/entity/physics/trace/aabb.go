@@ -7,10 +7,16 @@ import (
 	"math"
 )
 
-// RegularResult ...
+// RegularResult is the result of a basic ray trace collision with a bounding box.
 type RegularResult struct {
+	bb   physics.AABB
 	pos  mgl64.Vec3
 	face cube.Face
+}
+
+// AABB ...
+func (r RegularResult) AABB() physics.AABB {
+	return r.bb
 }
 
 // Position ...
@@ -23,7 +29,10 @@ func (r RegularResult) Face() cube.Face {
 	return r.face
 }
 
-// Intercept ...
+// Intercept performs a ray trace and calculates the point on the AABB's edge nearest to the start position that the ray trace
+// collided with.
+// Intercept returns a RegularResult with the colliding vector closest to the start position, if no colliding point was found,
+// it returns nil.
 func Intercept(bb physics.AABB, pos1, pos2 mgl64.Vec3) Result {
 	min, max := bb.Min(), bb.Max()
 	v1 := intermediateX(pos1, pos2, min[0])

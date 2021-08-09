@@ -8,9 +8,12 @@ import (
 	"math"
 )
 
-// TraverseBlocks ...
+// TraverseBlocks performs a ray trace between the start and end coordinates.
+// A function is passed which is called for each voxel, if the function returns true it'll break the loop,
+// causing the function to return.
+// TraverseBlocks returns an error if the start and end positions are the same.
 func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (br bool)) error {
-	dir := end.Sub(end).Normalize()
+	dir := end.Sub(start).Normalize()
 	if dir.LenSqr() <= 0.0 {
 		return fmt.Errorf("start and end points are the same, giving a zero direction vector")
 	}
@@ -18,6 +21,7 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (br bool)) error
 	b := cube.PosFromVec3(start)
 
 	step := signVec3(dir)
+	stepX, stepY, stepZ := cube.Pos{int(math.Floor(step[0]))}, cube.Pos{0, int(math.Floor(step[1]))}, cube.Pos{0, 0, int(math.Floor(step[2]))}
 	max := boundaryVec3(start, dir)
 
 	delta := divideVec3(step, dir)
@@ -32,19 +36,19 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (br bool)) error
 			if max[0] > r {
 				break
 			}
-			b = b.Add(cube.Pos{int(math.Floor(step[0]))})
+			b = b.Add(stepX)
 			max[0] += delta[0]
 		} else if max[1] < max[2] {
 			if max[1] > r {
 				break
 			}
-			b = b.Add(cube.Pos{0, int(math.Floor(step[1]))})
+			b = b.Add(stepY)
 			max[1] += delta[1]
 		} else {
 			if max[2] > r {
 				break
 			}
-			b = b.Add(cube.Pos{0, 0, int(math.Floor(step[2]))})
+			b = b.Add(stepZ)
 			max[2] += delta[2]
 		}
 	}
