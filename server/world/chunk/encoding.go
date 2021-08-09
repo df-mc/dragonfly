@@ -32,6 +32,7 @@ func (diskEncoding) network() byte          { return 0 }
 func (diskEncoding) encoding() nbt.Encoding { return nbt.LittleEndian }
 func (diskEncoding) data2D(c *Chunk) []byte { return append(emptyHeightMap, c.biomes[:]...) }
 func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
+	_ = binary.Write(buf, binary.LittleEndian, uint32(p.Len()))
 	blocks := make([]blockEntry, p.Len())
 	for index, runtimeID := range p.blockRuntimeIDs {
 		// Get the block state registered with the runtime IDs we have in the palette of the block storage
