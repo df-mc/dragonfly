@@ -34,7 +34,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
 func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	data := chunk.NetworkEncode(c)
+	data := chunk.Encode(c, chunk.NetworkEncoding)
 
 	count := byte(0)
 	for y := byte(0); y < 16; y++ {
@@ -97,7 +97,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 
 // sendNetworkChunk sends a network encoded chunk to the client.
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	data := chunk.NetworkEncode(c)
+	data := chunk.Encode(c, chunk.NetworkEncoding)
 
 	count := byte(0)
 	for y := byte(0); y < 16; y++ {

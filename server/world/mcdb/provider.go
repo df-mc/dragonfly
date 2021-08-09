@@ -157,7 +157,7 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 // SaveChunk saves a chunk at the position passed to the leveldb database. Its version is written as the
 // version in the chunkVersion constant.
 func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
-	data := chunk.DiskEncode(c)
+	data := chunk.Encode(c, chunk.DiskEncoding)
 
 	key := index(position)
 	_ = p.db.Put(append(key, keyVersion), []byte{chunkVersion}, nil)
