@@ -54,7 +54,9 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		c   = New(air)
 		err error
 	)
-	copy(c.biomes[:], data.Data2D[512:])
+	if len(data.Data2D) >= 512+256 {
+		copy(c.biomes[:], data.Data2D[512:])
+	}
 
 	for y, sub := range data.SubChunks {
 		if len(sub) == 0 {
