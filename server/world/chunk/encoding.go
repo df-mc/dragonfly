@@ -30,7 +30,7 @@ type diskEncoding struct{}
 
 func (diskEncoding) network() byte          { return 0 }
 func (diskEncoding) encoding() nbt.Encoding { return nbt.LittleEndian }
-func (diskEncoding) data2D(c *Chunk) []byte { return append(c.biomes[:], 0) }
+func (diskEncoding) data2D(c *Chunk) []byte { return append(emptyHeightMap, c.biomes[:]...) }
 func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
 	blocks := make([]blockEntry, p.Len())
 	for index, runtimeID := range p.blockRuntimeIDs {
@@ -76,7 +76,7 @@ type networkEncoding struct{}
 
 func (networkEncoding) network() byte          { return 1 }
 func (networkEncoding) encoding() nbt.Encoding { return nbt.NetworkLittleEndian }
-func (networkEncoding) data2D(c *Chunk) []byte { return append(emptyHeightMap, c.biomes[:]...) }
+func (networkEncoding) data2D(c *Chunk) []byte { return append(c.biomes[:], 0) }
 func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
 	_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	for _, runtimeID := range p.blockRuntimeIDs {
