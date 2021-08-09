@@ -40,10 +40,10 @@ func (r EntityResult) Entity() world.Entity {
 // that the ray trace collided with.
 // EntityIntercept returns a EntityResult with the entity collided with and with the colliding vector closest to the start position,
 // if no colliding point was found, it returns nil.
-func EntityIntercept(e world.Entity, pos1, pos2 mgl64.Vec3) Result {
+func EntityIntercept(e world.Entity, start, end mgl64.Vec3) Result {
 	bb := e.AABB().Translate(e.Position()).Grow(-3.0)
 
-	r := Intercept(bb, pos1, pos2)
+	r := Intercept(bb, start, end)
 	if r == nil {
 		return nil
 	}

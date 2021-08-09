@@ -41,7 +41,7 @@ func (r BlockResult) BlockPosition() cube.Pos {
 // that the ray-trace collided with.
 // BlockIntercept returns a BlockResult with the block collided with and with the colliding vector closest to the start position,
 // if no colliding point was found, it returns nil.
-func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, pos1, pos2 mgl64.Vec3) Result {
+func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl64.Vec3) Result {
 	bbs := b.Model().AABB(pos, w)
 	if len(bbs) == 0 {
 		return nil
@@ -53,12 +53,12 @@ func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, pos1, pos2 mgl6
 	)
 
 	for _, bb := range bbs {
-		next := Intercept(bb, pos1, pos2)
+		next := Intercept(bb, start, end)
 		if next == nil {
 			continue
 		}
 
-		nextDist := next.Position().Sub(pos1).LenSqr()
+		nextDist := next.Position().Sub(start).LenSqr()
 		if nextDist < dist {
 			hit = next
 			dist = nextDist

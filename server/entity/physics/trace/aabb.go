@@ -7,40 +7,40 @@ import (
 	"math"
 )
 
-// RegularResult is the result of a basic ray trace collision with a bounding box.
-type RegularResult struct {
+// AABBResult is the result of a basic ray trace collision with a bounding box.
+type AABBResult struct {
 	bb   physics.AABB
 	pos  mgl64.Vec3
 	face cube.Face
 }
 
 // AABB ...
-func (r RegularResult) AABB() physics.AABB {
+func (r AABBResult) AABB() physics.AABB {
 	return r.bb
 }
 
 // Position ...
-func (r RegularResult) Position() mgl64.Vec3 {
+func (r AABBResult) Position() mgl64.Vec3 {
 	return r.pos
 }
 
 // Face ...
-func (r RegularResult) Face() cube.Face {
+func (r AABBResult) Face() cube.Face {
 	return r.face
 }
 
 // Intercept performs a ray trace and calculates the point on the AABB's edge nearest to the start position that the ray trace
 // collided with.
-// Intercept returns a RegularResult with the colliding vector closest to the start position, if no colliding point was found,
+// Intercept returns a AABBResult with the colliding vector closest to the start position, if no colliding point was found,
 // it returns nil.
-func Intercept(bb physics.AABB, pos1, pos2 mgl64.Vec3) Result {
+func Intercept(bb physics.AABB, start, end mgl64.Vec3) Result {
 	min, max := bb.Min(), bb.Max()
-	v1 := intermediateX(pos1, pos2, min[0])
-	v2 := intermediateX(pos1, pos2, max[0])
-	v3 := intermediateY(pos1, pos2, min[1])
-	v4 := intermediateY(pos1, pos2, max[1])
-	v5 := intermediateZ(pos1, pos2, min[2])
-	v6 := intermediateZ(pos1, pos2, max[2])
+	v1 := intermediateX(start, end, min[0])
+	v2 := intermediateX(start, end, max[0])
+	v3 := intermediateY(start, end, min[1])
+	v4 := intermediateY(start, end, max[1])
+	v5 := intermediateZ(start, end, min[2])
+	v6 := intermediateZ(start, end, max[2])
 
 	if v1 != nil && !bb.Vec3WithinYZ(*v1) {
 		v1 = nil
@@ -71,7 +71,7 @@ func Intercept(bb physics.AABB, pos1, pos2 mgl64.Vec3) Result {
 			continue
 		}
 
-		d := pos1.Dot(*v)
+		d := start.Dot(*v)
 		if d < dist {
 			vec = v
 			dist = d
@@ -98,7 +98,7 @@ func Intercept(bb physics.AABB, pos1, pos2 mgl64.Vec3) Result {
 		f = cube.FaceSouth
 	}
 
-	return RegularResult{pos: *vec, face: f}
+	return AABBResult{pos: *vec, face: f}
 }
 
 // intermediateX ...
@@ -146,4 +146,4 @@ func intermediateZ(a, b mgl64.Vec3, z float64) *mgl64.Vec3 {
 	return &mgl64.Vec3{a[0] + (b[0]-a[0])*f, a[1] + (b[1]-a[1])*f, z}
 }
 
-func (r RegularResult) __() {}
+func (r AABBResult) __() {}
