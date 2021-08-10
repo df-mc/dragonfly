@@ -73,6 +73,8 @@ type World struct {
 
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
+
+	updateLCG int
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -96,6 +98,7 @@ func New(log internal.Logger, simulationDistance int) *World {
 		stopTick:         ctx,
 		cancelTick:       cancel,
 		set:              defaultSettings(),
+		updateLCG:        internal.NextInt(),
 	}
 
 	w.initChunkCache()
@@ -786,6 +789,39 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 }
 
+// CollidingEntities returns the entities colliding with the AABB passed.
+func (w *World) CollidingEntities(aabb physics.AABB) []Entity {
+	if w == nil {
+		return nil
+	}
+
+	// Make an estimate of 16 entities on average.
+	m := make([]Entity, 0, 16)
+
+	// We expand it by 3 blocks in all horizontal directions to account for entities that may be in
+	// neighbouring chunks while having a bounding box that extends into the current one.
+	minPos, maxPos := chunkPosFromVec3(aabb.Min().Sub(mgl64.Vec3{3.0, 0, 3.0})), chunkPosFromVec3(aabb.Max().Add(mgl64.Vec3{3.0, 0, 3.0}))
+
+	for x := minPos[0]; x <= maxPos[0]; x++ {
+		for z := minPos[1]; z <= maxPos[1]; z++ {
+			c, ok := w.chunkFromCache(ChunkPos{x, z})
+			if !ok {
+				// The chunk wasn't loaded, so there are no entities here.
+				continue
+			}
+			c.Lock()
+			for _, entity := range c.entities {
+				if aabb.IntersectsWith(entity.AABB().Translate(entity.Position())) {
+					// The entities AABB was within the AABB, so we add it to the slice to return.
+					m = append(m, entity)
+				}
+			}
+			c.Unlock()
+		}
+	}
+	return m
+}
+
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
 // those which are contained within the AABB when it comes to their position.
 func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
@@ -840,6 +876,30 @@ func OfEntity(e Entity) (*World, bool) {
 	w, ok := entityWorlds[e]
 	worldsMu.RUnlock()
 	return w, ok
+}
+
+const LCGConstant = 1013904223
+
+func (w *World) GetUpdateLGC() int {
+	w.updateLCG = (w.updateLCG * 3) ^ LCGConstant
+	return w.updateLCG
+}
+
+func (w *World) AdjustPosToNearbyEntities(pos ChunkPos) ChunkPos {
+	return ChunkPos{0, 0}
+}
+
+func (w *World) StrikeLightning(pos ChunkPos) {
+	if internal.NextIntn(10000) == 0 {
+		w.StrikeLightningNow(pos)
+	}
+}
+
+func (w *World) StrikeLightningNow(pos ChunkPos) {
+	//LCG := int32(w.GetUpdateLGC() >> 2)
+	//
+	//chunkX, chunkZ := pos.X(), pos.Z()
+	//vec := w.AdjustPosToNearbyEntities(ChunkPos{chunkX + (LCG & 0xf), chunkZ + (LCG >> 8 & 0xf)})
 }
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
