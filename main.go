@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
@@ -57,13 +56,4 @@ func readConfig() (server.Config, error) {
 		return c, fmt.Errorf("error decoding config: %v", err)
 	}
 	return c, nil
-}
-
-// TODO TESTING ENTITY
-
-type TestEntity struct{}
-
-func (t TestEntity) Run(source cmd.Source, output *cmd.Output) {
-	output.Printf("Spawning entity")
-
 }
