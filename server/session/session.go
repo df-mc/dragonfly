@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/recipes"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -62,7 +63,10 @@ type Session struct {
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
 	openedWindow, openedPos        atomic.Value
+	openedContainerID              atomic.Uint32
 	swingingArm                    atomic.Bool
+
+	recipeMapping map[uint32]recipes.Recipe
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
@@ -128,6 +132,8 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log internal.Logger, joinMess
 func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
+
+	s.recipeMapping = make(map[uint32]recipes.Recipe)
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = c
 
@@ -154,6 +160,8 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
+
+	s.sendRecipes()
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
 
@@ -238,6 +246,22 @@ func (s *Session) handlePackets() {
 			return
 		}
 	}
+}
+
+// getCraftingSize gets the crafting size based on the opened container ID.
+func (s *Session) getCraftingSize() byte {
+	if s.openedContainerID.Load() == 1 {
+		return craftingSizeLarge
+	}
+	return craftingSizeSmall
+}
+
+// getCraftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) getCraftingOffset() byte {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
 }
 
 // sendChunks continuously sends chunks to the player, until a value is sent to the closeChan passed.

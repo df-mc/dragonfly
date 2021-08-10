@@ -14,6 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/recipes"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -46,6 +47,11 @@ func (s *Session) SendRespawn() {
 	})
 }
 
+// sendRecipes sends the current crafting recipes to the session.
+func (s *Session) sendRecipes() {
+	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+}
+
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
@@ -59,6 +65,15 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 const (
+	craftingSizeSmall       = 4
+	craftingSizeLarge       = 9
+	craftingGridSmallOffset = 28
+	craftingGridLargeOffset = 32
+	craftingResultIndex     = 50
+	craftingFlagAll         = 32767
+)
+
+const (
 	containerArmour         = 6
 	containerChest          = 7
 	containerBeacon         = 8
@@ -67,9 +82,11 @@ const (
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
+	containerCraftingOffset = 46
 	containerBarrel         = 57
 	containerCursor         = 58
 	containerCreativeOutput = 59
+	containerCraftingResult = containerCraftingGrid + containerCraftingOffset
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -548,6 +565,68 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	}
 	s := item.NewStack(t, int(it.Count))
 	return nbtconv.ItemFromNBT(it.NBTData, &s)
+}
+
+// itemToRecipeIngredientItem converts a recipe.Item into a type that can be used over the protocol.
+func itemToRecipeIngredientItem(s recipes.Item) protocol.RecipeIngredientItem {
+	if s.Item() == nil {
+		return protocol.RecipeIngredientItem{}
+	}
+	rid, meta, ok := world.ItemRuntimeID(s.Item())
+	if !ok {
+		panic("should never happen")
+	}
+
+	if s.AppliesToAll {
+		meta = craftingFlagAll
+	}
+
+	return protocol.RecipeIngredientItem{
+		NetworkID:     rid,
+		MetadataValue: int32(meta),
+		Count:         int32(s.Count()),
+	}
+}
+
+// itemsToRecipeIngredientItems converts a list of recipe.Items into a type that can be used over the protocol.
+func itemsToRecipeIngredientItems(s []recipes.Item) (r []protocol.RecipeIngredientItem) {
+	for _, st := range s {
+		r = append(r, itemToRecipeIngredientItem(st))
+	}
+	return
+}
+
+// protocolRecipes returns all recipes as protocol recipes.
+func (s *Session) protocolRecipes() []protocol.Recipe {
+	recipeList := make([]protocol.Recipe, 0, len(recipes.All()))
+	for index, i := range recipes.All() {
+		networkID := uint32(index) + 1
+		s.recipeMapping[networkID] = i
+
+		switch newRecipe := i.(type) {
+		case recipes.ShapelessRecipe:
+			recipeList = append(recipeList, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
+				Output:          []protocol.ItemStack{stackFromItem(newRecipe.Output)},
+				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shapeless recipes are added.
+				Priority:        newRecipe.Priority,
+				RecipeNetworkID: networkID,
+			})
+		case recipes.ShapedRecipe:
+			recipeList = append(recipeList, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Width:           newRecipe.Dimensions.Width,
+				Height:          newRecipe.Dimensions.Height,
+				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
+				Output:          []protocol.ItemStack{stackFromItem(newRecipe.Output)},
+				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shaped recipes are added.
+				Priority:        newRecipe.Priority,
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	return recipeList
 }
 
 // creativeItems returns all creative inventory items as protocol item stacks.
