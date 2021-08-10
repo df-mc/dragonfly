@@ -742,13 +742,15 @@ func (p *Player) Respawn() {
 		return
 	}
 	pos := p.World().Spawn().Vec3Middle()
-	p.handler().HandleRespawn(&pos)
+	w := p.World()
+
+	p.handler().HandleRespawn(w, &pos)
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
 	p.Extinguish()
 
-	p.World().AddEntity(p)
+	w.AddEntity(p)
 	p.SetVisible()
 
 	p.Teleport(pos)

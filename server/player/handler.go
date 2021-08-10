@@ -41,7 +41,7 @@ type Handler interface {
 	HandleDeath(src damage.Source)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos.
-	HandleRespawn(pos *mgl64.Vec3)
+	HandleRespawn(w *world.World, pos *mgl64.Vec3)
 	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
 	HandleSkinChange(ctx *event.Context, skin skin.Skin)
@@ -182,7 +182,7 @@ func (NopHandler) HandleFoodLoss(*event.Context, int, int) {}
 func (NopHandler) HandleDeath(damage.Source) {}
 
 // HandleRespawn ...
-func (NopHandler) HandleRespawn(*mgl64.Vec3) {}
+func (NopHandler) HandleRespawn(*world.World, *mgl64.Vec3) {}
 
 // HandleQuit ...
 func (NopHandler) HandleQuit() {}
