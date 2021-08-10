@@ -100,7 +100,7 @@ func writeDisplay(m map[string]interface{}, s item.Stack) {
 func writeDamage(m map[string]interface{}, s item.Stack, disk bool) {
 	if v, ok := m["Damage"]; !ok || v.(int16) == 0 {
 		if _, ok := s.Item().(item.Durable); ok {
-			if !disk {
+			if disk {
 				m["Damage"] = int16(s.MaxDurability() - s.Durability())
 			} else {
 				m["Damage"] = int32(s.MaxDurability() - s.Durability())

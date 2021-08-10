@@ -831,8 +831,6 @@ func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
 	// Make an estimate of 16 entities on average.
 	m := make([]Entity, 0, 16)
 
-	// We expand it by 3 blocks in all horizontal directions to account for entities that may be in
-	// neighbouring chunks while having a bounding box that extends into the current one.
 	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
 
 	for x := minPos[0]; x <= maxPos[0]; x++ {

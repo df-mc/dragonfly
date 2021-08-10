@@ -83,6 +83,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.CommandsEnabled = true
 	p.d.MultiPlayerGame = true
 	p.d.SpawnY = math.MaxInt32
+	p.d.Difficulty = 2
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
