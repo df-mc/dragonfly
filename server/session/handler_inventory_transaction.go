@@ -2,17 +2,13 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"time"
 )
 
 // InventoryTransactionHandler handles the InventoryTransaction packet.
-type InventoryTransactionHandler struct {
-	lastUseItemOnBlock time.Time
-}
+type InventoryTransactionHandler struct{}
 
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
@@ -128,25 +124,12 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
-		if _, ok := s.c.World().Block(pos).(block.Farmland); ok {
-			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
-			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
-			// UseItem action, so we just release immediately after if that happens to be the case.
-			h.lastUseItemOnBlock = time.Now()
-		}
-
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
 		s.sendInv(s.inv, protocol.WindowIDInventory)
 		s.c.UseItemOnBlock(pos, cube.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
-		if time.Since(h.lastUseItemOnBlock) < time.Second/20 {
-			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
-			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
-			// UseItem action, so we just release immediately after if that happens to be the case.
-			s.c.ReleaseItem()
-		}
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
 	}

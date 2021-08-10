@@ -996,13 +996,14 @@ func (p *Player) UseItem() {
 
 				held, left := p.HeldItems()
 				if duration < usable.ConsumeDuration() {
-					// The required duration for consuming this item was not met, so we don't consume it.
+					// The required duration for consuming this item was not met, so we don't consume it and stop
+					// consuming.
+					p.ReleaseItem()
 					return
 				}
 				p.SetHeldItems(p.subtractItem(held, 1), left)
 				p.addNewItem(&item.UseContext{NewItem: usable.Consume(p.World(), p)})
 				p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
-				return
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()
