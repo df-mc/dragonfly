@@ -1,12 +1,14 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
-	math "github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"sync/atomic"
+	"time"
 )
 
 // Lightning is a lethal element to thunderstorms. Lightning momentarily increases the skylight's brightness to slightly greater than full daylight.
@@ -21,7 +23,7 @@ type Lightning struct {
 func NewLightning(pos mgl64.Vec3) *Lightning {
 	li := &Lightning{
 		state:    2,
-		liveTime: math.NextIntn(3) + 1,
+		liveTime: nextInt(3) + 1,
 	}
 	li.pos.Store(pos)
 
@@ -93,7 +95,7 @@ func (li *Lightning) Tick(_ int64) {
 		if li.liveTime == 0 {
 			_ = li.Close()
 			return
-		} else if li.state < -math.NextIntn(10) {
+		} else if li.state < -nextInt(10) {
 			li.liveTime--
 			li.state = 1
 
@@ -105,6 +107,18 @@ func (li *Lightning) Tick(_ int64) {
 		bb := li.AABB().Grow(3)
 		bb.Extend(mgl64.Vec3{bb.Max().X() + 6})
 
-		// TODO get all colliding entities in the aabb, and then damage them
+		for _, e := range li.World().CollidingEntities(bb) {
+			if l, ok := e.(Living); ok && l.Health() <= 0 { // there's no point in damaging entities that are already dead
+				l.Hurt(5, damage.SourceLightning{})
+				if f, ok := e.(Flammable); ok && f.OnFireDuration() < 8*20 {
+					f.SetOnFire(8)
+				}
+			}
+		}
 	}
+}
+
+func nextInt(max int) int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(max)
 }
