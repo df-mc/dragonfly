@@ -3,7 +3,9 @@ package world
 import (
 	"context"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -876,6 +878,10 @@ func OfEntity(e Entity) (*World, bool) {
 	return w, ok
 }
 
+func (w *World) CanBlockSeeSky(pos mgl64.Vec3) bool {
+	return w.HighestBlock(int(pos.X()), int(pos.Z())) < int(pos.Y())
+}
+
 const LCGConstant = 1013904223
 
 func (w *World) GetUpdateLGC() int {
@@ -883,8 +889,26 @@ func (w *World) GetUpdateLGC() int {
 	return w.updateLCG
 }
 
-func (w *World) AdjustPosToNearbyEntities(pos ChunkPos) ChunkPos {
-	return ChunkPos{0, 0}
+func (w *World) AdjustPosToNearbyEntities(pos mgl64.Vec3) mgl64.Vec3 {
+	pos = mgl64.Vec3{pos.X(), float64(w.HighestBlock(internal.Floor(pos.X()), internal.Floor(pos.Z()))), pos.Z()}
+	aabb := physics.NewAABB(pos, mgl64.Vec3{pos.X(), 255, pos.Z()}).Extend(mgl64.Vec3{3, 3, 3})
+	var list []mgl64.Vec3
+
+	for _, e := range w.CollidingEntities(aabb) {
+		if l, ok := e.(entity.Living); ok && l.Health() <= 0 && w.CanBlockSeeSky(l.Position()) {
+			list = append(list, l.Position())
+		}
+	}
+
+	if len(list) > 0 {
+		return list[internal.NextIntn(len(list))]
+	} else {
+		if pos.Y() == -1 {
+			pos = pos.Add(mgl64.Vec3{0, 2, 0})
+		}
+
+		return pos
+	}
 }
 
 func (w *World) StrikeLightning(pos ChunkPos) {
@@ -894,10 +918,20 @@ func (w *World) StrikeLightning(pos ChunkPos) {
 }
 
 func (w *World) StrikeLightningNow(pos ChunkPos) {
-	//LCG := int32(w.GetUpdateLGC() >> 2)
-	//
-	//chunkX, chunkZ := pos.X(), pos.Z()
-	//vec := w.AdjustPosToNearbyEntities(ChunkPos{chunkX + (LCG & 0xf), chunkZ + (LCG >> 8 & 0xf)})
+	LCG := int32(w.GetUpdateLGC() >> 2)
+
+	chunkX, chunkZ := pos.X(), pos.Z()
+	vec := w.AdjustPosToNearbyEntities(mgl64.Vec3{float64(chunkX + (LCG & 0xf)), 0, float64(chunkZ + (LCG >> 8 & 0xf))})
+
+	blockType := w.Block(cube.Pos{internal.Floor(vec.X()) & 0xf, internal.Floor(vec.Y()), internal.Floor(vec.Z()) & 0xf})
+
+	_, tallGrass := blockType.(block.TallGrass)
+	_, flowingWater := blockType.(block.Water)
+	if !tallGrass && !flowingWater {
+		vec = vec.Add(mgl64.Vec3{0, 1, 0})
+	}
+
+	entity.NewLightning(vec)
 }
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world
