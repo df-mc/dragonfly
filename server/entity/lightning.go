@@ -106,8 +106,4 @@ func (li *Lightning) Tick(_ int64) {
 	}
 }
 
-func nextInt(max int) int {
-	return rand.Intn(max)
-}
-
 var setBlocksOnFire func(w *world.World, lPos mgl64.Vec3)
