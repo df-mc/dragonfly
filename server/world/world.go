@@ -73,6 +73,8 @@ type World struct {
 
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
+
+	updateLCG int
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -96,6 +98,7 @@ func New(log internal.Logger, simulationDistance int) *World {
 		stopTick:         ctx,
 		cancelTick:       cancel,
 		set:              defaultSettings(),
+		updateLCG:        rand.Int(),
 	}
 
 	w.initChunkCache()
@@ -208,6 +211,12 @@ func (w *World) HighestBlock(x, z int) int {
 	v := c.HighestBlock(uint8(x), uint8(z))
 	c.Unlock()
 	return int(v)
+}
+
+const LCGConstant = 1013904223
+func (w *World) GetUpdateLGC() int {
+	w.updateLCG = (w.updateLCG * 3) ^ LCGConstant
+	return w.updateLCG
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -1206,6 +1215,14 @@ func (w *World) startTicking() {
 	}
 }
 
+var (
+	shouldUpdateRain = false
+	updateRain = false
+
+	shouldUpdateThunder = false
+	updateThunder = false
+)
+
 // tick ticks the world and updates the time, blocks and entities that require updates.
 func (w *World) tick() {
 	viewers := w.allViewers()
@@ -1229,13 +1246,15 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.SetRaining(w.set.RainLevel <= 0)
+			shouldUpdateRain = true
+			updateRain = w.set.RainLevel <= 0
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.SetThunder(w.set.ThunderLevel <= 0)
+			shouldUpdateThunder = true
+			updateThunder = w.set.ThunderLevel <= 0
 		}
 	}
 	w.mu.Unlock()
@@ -1246,17 +1265,30 @@ func (w *World) tick() {
 		}
 	}
 
-	//if w.IsThundering() {
-	//	for pos := range w.chunks {
-	//		// TODO Handle lightning
-	//		// w.AddEntity(entity.NewLightning())
-	//	}
-	//}
+	if shouldUpdateRain {
+		w.SetRaining(updateRain)
+		shouldUpdateRain, updateRain = false, false
+	}
+
+	if shouldUpdateThunder {
+		w.SetThunder(updateThunder)
+		shouldUpdateThunder, updateThunder = false, false
+	}
+
+	if w.IsThundering() {
+		if rand.Intn(10000) == 0 {
+			for pos := range w.chunks {
+				performThunder(w, pos)
+			}
+		}
+	}
 
 	w.tickEntities(tick)
 	w.tickRandomBlocks(viewers, tick)
 	w.tickScheduledBlocks(tick)
 }
+
+var performThunder func(w *World, pos ChunkPos)
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
 // execution.
