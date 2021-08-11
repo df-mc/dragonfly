@@ -1740,6 +1740,9 @@ func (p *Player) checkCollisions() {
 						if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
 							onGround = true
 							p.onGround.Store(onGround)
+						} else {
+							onGround = false
+							p.onGround.Store(onGround)
 						}
 					}
 				}
