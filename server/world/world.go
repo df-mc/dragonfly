@@ -1564,12 +1564,10 @@ func (w *World) tickEntities(tick int64) {
 
 // SetRaining toggles raining depending on the raining argument.
 func (w *World) SetRaining(raining bool) {
-	var level int
+	level := 0
 	if raining {
 		level = 1
-	} else {
-		level = 0
-	} // Go developers, can you please add the ternary operator? :)
+	}
 	w.setRainLevel(level)
 
 	for _, v := range w.allViewers() {
@@ -1589,12 +1587,10 @@ func (w *World) SetThunder(thundering bool) {
 		w.SetRaining(true)
 	}
 
-	var level int
+	level := 0
 	if thundering {
 		level = 1
-	} else {
-		level = 0
-	} // Go developers, can you please add the ternary operator? :)
+	}
 	w.setThunderLevel(level)
 
 	for _, v := range w.allViewers() {
