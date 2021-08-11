@@ -25,6 +25,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -56,6 +57,11 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
+}
+
+func init() {
+	// Seeding the random for things like lightning that need to use RNG.
+	rand.Seed(time.Now().UnixNano())
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
