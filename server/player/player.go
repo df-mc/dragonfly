@@ -885,6 +885,17 @@ func (p *Player) Immobile() bool {
 	return p.immobile.Load()
 }
 
+// FireProof checks if the Player is currently fire proof. True is returned if the player has a FireResistance effect or
+// if it is in creative mode.
+func (p *Player) FireProof() bool {
+	for _, e := range p.Effects() {
+		if _, ok := e.Type().(effect.FireResistance); ok {
+			return true
+		}
+	}
+	return !p.GameMode().AllowsTakingDamage()
+}
+
 // OnFireDuration ...
 func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks.Load()) * time.Second / 20
