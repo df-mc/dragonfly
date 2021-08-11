@@ -74,13 +74,15 @@ func (li *Lightning) Name() string {
 
 // Tick ...
 func (li *Lightning) Tick(_ int64) {
+	pos, w := li.Position(), li.World()
 	if li.state == 2 { // Init phase
-		li.World().PlaySound(li.Position(), sound.Thunder{})
-		li.World().PlaySound(li.Position(), sound.Explosion{})
+		w.PlaySound(pos, sound.Thunder{})
+		w.PlaySound(pos, sound.Explosion{})
 
-		bb := li.AABB().Grow(9).Extend(mgl64.Vec3{6})
-		for _, e := range li.World().CollidingEntities(bb) {
-			if l, ok := e.(Living); ok && l.Health() > 0 { // there's no point in damaging entities that are already dead
+		bb := li.AABB().Translate(pos).Grow(3)
+		for _, e := range w.CollidingEntities(bb) {
+			// Only damage entities that weren't already dead.
+			if l, ok := e.(Living); ok && l.Health() > 0 {
 				l.Hurt(5, damage.SourceLightning{})
 				if f, ok := e.(Flammable); ok && f.OnFireDuration() < 8*20 {
 					f.SetOnFire(time.Second * 8)
@@ -88,7 +90,7 @@ func (li *Lightning) Tick(_ int64) {
 			}
 		}
 
-		setBlocksOnFire(li.World(), li.Position())
+		setBlocksOnFire(w, pos)
 	}
 
 	li.state--
@@ -96,12 +98,11 @@ func (li *Lightning) Tick(_ int64) {
 	if li.state < 0 {
 		if li.liveTime == 0 {
 			_ = li.Close()
-			return
 		} else if li.state < -rand.Intn(10) {
 			li.liveTime--
 			li.state = 1
 
-			setBlocksOnFire(li.World(), li.Position())
+			setBlocksOnFire(w, pos)
 		}
 	}
 }
