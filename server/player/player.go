@@ -1726,7 +1726,6 @@ func (p *Player) starve() {
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions() {
 	w := p.World()
-	pos := p.Position()
 
 	aabb := p.AABB().Translate(p.Position())
 	grown := aabb.Grow(0.25)
@@ -1740,7 +1739,7 @@ func (p *Player) checkBlockCollisions() {
 				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
 				for _, bb := range b.Model().AABB(blockPos, w) {
-					if aabb.IntersectsWith(bb.Translate(pos)) {
+					if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
 						if collide, ok := b.(block.EntityCollider); ok {
 							collide.EntityCollide(p)
 						}
