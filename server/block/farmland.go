@@ -17,8 +17,6 @@ type Farmland struct {
 	Hydration int
 }
 
-//TODO: Add crop trampling
-
 // SoilFor ...
 func (f Farmland) SoilFor(block world.Block) bool {
 	switch block.(type) {
@@ -91,4 +89,14 @@ func allFarmland() (b []world.Block) {
 		b = append(b, Farmland{Hydration: i})
 	}
 	return
+}
+
+// EntityCollide ...
+func (f Farmland) EntityCollide(e world.Entity, pos cube.Pos) {
+	if fallEntity, ok := e.(FallDistanceEntity); ok {
+		fallDistance := fallEntity.FallDistance()
+		if fallDistance > 0.10 { // CloudBurst uses 0.75, but 0.10 feels more reliable.
+			e.World().PlaceBlock(pos, Dirt{})
+		}
+	}
 }

@@ -53,7 +53,7 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 }
 
 // EntityCollide ...
-func (Ladder) EntityCollide(e world.Entity) {
+func (Ladder) EntityCollide(e world.Entity, _ cube.Pos) {
 	if fallEntity, ok := e.(FallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}

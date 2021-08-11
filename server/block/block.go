@@ -216,13 +216,15 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 // EntityCollider is an interface for blocks with special behaviors on entity collision.
 type EntityCollider interface {
 	// EntityCollide is called on entity collision.
-	EntityCollide(e world.Entity)
+	EntityCollide(e world.Entity, pos cube.Pos)
 }
 
 // FallDistanceEntity is an entity that has a fall distance.
 type FallDistanceEntity interface {
 	// ResetFallDistance resets the entities fall distance.
 	ResetFallDistance()
+	// FallDistance gets the entities fall distance.
+	FallDistance() float64
 }
 
 // InstrumentBlock represents a block that creates a note block sound other than the piano.

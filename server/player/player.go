@@ -253,6 +253,11 @@ func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)
 }
 
+// FallDistance gets the player's fall distance.
+func (p *Player) FallDistance() float64 {
+	return p.fallDistance.Load()
+}
+
 // SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
 // and the text it shows.
 // If non-empty, the subtitle is shown in a smaller font below the title. The same counts for the action text
@@ -1745,7 +1750,7 @@ func (p *Player) checkCollisions() {
 				}
 
 				if collide, ok := b.(block.EntityCollider); ok {
-					collide.EntityCollide(p)
+					collide.EntityCollide(p, bPos)
 				}
 			}
 		}
