@@ -246,13 +246,13 @@ func init() {
 		_, isNormal := w.Difficulty().(world.DifficultyNormal)
 		_, isHard := w.Difficulty().(world.DifficultyHard)
 		if isNormal || isHard { // difficulty >= 2
-			bPos := cube.Pos{int(lPos.X()), int(lPos.Y()), int(lPos.Z())}
+			bPos := cube.PosFromVec3(lPos)
 			b := w.Block(bPos)
 			_, isAir := b.(Air)
 			_, isTallGrass := b.(TallGrass)
 			if isAir || isTallGrass {
-				below := w.Block(bPos.Side(0 /* cube.FaceDown */))
-				if below.Model().FaceSolid(bPos, 1 /* cube.FaceUp */, w) || neighboursFlammable(bPos, w) {
+				below := w.Block(bPos.Side(cube.FaceDown))
+				if below.Model().FaceSolid(bPos, cube.FaceUp, w) || neighboursFlammable(bPos, w) {
 					w.PlaceBlock(bPos, Fire{})
 				}
 			}

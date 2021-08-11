@@ -23,7 +23,7 @@ type Lightning struct {
 func NewLightning(pos mgl64.Vec3) *Lightning {
 	li := &Lightning{
 		state:    2,
-		liveTime: nextInt(3) + 1,
+		liveTime: rand.Intn(3) + 1,
 	}
 	li.pos.Store(pos)
 
@@ -46,17 +46,9 @@ func (Lightning) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{})
 }
 
-// State ...
-func (li *Lightning) State() int {
-	return li.state
-}
-
 // Close closes the lighting.
 func (li *Lightning) Close() error {
-	if li.World() != nil {
-		li.World().RemoveEntity(li)
-	}
-
+	li.World().RemoveEntity(li)
 	return nil
 }
 
@@ -93,7 +85,6 @@ func (li *Lightning) Tick(_ int64) {
 				if f, ok := e.(Flammable); ok && f.OnFireDuration() < 8*20 {
 					f.SetOnFire(time.Second * 8)
 				}
-				// TODO Check if the entity is a creeper, if so, make it an supercharged creeper
 			}
 		}
 
@@ -106,7 +97,7 @@ func (li *Lightning) Tick(_ int64) {
 		if li.liveTime == 0 {
 			_ = li.Close()
 			return
-		} else if li.state < -nextInt(10) {
+		} else if li.state < -rand.Intn(10) {
 			li.liveTime--
 			li.state = 1
 
@@ -116,7 +107,6 @@ func (li *Lightning) Tick(_ int64) {
 }
 
 func nextInt(max int) int {
-	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(max)
 }
 
