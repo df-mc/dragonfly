@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
@@ -88,7 +86,18 @@ func (li *Lightning) Tick(_ int64) {
 		li.World().PlaySound(li.Position(), sound.Thunder{})
 		li.World().PlaySound(li.Position(), sound.Explosion{})
 
-		li.setBlocksOnFire()
+		bb := li.AABB().Grow(9).Extend(mgl64.Vec3{6})
+		for _, e := range li.World().CollidingEntities(bb) {
+			if l, ok := e.(Living); ok && l.Health() > 0 { // there's no point in damaging entities that are already dead
+				l.Hurt(5, damage.SourceLightning{})
+				if f, ok := e.(Flammable); ok && f.OnFireDuration() < 8*20 {
+					f.SetOnFire(time.Second * 8)
+				}
+				// TODO Check if the entity is a creeper, if so, make it an supercharged creeper
+			}
+		}
+
+		setBlocksOnFire(li.World(), li.Position())
 	}
 
 	li.state--
@@ -101,24 +110,7 @@ func (li *Lightning) Tick(_ int64) {
 			li.liveTime--
 			li.state = 1
 
-			li.setBlocksOnFire()
-		}
-	}
-
-	// I am not entirely sure how many times we should damage the player, since this nearly insta-kills it.
-	// Default MC behavior is "li.state >= 0", but this definitely insta-kills the player if it's colliding with the AABB of the lightning bolt
-	// due to the state being reset ~5 times (depends on rand.Intn), dealing 5 * 5 damage, and 4 * 5 is already enough to insta-kill it.
-	if li.state == 0 {
-		bb := li.AABB().Grow(9).Extend(mgl64.Vec3{6})
-
-		for _, e := range li.World().CollidingEntities(bb) {
-			if l, ok := e.(Living); ok && l.Health() > 0 { // there's no point in damaging entities that are already dead
-				l.Hurt(5, damage.SourceLightning{})
-				if f, ok := e.(Flammable); ok && f.OnFireDuration() < 8*20 {
-					f.SetOnFire(time.Second * 8)
-				}
-				// TODO Check if the entity is a creeper, if so, make it an supercharged creeper
-			}
+			setBlocksOnFire(li.World(), li.Position())
 		}
 	}
 }
@@ -128,21 +120,4 @@ func nextInt(max int) int {
 	return rand.Intn(max)
 }
 
-func (li *Lightning) setBlocksOnFire() {
-	_, isNormal := li.World().Difficulty().(world.DifficultyNormal)
-	_, isHard := li.World().Difficulty().(world.DifficultyHard)
-	if isNormal || isHard { // difficulty >= 2
-		lPos := li.Position()
-		bPos := cube.Pos{int(lPos.X()), int(lPos.Y()), int(lPos.Z())}
-		b := li.World().Block(bPos)
-
-		_, isAir := b.(block.Air)
-		_, isTallGrass := b.(block.TallGrass)
-		if isAir || isTallGrass {
-			below := li.World().Block(bPos.Side(cube.FaceDown))
-			if below.Model().FaceSolid(bPos, cube.FaceUp, li.World()) || block.NeighboursFlammable(bPos, li.World()) {
-				li.World().PlaceBlock(bPos, block.Fire{})
-			}
-		}
-	}
-}
+var setBlocksOnFire func(w *world.World, lPos mgl64.Vec3)

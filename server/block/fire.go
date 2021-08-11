@@ -1,12 +1,16 @@
 package block
 
+//lint:file-ignore ST1022 Exported variables in this package have compiler directives. These variables are not otherwise exposed to users.
+
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
+	_ "unsafe" // Imported for compiler directives.
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.
@@ -231,4 +235,27 @@ func allFire() (b []world.Block) {
 		b = append(b, Fire{Age: i, Type: SoulFire()})
 	}
 	return
+}
+
+//go:linkname block_setBlocksOnFire github.com/df-mc/dragonfly/server/entity.setBlocksOnFire
+//noinspection ALL
+var block_setBlocksOnFire func(w *world.World, lPos mgl64.Vec3)
+
+func init() {
+	block_setBlocksOnFire = func(w *world.World, lPos mgl64.Vec3) {
+		_, isNormal := w.Difficulty().(world.DifficultyNormal)
+		_, isHard := w.Difficulty().(world.DifficultyHard)
+		if isNormal || isHard { // difficulty >= 2
+			bPos := cube.Pos{int(lPos.X()), int(lPos.Y()), int(lPos.Z())}
+			b := w.Block(bPos)
+			_, isAir := b.(Air)
+			_, isTallGrass := b.(TallGrass)
+			if isAir || isTallGrass {
+				below := w.Block(bPos.Side(0 /* cube.FaceDown */))
+				if below.Model().FaceSolid(bPos, 1 /* cube.FaceUp */, w) || NeighboursFlammable(bPos, w) {
+					w.PlaceBlock(bPos, Fire{})
+				}
+			}
+		}
+	}
 }
