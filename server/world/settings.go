@@ -14,6 +14,16 @@ type Settings struct {
 	Time int64
 	// TimeCycle specifies if the time should advance every tick. If set to false, time won't change.
 	TimeCycle bool
+	// RainTime is the current rain time of the World. It advances every tick if WeatherCycle is set to true.
+	RainTime int32
+	// RainLevel is the current rain level of the World.
+	RainLevel float32
+	// ThunderTime is the current thunder time of the World. It advances every tick if WeatherCycle is set to true.
+	ThunderTime int32
+	// Thunder is the current thunder level of the World.
+	ThunderLevel float32
+	// WeatherCycle specifies if weather should be enabled in this world. If set to false, weather will be disabled.
+	WeatherCycle bool
 	// CurrentTick is the current tick of the world. This is similar to the Time, except that it has no visible effect
 	// to the client. It can also not be changed through commands and will only ever go up.
 	CurrentTick int64
@@ -26,5 +36,5 @@ type Settings struct {
 
 // defaultSettings returns the default Settings for a new World.
 func defaultSettings() Settings {
-	return Settings{Name: "World", DefaultGameMode: GameModeSurvival{}, Difficulty: DifficultyNormal{}, TimeCycle: true}
+	return Settings{Name: "World", DefaultGameMode: GameModeSurvival{}, Difficulty: DifficultyNormal{}, TimeCycle: true, WeatherCycle: true}
 }

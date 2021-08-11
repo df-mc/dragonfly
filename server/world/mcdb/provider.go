@@ -67,6 +67,7 @@ func New(dir string) (*Provider, error) {
 // initDefaultLevelDat initialises a default level.dat file.
 func (p *Provider) initDefaultLevelDat() {
 	p.d.DoDayLightCycle = true
+	p.d.DoWeatherCycle = true
 	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.LevelName = "World"
 	p.d.GameType = 1
@@ -93,6 +94,11 @@ func (p *Provider) Settings() world.Settings {
 		Spawn:           cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)},
 		Time:            p.d.Time,
 		TimeCycle:       p.d.DoDayLightCycle,
+		WeatherCycle:    p.d.DoWeatherCycle,
+		RainTime:        p.d.RainTime,
+		RainLevel:       p.d.RainLevel,
+		ThunderTime:     p.d.LightningTime,
+		ThunderLevel:    p.d.LightningLevel,
 		CurrentTick:     p.d.CurrentTick,
 		DefaultGameMode: p.LoadDefaultGameMode(),
 		Difficulty:      p.LoadDifficulty(),
@@ -105,6 +111,9 @@ func (p *Provider) SaveSettings(s world.Settings) {
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
 	p.d.Time = s.Time
 	p.d.DoDayLightCycle = s.TimeCycle
+	p.d.DoWeatherCycle = s.WeatherCycle
+	p.d.RainTime, p.d.RainLevel = s.RainTime, s.RainLevel
+	p.d.LightningTime, p.d.LightningLevel = s.ThunderTime, s.ThunderLevel
 	p.d.CurrentTick = s.CurrentTick
 	p.SaveDefaultGameMode(s.DefaultGameMode)
 	p.SaveDifficulty(s.Difficulty)

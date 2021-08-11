@@ -655,7 +655,7 @@ func (w *World) StartTime() {
 	w.enableTimeCycle(true)
 }
 
-// enableTimeCycle enables or disables the time cycling of tthe World.
+// enableTimeCycle enables or disables the time cycling of the World.
 func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
 		return
@@ -663,6 +663,78 @@ func (w *World) enableTimeCycle(v bool) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.set.TimeCycle = v
+}
+
+// ToggleWeatherCycle enables or disables weather of the World.
+func (w *World) ToggleWeatherCycle(v bool) {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.WeatherCycle = v
+}
+
+// setRainTime sets the rain time.
+func (w *World) setRainTime(new int) {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	w.set.RainTime = int32(new)
+	w.mu.Unlock()
+}
+
+// setRainLevel sets the rain level.
+func (w *World) setRainLevel(new int) {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	w.set.RainLevel = float32(new)
+	w.mu.Unlock()
+}
+
+// setThunderTime sets the thunder time.
+func (w *World) setThunderTime(new int) {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	w.set.ThunderTime = int32(new)
+	w.mu.Unlock()
+}
+
+// setThunderLevel sets the thunder level.
+func (w *World) setThunderLevel(new int) {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	w.set.ThunderLevel = float32(new)
+	w.mu.Unlock()
+}
+
+// IsRaining returns a bool that decides whether it is raining or not.
+func (w *World) IsRaining() bool {
+	if w == nil {
+		return false
+	}
+	w.mu.Lock()
+	a := w.set.RainLevel > 0
+	w.mu.Unlock()
+	return a
+}
+
+// IsThundering returns a bool that decides whether it is thundering or not.
+func (w *World) IsThundering() bool {
+	if w == nil {
+		return false
+	}
+	w.mu.Lock()
+	a := w.set.ThunderLevel > 0
+	w.mu.Unlock()
+	return a
 }
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
@@ -1149,6 +1221,23 @@ func (w *World) tick() {
 		w.set.Time++
 	}
 	t := int(w.set.Time)
+
+	if w.set.WeatherCycle {
+		// Tick Weather
+		// NOTE: All of the following numbers/calculations you see are from default Minecraft.
+
+		// Raining
+		w.set.RainTime--
+		if w.set.RainTime <= 0 {
+			w.SetRaining(w.set.RainLevel <= 0)
+		}
+
+		// Thunder
+		w.set.ThunderTime--
+		if w.set.ThunderTime <= 0 {
+			w.SetThunder(w.set.ThunderLevel <= 0)
+		}
+	}
 	w.mu.Unlock()
 
 	if tick%20 == 0 {
@@ -1156,6 +1245,13 @@ func (w *World) tick() {
 			viewer.ViewTime(t)
 		}
 	}
+
+	//if w.IsThundering() {
+	//	for pos := range w.chunks {
+	//		// TODO Handle lightning
+	//		// w.AddEntity(entity.NewLightning())
+	//	}
+	//}
 
 	w.tickEntities(tick)
 	w.tickRandomBlocks(viewers, tick)
@@ -1432,6 +1528,52 @@ func (w *World) tickEntities(tick int64) {
 		ticker.Tick(tick)
 	}
 	w.entitiesToTick = w.entitiesToTick[:0]
+}
+
+// SetRaining toggles raining depending on the raining argument.
+func (w *World) SetRaining(raining bool) {
+	var level int
+	if raining {
+		level = 1
+	} else {
+		level = 0
+	} // Go developers, can you please add the ternary operator? :)
+	w.setRainLevel(level)
+
+	for _, v := range w.allViewers() {
+		v.ViewRain(raining)
+	}
+
+	if raining {
+		w.setRainTime(rand.Intn(12000) + 12000)
+	} else {
+		w.setRainTime(rand.Intn(168000) + 12000)
+	}
+}
+
+// SetThunder toggles raining depending on the thundering argument.
+func (w *World) SetThunder(thundering bool) {
+	if thundering && !w.IsRaining() {
+		w.SetRaining(true)
+	}
+
+	var level int
+	if thundering {
+		level = 1
+	} else {
+		level = 0
+	} // Go developers, can you please add the ternary operator? :)
+	w.setThunderLevel(level)
+
+	for _, v := range w.allViewers() {
+		v.ViewThunder(thundering)
+	}
+
+	if thundering {
+		w.setThunderTime(rand.Intn(12000) + 3600)
+	} else {
+		w.setThunderTime(rand.Intn(168000) + 12000)
+	}
 }
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
