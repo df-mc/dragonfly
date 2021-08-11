@@ -214,6 +214,7 @@ func (w *World) HighestBlock(x, z int) int {
 }
 
 const LCGConstant = 1013904223
+
 func (w *World) GetUpdateLGC() int {
 	w.updateLCG = (w.updateLCG * 3) ^ LCGConstant
 	return w.updateLCG
@@ -1217,10 +1218,10 @@ func (w *World) startTicking() {
 
 var (
 	shouldUpdateRain = false
-	updateRain = false
+	updateRain       = false
 
 	shouldUpdateThunder = false
-	updateThunder = false
+	updateThunder       = false
 )
 
 // tick ticks the world and updates the time, blocks and entities that require updates.
