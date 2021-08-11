@@ -1746,7 +1746,7 @@ func (p *Player) checkBlockCollisions() {
 				for _, bb := range b.Model().AABB(blockPos, w) {
 					if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
 						if collide, ok := b.(block.EntityCollider); ok {
-							collide.EntityCollide(p, bPos)
+							collide.EntityCollide(p, blockPos)
 						}
 						break
 					}
