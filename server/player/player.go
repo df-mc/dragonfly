@@ -885,6 +885,17 @@ func (p *Player) Immobile() bool {
 	return p.immobile.Load()
 }
 
+// FireProof checks if the Player is currently fire proof. True is returned if the player has a FireResistance effect or
+// if it is in creative mode.
+func (p *Player) FireProof() bool {
+	for _, e := range p.Effects() {
+		if _, ok := e.Type().(effect.FireResistance); ok {
+			return true
+		}
+	}
+	return !p.GameMode().AllowsTakingDamage()
+}
+
 // OnFireDuration ...
 func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks.Load()) * time.Second / 20
@@ -996,13 +1007,14 @@ func (p *Player) UseItem() {
 
 				held, left := p.HeldItems()
 				if duration < usable.ConsumeDuration() {
-					// The required duration for consuming this item was not met, so we don't consume it.
+					// The required duration for consuming this item was not met, so we don't consume it and stop
+					// consuming.
+					p.ReleaseItem()
 					return
 				}
 				p.SetHeldItems(p.subtractItem(held, 1), left)
 				p.addNewItem(&item.UseContext{NewItem: usable.Consume(p.World(), p)})
 				p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
-				return
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()
