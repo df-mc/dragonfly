@@ -28,7 +28,7 @@ type Water struct {
 }
 
 // EntityCollide ...
-func (w Water) EntityCollide(e world.Entity, _ cube.Pos) {
+func (w Water) EntityCollide(pos cube.Pos, e world.Entity) {
 	if fallEntity, ok := e.(FallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}

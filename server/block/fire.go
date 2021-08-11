@@ -161,7 +161,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EntityCollide ...
-func (f Fire) EntityCollide(e world.Entity, _ cube.Pos) {
+func (f Fire) EntityCollide(pos cube.Pos, e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
 		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
 			l.Hurt(1, damage.SourceFire{})

@@ -92,7 +92,7 @@ func allFarmland() (b []world.Block) {
 }
 
 // EntityCollide ...
-func (f Farmland) EntityCollide(e world.Entity, pos cube.Pos) {
+func (f Farmland) EntityCollide(pos cube.Pos, e world.Entity) {
 	if fallEntity, ok := e.(FallDistanceEntity); ok {
 		fallDistance := fallEntity.FallDistance()
 		if fallDistance > 0.75 {
