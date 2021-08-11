@@ -95,7 +95,7 @@ func allFarmland() (b []world.Block) {
 func (f Farmland) EntityCollide(e world.Entity, pos cube.Pos) {
 	if fallEntity, ok := e.(FallDistanceEntity); ok {
 		fallDistance := fallEntity.FallDistance()
-		if fallDistance > 0.10 { // CloudBurst uses 0.75, but 0.10 feels more reliable.
+		if fallDistance > 0.75 {
 			e.World().PlaceBlock(pos, Dirt{})
 		}
 	}
