@@ -464,7 +464,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
 	case sound.Thunder:
-		pk.SoundType = packet.SoundEventThunder
+		pk.SoundType, pk.EntityType = packet.SoundEventThunder, "minecraft:lightning_bolt"
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundClick,

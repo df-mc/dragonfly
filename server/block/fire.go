@@ -30,8 +30,8 @@ func FlammableBlock(block world.Block) bool {
 	return false
 }
 
-// neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
-func neighboursFlammable(pos cube.Pos, w *world.World) bool {
+// NeighboursFlammable returns true if one a block adjacent to the passed position is flammable.
+func NeighboursFlammable(pos cube.Pos, w *world.World) bool {
 	for i := cube.Face(0); i < 6; i++ {
 		if FlammableBlock(w.Block(pos.Side(i))) {
 			return true
@@ -96,7 +96,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				w.BreakBlockWithoutParticles(pos)
 				return
 			}
-			if !neighboursFlammable(pos, w) {
+			if !NeighboursFlammable(pos, w) {
 				if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, w) || f.Age > 3 {
 					w.BreakBlockWithoutParticles(pos)
 				}
@@ -183,7 +183,7 @@ func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
 	below := w.Block(pos.Side(cube.FaceDown))
-	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
+	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!NeighboursFlammable(pos, w) || f.Type == SoulFire()) {
 		w.BreakBlockWithoutParticles(pos)
 	} else {
 		switch below.(type) {
