@@ -340,6 +340,7 @@ func (s *Session) registerHandlers() {
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
 		packet.IDContainerClose:        &ContainerCloseHandler{},
+		packet.IDCraftingEvent:         nil, // Not needed as we use ItemStackRequest actions instead.
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
