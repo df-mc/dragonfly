@@ -88,22 +88,7 @@ func (li *Lightning) Tick(_ int64) {
 		li.World().PlaySound(li.Position(), sound.Thunder{})
 		li.World().PlaySound(li.Position(), sound.Explosion{})
 
-		_, isNormal := li.World().Difficulty().(world.DifficultyNormal)
-		_, isHard := li.World().Difficulty().(world.DifficultyHard)
-		if isNormal || isHard { // difficulty >= 2
-			lPos := li.Position()
-			bPos := cube.Pos{int(lPos.X()), int(lPos.Y()), int(lPos.Z())}
-			b := li.World().Block(bPos)
-
-			_, isAir := b.(block.Air)
-			_, isTallGrass := b.(block.TallGrass)
-			if isAir || isTallGrass {
-				below := li.World().Block(bPos.Side(cube.FaceDown))
-				if below.Model().FaceSolid(bPos, cube.FaceUp, li.World()) || block.NeighboursFlammable(bPos, li.World()) {
-
-				}
-			}
-		}
+		li.setBlocksOnFire()
 	}
 
 	li.state--
@@ -116,7 +101,7 @@ func (li *Lightning) Tick(_ int64) {
 			li.liveTime--
 			li.state = 1
 
-			// TODO set blocks on fire, again?
+			li.setBlocksOnFire()
 		}
 	}
 
@@ -139,5 +124,25 @@ func (li *Lightning) Tick(_ int64) {
 }
 
 func nextInt(max int) int {
+	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(max)
+}
+
+func (li *Lightning) setBlocksOnFire() {
+	_, isNormal := li.World().Difficulty().(world.DifficultyNormal)
+	_, isHard := li.World().Difficulty().(world.DifficultyHard)
+	if isNormal || isHard { // difficulty >= 2
+		lPos := li.Position()
+		bPos := cube.Pos{int(lPos.X()), int(lPos.Y()), int(lPos.Z())}
+		b := li.World().Block(bPos)
+
+		_, isAir := b.(block.Air)
+		_, isTallGrass := b.(block.TallGrass)
+		if isAir || isTallGrass {
+			below := li.World().Block(bPos.Side(cube.FaceDown))
+			if below.Model().FaceSolid(bPos, cube.FaceUp, li.World()) || block.NeighboursFlammable(bPos, li.World()) {
+				li.World().PlaceBlock(bPos, block.Fire{})
+			}
+		}
+	}
 }
