@@ -1,6 +1,11 @@
 package recipes
 
 import (
+	"fmt"
+	// Insure all blocks and items are registered before trying to load vanilla recipes.
+	_ "github.com/df-mc/dragonfly/server/block"
+	_ "github.com/df-mc/dragonfly/server/item"
+
 	_ "embed"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
@@ -28,7 +33,15 @@ func init() {
 		panic(err)
 	}
 
-	for _, s := range vanillaRecipes.Shapeless {
+	for i, s := range vanillaRecipes.Shapeless {
+		fmt.Println("-----------------------------")
+		fmt.Println("Crafting Recipe:", i)
+		for _, i := range s.Input {
+			fmt.Println(i.Name, i.MetadataValue)
+		}
+		fmt.Println("Results in:")
+		fmt.Println(s.Output.Name, s.Output.MetadataValue)
+		fmt.Println("-----------------------------")
 		input, ok := s.Input.ToStacks()
 		if !ok {
 			continue
@@ -37,6 +50,7 @@ func init() {
 		if !ok {
 			continue
 		}
+		fmt.Println("Registered recipe:", i)
 		Register(ShapelessRecipe{
 			Inputs:   input,
 			Output:   output,
@@ -44,7 +58,17 @@ func init() {
 		})
 	}
 
-	for _, s := range vanillaRecipes.Shaped {
+	for i, s := range vanillaRecipes.Shaped {
+		fmt.Println("-----------------------------")
+		fmt.Println("Crafting Recipe:", i)
+		for _, i := range s.Input {
+			fmt.Println(i.Name, i.MetadataValue)
+		}
+		fmt.Println("Results in:")
+		fmt.Println(s.Output.Name, s.Output.MetadataValue)
+		fmt.Println("Dimensions:")
+		fmt.Println(s.Width, s.Height)
+		fmt.Println("-----------------------------")
 		input, ok := s.Input.ToStacks()
 		if !ok {
 			continue
@@ -53,6 +77,7 @@ func init() {
 		if !ok {
 			continue
 		}
+		fmt.Println("Registered recipe:", i)
 		Register(ShapedRecipe{
 			Inputs:   input,
 			Output:   output,

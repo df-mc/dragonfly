@@ -99,6 +99,11 @@ func (h *ItemStackRequestHandler) handleTake(a *protocol.TakeStackRequestAction,
 
 // handlePlace handles a Place stack request action.
 func (h *ItemStackRequestHandler) handlePlace(a *protocol.PlaceStackRequestAction, s *Session) error {
+	// Fix the container IDs before updating anything, otherwise we could have issues with future requests.
+	// These issues only happen on place, hence why we're only checking for wrong container IDs here.
+	a.Source.ContainerID = fixID(a.Source.ContainerID)
+	a.Destination.ContainerID = fixID(a.Destination.ContainerID)
+
 	return h.handleTransfer(a.Source, a.Destination, a.Count, s)
 }
 
