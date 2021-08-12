@@ -1,7 +1,6 @@
 package trace
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -9,13 +8,12 @@ import (
 )
 
 // TraverseBlocks performs a ray trace between the start and end coordinates.
-// A function is passed which is called for each voxel, if the function returns true it'll break the loop,
-// causing the function to return.
-// TraverseBlocks returns an error if the start and end positions are the same.
-func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (br bool)) error {
+// A function 'f' is passed which is called for each voxel, if f returns false, the function will return.
+// TraverseBlocks panics if the start and end positions are the same.
+func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 	dir := end.Sub(start).Normalize()
 	if dir.LenSqr() <= 0.0 {
-		return fmt.Errorf("start and end points are the same, giving a zero direction vector")
+		panic("start and end points are the same, giving a zero direction vector")
 	}
 
 	b := cube.PosFromVec3(start)
@@ -28,32 +26,30 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (br bool)) error
 
 	r := world.Distance(start, end)
 	for {
-		if f(b) {
-			break
+		if !f(b) {
+			return
 		}
 
 		if max[0] < max[1] && max[0] < max[2] {
 			if max[0] > r {
-				break
+				return
 			}
 			b = b.Add(stepX)
 			max[0] += delta[0]
 		} else if max[1] < max[2] {
 			if max[1] > r {
-				break
+				return
 			}
 			b = b.Add(stepY)
 			max[1] += delta[1]
 		} else {
 			if max[2] > r {
-				break
+				return
 			}
 			b = b.Add(stepZ)
 			max[2] += delta[2]
 		}
 	}
-
-	return nil
 }
 
 // divideVec3 ...

@@ -32,8 +32,8 @@ func (r AABBResult) Face() cube.Face {
 // Intercept performs a ray trace and calculates the point on the AABB's edge nearest to the start position that the ray trace
 // collided with.
 // Intercept returns a AABBResult with the colliding vector closest to the start position, if no colliding point was found,
-// it returns nil.
-func Intercept(bb physics.AABB, start, end mgl64.Vec3) Result {
+// a zero AABBResult is returned and ok is false.
+func Intercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, ok bool) {
 	min, max := bb.Min(), bb.Max()
 	v1 := intermediateX(start, end, min[0])
 	v2 := intermediateX(start, end, max[0])
@@ -79,7 +79,7 @@ func Intercept(bb physics.AABB, start, end mgl64.Vec3) Result {
 	}
 
 	if vec == nil {
-		return nil
+		return
 	}
 
 	var f cube.Face
@@ -98,7 +98,7 @@ func Intercept(bb physics.AABB, start, end mgl64.Vec3) Result {
 		f = cube.FaceSouth
 	}
 
-	return AABBResult{pos: *vec, face: f}
+	return AABBResult{pos: *vec, face: f}, false
 }
 
 // intermediateX ...
@@ -145,5 +145,3 @@ func intermediateZ(a, b mgl64.Vec3, z float64) *mgl64.Vec3 {
 
 	return &mgl64.Vec3{a[0] + (b[0]-a[0])*f, a[1] + (b[1]-a[1])*f, z}
 }
-
-func (r AABBResult) __() {}
