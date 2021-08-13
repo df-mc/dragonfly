@@ -64,6 +64,11 @@ func (e Effect) WithoutParticles() Effect {
 	return e
 }
 
+// ParticlesHidden returns true if the Effect had its particles hidden by calling WithoutParticles.
+func (e Effect) ParticlesHidden() bool {
+	return e.particlesHidden
+}
+
 // Level returns the level of the Effect.
 func (e Effect) Level() int {
 	return e.lvl

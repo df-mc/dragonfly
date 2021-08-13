@@ -885,6 +885,17 @@ func (p *Player) Immobile() bool {
 	return p.immobile.Load()
 }
 
+// FireProof checks if the Player is currently fire proof. True is returned if the player has a FireResistance effect or
+// if it is in creative mode.
+func (p *Player) FireProof() bool {
+	for _, e := range p.Effects() {
+		if _, ok := e.Type().(effect.FireResistance); ok {
+			return true
+		}
+	}
+	return !p.GameMode().AllowsTakingDamage()
+}
+
 // OnFireDuration ...
 func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks.Load()) * time.Second / 20
@@ -996,13 +1007,14 @@ func (p *Player) UseItem() {
 
 				held, left := p.HeldItems()
 				if duration < usable.ConsumeDuration() {
-					// The required duration for consuming this item was not met, so we don't consume it.
+					// The required duration for consuming this item was not met, so we don't consume it and stop
+					// consuming.
+					p.ReleaseItem()
 					return
 				}
 				p.SetHeldItems(p.subtractItem(held, 1), left)
 				p.addNewItem(&item.UseContext{NewItem: usable.Consume(p.World(), p)})
 				p.World().PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
-				return
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()
@@ -1184,7 +1196,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	held, _ := p.HeldItems()
-	if _, ok := held.Item().(item.Sword); ok && !p.GameMode().CreativeInventory() {
+	if _, ok := held.Item().(item.Sword); ok && p.GameMode().CreativeInventory() {
 		// Can't break blocks with a sword in creative mode.
 		return
 	}
@@ -1518,7 +1530,8 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 
 		p.pos.Store(res)
 
-		p.checkCollisions()
+		p.checkBlockCollisions()
+		p.onGround.Store(p.checkOnGround())
 
 		p.updateFallState(deltaPos[1])
 
@@ -1640,7 +1653,10 @@ func (p *Player) Tick(current int64) {
 			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
 		}
 	}
-	p.checkCollisions()
+
+	p.checkBlockCollisions()
+	p.onGround.Store(p.checkOnGround())
+
 	p.tickFood()
 	p.effects.Tick(p)
 	if p.Position()[1] < cube.MinY && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
@@ -1707,11 +1723,36 @@ func (p *Player) starve() {
 	}
 }
 
-// checkCollisions checks the player's block collisions, including whether the player
-// is currently considered to be on the ground or not.
-func (p *Player) checkCollisions() {
-	var onGround bool
+// checkCollisions checks the player's block collisions.
+func (p *Player) checkBlockCollisions() {
+	w := p.World()
 
+	aabb := p.AABB().Translate(p.Position())
+	grown := aabb.Grow(0.25)
+	min, max := grown.Min(), grown.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				blockPos := cube.Pos{x, y, z}
+				b := w.Block(blockPos)
+				for _, bb := range b.Model().AABB(blockPos, w) {
+					if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
+						if collide, ok := b.(block.EntityCollider); ok {
+							collide.EntityCollide(p)
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+}
+
+// checkOnGround checks if the player is currently considered to be on the ground.
+func (p *Player) checkOnGround() bool {
 	w := p.World()
 	pos := p.Position()
 	pAABB := p.AABB().Translate(pos)
@@ -1722,22 +1763,16 @@ func (p *Player) checkCollisions() {
 			for y := pos[1] - 1; y < pos[1]+1; y++ {
 				bPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
 				b := w.Block(bPos)
-				if !onGround {
-					aabbList := b.Model().AABB(bPos, w)
-					for _, aabb := range aabbList {
-						if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
-							onGround = true
-							p.onGround.Store(onGround)
-						}
+				aabbList := b.Model().AABB(bPos, p.World())
+				for _, aabb := range aabbList {
+					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+						return true
 					}
-				}
-
-				if collide, ok := b.(block.EntityCollider); ok {
-					collide.EntityCollide(p)
 				}
 			}
 		}
 	}
+	return false
 }
 
 // AABB returns the axis aligned bounding box of the player.

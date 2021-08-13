@@ -15,17 +15,36 @@ func ReadItem(data map[string]interface{}, s *item.Stack) item.Stack {
 		s = &a
 	}
 	readDamage(data, s, disk)
-	readEnchantments(data, s)
 	readDisplay(data, s)
+	readEnchantments(data, s)
 	readDragonflyData(data, s)
 	return *s
 }
 
+// ReadBlock decodes the data of a block into a world.Block.
+func ReadBlock(m map[string]interface{}) world.Block {
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	nameVal, _ := m["name"]
+	name, _ := nameVal.(string)
+	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
+	statesVal, _ := m["states"]
+	properties, _ := statesVal.(map[string]interface{})
+
+	b, _ := world.BlockByName(name, properties)
+	return b
+}
+
 // readItemStack reads an item.Stack from the NBT in the map passed.
 func readItemStack(m map[string]interface{}) item.Stack {
-	it, _ := world.ItemByName(MapString(m, "Name"), MapInt16(m, "Damage"))
+	var it world.Item
 	if blockItem, ok := MapBlock(m, "Block").(world.Item); ok {
 		it = blockItem
+	}
+	if v, ok := world.ItemByName(MapString(m, "Name"), MapInt16(m, "Damage")); ok {
+		it = v
+	}
+	if it == nil {
+		return item.Stack{}
 	}
 	if n, ok := it.(world.NBTer); ok {
 		it = n.DecodeNBT(m).(world.Item)
@@ -68,7 +87,7 @@ func readDisplay(m map[string]interface{}, s *item.Stack) {
 		if display, ok := displayInterface.(map[string]interface{}); ok {
 			if _, ok := display["Name"]; ok {
 				// Only add the custom name if actually set.
-				*s = s.WithCustomName(MapString(m, "Name"))
+				*s = s.WithCustomName(MapString(display, "Name"))
 			}
 			if loreInterface, ok := display["Lore"]; ok {
 				if lore, ok := loreInterface.([]string); ok {
