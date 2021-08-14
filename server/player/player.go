@@ -1535,10 +1535,10 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 
 		p.pos.Store(res)
 
+		p.updateFallState(deltaPos[1])
+
 		p.checkBlockCollisions()
 		p.onGround.Store(p.checkOnGround())
-
-		p.updateFallState(deltaPos[1])
 
 		// The vertical axis isn't relevant for calculation of exhaustion points.
 		deltaPos[1] = 0
@@ -1733,22 +1733,35 @@ func (p *Player) checkBlockCollisions() {
 	w := p.World()
 
 	aabb := p.AABB().Translate(p.Position())
-	grown := aabb.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
+	min, max := aabb.Min(), aabb.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
 	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
 
-	for y := minY; y <= maxY; y++ {
+	for y := minY - 1; y <= maxY+1; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
-				for _, bb := range b.Model().AABB(blockPos, w) {
-					if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
-						if collide, ok := b.(block.EntityCollider); ok {
+				var liquid bool
+				if collide, ok := b.(block.EntityCollider); ok {
+					if _, liquid = b.(world.Liquid); liquid {
+						collide.EntityCollide(blockPos, p)
+						continue
+					}
+
+					for _, bb := range b.Model().AABB(blockPos, w) {
+						if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
+							collide.EntityCollide(blockPos, p)
+							break
+						}
+					}
+				}
+
+				if !liquid {
+					if l, ok := w.Liquid(blockPos); ok {
+						if collide, ok := l.(block.EntityCollider); ok {
 							collide.EntityCollide(blockPos, p)
 						}
-						break
 					}
 				}
 			}
