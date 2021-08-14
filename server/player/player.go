@@ -1737,11 +1737,25 @@ func (p *Player) checkBlockCollisions() {
 			for z := minZ; z <= maxZ; z++ {
 				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
+				var liquid bool
 				if collide, ok := b.(block.EntityCollider); ok {
+					if _, liquid = b.(world.Liquid); liquid {
+						collide.EntityCollide(p)
+						continue
+					}
+
 					for _, bb := range b.Model().AABB(blockPos, w) {
 						if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
 							collide.EntityCollide(p)
 							break
+						}
+					}
+				}
+
+				if !liquid {
+					if l, ok := w.Liquid(blockPos); ok {
+						if collide, ok := l.(block.EntityCollider); ok {
+							collide.EntityCollide(p)
 						}
 					}
 				}
