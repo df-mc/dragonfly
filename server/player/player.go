@@ -1745,13 +1745,13 @@ func (p *Player) checkBlockCollisions() {
 				var liquid bool
 				if collide, ok := b.(block.EntityCollider); ok {
 					if _, liquid = b.(world.Liquid); liquid {
-						collide.EntityCollide(blockPos, p)
+						collide.EntityCollide(p)
 						continue
 					}
 
 					for _, bb := range b.Model().AABB(blockPos, w) {
 						if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
-							collide.EntityCollide(blockPos, p)
+							collide.EntityCollide(p)
 							break
 						}
 					}
@@ -1760,7 +1760,7 @@ func (p *Player) checkBlockCollisions() {
 				if !liquid {
 					if l, ok := w.Liquid(blockPos); ok {
 						if collide, ok := l.(block.EntityCollider); ok {
-							collide.EntityCollide(blockPos, p)
+							collide.EntityCollide(p)
 						}
 					}
 				}
