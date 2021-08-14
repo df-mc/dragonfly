@@ -1535,10 +1535,10 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 
 		p.pos.Store(res)
 
-		p.updateFallState(deltaPos[1])
-
 		p.checkBlockCollisions()
 		p.onGround.Store(p.checkOnGround())
+
+		p.updateFallState(deltaPos[1])
 
 		// The vertical axis isn't relevant for calculation of exhaustion points.
 		deltaPos[1] = 0
