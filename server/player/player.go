@@ -1535,10 +1535,10 @@ func (p *Player) Move(deltaPos mgl64.Vec3) {
 
 		p.pos.Store(res)
 
+		p.updateFallState(deltaPos[1])
+
 		p.checkBlockCollisions()
 		p.onGround.Store(p.checkOnGround())
-
-		p.updateFallState(deltaPos[1])
 
 		// The vertical axis isn't relevant for calculation of exhaustion points.
 		deltaPos[1] = 0
@@ -1733,7 +1733,8 @@ func (p *Player) checkBlockCollisions() {
 	w := p.World()
 
 	aabb := p.AABB().Translate(p.Position())
-	min, max := aabb.Min(), aabb.Max()
+	grown := aabb.GrowVec3(mgl64.Vec3{0, 0.25})
+	min, max := grown.Min(), grown.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
 	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
 
@@ -1750,7 +1751,7 @@ func (p *Player) checkBlockCollisions() {
 					}
 
 					for _, bb := range b.Model().AABB(blockPos, w) {
-						if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
+						if grown.IntersectsWith(bb.Translate(blockPos.Vec3())) {
 							collide.EntityCollide(blockPos, p)
 							break
 						}

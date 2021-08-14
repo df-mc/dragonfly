@@ -91,11 +91,17 @@ func allFarmland() (b []world.Block) {
 	return
 }
 
+/*
+CloudBurst uses 0.75, but using the entity collide method I can't reliably reach the minimum of 0.75
+I am able however to always reach 0.37, so I went with that instead. Should be good enough.
+*/
+const minimumFallDistance = 0.37
+
 // EntityCollide ...
 func (f Farmland) EntityCollide(pos cube.Pos, e world.Entity) {
 	if fallEntity, ok := e.(FallDistanceEntity); ok {
 		fallDistance := fallEntity.FallDistance()
-		if fallDistance > 0.75 {
+		if fallDistance > minimumFallDistance {
 			e.World().PlaceBlock(pos, Dirt{})
 		}
 	}
