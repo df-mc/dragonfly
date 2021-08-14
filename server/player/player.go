@@ -1728,22 +1728,21 @@ func (p *Player) checkBlockCollisions() {
 	w := p.World()
 
 	aabb := p.AABB().Translate(p.Position())
-	grown := aabb.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
+	min, max := aabb.Min(), aabb.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
 	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
 
-	for y := minY; y <= maxY; y++ {
+	for y := minY - 1; y <= maxY+1; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
-				for _, bb := range b.Model().AABB(blockPos, w) {
-					if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
-						if collide, ok := b.(block.EntityCollider); ok {
+				if collide, ok := b.(block.EntityCollider); ok {
+					for _, bb := range b.Model().AABB(blockPos, w) {
+						if aabb.IntersectsWith(bb.Translate(blockPos.Vec3())) {
 							collide.EntityCollide(p)
+							break
 						}
-						break
 					}
 				}
 			}
