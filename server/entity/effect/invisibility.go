@@ -3,17 +3,16 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Invisibility is a lasting effect that causes the affected entity to turn invisible. While invisible, the
 // entity's armour is still visible and effect particles will still be displayed.
 type Invisibility struct {
-	lastingEffect
+	nopLasting
 }
 
 // Start ...
-func (Invisibility) Start(e world.Entity) {
+func (Invisibility) Start(e world.Entity, _ int) {
 	if i, ok := e.(interface {
 		SetInvisible()
 		SetVisible()
@@ -23,18 +22,13 @@ func (Invisibility) Start(e world.Entity) {
 }
 
 // End ...
-func (Invisibility) End(e world.Entity) {
+func (Invisibility) End(e world.Entity, _ int) {
 	if i, ok := e.(interface {
 		SetInvisible()
 		SetVisible()
 	}); ok {
 		i.SetVisible()
 	}
-}
-
-// WithSettings ...
-func (i Invisibility) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Invisibility{i.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

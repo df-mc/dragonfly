@@ -3,31 +3,25 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // HealthBoost causes the affected entity to have its maximum health changed for a specific duration.
 type HealthBoost struct {
-	lastingEffect
+	nopLasting
 }
 
 // Start ...
-func (h HealthBoost) Start(e world.Entity) {
-	if living, ok := e.(living); ok {
-		living.SetMaxHealth(living.MaxHealth() + 4*float64(h.Lvl))
+func (HealthBoost) Start(e world.Entity, lvl int) {
+	if l, ok := e.(living); ok {
+		l.SetMaxHealth(l.MaxHealth() + 4*float64(lvl))
 	}
 }
 
 // End ...
-func (h HealthBoost) End(e world.Entity) {
-	if living, ok := e.(living); ok {
-		living.SetMaxHealth(living.MaxHealth() - 4*float64(h.Lvl))
+func (HealthBoost) End(e world.Entity, lvl int) {
+	if l, ok := e.(living); ok {
+		l.SetMaxHealth(l.MaxHealth() - 4*float64(lvl))
 	}
-}
-
-// WithSettings ...
-func (h HealthBoost) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return HealthBoost{h.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

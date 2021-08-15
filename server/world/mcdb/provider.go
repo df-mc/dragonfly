@@ -83,6 +83,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.CommandsEnabled = true
 	p.d.MultiPlayerGame = true
 	p.d.SpawnY = math.MaxInt32
+	p.d.Difficulty = 2
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
@@ -157,7 +158,7 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 // SaveChunk saves a chunk at the position passed to the leveldb database. Its version is written as the
 // version in the chunkVersion constant.
 func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
-	data := chunk.DiskEncode(c, false)
+	data := chunk.Encode(c, chunk.DiskEncoding)
 
 	key := index(position)
 	_ = p.db.Put(append(key, keyVersion), []byte{chunkVersion}, nil)
@@ -167,10 +168,6 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 	binary.LittleEndian.PutUint32(finalisation, 2)
 	_ = p.db.Put(append(key, keyFinalisation), finalisation, nil)
 
-	if len(data.BlockNBT) != 0 {
-		// We only write block NBT if there actually is any.
-		_ = p.db.Put(append(key, keyBlockEntities), data.BlockNBT, nil)
-	}
 	for y, sub := range data.SubChunks {
 		if len(sub) == 0 {
 			// No sub chunk here: Delete it from the database and continue.

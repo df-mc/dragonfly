@@ -2,17 +2,11 @@ package effect
 
 import (
 	"image/color"
-	"time"
 )
 
 // SlowFalling is a lasting effect that causes the affected entity to fall very slowly.
 type SlowFalling struct {
-	lastingEffect
-}
-
-// WithSettings ...
-func (s SlowFalling) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return SlowFalling{s.withSettings(d, level, ambient)}
+	nopLasting
 }
 
 // RGBA ...

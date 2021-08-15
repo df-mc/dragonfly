@@ -2,26 +2,20 @@ package effect
 
 import (
 	"image/color"
-	"time"
 )
 
 // Weakness is a lasting effect that reduces the damage dealt to other entities with melee attacks.
 type Weakness struct {
-	lastingEffect
+	nopLasting
 }
 
 // Multiplier returns the damage multiplier of the effect.
-func (w Weakness) Multiplier() float64 {
-	v := -0.2 * float64(w.Lvl)
+func (Weakness) Multiplier(lvl int) float64 {
+	v := -0.2 * float64(lvl)
 	if v < -1 {
 		v = -1
 	}
 	return v
-}
-
-// WithSettings ...
-func (w Weakness) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Weakness{w.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

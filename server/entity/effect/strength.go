@@ -2,22 +2,16 @@ package effect
 
 import (
 	"image/color"
-	"time"
 )
 
 // Strength is a lasting effect that increases the damage dealt with melee attacks when applied to an entity.
 type Strength struct {
-	lastingEffect
+	nopLasting
 }
 
 // Multiplier returns the damage multiplier of the effect.
-func (s Strength) Multiplier() float64 {
-	return 0.3 * float64(s.Lvl)
-}
-
-// WithSettings ...
-func (s Strength) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Strength{s.withSettings(d, level, ambient)}
+func (Strength) Multiplier(lvl int) float64 {
+	return 0.3 * float64(lvl)
 }
 
 // RGBA ...

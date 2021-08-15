@@ -2,17 +2,13 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"time"
 )
 
 // InventoryTransactionHandler handles the InventoryTransaction packet.
-type InventoryTransactionHandler struct {
-	lastUseItemOnBlock time.Time
-}
+type InventoryTransactionHandler struct{}
 
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
@@ -72,20 +68,19 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if action.OldItem.Stack.Count != 0 || action.OldItem.Stack.NetworkID != 0 || action.OldItem.Stack.MetadataValue != 0 {
 				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
 			}
-			newItem := stackToItem(action.NewItem.Stack)
-			actual, offHand := s.c.HeldItems()
-			if !newItem.Comparable(actual) {
-				return fmt.Errorf("different item thrown than held in hand: %#v was thrown but held %#v", newItem, actual)
+			thrown := stackToItem(action.NewItem.Stack)
+			held, off := s.c.HeldItems()
+			if !thrown.Comparable(held) {
+				return fmt.Errorf("different item thrown than held in slot: %#v was thrown but held %#v", thrown, held)
 			}
-			if newItem.Count() > actual.Count() {
-				return fmt.Errorf("tried to throw %v items, but held only %v", newItem.Count(), actual.Count())
+			if thrown.Count() > held.Count() {
+				return fmt.Errorf("tried to throw %v items, but held only %v in slot", thrown.Count(), held.Count())
 			}
-			s.c.SetHeldItems(actual.Grow(-newItem.Count()), offHand)
-			if newHeld, _ := s.c.HeldItems(); newHeld.Equal(actual.Grow(-newItem.Count())) {
-				// Explicitly don't re-use the newItem variable. This item was supplied by the user, and if some
-				// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
-				s.c.Drop(actual.Grow(newItem.Count() - actual.Count()))
-			}
+			// Explicitly don't re-use the thrown variable. This item was supplied by the user, and if some
+			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
+			// Only grow or shrink the held item to prevent any such issues.
+			n := s.c.Drop(held.Grow(thrown.Count() - held.Count()))
+			s.c.SetHeldItems(held.Grow(-n), off)
 		default:
 			// Ignore inventory actions we don't explicitly handle.
 		}
@@ -129,25 +124,12 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionBreakBlock:
 		s.c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
-		if _, ok := s.c.World().Block(pos).(block.Farmland); ok {
-			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
-			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
-			// UseItem action, so we just release immediately after if that happens to be the case.
-			h.lastUseItemOnBlock = time.Now()
-		}
-
 		// We reset the inventory so that we can send the held item update without the client already
 		// having done that client-side.
 		s.sendInv(s.inv, protocol.WindowIDInventory)
 		s.c.UseItemOnBlock(pos, cube.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
 		s.c.UseItem()
-		if time.Since(h.lastUseItemOnBlock) < time.Second/20 {
-			// This is a hack to prevent infinite eating. The client sends a UseItem action after a
-			// UseItemActionClickBlock when planting, for example, carrots, with no Release action or second
-			// UseItem action, so we just release immediately after if that happens to be the case.
-			s.c.ReleaseItem()
-		}
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
 	}

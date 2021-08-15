@@ -22,8 +22,8 @@ func (e GoldenApple) ConsumeDuration() time.Duration {
 // Consume ...
 func (e GoldenApple) Consume(_ *world.World, c Consumer) Stack {
 	c.Saturate(4, 9.6)
-	c.AddEffect(effect.Absorption{}.WithSettings(2*time.Minute, 1, false))
-	c.AddEffect(effect.Regeneration{}.WithSettings(5*time.Minute, 2, false))
+	c.AddEffect(effect.New(effect.Absorption{}, 1, 2*time.Minute))
+	c.AddEffect(effect.New(effect.Regeneration{}, 2, 5*time.Minute))
 	return Stack{}
 }
 

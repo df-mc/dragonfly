@@ -3,33 +3,27 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Speed is a lasting effect that increases the speed of an entity by 20% for each level that the effect has.
 type Speed struct {
-	lastingEffect
+	nopLasting
 }
 
 // Start ...
-func (s Speed) Start(e world.Entity) {
-	speed := 1 + float64(s.Lvl)*0.2
-	if living, ok := e.(living); ok {
-		living.SetSpeed(living.Speed() * speed)
+func (Speed) Start(e world.Entity, lvl int) {
+	speed := 1 + float64(lvl)*0.2
+	if l, ok := e.(living); ok {
+		l.SetSpeed(l.Speed() * speed)
 	}
 }
 
 // End ...
-func (s Speed) End(e world.Entity) {
-	speed := 1 + float64(s.Lvl)*0.2
-	if living, ok := e.(living); ok {
-		living.SetSpeed(living.Speed() / speed)
+func (Speed) End(e world.Entity, lvl int) {
+	speed := 1 + float64(lvl)*0.2
+	if l, ok := e.(living); ok {
+		l.SetSpeed(l.Speed() / speed)
 	}
-}
-
-// WithSettings ...
-func (s Speed) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Speed{s.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

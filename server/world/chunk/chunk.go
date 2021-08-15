@@ -90,7 +90,7 @@ func init() {
 // SetRuntimeID sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
 // SubChunk exists at the given y, a new SubChunk is created and the block is set.
 func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtimeID uint32) {
-	i := subY(y)
+	i := subIndex(y)
 	sub := chunk.sub[i]
 	if sub == nil {
 		// The first layer is initialised in the next call to Layer().
@@ -110,13 +110,13 @@ func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtime
 // highest block that completely blocks any light from going through. If none is found, the value returned is
 // 0.
 func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
-	for subY := MaxSubChunkIndex; subY >= 0; subY-- {
-		sub := chunk.sub[subY]
+	for index := int16(MaxSubChunkIndex); index >= 0; index-- {
+		sub := chunk.sub[index]
 		if sub == nil || len(sub.storages) == 0 {
 			continue
 		}
 		for y := 15; y >= 0; y-- {
-			totalY := int16(y | (subY << 4))
+			totalY := int16(y) | subY(index)
 			if FilteringBlocks[sub.storages[0].RuntimeID(x, uint8(totalY&15), z)] == 15 {
 				return totalY
 			}
@@ -128,13 +128,13 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
 // HighestBlock iterates from the highest non-empty sub chunk downwards to find the Y value of the highest
 // non-air block at an x and z. If no blocks are present in the column, 0 is returned.
 func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
-	for subY := MaxSubChunkIndex; subY >= 0; subY-- {
-		sub := chunk.sub[subY]
+	for index := int16(MaxSubChunkIndex); index >= 0; index-- {
+		sub := chunk.sub[index]
 		if sub == nil || len(sub.storages) == 0 {
 			continue
 		}
 		for y := 15; y >= 0; y-- {
-			totalY := int16(y | (subY << 4))
+			totalY := int16(y) | subY(index)
 			rid := sub.storages[0].RuntimeID(x, uint8(totalY&15), z)
 			if rid != chunk.air {
 				return totalY
@@ -181,11 +181,16 @@ func columnOffset(x, z uint8) uint8 {
 
 // subChunk finds the correct SubChunk in the Chunk by a Y value.
 func (chunk *Chunk) subChunk(y int16) *SubChunk {
-	i := subY(y)
+	i := subIndex(y)
 	return chunk.sub[i]
 }
 
-// subY returns the sub chunk Y index matching the y value passed.
-func subY(y int16) int16 {
+// subIndex returns the sub chunk Y index matching the y value passed.
+func subIndex(y int16) int16 {
 	return (y >> 4) - minSubChunkY
+}
+
+// subY returns the sub chunk Y value matching the index passed.
+func subY(index int16) int16 {
+	return (index + minSubChunkY) >> 4
 }

@@ -52,7 +52,7 @@ func encodeItem(item item.Stack) []byte {
 	}
 
 	var b bytes.Buffer
-	itemNBT := nbtconv.ItemToNBT(item, false)
+	itemNBT := nbtconv.WriteItem(item, true)
 	encoder := nbt.NewEncoderWithEncoding(&b, nbt.LittleEndian)
 	err := encoder.Encode(itemNBT)
 	if err != nil {
@@ -68,5 +68,5 @@ func decodeItem(data []byte) item.Stack {
 	if err != nil {
 		return item.Stack{}
 	}
-	return nbtconv.ItemFromNBT(itemNBT, nil)
+	return nbtconv.ReadItem(itemNBT, nil)
 }
