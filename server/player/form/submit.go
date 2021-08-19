@@ -33,7 +33,7 @@ type ModalSubmittable MenuSubmittable
 // Closer represents a form which has special logic when being closed by a Submitter. The struct struct will have its Close method called, when its form is closed.
 type Closer interface {
 	// Close is called when the Submitter closes a form
-	Close()
+	Close(submitter Submitter)
 }
 
 // Submitter is an entity that is able to submit a form sent to it. It is able to fill out fields in the form
