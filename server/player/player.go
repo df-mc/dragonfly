@@ -600,7 +600,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	}
 	velocity = velocity.Mul(1 - resistance)
 
-	if p.s == nil {
+	if p.s == session.Nop {
 		p.UpdateVelocity(velocity)
 		return
 	}
@@ -1600,7 +1600,7 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // UpdateVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) UpdateVelocity(velocity mgl64.Vec3) {
-	if p.s == nil {
+	if p.s == session.Nop {
 		p.vel.Store(velocity)
 		return
 	}
