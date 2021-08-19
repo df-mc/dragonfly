@@ -46,7 +46,7 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos                                 atomic.Value
+	pos, vel                            atomic.Value
 	nameTag                             atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 
@@ -80,6 +80,8 @@ type Player struct {
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
 	immunity atomic.Value
+
+	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -117,7 +119,9 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
 	}
+	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
 	return p
@@ -130,6 +134,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // you can leave the data as nil to use default data.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
+	p.mc = nil
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
@@ -582,10 +587,6 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	if p.session() == session.Nop {
-		// TODO: Implement server-side movement and knock-back.
-		return
-	}
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 	velocity = velocity.Normalize().Mul(force)
@@ -597,7 +598,14 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 			resistance += a.KnockBackResistance()
 		}
 	}
-	p.session().SendVelocity(velocity.Mul(1 - resistance))
+	velocity = velocity.Mul(1 - resistance)
+
+	if p.s == nil {
+		p.UpdateVelocity(velocity)
+		return
+	}
+
+	p.session().SendVelocity(velocity)
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
@@ -1584,6 +1592,21 @@ func (p *Player) Position() mgl64.Vec3 {
 	return p.pos.Load().(mgl64.Vec3)
 }
 
+// Velocity returns the players current velocity. If there is an attached session, this will be empty.
+func (p *Player) Velocity() mgl64.Vec3 {
+	return p.vel.Load().(mgl64.Vec3)
+}
+
+// UpdateVelocity updates the players velocity. If there is an attached session, this will just send
+// the velocity to the player session for the player to update.
+func (p *Player) UpdateVelocity(velocity mgl64.Vec3) {
+	if p.s == nil {
+		p.vel.Store(velocity)
+		return
+	}
+	p.session().SendVelocity(velocity)
+}
+
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
@@ -1681,6 +1704,14 @@ func (p *Player) Tick(current int64) {
 				v.ViewEntityAction(p, action.Eat{})
 			}
 		}
+	}
+
+	movementComputer := p.mc
+	if movementComputer != nil {
+		pos, vel := movementComputer.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+
+		p.pos.Store(pos)
+		p.vel.Store(vel)
 	}
 }
 
