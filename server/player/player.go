@@ -598,14 +598,8 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 			resistance += a.KnockBackResistance()
 		}
 	}
-	velocity = velocity.Mul(1 - resistance)
 
-	if p.s == session.Nop {
-		p.UpdateVelocity(velocity)
-		return
-	}
-
-	p.session().SendVelocity(velocity)
+	p.UpdateVelocity(velocity.Mul(1 - resistance))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
