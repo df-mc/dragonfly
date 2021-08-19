@@ -81,7 +81,7 @@ type Player struct {
 	effects  *entity.EffectManager
 	immunity atomic.Value
 
-	mc atomic.Value
+	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -119,7 +119,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
 	}
-	p.mc.Store(&entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true})
+	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
@@ -1593,7 +1593,7 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // UpdateVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) UpdateVelocity(velocity mgl64.Vec3) {
-	if p.s == session.Nop {
+	if p.session() == session.Nop {
 		p.vel.Store(velocity)
 		return
 	}
@@ -1699,8 +1699,8 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	if p.s == session.Nop {
-		pos, vel := p.movementComputer().TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+	if p.session() == session.Nop {
+		pos, vel := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
 
 		p.pos.Store(pos)
 		p.vel.Store(vel)
@@ -2074,7 +2074,7 @@ func (p *Player) Data() Data {
 		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
-		Velocity:        mgl64.Vec3{}, // TODO: Implement server-side movement of player entities.
+		Velocity:        p.Velocity(),
 		Yaw:             yaw,
 		Pitch:           pitch,
 		Health:          p.Health(),
@@ -2097,12 +2097,6 @@ func (p *Player) Data() Data {
 		FireTicks:    p.fireTicks.Load(),
 		FallDistance: p.fallDistance.Load(),
 	}
-}
-
-// movementComputer returns the movement computer for the player.
-// It is always set if the player has no session.
-func (p *Player) movementComputer() *entity.MovementComputer {
-	return p.mc.Load().(*entity.MovementComputer)
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session

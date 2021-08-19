@@ -415,11 +415,14 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
 	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), data)
-	gm := server.world.DefaultGameMode()
+
+	gameMode := server.world.DefaultGameMode()
 	if data != nil {
-		gm = data.GameMode
+		p.UpdateVelocity(data.Velocity)
+		gameMode = data.GameMode
 	}
-	s.Start(p, server.world, gm, server.handleSessionClose)
+
+	s.Start(p, server.world, gameMode, server.handleSessionClose)
 	return p
 }
 
