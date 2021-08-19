@@ -2074,7 +2074,7 @@ func (p *Player) Data() Data {
 		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
-		Velocity:        p.Velocity(),
+		Velocity:        mgl64.Vec3{},
 		Yaw:             yaw,
 		Pitch:           pitch,
 		Health:          p.Health(),
