@@ -140,7 +140,7 @@ func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
 func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
 	s.Text = nbtconv.MapString(data, "Text")
 	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.MapInt32(data, "SignTextColor"))
-	s.Glowing = nbtconv.MapByte(data, "IgnoreLighting") == 1
+	s.Glowing = nbtconv.MapByte(data, "IgnoreLighting") == 1 && nbtconv.MapByte(data, "TextIgnoreLegacyBugResolved") == 1
 
 	return s
 }
