@@ -598,7 +598,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 		}
 	}
 
-	p.UpdateVelocity(velocity.Mul(1 - resistance))
+	p.SetVelocity(velocity.Mul(1 - resistance))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
@@ -1590,9 +1590,9 @@ func (p *Player) Velocity() mgl64.Vec3 {
 	return p.vel.Load().(mgl64.Vec3)
 }
 
-// UpdateVelocity updates the players velocity. If there is an attached session, this will just send
+// SetVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
-func (p *Player) UpdateVelocity(velocity mgl64.Vec3) {
+func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 	if p.session() == session.Nop {
 		p.vel.Store(velocity)
 		return
