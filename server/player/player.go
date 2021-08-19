@@ -81,7 +81,7 @@ type Player struct {
 	effects  *entity.EffectManager
 	immunity atomic.Value
 
-	mc *entity.MovementComputer
+	mc atomic.Value
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -119,7 +119,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
 	}
-	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
+	p.mc.Store(&entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true})
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
@@ -134,7 +134,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // you can leave the data as nil to use default data.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
-	p.mc = nil
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
@@ -1700,9 +1699,8 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	movementComputer := p.mc
-	if movementComputer != nil {
-		pos, vel := movementComputer.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+	if p.s == session.Nop {
+		pos, vel := p.movementComputer().TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
 
 		p.pos.Store(pos)
 		p.vel.Store(vel)
@@ -2099,6 +2097,12 @@ func (p *Player) Data() Data {
 		FireTicks:    p.fireTicks.Load(),
 		FallDistance: p.fallDistance.Load(),
 	}
+}
+
+// movementComputer returns the movement computer for the player.
+// It is always set if the player has no session.
+func (p *Player) movementComputer() *entity.MovementComputer {
+	return p.mc.Load().(*entity.MovementComputer)
 }
 
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
