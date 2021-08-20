@@ -30,9 +30,9 @@ type MenuSubmittable interface {
 // buttons on a Modal form will not have images.
 type ModalSubmittable MenuSubmittable
 
-// Closer represents a form which has special logic when being closed by a Submitter. The form will have its Close method called, when it is closed.
+// Closer represents a form which has special logic when being closed by a Submitter.
 type Closer interface {
-	// Close is called when the Submitter closes a form
+	// Close is called when the Submitter closes a form.
 	Close(submitter Submitter)
 }
 
