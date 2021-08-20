@@ -30,6 +30,9 @@ func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
 
 	if bytes.Equal(pk.ResponseData, nullBytes) || len(pk.ResponseData) == 0 {
 		// The form was cancelled: The cross in the top right corner was clicked.
+		if closer, ok := f.(form.Closer); ok {
+			closer.Close(s.c)
+		}
 		return nil
 	}
 	if !ok {
