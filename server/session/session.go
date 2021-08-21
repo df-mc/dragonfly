@@ -249,7 +249,7 @@ func (s *Session) handlePackets() {
 }
 
 // getCraftingSize gets the crafting size based on the opened container ID.
-func (s *Session) getCraftingSize() byte {
+func (s *Session) craftingSize() byte {
 	if s.openedContainerID.Load() == 1 {
 		return craftingSizeLarge
 	}
