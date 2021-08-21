@@ -257,7 +257,7 @@ func (s *Session) getCraftingSize() byte {
 }
 
 // getCraftingOffset gets the crafting offset based on the opened container ID.
-func (s *Session) getCraftingOffset() byte {
+func (s *Session) craftingOffset() byte {
 	if s.openedContainerID.Load() == 1 {
 		return craftingGridLargeOffset
 	}
