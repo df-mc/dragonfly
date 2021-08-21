@@ -22,7 +22,7 @@ type Beacon struct {
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
-	Primary, Secondary effect.Effect
+	Primary, Secondary effect.LastingType
 	// level is the amount of the pyramid's levels, it is defined by the mineral blocks which build up the
 	// pyramid, and can be 0-4.
 	level int
@@ -44,10 +44,10 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
 	b.level = int(nbtconv.MapInt32(data, "Levels"))
 	if primary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Primary"))); ok {
-		b.Primary = primary
+		b.Primary = primary.(effect.LastingType)
 	}
 	if secondary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Secondary"))); ok {
-		b.Secondary = secondary
+		b.Secondary = secondary.(effect.LastingType)
 	}
 	return b
 }
@@ -146,7 +146,7 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 	dur := time.Duration(seconds) * time.Second
 
 	// Establishing what effects are active with the current amount of beacon levels.
-	primary, secondary := b.Primary, effect.Effect(nil)
+	primary, secondary := b.Primary, effect.LastingType(nil)
 	switch b.level {
 	case 0:
 		primary = nil
@@ -160,22 +160,22 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 			primary = nil
 		}
 	case 3:
+		// Accept all effects for primary, but leave secondary as nil.
 	default:
 		secondary = b.Secondary
 	}
+	var primaryEff, secondaryEff effect.Effect
 	// Determining whether the primary power is set.
 	if primary != nil {
-		primary = primary.WithSettings(dur, 1, true)
+		primaryEff = effect.NewAmbient(primary, 1, dur)
 		// Secondary power can only be set if the primary power is set.
 		if secondary != nil {
-			// It is possible to select 2 primary powers if the beacon's level is 4.
-			pId, pOk := effect.ID(primary)
-			sId, sOk := effect.ID(secondary)
-			if pOk && sOk && pId == sId {
-				primary = primary.WithSettings(dur, 2, true)
-				secondary = nil
+			// It is possible to select 2 primary powers if the beacon's level is 4. This then means that the effect
+			// should get a level of 2.
+			if primary == secondary {
+				primaryEff = effect.NewAmbient(primary, 2, dur)
 			} else {
-				secondary = secondary.WithSettings(dur, 1, true)
+				secondaryEff = effect.NewAmbient(secondary, 1, dur)
 			}
 		}
 	}
@@ -188,11 +188,11 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 	))
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
-			if primary != nil {
-				p.AddEffect(primary)
+			if primaryEff.Type() != nil {
+				p.AddEffect(primaryEff)
 			}
-			if secondary != nil {
-				p.AddEffect(secondary)
+			if secondaryEff.Type() != nil {
+				p.AddEffect(secondaryEff)
 			}
 		}
 	}

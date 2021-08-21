@@ -315,7 +315,6 @@ func (server *Server) startListening() error {
 	}
 
 	var err error
-	//noinspection SpellCheckingInspection
 	server.listener, err = cfg.Listen("raknet", server.c.Network.Address)
 	if err != nil {
 		return fmt.Errorf("listening on address failed: %w", err)
@@ -328,20 +327,25 @@ func (server *Server) startListening() error {
 // run runs the server, continuously accepting new connections from players. It returns when the server is
 // closed by a call to Close.
 func (server *Server) run() {
+	wg := new(sync.WaitGroup)
 	for {
 		c, err := server.listener.Accept()
 		if err != nil {
-			// Accept will only return an error if the Listener was closed, meaning trying to continue
-			// listening is futile.
+			// First wait until all connections that are being handled are done inserting the player into the channel.
+			// Afterwards, when we're sure no more values will be inserted in the players channel, we can close it
+			// safely.
+			wg.Wait()
 			close(server.players)
 			return
 		}
-		go server.handleConn(c.(*minecraft.Conn))
+		wg.Add(1)
+		go server.handleConn(c.(*minecraft.Conn), wg)
 	}
 }
 
 // handleConn handles an incoming connection accepted from the Listener.
-func (server *Server) handleConn(conn *minecraft.Conn) {
+func (server *Server) handleConn(conn *minecraft.Conn, wg *sync.WaitGroup) {
+	defer wg.Done()
 	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
 		Yaw:            90,
@@ -358,19 +362,16 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
 	}
-	id, err := uuid.Parse(conn.IdentityData().Identity)
-	if err != nil {
-		_ = conn.Close()
-		server.log.Debugf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
-		return
-	}
+	// UUID is validated by gophertunnel.
+	id, _ := uuid.Parse(conn.IdentityData().Identity)
+
 	var playerData *player.Data
 	if d, err := server.playerProvider.Load(id); err == nil {
 		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 		playerData = &d
 	}
-	if err = conn.StartGameTimeout(data, time.Minute); err != nil {
+	if err := conn.StartGameTimeout(data, time.Minute); err != nil {
 		_ = server.listener.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return

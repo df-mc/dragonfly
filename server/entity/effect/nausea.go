@@ -2,17 +2,11 @@ package effect
 
 import (
 	"image/color"
-	"time"
 )
 
 // Nausea is a lasting effect that causes the screen to warp, similarly to when entering a nether portal.
 type Nausea struct {
-	lastingEffect
-}
-
-// WithSettings ...
-func (n Nausea) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Nausea{n.withSettings(d, level, ambient)}
+	nopLasting
 }
 
 // RGBA ...

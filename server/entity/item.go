@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
@@ -31,7 +30,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.Count() - i.MaxCount())
 	}
-	i = nbtconv.ItemFromNBT(nbtconv.ItemToNBT(i, false), nil)
+	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
 
 	it := &Item{i: i, pickupDelay: 40, c: &MovementComputer{
 		Gravity:           0.04,
@@ -182,31 +181,13 @@ func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
 
 // EncodeNBT encodes the Item entity's properties as a map and returns it.
 func (it *Item) EncodeNBT() map[string]interface{} {
-	name, damage := it.i.Item().EncodeItem()
-	if _, ok := it.i.Item().(item.Durable); ok {
-		damage = int16(it.i.MaxDurability() - it.i.Durability())
-	}
-	i := make(map[string]interface{})
-	if n, ok := it.i.Item().(world.NBTer); ok {
-		i = n.EncodeNBT()
-	}
-	i["Damage"], i["Name"], i["Count"] = damage, name, byte(it.i.Count())
-
-	if b, ok := it.i.Item().(world.Block); ok {
-		name, properties := b.EncodeBlock()
-		i["Block"] = map[string]interface{}{
-			"name":    name,
-			"states":  properties,
-			"version": chunk.CurrentBlockVersion,
-		}
-	}
 	return map[string]interface{}{
 		"Age":         int16(it.age),
 		"PickupDelay": int64(it.pickupDelay),
 		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
 		"Health":      int16(5),
-		"Item":        it,
+		"Item":        nbtconv.WriteItem(it.Item(), true),
 	}
 }
 

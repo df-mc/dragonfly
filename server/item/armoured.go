@@ -26,4 +26,6 @@ type ArmourContainer interface {
 	SetBoots(boots Stack)
 	// Boots returns the item stack set as boots in the inventory.
 	Boots() Stack
+	// Clear clears all items in the inventory.
+	Clear()
 }

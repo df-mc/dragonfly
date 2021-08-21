@@ -207,12 +207,8 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	if i.Count() < int(a.Count) {
 		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
 	}
-
-	if s.c.Drop(i.Grow(int(a.Count)-i.Count())) != 0 {
-		h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
-	} else {
-		h.setItemInSlot(a.Source, i, s)
-	}
+	n := s.c.Drop(i.Grow(int(a.Count) - i.Count()))
+	h.setItemInSlot(a.Source, i.Grow(-n), s)
 	return nil
 }
 
@@ -246,8 +242,9 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
 	}
 
-	beacon.Primary, _ = effect.ByID(int(a.PrimaryEffect))
-	beacon.Secondary, _ = effect.ByID(int(a.SecondaryEffect))
+	primary, _ := effect.ByID(int(a.PrimaryEffect))
+	secondary, _ := effect.ByID(int(a.SecondaryEffect))
+	beacon.Primary, beacon.Secondary = primary.(effect.LastingType), secondary.(effect.LastingType)
 	s.c.World().SetBlock(pos, beacon)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
@@ -332,7 +329,13 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
 	inventory, _ := s.invByID(int32(slot.ContainerID))
-	if inventory.SlotLocked(int(slot.Slot)) {
+
+	sl := int(slot.Slot)
+	if inventory == s.offHand {
+		sl = 0
+	}
+
+	if inventory.SlotLocked(sl) {
 		return fmt.Errorf("slot in inventory was locked")
 	}
 	return nil
@@ -387,7 +390,13 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
 	}
-	i, err := inventory.Item(int(slot.Slot))
+
+	sl := int(slot.Slot)
+	if inventory == s.offHand {
+		sl = 0
+	}
+
+	i, err := inventory.Item(sl)
 	if err != nil {
 		return i, err
 	}
@@ -398,7 +407,12 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
 	inventory, _ := s.invByID(int32(slot.ContainerID))
 
-	_ = inventory.SetItem(int(slot.Slot), i)
+	sl := int(slot.Slot)
+	if inventory == s.offHand {
+		sl = 0
+	}
+
+	_ = inventory.SetItem(sl, i)
 
 	if h.changes[slot.ContainerID] == nil {
 		h.changes[slot.ContainerID] = map[byte]protocol.StackResponseSlotInfo{}

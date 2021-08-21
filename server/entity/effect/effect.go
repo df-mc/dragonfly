@@ -8,135 +8,105 @@ import (
 	"time"
 )
 
-// Effect represents an effect that may be added to a living entity. Effects may either be instant or last
-// for a specific duration.
-type Effect interface {
-	// Instant checks if the effect is instance. If it is instant, the effect will only be ticked a single
-	// time when added to an entity.
-	Instant() bool
-	// Apply applies the effect to an entity. For instant effects, this method applies the effect once, such
-	// as healing the world.Entity for instant health.
-	Apply(e world.Entity)
-	// Level returns the level of the effect. A higher level generally means a more powerful effect.
-	Level() int
-	// Duration returns the leftover duration of the effect.
-	Duration() time.Duration
-	// WithSettings returns the effect with a duration and level passed.
-	WithSettings(d time.Duration, level int, ambient bool) Effect
+// LastingType represents an effect type that can have a duration. An effect can be made using it by calling effect.New
+// with the LastingType.
+type LastingType interface {
+	Type
 	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
 	// together to form a new colour.
 	RGBA() color.RGBA
-	// ShowParticles checks if the particle should show particles. If not, entities that have the effect
-	// will not display particles around them.
-	ShowParticles() bool
-	// AmbientSource specifies if the effect came from an ambient source, such as a beacon or conduit. The
-	// particles will be less visible when this is true.
-	AmbientSource() bool
-	// Start is called for lasting events. It is sent the first time the effect is applied to an entity.
-	Start(e world.Entity)
-	// End is called for lasting events. It is sent the moment the effect expires.
-	End(e world.Entity)
+	// Start is called for lasting effects when they are initially added to an entity.
+	Start(e world.Entity, lvl int)
+	// End is called for lasting effects when they are removed from an entity.
+	End(e world.Entity, lvl int)
 }
 
-// instantEffect forms the base of an instant effect.
-type instantEffect struct {
-	// Lvl holds the level of the effect. A higher level results in a more powerful effect, whereas a negative
-	// level will generally inverse effect.
-	Lvl int
+// Type is an effect implementation that can be applied to an entity.
+type Type interface {
+	// Apply applies the effect to an entity. This method applies the effect to an entity once for instant effects, such
+	// as healing the world.Entity for instant health.
+	// Apply always has a duration of 0 passed to it for instant effect implementations. For lasting effects that
+	// implement LastingType, the appropriate leftover duration is passed.
+	Apply(e world.Entity, lvl int, d time.Duration)
 }
 
-// Instant always returns true for instant effects.
-func (instantEffect) Instant() bool {
-	return true
+// Effect is an effect that can be added to an entity. Effects are either instant (applying the effect only once) or
+// lasting (applying the effect every tick).
+type Effect struct {
+	t                        Type
+	d                        time.Duration
+	lvl                      int
+	ambient, particlesHidden bool
 }
 
-// Level returns the level of the instant effect.
-func (i instantEffect) Level() int {
-	return i.Lvl
+// NewInstant returns a new instant Effect using the Type passed. The effect will be applied to an entity once
+// and will expire immediately after.
+func NewInstant(t Type, lvl int) Effect {
+	return Effect{t: t, lvl: lvl}
 }
 
-// Duration always returns 0 for instant effects.
-func (instantEffect) Duration() time.Duration {
-	return 0
+// New creates a new Effect using a LastingType passed. Once added to an entity, the time.Duration passed will be ticked down
+// by the entity until it reaches a duration of 0.
+func New(t LastingType, lvl int, d time.Duration) Effect {
+	return Effect{t: t, lvl: lvl, d: d}
 }
 
-// ShowParticles always returns false for instant effects.
-func (instantEffect) ShowParticles() bool {
-	return false
+// NewAmbient creates a new ambient (reduced particles, as when using a beacon) Effect using a LastingType passed. Once added
+// to an entity, the time.Duration passed will be ticked down by the entity until it reaches a duration of 0.
+func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
+	return Effect{t: t, lvl: lvl, d: d, ambient: true}
 }
 
-// AmbientSource always returns false for instant effects.
-func (instantEffect) AmbientSource() bool {
-	return false
+// WithoutParticles returns the same Effect with particles disabled. Adding the effect to players will not display the
+// particles around the player.
+func (e Effect) WithoutParticles() Effect {
+	e.particlesHidden = true
+	return e
 }
 
-// RGBA always returns an empty color.RGBA.
-func (instantEffect) RGBA() color.RGBA {
-	return color.RGBA{}
+// ParticlesHidden returns true if the Effect had its particles hidden by calling WithoutParticles.
+func (e Effect) ParticlesHidden() bool {
+	return e.particlesHidden
 }
 
-// End ...
-func (instantEffect) End(world.Entity) {}
-
-// Start ...
-func (instantEffect) Start(world.Entity) {}
-
-// lastingEffect forms the base of an effect that lasts for a specific duration.
-type lastingEffect struct {
-	// Lvl holds the level of the effect. A higher level results in a more powerful effect, whereas a negative
-	// level will generally inverse effect.
-	Lvl int
-	// Dur holds the duration of the effect. One will be subtracted every time the entity that the effect is
-	// added to is ticked.
-	Dur time.Duration
-	// HideParticles hides the coloured particles of the effect when added to an entity.
-	HideParticles bool
-	// Ambient specifies if the effect comes from an ambient source, such as from a beacon or conduit. The
-	// particles displayed when Ambient is true are less visible.
-	Ambient bool
+// Level returns the level of the Effect.
+func (e Effect) Level() int {
+	return e.lvl
 }
 
-// Instant always returns false for lasting effects.
-func (lastingEffect) Instant() bool {
-	return false
+// Duration returns the leftover duration of the Effect. The duration returned is always 0 if NewInstant was used to
+// create the effect.
+func (e Effect) Duration() time.Duration {
+	return e.d
 }
 
-// Level returns the level of the lasting effect.
-func (l lastingEffect) Level() int {
-	return l.Lvl
+// Ambient returns whether the Effect is an ambient effect, leading to reduced particles shown to the client. False is
+// always returned if the Effect was created using New or NewInstant.
+func (e Effect) Ambient() bool {
+	return e.ambient
 }
 
-// Duration returns the leftover duration of the lasting effect.
-func (l lastingEffect) Duration() time.Duration {
-	return l.Dur
+// Type returns the underlying type of the Effect. It is either of the type Type or LastingType, depending on whether it
+// was created using New or NewAmbient, or NewInstant.
+func (e Effect) Type() Type {
+	return e.t
 }
 
-// ShowParticles returns true if the effect does not display particles.
-func (l lastingEffect) ShowParticles() bool {
-	return !l.HideParticles
+// TickDuration ticks the effect duration, subtracting time.Second/20 from the leftover time and returning the resulting
+// Effect.
+func (e Effect) TickDuration() Effect {
+	if _, ok := e.t.(LastingType); ok {
+		e.d -= time.Second / 20
+	}
+	return e
 }
 
-// AmbientSource specifies if the effect comes from a beacon or conduit.
-func (l lastingEffect) AmbientSource() bool {
-	return l.Ambient
-}
+// nopLasting is a lasting effect with no (server-side) behaviour. It does not implement the RGBA method.
+type nopLasting struct{}
 
-// withSettings returns the lastingEffect with the duration passed.
-func (l lastingEffect) withSettings(d time.Duration, level int, ambient bool) lastingEffect {
-	l.Dur = d
-	l.Lvl = level
-	l.Ambient = ambient
-	return l
-}
-
-// End ...
-func (lastingEffect) End(world.Entity) {}
-
-// Start ...
-func (lastingEffect) Start(world.Entity) {}
-
-// Apply ...
-func (lastingEffect) Apply(living world.Entity) {}
+func (nopLasting) Apply(world.Entity, int, time.Duration) {}
+func (nopLasting) End(world.Entity, int)                  {}
+func (nopLasting) Start(world.Entity, int)                {}
 
 // tickDuration returns the duration as in-game ticks.
 func tickDuration(d time.Duration) int {
@@ -146,22 +116,29 @@ func tickDuration(d time.Duration) int {
 // ResultingColour calculates the resulting colour of the effects passed and returns a bool specifying if the
 // effects were ambient effects, which will cause their particles to display less frequently.
 func ResultingColour(effects []Effect) (color.RGBA, bool) {
-	r, g, b, a := 0, 0, 0, 0
-	l := len(effects)
-	if l == 0 {
-		return color.RGBA{}, false
-	}
-
+	r, g, b, a, l := 0, 0, 0, 0, 0
 	ambient := true
 	for _, e := range effects {
-		c := e.RGBA()
-		r += int(c.R)
-		g += int(c.G)
-		b += int(c.B)
-		a += int(c.A)
-		if !e.AmbientSource() {
-			ambient = false
+		if e.particlesHidden {
+			// Don't take effects with hidden particles into account for colour calculation: Their particles are hidden
+			// after all.
+			continue
 		}
+		if t, ok := e.Type().(LastingType); ok {
+			c := t.RGBA()
+			r += int(c.R)
+			g += int(c.G)
+			b += int(c.B)
+			a += int(c.A)
+			l++
+			if !e.Ambient() {
+				ambient = false
+			}
+		}
+	}
+	if l == 0 {
+		// Prevent division by 0 errors if no effects with particles were present.
+		return color.RGBA{}, false
 	}
 	return color.RGBA{R: uint8(r / l), G: uint8(g / l), B: uint8(b / l), A: uint8(a / l)}, ambient
 }

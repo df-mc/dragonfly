@@ -8,24 +8,19 @@ import (
 
 // Saturation is a lasting effect that causes the affected player to regain food and saturation.
 type Saturation struct {
-	lastingEffect
+	nopLasting
 }
 
 // Apply ...
-func (s Saturation) Apply(e world.Entity) {
+func (Saturation) Apply(e world.Entity, lvl int, _ time.Duration) {
 	if i, ok := e.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
-		i.Saturate(1*s.Lvl, 2*float64(s.Lvl))
+		i.Saturate(lvl, 2*float64(lvl))
 	}
 }
 
-// WithSettings ...
-func (s Saturation) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Saturation{s.withSettings(d, level, ambient)}
-}
-
 // RGBA ...
-func (s Saturation) RGBA() color.RGBA {
+func (Saturation) RGBA() color.RGBA {
 	return color.RGBA{R: 0xf8, G: 0x24, B: 0x23, A: 0xff}
 }

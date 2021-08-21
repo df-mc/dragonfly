@@ -241,7 +241,7 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id := uint32(0), int32(packet.GameTypeSurvival)
+	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
 	}
@@ -250,34 +250,30 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
+	} else {
+		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
 	}
 	if !mode.AllowsInteraction() {
 		flags |= packet.AdventureFlagNoPVP
+	} else {
+		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
 	}
-	// Find a game type that matches the game mode most closely. We assign some properties to specifically creative
-	// mode or spectator mode and assign game type based on those.
-	crea := mode.AllowsFlying() && mode.CreativeInventory()
-	spec := !mode.AllowsEditing() && !mode.AllowsInteraction()
-	switch {
-	case crea && !spec:
+	// Creative or spectator players:
+	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-	case crea && spec:
-		id = packet.GameTypeCreativeSpectator
-	case !crea && spec:
-		id = packet.GameTypeSurvivalSpectator
-	case !crea && mode.AllowsInteraction() && !mode.AllowsEditing():
-		id = packet.GameTypeAdventure
-	default:
-		id = packet.GameTypeSurvival
+		// Cannot interact with the world, so this is a spectator.
+		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
+			id = packet.GameTypeCreativeSpectator
+		}
 	}
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
-		PlayerUniqueID:    1,
-		ActionPermissions: uint32(packet.ActionPermissionBuild | packet.ActionPermissionMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
+		PlayerUniqueID:    selfEntityRuntimeID,
+		ActionPermissions: perms,
 	})
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
@@ -313,20 +309,20 @@ func (s *Session) SendAbsorption(value float64) {
 
 // SendEffect sends an effects passed to the player.
 func (s *Session) SendEffect(e effect.Effect) {
-	s.SendEffectRemoval(e)
-	id, _ := effect.ID(e)
+	s.SendEffectRemoval(e.Type())
+	id, _ := effect.ID(e.Type())
 	s.writePacket(&packet.MobEffect{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Operation:       packet.MobEffectAdd,
 		EffectType:      int32(id),
 		Amplifier:       int32(e.Level() - 1),
-		Particles:       e.ShowParticles(),
+		Particles:       !e.ParticlesHidden(),
 		Duration:        int32(e.Duration() / (time.Second / 20)),
 	})
 }
 
 // SendEffectRemoval sends the removal of an effect passed.
-func (s *Session) SendEffectRemoval(e effect.Effect) {
+func (s *Session) SendEffectRemoval(e effect.Type) {
 	id, ok := effect.ID(e)
 	if !ok {
 		panic(fmt.Sprintf("unregistered effect type %T", e))
@@ -455,7 +451,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -463,7 +459,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			viewer.ViewEntityItems(s.c)
 		}
 		if !s.inTransaction.Load() {
-			i, _ := s.offHand.Item(1)
+			i, _ := s.offHand.Item(0)
 			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
 				Content: []protocol.ItemInstance{
@@ -535,7 +531,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 		BlockRuntimeID: int32(blockRuntimeID),
 		HasNetworkID:   true,
 		Count:          uint16(it.Count()),
-		NBTData:        nbtconv.ItemToNBT(it, true),
+		NBTData:        nbtconv.WriteItem(it, false),
 	}
 }
 
@@ -572,7 +568,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.ItemFromNBT(it.NBTData, &s)
+	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
 // itemToRecipeIngredientItem converts a recipe.Item into a type that can be used over the protocol.

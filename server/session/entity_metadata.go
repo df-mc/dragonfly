@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 	"time"
 )
 
@@ -59,11 +60,13 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
-		m[dataKeyPotionColour] = (int32(colour.A) << 24) | (int32(colour.R) << 16) | (int32(colour.G) << 8) | int32(colour.B)
-		if am {
-			m[dataKeyPotionAmbient] = byte(1)
-		} else {
-			m[dataKeyPotionAmbient] = byte(0)
+		if (colour != color.RGBA{}) {
+			m[dataKeyPotionColour] = (int32(colour.A) << 24) | (int32(colour.R) << 16) | (int32(colour.G) << 8) | int32(colour.B)
+			if am {
+				m[dataKeyPotionAmbient] = byte(1)
+			} else {
+				m[dataKeyPotionAmbient] = byte(0)
+			}
 		}
 	}
 

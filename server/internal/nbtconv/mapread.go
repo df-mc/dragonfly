@@ -102,15 +102,7 @@ func Vec3ToFloat32Slice(x mgl64.Vec3) []float32 {
 func MapBlock(x map[string]interface{}, k string) world.Block {
 	if val, ok := x[k]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
-			//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-			nameVal, _ := m["name"]
-			name, _ := nameVal.(string)
-			//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-			statesVal, _ := m["states"]
-			properties, _ := statesVal.(map[string]interface{})
-
-			b, _ := world.BlockByName(name, properties)
-			return b
+			return ReadBlock(m)
 		}
 	}
 	return nil
@@ -121,15 +113,12 @@ func MapBlock(x map[string]interface{}, k string) world.Block {
 func MapItem(x map[string]interface{}, k string) item.Stack {
 	if val, ok := x[k]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
-			b := MapBlock(m, "Block")
-			it, _ := world.ItemByName(MapString(m, "Name"), MapInt16(m, "Damage"))
-			if blockItem, ok := b.(world.Item); ok {
-				it = blockItem
-			}
-			if n, ok := it.(world.NBTer); ok {
-				it = n.DecodeNBT(m).(world.Item)
-			}
-			return item.NewStack(it, int(MapByte(m, "Count"))).Damage(int(MapInt16(m, "Damage")))
+			s := readItemStack(m)
+			readDamage(m, &s, true)
+			readEnchantments(m, &s)
+			readDisplay(m, &s)
+			readDragonflyData(m, &s)
+			return s
 		}
 	}
 	return item.Stack{}
