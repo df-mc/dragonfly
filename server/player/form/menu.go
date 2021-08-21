@@ -96,12 +96,6 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	return nil
 }
 
-func (m Menu) HandleFormClose(submitter Submitter) {
-	if closer, ok := m.submittable.(Closer); ok {
-		closer.Close(submitter)
-	}
-}
-
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
 func (m Menu) verify() {

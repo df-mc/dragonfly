@@ -82,12 +82,6 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 	return nil
 }
 
-func (m Modal) HandleFormClose(submitter Submitter) {
-	if closer, ok := m.submittable.(Closer); ok {
-		closer.Close(submitter)
-	}
-}
-
 // Buttons returns a list of all buttons of the Modal form, which will always be a total of two buttons.
 func (m Modal) Buttons() []Button {
 	v := reflect.ValueOf(m.submittable)
