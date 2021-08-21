@@ -23,7 +23,7 @@ func (c CraftingTable) EncodeBlock() (name string, properties map[string]interfa
 }
 
 // BreakInfo ...
-func (c CraftingTable) BreakInfo(*world.World) BreakInfo {
+func (c CraftingTable) BreakInfo() BreakInfo {
 	return BreakInfo{
 		Hardness:    2.5,
 		Harvestable: alwaysHarvestable,

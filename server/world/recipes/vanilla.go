@@ -1,7 +1,6 @@
 package recipes
 
 import (
-	"fmt"
 	// Insure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
 	_ "github.com/df-mc/dragonfly/server/item"
@@ -33,15 +32,7 @@ func init() {
 		panic(err)
 	}
 
-	for i, s := range vanillaRecipes.Shapeless {
-		fmt.Println("-----------------------------")
-		fmt.Println("Crafting Recipe:", i)
-		for _, i := range s.Input {
-			fmt.Println(i.Name, i.MetadataValue)
-		}
-		fmt.Println("Results in:")
-		fmt.Println(s.Output.Name, s.Output.MetadataValue)
-		fmt.Println("-----------------------------")
+	for _, s := range vanillaRecipes.Shapeless {
 		input, ok := s.Input.ToStacks()
 		if !ok {
 			continue
@@ -50,7 +41,6 @@ func init() {
 		if !ok {
 			continue
 		}
-		fmt.Println("Registered recipe:", i)
 		Register(ShapelessRecipe{
 			Inputs:   input,
 			Output:   output,
@@ -58,17 +48,7 @@ func init() {
 		})
 	}
 
-	for i, s := range vanillaRecipes.Shaped {
-		fmt.Println("-----------------------------")
-		fmt.Println("Crafting Recipe:", i)
-		for _, i := range s.Input {
-			fmt.Println(i.Name, i.MetadataValue)
-		}
-		fmt.Println("Results in:")
-		fmt.Println(s.Output.Name, s.Output.MetadataValue)
-		fmt.Println("Dimensions:")
-		fmt.Println(s.Width, s.Height)
-		fmt.Println("-----------------------------")
+	for _, s := range vanillaRecipes.Shaped {
 		input, ok := s.Input.ToStacks()
 		if !ok {
 			continue
@@ -77,7 +57,6 @@ func init() {
 		if !ok {
 			continue
 		}
-		fmt.Println("Registered recipe:", i)
 		Register(ShapedRecipe{
 			Inputs:   input,
 			Output:   output,

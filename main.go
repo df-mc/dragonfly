@@ -35,6 +35,7 @@ func main() {
 		if p, err := srv.Accept(); err != nil {
 			return
 		} else {
+			// TODO: Remove this after testing.
 			p.SetGameMode(world.GameModeSurvival{})
 			p.Inventory().AddItem(item.NewStack(block.Planks{Wood: block.OakWood()}, 64))
 		}
