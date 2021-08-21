@@ -82,6 +82,7 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 	return nil
 }
 
+// HandleFormClose is called when a form is closed by a Submitter. If the submittable of form is a Closer, it calls the Close method of it.
 func (m Modal) HandleFormClose(submitter Submitter) {
 	if closer, ok := m.submittable.(Closer); ok {
 		closer.Close(submitter)
