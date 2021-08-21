@@ -30,10 +30,7 @@ func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
 
 	if bytes.Equal(pk.ResponseData, nullBytes) || len(pk.ResponseData) == 0 {
 		// The form was cancelled: The cross in the top right corner was clicked.
-		if err := f.SubmitJSON(nil, s.c); err != nil {
-			return fmt.Errorf("error handling form close: %w", err)
-		}
-		return nil
+		pk.ResponseData = nil
 	}
 	if !ok {
 		return fmt.Errorf("no form with ID %v currently opened", pk.FormID)
