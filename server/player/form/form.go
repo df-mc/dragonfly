@@ -15,6 +15,7 @@ import (
 type Form interface {
 	json.Marshaler
 	SubmitJSON(b []byte, submitter Submitter) error
+	HandleFormClose(submitter Submitter)
 	__()
 }
 
@@ -115,6 +116,12 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	v.Interface().(Submittable).Submit(submitter)
 
 	return nil
+}
+
+func (f Custom) HandleFormClose(submitter Submitter) {
+	if closer, ok := f.submittable.(Closer); ok {
+		closer.Close(submitter)
+	}
 }
 
 // parseValue parses a value into the Element passed and returns it as a reflect.Value. If the value is not
