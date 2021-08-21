@@ -12,7 +12,7 @@ type Item struct {
 	AppliesToAll bool
 }
 
-// InputItem is an item that has a name and a metadata value.
+// ItemType is an item that has a name and a metadata value.
 type ItemType struct {
 	// Name is the name of the item type.
 	Name string `nbt:"name"`

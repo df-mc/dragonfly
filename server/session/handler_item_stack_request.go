@@ -137,7 +137,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	case recipes.ShapedRecipe:
 		expectedInputs, output = r.Inputs, r.Output
 	default:
-		return fmt.Errorf("tried crafting an invalid recipe: %T\n", r)
+		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
 	}
 
 	if !h.hasRequiredInputs(expectedInputs, s) {

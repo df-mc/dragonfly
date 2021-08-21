@@ -12,7 +12,7 @@ func Register(recipe Recipe) {
 	recipes = append(recipes, recipe)
 }
 
-// Recipes returns each recipe in an array.
+// All returns each recipe in a slice.
 func All() []Recipe {
 	return recipes
 }
