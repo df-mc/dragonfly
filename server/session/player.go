@@ -581,7 +581,7 @@ func itemToRecipeIngredientItem(s recipes.Item) protocol.RecipeIngredientItem {
 		panic("should never happen")
 	}
 
-	if s.AppliesToAll {
+	if s.AllTypes {
 		meta = craftingFlagAll
 	}
 

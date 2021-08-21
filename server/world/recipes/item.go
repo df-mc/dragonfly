@@ -8,8 +8,9 @@ import (
 // Item is a recipe item. It is an item stack inherently, but it also has an extra value for if it applies to all types.
 type Item struct {
 	item.Stack
-	// AppliesToAll is true if if the item applies to all of it's type. This is so it can be rendered in the recipe book for alternative types.
-	AppliesToAll bool
+	// AllTypes is true if if the item applies to all of it's type. This is so it can be rendered in the recipe book
+	// for alternative types.
+	AllTypes bool
 }
 
 // ItemType is an item that has a name and a metadata value.
@@ -45,7 +46,7 @@ func (i InputItem) ToStack() (Item, bool) {
 		return Item{}, false
 	}
 
-	return Item{Stack: item.NewStack(it, int(i.Count)), AppliesToAll: i.MetadataValue == 32767}, true
+	return Item{Stack: item.NewStack(it, int(i.Count)), AllTypes: i.MetadataValue == 32767}, true
 }
 
 // InputItems is an array of input items.

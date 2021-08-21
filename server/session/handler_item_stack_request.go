@@ -496,7 +496,7 @@ func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Se
 		currentInputToMatch := inputs[satisfiedInputs]
 
 		// Items that apply to all types, so we just compare with the name and count.
-		if currentInputToMatch.AppliesToAll {
+		if currentInputToMatch.AllTypes {
 			name, _ := oldSt.Item().EncodeItem()
 			otherName, _ := currentInputToMatch.Item().EncodeItem()
 			if name == otherName && oldSt.Count() >= currentInputToMatch.Count() {
