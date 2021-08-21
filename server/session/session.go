@@ -248,7 +248,7 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// getCraftingSize gets the crafting size based on the opened container ID.
+// craftingSize gets the crafting size based on the opened container ID.
 func (s *Session) craftingSize() byte {
 	if s.openedContainerID.Load() == 1 {
 		return craftingSizeLarge
@@ -256,7 +256,7 @@ func (s *Session) craftingSize() byte {
 	return craftingSizeSmall
 }
 
-// getCraftingOffset gets the crafting offset based on the opened container ID.
+// craftingOffset gets the crafting offset based on the opened container ID.
 func (s *Session) craftingOffset() byte {
 	if s.openedContainerID.Load() == 1 {
 		return craftingGridLargeOffset

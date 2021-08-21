@@ -471,10 +471,10 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 
 // hasRequiredInputs checks and validates the inputs for a crafting grid.
 func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Session) bool {
-	offset := s.getCraftingOffset()
+	offset := s.craftingOffset()
 
 	var satisfiedInputs int
-	for i := byte(0); i < s.getCraftingSize(); i++ {
+	for i := byte(0); i < s.craftingSize(); i++ {
 		if satisfiedInputs == len(inputs) {
 			break
 		}
@@ -514,10 +514,10 @@ func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Se
 
 // removeInputs removes the inputs passed in the crafting grid.
 func (h *ItemStackRequestHandler) removeInputs(inputs []recipes.Item, s *Session) error {
-	offset := s.getCraftingOffset()
+	offset := s.craftingOffset()
 
 	var index int
-	for i := byte(0); i < s.getCraftingSize(); i++ {
+	for i := byte(0); i < s.craftingSize(); i++ {
 		if index == len(inputs) {
 			break
 		}
