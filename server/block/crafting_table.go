@@ -24,12 +24,7 @@ func (c CraftingTable) EncodeBlock() (name string, properties map[string]interfa
 
 // BreakInfo ...
 func (c CraftingTable) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    2.5,
-		Harvestable: alwaysHarvestable,
-		Effective:   axeEffective,
-		Drops:       simpleDrops(item.NewStack(c, 1)),
-	}
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
 }
 
 func (c CraftingTable) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
