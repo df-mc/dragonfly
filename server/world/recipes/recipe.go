@@ -9,7 +9,7 @@ type Recipe interface {
 
 // ShapelessRecipe is a recipe that has no particular shape.
 type ShapelessRecipe struct {
-	Recipe
+	recipe
 	// Inputs is a list of items that serve as the input of the shapeless recipe. These items are the items
 	// required to craft the output. The amount of input items must be exactly equal to Width * Height.
 	Inputs []Item
@@ -21,7 +21,7 @@ type ShapelessRecipe struct {
 
 // ShapedRecipe is a recipe that has a specific shape that must be used to craft the output of the recipe.
 type ShapedRecipe struct {
-	Recipe
+	recipe
 	// Dimensions are the dimensions for the shaped recipe.
 	Dimensions Dimensions
 	// Inputs is a list of items that serve as the input of the shaped recipe. These items are the items
@@ -32,3 +32,9 @@ type ShapedRecipe struct {
 	// Priority ...
 	Priority int32
 }
+
+// recipe implements the Recipe interface. Structures in this package may embed it to gets its functionality
+// out of the box.
+type recipe struct{}
+
+func (recipe) __() {}
