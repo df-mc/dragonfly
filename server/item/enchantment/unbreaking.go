@@ -8,7 +8,8 @@ import (
 	"math/rand"
 )
 
-// Efficiency is an enchantment that increases mining speed.
+// Unbreaking is an enchantment that gives a chance for an item to avoid durability reduction when it
+// is used, effectively increasing the item's durability.
 type Unbreaking struct{ enchantment }
 
 // Reduce returns the amount of damage that should be reduced with unbreaking.
@@ -32,7 +33,7 @@ func (e Unbreaking) Name() string {
 
 // MaxLevel ...
 func (e Unbreaking) MaxLevel() int {
-	return 5
+	return 3
 }
 
 // WithLevel ...
