@@ -15,6 +15,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
@@ -512,6 +513,29 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 				finalDamage = 0
 			}
 		}
+
+		if src, ok := source.(damage.SourceEntityAttack); ok {
+			var d int
+			for i, it := range p.armour.Items() {
+				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
+					if rand.Float64() < float64(t.Level())*0.15 {
+						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 3))
+						if t.Level() > 10 {
+							d += t.Level() - 10
+							continue
+						}
+						d += 1 + rand.Intn(4)
+					} else {
+						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 1))
+					}
+				}
+			}
+
+			if l, ok := src.Attacker.(entity.Living); ok && d > 0 {
+				l.Hurt(float64(d), damage.SourceCustom{})
+			}
+		}
+
 		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.World().Viewers(p.Position()) {
@@ -534,8 +558,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		if damageToArmour == 0 {
 			damageToArmour++
 		}
-		for i := 0; i < 4; i++ {
-			it, _ := p.armour.Inv().Item(i)
+		for i, it := range p.armour.Items() {
 			if a, ok := it.Item().(armour.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
@@ -552,7 +575,25 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 			dmg *= resistance.Multiplier(src, e.Level())
 		}
 	}
-	// TODO: Account for enchantments.
+
+	if entityAttack, ok := src.(damage.SourceEntityAttack); ok {
+		if carrier, ok := entityAttack.Attacker.(item.Carrier); ok {
+			held, _ := carrier.HeldItems()
+			if e, ok := held.Enchantment(enchantment.Sharpness{}); ok {
+				dmg += (enchantment.Sharpness{}).Addend(e.Level())
+			}
+		}
+	}
+
+	for _, it := range p.armour.Items() {
+		if p, ok := it.Enchantment(enchantment.Protection{}); ok {
+			dmg -= (enchantment.Protection{}).Subtrahend(p.Level())
+		}
+	}
+
+	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
+		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
+	}
 	if dmg < 0 {
 		dmg = 0
 	}
@@ -1163,6 +1204,10 @@ func (p *Player) AttackEntity(e world.Entity) {
 			}
 		}
 
+		if s, ok := i.Enchantment(enchantment.Sharpness{}); ok {
+			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
+		}
+
 		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
 
 		if mgl64.FloatEqual(healthBefore, living.Health()) {
@@ -1171,6 +1216,12 @@ func (p *Player) AttackEntity(e world.Entity) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
 			p.Exhaust(0.1)
 			living.KnockBack(p.Position(), force, height)
+		}
+
+		if flammable, ok := living.(entity.Flammable); ok {
+			if f, ok := i.Enchantment(enchantment.FireAspect{}); ok {
+				flammable.SetOnFire((enchantment.FireAspect{}).Duration(f.Level()))
+			}
 		}
 
 		if durable, ok := i.Item().(item.Durable); ok {
@@ -1232,7 +1283,8 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}))); ok {
+	_, ok := p.World().Liquid(cube.PosFromVec3(entity.EyePosition(p)))
+	if _, ok2 := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); ok && !ok2 {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -1649,7 +1701,7 @@ func (p *Player) Tick(current int64) {
 	}
 	if _, ok := p.World().Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
-		if _, ok2 := p.Armour().Helmet().Item().(item.TurtleShell); ok2 {
+		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
 			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
 		}
 	}
@@ -1831,7 +1883,7 @@ func (p *Player) EyeHeight() float64 {
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
 // to players around it.
 func (p *Player) PlaySound(sound world.Sound) {
-	p.session().ViewSound(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()}), sound)
+	p.session().ViewSound(entity.EyePosition(p), sound)
 }
 
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
@@ -1878,7 +1930,7 @@ func (p *Player) Breathing() bool {
 			return true
 		}
 	}
-	_, submerged := p.World().Liquid(cube.PosFromVec3(p.Position().Add(mgl64.Vec3{0, p.EyeHeight()})))
+	_, submerged := p.World().Liquid(cube.PosFromVec3(entity.EyePosition(p)))
 	return !submerged
 }
 
@@ -1920,6 +1972,9 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 	p.handler().HandleItemDamage(ctx, s, d)
 
 	ctx.Continue(func() {
+		if e, ok := s.Enchantment(enchantment.Unbreaking{}); ok {
+			d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
+		}
 		s = s.Damage(d)
 		if s.Empty() {
 			p.World().PlaySound(p.Position(), sound.ItemBreak{})
@@ -1965,7 +2020,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	if !p.GameMode().AllowsInteraction() {
 		return false
 	}
-	eyes := p.Position().Add(mgl64.Vec3{0, eyeHeight})
+	eyes := entity.EyePosition(p)
 
 	if p.GameMode().CreativeInventory() {
 		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()
