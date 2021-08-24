@@ -78,6 +78,13 @@ func (f Custom) Elements() []Element {
 // If the values are valid and can be parsed properly, the Submit() method of the form's Submittable is called
 // and the fields of the Submittable will be filled out.
 func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
+	if b == nil {
+		if closer, ok := f.submittable.(Closer); ok {
+			closer.Close(submitter)
+		}
+		return nil
+	}
+
 	dec := json.NewDecoder(bytes.NewBuffer(b))
 	dec.UseNumber()
 
