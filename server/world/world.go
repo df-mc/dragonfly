@@ -679,14 +679,24 @@ func (w *World) enableTimeCycle(v bool) {
 	w.set.TimeCycle = v
 }
 
-// ToggleWeatherCycle enables or disables weather of the World.
-func (w *World) ToggleWeatherCycle(v bool) {
+// StopWeatherCycle disables weather of the World.
+func (w *World) StopWeatherCycle() {
 	if w == nil {
 		return
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.set.WeatherCycle = v
+	w.set.WeatherCycle = false
+}
+
+// StartWeatherCycle enables weather of the World.
+func (w *World) StartWeatherCycle() {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.WeatherCycle = true
 }
 
 // setRainTime sets the rain time.
