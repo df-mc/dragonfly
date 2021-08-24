@@ -29,20 +29,20 @@ func canAddArmour(s item.Stack, slot int) bool {
 	}
 	switch slot {
 	case 0:
-		if h, ok := s.Item().(armour.Helmet); ok && h.Helmet() {
-			return true
+		if h, ok := s.Item().(armour.Helmet); ok {
+			return h.Helmet()
 		}
 	case 1:
-		if c, ok := s.Item().(armour.Chestplate); ok && c.Chestplate() {
-			return true
+		if c, ok := s.Item().(armour.Chestplate); ok {
+			return c.Chestplate()
 		}
 	case 2:
-		if l, ok := s.Item().(armour.Leggings); ok && l.Leggings() {
-			return true
+		if l, ok := s.Item().(armour.Leggings); ok {
+			return l.Leggings()
 		}
 	case 3:
-		if b, ok := s.Item().(armour.Boots); ok && b.Boots() {
-			return true
+		if b, ok := s.Item().(armour.Boots); ok {
+			return b.Boots()
 		}
 	}
 	return false

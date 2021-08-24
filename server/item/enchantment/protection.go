@@ -1,6 +1,7 @@
 package enchantment
 
 import (
+	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
 )
@@ -27,13 +28,13 @@ func (e BlastProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e BlastProtection) CompatibleWith(s item.Stack) bool {
-	_, armour := s.Item().(armour.Armour)
+	_, ok := s.Item().(armour.Armour)
 
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
 	_, prot := s.Enchantment(Protection{})
 
-	return armour && !fireProt && !projectileProt && !prot
+	return ok && !fireProt && !projectileProt && !prot
 }
 
 // FireProtection is an armour enchantment that decreases fire damage.
@@ -58,13 +59,13 @@ func (e FireProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e FireProtection) CompatibleWith(s item.Stack) bool {
-	_, armour := s.Item().(armour.Armour)
+	_, ok := s.Item().(armour.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
 	_, prot := s.Enchantment(Protection{})
 
-	return armour && !blastProt && !projectileProt && !prot
+	return ok && !blastProt && !projectileProt && !prot
 }
 
 // ProjectileProtection is an armour enchantment that reduces damage from projectiles.
@@ -89,18 +90,28 @@ func (e ProjectileProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e ProjectileProtection) CompatibleWith(s item.Stack) bool {
-	_, armour := s.Item().(armour.Armour)
+	_, ok := s.Item().(armour.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, prot := s.Enchantment(Protection{})
 
-	return armour && !blastProt && !fireProt && !prot
+	return ok && !blastProt && !fireProt && !prot
 }
 
 // Protection is an armour enchantment which increases the damage reduction.
 type Protection struct {
 	enchantment
+}
+
+// Affects ...
+func (e Protection) Affects(src damage.Source) bool {
+	return src == damage.SourceEntityAttack{} || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
+}
+
+// Subtrahend returns the amount of damage that should be subtracted with protection.
+func (e Protection) Subtrahend(level int) float64 {
+	return float64(level) / 20
 }
 
 // Name ...
@@ -120,11 +131,11 @@ func (e Protection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Protection) CompatibleWith(s item.Stack) bool {
-	_, armour := s.Item().(armour.Armour)
+	_, ok := s.Item().(armour.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
 
-	return armour && !blastProt && !fireProt && !projectileProt
+	return ok && !blastProt && !fireProt && !projectileProt
 }

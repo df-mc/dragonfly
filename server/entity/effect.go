@@ -99,6 +99,7 @@ func (m *EffectManager) Tick(entity Living) {
 		}
 		eff = eff.TickDuration()
 		e = append(e, eff)
+		m.effects[i] = eff
 	}
 	m.mu.Unlock()
 
