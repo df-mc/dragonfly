@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
@@ -75,6 +76,10 @@ func (li *Lightning) Name() string {
 // Tick ...
 func (li *Lightning) Tick(_ int64) {
 	pos, w := li.Position(), li.World()
+	f := fire().(interface {
+		Start(w *world.World, pos cube.Pos)
+	})
+
 	if li.state == 2 { // Init phase
 		w.PlaySound(pos, sound.Thunder{})
 		w.PlaySound(pos, sound.Explosion{})
@@ -84,13 +89,14 @@ func (li *Lightning) Tick(_ int64) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
 				l.Hurt(5, damage.SourceLightning{})
-				if f, ok := e.(Flammable); ok && f.OnFireDuration() < 8*20 {
+				if f, ok := e.(Flammable); ok && f.OnFireDuration() < time.Second*8 {
 					f.SetOnFire(time.Second * 8)
 				}
 			}
 		}
-
-		setBlocksOnFire(w, pos)
+		if w.Difficulty().FireSpreadIncrease() >= 10 {
+			f.Start(w, cube.PosFromVec3(pos))
+		}
 	}
 
 	li.state--
@@ -102,9 +108,18 @@ func (li *Lightning) Tick(_ int64) {
 			li.liveTime--
 			li.state = 1
 
-			setBlocksOnFire(w, pos)
+			if w.Difficulty().FireSpreadIncrease() >= 10 {
+				f.Start(w, cube.PosFromVec3(pos))
+			}
 		}
 	}
 }
 
-var setBlocksOnFire func(w *world.World, lPos mgl64.Vec3)
+// fire returns a fire block.
+func fire() world.Block {
+	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	if !ok {
+		panic("could not find fire block")
+	}
+	return f
+}
