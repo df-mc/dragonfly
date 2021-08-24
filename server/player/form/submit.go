@@ -30,6 +30,12 @@ type MenuSubmittable interface {
 // buttons on a Modal form will not have images.
 type ModalSubmittable MenuSubmittable
 
+// Closer represents a form which has special logic when being closed by a Submitter.
+type Closer interface {
+	// Close is called when the Submitter closes a form.
+	Close(submitter Submitter)
+}
+
 // Submitter is an entity that is able to submit a form sent to it. It is able to fill out fields in the form
 // which will then be present when handled.
 type Submitter interface {

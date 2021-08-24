@@ -22,10 +22,8 @@ type Controllable interface {
 	cmd.Source
 	SetHeldItems(right, left item.Stack)
 
-	Move(deltaPos mgl64.Vec3)
+	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	Speed() float64
-	EyeHeight() float64
-	Rotate(deltaYaw, deltaPitch float64)
 	Facing() cube.Direction
 
 	Chat(msg ...interface{})
