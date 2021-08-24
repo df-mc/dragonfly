@@ -236,7 +236,7 @@ func (f Fire) Start(w *world.World, pos cube.Pos) {
 	_, isTallGrass := b.(TallGrass)
 	if isAir || isTallGrass {
 		below := w.Block(pos.Side(cube.FaceDown))
-		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
+		if below.Model().FaceSolid(pos, cube.FaceUp, w) || NeighboursFlammable(pos, w) {
 			w.PlaceBlock(pos, Fire{})
 		}
 	}
