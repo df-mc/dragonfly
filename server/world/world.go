@@ -74,7 +74,7 @@ type World struct {
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
 
-	updateLCG int
+	updateLCG           int
 	shouldUpdateRain    bool
 	updateRain          bool
 	shouldUpdateThunder bool
