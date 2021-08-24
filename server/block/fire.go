@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
@@ -237,25 +236,9 @@ func allFire() (b []world.Block) {
 	return
 }
 
-//go:linkname block_setBlocksOnFire github.com/df-mc/dragonfly/server/entity.setBlocksOnFire
-//noinspection ALL
-var block_setBlocksOnFire func(w *world.World, lPos mgl64.Vec3)
+//go:linkname entity_flammableBlock github.com/df-mc/dragonfly/server/entity.flammableBlock
+var entity_flammableBlock func(block world.Block) bool
 
 func init() {
-	block_setBlocksOnFire = func(w *world.World, lPos mgl64.Vec3) {
-		_, isNormal := w.Difficulty().(world.DifficultyNormal)
-		_, isHard := w.Difficulty().(world.DifficultyHard)
-		if isNormal || isHard { // difficulty >= 2
-			bPos := cube.PosFromVec3(lPos)
-			b := w.Block(bPos)
-			_, isAir := b.(Air)
-			_, isTallGrass := b.(TallGrass)
-			if isAir || isTallGrass {
-				below := w.Block(bPos.Side(cube.FaceDown))
-				if below.Model().FaceSolid(bPos, cube.FaceUp, w) || neighboursFlammable(bPos, w) {
-					w.PlaceBlock(bPos, Fire{})
-				}
-			}
-		}
-	}
+	entity_flammableBlock = FlammableBlock
 }
