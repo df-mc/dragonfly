@@ -75,6 +75,10 @@ type World struct {
 	viewers   map[Viewer]struct{}
 
 	updateLCG int
+	shouldUpdateRain    bool
+	updateRain          bool
+	shouldUpdateThunder bool
+	updateThunder       bool
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -1216,14 +1220,6 @@ func (w *World) startTicking() {
 	}
 }
 
-var (
-	shouldUpdateRain = false
-	updateRain       = false
-
-	shouldUpdateThunder = false
-	updateThunder       = false
-)
-
 // tick ticks the world and updates the time, blocks and entities that require updates.
 func (w *World) tick() {
 	viewers := w.allViewers()
@@ -1247,15 +1243,15 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			shouldUpdateRain = true
-			updateRain = w.set.RainLevel <= 0
+			w.shouldUpdateRain = true
+			w.updateRain = w.set.RainLevel <= 0
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			shouldUpdateThunder = true
-			updateThunder = w.set.ThunderLevel <= 0
+			w.shouldUpdateThunder = true
+			w.updateThunder = w.set.ThunderLevel <= 0
 		}
 	}
 	w.mu.Unlock()
@@ -1266,14 +1262,16 @@ func (w *World) tick() {
 		}
 	}
 
-	if shouldUpdateRain {
-		w.SetRaining(updateRain)
-		shouldUpdateRain, updateRain = false, false
+	// These bools are here to add some latency, since for some reason updating weather in the code block above doesn't work.
+
+	if w.shouldUpdateRain {
+		w.SetRaining(w.updateRain)
+		w.shouldUpdateRain, w.updateRain = false, false
 	}
 
-	if shouldUpdateThunder {
-		w.SetThunder(updateThunder)
-		shouldUpdateThunder, updateThunder = false, false
+	if w.shouldUpdateThunder {
+		w.SetThunder(w.updateThunder)
+		w.shouldUpdateThunder, w.updateThunder = false, false
 	}
 
 	if w.IsThundering() {

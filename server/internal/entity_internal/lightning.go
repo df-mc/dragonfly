@@ -17,10 +17,10 @@ var world_performThunder func(w *world.World, pos world.ChunkPos)
 
 func init() {
 	world_performThunder = func(w *world.World, pos world.ChunkPos) {
-		LCG := int32(w.GetUpdateLGC() >> 2)
+		lcg := int32(w.GetUpdateLGC() >> 2)
 
 		chunkX, chunkZ := pos.X(), pos.Z()
-		vec := adjustPosToNearbyEntities(w, mgl64.Vec3{float64(chunkX + (LCG & 0xf)), 0, float64(chunkZ + (LCG >> 8 & 0xf))})
+		vec := adjustPosToNearbyEntities(w, mgl64.Vec3{float64(chunkX + (lcg & 0xf)), 0, float64(chunkZ + (lcg >> 8 & 0xf))})
 
 		blockType := w.Block(cube.Pos{int(math.Floor(vec.X())) & 0xf, int(math.Floor(vec.Y())), int(math.Floor(vec.Z())) & 0xf})
 
@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-func canBlockSeeSky(w *world.World, pos mgl64.Vec3) bool {
+func highestBlock(w *world.World, pos mgl64.Vec3) bool {
 	return w.HighestBlock(int(pos.X()), int(pos.Z())) < int(pos.Y())
 }
 
@@ -44,7 +44,7 @@ func adjustPosToNearbyEntities(w *world.World, pos mgl64.Vec3) mgl64.Vec3 {
 	var list []mgl64.Vec3
 
 	for _, e := range w.CollidingEntities(aabb) {
-		if l, ok := e.(entity.Living); ok && l.Health() <= 0 && canBlockSeeSky(w, l.Position()) {
+		if l, ok := e.(entity.Living); ok && l.Health() <= 0 && highestBlock(w, l.Position()) {
 			list = append(list, l.Position())
 		}
 	}
