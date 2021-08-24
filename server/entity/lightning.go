@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"math/rand"
 	"sync/atomic"
 	"time"
@@ -26,7 +27,7 @@ func NewLightning(pos mgl64.Vec3) *Lightning {
 		state:    2,
 		liveTime: rand.Intn(3) + 1,
 	}
-	li.pos.Store(pos)
+	li.pos.Store(mgl64.Vec3{math.Floor(pos[0]), math.Floor(pos[1]), math.Floor(pos[2])})
 
 	return li
 }
