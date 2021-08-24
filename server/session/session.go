@@ -11,12 +11,12 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"go.uber.org/atomic"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -28,7 +28,7 @@ type Session struct {
 	log internal.Logger
 
 	c        Controllable
-	conn     *minecraft.Conn
+	conn     Conn
 	handlers map[uint32]packetHandler
 
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
@@ -72,6 +72,36 @@ type Session struct {
 	joinMessage, quitMessage *atomic.String
 }
 
+// Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
+// information on the identity of the Session.
+type Conn interface {
+	io.Closer
+	// IdentityData returns the login.IdentityData of a Conn. It contains the UUID, XUID and username of the connection.
+	IdentityData() login.IdentityData
+	// ClientData returns the login.ClientData of a Conn. This includes less sensitive data of the player like its skin,
+	// language code and other non-essential information.
+	ClientData() login.ClientData
+	// ClientCacheEnabled specifies if the Conn has the client cache, used for caching chunks client-side, enabled or
+	// not. Some platforms, like the Nintendo Switch, have this disabled at all times.
+	ClientCacheEnabled() bool
+	// ChunkRadius returns the chunk radius as requested by the client at the other end of the Conn.
+	ChunkRadius() int
+	// Latency returns the current latency measured over the Conn.
+	Latency() time.Duration
+	// Flush flushes the packets buffered by the Conn, sending all of them out immediately.
+	Flush() error
+	// LocalAddr returns the local network address.
+	LocalAddr() net.Addr
+	// RemoteAddr returns the remote network address.
+	RemoteAddr() net.Addr
+	// ReadPacket reads a packet.Packet from the Conn. An error is returned if a deadline was set that was
+	// exceeded or if the Conn was closed while awaiting a packet.
+	ReadPacket() (pk packet.Packet, err error)
+	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
+	// packet.
+	WritePacket(pk packet.Packet) error
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -91,7 +121,7 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(conn *minecraft.Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
+func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -371,11 +401,4 @@ func (s *Session) closePlayerList() {
 	}
 	sessions = n
 	sessionMu.Unlock()
-}
-
-// connection returns the minecraft connection.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func (s *Session) connection() *minecraft.Conn {
-	return s.conn
 }
