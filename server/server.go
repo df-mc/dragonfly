@@ -303,6 +303,34 @@ func (server *Server) Close() error {
 	return nil
 }
 
+// Listen makes the Server listen for new connections from the Listener passed. This may be used to listen for players
+// on different interfaces. Note that the maximum player count of additional Listeners added is not enforced
+// automatically. The limit must be enforced by the Listener.
+func (server *Server) Listen(l Listener) {
+	server.listenMu.Lock()
+	server.listeners = append(server.listeners, l)
+	server.listenMu.Unlock()
+
+	server.wg.Add(1)
+
+	wg := new(sync.WaitGroup)
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				// First wait until all connections that are being handled are done inserting the player into the channel.
+				// Afterwards, when we're sure no more values will be inserted in the players channel, we can return so the
+				// player channel can be closed.
+				wg.Wait()
+				server.wg.Done()
+				return
+			}
+			wg.Add(1)
+			go server.finaliseConn(c, l, wg)
+		}
+	}()
+}
+
 // CloseOnProgramEnd closes the server right before the program ends, so that all data of the server are
 // saved properly.
 func (server *Server) CloseOnProgramEnd() {
@@ -348,34 +376,9 @@ func (server *Server) wait() {
 	close(server.players)
 }
 
-func (server *Server) Listen(l Listener) {
-	server.listenMu.Lock()
-	server.listeners = append(server.listeners, l)
-	server.listenMu.Unlock()
-
-	server.wg.Add(1)
-
-	wg := new(sync.WaitGroup)
-	go func() {
-		for {
-			c, err := l.Accept()
-			if err != nil {
-				// First wait until all connections that are being handled are done inserting the player into the channel.
-				// Afterwards, when we're sure no more values will be inserted in the players channel, we can return so the
-				// player channel can be closed.
-				wg.Wait()
-				server.wg.Done()
-				return
-			}
-			wg.Add(1)
-			go server.finaliseConn(c, l, wg)
-		}
-	}()
-}
-
+// finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
 func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
-	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
 		Yaw:            90,
 		WorldName:      server.c.World.Name,
