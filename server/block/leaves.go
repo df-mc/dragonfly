@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
 
@@ -20,6 +21,18 @@ type Leaves struct {
 	Persistent bool
 
 	ShouldUpdate bool
+}
+
+// UseOnBlock makes leaves persistent when they are placed so that they don't decay.
+func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(w, pos, face, l)
+	if !used {
+		return
+	}
+	l.Persistent = true
+
+	place(w, pos, l, user, ctx)
+	return placed(ctx)
 }
 
 // findLog ...
