@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -90,8 +91,6 @@ type Conn interface {
 	Latency() time.Duration
 	// Flush flushes the packets buffered by the Conn, sending all of them out immediately.
 	Flush() error
-	// LocalAddr returns the local network address.
-	LocalAddr() net.Addr
 	// RemoteAddr returns the remote network address.
 	RemoteAddr() net.Addr
 	// ReadPacket reads a packet.Packet from the Conn. An error is returned if a deadline was set that was
@@ -100,6 +99,8 @@ type Conn interface {
 	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
 	// packet.
 	WritePacket(pk packet.Packet) error
+	// StartGame starts the game for the Conn with a timeout.
+	StartGame(data minecraft.GameData) error
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
