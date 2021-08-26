@@ -1938,6 +1938,12 @@ func (p *Player) SwingArm() {
 		v.ViewEntityAction(p, action.SwingArm{})
 	}
 }
+func (p *Player) PunchAir(ctx *event.Context) {
+	if p.Dead() {
+		return
+	}
+	p.handler().HandlePunchAir(ctx)
+}
 
 // EncodeEntity ...
 func (p *Player) EncodeEntity() string {
@@ -2139,7 +2145,7 @@ func (p *Player) session() *session.Session {
 	return s
 }
 
-// handler returns the handler of the player.
+// handler returns the Handler of the player.
 func (p *Player) handler() Handler {
 	p.hMutex.RLock()
 	handler := p.h
