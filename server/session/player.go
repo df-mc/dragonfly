@@ -322,7 +322,7 @@ func (s *Session) EnableCoordinates(enable bool) {
 }
 
 // EnableInstantRespawn will either enable or disable instant respawn for the player depending on the value given
-func (s *session) EnableInstantRespawn(enable bool) {
+func (s *Session) EnableInstantRespawn(enable bool) {
 	//noinspection SpellCheckingInspection
 	s.sendGameRules([]protocol.GameRule{{Name: "immediateRespawn", Value: enable}})
 }
