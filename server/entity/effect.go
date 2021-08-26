@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"reflect"
 	"sync"
@@ -26,8 +27,11 @@ func NewEffectManager() *EffectManager {
 // a higher level/duration than the one passed. Add panics if the effect has a negative duration or level.
 func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	lvl, dur := e.Level(), e.Duration()
-	if lvl <= 0 || dur < 0 {
-		panic("(*EffectManager).Add: effect cannot have negative level or duration")
+	if lvl <= 0 {
+		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have level of 0 or below: %v", lvl))
+	}
+	if dur < 0 {
+		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
@@ -77,7 +81,7 @@ func (m *EffectManager) Effects() []effect.Effect {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	e := make([]effect.Effect, len(m.effects))
+	e := make([]effect.Effect, 0, len(m.effects))
 	for _, eff := range m.effects {
 		e = append(e, eff)
 	}
