@@ -382,6 +382,14 @@ func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
 }
 
+func (p *Player) EnableInstantRespawn() {
+	p.session().EnableInstantRespawn(true)
+}
+
+func (p *Player) DisableInstantRespawn() {
+	p.session().EnableInstantRespawn(false)
+}
+
 // SetNameTag changes the name tag displayed over the player in-game. Changing the name tag does not change
 // the player's name in, for example, the player list or the chat.
 func (p *Player) SetNameTag(name string) {
