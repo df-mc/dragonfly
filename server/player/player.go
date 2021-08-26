@@ -1938,11 +1938,16 @@ func (p *Player) SwingArm() {
 		v.ViewEntityAction(p, action.SwingArm{})
 	}
 }
-func (p *Player) PunchAir(ctx *event.Context) {
+func (p *Player) PunchAir() {
 	if p.Dead() {
 		return
 	}
+	ctx := event.C()
 	p.handler().HandlePunchAir(ctx)
+	ctx.Continue(func() {
+		p.SwingArm()
+		p.World().PlaySound(p.Position(), sound.Attack{Damage: false})
+	})
 }
 
 // EncodeEntity ...

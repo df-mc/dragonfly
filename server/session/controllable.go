@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -42,7 +41,7 @@ type Controllable interface {
 	AttackEntity(e world.Entity)
 	Drop(s item.Stack) (n int)
 	SwingArm()
-	PunchAir(ctx *event.Context)
+	PunchAir()
 
 	Respawn()
 
