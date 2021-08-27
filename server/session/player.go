@@ -605,6 +605,21 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	}
 	return
 }
+func (s *Session) SendXpValue(e *entity.ExperienceManager) {
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{{
+			Name:    "minecraft:player.level",
+			Value:   float32(e.Level()),
+			Default: 0,
+		},
+			{
+				Name:    "minecraft:player.experience",
+				Value:   float32(e.Progress()),
+				Default: 0.00,
+			}},
+	})
+}
 
 // CameraShakeType is the type of camera shake that the player receives
 type CameraShakeType uint8
