@@ -36,7 +36,7 @@ func (sub *SubChunk) RuntimeID(x, y, z byte, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
 		return sub.air
 	}
-	return sub.Layer(layer).RuntimeID(x, y, z)
+	return sub.storages[layer].RuntimeID(x, y, z)
 }
 
 // SetRuntimeID sets the given runtime ID at the given X, Y and Z. X, Y and Z must be in a range of 0-15.

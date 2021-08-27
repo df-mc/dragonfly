@@ -70,6 +70,13 @@ func (m Modal) Body() string {
 // SubmitJSON submits a JSON byte slice to the modal form. This byte slice contains a JSON encoded bool in it,
 // which is used to determine which button was clicked.
 func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
+	if b == nil {
+		if closer, ok := m.submittable.(Closer); ok {
+			closer.Close(submitter)
+		}
+		return nil
+	}
+
 	var value bool
 	if err := json.Unmarshal(b, &value); err != nil {
 		return fmt.Errorf("error parsing JSON as bool: %w", err)

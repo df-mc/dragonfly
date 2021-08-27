@@ -15,6 +15,7 @@ type MovementComputer struct {
 	DragBeforeGravity bool
 	Drag              float64
 
+	lastVel  mgl64.Vec3
 	onGround bool
 }
 
@@ -44,20 +45,23 @@ func (c *MovementComputer) OnGround() bool {
 var zeroVec3 mgl64.Vec3
 
 // epsilon is the epsilon used for thresholds for change used for change in position and velocity.
-var epsilon = 0.001
+const epsilon = 0.001
 
 // sendMovement sends the movement of the world.Entity passed (dPos and vel) to all viewers passed.
 func (c *MovementComputer) sendMovement(e world.Entity, viewers []world.Viewer, pos, dPos, vel mgl64.Vec3, yaw, pitch float64) {
 	posChanged := !dPos.ApproxEqualThreshold(zeroVec3, epsilon)
-	velChanged := !vel.ApproxEqualThreshold(zeroVec3, epsilon)
-	for _, v := range viewers {
-		// TODO: Don't always send velocity and position change. This causes very jittery movement client-side
-		//  which looks awful.
-		if velChanged {
-			v.ViewEntityVelocity(e, vel)
-		}
-		if posChanged {
+	velChanged := !vel.ApproxEqualThreshold(c.lastVel, epsilon)
+
+	still, wasStill := vel.ApproxEqualThreshold(zeroVec3, epsilon), c.lastVel.ApproxEqualThreshold(zeroVec3, epsilon)
+	if posChanged || wasStill != still {
+		for _, v := range viewers {
 			v.ViewEntityMovement(e, pos, yaw, pitch, c.onGround)
+		}
+	}
+	if velChanged || (!wasStill && still) {
+		c.lastVel = vel
+		for _, v := range viewers {
+			v.ViewEntityVelocity(e, vel)
 		}
 	}
 }
@@ -153,7 +157,7 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				boxes := boxes(w.Block(pos), pos, w)
+				boxes := w.Block(pos).Model().AABB(pos, w)
 				for _, box := range boxes {
 					blockAABBs = append(blockAABBs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
 				}
@@ -161,9 +165,4 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 		}
 	}
 	return blockAABBs
-}
-
-// boxes returns the axis aligned bounding box of a block.
-func boxes(b world.Block, pos cube.Pos, w *world.World) []physics.AABB {
-	return b.Model().AABB(pos, w)
 }

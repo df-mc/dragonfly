@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -43,26 +44,24 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	}
 
 	s.teleportMu.Lock()
-	teleportPos := s.teleportPos
-	s.teleportMu.Unlock()
-	if teleportPos != nil {
-		if newPos.Sub(*teleportPos).Len() > 0.5 {
+	if s.teleportPos != nil {
+		if newPos.Sub(*s.teleportPos).Len() > 0.5 {
+			s.teleportMu.Unlock()
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
+			s.ViewEntityTeleport(s.c, s.c.Position())
 			return nil
 		}
-		s.teleportMu.Lock()
 		s.teleportPos = nil
-		s.teleportMu.Unlock()
 	}
+	s.teleportMu.Unlock()
 
-	_, submergedBefore := s.c.World().Liquid(cube.PosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
+	_, submergedBefore := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c)))
 
-	s.c.Move(deltaPos)
-	s.c.Rotate(deltaYaw, deltaPitch)
+	s.c.Move(deltaPos, deltaYaw, deltaPitch)
 
-	_, submergedAfter := s.c.World().Liquid(cube.PosFromVec3(s.c.Position().Add(mgl64.Vec3{0, s.c.EyeHeight()})))
+	_, submergedAfter := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c)))
 
 	if submergedBefore != submergedAfter {
 		// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,
