@@ -324,7 +324,7 @@ func (s *Session) EnableCoordinates(enable bool) {
 // EnableInstantRespawn will either enable or disable instant respawn for the player depending on the value given
 func (s *Session) EnableInstantRespawn(enable bool) {
 	//noinspection SpellCheckingInspection
-	s.sendGameRules([]protocol.GameRule{{Name: "immediateRespawn", Value: enable}})
+	s.sendGameRules([]protocol.GameRule{{Name: "doimmediaterespawn", Value: enable}})
 }
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
