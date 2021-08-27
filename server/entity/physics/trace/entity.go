@@ -43,10 +43,10 @@ func (r EntityResult) Entity() world.Entity {
 func EntityIntercept(e world.Entity, start, end mgl64.Vec3) (result EntityResult, ok bool) {
 	bb := e.AABB().Translate(e.Position()).Grow(-3.0)
 
-	r, ok := Intercept(bb, start, end)
+	r, ok := AABBIntercept(bb, start, end)
 	if !ok {
 		return
 	}
 
-	return EntityResult{pos: r.Position(), face: r.Face(), entity: e}, true
+	return EntityResult{bb: bb, pos: r.Position(), face: r.Face(), entity: e}, true
 }

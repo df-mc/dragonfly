@@ -19,7 +19,7 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 	b := cube.PosFromVec3(start)
 
 	step := signVec3(dir)
-	stepX, stepY, stepZ := cube.Pos{int(math.Floor(step[0]))}, cube.Pos{0, int(math.Floor(step[1]))}, cube.Pos{0, 0, int(math.Floor(step[2]))}
+	stepX, stepY, stepZ := int(step[0]), int(step[1]), int(step[2])
 	max := boundaryVec3(start, dir)
 
 	delta := divideVec3(step, dir)
@@ -34,19 +34,19 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 			if max[0] > r {
 				return
 			}
-			b = b.Add(stepX)
+			b[0] += stepX
 			max[0] += delta[0]
 		} else if max[1] < max[2] {
 			if max[1] > r {
 				return
 			}
-			b = b.Add(stepY)
+			b[1] += stepY
 			max[1] += delta[1]
 		} else {
 			if max[2] > r {
 				return
 			}
-			b = b.Add(stepZ)
+			b[2] += stepZ
 			max[2] += delta[2]
 		}
 	}

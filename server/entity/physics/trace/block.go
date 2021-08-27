@@ -53,7 +53,7 @@ func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl6
 	)
 
 	for _, bb := range bbs {
-		next, ok := Intercept(bb, start, end)
+		next, ok := AABBIntercept(bb.Translate(pos.Vec3()), start, end)
 		if !ok {
 			continue
 		}
@@ -69,5 +69,5 @@ func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl6
 		return result, false
 	}
 
-	return BlockResult{pos: hit.Position(), face: hit.Face(), blockPos: pos}, true
+	return BlockResult{bb: hit.AABB(), pos: hit.Position(), face: hit.Face(), blockPos: pos}, true
 }
