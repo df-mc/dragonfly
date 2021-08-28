@@ -2101,6 +2101,7 @@ func (p *Player) load(data Data) {
 
 	p.experience.SetLevel(int32(data.XPLevel))
 	p.experience.SetProgress(data.XPPercentage)
+	p.session().SendXPValue(p.experience)
 
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
