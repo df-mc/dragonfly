@@ -2035,16 +2035,19 @@ func (p *Player) XPProgress() float64 {
 	return p.experience.Progress()
 }
 
+// AddXP add xp to the player
 func (p *Player) AddXP(amount int) {
 	p.experience.AddXP(amount)
 	p.session().SendXpValue(p.experience)
 }
 
+// SetXPLevel set the xp level of the player, the level must have a value between 0 and 21474836477
 func (p *Player) SetXPLevel(level int) {
 	p.experience.SetLevel(level)
 	p.session().SendXpValue(p.experience)
 }
 
+//SetXPProgress set the xp progress of the player, this accepts a value between 0.00 and 1.00
 func (p *Player) SetXPProgress(progress float64) {
 	p.experience.SetProgress(progress)
 	p.session().SendXpValue(p.experience)
