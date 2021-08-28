@@ -2041,7 +2041,7 @@ func (p *Player) AddXP(amount int) {
 	p.session().SendXpValue(p.experience)
 }
 
-// SetXPLevel set the xp level of the player, the level must have a value between 0 and 21474836477
+// SetXPLevel set the xp level of the player, the level must have a value between 0 and 2147483647
 func (p *Player) SetXPLevel(level int) {
 	p.experience.SetLevel(level)
 	p.session().SendXpValue(p.experience)
