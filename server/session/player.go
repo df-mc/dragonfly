@@ -605,7 +605,9 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	}
 	return
 }
-func (s *Session) SendXpValue(e *entity.ExperienceManager) {
+
+// SendXPValue send the xp level and progress to player.
+func (s *Session) SendXPValue(e *entity.ExperienceManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{

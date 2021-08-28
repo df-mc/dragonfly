@@ -2025,32 +2025,35 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
-// XPLevel get level of the player
+// XPLevel get level of the player.
 func (p *Player) XPLevel() int {
-	return p.experience.Level()
+	return int(p.experience.Level())
 }
 
-// XPProgress get the progress of the player
+// XPProgress get the progress of the player.
 func (p *Player) XPProgress() float64 {
 	return p.experience.Progress()
 }
 
-// AddXP add xp to the player
+// AddXP add xp to the player.
 func (p *Player) AddXP(amount int) {
 	p.experience.AddXP(amount)
-	p.session().SendXpValue(p.experience)
+	p.session().SendXPValue(p.experience)
 }
 
-// SetXPLevel set the xp level of the player, the level must have a value between 0 and 2147483647
+// SetXPLevel set the xp level of the player, the level must have a value between 0 and 2147483647.
 func (p *Player) SetXPLevel(level int) {
-	p.experience.SetLevel(level)
-	p.session().SendXpValue(p.experience)
+	if level > math.MaxInt32 {
+		level = math.MaxInt32
+	}
+	p.experience.SetLevel(int32(level))
+	p.session().SendXPValue(p.experience)
 }
 
-//SetXPProgress set the xp progress of the player, this accepts a value between 0.00 and 1.00
+//SetXPProgress set the xp progress of the player, this accepts a value between 0.00 and 1.00.
 func (p *Player) SetXPProgress(progress float64) {
 	p.experience.SetProgress(progress)
-	p.session().SendXpValue(p.experience)
+	p.session().SendXPValue(p.experience)
 }
 
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
@@ -2096,9 +2099,8 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.experience.SetLevel(data.XPLevel)
+	p.experience.SetLevel(int32(data.XPLevel))
 	p.experience.SetProgress(data.XPPercentage)
-	p.experience.SetTotalXP(data.XPTotal)
 
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
@@ -2141,7 +2143,7 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
-		XPLevel:         p.experience.Level(),
+		XPLevel:         int(p.experience.Level()),
 		XPPercentage:    p.experience.Progress(),
 		XPTotal:         p.experience.TotalXP(),
 		FoodTick:        p.hunger.foodTick,
