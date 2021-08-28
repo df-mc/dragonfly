@@ -2025,6 +2025,31 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
+// XPLevel get level of the player
+func (p *Player) XPLevel() int {
+	return p.experience.Level()
+}
+
+// XPProgress get the progress of the player
+func (p *Player) XPProgress() float64 {
+	return p.experience.Progress()
+}
+
+func (p *Player) AddXP(amount int) {
+	p.experience.AddXP(amount)
+	p.session().SendXpValue(p.experience)
+}
+
+func (p *Player) SetXPLevel(level int) {
+	p.experience.SetLevel(level)
+	p.session().SendXpValue(p.experience)
+}
+
+func (p *Player) SetXPProgress(progress float64) {
+	p.experience.SetProgress(progress)
+	p.session().SendXpValue(p.experience)
+}
+
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
