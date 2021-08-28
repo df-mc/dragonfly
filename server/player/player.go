@@ -77,10 +77,11 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	speed    atomic.Float64
-	health   *entity.HealthManager
-	effects  *entity.EffectManager
-	immunity atomic.Value
+	speed      atomic.Float64
+	health     *entity.HealthManager
+	experience *entity.ExperienceManager
+	effects    *entity.EffectManager
+	immunity   atomic.Value
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -102,21 +103,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:     uuid.New(),
-		offHand:  inventory.New(1, p.broadcastItems),
-		armour:   inventory.NewArmour(p.broadcastArmour),
-		hunger:   newHungerManager(),
-		health:   entity.NewHealthManager(),
-		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeAdventure{},
-		h:        NopHandler{},
-		name:     name,
-		skin:     skin,
-		speed:    *atomic.NewFloat64(0.1),
-		nameTag:  *atomic.NewString(name),
-		heldSlot: atomic.NewUint32(0),
-		locale:   language.BritishEnglish,
-		scale:    *atomic.NewFloat64(1),
+		uuid:       uuid.New(),
+		offHand:    inventory.New(1, p.broadcastItems),
+		armour:     inventory.NewArmour(p.broadcastArmour),
+		hunger:     newHungerManager(),
+		health:     entity.NewHealthManager(),
+		experience: entity.NewExperienceManager(),
+		effects:    entity.NewEffectManager(),
+		gameMode:   world.GameModeAdventure{},
+		h:          NopHandler{},
+		name:       name,
+		skin:       skin,
+		speed:      *atomic.NewFloat64(0.1),
+		nameTag:    *atomic.NewString(name),
+		heldSlot:   atomic.NewUint32(0),
+		locale:     language.BritishEnglish,
+		scale:      *atomic.NewFloat64(1),
 	}
 	p.pos.Store(pos)
 	p.immunity.Store(time.Now())
@@ -2066,6 +2068,10 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
+	p.experience.SetLevel(data.XPLevel)
+	p.experience.SetProgress(data.XPPercentage)
+	p.experience.SetTotalXP(data.XPTotal)
+
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
@@ -2107,6 +2113,9 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
+		XPLevel:         p.experience.Level(),
+		XPPercentage:    p.experience.Progress(),
+		XPTotal:         p.experience.TotalXP(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
