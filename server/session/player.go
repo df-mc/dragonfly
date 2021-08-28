@@ -609,14 +609,16 @@ func (s *Session) SendXpValue(e *entity.ExperienceManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:player.level",
-			Value:   float32(e.Level()),
+			Name:  "minecraft:player.level",
+			Value: float32(e.Level()),
+			Min:   0, Max: float32(e.MaxLevel()),
 			Default: 0,
 		},
 			{
-				Name:    "minecraft:player.experience",
-				Value:   float32(e.Progress()),
-				Default: 0.00,
+				Name:  "minecraft:player.experience",
+				Value: float32(e.Progress()),
+				Min:   0, Max: 1,
+				Default: 0,
 			}},
 	})
 }
