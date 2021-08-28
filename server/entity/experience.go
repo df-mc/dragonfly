@@ -1,6 +1,8 @@
 package entity
 
-var maxLevel = 21474836477
+import "math"
+
+var maxLevel = math.MaxInt32
 
 type ExperienceManager struct {
 	level    int
