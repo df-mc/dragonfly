@@ -1,10 +1,14 @@
 package entity
 
-import "math"
+import (
+	"math"
+	"sync"
+)
 
 var maxLevel int32 = math.MaxInt32
 
 type ExperienceManager struct {
+	mu       sync.RWMutex
 	level    int32
 	progress float64
 	totalXP  int
@@ -17,36 +21,50 @@ func NewExperienceManager() *ExperienceManager {
 
 // Level get xp level.
 func (e *ExperienceManager) Level() int32 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return e.level
 }
 
 // Progress get the progress of the xp, the value are Between 0.00 and 1.00.
 func (e *ExperienceManager) Progress() float64 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return e.progress
 }
 
 // MaxLevel get the max xp level.
 func (e *ExperienceManager) MaxLevel() int32 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return maxLevel
 }
 
 // TotalXP get the total xp collected.
 func (e *ExperienceManager) TotalXP() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return e.totalXP
 }
 
-// GetExperienceToNextLevel get the total experience netted to level up.
-func (e *ExperienceManager) GetExperienceToNextLevel() int {
-	return e.GetExperienceForLevel(e.level)
+// ExperienceToNextLevel get the total experience netted to level up.
+func (e *ExperienceManager) ExperienceToNextLevel() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.ExperienceForLevel(e.level)
 }
 
-// GetExperienceNettedToLevelUp get xp that you need to level up with reducing xp that you already have.
-func (e *ExperienceManager) GetExperienceNettedToLevelUp() int {
-	return e.GetExperienceToNextLevel() - e.ProgressToXp(e.progress, e.level)
+// ExperienceNeededToLevelUp get xp that you need to level up with reducing xp that you already have.
+func (e *ExperienceManager) ExperienceNeededToLevelUp() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.ExperienceToNextLevel() - e.ProgressToXp(e.progress, e.level)
 }
 
-// GetExperienceForLevel get the amount xp to level up in a specific level.
-func (e *ExperienceManager) GetExperienceForLevel(level int32) int {
+// ExperienceForLevel get the amount xp to level up in a specific level.
+func (e *ExperienceManager) ExperienceForLevel(level int32) int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	// I have make like MINET
 	if level > 30 {
 		return int(9*level - 158)
@@ -57,30 +75,38 @@ func (e *ExperienceManager) GetExperienceForLevel(level int32) int {
 	}
 }
 
-// GetExperienceForLevels calculate amount of xp for reach a level.
-func (e *ExperienceManager) GetExperienceForLevels(level int32) int {
+// ExperienceForLevels calculate amount of xp for reach a level.
+func (e *ExperienceManager) ExperienceForLevels(level int32) int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	xp := 0
 	for i := int32(0); i <= level; i++ {
-		xp += e.GetExperienceForLevel(i)
+		xp += e.ExperienceForLevel(i)
 	}
 	return xp
 }
 
 // ProgressToXp get number of xp that you have (not total but start on level) whit progress.
 func (e *ExperienceManager) ProgressToXp(progress float64, level int32) int {
-	return int(float64(e.GetExperienceForLevel(level)) * progress)
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return int(float64(e.ExperienceForLevel(level)) * progress)
 }
 
 // XpToProgress get progress with the amount of xp and a level.
 func (e *ExperienceManager) XpToProgress(xp int, level int32) float64 {
-	return float64(xp) / float64(e.GetExperienceForLevel(level))
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return float64(xp) / float64(e.ExperienceForLevel(level))
 }
 
 // AddXP add xp, that check if you level up.
 func (e *ExperienceManager) AddXP(amount int) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	// level up
-	for e.GetExperienceNettedToLevelUp()-amount <= 0 {
-		amount -= e.GetExperienceToNextLevel() - e.GetExperienceNettedToLevelUp()
+	for e.ExperienceNeededToLevelUp()-amount <= 0 {
+		amount -= e.ExperienceToNextLevel() - e.ExperienceNeededToLevelUp()
 		if e.level == maxLevel {
 			return
 		}
@@ -91,17 +117,21 @@ func (e *ExperienceManager) AddXP(amount int) {
 
 // SetLevel set a new level, this recalculates the total xp.
 func (e *ExperienceManager) SetLevel(level int32) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	if level < 0 {
 		level = 0
 	} else if level > maxLevel {
 		level = maxLevel
 	}
 	e.level = level
-	e.totalXP = e.GetExperienceForLevels(level) + e.ProgressToXp(e.progress, level)
+	e.totalXP = e.ExperienceForLevels(level) + e.ProgressToXp(e.progress, level)
 }
 
 // SetProgress set a new progress, this recalculates the total xp.
 func (e *ExperienceManager) SetProgress(progress float64) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	if progress < 0 {
 		progress = 0
 	} else if progress >= 1 {
