@@ -382,13 +382,12 @@ func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
 }
 
-// EnableInstantRespawn enables the vanilla instant respawn for the player. 
-// All that does is simply remove the respawn screen.
+// EnableInstantRespawn enables the vanilla instant respawn for the player.
 func (p *Player) EnableInstantRespawn() {
 	p.session().EnableInstantRespawn(true)
 }
 
-// DisableInstantRespawn disables the vanilla instant respawn.
+// DisableInstantRespawn disables the vanilla instant respawn for the player.
 func (p *Player) DisableInstantRespawn() {
 	p.session().EnableInstantRespawn(false)
 }
