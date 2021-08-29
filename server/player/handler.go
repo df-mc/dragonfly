@@ -81,7 +81,7 @@ type Handler interface {
 	// back will be dealt.
 	// The knock back force and height is also provided which can be modified.
 	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64)
-	//HandlePunchAir handles the player punching air
+	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
@@ -171,7 +171,7 @@ func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 // HandleAttackEntity ...
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64) {}
 
-//HandlePunchAir ...
+// HandlePunchAir ...
 func (NopHandler) HandlePunchAir(*event.Context) {}
 
 // HandleHurt ...
