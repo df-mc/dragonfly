@@ -1938,6 +1938,7 @@ func (p *Player) SwingArm() {
 		v.ViewEntityAction(p, action.SwingArm{})
 	}
 }
+
 // PunchAir makes the player punch the air and plays the attackNoDamage sound.
 func (p *Player) PunchAir() {
 	if p.Dead() {
@@ -1947,7 +1948,7 @@ func (p *Player) PunchAir() {
 	p.handler().HandlePunchAir(ctx)
 	ctx.Continue(func() {
 		p.SwingArm()
-		p.World().PlaySound(p.Position(), sound.Attack{Damage: false})
+		p.World().PlaySound(p.Position(), sound.Attack{})
 	})
 }
 
