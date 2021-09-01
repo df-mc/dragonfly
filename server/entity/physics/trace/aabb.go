@@ -63,7 +63,7 @@ func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, o
 
 	var (
 		vec  *mgl64.Vec3
-		dist = float64(math.MaxInt64)
+		dist = math.MaxFloat64
 	)
 
 	for _, v := range [...]*mgl64.Vec3{v1, v2, v3, v4, v5, v6} {
@@ -71,8 +71,7 @@ func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, o
 			continue
 		}
 
-		d := start.Sub(*v).LenSqr()
-		if d < dist {
+		if d := start.Sub(*v).LenSqr(); d < dist {
 			vec = v
 			dist = d
 		}
@@ -103,12 +102,11 @@ func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, o
 
 // intermediateX ...
 func intermediateX(a, b mgl64.Vec3, x float64) *mgl64.Vec3 {
-	xDiff := b[0] - a[0]
-	if (xDiff * xDiff) < 0.0000001 {
+	if mgl64.FloatEqual(b[0], a[0]) {
 		return nil
 	}
 
-	f := (x - a[0]) / xDiff
+	f := (x - a[0]) / (b[0] - a[0])
 	if f < 0 || f > 1 {
 		return nil
 	}
@@ -118,12 +116,11 @@ func intermediateX(a, b mgl64.Vec3, x float64) *mgl64.Vec3 {
 
 // intermediateY ...
 func intermediateY(a, b mgl64.Vec3, y float64) *mgl64.Vec3 {
-	yDiff := b[1] - a[1]
-	if (yDiff * yDiff) < 0.0000001 {
+	if mgl64.FloatEqual(a[1], b[1]) {
 		return nil
 	}
 
-	f := (y - a[1]) / yDiff
+	f := (y - a[1]) / (b[1] - a[1])
 	if f < 0 || f > 1 {
 		return nil
 	}
@@ -133,12 +130,11 @@ func intermediateY(a, b mgl64.Vec3, y float64) *mgl64.Vec3 {
 
 // intermediateZ ...
 func intermediateZ(a, b mgl64.Vec3, z float64) *mgl64.Vec3 {
-	zDiff := b[2] - a[2]
-	if (zDiff * zDiff) < 0.0000001 {
+	if mgl64.FloatEqual(a[2], b[2]) {
 		return nil
 	}
 
-	f := (z - a[2]) / zDiff
+	f := (z - a[2]) / (b[2] - a[2])
 	if f < 0 || f > 1 {
 		return nil
 	}

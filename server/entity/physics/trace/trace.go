@@ -22,7 +22,7 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 	stepX, stepY, stepZ := int(step[0]), int(step[1]), int(step[2])
 	max := boundaryVec3(start, dir)
 
-	delta := divideVec3(step, dir)
+	delta := safeDivideVec3(step, dir)
 
 	r := world.Distance(start, end)
 	for {
@@ -52,17 +52,21 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 	}
 }
 
-// divideVec3 ...
-func divideVec3(v1, v2 mgl64.Vec3) mgl64.Vec3 {
-	return mgl64.Vec3{divide(v1[0], v2[0]), divide(v1[1], v2[1]), divide(v1[2], v2[2])}
+// safeDivideVec3 ...
+func safeDivideVec3(dividend, divisor mgl64.Vec3) mgl64.Vec3 {
+	return mgl64.Vec3{
+		safeDivide(dividend[0], divisor[0]),
+		safeDivide(dividend[1], divisor[1]),
+		safeDivide(dividend[2], divisor[2]),
+	}
 }
 
-// divide ...
-func divide(f1, f2 float64) float64 {
-	if f2 == 0.0 {
+// safeDivide divides the dividend by the divisor, but if the divisor is 0, it returns 0.
+func safeDivide(dividend, divisor float64) float64 {
+	if divisor == 0.0 {
 		return 0.0
 	}
-	return f1 / f2
+	return dividend / divisor
 }
 
 // boundaryVec3 ...
@@ -70,20 +74,21 @@ func boundaryVec3(v1, v2 mgl64.Vec3) mgl64.Vec3 {
 	return mgl64.Vec3{boundary(v1[0], v2[0]), boundary(v1[1], v2[1]), boundary(v1[2], v2[2])}
 }
 
-// boundary ...
-func boundary(s, d float64) float64 {
-	if d == 0.0 {
+// boundary returns the distance that must be travelled on an axis from the start point with the direction vector
+// component to cross a block boundary.
+func boundary(start, dir float64) float64 {
+	if dir == 0.0 {
 		return math.Inf(1)
 	}
 
-	if d < 0.0 {
-		s, d = -s, -d
-		if math.Floor(s) == s {
+	if dir < 0.0 {
+		start, dir = -start, -dir
+		if math.Floor(start) == start {
 			return 0.0
 		}
 	}
 
-	return (1 - (s - math.Floor(s))) / d
+	return (1 - (start - math.Floor(start))) / dir
 }
 
 // signVec3 ...
