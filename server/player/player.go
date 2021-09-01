@@ -1939,7 +1939,7 @@ func (p *Player) SwingArm() {
 	}
 }
 
-// PunchAir makes the player punch the air and plays the attackNoDamage sound.
+// PunchAir makes the player punch the air and plays the sound for attacking with no damage.
 func (p *Player) PunchAir() {
 	if p.Dead() {
 		return
