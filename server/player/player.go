@@ -1949,6 +1949,19 @@ func (p *Player) SwingArm() {
 	}
 }
 
+// PunchAir makes the player punch the air and plays the sound for attacking with no damage.
+func (p *Player) PunchAir() {
+	if p.Dead() {
+		return
+	}
+	ctx := event.C()
+	p.handler().HandlePunchAir(ctx)
+	ctx.Continue(func() {
+		p.SwingArm()
+		p.World().PlaySound(p.Position(), sound.Attack{})
+	})
+}
+
 // EncodeEntity ...
 func (p *Player) EncodeEntity() string {
 	return "minecraft:player"
@@ -2149,7 +2162,7 @@ func (p *Player) session() *session.Session {
 	return s
 }
 
-// handler returns the handler of the player.
+// handler returns the Handler of the player.
 func (p *Player) handler() Handler {
 	p.hMutex.RLock()
 	handler := p.h
