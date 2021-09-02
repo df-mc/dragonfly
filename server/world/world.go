@@ -655,7 +655,7 @@ func (w *World) StartTime() {
 	w.enableTimeCycle(true)
 }
 
-// enableTimeCycle enables or disables the time cycling of tthe World.
+// enableTimeCycle enables or disables the time cycling of the World.
 func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
 		return
