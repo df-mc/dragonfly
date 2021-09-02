@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
@@ -31,25 +29,10 @@ func main() {
 	}
 
 	for {
-		if p, err := srv.Accept(); err != nil {
+		if _, err := srv.Accept(); err != nil {
 			return
-		} else {
-			p.Inventory().Handle(handler{})
 		}
 	}
-}
-
-type handler struct{}
-
-func (h handler) HandleTake(ctx *event.Context, slot int, it item.Stack) {
-	ctx.Cancel()
-}
-
-func (h handler) HandlePlace(ctx *event.Context, slot int, it item.Stack) {
-}
-
-func (h handler) HandleDrop(ctx *event.Context, slot int, it item.Stack) {
-	ctx.Cancel()
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
