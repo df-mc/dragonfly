@@ -76,7 +76,10 @@ func (chunk *Chunk) RuntimeID(x uint8, y int16, z uint8, layer uint8) uint32 {
 		// an air block.
 		return chunk.air
 	}
-	return sub.RuntimeID(x, uint8(y&15), z, layer)
+	if uint8(len(sub.storages)) <= layer {
+		return sub.air
+	}
+	return sub.storages[layer].RuntimeID(x, uint8(y&15), z)
 }
 
 // fullSkyLight is used to copy full light to newly created sub chunks.

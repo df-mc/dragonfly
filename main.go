@@ -8,6 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"runtime/pprof"
+	"time"
 )
 
 func main() {
@@ -27,6 +29,13 @@ func main() {
 	if err := srv.Start(); err != nil {
 		log.Fatalln(err)
 	}
+
+	go func() {
+		t := time.NewTimer(time.Second * 5)
+		<-t.C
+		f, _ := os.Open("heap.pprof")
+		_ = pprof.WriteHeapProfile(f)
+	}()
 
 	for {
 		if _, err := srv.Accept(); err != nil {
