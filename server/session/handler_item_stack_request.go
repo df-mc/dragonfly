@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -53,6 +54,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session) (err error) {
 	defer func() {
 		if err != nil {
+			s.log.Debugf("%v", err)
 			h.reject(req.RequestID, s)
 			return
 		}
@@ -97,6 +99,52 @@ func (h *ItemStackRequestHandler) handleTake(a *protocol.TakeStackRequestAction,
 // handlePlace handles a Place stack request action.
 func (h *ItemStackRequestHandler) handlePlace(a *protocol.PlaceStackRequestAction, s *Session) error {
 	return h.handleTransfer(a.Source, a.Destination, a.Count, s)
+}
+
+// handleTransfer handles the transferring of x count from a source slot to a destination slot.
+func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestSlotInfo, count byte, s *Session) error {
+	if err := h.verifySlots(s, from, to); err != nil {
+		return fmt.Errorf("source slot out of sync: %w", err)
+	}
+	i, _ := h.itemInSlot(from, s)
+	dest, _ := h.itemInSlot(to, s)
+	if !i.Comparable(dest) {
+		return fmt.Errorf("client tried transferring %v to %v, but the stacks are incomparable", i, dest)
+	}
+	if i.Count() < int(count) {
+		return fmt.Errorf("client tried subtracting %v from item count, but there are only %v", count, i.Count())
+	}
+	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Empty() {
+		return fmt.Errorf("client tried adding %v to item count %v, but max is %v", count, dest.Count(), dest.MaxCount())
+	}
+	if dest.Empty() {
+		dest = i.Grow(-math.MaxInt32)
+	}
+
+	var err error
+
+	invA, _ := s.invByID(int32(from.ContainerID))
+	invB, _ := s.invByID(int32(to.ContainerID))
+
+	ctx := event.C()
+	invA.Handler().HandleTake(ctx, int(from.Slot), i.Grow(int(count)-i.Count()))
+	ctx.Stop(func() {
+		err = fmt.Errorf("take action was cancelled")
+	})
+
+	ctx = event.C()
+	invB.Handler().HandlePlace(ctx, int(to.Slot), i.Grow(int(count)-i.Count()))
+	ctx.Stop(func() {
+		err = fmt.Errorf("place action was cancelled")
+	})
+	if err != nil {
+		return err
+	}
+
+	h.setItemInSlot(from, i.Grow(-int(count)), s)
+	h.setItemInSlot(to, dest.Grow(int(count)), s)
+
+	return nil
 }
 
 // handleSwap handles a Swap stack request action.
@@ -231,32 +279,6 @@ func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beaco
 		return true
 	}
 	return false
-}
-
-// handleTransfer handles the transferring of x count from a source slot to a destination slot.
-func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestSlotInfo, count byte, s *Session) error {
-	if err := h.verifySlots(s, from, to); err != nil {
-		return fmt.Errorf("source slot out of sync: %w", err)
-	}
-	i, _ := h.itemInSlot(from, s)
-	dest, _ := h.itemInSlot(to, s)
-	if !i.Comparable(dest) {
-		return fmt.Errorf("client tried transferring %v to %v, but the stacks are incomparable", i, dest)
-	}
-	if i.Count() < int(count) {
-		return fmt.Errorf("client tried subtracting %v from item count, but there are only %v", count, i.Count())
-	}
-	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Empty() {
-		return fmt.Errorf("client tried adding %v to item count %v, but max is %v", count, dest.Count(), dest.MaxCount())
-	}
-	if dest.Empty() {
-		dest = i.Grow(-math.MaxInt32)
-	}
-
-	h.setItemInSlot(from, i.Grow(-int(count)), s)
-	h.setItemInSlot(to, dest.Grow(int(count)), s)
-
-	return nil
 }
 
 // verifySlots verifies a list of slots passed.
@@ -427,5 +449,9 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			RequestID: id,
 		}},
 	})
+	for container := range h.changes {
+		s.invByID()
+		s.sendInv()
+	}
 	h.changes = map[byte]map[byte]protocol.StackResponseSlotInfo{}
 }
