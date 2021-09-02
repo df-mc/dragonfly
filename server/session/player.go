@@ -332,10 +332,11 @@ func (s *Session) EnableInstantRespawn(enable bool) {
 func (s *Session) addToPlayerList(session *Session) {
 	c := session.c
 
-	s.entityMutex.Lock()
 	runtimeID := uint64(1)
+	s.entityMutex.Lock()
 	if session != s {
-		runtimeID = s.currentEntityRuntimeID.Add(1)
+		s.currentEntityRuntimeID += 1
+		runtimeID = s.currentEntityRuntimeID
 	}
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entities[runtimeID] = c

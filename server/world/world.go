@@ -655,7 +655,7 @@ func (w *World) StartTime() {
 	w.enableTimeCycle(true)
 }
 
-// enableTimeCycle enables or disables the time cycling of tthe World.
+// enableTimeCycle enables or disables the time cycling of the World.
 func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
 		return
@@ -787,7 +787,7 @@ func (w *World) RemoveEntity(e Entity) {
 }
 
 // CollidingEntities returns the entities colliding with the AABB passed.
-func (w *World) CollidingEntities(aabb physics.AABB) []Entity {
+func (w *World) CollidingEntities(aabb physics.AABB, ignoredEntities ...Entity) []Entity {
 	if w == nil {
 		return nil
 	}
@@ -808,9 +808,18 @@ func (w *World) CollidingEntities(aabb physics.AABB) []Entity {
 			}
 			c.Lock()
 			for _, entity := range c.entities {
-				if aabb.IntersectsWith(entity.AABB().Translate(entity.Position())) {
-					// The entities AABB was within the AABB, so we add it to the slice to return.
-					m = append(m, entity)
+				var ignored bool
+				for _, e := range ignoredEntities {
+					if entity != e {
+						ignored = true
+						break
+					}
+				}
+				if !ignored {
+					if aabb.IntersectsWith(entity.AABB().Translate(entity.Position())) {
+						// The entities AABB was within the AABB, so we add it to the slice to return.
+						m = append(m, entity)
+					}
 				}
 			}
 			c.Unlock()

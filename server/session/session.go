@@ -45,10 +45,10 @@ type Session struct {
 	teleportMu  sync.Mutex
 	teleportPos *mgl64.Vec3
 
+	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
-	currentEntityRuntimeID atomic.Uint64
-	entityMutex            sync.RWMutex
+	currentEntityRuntimeID uint64
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
@@ -141,7 +141,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		maxChunkRadius:         int32(maxChunkRadius),
 		conn:                   conn,
 		log:                    log,
-		currentEntityRuntimeID: *atomic.NewUint64(1),
+		currentEntityRuntimeID: 1,
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
