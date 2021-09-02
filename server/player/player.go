@@ -89,6 +89,7 @@ type Player struct {
 	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
+	cps    int
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
@@ -1197,6 +1198,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e, &force, &height)
 	ctx.Continue(func() {
+		p.addCps()
 		p.SwingArm()
 		living, ok := e.(entity.Living)
 		if !ok {
@@ -1939,6 +1941,20 @@ func (p *Player) Breathing() bool {
 	return !submerged
 }
 
+//Cps will return the current Cps of the player
+func (p *Player) Cps() int {
+	return p.cps
+}
+
+//addCps updates the Cps of the player and removes it 1 second later
+func (p *Player) addCps() {
+	go func() {
+		p.cps += 1
+		time.Sleep(1 * time.Second)
+		p.cps -= 1
+	}()
+}
+
 // SwingArm makes the player swing its arm.
 func (p *Player) SwingArm() {
 	if p.Dead() {
@@ -1957,6 +1973,7 @@ func (p *Player) PunchAir() {
 	ctx := event.C()
 	p.handler().HandlePunchAir(ctx)
 	ctx.Continue(func() {
+		p.addCps()
 		p.SwingArm()
 		p.World().PlaySound(p.Position(), sound.Attack{})
 	})
