@@ -35,12 +35,12 @@ func (r AABBResult) Face() cube.Face {
 // a zero AABBResult is returned and ok is false.
 func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, ok bool) {
 	min, max := bb.Min(), bb.Max()
-	v1 := intermediateX(start, end, min[0])
-	v2 := intermediateX(start, end, max[0])
-	v3 := intermediateY(start, end, min[1])
-	v4 := intermediateY(start, end, max[1])
-	v5 := intermediateZ(start, end, min[2])
-	v6 := intermediateZ(start, end, max[2])
+	v1 := vec3OnLineWithX(start, end, min[0])
+	v2 := vec3OnLineWithX(start, end, max[0])
+	v3 := vec3OnLineWithY(start, end, min[1])
+	v4 := vec3OnLineWithY(start, end, max[1])
+	v5 := vec3OnLineWithZ(start, end, min[2])
+	v6 := vec3OnLineWithZ(start, end, max[2])
 
 	if v1 != nil && !bb.Vec3WithinYZ(*v1) {
 		v1 = nil
@@ -100,8 +100,9 @@ func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, o
 	return AABBResult{bb: bb, pos: *vec, face: f}, true
 }
 
-// intermediateX ...
-func intermediateX(a, b mgl64.Vec3, x float64) *mgl64.Vec3 {
+// vec3OnLineWithX returns an mgl64.Vec3 on the line between mgl64.Vec3 a and b with an X value passed. If no such vec3
+// could be found, the bool returned is false.
+func vec3OnLineWithX(a, b mgl64.Vec3, x float64) *mgl64.Vec3 {
 	if mgl64.FloatEqual(b[0], a[0]) {
 		return nil
 	}
@@ -114,8 +115,9 @@ func intermediateX(a, b mgl64.Vec3, x float64) *mgl64.Vec3 {
 	return &mgl64.Vec3{x, a[1] + (b[1]-a[1])*f, a[2] + (b[2]-a[2])*f}
 }
 
-// intermediateY ...
-func intermediateY(a, b mgl64.Vec3, y float64) *mgl64.Vec3 {
+// vec3OnLineWithY returns an mgl64.Vec3 on the line between mgl64.Vec3 a and b with a Y value passed. If no such vec3
+// could be found, the bool returned is false.
+func vec3OnLineWithY(a, b mgl64.Vec3, y float64) *mgl64.Vec3 {
 	if mgl64.FloatEqual(a[1], b[1]) {
 		return nil
 	}
@@ -128,8 +130,9 @@ func intermediateY(a, b mgl64.Vec3, y float64) *mgl64.Vec3 {
 	return &mgl64.Vec3{a[0] + (b[0]-a[0])*f, y, a[2] + (b[2]-a[2])*f}
 }
 
-// intermediateZ ...
-func intermediateZ(a, b mgl64.Vec3, z float64) *mgl64.Vec3 {
+// vec3OnLineWithZ returns an mgl64.Vec3 on the line between mgl64.Vec3 a and b with a Z value passed. If no such vec3
+// could be found, the bool returned is false.
+func vec3OnLineWithZ(a, b mgl64.Vec3, z float64) *mgl64.Vec3 {
 	if mgl64.FloatEqual(a[2], b[2]) {
 		return nil
 	}
