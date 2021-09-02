@@ -18,7 +18,7 @@ import (
 // inventory.
 type ItemStackRequestHandler struct {
 	currentRequest  int32
-	changes         map[byte]map[byte]protocol.StackResponseSlotInfo
+	changes         map[byte]map[byte]changeInfo
 	responseChanges map[int32]map[byte]map[byte]responseChange
 	current         time.Time
 	ignoreDestroy   bool
@@ -29,6 +29,11 @@ type ItemStackRequestHandler struct {
 type responseChange struct {
 	id        int32
 	timestamp time.Time
+}
+
+type changeInfo struct {
+	after  protocol.StackResponseSlotInfo
+	before item.Stack
 }
 
 // Handle ...
@@ -121,22 +126,12 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 		dest = i.Grow(-math.MaxInt32)
 	}
 
-	var err error
-
 	invA, _ := s.invByID(int32(from.ContainerID))
 	invB, _ := s.invByID(int32(to.ContainerID))
 
 	ctx := event.C()
-	invA.Handler().HandleTake(ctx, int(from.Slot), i.Grow(int(count)-i.Count()))
-	ctx.Stop(func() {
-		err = fmt.Errorf("take action was cancelled")
-	})
-
-	ctx = event.C()
-	invB.Handler().HandlePlace(ctx, int(to.Slot), i.Grow(int(count)-i.Count()))
-	ctx.Stop(func() {
-		err = fmt.Errorf("place action was cancelled")
-	})
+	_ = call(ctx, int(from.Slot), i.Grow(int(count)-i.Count()), invA.Handler().HandleTake)
+	err := call(ctx, int(to.Slot), i.Grow(int(count)-i.Count()), invB.Handler().HandlePlace)
 	if err != nil {
 		return err
 	}
@@ -155,10 +150,38 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	i, _ := h.itemInSlot(a.Source, s)
 	dest, _ := h.itemInSlot(a.Destination, s)
 
+	invA, _ := s.invByID(int32(a.Source.ContainerID))
+	invB, _ := s.invByID(int32(a.Destination.ContainerID))
+
+	ctx := event.C()
+	_ = call(ctx, int(a.Source.Slot), i, invA.Handler().HandleTake)
+	_ = call(ctx, int(a.Source.Slot), dest, invA.Handler().HandlePlace)
+	_ = call(ctx, int(a.Destination.Slot), dest, invB.Handler().HandleTake)
+	err := call(ctx, int(a.Destination.Slot), i, invB.Handler().HandlePlace)
+	if err != nil {
+		return err
+	}
+
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
 
 	return nil
+}
+
+// call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
+// the event.Context was cancelled either before or after the call.
+func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+	var err error
+	ctx.Stop(func() {
+		err = fmt.Errorf("action was cancelled")
+	})
+	ctx.Continue(func() {
+		f(ctx, slot, it)
+		ctx.Stop(func() {
+			err = fmt.Errorf("action was cancelled")
+		})
+	})
+	return err
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -211,6 +234,13 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	if i.Count() < int(a.Count) {
 		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
 	}
+
+	inv, _ := s.invByID(int32(a.Source.ContainerID))
+	ctx := event.C()
+	if err := call(ctx, int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+		return err
+	}
+
 	n := s.c.Drop(i.Grow(int(a.Count) - i.Count()))
 	h.setItemInSlot(a.Source, i.Grow(-n), s)
 	return nil
@@ -395,18 +425,23 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 		sl = 0
 	}
 
+	before, _ := inventory.Item(sl)
 	_ = inventory.SetItem(sl, i)
 
-	if h.changes[slot.ContainerID] == nil {
-		h.changes[slot.ContainerID] = map[byte]protocol.StackResponseSlotInfo{}
-	}
 	respSlot := protocol.StackResponseSlotInfo{
 		Slot:           slot.Slot,
 		HotbarSlot:     slot.Slot,
 		Count:          byte(i.Count()),
 		StackNetworkID: item_id(i),
 	}
-	h.changes[slot.ContainerID][slot.Slot] = respSlot
+
+	if h.changes[slot.ContainerID] == nil {
+		h.changes[slot.ContainerID] = map[byte]changeInfo{}
+	}
+	h.changes[slot.ContainerID][slot.Slot] = changeInfo{
+		after:  respSlot,
+		before: before,
+	}
 
 	if h.responseChanges[h.currentRequest] == nil {
 		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
@@ -426,7 +461,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 	for container, slotInfo := range h.changes {
 		slots := make([]protocol.StackResponseSlotInfo, 0, len(slotInfo))
 		for _, slot := range slotInfo {
-			slots = append(slots, slot)
+			slots = append(slots, slot.after)
 		}
 		info = append(info, protocol.StackResponseContainerInfo{
 			ContainerID: container,
@@ -438,7 +473,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 		RequestID:     id,
 		ContainerInfo: info,
 	}}})
-	h.changes = map[byte]map[byte]protocol.StackResponseSlotInfo{}
+	h.changes = map[byte]map[byte]changeInfo{}
 }
 
 // reject rejects the item stack request sent by the client so that it is reverted client-side.
@@ -449,9 +484,12 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			RequestID: id,
 		}},
 	})
-	for container := range h.changes {
-		s.invByID()
-		s.sendInv()
+	// Revert changes that we already made for valid actions.
+	for container, slots := range h.changes {
+		for slot, info := range slots {
+			inv, _ := s.invByID(int32(container))
+			_ = inv.SetItem(int(slot), info.before)
+		}
 	}
-	h.changes = map[byte]map[byte]protocol.StackResponseSlotInfo{}
+	h.changes = map[byte]map[byte]changeInfo{}
 }
