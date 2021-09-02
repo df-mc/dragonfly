@@ -42,31 +42,15 @@ func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, o
 	v5 := vec3OnLineWithZ(start, end, min[2])
 	v6 := vec3OnLineWithZ(start, end, max[2])
 
-	if v1 != nil && !bb.Vec3WithinYZ(*v1) {
-		v1 = nil
-	}
-	if v2 != nil && !bb.Vec3WithinYZ(*v2) {
-		v2 = nil
-	}
-	if v3 != nil && !bb.Vec3WithinXZ(*v3) {
-		v3 = nil
-	}
-	if v4 != nil && !bb.Vec3WithinXZ(*v4) {
-		v4 = nil
-	}
-	if v5 != nil && !bb.Vec3WithinXY(*v5) {
-		v5 = nil
-	}
-	if v6 != nil && !bb.Vec3WithinXY(*v6) {
-		v6 = nil
-	}
-
 	var (
 		vec  *mgl64.Vec3
 		dist = math.MaxFloat64
 	)
 
 	for _, v := range [...]*mgl64.Vec3{v1, v2, v3, v4, v5, v6} {
+		if v != nil && !bb.Vec3WithinXY(*v) {
+			v = nil
+		}
 		if v == nil {
 			continue
 		}
