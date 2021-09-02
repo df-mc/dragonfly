@@ -50,7 +50,7 @@ func (s *Session) SendAvailableCommands() {
 		overloads := make([]protocol.CommandOverload, len(params))
 		for i, params := range params {
 			for _, paramInfo := range params {
-				t, enum := valueToParamType(paramInfo.Value, s.c.(cmd.Source))
+				t, enum := valueToParamType(paramInfo.Value, s.c)
 				t |= protocol.CommandArgValid
 
 				opt := byte(0)
