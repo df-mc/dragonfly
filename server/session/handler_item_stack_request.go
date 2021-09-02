@@ -31,6 +31,8 @@ type responseChange struct {
 	timestamp time.Time
 }
 
+// changeInfo holds information on a slot change initiated by an item stack request. It holds both the new and the old
+// item information and is used for reverting and verifying.
 type changeInfo struct {
 	after  protocol.StackResponseSlotInfo
 	before item.Stack
