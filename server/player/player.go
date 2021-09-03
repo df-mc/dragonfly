@@ -1593,11 +1593,10 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // SetVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
-	if p.session() == session.Nop {
+	s := p.session()
+	if s.SendVelocity(velocity); s == session.Nop {
 		p.vel.Store(velocity)
-		return
 	}
-	p.session().SendVelocity(velocity)
 }
 
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
