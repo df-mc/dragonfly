@@ -77,11 +77,11 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	speed      atomic.Float64
-	health     *entity.HealthManager
-	experience *entity.ExperienceManager
-	effects    *entity.EffectManager
-	immunity   atomic.Value
+	speed    atomic.Float64
+	health   *entity.HealthManager
+	xp       *entity.XPManager
+	effects  *entity.EffectManager
+	immunity atomic.Value
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -103,22 +103,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		gameMode:   world.GameModeAdventure{},
-		h:          NopHandler{},
-		name:       name,
-		skin:       skin,
-		speed:      *atomic.NewFloat64(0.1),
-		nameTag:    *atomic.NewString(name),
-		heldSlot:   atomic.NewUint32(0),
-		locale:     language.BritishEnglish,
-		scale:      *atomic.NewFloat64(1),
+		uuid:     uuid.New(),
+		offHand:  inventory.New(1, p.broadcastItems),
+		armour:   inventory.NewArmour(p.broadcastArmour),
+		hunger:   newHungerManager(),
+		health:   entity.NewHealthManager(),
+		xp:       entity.NewXPManager(),
+		effects:  entity.NewEffectManager(),
+		gameMode: world.GameModeAdventure{},
+		h:        NopHandler{},
+		name:     name,
+		skin:     skin,
+		speed:    *atomic.NewFloat64(0.1),
+		nameTag:  *atomic.NewString(name),
+		heldSlot: atomic.NewUint32(0),
+		locale:   language.BritishEnglish,
+		scale:    *atomic.NewFloat64(1),
 	}
 	p.pos.Store(pos)
 	p.immunity.Store(time.Now())
@@ -2027,18 +2027,18 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 
 // XPLevel get level of the player.
 func (p *Player) XPLevel() int {
-	return int(p.experience.Level())
+	return int(p.xp.Level())
 }
 
 // XPProgress get the progress of the player.
 func (p *Player) XPProgress() float64 {
-	return p.experience.Progress()
+	return p.xp.Progress()
 }
 
 // AddXP add xp to the player.
 func (p *Player) AddXP(amount int) {
-	p.experience.AddXP(amount)
-	p.session().SendXPValue(p.experience)
+	p.xp.AddXP(amount)
+	p.session().SendXPValue(p.xp)
 }
 
 // SetXPLevel set the xp level of the player, the level must have a value between 0 and 2147483647.
@@ -2046,14 +2046,14 @@ func (p *Player) SetXPLevel(level int) {
 	if level > math.MaxInt32 {
 		level = math.MaxInt32
 	}
-	p.experience.SetLevel(int32(level))
-	p.session().SendXPValue(p.experience)
+	p.xp.SetLevel(int32(level))
+	p.session().SendXPValue(p.xp)
 }
 
 //SetXPProgress set the xp progress of the player, this accepts a value between 0.00 and 1.00.
 func (p *Player) SetXPProgress(progress float64) {
-	p.experience.SetProgress(progress)
-	p.session().SendXPValue(p.experience)
+	p.xp.SetProgress(progress)
+	p.session().SendXPValue(p.xp)
 }
 
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
@@ -2099,9 +2099,9 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.experience.SetLevel(int32(data.XPLevel))
-	p.experience.SetProgress(data.XPPercentage)
-	p.session().SendXPValue(p.experience)
+	p.xp.SetLevel(int32(data.XPLevel))
+	p.xp.SetProgress(data.XPPercentage)
+	p.session().SendXPValue(p.xp)
 
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
@@ -2144,9 +2144,9 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
-		XPLevel:         int(p.experience.Level()),
-		XPPercentage:    p.experience.Progress(),
-		XPTotal:         p.experience.TotalXP(),
+		XPLevel:         int(p.xp.Level()),
+		XPPercentage:    p.xp.Progress(),
+		XPTotal:         p.xp.TotalXP(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
