@@ -47,7 +47,7 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos                                 atomic.Value
+	pos, vel                            atomic.Value
 	nameTag                             atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 
@@ -82,6 +82,8 @@ type Player struct {
 	xp       *entity.XPManager
 	effects  *entity.EffectManager
 	immunity atomic.Value
+
+	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -120,7 +122,9 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
 	}
+	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
 	return p
@@ -384,6 +388,16 @@ func (p *Player) HideCoordinates() {
 	p.session().EnableCoordinates(false)
 }
 
+// EnableInstantRespawn enables the vanilla instant respawn for the player.
+func (p *Player) EnableInstantRespawn() {
+	p.session().EnableInstantRespawn(true)
+}
+
+// DisableInstantRespawn disables the vanilla instant respawn for the player.
+func (p *Player) DisableInstantRespawn() {
+	p.session().EnableInstantRespawn(false)
+}
+
 // SetNameTag changes the name tag displayed over the player in-game. Changing the name tag does not change
 // the player's name in, for example, the player list or the chat.
 func (p *Player) SetNameTag(name string) {
@@ -625,10 +639,6 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	if p.session() == session.Nop {
-		// TODO: Implement server-side movement and knock-back.
-		return
-	}
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 	velocity = velocity.Normalize().Mul(force)
@@ -640,7 +650,8 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 			resistance += a.KnockBackResistance()
 		}
 	}
-	p.session().SendVelocity(velocity.Mul(1 - resistance))
+
+	p.SetVelocity(velocity.Mul(1 - resistance))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
@@ -1632,6 +1643,20 @@ func (p *Player) Position() mgl64.Vec3 {
 	return p.pos.Load().(mgl64.Vec3)
 }
 
+// Velocity returns the players current velocity. If there is an attached session, this will be empty.
+func (p *Player) Velocity() mgl64.Vec3 {
+	return p.vel.Load().(mgl64.Vec3)
+}
+
+// SetVelocity updates the players velocity. If there is an attached session, this will just send
+// the velocity to the player session for the player to update.
+func (p *Player) SetVelocity(velocity mgl64.Vec3) {
+	s := p.session()
+	if s.SendVelocity(velocity); s == session.Nop {
+		p.vel.Store(velocity)
+	}
+}
+
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
@@ -1730,6 +1755,13 @@ func (p *Player) Tick(current int64) {
 				v.ViewEntityAction(p, action.Eat{})
 			}
 		}
+	}
+
+	if p.session() == session.Nop {
+		pos, vel := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+
+		p.pos.Store(pos)
+		p.vel.Store(vel)
 	}
 }
 
@@ -1941,6 +1973,19 @@ func (p *Player) SwingArm() {
 	}
 }
 
+// PunchAir makes the player punch the air and plays the sound for attacking with no damage.
+func (p *Player) PunchAir() {
+	if p.Dead() {
+		return
+	}
+	ctx := event.C()
+	p.handler().HandlePunchAir(ctx)
+	ctx.Continue(func() {
+		p.SwingArm()
+		p.World().PlaySound(p.Position(), sound.Attack{})
+	})
+}
+
 // EncodeEntity ...
 func (p *Player) EncodeEntity() string {
 	return "minecraft:player"
@@ -2138,7 +2183,7 @@ func (p *Player) Data() Data {
 		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
-		Velocity:        mgl64.Vec3{}, // TODO: Implement server-side movement of player entities.
+		Velocity:        mgl64.Vec3{},
 		Yaw:             yaw,
 		Pitch:           pitch,
 		Health:          p.Health(),
@@ -2179,7 +2224,7 @@ func (p *Player) session() *session.Session {
 	return s
 }
 
-// handler returns the handler of the player.
+// handler returns the Handler of the player.
 func (p *Player) handler() Handler {
 	p.hMutex.RLock()
 	handler := p.h
