@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -20,7 +21,7 @@ import (
 type ItemStackRequestHandler struct {
 	currentRequest  int32
 	changes         map[byte]map[byte]changeInfo
-	responseChanges map[int32]map[byte]map[byte]responseChange
+	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
 	current         time.Time
 	ignoreDestroy   bool
 }
@@ -108,11 +109,6 @@ func (h *ItemStackRequestHandler) handleTake(a *protocol.TakeStackRequestAction,
 
 // handlePlace handles a Place stack request action.
 func (h *ItemStackRequestHandler) handlePlace(a *protocol.PlaceStackRequestAction, s *Session) error {
-	// Fix the container IDs before updating anything, otherwise we could have issues with future requests.
-	// These issues only happen on place, hence why we're only checking for wrong container IDs here.
-	a.Source.ContainerID = fixID(a.Source.ContainerID)
-	a.Destination.ContainerID = fixID(a.Destination.ContainerID)
-
 	return h.handleTransfer(a.Source, a.Destination, a.Count, s)
 }
 
@@ -369,7 +365,10 @@ func (h *ItemStackRequestHandler) verifySlots(s *Session, slots ...protocol.Stac
 
 // verifySlot checks if the slot passed by the client is the same as that expected by the server.
 func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo, s *Session) error {
-	h.tryAcknowledgeChanges(slot)
+	err := h.tryAcknowledgeChanges(s, slot)
+	if err != nil {
+		return err
+	}
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
 	}
@@ -378,7 +377,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	if err != nil {
 		return err
 	}
-	clientID, err := h.resolveID(slot)
+	clientID, err := h.resolveID(s, slot)
 	if err != nil {
 		return err
 	}
@@ -387,15 +386,15 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	if id := item_id(i); id != clientID {
 		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
-	inventory, _ := s.invByID(int32(slot.ContainerID))
 
+	inv, _ := s.invByID(int32(slot.ContainerID))
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	if inventory.SlotLocked(sl) {
-		return fmt.Errorf("slot in inventory was locked")
+	if inv.SlotLocked(sl) {
+		return fmt.Errorf("slot in inv was locked")
 	}
 	return nil
 }
@@ -403,7 +402,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 // resolveID resolves the stack network ID in the slot passed. If it is negative, it points to an earlier
 // request, in which case it will look it up in the changes of an earlier response to a request to find the
 // actual stack network ID in the slot. If it is positive, the ID will be returned again.
-func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) (int32, error) {
+func (h *ItemStackRequestHandler) resolveID(s *Session, slot protocol.StackRequestSlotInfo) (int32, error) {
 	if slot.StackNetworkID >= 0 {
 		return slot.StackNetworkID, nil
 	}
@@ -411,7 +410,11 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v, but request could not be found", slot.StackNetworkID)
 	}
-	changes, ok := containerChanges[slot.ContainerID]
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return 0, fmt.Errorf("slot pointed to inventory with id %v, but inventory could not be found", slot.ContainerID)
+	}
+	changes, ok := containerChanges[inv]
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.ContainerID)
 	}
@@ -425,37 +428,44 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 // tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
 // info passed from the client has the right stack network ID in any of the stored slots. If this is the case,
 // that entry is removed, so that the maps are cleaned up eventually.
-func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
+func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protocol.StackRequestSlotInfo) error {
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return fmt.Errorf("could not find container with id %v", slot.ContainerID)
+	}
+
 	for requestID, containerChanges := range h.responseChanges {
-		for containerID, changes := range containerChanges {
+		for newInv, changes := range containerChanges {
 			for slotIndex, val := range changes {
-				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && newInv == inv) || h.current.Sub(val.timestamp) > time.Second*5 {
 					delete(changes, slotIndex)
 				}
 			}
 			if len(changes) == 0 {
-				delete(containerChanges, containerID)
+				delete(containerChanges, newInv)
 			}
 		}
 		if len(containerChanges) == 0 {
 			delete(h.responseChanges, requestID)
 		}
 	}
+
+	return nil
 }
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
 func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session) (item.Stack, error) {
-	inventory, ok := s.invByID(int32(slot.ContainerID))
+	inv, ok := s.invByID(int32(slot.ContainerID))
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
 	}
 
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	i, err := inventory.Item(sl)
+	i, err := inv.Item(sl)
 	if err != nil {
 		return i, err
 	}
@@ -464,15 +474,15 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
-	inventory, _ := s.invByID(int32(slot.ContainerID))
+	inv, _ := s.invByID(int32(slot.ContainerID))
 
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	before, _ := inventory.Item(sl)
-	_ = inventory.SetItem(sl, i)
+	before, _ := inv.Item(sl)
+	_ = inv.SetItem(sl, i)
 
 	respSlot := protocol.StackResponseSlotInfo{
 		Slot:           slot.Slot,
@@ -490,12 +500,12 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	}
 
 	if h.responseChanges[h.currentRequest] == nil {
-		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
+		h.responseChanges[h.currentRequest] = map[*inventory.Inventory]map[byte]responseChange{}
 	}
-	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
-		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
+	if h.responseChanges[h.currentRequest][inv] == nil {
+		h.responseChanges[h.currentRequest][inv] = map[byte]responseChange{}
 	}
-	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+	h.responseChanges[h.currentRequest][inv][slot.Slot] = responseChange{
 		id:        respSlot.StackNetworkID,
 		timestamp: h.current,
 	}

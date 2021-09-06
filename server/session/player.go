@@ -89,14 +89,6 @@ const (
 	containerCraftingResult = containerCraftingGrid + containerCraftingOffset
 )
 
-// fixID fixes the container ID passed, as it can sometimes be incorrectly sent by Minecraft. (for example, in the recipe book.)
-func fixID(id byte) byte {
-	if id == containerHotbar || id == containerInventory {
-		return containerFullInventory
-	}
-	return id
-}
-
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
