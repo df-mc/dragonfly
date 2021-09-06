@@ -600,6 +600,12 @@ func itemsToRecipeIngredientItems(s []recipes.Item) (r []protocol.RecipeIngredie
 	return
 }
 
+// stripDamageFromProtocolItem strips the damage from a protocol item.
+func stripDamageFromProtocolItem(st protocol.ItemStack) protocol.ItemStack {
+	delete(st.NBTData, "Damage")
+	return st
+}
+
 // protocolRecipes returns all recipes as protocol recipes.
 func (s *Session) protocolRecipes() []protocol.Recipe {
 	recipeList := make([]protocol.Recipe, 0, len(recipes.All()))
@@ -609,25 +615,21 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 
 		switch newRecipe := i.(type) {
 		case recipes.ShapelessRecipe:
-			out := stackFromItem(newRecipe.Output)
-			delete(out.NBTData, "Damage")
 			recipeList = append(recipeList, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
-				Output:          []protocol.ItemStack{out},
+				Output:          []protocol.ItemStack{stripDamageFromProtocolItem(stackFromItem(newRecipe.Output))},
 				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shapeless recipes are added.
 				Priority:        newRecipe.Priority,
 				RecipeNetworkID: networkID,
 			})
 		case recipes.ShapedRecipe:
-			out := stackFromItem(newRecipe.Output)
-			delete(out.NBTData, "Damage")
 			recipeList = append(recipeList, &protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
 				Width:           newRecipe.Dimensions.Width,
 				Height:          newRecipe.Dimensions.Height,
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
-				Output:          []protocol.ItemStack{out},
+				Output:          []protocol.ItemStack{stripDamageFromProtocolItem(stackFromItem(newRecipe.Output))},
 				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shaped recipes are added.
 				Priority:        newRecipe.Priority,
 				RecipeNetworkID: networkID,
@@ -641,11 +643,9 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
 	for index, i := range creative.Items() {
-		v := stackFromItem(i)
-		delete(v.NBTData, "Damage")
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  v,
+			Item:                  stripDamageFromProtocolItem(stackFromItem(i)),
 		})
 	}
 	return it
