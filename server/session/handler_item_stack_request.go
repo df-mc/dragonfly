@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
-	"github.com/df-mc/dragonfly/server/world/recipes"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -185,13 +185,13 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		return fmt.Errorf("invalid recipe network id sent")
 	}
 
-	var expectedInputs []recipes.Item
+	var expectedInputs []recipe.Item
 	var output item.Stack
 
 	switch r := r.(type) {
-	case recipes.ShapelessRecipe:
+	case recipe.ShapelessRecipe:
 		expectedInputs, output = r.Inputs, r.Output
-	case recipes.ShapedRecipe:
+	case recipe.ShapedRecipe:
 		expectedInputs, output = r.Inputs, r.Output
 	default:
 		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
@@ -541,7 +541,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 }
 
 // hasRequiredInputs checks and validates the inputs for a crafting grid.
-func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Session) bool {
+func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipe.Item, s *Session) bool {
 	offset := s.craftingOffset()
 
 	var satisfiedInputs int
@@ -584,7 +584,7 @@ func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Se
 }
 
 // removeInputs removes the inputs passed in the crafting grid.
-func (h *ItemStackRequestHandler) removeInputs(inputs []recipes.Item, s *Session) error {
+func (h *ItemStackRequestHandler) removeInputs(inputs []recipe.Item, s *Session) error {
 	offset := s.craftingOffset()
 
 	var index int

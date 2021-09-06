@@ -1,4 +1,4 @@
-package recipes
+package recipe
 
 import (
 	_ "embed"
@@ -12,7 +12,7 @@ func Register(recipe Recipe) {
 	recipes = append(recipes, recipe)
 }
 
-// All returns each recipe in a slice.
-func All() []Recipe {
+// Recipes returns each recipe in a slice.
+func Recipes() []Recipe {
 	return recipes
 }

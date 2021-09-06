@@ -11,10 +11,10 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/recipes"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -579,7 +579,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 }
 
 // itemToRecipeIngredientItem converts a recipe.Item into a type that can be used over the protocol.
-func itemToRecipeIngredientItem(s recipes.Item) protocol.RecipeIngredientItem {
+func itemToRecipeIngredientItem(s recipe.Item) protocol.RecipeIngredientItem {
 	if s.Item() == nil {
 		return protocol.RecipeIngredientItem{}
 	}
@@ -600,7 +600,7 @@ func itemToRecipeIngredientItem(s recipes.Item) protocol.RecipeIngredientItem {
 }
 
 // itemsToRecipeIngredientItems converts a list of recipe.Items into a type that can be used over the protocol.
-func itemsToRecipeIngredientItems(s []recipes.Item) (r []protocol.RecipeIngredientItem) {
+func itemsToRecipeIngredientItems(s []recipe.Item) (r []protocol.RecipeIngredientItem) {
 	for _, st := range s {
 		r = append(r, itemToRecipeIngredientItem(st))
 	}
@@ -615,30 +615,28 @@ func stripDamageFromProtocolItem(st protocol.ItemStack) protocol.ItemStack {
 
 // protocolRecipes returns all recipes as protocol recipes.
 func (s *Session) protocolRecipes() []protocol.Recipe {
-	recipeList := make([]protocol.Recipe, 0, len(recipes.All()))
-	for index, i := range recipes.All() {
+	recipeList := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
 		s.recipeMapping[networkID] = i
 
 		switch newRecipe := i.(type) {
-		case recipes.ShapelessRecipe:
+		case recipe.ShapelessRecipe:
 			recipeList = append(recipeList, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
 				Output:          []protocol.ItemStack{stripDamageFromProtocolItem(stackFromItem(newRecipe.Output))},
 				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shapeless recipes are added.
-				Priority:        newRecipe.Priority,
 				RecipeNetworkID: networkID,
 			})
-		case recipes.ShapedRecipe:
+		case recipe.ShapedRecipe:
 			recipeList = append(recipeList, &protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
-				Width:           newRecipe.Dimensions.Width,
-				Height:          newRecipe.Dimensions.Height,
+				Width:           int32(newRecipe.Dimensions[0]),
+				Height:          int32(newRecipe.Dimensions[1]),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
 				Output:          []protocol.ItemStack{stripDamageFromProtocolItem(stackFromItem(newRecipe.Output))},
 				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shaped recipes are added.
-				Priority:        newRecipe.Priority,
 				RecipeNetworkID: networkID,
 			})
 		}

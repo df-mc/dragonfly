@@ -1,4 +1,4 @@
-package recipes
+package recipe
 
 import "github.com/df-mc/dragonfly/server/item"
 
@@ -15,8 +15,6 @@ type ShapelessRecipe struct {
 	Inputs []Item
 	// Output is an item that is created as a result of crafting the recipe.
 	Output item.Stack
-	// Priority ...
-	Priority int32
 }
 
 // ShapedRecipe is a recipe that has a specific shape that must be used to craft the output of the recipe.
@@ -29,8 +27,6 @@ type ShapedRecipe struct {
 	Inputs []Item
 	// Output is an item that is created as a result of crafting the recipe.
 	Output item.Stack
-	// Priority ...
-	Priority int32
 }
 
 // recipe implements the Recipe interface. Structures in this package may embed it to gets its functionality

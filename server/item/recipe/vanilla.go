@@ -1,4 +1,4 @@
-package recipes
+package recipe
 
 import (
 	// Insure all blocks and items are registered before trying to load vanilla recipes.
@@ -15,15 +15,15 @@ var vanillaCraftingData []byte
 func init() {
 	var vanillaRecipes struct {
 		Shaped []struct {
-			Input    InputItems `nbt:"input"`
-			Output   OutputItem `nbt:"output"`
+			Input    inputItems `nbt:"input"`
+			Output   outputItem `nbt:"output"`
 			Priority int32      `nbt:"priority"`
 			Width    int32      `nbt:"width"`
 			Height   int32      `nbt:"height"`
 		} `nbt:"shaped"`
 		Shapeless []struct {
-			Input    InputItems `nbt:"input"`
-			Output   OutputItem `nbt:"output"`
+			Input    inputItems `nbt:"input"`
+			Output   outputItem `nbt:"output"`
 			Priority int32      `nbt:"priority"`
 		} `nbt:"shapeless"`
 	}
@@ -42,9 +42,8 @@ func init() {
 			continue
 		}
 		Register(ShapelessRecipe{
-			Inputs:   input,
-			Output:   output,
-			Priority: s.Priority,
+			Inputs: input,
+			Output: output,
 		})
 	}
 
@@ -58,13 +57,9 @@ func init() {
 			continue
 		}
 		Register(ShapedRecipe{
-			Inputs:   input,
-			Output:   output,
-			Priority: s.Priority,
-			Dimensions: Dimensions{
-				Width:  s.Width,
-				Height: s.Height,
-			},
+			Inputs:     input,
+			Output:     output,
+			Dimensions: Dimensions{int(s.Width), int(s.Height)},
 		})
 	}
 }

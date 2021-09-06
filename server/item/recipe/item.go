@@ -1,4 +1,4 @@
-package recipes
+package recipe
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
@@ -13,21 +13,8 @@ type Item struct {
 	AllTypes bool
 }
 
-// ItemType is an item that has a name and a metadata value.
-type ItemType struct {
-	// Name is the name of the item type.
-	Name string `nbt:"name"`
-	// MetadataValue is the meta of the item type.
-	MetadataValue int32 `nbt:"meta"`
-}
-
-// ToItem converts the item type to an item.
-func (i ItemType) ToItem() (it world.Item, ok bool) {
-	return world.ItemByName(i.Name, int16(i.MetadataValue))
-}
-
-// InputItem is an item that is inputted to a crafting menu.
-type InputItem struct {
+// inputItem is an item that is inputted to a crafting menu.
+type inputItem struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
 	// MetadataValue is the meta of the item. This can change the item almost completely, or act as durability.
@@ -37,7 +24,7 @@ type InputItem struct {
 }
 
 // ToStack converts an input item to a stack.
-func (i InputItem) ToStack() (Item, bool) {
+func (i inputItem) ToStack() (Item, bool) {
 	if len(i.Name) == 0 {
 		return Item{}, true
 	}
@@ -49,11 +36,11 @@ func (i InputItem) ToStack() (Item, bool) {
 	return Item{Stack: item.NewStack(it, int(i.Count)), AllTypes: i.MetadataValue == 32767}, true
 }
 
-// InputItems is an array of input items.
-type InputItems []InputItem
+// inputItems is an array of input items.
+type inputItems []inputItem
 
-// ToStacks converts InputItems into item stacks.
-func (i InputItems) ToStacks() (s []Item, ok bool) {
+// ToStacks converts inputItems into item stacks.
+func (i inputItems) ToStacks() (s []Item, ok bool) {
 	for _, it := range i {
 		st, ok := it.ToStack()
 		if !ok {
@@ -64,8 +51,8 @@ func (i InputItems) ToStacks() (s []Item, ok bool) {
 	return s, true
 }
 
-// OutputItem is an item that is outputted after crafting.
-type OutputItem struct {
+// outputItem is an item that is outputted after crafting.
+type outputItem struct {
 	// Name is the name of the item being output.
 	Name string `nbt:"name"`
 	// MetadataValue is the meta of the item. This can change the item almost completely, or act as durability.
@@ -83,7 +70,7 @@ type OutputItem struct {
 }
 
 // ToStack converts an input item to a stack.
-func (o OutputItem) ToStack() (item.Stack, bool) {
+func (o outputItem) ToStack() (item.Stack, bool) {
 	if len(o.Name) == 0 {
 		return item.Stack{}, true
 	}
