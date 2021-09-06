@@ -5,9 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
-	"github.com/df-mc/dragonfly/server/world/recipes"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -18,7 +18,7 @@ import (
 // inventory.
 type ItemStackRequestHandler struct {
 	currentRequest  int32
-	changes         map[byte]map[byte]protocol.StackResponseSlotInfo
+	changes         map[byte]map[byte]changeInfo
 	responseChanges map[int32]map[byte]map[byte]responseChange
 	current         time.Time
 	ignoreDestroy   bool
@@ -29,6 +29,13 @@ type ItemStackRequestHandler struct {
 type responseChange struct {
 	id        int32
 	timestamp time.Time
+}
+
+// changeInfo holds information on a slot change initiated by an item stack request. It holds both the new and the old
+// item information and is used for reverting and verifying.
+type changeInfo struct {
+	after  protocol.StackResponseSlotInfo
+	before item.Stack
 }
 
 // Handle ...
@@ -54,6 +61,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session) (err error) {
 	defer func() {
 		if err != nil {
+			s.log.Debugf("%v", err)
 			h.reject(req.RequestID, s)
 			return
 		}
@@ -63,8 +71,6 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 
 	for _, action := range req.Actions {
 		switch a := action.(type) {
-		case *protocol.CraftRecipeStackRequestAction:
-			err = h.handleCraft(a, s)
 		case *protocol.TakeStackRequestAction:
 			err = h.handleTake(a, s)
 		case *protocol.PlaceStackRequestAction:
@@ -79,7 +85,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
-		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction, *protocol.MineBlockStackRequestAction:
+		case *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
 			return fmt.Errorf("unhandled stack request action %#v", action)
@@ -99,12 +105,43 @@ func (h *ItemStackRequestHandler) handleTake(a *protocol.TakeStackRequestAction,
 
 // handlePlace handles a Place stack request action.
 func (h *ItemStackRequestHandler) handlePlace(a *protocol.PlaceStackRequestAction, s *Session) error {
-	// Fix the container IDs before updating anything, otherwise we could have issues with future requests.
-	// These issues only happen on place, hence why we're only checking for wrong container IDs here.
-	a.Source.ContainerID = fixID(a.Source.ContainerID)
-	a.Destination.ContainerID = fixID(a.Destination.ContainerID)
-
 	return h.handleTransfer(a.Source, a.Destination, a.Count, s)
+}
+
+// handleTransfer handles the transferring of x count from a source slot to a destination slot.
+func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestSlotInfo, count byte, s *Session) error {
+	if err := h.verifySlots(s, from, to); err != nil {
+		return fmt.Errorf("source slot out of sync: %w", err)
+	}
+	i, _ := h.itemInSlot(from, s)
+	dest, _ := h.itemInSlot(to, s)
+	if !i.Comparable(dest) {
+		return fmt.Errorf("client tried transferring %v to %v, but the stacks are incomparable", i, dest)
+	}
+	if i.Count() < int(count) {
+		return fmt.Errorf("client tried subtracting %v from item count, but there are only %v", count, i.Count())
+	}
+	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Empty() {
+		return fmt.Errorf("client tried adding %v to item count %v, but max is %v", count, dest.Count(), dest.MaxCount())
+	}
+	if dest.Empty() {
+		dest = i.Grow(-math.MaxInt32)
+	}
+
+	invA, _ := s.invByID(int32(from.ContainerID))
+	invB, _ := s.invByID(int32(to.ContainerID))
+
+	ctx := event.C()
+	_ = call(ctx, int(from.Slot), i.Grow(int(count)-i.Count()), invA.Handler().HandleTake)
+	err := call(ctx, int(to.Slot), i.Grow(int(count)-i.Count()), invB.Handler().HandlePlace)
+	if err != nil {
+		return err
+	}
+
+	h.setItemInSlot(from, i.Grow(-int(count)), s)
+	h.setItemInSlot(to, dest.Grow(int(count)), s)
+
+	return nil
 }
 
 // handleSwap handles a Swap stack request action.
@@ -115,46 +152,38 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	i, _ := h.itemInSlot(a.Source, s)
 	dest, _ := h.itemInSlot(a.Destination, s)
 
+	invA, _ := s.invByID(int32(a.Source.ContainerID))
+	invB, _ := s.invByID(int32(a.Destination.ContainerID))
+
+	ctx := event.C()
+	_ = call(ctx, int(a.Source.Slot), i, invA.Handler().HandleTake)
+	_ = call(ctx, int(a.Source.Slot), dest, invA.Handler().HandlePlace)
+	_ = call(ctx, int(a.Destination.Slot), dest, invB.Handler().HandleTake)
+	err := call(ctx, int(a.Destination.Slot), i, invB.Handler().HandlePlace)
+	if err != nil {
+		return err
+	}
+
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
 
 	return nil
 }
 
-// handleCraft handles the Craft stack request action.
-func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
-	r, ok := s.recipeMapping[a.RecipeNetworkID]
-	if !ok {
-		return fmt.Errorf("invalid recipe network id sent")
-	}
-
-	var expectedInputs []recipes.Item
-	var output item.Stack
-
-	switch r := r.(type) {
-	case recipes.ShapelessRecipe:
-		expectedInputs, output = r.Inputs, r.Output
-	case recipes.ShapedRecipe:
-		expectedInputs, output = r.Inputs, r.Output
-	default:
-		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
-	}
-
-	if !h.hasRequiredInputs(expectedInputs, s) {
-		return fmt.Errorf("tried crafting without required inputs")
-	}
-
-	if err := h.removeInputs(expectedInputs, s); err != nil {
-		return err
-	}
-
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingResult,
-		Slot:           craftingResultIndex,
-		StackNetworkID: item_id(output),
-	}, output, s)
-
-	return nil
+// call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
+// the event.Context was cancelled either before or after the call.
+func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+	var err error
+	ctx.Stop(func() {
+		err = fmt.Errorf("action was cancelled")
+	})
+	ctx.Continue(func() {
+		f(ctx, slot, it)
+		ctx.Stop(func() {
+			err = fmt.Errorf("action was cancelled")
+		})
+	})
+	return err
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -207,6 +236,13 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	if i.Count() < int(a.Count) {
 		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
 	}
+
+	inv, _ := s.invByID(int32(a.Source.ContainerID))
+	ctx := event.C()
+	if err := call(ctx, int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+		return err
+	}
+
 	n := s.c.Drop(i.Grow(int(a.Count) - i.Count()))
 	h.setItemInSlot(a.Source, i.Grow(-n), s)
 	return nil
@@ -242,9 +278,14 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
 	}
 
-	primary, _ := effect.ByID(int(a.PrimaryEffect))
-	secondary, _ := effect.ByID(int(a.SecondaryEffect))
-	beacon.Primary, beacon.Secondary = primary.(effect.LastingType), secondary.(effect.LastingType)
+	primary, pOk := effect.ByID(int(a.PrimaryEffect))
+	secondary, sOk := effect.ByID(int(a.SecondaryEffect))
+	if pOk {
+		beacon.Primary = primary.(effect.LastingType)
+	}
+	if sOk {
+		beacon.Secondary = secondary.(effect.LastingType)
+	}
 	s.c.World().SetBlock(pos, beacon)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
@@ -270,32 +311,6 @@ func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beaco
 		return true
 	}
 	return false
-}
-
-// handleTransfer handles the transferring of x count from a source slot to a destination slot.
-func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestSlotInfo, count byte, s *Session) error {
-	if err := h.verifySlots(s, from, to); err != nil {
-		return fmt.Errorf("source slot out of sync: %w", err)
-	}
-	i, _ := h.itemInSlot(from, s)
-	dest, _ := h.itemInSlot(to, s)
-	if !i.Comparable(dest) {
-		return fmt.Errorf("client tried transferring %v to %v, but the stacks are incomparable", i, dest)
-	}
-	if i.Count() < int(count) {
-		return fmt.Errorf("client tried subtracting %v from item count, but there are only %v", count, i.Count())
-	}
-	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Empty() {
-		return fmt.Errorf("client tried adding %v to item count %v, but max is %v", count, dest.Count(), dest.MaxCount())
-	}
-	if dest.Empty() {
-		dest = i.Grow(-math.MaxInt32)
-	}
-
-	h.setItemInSlot(from, i.Grow(-int(count)), s)
-	h.setItemInSlot(to, dest.Grow(int(count)), s)
-
-	return nil
 }
 
 // verifySlots verifies a list of slots passed.
@@ -412,18 +427,23 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 		sl = 0
 	}
 
+	before, _ := inventory.Item(sl)
 	_ = inventory.SetItem(sl, i)
 
-	if h.changes[slot.ContainerID] == nil {
-		h.changes[slot.ContainerID] = map[byte]protocol.StackResponseSlotInfo{}
-	}
 	respSlot := protocol.StackResponseSlotInfo{
 		Slot:           slot.Slot,
 		HotbarSlot:     slot.Slot,
 		Count:          byte(i.Count()),
 		StackNetworkID: item_id(i),
 	}
-	h.changes[slot.ContainerID][slot.Slot] = respSlot
+
+	if h.changes[slot.ContainerID] == nil {
+		h.changes[slot.ContainerID] = map[byte]changeInfo{}
+	}
+	h.changes[slot.ContainerID][slot.Slot] = changeInfo{
+		after:  respSlot,
+		before: before,
+	}
 
 	if h.responseChanges[h.currentRequest] == nil {
 		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
@@ -443,7 +463,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 	for container, slotInfo := range h.changes {
 		slots := make([]protocol.StackResponseSlotInfo, 0, len(slotInfo))
 		for _, slot := range slotInfo {
-			slots = append(slots, slot)
+			slots = append(slots, slot.after)
 		}
 		info = append(info, protocol.StackResponseContainerInfo{
 			ContainerID: container,
@@ -455,7 +475,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 		RequestID:     id,
 		ContainerInfo: info,
 	}}})
-	h.changes = map[byte]map[byte]protocol.StackResponseSlotInfo{}
+	h.changes = map[byte]map[byte]changeInfo{}
 }
 
 // reject rejects the item stack request sent by the client so that it is reverted client-side.
@@ -466,84 +486,12 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			RequestID: id,
 		}},
 	})
-	h.changes = map[byte]map[byte]protocol.StackResponseSlotInfo{}
-}
-
-// hasRequiredInputs checks and validates the inputs for a crafting grid.
-func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Session) bool {
-	offset := s.craftingOffset()
-
-	var satisfiedInputs int
-	for i := byte(0); i < s.craftingSize(); i++ {
-		if satisfiedInputs == len(inputs) {
-			break
-		}
-
-		slot := i + offset
-		oldSt, err := s.ui.Item(int(slot))
-		if err != nil {
-			return false
-		}
-		if oldSt.Empty() {
-			// We should still up the satisfied inputs count if both stacks are empty.
-			if inputs[satisfiedInputs].Empty() {
-				satisfiedInputs++
-			}
-
-			continue
-		}
-
-		currentInputToMatch := inputs[satisfiedInputs]
-
-		// Items that apply to all types, so we just compare with the name and count.
-		if currentInputToMatch.AllTypes {
-			name, _ := oldSt.Item().EncodeItem()
-			otherName, _ := currentInputToMatch.Item().EncodeItem()
-			if name == otherName && oldSt.Count() >= currentInputToMatch.Count() {
-				satisfiedInputs++
-			}
-		} else {
-			if oldSt.Comparable(currentInputToMatch.Stack) {
-				satisfiedInputs++
-			}
+	// Revert changes that we already made for valid actions.
+	for container, slots := range h.changes {
+		for slot, info := range slots {
+			inv, _ := s.invByID(int32(container))
+			_ = inv.SetItem(int(slot), info.before)
 		}
 	}
-
-	return satisfiedInputs == len(inputs)
-}
-
-// removeInputs removes the inputs passed in the crafting grid.
-func (h *ItemStackRequestHandler) removeInputs(inputs []recipes.Item, s *Session) error {
-	offset := s.craftingOffset()
-
-	var index int
-	for i := byte(0); i < s.craftingSize(); i++ {
-		if index == len(inputs) {
-			break
-		}
-
-		slot := i + offset
-		oldSt, err := s.ui.Item(int(slot))
-		if err != nil {
-			return fmt.Errorf("expected item doesn't exist: " + err.Error())
-		}
-		if oldSt.Empty() {
-			// We should still up the index if the expected input is empty.
-			if inputs[index].Empty() {
-				index++
-			}
-
-			continue
-		}
-
-		st := oldSt.Grow(-inputs[index].Count())
-		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID:    containerCraftingGrid,
-			Slot:           slot,
-			StackNetworkID: item_id(st),
-		}, st, s)
-		index++
-	}
-
-	return nil
+	h.changes = map[byte]map[byte]changeInfo{}
 }

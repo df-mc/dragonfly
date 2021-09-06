@@ -17,6 +17,7 @@ import (
 // Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
 	mu          sync.RWMutex
+	h           Handler
 	slots       []item.Stack
 	lockedSlots atomic.Uint64
 
@@ -42,7 +43,7 @@ func New(size int, f func(slot int, item item.Stack)) *Inventory {
 	if f == nil {
 		f = func(slot int, item item.Stack) {}
 	}
-	return &Inventory{slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
@@ -268,6 +269,25 @@ func (inv *Inventory) Clear() {
 		defer f()
 	}
 	inv.mu.Unlock()
+}
+
+// Handle assigns a Handler to an Inventory so that its methods are called for the respective events. Nil may be passed
+// to set the default NopHandler.
+func (inv *Inventory) Handle(h Handler) {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+
+	if h == nil {
+		h = NopHandler{}
+	}
+	inv.h = h
+}
+
+// Handler returns the Handler currently assigned to the Inventory. This is the NopHandler by default.
+func (inv *Inventory) Handler() Handler {
+	inv.mu.RLock()
+	defer inv.mu.RUnlock()
+	return inv.h
 }
 
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is

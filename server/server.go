@@ -25,6 +25,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -44,11 +45,10 @@ type Server struct {
 	joinMessage, quitMessage atomic.String
 	playerProvider           player.Provider
 
-	c        Config
-	log      internal.Logger
-	listener *minecraft.Listener
-	world    *world.World
-	players  chan *player.Player
+	c       Config
+	log     internal.Logger
+	world   *world.World
+	players chan *player.Player
 
 	startTime time.Time
 
@@ -56,6 +56,16 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
+
+	wg sync.WaitGroup
+
+	listenMu  sync.Mutex
+	listeners []Listener
+}
+
+func init() {
+	// Seeding the random for things like lightning that need to use RNG.
+	rand.Seed(time.Now().UnixNano())
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -133,7 +143,7 @@ func (server *Server) Run() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	server.run()
+	server.wait()
 	return nil
 }
 
@@ -152,7 +162,7 @@ func (server *Server) Start() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	go server.run()
+	go server.wait()
 	return nil
 }
 
@@ -279,11 +289,46 @@ func (server *Server) Close() error {
 
 	server.log.Debugf("Closing world...")
 	if err = server.world.Close(); err != nil {
-		return err
+		server.log.Errorf("Error while closing world: %v", err)
 	}
 
-	server.log.Debugf("Closing listener...")
-	return server.listener.Close()
+	server.log.Debugf("Closing listeners...")
+	server.listenMu.Lock()
+	defer server.listenMu.Unlock()
+	for _, l := range server.listeners {
+		if err := l.Close(); err != nil {
+			server.log.Errorf("Error closing listener: %v", err)
+		}
+	}
+	return nil
+}
+
+// Listen makes the Server listen for new connections from the Listener passed. This may be used to listen for players
+// on different interfaces. Note that the maximum player count of additional Listeners added is not enforced
+// automatically. The limit must be enforced by the Listener.
+func (server *Server) Listen(l Listener) {
+	server.listenMu.Lock()
+	server.listeners = append(server.listeners, l)
+	server.listenMu.Unlock()
+
+	server.wg.Add(1)
+
+	wg := new(sync.WaitGroup)
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				// First wait until all connections that are being handled are done inserting the player into the channel.
+				// Afterwards, when we're sure no more values will be inserted in the players channel, we can return so the
+				// player channel can be closed.
+				wg.Wait()
+				server.wg.Done()
+				return
+			}
+			wg.Add(1)
+			go server.finaliseConn(c, l, wg)
+		}
+	}()
 }
 
 // CloseOnProgramEnd closes the server right before the program ends, so that all data of the server are
@@ -314,39 +359,26 @@ func (server *Server) startListening() error {
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 	}
 
-	var err error
-	server.listener, err = cfg.Listen("raknet", server.c.Network.Address)
+	l, err := cfg.Listen("raknet", server.c.Network.Address)
 	if err != nil {
 		return fmt.Errorf("listening on address failed: %w", err)
 	}
+	server.Listen(listener{Listener: l})
 
-	server.log.Infof("Server running on %v.\n", server.listener.Addr())
+	server.log.Infof("Server running on %v.\n", l.Addr())
 	return nil
 }
 
-// run runs the server, continuously accepting new connections from players. It returns when the server is
-// closed by a call to Close.
-func (server *Server) run() {
-	wg := new(sync.WaitGroup)
-	for {
-		c, err := server.listener.Accept()
-		if err != nil {
-			// First wait until all connections that are being handled are done inserting the player into the channel.
-			// Afterwards, when we're sure no more values will be inserted in the players channel, we can close it
-			// safely.
-			wg.Wait()
-			close(server.players)
-			return
-		}
-		wg.Add(1)
-		go server.handleConn(c.(*minecraft.Conn), wg)
-	}
+// wait awaits the closing of all Listeners added to the Server through a call to Listen and closed the players channel
+// once that happens.
+func (server *Server) wait() {
+	server.wg.Wait()
+	close(server.players)
 }
 
-// handleConn handles an incoming connection accepted from the Listener.
-func (server *Server) handleConn(conn *minecraft.Conn, wg *sync.WaitGroup) {
+// finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
+func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
-	//noinspection SpellCheckingInspection
 	data := minecraft.GameData{
 		Yaw:            90,
 		WorldName:      server.c.World.Name,
@@ -371,8 +403,9 @@ func (server *Server) handleConn(conn *minecraft.Conn, wg *sync.WaitGroup) {
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 		playerData = &d
 	}
-	if err := conn.StartGameTimeout(data, time.Minute); err != nil {
-		_ = server.listener.Disconnect(conn, "Connection timeout.")
+
+	if err := conn.StartGame(data); err != nil {
+		_ = l.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
@@ -412,7 +445,7 @@ func (server *Server) handleSessionClose(controllable session.Controllable) {
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
+func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *player.Player {
 	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), data)
 	gm := server.world.DefaultGameMode()

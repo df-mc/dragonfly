@@ -197,7 +197,7 @@ type Flammable interface {
 // FlammabilityInfo contains values related to block behaviors involving fire.
 type FlammabilityInfo struct {
 	// Encouragement is the chance a block will catch on fire during attempted fire spread.
-	Encouragement,
+	Encouragement int
 	// Flammability is the chance a block will burn away during a fire block tick.
 	Flammability int
 	// LavaFlammable returns whether it can catch on fire from lava.
