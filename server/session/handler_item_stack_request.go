@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
+	"github.com/df-mc/dragonfly/server/world/recipes"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -71,6 +72,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 
 	for _, action := range req.Actions {
 		switch a := action.(type) {
+		case *protocol.CraftRecipeStackRequestAction:
+			err = h.handleCraft(a, s)
 		case *protocol.TakeStackRequestAction:
 			err = h.handleTake(a, s)
 		case *protocol.PlaceStackRequestAction:
@@ -85,7 +88,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
-		case *protocol.CraftResultsDeprecatedStackRequestAction:
+		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
 			return fmt.Errorf("unhandled stack request action %#v", action)
@@ -105,6 +108,11 @@ func (h *ItemStackRequestHandler) handleTake(a *protocol.TakeStackRequestAction,
 
 // handlePlace handles a Place stack request action.
 func (h *ItemStackRequestHandler) handlePlace(a *protocol.PlaceStackRequestAction, s *Session) error {
+	// Fix the container IDs before updating anything, otherwise we could have issues with future requests.
+	// These issues only happen on place, hence why we're only checking for wrong container IDs here.
+	a.Source.ContainerID = fixID(a.Source.ContainerID)
+	a.Destination.ContainerID = fixID(a.Destination.ContainerID)
+
 	return h.handleTransfer(a.Source, a.Destination, a.Count, s)
 }
 
@@ -166,6 +174,42 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
+
+	return nil
+}
+
+// handleCraft handles the Craft stack request action.
+func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+	r, ok := s.recipeMapping[a.RecipeNetworkID]
+	if !ok {
+		return fmt.Errorf("invalid recipe network id sent")
+	}
+
+	var expectedInputs []recipes.Item
+	var output item.Stack
+
+	switch r := r.(type) {
+	case recipes.ShapelessRecipe:
+		expectedInputs, output = r.Inputs, r.Output
+	case recipes.ShapedRecipe:
+		expectedInputs, output = r.Inputs, r.Output
+	default:
+		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
+	}
+
+	if !h.hasRequiredInputs(expectedInputs, s) {
+		return fmt.Errorf("tried crafting without required inputs")
+	}
+
+	if err := h.removeInputs(expectedInputs, s); err != nil {
+		return err
+	}
+
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID:    containerCraftingResult,
+		Slot:           craftingResultIndex,
+		StackNetworkID: item_id(output),
+	}, output, s)
 
 	return nil
 }
@@ -494,4 +538,83 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 		}
 	}
 	h.changes = map[byte]map[byte]changeInfo{}
+}
+
+// hasRequiredInputs checks and validates the inputs for a crafting grid.
+func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipes.Item, s *Session) bool {
+	offset := s.craftingOffset()
+
+	var satisfiedInputs int
+	for i := byte(0); i < s.craftingSize(); i++ {
+		if satisfiedInputs == len(inputs) {
+			break
+		}
+
+		slot := i + offset
+		oldSt, err := s.ui.Item(int(slot))
+		if err != nil {
+			return false
+		}
+		if oldSt.Empty() {
+			// We should still up the satisfied inputs count if both stacks are empty.
+			if inputs[satisfiedInputs].Empty() {
+				satisfiedInputs++
+			}
+
+			continue
+		}
+
+		currentInputToMatch := inputs[satisfiedInputs]
+
+		// Items that apply to all types, so we just compare with the name and count.
+		if currentInputToMatch.AllTypes {
+			name, _ := oldSt.Item().EncodeItem()
+			otherName, _ := currentInputToMatch.Item().EncodeItem()
+			if name == otherName && oldSt.Count() >= currentInputToMatch.Count() {
+				satisfiedInputs++
+			}
+		} else {
+			if oldSt.Comparable(currentInputToMatch.Stack) {
+				satisfiedInputs++
+			}
+		}
+	}
+
+	return satisfiedInputs == len(inputs)
+}
+
+// removeInputs removes the inputs passed in the crafting grid.
+func (h *ItemStackRequestHandler) removeInputs(inputs []recipes.Item, s *Session) error {
+	offset := s.craftingOffset()
+
+	var index int
+	for i := byte(0); i < s.craftingSize(); i++ {
+		if index == len(inputs) {
+			break
+		}
+
+		slot := i + offset
+		oldSt, err := s.ui.Item(int(slot))
+		if err != nil {
+			return fmt.Errorf("expected item doesn't exist: " + err.Error())
+		}
+		if oldSt.Empty() {
+			// We should still up the index if the expected input is empty.
+			if inputs[index].Empty() {
+				index++
+			}
+
+			continue
+		}
+
+		st := oldSt.Grow(-inputs[index].Count())
+		h.setItemInSlot(protocol.StackRequestSlotInfo{
+			ContainerID:    containerCraftingGrid,
+			Slot:           slot,
+			StackNetworkID: item_id(st),
+		}, st, s)
+		index++
+	}
+
+	return nil
 }
