@@ -47,7 +47,6 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 	return len(lines), nil
 }
 
-
 // Set changes a specific line in the scoreboard
 func (board *Scoreboard) Set(index int, s string) (err error)  {
 	if index < 0 || len(board.lines) < index{
