@@ -36,7 +36,7 @@ func (board *Scoreboard) Write(p []byte) (n int, err error) {
 // WriteString writes a string of text to the scoreboard. Newlines may be written to create a new line on
 // the scoreboard.
 func (board *Scoreboard) WriteString(s string) (n int, err error) {
-	lines := strings.Split(s,"\n")
+	lines := strings.Split(s, "\n")
 	board.lines = append(board.lines, lines...)
 
 	// Scoreboards can have up to 15 lines. (16 including the title.)
@@ -47,9 +47,9 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 }
 
 // Set changes a specific line in the scoreboard
-func (board *Scoreboard) Set(index int, s string) (err error)  {
-	if index < 0 || len(board.lines) <= index{
-		return fmt.Errorf("index out of range %v",index)
+func (board *Scoreboard) Set(index int, s string) (err error) {
+	if index < 0 || len(board.lines) <= index {
+		return fmt.Errorf("index out of range %v", index)
 	}
 
 	// Remove new lines from the string
