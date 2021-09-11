@@ -48,7 +48,7 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 
 // Set changes a specific line in the scoreboard
 func (board *Scoreboard) Set(index int, s string) (err error)  {
-	if index < 0 || len(board.lines) < index{
+	if index < 0 || len(board.lines) <= index{
 		return fmt.Errorf("index out of range %v",index)
 	}
 
