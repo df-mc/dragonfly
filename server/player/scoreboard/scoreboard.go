@@ -43,7 +43,6 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 	if len(board.lines) >= 15 {
 		return len(lines), fmt.Errorf("write scoreboard: maximum of 15 lines of text exceeded")
 	}
-
 	return len(lines), nil
 }
 
@@ -55,7 +54,6 @@ func (board *Scoreboard) Set(index int, s string) (err error)  {
 
 	// Remove new lines from the string
 	board.lines[index] = strings.TrimSuffix(strings.TrimSuffix(s, "\n"), "\n")
-
 	return nil
 }
 
