@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -76,6 +77,11 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 			if thrown.Count() > held.Count() {
 				return fmt.Errorf("tried to throw %v items, but held only %v in slot", thrown.Count(), held.Count())
 			}
+
+			if err := call(event.C(), int(s.heldSlot.Load()), held.Grow(thrown.Count()-held.Count()), s.inv.Handler().HandleDrop); err != nil {
+				return err
+			}
+
 			// Explicitly don't re-use the thrown variable. This item was supplied by the user, and if some
 			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
 			// Only grow or shrink the held item to prevent any such issues.
