@@ -810,7 +810,7 @@ func (w *World) CollidingEntities(aabb physics.AABB, ignoredEntities ...Entity) 
 			for _, entity := range c.entities {
 				var ignored bool
 				for _, e := range ignoredEntities {
-					if entity != e {
+					if entity == e {
 						ignored = true
 						break
 					}
