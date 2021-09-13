@@ -123,6 +123,7 @@ type User interface {
 
 // Carrier represents an entity that is able to carry an item.
 type Carrier interface {
+	world.Entity
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
