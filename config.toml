@@ -45,3 +45,7 @@
   # Folder controls where the player data will be stored by the default LevelDB
   # player provider if it is enabled.
   Folder = "players"
+
+[Resources]
+  # Folder configures the directory used by the server to load resource packs.
+  Folder = "resources"
