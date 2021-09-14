@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
+	_ "unsafe" // Imported for compiler directives.
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.
@@ -30,8 +31,8 @@ func flammableBlock(block world.Block) bool {
 	return ok && flammable.FlammabilityInfo().Encouragement > 0
 }
 
-// NeighboursFlammable returns true if one a block adjacent to the passed position is flammable.
-func NeighboursFlammable(pos cube.Pos, w *world.World) bool {
+// neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
+func neighboursFlammable(pos cube.Pos, w *world.World) bool {
 	for _, i := range cube.Faces() {
 		if flammableBlock(w.Block(pos.Side(i))) {
 			return true
@@ -98,7 +99,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			w.BreakBlockWithoutParticles(pos)
 			return
 		}
-		if !NeighboursFlammable(pos, w) {
+		if !neighboursFlammable(pos, w) {
 			if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, w) || f.Age > 3 {
 				w.BreakBlockWithoutParticles(pos)
 			}
@@ -186,7 +187,7 @@ func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
 	below := w.Block(pos.Side(cube.FaceDown))
-	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!NeighboursFlammable(pos, w) || f.Type == SoulFire()) {
+	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
 		w.BreakBlockWithoutParticles(pos)
 		return
 	}
@@ -235,7 +236,7 @@ func (f Fire) Start(w *world.World, pos cube.Pos) {
 	_, isTallGrass := b.(TallGrass)
 	if isAir || isTallGrass {
 		below := w.Block(pos.Side(cube.FaceDown))
-		if below.Model().FaceSolid(pos, cube.FaceUp, w) || NeighboursFlammable(pos, w) {
+		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
 			w.PlaceBlock(pos, Fire{})
 		}
 	}
