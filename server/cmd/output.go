@@ -26,7 +26,6 @@ func (o *Output) Printf(format string, a ...interface{}) {
 
 // Print formats a (success) message and adds it to the command output.
 func (o *Output) Print(a ...interface{}) {
-	fmt.Sprintln()
 	o.messages = append(o.messages, fmt.Sprint(a...))
 }
 

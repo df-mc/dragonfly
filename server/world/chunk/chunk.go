@@ -76,7 +76,10 @@ func (chunk *Chunk) RuntimeID(x uint8, y int16, z uint8, layer uint8) uint32 {
 		// an air block.
 		return chunk.air
 	}
-	return sub.RuntimeID(x, uint8(y&15), z, layer)
+	if uint8(len(sub.storages)) <= layer {
+		return sub.air
+	}
+	return sub.storages[layer].RuntimeID(x, uint8(y), z)
 }
 
 // fullSkyLight is used to copy full light to newly created sub chunks.
@@ -103,7 +106,7 @@ func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtime
 		// Don't do anything with this, just return.
 		return
 	}
-	sub.Layer(layer).SetRuntimeID(x, uint8(y&15), z, runtimeID)
+	sub.Layer(layer).SetRuntimeID(x, uint8(y), z, runtimeID)
 }
 
 // HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the
@@ -117,7 +120,7 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
 		}
 		for y := 15; y >= 0; y-- {
 			totalY := int16(y) | subY(index)
-			if FilteringBlocks[sub.storages[0].RuntimeID(x, uint8(totalY&15), z)] == 15 {
+			if FilteringBlocks[sub.storages[0].RuntimeID(x, uint8(totalY), z)] == 15 {
 				return totalY
 			}
 		}
@@ -135,7 +138,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
 		}
 		for y := 15; y >= 0; y-- {
 			totalY := int16(y) | subY(index)
-			rid := sub.storages[0].RuntimeID(x, uint8(totalY&15), z)
+			rid := sub.storages[0].RuntimeID(x, uint8(totalY), z)
 			if rid != chunk.air {
 				return totalY
 			}

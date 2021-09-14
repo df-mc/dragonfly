@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -67,16 +66,16 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	pk := &packet.SetScore{
 		ActionType: packet.ScoreboardActionModify,
 	}
-	for k, line := range bytes.Split(sb.Bytes(), []byte{'\n'}) {
+	for k, line := range sb.Lines() {
 		if len(line) == 0 {
-			line = []byte("§" + colours[k])
+			line = "§" + colours[k]
 		}
 		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
 			EntryID:       int64(k),
 			ObjectiveName: s.scoreboardObj.Load(),
 			Score:         int32(k),
 			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
-			DisplayName:   padScoreboardString(sb, string(line)),
+			DisplayName:   padScoreboardString(sb, line),
 		})
 	}
 	s.writePacket(pk)

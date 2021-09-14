@@ -41,6 +41,7 @@ type Controllable interface {
 	AttackEntity(e world.Entity)
 	Drop(s item.Stack) (n int)
 	SwingArm()
+	PunchAir()
 
 	Respawn()
 
