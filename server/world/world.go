@@ -74,7 +74,7 @@ type World struct {
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
 
-	updateLCG           int
+	updateLCG int
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -1258,7 +1258,7 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.SetRaining(w.set.RainLevel <= 0)
+			w.setRaining(w.set.RainLevel <= 0)
 		}
 
 		// Thunder
