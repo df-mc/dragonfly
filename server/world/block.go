@@ -186,7 +186,7 @@ type LiquidDisplacer interface {
 	SideClosed(pos, side cube.Pos, w *World) bool
 }
 
-// lightEmitter is identical to a block.lightEmitter.
+// lightEmitter is identical to a block.LightEmitter.
 type lightEmitter interface {
 	LightEmissionLevel() uint8
 }

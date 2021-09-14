@@ -32,7 +32,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
 
-	it := &Item{i: i, pickupDelay: 40, c: &MovementComputer{
+	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
 		Gravity:           0.04,
 		DragBeforeGravity: true,
 		Drag:              0.02,

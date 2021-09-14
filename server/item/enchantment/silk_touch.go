@@ -27,5 +27,5 @@ func (e SilkTouch) WithLevel(level int) item.Enchantment {
 func (e SilkTouch) CompatibleWith(s item.Stack) bool {
 	t, ok := s.Item().(tool.Tool)
 	//TODO: Fortune
-	return ok && (t.ToolType() == tool.TypePickaxe || t.ToolType() == tool.TypeAxe || t.ToolType() == tool.TypeShovel || t.ToolType() == tool.TypeHoe || t.ToolType() == tool.TypeShears)
+	return ok && (t.ToolType() != tool.TypeSword && t.ToolType() != tool.TypeNone)
 }
