@@ -744,12 +744,10 @@ func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 // ViewRain ...
 func (s *Session) ViewRain(raining bool) {
 	pk := &packet.LevelEvent{
-		Position: mgl32.Vec3{},
+		EventType: packet.EventStopRain,
 	}
 	if raining {
 		pk.EventType, pk.EventData = packet.EventStartRain, int32(rand.Intn(50000)+10000)
-	} else {
-		pk.EventType = packet.EventStopRain
 	}
 	s.writePacket(pk)
 }
@@ -757,12 +755,10 @@ func (s *Session) ViewRain(raining bool) {
 // ViewThunder ...
 func (s *Session) ViewThunder(thundering bool) {
 	pk := &packet.LevelEvent{
-		Position: mgl32.Vec3{},
+		EventType: packet.EventStopThunder,
 	}
 	if thundering {
 		pk.EventType, pk.EventData = packet.EventStartThunder, int32(rand.Intn(50000)+10000)
-	} else {
-		pk.EventType = packet.EventStopThunder
 	}
 	s.writePacket(pk)
 }

@@ -75,10 +75,6 @@ type World struct {
 	viewers   map[Viewer]struct{}
 
 	updateLCG           int
-	shouldUpdateRain    bool
-	updateRain          bool
-	shouldUpdateThunder bool
-	updateThunder       bool
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -704,9 +700,7 @@ func (w *World) setRainTime(new int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
 	w.set.RainTime = int32(new)
-	w.mu.Unlock()
 }
 
 // setRainLevel sets the rain level.
@@ -714,9 +708,7 @@ func (w *World) setRainLevel(new int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
 	w.set.RainLevel = float32(new)
-	w.mu.Unlock()
 }
 
 // setThunderTime sets the thunder time.
@@ -724,9 +716,7 @@ func (w *World) setThunderTime(new int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
 	w.set.ThunderTime = int32(new)
-	w.mu.Unlock()
 }
 
 // setThunderLevel sets the thunder level.
@@ -734,9 +724,7 @@ func (w *World) setThunderLevel(new int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
 	w.set.ThunderLevel = float32(new)
-	w.mu.Unlock()
 }
 
 // IsRaining returns a bool that decides whether it is raining or not.
@@ -747,6 +735,14 @@ func (w *World) IsRaining() bool {
 	w.mu.Lock()
 	a := w.set.RainLevel > 0
 	w.mu.Unlock()
+	return a
+}
+
+func (w *World) isRaining() bool {
+	if w == nil {
+		return false
+	}
+	a := w.set.RainLevel > 0
 	return a
 }
 
@@ -1257,20 +1253,18 @@ func (w *World) tick() {
 
 	if w.set.WeatherCycle {
 		// Tick Weather
-		// NOTE: All of the following numbers/calculations you see are from default Minecraft.
+		// NOTE: The following numbers/calculations you see are taken from Minecraft.
 
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.shouldUpdateRain = true
-			w.updateRain = w.set.RainLevel <= 0
+			w.SetRaining(w.set.RainLevel <= 0)
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.shouldUpdateThunder = true
-			w.updateThunder = w.set.ThunderLevel <= 0
+			w.setThunder(w.set.ThunderLevel <= 0)
 		}
 	}
 	w.mu.Unlock()
@@ -1279,18 +1273,6 @@ func (w *World) tick() {
 		for _, viewer := range viewers {
 			viewer.ViewTime(t)
 		}
-	}
-
-	// These bools are here to add some latency, since for some reason updating weather in the code block above doesn't work.
-
-	if w.shouldUpdateRain {
-		w.SetRaining(w.updateRain)
-		w.shouldUpdateRain, w.updateRain = false, false
-	}
-
-	if w.shouldUpdateThunder {
-		w.SetThunder(w.updateThunder)
-		w.shouldUpdateThunder, w.updateThunder = false, false
 	}
 
 	if w.IsThundering() {
@@ -1582,6 +1564,12 @@ func (w *World) tickEntities(tick int64) {
 
 // SetRaining toggles raining depending on the raining argument.
 func (w *World) SetRaining(raining bool) {
+	w.mu.Lock()
+	w.setRaining(raining)
+	w.mu.Unlock()
+}
+
+func (w *World) setRaining(raining bool) {
 	level := 0
 	if raining {
 		level = 1
@@ -1601,8 +1589,14 @@ func (w *World) SetRaining(raining bool) {
 
 // SetThunder toggles raining depending on the thundering argument.
 func (w *World) SetThunder(thundering bool) {
-	if thundering && !w.IsRaining() {
-		w.SetRaining(true)
+	w.mu.Lock()
+	w.setThunder(thundering)
+	w.mu.Unlock()
+}
+
+func (w *World) setThunder(thundering bool) {
+	if thundering && !w.isRaining() {
+		w.setRaining(true)
 	}
 
 	level := 0
