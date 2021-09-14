@@ -1258,13 +1258,13 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.setRaining(w.set.RainLevel <= 0)
+			w.setRaining(w.set.RainLevel <= 0, time.Duration(rand.Intn(600) + 600))
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.setThunder(w.set.ThunderLevel <= 0)
+			w.setThunder(w.set.ThunderLevel <= 0, time.Duration(rand.Intn(600) + 180))
 		}
 	}
 	w.mu.Unlock()
@@ -1563,13 +1563,13 @@ func (w *World) tickEntities(tick int64) {
 }
 
 // SetRaining toggles raining depending on the raining argument.
-func (w *World) SetRaining(raining bool) {
+func (w *World) SetRaining(raining bool, x time.Duration) {
 	w.mu.Lock()
-	w.setRaining(raining)
+	w.setRaining(raining, x)
 	w.mu.Unlock()
 }
 
-func (w *World) setRaining(raining bool) {
+func (w *World) setRaining(raining bool, x time.Duration) {
 	level := 0
 	if raining {
 		level = 1
@@ -1581,22 +1581,22 @@ func (w *World) setRaining(raining bool) {
 	}
 
 	if raining {
-		w.setRainTime(rand.Intn(12000) + 12000)
+		w.setRainTime(int(x.Seconds() / 20)) // rand.Intn(12000) + 12000
 	} else {
 		w.setRainTime(rand.Intn(168000) + 12000)
 	}
 }
 
 // SetThunder toggles raining depending on the thundering argument.
-func (w *World) SetThunder(thundering bool) {
+func (w *World) SetThunder(thundering bool, x time.Duration) {
 	w.mu.Lock()
-	w.setThunder(thundering)
+	w.setThunder(thundering, x)
 	w.mu.Unlock()
 }
 
-func (w *World) setThunder(thundering bool) {
+func (w *World) setThunder(thundering bool, x time.Duration) {
 	if thundering && !w.isRaining() {
-		w.setRaining(true)
+		w.setRaining(true, time.Duration(rand.Intn(600) + 600))
 	}
 
 	level := 0
@@ -1610,7 +1610,7 @@ func (w *World) setThunder(thundering bool) {
 	}
 
 	if thundering {
-		w.setThunderTime(rand.Intn(12000) + 3600)
+		w.setThunderTime(int(x.Seconds() / 20)) // rand.Intn(12000) + 3600
 	} else {
 		w.setThunderTime(rand.Intn(168000) + 12000)
 	}
