@@ -77,11 +77,11 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	speed    atomic.Float64
-	health   *entity.HealthManager
-	xp       *entity.XPManager
-	effects  *entity.EffectManager
-	immunity atomic.Value
+	speed      atomic.Float64
+	health     *entity.HealthManager
+	experience *entity.ExperienceManager
+	effects    *entity.EffectManager
+	immunity   atomic.Value
 
 	mc *entity.MovementComputer
 
@@ -105,22 +105,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:     uuid.New(),
-		offHand:  inventory.New(1, p.broadcastItems),
-		armour:   inventory.NewArmour(p.broadcastArmour),
-		hunger:   newHungerManager(),
-		health:   entity.NewHealthManager(),
-		xp:       entity.NewXPManager(),
-		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeAdventure{},
-		h:        NopHandler{},
-		name:     name,
-		skin:     skin,
-		speed:    *atomic.NewFloat64(0.1),
-		nameTag:  *atomic.NewString(name),
-		heldSlot: atomic.NewUint32(0),
-		locale:   language.BritishEnglish,
-		scale:    *atomic.NewFloat64(1),
+		uuid:       uuid.New(),
+		offHand:    inventory.New(1, p.broadcastItems),
+		armour:     inventory.NewArmour(p.broadcastArmour),
+		hunger:     newHungerManager(),
+		health:     entity.NewHealthManager(),
+		experience: entity.NewExperienceManager(),
+		effects:    entity.NewEffectManager(),
+		gameMode:   world.GameModeAdventure{},
+		h:          NopHandler{},
+		name:       name,
+		skin:       skin,
+		speed:      *atomic.NewFloat64(0.1),
+		nameTag:    *atomic.NewString(name),
+		heldSlot:   atomic.NewUint32(0),
+		locale:     language.BritishEnglish,
+		scale:      *atomic.NewFloat64(1),
 	}
 	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
@@ -2070,35 +2070,35 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
-// XPLevel get level of the player.
-func (p *Player) XPLevel() int {
-	return int(p.xp.Level())
+// ExperienceLevel get level of the player.
+func (p *Player) ExperienceLevel() int {
+	return int(p.experience.Level())
 }
 
-// XPProgress get the progress of the player.
-func (p *Player) XPProgress() float64 {
-	return p.xp.Progress()
+// ExperienceProgress get the progress of the player.
+func (p *Player) ExperienceProgress() float64 {
+	return p.experience.Progress()
 }
 
-// AddXP add xp to the player.
-func (p *Player) AddXP(amount int) {
-	p.xp.AddXP(amount)
-	p.session().SendXPValue(p.xp)
+// AddExperience add experience to the player.
+func (p *Player) AddExperience(amount int) {
+	p.experience.AddExperience(amount)
+	p.session().SendExperienceValue(p.experience)
 }
 
-// SetXPLevel set the xp level of the player, the level must have a value between 0 and 2147483647.
-func (p *Player) SetXPLevel(level int) {
+// SetExperienceLevel set the experience level of the player, the level must have a value between 0 and 2147483647.
+func (p *Player) SetExperienceLevel(level int) {
 	if level > math.MaxInt32 {
 		level = math.MaxInt32
 	}
-	p.xp.SetLevel(int32(level))
-	p.session().SendXPValue(p.xp)
+	p.experience.SetLevel(int32(level))
+	p.session().SendExperienceValue(p.experience)
 }
 
-//SetXPProgress set the xp progress of the player, this accepts a value between 0.00 and 1.00.
-func (p *Player) SetXPProgress(progress float64) {
-	p.xp.SetProgress(progress)
-	p.session().SendXPValue(p.xp)
+//SetExperienceProgress set the experience progress of the player, this accepts a value between 0.00 and 1.00.
+func (p *Player) SetExperienceProgress(progress float64) {
+	p.experience.SetProgress(progress)
+	p.session().SendExperienceValue(p.experience)
 }
 
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
@@ -2144,9 +2144,8 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.xp.SetLevel(int32(data.XPLevel))
-	p.xp.SetProgress(data.XPPercentage)
-	p.session().SendXPValue(p.xp)
+	p.experience.SetTotalExperience(data.XPTotal)
+	p.session().SendExperienceValue(p.experience)
 
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
@@ -2189,9 +2188,9 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
-		XPLevel:         int(p.xp.Level()),
-		XPPercentage:    p.xp.Progress(),
-		XPTotal:         p.xp.TotalXP(),
+		XPLevel:         int(p.experience.Level()),
+		XPPercentage:    p.experience.Progress(),
+		XPTotal:         p.experience.TotalExperience(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,

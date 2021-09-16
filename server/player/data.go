@@ -31,7 +31,7 @@ type Data struct {
 	// ExhaustionLevel determines how fast the hunger level depletes and is controlled by the kinds
 	// of food the player has eaten. SaturationLevel determines how fast the saturation level depletes.
 	ExhaustionLevel, SaturationLevel float64
-	// XPLevel is the current xp level the player has, XPTotal is the total amount of xp the
+	// XPLevel is the current experience level the player has, XPTotal is the total amount of experience the
 	// player has collected during their lifetime, which is used to display score upon player death.
 	// These are currently not implemented in DF.
 	XPLevel, XPTotal int

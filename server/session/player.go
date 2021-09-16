@@ -613,19 +613,20 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	return
 }
 
-// SendXPValue send the xp level and progress to player.
-func (s *Session) SendXPValue(e *entity.XPManager) {
+// SendExperienceValue send the xp level and progress to player.
+func (s *Session) SendExperienceValue(e *entity.ExperienceManager) {
+	lvl, progress := e.LevelAndProgress()
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			Name:  "minecraft:player.level",
-			Value: float32(e.Level()),
+			Value: float32(lvl),
 			Min:   0, Max: float32(e.MaxLevel()),
 			Default: 0,
 		},
 			{
 				Name:  "minecraft:player.experience",
-				Value: float32(e.Progress()),
+				Value: float32(progress),
 				Min:   0, Max: 1,
 				Default: 0,
 			}},
