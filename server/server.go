@@ -5,6 +5,17 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/rand"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"sync"
+	"syscall"
+	"time"
+	_ "unsafe" // Imported for compiler directives.
+
 	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
@@ -22,18 +33,10 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
+	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
-	"math/rand"
-	"os"
-	"os/exec"
-	"os/signal"
-	"runtime"
-	"sync"
-	"syscall"
-	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -45,10 +48,11 @@ type Server struct {
 	joinMessage, quitMessage atomic.String
 	playerProvider           player.Provider
 
-	c       Config
-	log     internal.Logger
-	world   *world.World
-	players chan *player.Player
+	c         Config
+	log       internal.Logger
+	world     *world.World
+	players   chan *player.Player
+	resources []*resource.Pack
 
 	startTime time.Time
 
@@ -94,6 +98,7 @@ func New(c *Config, log internal.Logger) *Server {
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
 
+	s.loadResources(c.Resources.Folder, log)
 	s.checkNetIsolation()
 
 	if !c.Players.SaveData {
@@ -357,6 +362,7 @@ func (server *Server) startListening() error {
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
+		ResourcePacks:          server.resources,
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)
@@ -546,4 +552,24 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 		})
 	}
 	return
+}
+
+// loadResources loads resource packs from path of specifed directory.
+func (server *Server) loadResources(p string, log internal.Logger) {
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		_ = os.Mkdir(p, 0777)
+	}
+	resources, err := os.ReadDir(p)
+	if err != nil {
+		panic(err)
+	}
+	for _, entry := range resources {
+		r, err := resource.Compile(filepath.Join(p, entry.Name()))
+		if err != nil {
+			log.Infof("Failed to load resource: %v", entry.Name())
+			continue
+		}
+
+		server.resources = append(server.resources, r)
+	}
 }
