@@ -78,6 +78,13 @@ type EntityInsider interface {
 	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
 }
 
+// Frictional represents a block that may have a custom friction value, friction is used for entity drag when the
+// entity is on ground. If a block does not implement this interface, it should be assumed that its friction is 0.6.
+type Frictional interface {
+	// Friction returns the block's friction value.
+	Friction() float64
+}
+
 // beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
 type beaconAffected interface {
 	// AddEffect adds a specific effect to the entity that implements this interface.
