@@ -28,7 +28,7 @@ type Item struct {
 // If the stack's count exceeds its max count, the count of the stack will be changed to the maximum.
 func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
-		i = i.Grow(i.Count() - i.MaxCount())
+		i = i.Grow(i.MaxCount() - i.Count())
 	}
 	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
 
