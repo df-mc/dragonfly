@@ -20,8 +20,8 @@ type Flower struct {
 	Type FlowerType
 }
 
-// EntityCollide ...
-func (f Flower) EntityCollide(e world.Entity) {
+// EntityInside ...
+func (f Flower) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 	if f.Type == WitherRose() {
 		if living, ok := e.(effectHolder); ok {
 			living.AddEffect(effect.New(effect.Wither{}, 1, 2*time.Second))
