@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 )
@@ -68,6 +69,15 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 	return false
 }
 
+// EntityLand ...
+func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity) {
+	if living, ok := e.(entity.Living); ok {
+		if fall, ok := living.(FallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
+			w.PlaceBlock(pos, Dirt{})
+		}
+	}
+}
+
 // BreakInfo ...
 func (f Farmland) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
@@ -89,20 +99,4 @@ func allFarmland() (b []world.Block) {
 		b = append(b, Farmland{Hydration: i})
 	}
 	return
-}
-
-/*
-CloudBurst uses 0.75, but using the entity collide method I can't reliably reach the minimum of 0.75
-I am able however to always reach 0.37, so I went with that instead. Should be good enough.
-*/
-const minimumFallDistance = 0.37
-
-// EntityCollide ...
-func (f Farmland) EntityCollide(pos cube.Pos, e world.Entity) {
-	if fallEntity, ok := e.(FallDistanceEntity); ok {
-		fallDistance := fallEntity.FallDistance()
-		if fallDistance > minimumFallDistance {
-			e.World().PlaceBlock(pos, Dirt{})
-		}
-	}
 }
