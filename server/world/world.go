@@ -230,8 +230,8 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 
 	rid, ok := BlockRuntimeID(b)
 	if !ok {
-		w.log.Errorf("runtime ID of block %+v not found", b)
 		c.Unlock()
+		w.log.Errorf("runtime ID of block %+v not found", b)
 		return
 	}
 	c.SetRuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
@@ -1387,23 +1387,23 @@ func (w *World) tickEntities(tick int64) {
 			// for viewers to view it.
 			w.entities[e] = chunkPos
 
-			oldChunk := w.chunks[lastPos]
-			oldChunk.Lock()
-			chunkEntities := make([]Entity, 0, len(oldChunk.entities)-1)
-			for _, entity := range oldChunk.entities {
+			old := w.chunks[lastPos]
+			old.Lock()
+			chunkEntities := make([]Entity, 0, len(old.entities)-1)
+			for _, entity := range old.entities {
 				if entity == e {
 					continue
 				}
 				chunkEntities = append(chunkEntities, entity)
 			}
-			oldChunk.entities = chunkEntities
+			old.entities = chunkEntities
 
 			var viewers []Viewer
-			if len(c.v) > 0 {
-				viewers = make([]Viewer, len(c.v))
-				copy(viewers, c.v)
+			if len(old.v) > 0 {
+				viewers = make([]Viewer, len(old.v))
+				copy(viewers, old.v)
 			}
-			oldChunk.Unlock()
+			old.Unlock()
 
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
