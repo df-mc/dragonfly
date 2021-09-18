@@ -258,6 +258,11 @@ func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)
 }
 
+// FallDistance returns the player's fall distance.
+func (p *Player) FallDistance() float64 {
+	return p.fallDistance.Load()
+}
+
 // SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
 // and the text it shows.
 // If non-empty, the subtitle is shown in a smaller font below the title. The same counts for the action text
@@ -482,7 +487,8 @@ func (p *Player) fall(fallDistance float64) {
 	pos := cube.PosFromVec3(p.Position())
 	b := w.Block(pos)
 	if len(b.Model().AABB(pos, w)) == 0 {
-		b = w.Block(pos.Side(cube.FaceSouth))
+		pos = pos.Side(cube.FaceDown)
+		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
 		h.EntityLand(pos, w, p)

@@ -237,6 +237,8 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 type FallDistanceEntity interface {
 	// ResetFallDistance resets the entities fall distance.
 	ResetFallDistance()
+	// FallDistance returns the entities fall distance.
+	FallDistance() float64
 }
 
 // InstrumentBlock represents a block that creates a note block sound other than the piano.
