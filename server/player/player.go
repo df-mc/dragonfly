@@ -47,7 +47,7 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos                                 atomic.Value
+	pos, vel                            atomic.Value
 	nameTag                             atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 
@@ -81,6 +81,8 @@ type Player struct {
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
 	immunity atomic.Value
+
+	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
@@ -118,7 +120,9 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
 	}
+	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
 	return p
@@ -252,6 +256,11 @@ func (p *Player) SendTip(a ...interface{}) {
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)
+}
+
+// FallDistance returns the player's fall distance.
+func (p *Player) FallDistance() float64 {
+	return p.fallDistance.Load()
 }
 
 // SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
@@ -474,6 +483,17 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 
 // fall is called when a falling entity hits the ground.
 func (p *Player) fall(fallDistance float64) {
+	w := p.World()
+	pos := cube.PosFromVec3(p.Position())
+	b := w.Block(pos)
+	if len(b.Model().AABB(pos, w)) == 0 {
+		pos = pos.Side(cube.FaceDown)
+		b = w.Block(pos)
+	}
+	if h, ok := b.(block.EntityLander); ok {
+		h.EntityLand(pos, w, p)
+	}
+
 	fallDamage := fallDistance - 3
 	for _, e := range p.Effects() {
 		if _, ok := e.Type().(effect.JumpBoost); ok {
@@ -633,10 +653,6 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	if p.session() == session.Nop {
-		// TODO: Implement server-side movement and knock-back.
-		return
-	}
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 	velocity = velocity.Normalize().Mul(force)
@@ -648,7 +664,8 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 			resistance += a.KnockBackResistance()
 		}
 	}
-	p.session().SendVelocity(velocity.Mul(1 - resistance))
+
+	p.SetVelocity(velocity.Mul(1 - resistance))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
@@ -1260,6 +1277,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		w.PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
+
 	held, _ := p.HeldItems()
 	if _, ok := held.Item().(item.Sword); ok && p.GameMode().CreativeInventory() {
 		// Can't break blocks with a sword in creative mode.
@@ -1644,6 +1662,20 @@ func (p *Player) Position() mgl64.Vec3 {
 	return p.pos.Load().(mgl64.Vec3)
 }
 
+// Velocity returns the players current velocity. If there is an attached session, this will be empty.
+func (p *Player) Velocity() mgl64.Vec3 {
+	return p.vel.Load().(mgl64.Vec3)
+}
+
+// SetVelocity updates the players velocity. If there is an attached session, this will just send
+// the velocity to the player session for the player to update.
+func (p *Player) SetVelocity(velocity mgl64.Vec3) {
+	s := p.session()
+	if s.SendVelocity(velocity); s == session.Nop {
+		p.vel.Store(velocity)
+	}
+}
+
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
@@ -1743,6 +1775,13 @@ func (p *Player) Tick(current int64) {
 			}
 		}
 	}
+
+	if p.session() == session.Nop {
+		pos, vel := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+
+		p.pos.Store(pos)
+		p.vel.Store(vel)
+	}
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
@@ -1789,36 +1828,23 @@ func (p *Player) checkBlockCollisions() {
 	w := p.World()
 
 	aabb := p.AABB().Translate(p.Position())
-	grown := aabb.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
-	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
-	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
 
-	for y := minY - 1; y <= maxY+1; y++ {
-		for x := minX; x <= maxX; x++ {
-			for z := minZ; z <= maxZ; z++ {
+	for y := min[1]; y <= max[1]; y++ {
+		for x := min[0]; x <= max[0]; x++ {
+			for z := min[2]; z <= max[2]; z++ {
 				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
-				var liquid bool
-				if collide, ok := b.(block.EntityCollider); ok {
-					if _, liquid = b.(world.Liquid); liquid {
-						collide.EntityCollide(p)
+				if collide, ok := b.(block.EntityInsider); ok {
+					collide.EntityInside(blockPos, w, p)
+					if _, liquid := b.(world.Liquid); liquid {
 						continue
-					}
-
-					for _, bb := range b.Model().AABB(blockPos, w) {
-						if grown.IntersectsWith(bb.Translate(blockPos.Vec3())) {
-							collide.EntityCollide(p)
-							break
-						}
 					}
 				}
 
-				if !liquid {
-					if l, ok := w.Liquid(blockPos); ok {
-						if collide, ok := l.(block.EntityCollider); ok {
-							collide.EntityCollide(p)
-						}
+				if l, ok := w.Liquid(blockPos); ok {
+					if collide, ok := l.(block.EntityInsider); ok {
+						collide.EntityInside(blockPos, w, p)
 					}
 				}
 			}
@@ -1829,18 +1855,18 @@ func (p *Player) checkBlockCollisions() {
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
 	w := p.World()
-	pos := p.Position()
-	pAABB := p.AABB().Translate(pos)
-	min, max := pAABB.Min(), pAABB.Max()
+	aabb := p.AABB().Translate(p.Position())
 
-	for x := min[0]; x <= max[0]+1; x++ {
-		for z := min[2]; z <= max[2]+1; z++ {
-			for y := pos[1] - 1; y < pos[1]+1; y++ {
-				bPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
-				b := w.Block(bPos)
-				aabbList := b.Model().AABB(bPos, w)
-				for _, aabb := range aabbList {
-					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+	b := aabb.Grow(1)
+
+	min, max := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
+	for x := min[0]; x <= max[0]; x++ {
+		for z := min[2]; z <= max[2]; z++ {
+			for y := min[1]; y < max[1]; y++ {
+				pos := cube.Pos{x, y, z}
+				aabbList := w.Block(pos).Model().AABB(pos, w)
+				for _, bb := range aabbList {
+					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(aabb) {
 						return true
 					}
 				}
@@ -2035,7 +2061,6 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 // is either survival or creative mode.
 func (p *Player) canReach(pos mgl64.Vec3) bool {
 	const (
-		eyeHeight     = 1.62
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
@@ -2128,7 +2153,7 @@ func (p *Player) Data() Data {
 		UUID:            p.UUID(),
 		Username:        p.Name(),
 		Position:        p.Position(),
-		Velocity:        mgl64.Vec3{}, // TODO: Implement server-side movement of player entities.
+		Velocity:        mgl64.Vec3{},
 		Yaw:             yaw,
 		Pitch:           pitch,
 		Health:          p.Health(),

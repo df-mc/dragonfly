@@ -49,6 +49,11 @@ type Config struct {
 		// player provider if it is enabled.
 		Folder string
 	}
+
+	Resources struct {
+		// Folder controls the location where resource packs will be loaded from.
+		Folder string
+	}
 }
 
 // DefaultConfig returns a configuration with the default values filled out.
@@ -66,5 +71,6 @@ func DefaultConfig() Config {
 	c.Players.MaximumChunkRadius = 32
 	c.Players.SaveData = true
 	c.Players.Folder = "players"
+	c.Resources.Folder = "resources"
 	return c
 }
