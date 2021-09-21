@@ -81,6 +81,9 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(NBTer); ok {
 		nbtBlocks[rid] = true
 	}
+	if _, ok := b.(RandomTicker); ok {
+		randomTickBlocks[rid] = true
+	}
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().

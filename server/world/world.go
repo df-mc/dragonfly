@@ -230,8 +230,8 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 
 	rid, ok := BlockRuntimeID(b)
 	if !ok {
-		w.log.Errorf("runtime ID of block %+v not found", b)
 		c.Unlock()
+		w.log.Errorf("runtime ID of block %+v not found", b)
 		return
 	}
 	c.SetRuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
@@ -1277,9 +1277,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		// We generate a random block in every chunk
 		for j := uint32(0); j < tickSpeed; j++ {
 			generateNew := true
-			var x, y, z int
-			for subY := 0; subY <= chunk.MaxSubChunkIndex; subY++ {
-				sub := subChunks[subY]
+			var x, y, z uint8
+			for subY, sub := range subChunks {
 				if sub == nil {
 					// No sub chunk present, so skip it right away.
 					continue
@@ -1302,14 +1301,14 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.RuntimeID(uint8(x), uint8(y), uint8(z))
+				rid := layer.RuntimeID(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
 				}
 
-				if randomTicker, ok := blocks[rid].(RandomTicker); ok {
-					w.toTick = append(w.toTick, toTick{b: randomTicker, pos: cube.Pos{cx + x, subY<<4 + y, cz + z}})
+				if randomTickBlocks[rid] {
+					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY<<4 + int(y), cz + int(z)}})
 					generateNew = true
 					continue
 				}
@@ -1336,11 +1335,11 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 // randUint4 is a structure used to generate random uint4s.
 type randUint4 struct {
 	x uint64
-	n int
+	n uint8
 }
 
 // uint4 returns a random uint4.
-func (g *randUint4) uint4(r *rand.Rand) int {
+func (g *randUint4) uint4(r *rand.Rand) uint8 {
 	if g.n == 0 {
 		g.x = r.Uint64()
 		g.n = 16
@@ -1349,7 +1348,7 @@ func (g *randUint4) uint4(r *rand.Rand) int {
 
 	g.x >>= 4
 	g.n--
-	return int(val)
+	return uint8(val)
 }
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
@@ -1387,23 +1386,23 @@ func (w *World) tickEntities(tick int64) {
 			// for viewers to view it.
 			w.entities[e] = chunkPos
 
-			oldChunk := w.chunks[lastPos]
-			oldChunk.Lock()
-			chunkEntities := make([]Entity, 0, len(oldChunk.entities)-1)
-			for _, entity := range oldChunk.entities {
+			old := w.chunks[lastPos]
+			old.Lock()
+			chunkEntities := make([]Entity, 0, len(old.entities)-1)
+			for _, entity := range old.entities {
 				if entity == e {
 					continue
 				}
 				chunkEntities = append(chunkEntities, entity)
 			}
-			oldChunk.entities = chunkEntities
+			old.entities = chunkEntities
 
 			var viewers []Viewer
-			if len(c.v) > 0 {
-				viewers = make([]Viewer, len(c.v))
-				copy(viewers, c.v)
+			if len(old.v) > 0 {
+				viewers = make([]Viewer, len(old.v))
+				copy(viewers, old.v)
 			}
-			oldChunk.Unlock()
+			old.Unlock()
 
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
