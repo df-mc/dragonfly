@@ -200,7 +200,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 		p.skin = skin
 		p.skinMu.Unlock()
 
-		for _, v := range p.World().Viewers(p.Position()) {
+		for _, v := range p.viewers() {
 			v.ViewSkin(p)
 		}
 	})
@@ -568,7 +568,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 
 		p.addHealth(-finalDamage)
 
-		for _, viewer := range p.World().Viewers(p.Position()) {
+		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, action.Hurt{})
 		}
 		p.immunity.Store(time.Now().Add(time.Second / 2))
@@ -770,7 +770,7 @@ func (p *Player) Dead() bool {
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src damage.Source) {
-	for _, viewer := range p.World().Viewers(p.Position()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, action.Death{})
 	}
 
@@ -1300,7 +1300,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		p.SwingArm()
 
 		breakTime := p.breakTime(pos)
-		for _, viewer := range w.Viewers(pos.Vec3()) {
+		for _, viewer := range p.viewers() {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
@@ -1357,7 +1357,7 @@ func (p *Player) AbortBreaking() {
 	}
 	p.breakParticleCounter.Store(0)
 	pos := p.breakingPos.Load().(cube.Pos)
-	for _, viewer := range p.World().Viewers(pos.Vec3()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
 	}
 }
@@ -1384,7 +1384,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	}
 	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
-		for _, viewer := range w.Viewers(pos.Vec3()) {
+		for _, viewer := range p.viewers() {
 			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
@@ -1593,7 +1593,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
-	for _, v := range p.World().Viewers(p.Position()) {
+	for _, v := range p.viewers() {
 		v.ViewEntityTeleport(p, pos)
 	}
 	p.pos.Store(pos)
@@ -1615,7 +1615,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	ctx := event.C()
 	p.handler().HandleMove(ctx, res, resYaw, resPitch)
 	ctx.Continue(func() {
-		for _, v := range p.World().Viewers(pos) {
+		for _, v := range p.viewers() {
 			v.ViewEntityMovement(p, res, resYaw, resPitch, p.onGround.Load())
 		}
 
@@ -1766,7 +1766,7 @@ func (p *Player) Tick(current int64) {
 		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
-			for _, v := range w.Viewers(p.Position()) {
+			for _, v := range p.viewers() {
 				v.ViewEntityAction(p, action.Eat{})
 			}
 		}
@@ -1941,7 +1941,7 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 
 // updateState updates the state of the player to all viewers of the player.
 func (p *Player) updateState() {
-	for _, v := range p.World().Viewers(p.Position()) {
+	for _, v := range p.viewers() {
 		v.ViewEntityState(p)
 	}
 }
@@ -1970,7 +1970,7 @@ func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}
-	for _, v := range p.World().Viewers(p.Position()) {
+	for _, v := range p.viewers() {
 		v.ViewEntityAction(p, action.SwingArm{})
 	}
 }
@@ -2197,16 +2197,33 @@ func (p *Player) handler() Handler {
 
 // broadcastItems broadcasts the items held to viewers.
 func (p *Player) broadcastItems(int, item.Stack) {
-	for _, viewer := range p.World().Viewers(p.Position()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}
 }
 
 // broadcastArmour broadcasts the armour equipped to viewers.
 func (p *Player) broadcastArmour(int, item.Stack) {
-	for _, viewer := range p.World().Viewers(p.Position()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewEntityArmour(p)
 	}
+}
+
+// viewers returns a list of all viewers of the Player.
+func (p *Player) viewers() []world.Viewer {
+	viewers := p.World().Viewers(p.Position())
+	s := p.session()
+
+	found := false
+	for _, v := range viewers {
+		if v == s {
+			found = true
+		}
+	}
+	if !found {
+		viewers = append(viewers, s)
+	}
+	return viewers
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
