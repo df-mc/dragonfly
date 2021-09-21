@@ -74,7 +74,7 @@ type World struct {
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
 
-	updateLCG int
+	thunderLCG int
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -98,7 +98,7 @@ func New(log internal.Logger, simulationDistance int) *World {
 		stopTick:         ctx,
 		cancelTick:       cancel,
 		set:              defaultSettings(),
-		updateLCG:        rand.Int(),
+		thunderLCG:       rand.Int(),
 	}
 
 	w.initChunkCache()
@@ -215,9 +215,9 @@ func (w *World) HighestBlock(x, z int) int {
 
 const LCGConstant = 1013904223
 
-func (w *World) GetUpdateLGC() int {
-	w.updateLCG = (w.updateLCG * 3) ^ LCGConstant
-	return w.updateLCG
+func (w *World) ThunderLCG() int {
+	w.thunderLCG = (w.thunderLCG * 3) ^ LCGConstant
+	return w.thunderLCG
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -1258,13 +1258,13 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.setRaining(w.set.RainLevel <= 0, time.Duration(rand.Intn(600)+600))
+			w.setRaining(w.set.RainLevel <= 0, time.Second * time.Duration(rand.Intn(600)+600))
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.setThunder(w.set.ThunderLevel <= 0, time.Duration(rand.Intn(600)+180))
+			w.setThunder(w.set.ThunderLevel <= 0, time.Second * time.Duration(rand.Intn(600)+180))
 		}
 	}
 	w.mu.Unlock()
@@ -1581,7 +1581,7 @@ func (w *World) setRaining(raining bool, x time.Duration) {
 	}
 
 	if raining {
-		w.setRainTime(int(x.Seconds() / 20)) // rand.Intn(12000) + 12000
+		w.setRainTime(int(x.Seconds() * 20))
 	} else {
 		w.setRainTime(rand.Intn(168000) + 12000)
 	}
@@ -1610,7 +1610,7 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 	}
 
 	if thundering {
-		w.setThunderTime(int(x.Seconds() / 20)) // rand.Intn(12000) + 3600
+		w.setThunderTime(int(x.Seconds() * 20))
 	} else {
 		w.setThunderTime(rand.Intn(168000) + 12000)
 	}
