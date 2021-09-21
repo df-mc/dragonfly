@@ -140,7 +140,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		// Can't flow into this block.
 		return false
 	}
-	if _, air := existing.(Air); !air {
+	if existing != nil {
 		w.BreakBlockWithoutParticles(pos)
 	}
 	if removable.HasLiquidDrops() {
@@ -243,7 +243,7 @@ func spreadNeighbour(b world.Liquid, src cube.Pos, w *world.World, node liquidNo
 // canFlowInto checks if a liquid can flow into the block present in the world at a specific block position.
 func canFlowInto(b world.Liquid, w *world.World, pos cube.Pos, sideways bool) bool {
 	bl := w.Block(pos)
-	if _, air := bl.(Air); air {
+	if bl == nil {
 		// Fast route for air: A type assert to a concrete type is much faster than a type assert to an interface.
 		return true
 	}

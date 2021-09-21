@@ -47,7 +47,7 @@ func dataToInv(data jsonInventoryData) player.InventoryData {
 }
 
 func encodeItem(item item.Stack) []byte {
-	if item.Empty() {
+	if item.Zero() {
 		return nil
 	}
 

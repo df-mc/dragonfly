@@ -492,7 +492,7 @@ func (s *Session) SetHeldSlot(slot int) error {
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
-	if it.Empty() {
+	if it.Zero() {
 		return protocol.ItemStack{}
 	}
 	var blockRuntimeID uint32
@@ -537,12 +537,12 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		// return air anyways.
 		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
-			t = block.Air{}
+			t = nil
 		}
 	} else {
 		t, ok = world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
 		if !ok {
-			t = block.Air{}
+			t = nil
 		}
 	}
 	//noinspection SpellCheckingInspection

@@ -978,7 +978,7 @@ func (p *Player) Armour() item.ArmourContainer {
 
 // HeldItems returns the items currently held in the hands of the player. The first item stack returned is the
 // one held in the main hand, the second is held in the off-hand.
-// If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
+// If no item was held in a hand, the stack returned has a count of 0. Stack.Zero() may be used to check if
 // the hand held anything.
 func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 	offHand, _ = p.offHand.Item(0)
@@ -987,7 +987,7 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 }
 
 // SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
-// (Stack.Empty()) to clear the held item.
+// (Stack.Zero()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
@@ -1113,7 +1113,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		if activatable, ok := w.Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which the block will activated as usual.
-			if !p.Sneaking() || i.Empty() {
+			if !p.Sneaking() || i.Zero() {
 				p.SwingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
 				// used.
@@ -1121,7 +1121,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				return
 			}
 		}
-		if i.Empty() {
+		if i.Zero() {
 			return
 		}
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
@@ -1252,7 +1252,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
 	w := p.World()
-	if _, air := w.Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
+	if w.Block(pos) == nil || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
@@ -1451,7 +1451,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 	w := p.World()
 	b := w.Block(pos)
-	if _, air := b.(block.Air); air {
+	if b == nil {
 		// Don't do anything if the position broken is already air.
 		return
 	}
@@ -2016,7 +2016,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 			d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
 		}
 		s = s.Damage(d)
-		if s.Empty() {
+		if s.Zero() {
 			p.World().PlaySound(p.Position(), sound.ItemBreak{})
 		}
 	})
@@ -2034,11 +2034,11 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // addNewItem adds the new item of the context passed to the inventory.
 func (p *Player) addNewItem(ctx *item.UseContext) {
-	if (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Empty() {
+	if (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Zero() {
 		return
 	}
 	held, left := p.HeldItems()
-	if held.Empty() {
+	if held.Zero() {
 		p.SetHeldItems(ctx.NewItem, left)
 		return
 	}

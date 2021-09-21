@@ -135,7 +135,7 @@ func (it *Item) merge(other *Item, pos mgl64.Vec3) bool {
 	newA.SetVelocity(other.Velocity())
 	it.World().AddEntity(newA)
 
-	if !b.Empty() {
+	if !b.Zero() {
 		newB := NewItem(b, pos)
 		newB.SetVelocity(it.vel)
 		it.World().AddEntity(newB)
@@ -169,7 +169,7 @@ func (it *Item) collect(collector Collector, pos mgl64.Vec3) {
 // DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
 func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
 	i := nbtconv.MapItem(data, "Item")
-	if i.Empty() {
+	if i.Zero() {
 		return nil
 	}
 	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
