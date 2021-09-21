@@ -1258,13 +1258,13 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.setRaining(w.set.RainLevel <= 0, time.Second * time.Duration(rand.Intn(600)+600))
+			w.setRaining(w.set.RainLevel <= 0, time.Second*time.Duration(rand.Intn(600)+600))
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.setThunder(w.set.ThunderLevel <= 0, time.Second * time.Duration(rand.Intn(600)+180))
+			w.setThunder(w.set.ThunderLevel <= 0, time.Second*time.Duration(rand.Intn(600)+180))
 		}
 	}
 	w.mu.Unlock()
