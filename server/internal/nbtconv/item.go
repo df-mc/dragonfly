@@ -9,7 +9,7 @@ func InvFromNBT(inv *inventory.Inventory, items []interface{}) {
 	for _, itemData := range items {
 		data, _ := itemData.(map[string]interface{})
 		it := ReadItem(data, nil)
-		if it.Zero() {
+		if it.Empty() {
 			continue
 		}
 		_ = inv.SetItem(int(MapByte(data, "Slot")), it)
@@ -20,7 +20,7 @@ func InvFromNBT(inv *inventory.Inventory, items []interface{}) {
 func InvToNBT(inv *inventory.Inventory) []map[string]interface{} {
 	var items []map[string]interface{}
 	for index, i := range inv.Items() {
-		if i.Zero() {
+		if i.Empty() {
 			continue
 		}
 		data := WriteItem(i, true)

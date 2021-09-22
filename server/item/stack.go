@@ -10,7 +10,6 @@ import (
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
 // size of the stack.
-// The default value of a Stack is a valid empty item.
 type Stack struct {
 	id int32
 
@@ -29,10 +28,12 @@ type Stack struct {
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
 // is negative or if the item type passed is nil.
-// Passing nil to NewStack is permitted, but such a Stack cannot be grown.
 func NewStack(t world.Item, count int) Stack {
 	if count < 0 {
 		panic("cannot use negative count for item stack")
+	}
+	if t == nil {
+		panic("cannot have a stack with item type nil")
 	}
 	return Stack{item: t, count: count, id: newID()}
 }
@@ -40,9 +41,6 @@ func NewStack(t world.Item, count int) Stack {
 // Count returns the amount of items that is present on the stack. The count is guaranteed never to be
 // negative.
 func (s Stack) Count() int {
-	if s.item == nil {
-		return 0
-	}
 	return s.count
 }
 
@@ -59,9 +57,6 @@ func (s Stack) MaxCount() int {
 // is grown, whereas if a negative size is passed, the resulting Stack will have a lower count. The count of
 // the returned Stack will never be negative.
 func (s Stack) Grow(n int) Stack {
-	if s.item == nil {
-		return s
-	}
 	s.count += n
 	if s.count < 0 {
 		s.count = 0
@@ -140,15 +135,15 @@ func (s Stack) WithDurability(d int) Stack {
 	return s
 }
 
-// Zero checks if the stack is empty (has a count of 0).
-func (s Stack) Zero() bool {
-	return s.count == 0 || s.item == nil
+// Empty checks if the stack is empty (has a count of 0).
+func (s Stack) Empty() bool {
+	return s.Count() == 0 || s.item == nil
 }
 
-// Item returns the item that the stack holds. If the stack is considered empty (Stack.Zero()), Item will
+// Item returns the item that the stack holds. If the stack is considered empty (Stack.Empty()), Item will
 // always return nil.
 func (s Stack) Item() world.Item {
-	if s.count == 0 {
+	if s.Empty() || s.item == nil {
 		return nil
 	}
 	return s.item
@@ -288,7 +283,7 @@ func (s Stack) Equal(s2 Stack) bool {
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
 // equal item type and have equal enchantments, lore and custom names, or if one of the stacks is empty.
 func (s Stack) Comparable(s2 Stack) bool {
-	if s.Zero() || s2.Zero() {
+	if s.Empty() || s2.Empty() {
 		return true
 	}
 
@@ -349,7 +344,7 @@ func newID() int32 {
 //lint:ignore U1000 Function is used using compiler directives.
 //noinspection GoUnusedFunction
 func id(s Stack) int32 {
-	if s.Zero() {
+	if s.Empty() {
 		return 0
 	}
 	return s.id

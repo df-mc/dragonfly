@@ -119,13 +119,13 @@ func (w *World) Name() string {
 func (w *World) Block(pos cube.Pos) Block {
 	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
-		return nil
+		return air()
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error getting block: %v", err)
-		return nil
+		return air()
 	}
 	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
@@ -147,7 +147,7 @@ func (w *World) Block(pos cube.Pos) Block {
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 	if pos.OutOfBounds() {
 		// Fast way out.
-		return nil, nil
+		return air(), nil
 	}
 	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	b, _ := BlockByRuntimeID(rid)
@@ -526,14 +526,14 @@ func (w *World) removeLiquids(c *chunkData, pos cube.Pos) bool {
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
 			for _, v := range c.v {
-				v.ViewBlockUpdate(pos, nil, 0)
+				v.ViewBlockUpdate(pos, air(), 0)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
 		for _, v := range c.v {
-			v.ViewBlockUpdate(pos, nil, 1)
+			v.ViewBlockUpdate(pos, air(), 1)
 		}
 	}
 	return noneLeft
@@ -1298,7 +1298,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				layer := layers[0]
 				p := layer.Palette()
 				if p.Len() == 1 && p.RuntimeID(0) == airRID {
-					// Zero layer present, so skip it right away.
+					// Empty layer present, so skip it right away.
 					continue
 				}
 				if generateNew {
