@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 )
@@ -16,8 +17,6 @@ type Farmland struct {
 	// decrements until it turns into dirt.
 	Hydration int
 }
-
-//TODO: Add crop trampling
 
 // SoilFor ...
 func (f Farmland) SoilFor(block world.Block) bool {
@@ -68,6 +67,15 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 		}
 	}
 	return false
+}
+
+// EntityLand ...
+func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity) {
+	if living, ok := e.(entity.Living); ok {
+		if fall, ok := living.(FallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
+			w.PlaceBlock(pos, Dirt{})
+		}
+	}
 }
 
 // BreakInfo ...

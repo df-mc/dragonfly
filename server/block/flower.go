@@ -20,8 +20,8 @@ type Flower struct {
 	Type FlowerType
 }
 
-// EntityCollide ...
-func (f Flower) EntityCollide(e world.Entity) {
+// EntityInside ...
+func (f Flower) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 	if f.Type == WitherRose() {
 		if living, ok := e.(effectHolder); ok {
 			living.AddEffect(effect.New(effect.Wither{}, 1, 2*time.Second))
@@ -37,7 +37,7 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 
 	for i := 0; i < 8; i++ {
 		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
-		if _, ok := w.Block(p).(Air); !ok {
+		if w.Block(p) != nil {
 			continue
 		}
 		if _, ok := w.Block(p.Side(cube.FaceDown)).(Grass); !ok {

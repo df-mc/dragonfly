@@ -59,6 +59,7 @@ func init() {
 		itemNamesToRuntimeIDs[name] = rid
 		itemRuntimeIDsToNames[rid] = name
 	}
+	items[itemHash{name: "minecraft:air"}] = nil
 }
 
 // ItemByName attempts to return an item by a name and a metadata value.
@@ -74,6 +75,9 @@ func ItemByName(name string, meta int16) (Item, bool) {
 // ItemRuntimeID attempts to return the runtime ID of the Item passed. False is returned if the Item is not
 // registered.
 func ItemRuntimeID(i Item) (rid int32, meta int16, ok bool) {
+	if i == nil {
+		return itemNamesToRuntimeIDs["minecraft:air"], 0, true
+	}
 	name, meta := i.EncodeItem()
 	rid, ok = itemNamesToRuntimeIDs[name]
 	return rid, meta, ok

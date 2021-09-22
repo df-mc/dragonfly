@@ -23,9 +23,10 @@ type MovementComputer struct {
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
 func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) (mgl64.Vec3, mgl64.Vec3) {
-	viewers := e.World().Viewers(pos)
+	w := e.World()
+	viewers := w.Viewers(pos)
 
-	vel = c.applyHorizontalForces(c.applyVerticalForces(vel))
+	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	dPos, vel := c.checkCollision(e, pos, vel)
 
 	c.sendMovement(e, viewers, pos, dPos, vel, yaw, pitch)
@@ -79,10 +80,16 @@ func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {
 }
 
 // applyHorizontalForces applies friction to the velocity based on the Drag value, reducing it on the X and Z axes.
-func (c *MovementComputer) applyHorizontalForces(vel mgl64.Vec3) mgl64.Vec3 {
+func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.Vec3) mgl64.Vec3 {
 	friction := 1 - c.Drag
 	if c.onGround {
-		friction = 0.6
+		if f, ok := w.Block(cube.PosFromVec3(pos).Side(cube.FaceDown)).(interface {
+			Friction() float64
+		}); ok {
+			friction *= f.Friction()
+		} else {
+			friction *= 0.6
+		}
 	}
 	vel[0] *= friction
 	vel[2] *= friction

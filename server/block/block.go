@@ -65,6 +65,26 @@ type BeaconSource interface {
 	PowersBeacon() bool
 }
 
+// EntityLander represents a block that reacts to an entity landing on it after falling.
+type EntityLander interface {
+	// EntityLand is called when an entity lands on the block.
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+}
+
+// EntityInsider represents a block that reacts to an entity going inside of its 1x1x1 axis
+// aligned bounding box.
+type EntityInsider interface {
+	// EntityInside is called when an entity goes inside of the block's 1x1x1 axis aligned bounding box.
+	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
+}
+
+// Frictional represents a block that may have a custom friction value, friction is used for entity drag when the
+// entity is on ground. If a block does not implement this interface, it should be assumed that its friction is 0.6.
+type Frictional interface {
+	// Friction returns the block's friction value.
+	Friction() float64
+}
+
 // beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
 type beaconAffected interface {
 	// AddEffect adds a specific effect to the entity that implements this interface.
@@ -178,9 +198,8 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
-	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
-	if air || liquid {
+	if w.Block(pos.Side(cube.FaceDown)) == nil || liquid {
 		w.BreakBlockWithoutParticles(pos)
 
 		e := entity.NewFallingBlock(b, pos.Vec3Middle())
@@ -213,16 +232,12 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 	}
 }
 
-// EntityCollider is an interface for blocks with special behaviors on entity collision.
-type EntityCollider interface {
-	// EntityCollide is called on entity collision.
-	EntityCollide(e world.Entity)
-}
-
 // FallDistanceEntity is an entity that has a fall distance.
 type FallDistanceEntity interface {
 	// ResetFallDistance resets the entities fall distance.
 	ResetFallDistance()
+	// FallDistance returns the entities fall distance.
+	FallDistance() float64
 }
 
 // InstrumentBlock represents a block that creates a note block sound other than the piano.

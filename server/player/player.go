@@ -200,7 +200,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 		p.skin = skin
 		p.skinMu.Unlock()
 
-		for _, v := range p.World().Viewers(p.Position()) {
+		for _, v := range p.viewers() {
 			v.ViewSkin(p)
 		}
 	})
@@ -256,6 +256,11 @@ func (p *Player) SendTip(a ...interface{}) {
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)
+}
+
+// FallDistance returns the player's fall distance.
+func (p *Player) FallDistance() float64 {
+	return p.fallDistance.Load()
 }
 
 // SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
@@ -478,6 +483,17 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 
 // fall is called when a falling entity hits the ground.
 func (p *Player) fall(fallDistance float64) {
+	w := p.World()
+	pos := cube.PosFromVec3(p.Position())
+	b := w.Block(pos)
+	if len(b.Model().AABB(pos, w)) == 0 {
+		pos = pos.Side(cube.FaceDown)
+		b = w.Block(pos)
+	}
+	if h, ok := b.(block.EntityLander); ok {
+		h.EntityLand(pos, w, p)
+	}
+
 	fallDamage := fallDistance - 3
 	for _, e := range p.Effects() {
 		if _, ok := e.Type().(effect.JumpBoost); ok {
@@ -552,7 +568,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 
 		p.addHealth(-finalDamage)
 
-		for _, viewer := range p.World().Viewers(p.Position()) {
+		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, action.Hurt{})
 		}
 		p.immunity.Store(time.Now().Add(time.Second / 2))
@@ -754,7 +770,7 @@ func (p *Player) Dead() bool {
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src damage.Source) {
-	for _, viewer := range p.World().Viewers(p.Position()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, action.Death{})
 	}
 
@@ -978,7 +994,7 @@ func (p *Player) Armour() item.ArmourContainer {
 
 // HeldItems returns the items currently held in the hands of the player. The first item stack returned is the
 // one held in the main hand, the second is held in the off-hand.
-// If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
+// If no item was held in a hand, the stack returned has a count of 0. Stack.Zero() may be used to check if
 // the hand held anything.
 func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 	offHand, _ = p.offHand.Item(0)
@@ -987,7 +1003,7 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 }
 
 // SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
-// (Stack.Empty()) to clear the held item.
+// (Stack.Zero()) to clear the held item.
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
@@ -1113,7 +1129,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		if activatable, ok := w.Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which the block will activated as usual.
-			if !p.Sneaking() || i.Empty() {
+			if !p.Sneaking() || i.Zero() {
 				p.SwingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
 				// used.
@@ -1121,7 +1137,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				return
 			}
 		}
-		if i.Empty() {
+		if i.Zero() {
 			return
 		}
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
@@ -1252,7 +1268,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
 	w := p.World()
-	if _, air := w.Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
+	if w.Block(pos) == nil || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
@@ -1261,6 +1277,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		w.PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
+
 	held, _ := p.HeldItems()
 	if _, ok := held.Item().(item.Sword); ok && p.GameMode().CreativeInventory() {
 		// Can't break blocks with a sword in creative mode.
@@ -1283,7 +1300,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		p.SwingArm()
 
 		breakTime := p.breakTime(pos)
-		for _, viewer := range w.Viewers(pos.Vec3()) {
+		for _, viewer := range p.viewers() {
 			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
@@ -1340,7 +1357,7 @@ func (p *Player) AbortBreaking() {
 	}
 	p.breakParticleCounter.Store(0)
 	pos := p.breakingPos.Load().(cube.Pos)
-	for _, viewer := range p.World().Viewers(pos.Vec3()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
 	}
 }
@@ -1367,7 +1384,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	}
 	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
-		for _, viewer := range w.Viewers(pos.Vec3()) {
+		for _, viewer := range p.viewers() {
 			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
@@ -1451,7 +1468,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 	w := p.World()
 	b := w.Block(pos)
-	if _, air := b.(block.Air); air {
+	if b == nil {
 		// Don't do anything if the position broken is already air.
 		return
 	}
@@ -1576,7 +1593,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
-	for _, v := range p.World().Viewers(p.Position()) {
+	for _, v := range p.viewers() {
 		v.ViewEntityTeleport(p, pos)
 	}
 	p.pos.Store(pos)
@@ -1598,7 +1615,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	ctx := event.C()
 	p.handler().HandleMove(ctx, res, resYaw, resPitch)
 	ctx.Continue(func() {
-		for _, v := range p.World().Viewers(pos) {
+		for _, v := range p.viewers() {
 			v.ViewEntityMovement(p, res, resYaw, resPitch, p.onGround.Load())
 		}
 
@@ -1749,7 +1766,7 @@ func (p *Player) Tick(current int64) {
 		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
-			for _, v := range w.Viewers(p.Position()) {
+			for _, v := range p.viewers() {
 				v.ViewEntityAction(p, action.Eat{})
 			}
 		}
@@ -1807,36 +1824,23 @@ func (p *Player) checkBlockCollisions() {
 	w := p.World()
 
 	aabb := p.AABB().Translate(p.Position())
-	grown := aabb.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
-	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
-	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
 
-	for y := minY - 1; y <= maxY+1; y++ {
-		for x := minX; x <= maxX; x++ {
-			for z := minZ; z <= maxZ; z++ {
+	for y := min[1]; y <= max[1]; y++ {
+		for x := min[0]; x <= max[0]; x++ {
+			for z := min[2]; z <= max[2]; z++ {
 				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
-				var liquid bool
-				if collide, ok := b.(block.EntityCollider); ok {
-					if _, liquid = b.(world.Liquid); liquid {
-						collide.EntityCollide(p)
+				if collide, ok := b.(block.EntityInsider); ok {
+					collide.EntityInside(blockPos, w, p)
+					if _, liquid := b.(world.Liquid); liquid {
 						continue
-					}
-
-					for _, bb := range b.Model().AABB(blockPos, w) {
-						if grown.IntersectsWith(bb.Translate(blockPos.Vec3())) {
-							collide.EntityCollide(p)
-							break
-						}
 					}
 				}
 
-				if !liquid {
-					if l, ok := w.Liquid(blockPos); ok {
-						if collide, ok := l.(block.EntityCollider); ok {
-							collide.EntityCollide(p)
-						}
+				if l, ok := w.Liquid(blockPos); ok {
+					if collide, ok := l.(block.EntityInsider); ok {
+						collide.EntityInside(blockPos, w, p)
 					}
 				}
 			}
@@ -1847,18 +1851,18 @@ func (p *Player) checkBlockCollisions() {
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
 	w := p.World()
-	pos := p.Position()
-	pAABB := p.AABB().Translate(pos)
-	min, max := pAABB.Min(), pAABB.Max()
+	aabb := p.AABB().Translate(p.Position())
 
-	for x := min[0]; x <= max[0]+1; x++ {
-		for z := min[2]; z <= max[2]+1; z++ {
-			for y := pos[1] - 1; y < pos[1]+1; y++ {
-				bPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
-				b := w.Block(bPos)
-				aabbList := b.Model().AABB(bPos, w)
-				for _, aabb := range aabbList {
-					if aabb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(bPos.Vec3()).IntersectsWith(pAABB) {
+	b := aabb.Grow(1)
+
+	min, max := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
+	for x := min[0]; x <= max[0]; x++ {
+		for z := min[2]; z <= max[2]; z++ {
+			for y := min[1]; y < max[1]; y++ {
+				pos := cube.Pos{x, y, z}
+				aabbList := w.Block(pos).Model().AABB(pos, w)
+				for _, bb := range aabbList {
+					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(aabb) {
 						return true
 					}
 				}
@@ -1937,7 +1941,7 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 
 // updateState updates the state of the player to all viewers of the player.
 func (p *Player) updateState() {
-	for _, v := range p.World().Viewers(p.Position()) {
+	for _, v := range p.viewers() {
 		v.ViewEntityState(p)
 	}
 }
@@ -1966,7 +1970,7 @@ func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}
-	for _, v := range p.World().Viewers(p.Position()) {
+	for _, v := range p.viewers() {
 		v.ViewEntityAction(p, action.SwingArm{})
 	}
 }
@@ -2016,7 +2020,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 			d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
 		}
 		s = s.Damage(d)
-		if s.Empty() {
+		if s.Zero() {
 			p.World().PlaySound(p.Position(), sound.ItemBreak{})
 		}
 	})
@@ -2034,11 +2038,11 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // addNewItem adds the new item of the context passed to the inventory.
 func (p *Player) addNewItem(ctx *item.UseContext) {
-	if (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Empty() {
+	if (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Zero() {
 		return
 	}
 	held, left := p.HeldItems()
-	if held.Empty() {
+	if held.Zero() {
 		p.SetHeldItems(ctx.NewItem, left)
 		return
 	}
@@ -2053,7 +2057,6 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 // is either survival or creative mode.
 func (p *Player) canReach(pos mgl64.Vec3) bool {
 	const (
-		eyeHeight     = 1.62
 		creativeRange = 13.0
 		survivalRange = 7.0
 	)
@@ -2194,16 +2197,33 @@ func (p *Player) handler() Handler {
 
 // broadcastItems broadcasts the items held to viewers.
 func (p *Player) broadcastItems(int, item.Stack) {
-	for _, viewer := range p.World().Viewers(p.Position()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}
 }
 
 // broadcastArmour broadcasts the armour equipped to viewers.
 func (p *Player) broadcastArmour(int, item.Stack) {
-	for _, viewer := range p.World().Viewers(p.Position()) {
+	for _, viewer := range p.viewers() {
 		viewer.ViewEntityArmour(p)
 	}
+}
+
+// viewers returns a list of all viewers of the Player.
+func (p *Player) viewers() []world.Viewer {
+	viewers := p.World().Viewers(p.Position())
+	s := p.session()
+
+	found := false
+	for _, v := range viewers {
+		if v == s {
+			found = true
+		}
+	}
+	if !found {
+		viewers = append(viewers, s)
+	}
+	return viewers
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the

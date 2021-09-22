@@ -36,7 +36,7 @@ func (d DragonEgg) teleport(pos cube.Pos, w *world.World) {
 	for i := 0; i < 1000; i++ {
 		newPos := pos.Add(cube.Pos{rand.Intn(31) - 15, max(cube.MinY-pos.Y(), min(cube.MaxY-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
 
-		if _, ok := w.Block(newPos).(Air); ok {
+		if w.Block(newPos) == nil {
 			w.PlaceBlock(newPos, d)
 			w.BreakBlockWithoutParticles(pos)
 			w.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Subtract(newPos)})

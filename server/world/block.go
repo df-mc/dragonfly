@@ -81,6 +81,9 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(NBTer); ok {
 		nbtBlocks[rid] = true
 	}
+	if _, ok := b.(RandomTicker); ok {
+		randomTickBlocks[rid] = true
+	}
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
@@ -112,7 +115,7 @@ func slowBlockRuntimeID(b Block) (uint32, bool) {
 // false. If found, the block is non-nil and the bool true.
 func BlockByRuntimeID(rid uint32) (Block, bool) {
 	if rid >= uint32(len(blocks)) {
-		return air(), false
+		return nil, false
 	}
 	return blocks[rid], true
 }
@@ -125,12 +128,6 @@ func BlockByName(name string, properties map[string]interface{}) (Block, bool) {
 		return nil, false
 	}
 	return blocks[rid], true
-}
-
-// air returns an air block.
-func air() Block {
-	b, _ := BlockByRuntimeID(airRID)
-	return b
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,

@@ -21,9 +21,11 @@ var (
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
-	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a nil implementation in
-	// this slice.
+	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a false value in this slice.
 	nbtBlocks []bool
+	// randomTickBlocks holds a list of RandomTicker implementations for blocks registered that implement the RandomTicker interface.
+	// These are indexed by their runtime IDs. Blocks that do not implement RandomTicker have a false value in this slice.
+	randomTickBlocks []bool
 	// airRID is the runtime ID of an air block.
 	airRID uint32
 )
@@ -63,13 +65,26 @@ func registerBlockState(s blockState) {
 	}
 	rid := uint32(len(blocks))
 	if s.Name == "minecraft:air" {
-		airRID = rid
+		registerAir(rid, h)
+		return
 	}
 	stateRuntimeIDs[h] = rid
 	blocks = append(blocks, unknownBlock{s})
 
 	nbtBlocks = append(nbtBlocks, false)
+	randomTickBlocks = append(randomTickBlocks, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
+	chunk.LightBlocks = append(chunk.LightBlocks, 0)
+}
+
+// registerAir registers an air block with the runtime ID passed.
+func registerAir(rid uint32, h stateHash) {
+	airRID = rid
+	blocks = append(blocks, nil)
+	stateRuntimeIDs[h] = rid
+	nbtBlocks = append(nbtBlocks, false)
+	randomTickBlocks = append(randomTickBlocks, false)
+	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 0)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 }
 
