@@ -83,6 +83,7 @@ func registerAir(rid uint32, h stateHash) {
 	blocks = append(blocks, nil)
 	stateRuntimeIDs[h] = rid
 	nbtBlocks = append(nbtBlocks, false)
+	randomTickBlocks = append(randomTickBlocks, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 0)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 }
