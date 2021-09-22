@@ -7,17 +7,18 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	lcgRand "golang.org/x/exp/rand"
 	"math"
 	"math/rand"
 )
 
 //go:linkname world_performThunder github.com/df-mc/dragonfly/server/world.performThunder
 //noinspection ALL
-var world_performThunder func(w *world.World, pos world.ChunkPos)
+var world_performThunder func(w *world.World, pos world.ChunkPos, tr *lcgRand.Rand)
 
 func init() {
-	world_performThunder = func(w *world.World, pos world.ChunkPos) {
-		lcg := w.ThunderLCG()
+	world_performThunder = func(w *world.World, pos world.ChunkPos, tr *lcgRand.Rand) {
+		lcg := int32(tr.Uint32())
 
 		chunkX, chunkZ := pos.X(), pos.Z()
 		vec := adjustPosToNearbyEntities(w, mgl64.Vec3{float64(chunkX + (lcg & 0xf)), 0, float64(chunkZ + (lcg >> 8 & 0xf))})

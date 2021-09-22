@@ -728,8 +728,8 @@ func (w *World) setThunderLevel(new int) {
 	w.set.ThunderLevel = float32(new)
 }
 
-// IsRaining returns a bool that decides whether it is raining or not.
-func (w *World) IsRaining() bool {
+// Raining returns a bool that decides whether it is raining or not.
+func (w *World) Raining() bool {
 	if w == nil {
 		return false
 	}
@@ -739,7 +739,9 @@ func (w *World) IsRaining() bool {
 	return a
 }
 
-func (w *World) isRaining() bool {
+// raining returns a bool that decides whether it is raining or not.
+// This does not lock the world mutex as opposed to Raining.
+func (w *World) raining() bool {
 	if w == nil {
 		return false
 	}
@@ -747,14 +749,24 @@ func (w *World) isRaining() bool {
 	return a
 }
 
-// IsThundering returns a bool that decides whether it is thundering or not.
-func (w *World) IsThundering() bool {
+// Thundering returns a bool that decides whether it is thundering or not.
+func (w *World) Thundering() bool {
 	if w == nil {
 		return false
 	}
 	w.mu.Lock()
 	a := w.set.ThunderLevel > 0
 	w.mu.Unlock()
+	return a
+}
+
+// thundering returns a bool that decides whether it is thundering or not.
+// This does not lock the world mutex as opposed to Thundering.
+func (w *World) thundering() bool {
+	if w == nil {
+		return false
+	}
+	a := w.set.ThunderLevel > 0
 	return a
 }
 
@@ -1276,10 +1288,10 @@ func (w *World) tick() {
 		}
 	}
 
-	if w.IsThundering() {
+	if w.Thundering() {
 		if rand.Intn(10000) == 0 {
 			for pos := range w.chunks {
-				performThunder(w, pos)
+				performThunder(w, pos, w.tr)
 			}
 		}
 	}
@@ -1289,11 +1301,7 @@ func (w *World) tick() {
 	w.tickScheduledBlocks(tick)
 }
 
-var performThunder func(w *World, pos ChunkPos)
-
-func (w *World) ThunderLCG() int32 {
-	return int32(w.tr.Uint32())
-}
+var performThunder func(w *World, pos ChunkPos, tr *lcgRand.Rand)
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
 // execution.
@@ -1566,13 +1574,22 @@ func (w *World) tickEntities(tick int64) {
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
-// SetRaining toggles raining depending on the raining argument.
-func (w *World) SetRaining(raining bool, x time.Duration) {
+// StartRaining makes it rain in the current world where time.Duration will determine the length.
+func (w *World) StartRaining(x time.Duration) {
 	w.mu.Lock()
-	w.setRaining(raining, x)
+	w.setRaining(true, x)
 	w.mu.Unlock()
 }
 
+// StopRaining makes it stop raining in the current world.
+func (w *World) StopRaining() {
+	w.mu.Lock()
+	w.setRaining(false, 0)
+	w.mu.Unlock()
+}
+
+// setRaining toggles raining depending on the raining argument.
+// This does not lock the world mutex as opposed to StartRaining and StopRaining.
 func (w *World) setRaining(raining bool, x time.Duration) {
 	level := 0
 	if raining {
@@ -1591,16 +1608,25 @@ func (w *World) setRaining(raining bool, x time.Duration) {
 	}
 }
 
-// SetThunder toggles raining depending on the thundering argument.
-func (w *World) SetThunder(thundering bool, x time.Duration) {
+// StartThundering makes it thunder in the current world where time.Duration will determine the length.
+func (w *World) StartThundering(x time.Duration) {
 	w.mu.Lock()
-	w.setThunder(thundering, x)
+	w.setThunder(true, x)
 	w.mu.Unlock()
 }
 
+// StopThundering makes it stop thundering in the current world.
+func (w *World) StopThundering() {
+	w.mu.Lock()
+	w.setThunder(false, 0)
+	w.mu.Unlock()
+}
+
+// setThunder toggles thundering depending on the thundering argument.
+// This does not lock the world mutex as opposed to StartThundering and StopThundering.
 func (w *World) setThunder(thundering bool, x time.Duration) {
-	if thundering && !w.isRaining() {
-		w.setRaining(true, time.Duration(rand.Intn(600)+600))
+	if thundering && !w.raining() {
+		w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
 	}
 
 	level := 0
