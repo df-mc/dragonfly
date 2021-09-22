@@ -2,13 +2,14 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Snowball ...
+// Snowball is a throwable projectile which damages entities on impact.
 type Snowball struct {
 	transform
 	yaw, pitch float64
@@ -17,14 +18,15 @@ type Snowball struct {
 
 	owner Living
 
-	c *projectileComputer
+	c *ProjectileComputer
 }
 
+// NewSnowball ...
 func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner Living) *Snowball {
 	s := &Snowball{
 		yaw:   yaw,
 		pitch: pitch,
-		c: &projectileComputer{c: &MovementComputer{
+		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.03,
 			DragBeforeGravity: true,
 			Drag:              0.01,
@@ -36,6 +38,7 @@ func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner Living) *Snowball {
 	return s
 }
 
+// Tick ...
 func (s *Snowball) Tick(current int64) {
 	var result trace.Result
 	s.mu.Lock()
@@ -58,8 +61,22 @@ func (s *Snowball) Tick(current int64) {
 			w.AddParticle(result.Position(), particle.SnowballPoof{})
 		}
 
+		if r, ok := result.(trace.EntityResult); ok {
+			if l, ok := r.Entity().(Living); ok {
+				l.Hurt(0.0, damage.SourceEntityAttack{Attacker: s})
+				l.KnockBack(pos, 0.45, 0.3608)
+			}
+		}
+
 		_ = s.Close()
 	}
+}
+
+// Rotation ...
+func (s *Snowball) Rotation() (float64, float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.yaw, s.pitch
 }
 
 // Name ...

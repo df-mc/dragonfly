@@ -6,12 +6,15 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
+// Snowball is a throwable combat item obtained through shovelling snow.
 type Snowball struct{}
 
+// MaxCount ...
 func (s Snowball) MaxCount() int {
 	return 16
 }
 
+// Use ...
 func (s Snowball) Use(w *world.World, user item.User, ctx *item.UseContext) bool {
 	yaw, pitch := user.Rotation()
 
