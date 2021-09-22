@@ -543,10 +543,7 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 // packet.
 func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	for _, it := range world.Items() {
-		var name string
-		if it != nil {
-			name, _ = it.EncodeItem()
-		}
+		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
 
 		entries = append(entries, protocol.ItemEntry{
