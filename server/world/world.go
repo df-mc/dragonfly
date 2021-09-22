@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
+	lcgRand "golang.org/x/exp/rand"
 	"math/rand"
 	"sync"
 	"time"
@@ -74,7 +75,7 @@ type World struct {
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
 
-	thunderLCG int
+	tr *lcgRand.Rand
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -98,7 +99,7 @@ func New(log internal.Logger, simulationDistance int) *World {
 		stopTick:         ctx,
 		cancelTick:       cancel,
 		set:              defaultSettings(),
-		thunderLCG:       rand.Int(),
+		tr:               lcgRand.New(&lcgRand.PCGSource{}),
 	}
 
 	w.initChunkCache()
@@ -211,13 +212,6 @@ func (w *World) HighestBlock(x, z int) int {
 	v := c.HighestBlock(uint8(x), uint8(z))
 	c.Unlock()
 	return int(v)
-}
-
-const LCGConstant = 1013904223
-
-func (w *World) ThunderLCG() int {
-	w.thunderLCG = (w.thunderLCG * 3) ^ LCGConstant
-	return w.thunderLCG
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -1289,6 +1283,10 @@ func (w *World) tick() {
 }
 
 var performThunder func(w *World, pos ChunkPos)
+
+func (w *World) ThunderLCG() int32 {
+	return int32(w.tr.Uint32())
+}
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
 // execution.
