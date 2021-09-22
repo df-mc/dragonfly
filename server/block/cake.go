@@ -35,7 +35,7 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return false
 	}
 
-	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
+	if w.Block(pos.Side(cube.FaceDown)) == nil {
 		return false
 	}
 
@@ -45,7 +45,7 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 
 // NeighbourUpdateTick ...
 func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
+	if w.Block(pos.Side(cube.FaceDown)) == nil {
 		w.BreakBlock(pos)
 	}
 }

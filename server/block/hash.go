@@ -3,8 +3,7 @@
 package block
 
 const (
-	hashAir = iota
-	hashAmethystBlock
+	hashAmethystBlock = iota
 	hashAncientDebris
 	hashAndesite
 	hashBarrel
@@ -126,10 +125,6 @@ const (
 	hashWoodTrapdoor
 	hashWool
 )
-
-func (Air) Hash() uint64 {
-	return hashAir
-}
 
 func (AmethystBlock) Hash() uint64 {
 	return hashAmethystBlock

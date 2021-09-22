@@ -133,7 +133,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				}
 				blockPos := pos.Add(cube.Pos{x, y, z})
 				block := w.Block(blockPos)
-				if _, ok := block.(Air); !ok {
+				if block != nil {
 					continue
 				}
 
@@ -232,9 +232,8 @@ func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
 // for a fire to be present must be present.
 func (f Fire) Start(w *world.World, pos cube.Pos) {
 	b := w.Block(pos)
-	_, isAir := b.(Air)
 	_, isTallGrass := b.(TallGrass)
-	if isAir || isTallGrass {
+	if b == nil || isTallGrass {
 		below := w.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
 			w.PlaceBlock(pos, Fire{})

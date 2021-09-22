@@ -65,7 +65,8 @@ func registerBlockState(s blockState) {
 	}
 	rid := uint32(len(blocks))
 	if s.Name == "minecraft:air" {
-		airRID = rid
+		registerAir(rid, h)
+		return
 	}
 	stateRuntimeIDs[h] = rid
 	blocks = append(blocks, unknownBlock{s})
@@ -73,6 +74,16 @@ func registerBlockState(s blockState) {
 	nbtBlocks = append(nbtBlocks, false)
 	randomTickBlocks = append(randomTickBlocks, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
+	chunk.LightBlocks = append(chunk.LightBlocks, 0)
+}
+
+// registerAir registers an air block with the runtime ID passed.
+func registerAir(rid uint32, h stateHash) {
+	airRID = rid
+	blocks = append(blocks, nil)
+	stateRuntimeIDs[h] = rid
+	nbtBlocks = append(nbtBlocks, false)
+	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 0)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 }
 

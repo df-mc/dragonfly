@@ -48,7 +48,7 @@ func New(size int, f func(slot int, item item.Stack)) *Inventory {
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
-// and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.
+// and a count of 0 is returned. Stack.Zero() may be called to check if this is the case.
 // Item only returns an error if the slot passed is out of range. (0 <= slot < inventory.Size())
 func (inv *Inventory) Item(slot int) (item.Stack, error) {
 	inv.check()
@@ -94,7 +94,7 @@ func (inv *Inventory) Items() []item.Stack {
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
 	for slot, it := range inv.Items() {
-		if !it.Empty() && it.Comparable(item) {
+		if !it.Zero() && it.Comparable(item) {
 			return slot, true
 		}
 	}
@@ -104,7 +104,7 @@ func (inv *Inventory) First(item item.Stack) (int, bool) {
 // FirstEmpty returns the first empty slot if found. Second return value describes whether an empty slot was found.
 func (inv *Inventory) FirstEmpty() (int, bool) {
 	for slot, it := range inv.Items() {
-		if it.Empty() {
+		if it.Zero() {
 			return slot, true
 		}
 	}
@@ -135,14 +135,14 @@ func (inv *Inventory) Swap(slotA, slotB int) error {
 // If the item could not be fully added to the inventory, an error is returned along with the count that was
 // added to the inventory.
 func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
-	if it.Empty() {
+	if it.Zero() {
 		return 0, nil
 	}
 	first := it.Count()
 
 	inv.mu.Lock()
 	for slot, invIt := range inv.slots {
-		if invIt.Empty() || inv.SlotLocked(slot) {
+		if invIt.Zero() || inv.SlotLocked(slot) {
 			// This slot was empty, and we should first try to add the item stack to existing stacks.
 			continue
 		}
@@ -152,14 +152,14 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		defer f()
 
 		it = b
-		if it.Empty() {
+		if it.Zero() {
 			inv.mu.Unlock()
 			// We were able to add the entire stack to existing stacks in the inventory.
 			return first, nil
 		}
 	}
 	for slot, invIt := range inv.slots {
-		if !invIt.Empty() || inv.SlotLocked(slot) {
+		if !invIt.Zero() || inv.SlotLocked(slot) {
 			// We can only use empty slots now: Items existing stacks have already been filled up.
 			continue
 		}
@@ -170,7 +170,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		defer f()
 
 		it = b
-		if it.Empty() {
+		if it.Zero() {
 			inv.mu.Unlock()
 			// We were able to add the entire stack to empty slots.
 			return first, nil
@@ -189,7 +189,7 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 
 	inv.mu.Lock()
 	for slot, slotIt := range inv.slots {
-		if slotIt.Empty() || inv.SlotLocked(slot) || !slotIt.Comparable(it) {
+		if slotIt.Zero() || inv.SlotLocked(slot) || !slotIt.Comparable(it) {
 			continue
 		}
 		f := inv.setItem(slot, slotIt.Grow(-toRemove))
@@ -235,7 +235,7 @@ func (inv *Inventory) Contents() []item.Stack {
 	contents := make([]item.Stack, 0, inv.Size())
 	inv.mu.RLock()
 	for _, it := range inv.slots {
-		if !it.Empty() {
+		if !it.Zero() {
 			contents = append(contents, it)
 		}
 	}
@@ -250,7 +250,7 @@ func (inv *Inventory) Empty() bool {
 	defer inv.mu.RUnlock()
 
 	for _, it := range inv.slots {
-		if !it.Empty() {
+		if !it.Zero() {
 			return false
 		}
 	}

@@ -198,9 +198,8 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
-	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
-	if air || liquid {
+	if w.Block(pos.Side(cube.FaceDown)) == nil || liquid {
 		w.BreakBlockWithoutParticles(pos)
 
 		e := entity.NewFallingBlock(b, pos.Vec3Middle())
