@@ -13,7 +13,7 @@ require (
 	github.com/muhammadmuzzammil1998/jsonc v0.0.0-20201229145248-615b0916ca38 // indirect
 	github.com/pelletier/go-toml v1.9.3
 	github.com/sandertv/go-raknet v1.10.0 // indirect
-	github.com/sandertv/gophertunnel v1.14.2
+	github.com/sandertv/gophertunnel v1.15.0
 	github.com/sirupsen/logrus v1.8.1
 	go.uber.org/atomic v1.9.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
