@@ -49,7 +49,7 @@ func (m MelonSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			}
 			direction := directions[r.Intn(len(directions))].Face()
 			stemPos := pos.Side(direction)
-			if w.Block(stemPos) == nil {
+			if _, ok := w.Block(stemPos).(Air); ok {
 				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
 				case Farmland, Dirt, Grass:
 					m.Direction = direction

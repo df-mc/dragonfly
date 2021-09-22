@@ -46,7 +46,7 @@ func (n NoteBlock) EncodeNBT() map[string]interface{} {
 
 // Punch ...
 func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
-	if w.Block(pos.Side(cube.FaceUp)) != nil {
+	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
 	n.playNote(pos, w)
@@ -54,7 +54,7 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 
 // Activate ...
 func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
-	if w.Block(pos.Side(cube.FaceUp)) != nil {
+	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
 	n.Pitch = (n.Pitch + 1) % 25

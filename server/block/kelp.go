@@ -129,7 +129,7 @@ func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			return
 		} else if _, ok := liquid.(Water); ok {
 			switch w.Block(abovePos).(type) {
-			case nil, Water:
+			case Air, Water:
 				w.PlaceBlock(abovePos, Kelp{Age: k.Age + 1})
 				if liquid.LiquidDepth() < 8 {
 					// When kelp grows into a water block, the water block becomes a source block.

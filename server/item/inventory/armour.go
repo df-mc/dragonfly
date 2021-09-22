@@ -24,7 +24,7 @@ func NewArmour(f func(slot int, item item.Stack)) *Armour {
 
 // canAddArmour checks if the item passed can be worn as armour in the slot passed.
 func canAddArmour(s item.Stack, slot int) bool {
-	if s.Zero() {
+	if s.Empty() {
 		return true
 	}
 	switch slot {

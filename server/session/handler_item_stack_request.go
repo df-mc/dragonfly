@@ -121,10 +121,10 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	if i.Count() < int(count) {
 		return fmt.Errorf("client tried subtracting %v from item count, but there are only %v", count, i.Count())
 	}
-	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Zero() {
+	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Empty() {
 		return fmt.Errorf("client tried adding %v to item count %v, but max is %v", count, dest.Count(), dest.MaxCount())
 	}
-	if dest.Zero() {
+	if dest.Empty() {
 		dest = i.Grow(-math.MaxInt32)
 	}
 
@@ -291,7 +291,7 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
 	// could just not send it.
 	// We just ignore the next Destroy action and set the item to air here.
-	h.setItemInSlot(slot, item.Stack{}, s)
+	h.setItemInSlot(slot, item.NewStack(block.Air{}, 0), s)
 	h.ignoreDestroy = true
 	return nil
 }

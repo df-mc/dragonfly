@@ -208,7 +208,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	case *entity.FallingBlock:
 		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))}
 	case *entity.Text:
-		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(nil))}
+		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
 		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
 	s.writePacket(&packet.AddActor{
