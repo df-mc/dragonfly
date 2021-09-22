@@ -1541,7 +1541,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	}
 
 	b := p.World().Block(pos)
-	if i, ok := b.(world.Item); ok {
+	if i, ok := b.(world.Item); ok && i != nil {
 		it, _ := world.ItemByName(i.EncodeItem())
 		copiedItem := item.NewStack(it, 1)
 

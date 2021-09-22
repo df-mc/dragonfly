@@ -33,13 +33,16 @@ func WriteBlock(b world.Block) map[string]interface{} {
 
 // writeItemStack writes the name, metadata value, count and NBT of an item to a map ready for NBT encoding.
 func writeItemStack(m map[string]interface{}, s item.Stack) {
+	m["Name"], m["Damage"], m["Count"] = "minecraft:air", 0, byte(s.Count())
+	if s.Zero() {
+		return
+	}
 	m["Name"], m["Damage"] = s.Item().EncodeItem()
 	if b, ok := s.Item().(world.Block); ok {
 		v := map[string]interface{}{}
 		writeBlock(v, b)
 		m["Block"] = v
 	}
-	m["Count"] = byte(s.Count())
 	if nbt, ok := s.Item().(world.NBTer); ok {
 		for k, v := range nbt.EncodeNBT() {
 			m[k] = v
