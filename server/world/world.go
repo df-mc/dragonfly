@@ -254,23 +254,6 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	}
 }
 
-// setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
-// does not send block updates to viewer.
-func (w *World) setBlockInChunk(c *chunkData, pos cube.Pos, b Block) error {
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		return fmt.Errorf("runtime ID of block state %+v not found", b)
-	}
-	c.SetRuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
-
-	if nbtBlocks[rid] {
-		c.e[pos] = b
-	} else {
-		delete(c.e, pos)
-	}
-	return nil
-}
-
 // breakParticle has its value set in the block_internal package.
 var breakParticle func(b Block) Particle
 
@@ -404,7 +387,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 
 								if nbtBlocks[rid] {
 									c.e[pos] = b
-								} else if _, ok := c.e[pos]; ok {
+								} else {
 									delete(c.e, pos)
 								}
 							} else {
