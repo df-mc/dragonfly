@@ -760,16 +760,6 @@ func (w *World) Thundering() bool {
 	return a
 }
 
-// thundering returns a bool that decides whether it is thundering or not.
-// This does not lock the world mutex as opposed to Thundering.
-func (w *World) thundering() bool {
-	if w == nil {
-		return false
-	}
-	a := w.set.ThunderLevel > 0
-	return a
-}
-
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
 func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
