@@ -1,7 +1,5 @@
 package block
 
-// TODO: Slipperiness
-
 // BlueIce is a solid block similar to packed ice.
 type BlueIce struct {
 	solid
@@ -10,6 +8,11 @@ type BlueIce struct {
 // BreakInfo ...
 func (b BlueIce) BreakInfo() BreakInfo {
 	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b))
+}
+
+// Friction ...
+func (b BlueIce) Friction() float64 {
+	return 0.989
 }
 
 // EncodeItem ...

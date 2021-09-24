@@ -5,15 +5,15 @@ go 1.16
 require (
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash v1.1.0
-	github.com/df-mc/goleveldb v1.1.8
+	github.com/df-mc/goleveldb v1.1.9
 	github.com/go-gl/mathgl v1.0.0
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/uuid v1.3.0
-	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v0.0.0-20201229145248-615b0916ca38 // indirect
 	github.com/pelletier/go-toml v1.9.3
 	github.com/sandertv/go-raknet v1.10.0 // indirect
-	github.com/sandertv/gophertunnel v1.14.1
+	github.com/sandertv/gophertunnel v1.15.0
 	github.com/sirupsen/logrus v1.8.1
 	go.uber.org/atomic v1.9.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect

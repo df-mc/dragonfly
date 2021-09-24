@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"go/ast"
 	"reflect"
 	"strings"
 	"unicode/utf8"
@@ -58,17 +57,15 @@ func (f Custom) Title() string {
 // Elements returns a list of all elements as set in the Submittable passed to form.New().
 func (f Custom) Elements() []Element {
 	v := reflect.ValueOf(f.submittable)
-	t := reflect.TypeOf(f.submittable)
 
 	elements := make([]Element, 0, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		field := v.Field(i)
+		if !field.CanSet() {
 			continue
 		}
 		// Each exported field is guaranteed to implement the Element interface.
-		elements = append(elements, fieldV.Interface().(Element))
+		elements = append(elements, field.Interface().(Element))
 	}
 	return elements
 }
@@ -78,6 +75,13 @@ func (f Custom) Elements() []Element {
 // If the values are valid and can be parsed properly, the Submit() method of the form's Submittable is called
 // and the fields of the Submittable will be filled out.
 func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
+	if b == nil {
+		if closer, ok := f.submittable.(Closer); ok {
+			closer.Close(submitter)
+		}
+		return nil
+	}
+
 	dec := json.NewDecoder(bytes.NewBuffer(b))
 	dec.UseNumber()
 
@@ -87,26 +91,20 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	}
 
 	origin := reflect.ValueOf(f.submittable)
-	t := reflect.TypeOf(f.submittable)
-	v := reflect.New(t).Elem()
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(origin)
 
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
 		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		if !fieldV.CanSet() {
 			continue
 		}
-
-		// We set the field of the original to the new one to make sure that the existing values are placed
-		// back in the form element. Not doing so would result in unexpected behaviour.
-		fieldV.Set(origin.Field(i))
-
 		if len(data) == 0 {
 			return fmt.Errorf("form JSON data array does not have enough values")
 		}
 		elem, err := f.parseValue(fieldV.Interface().(Element), data[0])
 		if err != nil {
-			return fmt.Errorf("error parsing: %w", err)
+			return fmt.Errorf("error parsing form response value: %w", err)
 		}
 		fieldV.Set(elem)
 		data = data[1:]
@@ -187,10 +185,10 @@ func (f Custom) verify() {
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		fieldT := t.Field(i)
-		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore {
+		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore || !v.Field(i).CanSet() {
 			continue
 		}
-		if !fieldT.Type.Implements(el) {
+		if !t.Field(i).Type.Implements(el) {
 			panic("all exported fields must implement form.Element interface")
 		}
 	}

@@ -3,12 +3,11 @@ package form
 import (
 	"encoding/json"
 	"fmt"
-	"go/ast"
 	"reflect"
 )
 
 // Menu represents a menu form. These menus are made up of a title and a body, with a number of buttons which
-// come below the body. These buttons may also have buttons on the side of them.
+// come below the body. These buttons may also have images on the side of them.
 type Menu struct {
 	title, body string
 	submittable MenuSubmittable
@@ -65,17 +64,15 @@ func (m Menu) Body() string {
 // reflection and returns them.
 func (m Menu) Buttons() []Button {
 	v := reflect.ValueOf(m.submittable)
-	t := reflect.TypeOf(m.submittable)
 
 	var buttons []Button
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		field := v.Field(i)
+		if !field.CanSet() {
 			continue
 		}
 		// Each exported field is guaranteed to be of type Button.
-		buttons = append(buttons, fieldV.Interface().(Button))
+		buttons = append(buttons, field.Interface().(Button))
 	}
 	buttons = append(buttons, m.buttons...)
 	return buttons
@@ -83,6 +80,13 @@ func (m Menu) Buttons() []Button {
 
 // SubmitJSON submits a JSON value to the menu, containing the index of the button clicked.
 func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
+	if b == nil {
+		if closer, ok := m.submittable.(Closer); ok {
+			closer.Close(submitter)
+		}
+		return nil
+	}
+
 	var index uint
 	err := json.Unmarshal(b, &index)
 	if err != nil {
@@ -100,10 +104,9 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 // not valid.
 func (m Menu) verify() {
 	v := reflect.ValueOf(m.submittable)
-	t := reflect.TypeOf(m.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		fieldT := t.Field(i)
-		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore {
+		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore || !v.Field(i).CanSet() {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {

@@ -81,6 +81,9 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(NBTer); ok {
 		nbtBlocks[rid] = true
 	}
+	if _, ok := b.(RandomTicker); ok {
+		randomTickBlocks[rid] = true
+	}
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
@@ -186,7 +189,7 @@ type LiquidDisplacer interface {
 	SideClosed(pos, side cube.Pos, w *World) bool
 }
 
-// lightEmitter is identical to a block.lightEmitter.
+// lightEmitter is identical to a block.LightEmitter.
 type lightEmitter interface {
 	LightEmissionLevel() uint8
 }

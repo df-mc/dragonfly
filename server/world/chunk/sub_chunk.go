@@ -17,12 +17,19 @@ func NewSubChunk(airRuntimeID uint32) *SubChunk {
 // Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer
 // is created, as well as all layers between the current highest layer and the new highest layer.
 func (sub *SubChunk) Layer(layer uint8) *BlockStorage {
-	for uint8(len(sub.storages)) <= layer {
+	for i := uint8(len(sub.storages)); i <= layer; i++ {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		sub.storages = append(sub.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{sub.air})))
+		sub.addLayer()
 	}
 	return sub.storages[layer]
+}
+
+// addLayer adds a new storage at the next layer. This is forced to not inline to guarantee that Layer is
+// inlined.
+//go:noinline
+func (sub *SubChunk) addLayer() {
+	sub.storages = append(sub.storages, newBlockStorage(make([]uint32, 128), newPalette(1, []uint32{sub.air})))
 }
 
 // Layers returns all layers in the sub chunk. This method may also return an empty slice.

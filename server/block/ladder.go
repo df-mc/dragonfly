@@ -52,21 +52,21 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	return placed(ctx)
 }
 
-// EntityCollide ...
-func (Ladder) EntityCollide(e world.Entity) {
+// EntityInside ...
+func (l Ladder) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 	if fallEntity, ok := e.(FallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
 }
 
 // CanDisplace ...
-func (Ladder) CanDisplace(b world.Liquid) bool {
+func (l Ladder) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)
 	return water
 }
 
 // SideClosed ...
-func (Ladder) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (l Ladder) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -76,7 +76,7 @@ func (l Ladder) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (Ladder) EncodeItem() (name string, meta int16) {
+func (l Ladder) EncodeItem() (name string, meta int16) {
 	return "minecraft:ladder", 0
 }
 

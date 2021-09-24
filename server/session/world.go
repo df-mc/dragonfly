@@ -142,13 +142,14 @@ func (s *Session) ViewEntity(e world.Entity) {
 	}
 	var runtimeID uint64
 
-	s.entityMutex.Lock()
 	_, controllable := e.(Controllable)
 
+	s.entityMutex.Lock()
 	if id, ok := s.entityRuntimeIDs[e]; ok && controllable {
 		runtimeID = id
 	} else {
-		runtimeID = s.currentEntityRuntimeID.Add(1)
+		s.currentEntityRuntimeID += 1
+		runtimeID = s.currentEntityRuntimeID
 		s.entityRuntimeIDs[e] = runtimeID
 		s.entities[runtimeID] = e
 	}
@@ -463,6 +464,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		})
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
+	case sound.Thunder:
+		pk.SoundType, pk.EntityType = packet.SoundEventThunder, "minecraft:lightning_bolt"
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundClick,
