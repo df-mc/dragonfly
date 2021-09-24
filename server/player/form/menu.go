@@ -103,7 +103,7 @@ func (m Menu) verify() {
 	t := reflect.TypeOf(m.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		fieldT := t.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {
