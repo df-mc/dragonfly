@@ -582,8 +582,8 @@ type inputData struct {
 	allTypes bool
 }
 
-// hasRequiredInventoryInputs checks and validates if the player inventory has the necessary inputs.
-func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Item, s *Session) bool {
+// inputMapFromInputs makes an input map from inputs.
+func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.Item) map[string]inputData {
 	inputMap := make(map[string]inputData)
 	for _, input := range inputs {
 		it := input.Item()
@@ -606,6 +606,13 @@ func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Ite
 
 		inputMap[name] = data
 	}
+
+	return inputMap
+}
+
+// hasRequiredInventoryInputs checks and validates if the player inventory has the necessary inputs.
+func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Item, s *Session) bool {
+	inputMap := h.inputMapFromInputs(inputs)
 
 	for _, oldSt := range s.inv.Contents() {
 		name, meta := oldSt.Item().EncodeItem()
@@ -671,28 +678,7 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.Item, s 
 
 // removeInventoryInputs removes the inputs in the player inventory.
 func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.Item, s *Session) error {
-	inputMap := make(map[string]inputData)
-	for _, input := range inputs {
-		it := input.Item()
-		if it == nil {
-			continue
-		}
-
-		name, meta := it.EncodeItem()
-		data := inputData{
-			count:         input.Count(),
-			metadataValue: meta,
-			allTypes:      input.AllTypes,
-		}
-
-		if newData, ok := inputMap[name]; ok {
-			if newData.metadataValue == data.metadataValue || newData.allTypes && data.allTypes {
-				data.count = data.count + newData.count
-			}
-		}
-
-		inputMap[name] = data
-	}
+	inputMap := h.inputMapFromInputs(inputs)
 
 	for slot, oldSt := range s.inv.Items() {
 		if oldSt.Empty() {
