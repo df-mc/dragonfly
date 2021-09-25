@@ -102,7 +102,7 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
-// The field will be ignored if it has a "json" tag with the value of "-".
+// The field will be ignored if it has an "ignore" tag.
 func (m Menu) verify() {
 	v := reflect.ValueOf(m.submittable)
 	t := reflect.TypeOf(m.submittable)

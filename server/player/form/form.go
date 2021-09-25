@@ -178,6 +178,7 @@ func (f Custom) parseValue(elem Element, s interface{}) (reflect.Value, error) {
 
 // verify verifies if the form is valid, checking if the fields all implement the Element interface. It panics
 // if the form is not valid.
+// The field will be ignored if it has an "ignore" tag.
 func (f Custom) verify() {
 	el := reflect.TypeOf((*Element)(nil)).Elem()
 

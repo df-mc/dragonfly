@@ -106,6 +106,7 @@ func (m Modal) Buttons() []Button {
 
 // verify verifies that the Modal form is valid. It checks if exactly two exported fields are present and
 // ensures that both have the Button type.
+// The field will be ignored if it has an "ignore" tag.
 func (m Modal) verify() {
 	var count int
 
