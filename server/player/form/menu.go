@@ -102,11 +102,12 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
+// The field will be ignored if it has a "json" tag with the value of "-".
 func (m Menu) verify() {
 	v := reflect.ValueOf(m.submittable)
+	t := reflect.TypeOf(m.submittable)
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore || !v.Field(i).CanSet() {
+		if _, ignore := t.Field(i).Tag.Lookup("ignore"); ignore || v.Field(i).CanSet() {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {

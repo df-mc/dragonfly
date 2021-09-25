@@ -184,8 +184,7 @@ func (f Custom) verify() {
 	v := reflect.ValueOf(f.submittable)
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		if _, ignore := fieldT.Tag.Lookup("ignore"); !ast.IsExported(fieldT.Name) || ignore || !v.Field(i).CanSet() {
+		if _, ignore := t.Field(i).Tag.Lookup("ignore"); ignore || v.Field(i).CanSet() {
 			continue
 		}
 		if !t.Field(i).Type.Implements(el) {
