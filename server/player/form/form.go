@@ -56,10 +56,11 @@ func (f Custom) Title() string {
 
 // Elements returns a list of all elements as set in the Submittable passed to form.New().
 func (f Custom) Elements() []Element {
-	v := reflect.ValueOf(f.submittable)
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	n := v.NumField()
 
-	elements := make([]Element, 0, v.NumField())
-	for i := 0; i < v.NumField(); i++ {
+	elements := make([]Element, 0, n)
+	for i := 0; i < n; i++ {
 		field := v.Field(i)
 		if !field.CanSet() {
 			continue
@@ -90,9 +91,8 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 		return fmt.Errorf("error decoding JSON data to slice: %w", err)
 	}
 
-	origin := reflect.ValueOf(f.submittable)
 	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
-	v.Set(origin)
+	v.Set(reflect.ValueOf(f.submittable))
 
 	for i := 0; i < v.NumField(); i++ {
 		fieldV := v.Field(i)
