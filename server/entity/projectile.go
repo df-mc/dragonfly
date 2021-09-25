@@ -7,6 +7,19 @@ import (
 	"math"
 )
 
+// Owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
+type Owned interface {
+	world.Entity
+	Owner() world.Entity
+	Own(owner world.Entity)
+}
+
+// Projectile ...
+type Projectile interface {
+	world.Entity
+	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+}
+
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.
 type ProjectileComputer struct {
 	*MovementComputer
@@ -15,7 +28,7 @@ type ProjectileComputer struct {
 // TickMovement performs a movement tick on a projectile. Velocity is applied and changed according to the values
 // of its Drag and Gravity. A ray trace is performed to see if the projectile has collided with any block or entity,
 // the ray trace result is returned.
-func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64, ignoredEntities ...world.Entity) (mgl64.Vec3, mgl64.Vec3, float64, float64, trace.Result) {
+func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw, pitch float64, ignoredEntities ...world.Entity) (mgl64.Vec3, mgl64.Vec3, float64, float64, trace.Result) {
 	w := e.World()
 	viewers := w.Viewers(pos)
 

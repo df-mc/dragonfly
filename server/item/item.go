@@ -113,6 +113,7 @@ type nameable interface {
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
+	world.Entity
 	Carrier
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction

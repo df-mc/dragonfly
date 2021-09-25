@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -16,13 +17,21 @@ type Snowball struct {
 
 	ticksLived int
 
-	owner Living
+	owner world.Entity
 
 	c *ProjectileComputer
 }
 
+func (s *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
+	return nil
+}
+
+func (s *Snowball) EncodeNBT() map[string]interface{} {
+	return nil
+}
+
 // NewSnowball ...
-func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner Living) *Snowball {
+func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Snowball {
 	s := &Snowball{
 		yaw:   yaw,
 		pitch: pitch,
@@ -48,6 +57,7 @@ func (s *Snowball) Tick(current int64) {
 		s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch)
 	}
 	pos := s.pos
+	s.ticksLived++
 	s.mu.Unlock()
 
 	if pos[1] < cube.MinY && current%10 == 0 {
@@ -70,6 +80,27 @@ func (s *Snowball) Tick(current int64) {
 
 		_ = s.Close()
 	}
+}
+
+// Launch ...
+func (s *Snowball) Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
+	snow := NewSnowball(pos, yaw, pitch, nil)
+	snow.vel = vel
+	return snow
+}
+
+// Owner ...
+func (s *Snowball) Owner() world.Entity {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.owner
+}
+
+// Own ...
+func (s *Snowball) Own(owner world.Entity) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.owner = owner
 }
 
 // Rotation ...
