@@ -37,7 +37,7 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 
 	for i := 0; i < 8; i++ {
 		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
-		if w.Block(p) != nil {
+		if _, ok := w.Block(p).(Air); !ok {
 			continue
 		}
 		if _, ok := w.Block(p.Side(cube.FaceDown)).(Grass); !ok {

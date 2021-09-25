@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"go/ast"
 	"reflect"
 	"strings"
 	"unicode/utf8"
@@ -57,18 +56,17 @@ func (f Custom) Title() string {
 
 // Elements returns a list of all elements as set in the Submittable passed to form.New().
 func (f Custom) Elements() []Element {
-	v := reflect.ValueOf(f.submittable)
-	t := reflect.TypeOf(f.submittable)
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	n := v.NumField()
 
-	elements := make([]Element, 0, v.NumField())
-	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+	elements := make([]Element, 0, n)
+	for i := 0; i < n; i++ {
+		field := v.Field(i)
+		if !field.CanSet() {
 			continue
 		}
 		// Each exported field is guaranteed to implement the Element interface.
-		elements = append(elements, fieldV.Interface().(Element))
+		elements = append(elements, field.Interface().(Element))
 	}
 	return elements
 }
@@ -93,27 +91,20 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 		return fmt.Errorf("error decoding JSON data to slice: %w", err)
 	}
 
-	origin := reflect.ValueOf(f.submittable)
-	t := reflect.TypeOf(f.submittable)
-	v := reflect.New(t).Elem()
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
 
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
 		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		if !fieldV.CanSet() {
 			continue
 		}
-
-		// We set the field of the original to the new one to make sure that the existing values are placed
-		// back in the form element. Not doing so would result in unexpected behaviour.
-		fieldV.Set(origin.Field(i))
-
 		if len(data) == 0 {
 			return fmt.Errorf("form JSON data array does not have enough values")
 		}
 		elem, err := f.parseValue(fieldV.Interface().(Element), data[0])
 		if err != nil {
-			return fmt.Errorf("error parsing: %w", err)
+			return fmt.Errorf("error parsing form response value: %w", err)
 		}
 		fieldV.Set(elem)
 		data = data[1:]
@@ -193,11 +184,10 @@ func (f Custom) verify() {
 	v := reflect.ValueOf(f.submittable)
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		if !v.Field(i).CanSet() {
 			continue
 		}
-		if !fieldT.Type.Implements(el) {
+		if !t.Field(i).Type.Implements(el) {
 			panic("all exported fields must implement form.Element interface")
 		}
 	}

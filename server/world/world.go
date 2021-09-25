@@ -119,13 +119,13 @@ func (w *World) Name() string {
 func (w *World) Block(pos cube.Pos) Block {
 	if w == nil || pos.OutOfBounds() {
 		// Fast way out.
-		return nil
+		return air()
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error getting block: %v", err)
-		return nil
+		return air()
 	}
 	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
@@ -147,7 +147,7 @@ func (w *World) Block(pos cube.Pos) Block {
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 	if pos.OutOfBounds() {
 		// Fast way out.
-		return nil, nil
+		return air(), nil
 	}
 	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	b, _ := BlockByRuntimeID(rid)
@@ -254,23 +254,6 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	}
 }
 
-// setBlockInChunk sets a block in the chunk passed at a specific position. Unlike setBlock, setBlockInChunk
-// does not send block updates to viewer.
-func (w *World) setBlockInChunk(c *chunkData, pos cube.Pos, b Block) error {
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		return fmt.Errorf("runtime ID of block state %+v not found", b)
-	}
-	c.SetRuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
-
-	if nbtBlocks[rid] {
-		c.e[pos] = b
-	} else {
-		delete(c.e, pos)
-	}
-	return nil
-}
-
 // breakParticle has its value set in the block_internal package.
 var breakParticle func(b Block) Particle
 
@@ -322,11 +305,7 @@ func (w *World) PlaceBlock(pos cube.Pos, b Block) {
 		}
 	}
 	w.SetBlock(pos, b)
-	if liquid != nil {
-		w.SetLiquid(pos, liquid)
-		return
-	}
-	w.SetLiquid(pos, nil)
+	w.SetLiquid(pos, liquid)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the world. Unlike SetBlock, it takes a
@@ -341,10 +320,10 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 	}
 	dim := s.Dimensions()
 	width, height, length := dim[0], dim[1], dim[2]
-	maxX, maxZ := pos[0]+width, pos[2]+length
+	maxX, maxY, maxZ := pos[0]+width, pos[1]+height, pos[2]+length
 
-	for chunkX := pos[0] >> 4; chunkX < ((pos[0]+width)>>4)+1; chunkX++ {
-		for chunkZ := pos[2] >> 4; chunkZ < ((pos[2]+length)>>4)+1; chunkZ++ {
+	for chunkX := pos[0] >> 4; chunkX < (maxX>>4)+1; chunkX++ {
+		for chunkZ := pos[2] >> 4; chunkZ < (maxZ>>4)+1; chunkZ++ {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
 			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
 			// block updates, but instead send a single chunk update once.
@@ -364,41 +343,69 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				return w.Block(cube.Pos{actualX, y, actualZ})
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
-			for localX := 0; localX < 16; localX++ {
-				xOffset := baseX + localX
-				if xOffset < pos[0] || xOffset >= maxX {
+			for i, sub := range c.Sub() {
+				if sub == nil {
+					// This never happens due to light always needing to be filled.
 					continue
 				}
-				for localZ := 0; localZ < 16; localZ++ {
-					zOffset := baseZ + localZ
-					if zOffset < pos[2] || zOffset >= maxZ {
+
+				baseY := i << 4
+				if baseY < pos[1]>>4 {
+					continue
+				} else if baseY >= maxY {
+					break
+				}
+
+				for localX := 0; localX < 16; localX++ {
+					xOffset := baseX + localX
+					if xOffset < pos[0] || xOffset >= maxX {
 						continue
 					}
-					for y := 0; y < height; y++ {
-						if y+pos[1] > cube.MaxY {
-							// We've hit the height limit for blocks.
-							break
-						} else if y+pos[1] < cube.MinY {
-							// We've got a block below the minimum, but other blocks might still reach above
-							// it, so don't break but continue.
+					for localZ := 0; localZ < 16; localZ++ {
+						zOffset := baseZ + localZ
+						if zOffset < pos[2] || zOffset >= maxZ {
 							continue
 						}
-						placePos := cube.Pos{xOffset, y + pos[1], zOffset}
-						b, liq := s.At(xOffset-pos[0], y, zOffset-pos[2], f)
-						if b != nil {
-							if err := w.setBlockInChunk(c, placePos, b); err != nil {
-								w.log.Errorf("error setting block of structure: %v", err)
-							}
-						}
-						if liq != nil {
-							runtimeID, ok := BlockRuntimeID(liq)
-							if !ok {
-								w.log.Errorf("runtime ID of block state %+v not found", liq)
+						for localY := 0; localY < 16; localY++ {
+							yOffset := baseY + localY
+							if yOffset > cube.MaxY || yOffset >= maxY {
+								// We've hit the height limit for blocks.
+								break
+							} else if yOffset < cube.MinY || yOffset < pos[1] {
+								// We've got a block below the minimum, but other blocks might still reach above
+								// it, so don't break but continue.
 								continue
 							}
-							c.SetRuntimeID(uint8(xOffset), int16(y+pos[1]), uint8(zOffset), 1, runtimeID)
-						} else {
-							c.SetRuntimeID(uint8(xOffset), int16(y+pos[1]), uint8(zOffset), 1, airRID)
+							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
+							if b != nil {
+								rid, ok := BlockRuntimeID(b)
+								if !ok {
+									w.log.Errorf("error setting block of structure: runtime ID of block state %+v not found", b)
+									continue
+								}
+								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
+
+								if nbtBlocks[rid] {
+									c.e[pos] = b
+								} else {
+									delete(c.e, pos)
+								}
+							} else {
+								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, airRID)
+							}
+							if liq != nil {
+								rid, ok := BlockRuntimeID(liq)
+								if !ok {
+									w.log.Errorf("runtime ID of block state %+v not found", liq)
+									continue
+								}
+								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, rid)
+							} else {
+								if len(sub.Layers()) < 2 {
+									continue
+								}
+								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
+							}
 						}
 					}
 				}
@@ -519,14 +526,14 @@ func (w *World) removeLiquids(c *chunkData, pos cube.Pos) bool {
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
 			for _, v := range c.v {
-				v.ViewBlockUpdate(pos, nil, 0)
+				v.ViewBlockUpdate(pos, air(), 0)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
 		for _, v := range c.v {
-			v.ViewBlockUpdate(pos, nil, 1)
+			v.ViewBlockUpdate(pos, air(), 1)
 		}
 	}
 	return noneLeft
@@ -1291,7 +1298,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				layer := layers[0]
 				p := layer.Palette()
 				if p.Len() == 1 && p.RuntimeID(0) == airRID {
-					// Zero layer present, so skip it right away.
+					// Empty layer present, so skip it right away.
 					continue
 				}
 				if generateNew {
