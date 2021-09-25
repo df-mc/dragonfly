@@ -111,8 +111,9 @@ func (m Modal) verify() {
 	var count int
 
 	v := reflect.ValueOf(m.submittable)
+	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {
