@@ -614,7 +614,7 @@ func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.Item) map[s
 func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Item, s *Session) bool {
 	inputMap := h.inputMapFromInputs(inputs)
 
-	for _, oldSt := range s.inv.Contents() {
+	for _, oldSt := range append(s.inv.Contents(), s.ui.Contents()...) {
 		name, meta := oldSt.Item().EncodeItem()
 		if data, ok := inputMap[name]; ok {
 			if data.metadataValue == meta || data.allTypes {
@@ -680,9 +680,9 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.Item, s 
 func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.Item, s *Session) error {
 	inputMap := h.inputMapFromInputs(inputs)
 
-	for slot, oldSt := range s.inv.Items() {
+	updateStack := func(container byte, slot byte, oldSt item.Stack) {
 		if oldSt.Empty() {
-			continue
+			return
 		}
 
 		name, meta := oldSt.Item().EncodeItem()
@@ -696,8 +696,8 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.Item, s 
 
 					st := oldSt.Grow(-targetRemoval)
 					h.setItemInSlot(protocol.StackRequestSlotInfo{
-						ContainerID:    containerFullInventory,
-						Slot:           byte(slot),
+						ContainerID:    container,
+						Slot:           slot,
 						StackNetworkID: item_id(st),
 					}, st, s)
 
@@ -706,6 +706,22 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.Item, s 
 				}
 			}
 		}
+	}
+
+	for slot, oldSt := range s.inv.Items() {
+		updateStack(containerFullInventory, byte(slot), oldSt)
+	}
+
+	offset := s.craftingOffset()
+	for i := byte(0); i < s.craftingSize(); i++ {
+		slot := i + offset
+
+		oldSt, err := s.ui.Item(int(slot))
+		if err != nil {
+			return err
+		}
+
+		updateStack(containerCraftingGrid, slot, oldSt)
 	}
 
 	return nil
