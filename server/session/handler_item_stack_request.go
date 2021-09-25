@@ -73,8 +73,10 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 
 	for _, action := range req.Actions {
 		switch a := action.(type) {
+		case *protocol.AutoCraftRecipeStackRequestAction:
+			err = h.handleCraft(a.RecipeNetworkID, true, int(a.TimesCrafted), s)
 		case *protocol.CraftRecipeStackRequestAction:
-			err = h.handleCraft(a, s)
+			err = h.handleCraft(a.RecipeNetworkID, false, 1, s)
 		case *protocol.TakeStackRequestAction:
 			err = h.handleTake(a, s)
 		case *protocol.PlaceStackRequestAction:
@@ -175,8 +177,8 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 }
 
 // handleCraft handles the Craft stack request action.
-func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
-	r, ok := s.recipeMapping[a.RecipeNetworkID]
+func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool, timesCrafted int, s *Session) error {
+	r, ok := s.recipeMapping[recipeNetworkID]
 	if !ok {
 		return fmt.Errorf("invalid recipe network id sent")
 	}
@@ -193,12 +195,32 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
 	}
 
-	if !h.hasRequiredInputs(expectedInputs, s) {
-		return fmt.Errorf("tried crafting without required inputs")
-	}
+	if auto {
+		var newExpectedInputs []recipe.Item
+		for _, input := range expectedInputs {
+			newExpectedInputs = append(newExpectedInputs, recipe.Item{
+				Stack:    input.Grow((input.Count() * timesCrafted) - input.Count()),
+				AllTypes: input.AllTypes,
+			})
+		}
 
-	if err := h.removeInputs(expectedInputs, s); err != nil {
-		return err
+		if !h.hasRequiredInventoryInputs(newExpectedInputs, s) {
+			return fmt.Errorf("tried crafting without required inventory inputs")
+		}
+
+		if err := h.removeInventoryInputs(newExpectedInputs, s); err != nil {
+			return err
+		}
+
+		output = output.Grow((output.Count() * timesCrafted) - output.Count())
+	} else {
+		if !h.hasRequiredGridInputs(expectedInputs, s) {
+			return fmt.Errorf("tried crafting without required inputs")
+		}
+
+		if err := h.removeGridInputs(expectedInputs, s); err != nil {
+			return err
+		}
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
@@ -550,8 +572,72 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	h.changes = map[byte]map[byte]changeInfo{}
 }
 
-// hasRequiredInputs checks and validates the inputs for a crafting grid.
-func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipe.Item, s *Session) bool {
+// inputData is used for input maps for inventory input checking and removing.
+type inputData struct {
+	// count is the count of the input.
+	count int
+	// metadataValue is the metadata value of the input.
+	metadataValue int16
+	// allTypes is true if the input applies to all of it's kind.
+	allTypes bool
+}
+
+// hasRequiredInventoryInputs checks and validates if the player inventory has the necessary inputs.
+func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Item, s *Session) bool {
+	inputMap := make(map[string]inputData)
+	for _, input := range inputs {
+		it := input.Item()
+		if it == nil {
+			continue
+		}
+
+		name, meta := it.EncodeItem()
+		data := inputData{
+			count:         input.Count(),
+			metadataValue: meta,
+			allTypes:      input.AllTypes,
+		}
+
+		if newData, ok := inputMap[name]; ok {
+			if newData.metadataValue == data.metadataValue || newData.allTypes && data.allTypes {
+				data.count = data.count + newData.count
+			}
+		}
+
+		inputMap[name] = data
+	}
+
+	for slot := 0; slot < s.inv.Size(); slot++ {
+		oldSt, err := s.inv.Item(slot)
+		if err != nil {
+			return false
+		}
+
+		it := oldSt.Item()
+		if it == nil {
+			continue
+		}
+
+		name, meta := it.EncodeItem()
+		if data, ok := inputMap[name]; ok {
+			if data.metadataValue == meta || data.allTypes {
+				data.count -= oldSt.Count()
+				inputMap[name] = data
+			}
+		}
+	}
+
+	for _, data := range inputMap {
+		if data.count > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// hasRequiredGridInputs checks and validates the inputs for a crafting grid.
+func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.Item, s *Session) bool {
 	offset := s.craftingOffset()
 
 	var satisfiedInputs int
@@ -593,8 +679,70 @@ func (h *ItemStackRequestHandler) hasRequiredInputs(inputs []recipe.Item, s *Ses
 	return satisfiedInputs == len(inputs)
 }
 
-// removeInputs removes the inputs passed in the crafting grid.
-func (h *ItemStackRequestHandler) removeInputs(inputs []recipe.Item, s *Session) error {
+// removeInventoryInputs removes the inputs in the player inventory.
+func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.Item, s *Session) error {
+	inputMap := make(map[string]inputData)
+	for _, input := range inputs {
+		it := input.Item()
+		if it == nil {
+			continue
+		}
+
+		name, meta := it.EncodeItem()
+		data := inputData{
+			count:         input.Count(),
+			metadataValue: meta,
+			allTypes:      input.AllTypes,
+		}
+
+		if newData, ok := inputMap[name]; ok {
+			if newData.metadataValue == data.metadataValue || newData.allTypes && data.allTypes {
+				data.count = data.count + newData.count
+			}
+		}
+
+		inputMap[name] = data
+	}
+
+	for slot := 0; slot < s.inv.Size(); slot++ {
+		oldSt, err := s.inv.Item(slot)
+		if err != nil {
+			return err
+		}
+
+		it := oldSt.Item()
+		if it == nil {
+			continue
+		}
+
+		name, meta := it.EncodeItem()
+		if data, ok := inputMap[name]; ok {
+			if data.metadataValue == meta || data.allTypes {
+				if data.count > 0 {
+					targetRemoval := oldSt.Count()
+					if data.count < oldSt.Count() {
+						targetRemoval = data.count
+					}
+
+					st := oldSt.Grow(-targetRemoval)
+					h.setItemInSlot(protocol.StackRequestSlotInfo{
+						ContainerID:    containerFullInventory,
+						Slot:           byte(slot),
+						StackNetworkID: item_id(st),
+					}, st, s)
+
+					data.count -= targetRemoval
+					inputMap[name] = data
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// removeGridInputs removes the inputs passed in the crafting grid.
+func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.Item, s *Session) error {
 	offset := s.craftingOffset()
 
 	var index int
