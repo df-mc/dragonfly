@@ -607,18 +607,8 @@ func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Ite
 		inputMap[name] = data
 	}
 
-	for slot := 0; slot < s.inv.Size(); slot++ {
-		oldSt, err := s.inv.Item(slot)
-		if err != nil {
-			return false
-		}
-
-		it := oldSt.Item()
-		if it == nil {
-			continue
-		}
-
-		name, meta := it.EncodeItem()
+	for _, oldSt := range s.inv.Contents() {
+		name, meta := oldSt.Item().EncodeItem()
 		if data, ok := inputMap[name]; ok {
 			if data.metadataValue == meta || data.allTypes {
 				data.count -= oldSt.Count()
@@ -704,18 +694,12 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.Item, s 
 		inputMap[name] = data
 	}
 
-	for slot := 0; slot < s.inv.Size(); slot++ {
-		oldSt, err := s.inv.Item(slot)
-		if err != nil {
-			return err
-		}
-
-		it := oldSt.Item()
-		if it == nil {
+	for slot, oldSt := range s.inv.Items() {
+		if oldSt.Empty() {
 			continue
 		}
 
-		name, meta := it.EncodeItem()
+		name, meta := oldSt.Item().EncodeItem()
 		if data, ok := inputMap[name]; ok {
 			if data.metadataValue == meta || data.allTypes {
 				if data.count > 0 {
