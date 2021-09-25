@@ -57,12 +57,13 @@ func (f Custom) Title() string {
 // Elements returns a list of all elements as set in the Submittable passed to form.New().
 func (f Custom) Elements() []Element {
 	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	t := v.Type()
 	n := v.NumField()
 
 	elements := make([]Element, 0, n)
 	for i := 0; i < n; i++ {
 		field := v.Field(i)
-		if !field.CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		// Each exported field is guaranteed to implement the Element interface.
