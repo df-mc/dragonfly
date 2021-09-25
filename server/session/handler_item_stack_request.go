@@ -199,7 +199,7 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 		var newExpectedInputs []recipe.Item
 		for _, input := range expectedInputs {
 			newExpectedInputs = append(newExpectedInputs, recipe.Item{
-				Stack:    input.Grow((input.Count() * timesCrafted) - input.Count()),
+				Stack:    input.Grow(input.Count() * (timesCrafted - 1)),
 				AllTypes: input.AllTypes,
 			})
 		}
@@ -212,7 +212,7 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 			return err
 		}
 
-		output = output.Grow((output.Count() * timesCrafted) - output.Count())
+		output = output.Grow(output.Count() * (timesCrafted - 1))
 	} else {
 		if !h.hasRequiredGridInputs(expectedInputs, s) {
 			return fmt.Errorf("tried crafting without required inputs")
