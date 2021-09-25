@@ -184,7 +184,7 @@ func (f Custom) verify() {
 	v := reflect.ValueOf(f.submittable)
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		if !t.Field(i).Type.Implements(el) {
