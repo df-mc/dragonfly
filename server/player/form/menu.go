@@ -64,11 +64,12 @@ func (m Menu) Body() string {
 // reflection and returns them.
 func (m Menu) Buttons() []Button {
 	v := reflect.ValueOf(m.submittable)
+	t := v.Type()
 
 	var buttons []Button
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
-		if !field.CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		// Each exported field is guaranteed to be of type Button.
@@ -104,8 +105,10 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 // not valid.
 func (m Menu) verify() {
 	v := reflect.ValueOf(m.submittable)
+	t := v.Type()
+
 	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {

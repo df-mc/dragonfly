@@ -91,11 +91,12 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 // Buttons returns a list of all buttons of the Modal form, which will always be a total of two buttons.
 func (m Modal) Buttons() []Button {
 	v := reflect.ValueOf(m.submittable)
+	t := v.Type()
 
 	buttons := make([]Button, 0, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
-		if !field.CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		// Each exported field is guaranteed to be of type Button.
@@ -110,8 +111,9 @@ func (m Modal) verify() {
 	var count int
 
 	v := reflect.ValueOf(m.submittable)
+	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanSet() {
+		if !v.Field(i).CanSet() || t.Field(i).Anonymous {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {
