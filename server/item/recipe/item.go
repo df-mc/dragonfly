@@ -5,12 +5,12 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Item is a recipe item. It is an item stack inherently, but it also has an extra value for if it applies to all types.
-type Item struct {
+// InputItem is a recipe item. It is an item stack inherently, but it also has an extra value for if it applies to all types.
+type InputItem struct {
 	item.Stack
-	// AllTypes is true if if the item applies to all of it's type. This is so it can be rendered in the recipe book
+	// Variants is true if the item applies to all of its possible variants. This is so it can be rendered in the recipe book
 	// for alternative types.
-	AllTypes bool
+	Variants bool
 }
 
 // inputItem is an item that is inputted to a crafting menu.
@@ -23,26 +23,26 @@ type inputItem struct {
 	Count int32 `nbt:"count"`
 }
 
-// ToStack converts an input item to a stack.
-func (i inputItem) ToStack() (Item, bool) {
+// toInputItem converts an inputItem to an InputItem.
+func (i inputItem) toInputItem() (InputItem, bool) {
 	if len(i.Name) == 0 {
-		return Item{}, true
+		return InputItem{}, true
 	}
 	it, ok := world.ItemByName(i.Name, int16(i.MetadataValue))
 	if !ok {
-		return Item{}, false
+		return InputItem{}, false
 	}
 
-	return Item{Stack: item.NewStack(it, int(i.Count)), AllTypes: i.MetadataValue == 32767}, true
+	return InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.MetadataValue == 32767}, true
 }
 
 // inputItems is an array of input items.
 type inputItems []inputItem
 
-// ToStacks converts inputItems into item stacks.
-func (i inputItems) ToStacks() (s []Item, ok bool) {
+// toInputItems converts inputItems into an array of InputItems.
+func (i inputItems) toInputItems() (s []InputItem, ok bool) {
 	for _, it := range i {
-		st, ok := it.ToStack()
+		st, ok := it.toInputItem()
 		if !ok {
 			return nil, false
 		}
@@ -69,7 +69,7 @@ type outputItem struct {
 	NBTData map[string]interface{} `nbt:"data"`
 }
 
-// ToStack converts an input item to a stack.
+// ToStack converts an output item to an item stack.
 func (o outputItem) ToStack() (item.Stack, bool) {
 	if len(o.Name) == 0 {
 		return item.Stack{}, true
@@ -78,9 +78,6 @@ func (o outputItem) ToStack() (item.Stack, bool) {
 	var it world.Item
 	var ok bool
 	if o.State.Version != 0 {
-		// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
-		// have their metadata sent, but we still need to get that metadata in order to be able to register
-		// different block states as different items.
 		if b, ok := world.BlockByName(o.State.Name, o.State.Properties); ok {
 			if it, ok = b.(world.Item); !ok {
 				return item.Stack{}, false

@@ -2,7 +2,7 @@ package recipe
 
 import "github.com/df-mc/dragonfly/server/item"
 
-// Recipe is embedded by all recipe types.
+// Recipe is implemented by all recipe types.
 type Recipe interface {
 	__()
 }
@@ -12,7 +12,7 @@ type ShapelessRecipe struct {
 	recipe
 	// Inputs is a list of items that serve as the input of the shapeless recipe. These items are the items
 	// required to craft the output. The amount of input items must be exactly equal to Width * Height.
-	Inputs []Item
+	Inputs []InputItem
 	// Output is an item that is created as a result of crafting the recipe.
 	Output item.Stack
 }
@@ -24,7 +24,7 @@ type ShapedRecipe struct {
 	Dimensions Dimensions
 	// Inputs is a list of items that serve as the input of the shaped recipe. These items are the items
 	// required to craft the output. The amount of input items must be exactly equal to Width * Height.
-	Inputs []Item
+	Inputs []InputItem
 	// Output is an item that is created as a result of crafting the recipe.
 	Output item.Stack
 }

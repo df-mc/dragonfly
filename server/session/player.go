@@ -570,8 +570,8 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
-// itemToRecipeIngredientItem converts a recipe.Item into a type that can be used over the protocol.
-func itemToRecipeIngredientItem(s recipe.Item) protocol.RecipeIngredientItem {
+// itemToRecipeIngredientItem converts a recipe.InputItem into a type that can be used over the protocol.
+func itemToRecipeIngredientItem(s recipe.InputItem) protocol.RecipeIngredientItem {
 	if s.Item() == nil {
 		return protocol.RecipeIngredientItem{}
 	}
@@ -580,7 +580,7 @@ func itemToRecipeIngredientItem(s recipe.Item) protocol.RecipeIngredientItem {
 		panic("should never happen")
 	}
 
-	if s.AllTypes {
+	if s.Variants {
 		meta = craftingFlagAll
 	}
 
@@ -592,15 +592,15 @@ func itemToRecipeIngredientItem(s recipe.Item) protocol.RecipeIngredientItem {
 }
 
 // itemsToRecipeIngredientItems converts a list of recipe.Items into a type that can be used over the protocol.
-func itemsToRecipeIngredientItems(s []recipe.Item) (r []protocol.RecipeIngredientItem) {
+func itemsToRecipeIngredientItems(s []recipe.InputItem) (r []protocol.RecipeIngredientItem) {
 	for _, st := range s {
 		r = append(r, itemToRecipeIngredientItem(st))
 	}
 	return
 }
 
-// stripDamageFromProtocolItem strips the damage from a protocol item.
-func stripDamageFromProtocolItem(st protocol.ItemStack) protocol.ItemStack {
+// deleteDamage strips the damage from a protocol item.
+func deleteDamage(st protocol.ItemStack) protocol.ItemStack {
 	delete(st.NBTData, "Damage")
 	return st
 }
@@ -617,7 +617,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 			recipeList = append(recipeList, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
-				Output:          []protocol.ItemStack{stripDamageFromProtocolItem(stackFromItem(newRecipe.Output))},
+				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output))},
 				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shapeless recipes are added.
 				RecipeNetworkID: networkID,
 			})
@@ -627,7 +627,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Width:           int32(newRecipe.Dimensions[0]),
 				Height:          int32(newRecipe.Dimensions[1]),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
-				Output:          []protocol.ItemStack{stripDamageFromProtocolItem(stackFromItem(newRecipe.Output))},
+				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output))},
 				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shaped recipes are added.
 				RecipeNetworkID: networkID,
 			})
@@ -642,7 +642,7 @@ func creativeItems() []protocol.CreativeItem {
 	for index, i := range creative.Items() {
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  stripDamageFromProtocolItem(stackFromItem(i)),
+			Item:                  deleteDamage(stackFromItem(i)),
 		})
 	}
 	return it

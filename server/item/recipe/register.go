@@ -1,9 +1,5 @@
 package recipe
 
-import (
-	_ "embed"
-)
-
 // recipes is a list of each recipe.
 var recipes []Recipe
 
