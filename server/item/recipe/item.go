@@ -89,10 +89,6 @@ func (o outputItem) ToStack() (item.Stack, bool) {
 			return item.Stack{}, false
 		}
 	}
-	s := item.NewStack(it, int(o.Count))
-	for k, v := range o.NBTData {
-		s = s.WithValue(k, v)
-	}
 
-	return s, true
+	return item.NewStack(it, int(o.Count)), true
 }
