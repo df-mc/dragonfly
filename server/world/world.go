@@ -1144,7 +1144,7 @@ func (w *World) startTicking() {
 			w.tick()
 		case <-w.stopTick.Done():
 			// The world was closed, so we should stop ticking.
-			w.doneTicking <- struct{}{}
+			close(w.doneTicking)
 			return
 		}
 	}
