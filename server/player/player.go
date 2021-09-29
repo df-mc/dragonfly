@@ -1070,18 +1070,16 @@ func (p *Player) UseItem() {
 			if !p.usingItem.CAS(false, true) {
 				// The player is currently using the item held. This is a signal the item was consumed, so we
 				// consume it and start using it again.
+				p.ReleaseItem()
+
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
 				// slightly increase the duration to combat this.
 				duration := time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
-
-				held, left := p.HeldItems()
 				if duration < usable.ConsumeDuration() {
-					// The required duration for consuming this item was not met, so we don't consume it and stop
-					// consuming.
-					p.ReleaseItem()
+					// The required duration for consuming this item was not met, so we don't consume it.
 					return
 				}
-				p.SetHeldItems(p.subtractItem(held, 1), left)
+				p.SetHeldItems(p.subtractItem(i, 1), left)
 				p.addNewItem(&item.UseContext{NewItem: usable.Consume(w, p)})
 				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 			}
