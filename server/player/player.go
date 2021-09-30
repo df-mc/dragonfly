@@ -77,10 +77,11 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	speed    atomic.Float64
-	health   *entity.HealthManager
-	effects  *entity.EffectManager
-	immunity atomic.Value
+	speed      atomic.Float64
+	health     *entity.HealthManager
+	experience *entity.ExperienceManager
+	effects    *entity.EffectManager
+	immunity   atomic.Value
 
 	mc *entity.MovementComputer
 
@@ -104,21 +105,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:     uuid.New(),
-		offHand:  inventory.New(1, p.broadcastItems),
-		armour:   inventory.NewArmour(p.broadcastArmour),
-		hunger:   newHungerManager(),
-		health:   entity.NewHealthManager(),
-		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeAdventure{},
-		h:        NopHandler{},
-		name:     name,
-		skin:     skin,
-		speed:    *atomic.NewFloat64(0.1),
-		nameTag:  *atomic.NewString(name),
-		heldSlot: atomic.NewUint32(0),
-		locale:   language.BritishEnglish,
-		scale:    *atomic.NewFloat64(1),
+		uuid:       uuid.New(),
+		offHand:    inventory.New(1, p.broadcastItems),
+		armour:     inventory.NewArmour(p.broadcastArmour),
+		hunger:     newHungerManager(),
+		health:     entity.NewHealthManager(),
+		experience: entity.NewExperienceManager(),
+		effects:    entity.NewEffectManager(),
+		gameMode:   world.GameModeAdventure{},
+		h:          NopHandler{},
+		name:       name,
+		skin:       skin,
+		speed:      *atomic.NewFloat64(0.1),
+		nameTag:    *atomic.NewString(name),
+		heldSlot:   atomic.NewUint32(0),
+		locale:     language.BritishEnglish,
+		scale:      *atomic.NewFloat64(1),
 	}
 	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
@@ -2069,6 +2071,37 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
+// ExperienceLevel get level of the player.
+func (p *Player) ExperienceLevel() int {
+	return int(p.experience.Level())
+}
+
+// ExperienceProgress get the progress of the player.
+func (p *Player) ExperienceProgress() float64 {
+	return p.experience.Progress()
+}
+
+// AddExperience add experience to the player.
+func (p *Player) AddExperience(amount int) {
+	p.experience.AddExperience(amount)
+	p.session().SendExperienceValue(p.experience)
+}
+
+// SetExperienceLevel set the experience level of the player, the level must have a value between 0 and 2147483647.
+func (p *Player) SetExperienceLevel(level int) {
+	if level > math.MaxInt32 {
+		level = math.MaxInt32
+	}
+	p.experience.SetLevel(int32(level))
+	p.session().SendExperienceValue(p.experience)
+}
+
+//SetExperienceProgress set the experience progress of the player, this accepts a value between 0.00 and 1.00.
+func (p *Player) SetExperienceProgress(progress float64) {
+	p.experience.SetProgress(progress)
+	p.session().SendExperienceValue(p.experience)
+}
+
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
@@ -2112,6 +2145,9 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
+	p.experience.SetTotalExperience(data.XPTotal)
+	p.session().SendExperienceValue(p.experience)
+
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
@@ -2153,6 +2189,9 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
+		XPLevel:         int(p.experience.Level()),
+		XPPercentage:    p.experience.Progress(),
+		XPTotal:         p.experience.TotalExperience(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
