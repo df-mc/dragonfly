@@ -213,6 +213,24 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
+// SendSound play a sound to the client, such as playing music in resource pack.
+func (s *Session) SendSound(soundName string, position mgl64.Vec3, volume, pitch float32) {
+	s.writePacket(&packet.PlaySound{
+		SoundName: soundName,
+		Position:  vec64To32(position),
+		Volume:    volume,
+		Pitch:     pitch,
+	})
+}
+
+// StopSound stop a sound playing to the player.
+func (s *Session) StopSound(soundName string, stopAll bool) {
+	s.writePacket(&packet.StopSound{
+		SoundName: soundName,
+		StopAll:   stopAll,
+	})
+}
+
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {

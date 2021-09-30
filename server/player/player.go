@@ -367,6 +367,18 @@ func (p *Player) Transfer(address string) (err error) {
 	return
 }
 
+// SendSound send play a sound to the player. If sound to have in vanilla or custom resource pack will be not work
+func (p *Player) SendSound(soundName string, volume, pitch float32) (err error) {
+	p.session().SendSound(soundName, p.Position(), volume, pitch)
+	return
+}
+
+// StopSound send stop play a sound by sound name while sound playing to player
+func (p *Player) StopSound(soundName string, stopAll bool) (err error) {
+	p.session().StopSound(soundName, stopAll)
+	return
+}
+
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
