@@ -1,10 +1,18 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Terracotta is a block formed from clay, with a hardness and blast resistance comparable to stone. For colouring it,
 // take a look at StainedTerracotta.
 type Terracotta struct {
 	solid
 	bassDrum
+}
+
+// SoilFor ...
+func (Terracotta) SoilFor(block world.Block) bool {
+	_, ok := block.(DeadBush)
+	return ok
 }
 
 // BreakInfo ...
