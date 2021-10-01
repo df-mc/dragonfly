@@ -373,9 +373,15 @@ func (p *Player) SendSound(soundName string, volume, pitch float32) (err error) 
 	return
 }
 
-// StopSound send stop play a sound by sound name while sound playing to player
-func (p *Player) StopSound(soundName string, stopAll bool) (err error) {
-	p.session().StopSound(soundName, stopAll)
+// StopSound stop play a sound by sound name while sound playing to player
+func (p *Player) StopSound(soundName string) (err error) {
+	p.session().StopSound(soundName, false)
+	return
+}
+
+// StopAllSound stop all play sound while sound playing to player
+func (p *Player) StopAllSound() (err error) {
+	p.session().StopSound("", true)
 	return
 }
 

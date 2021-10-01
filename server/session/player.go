@@ -224,6 +224,7 @@ func (s *Session) SendSound(soundName string, position mgl64.Vec3, volume, pitch
 }
 
 // StopSound stop a sound playing to the player.
+// if all sounds currently playing to the player should be stopped set stopAll to true and soundName left empty.
 func (s *Session) StopSound(soundName string, stopAll bool) {
 	s.writePacket(&packet.StopSound{
 		SoundName: soundName,
