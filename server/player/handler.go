@@ -85,6 +85,7 @@ type Handler interface {
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
 	// HandleOpenContainer handles when the player opens a container
+	// ctx.Cancel() may be called to prevent the player from opening that container
 	HandleOpenContainer(ctx *event.Context, pos cube.Pos)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
