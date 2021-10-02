@@ -213,6 +213,15 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
+// StopSound stop a sound playing to the player.
+// if all sounds currently playing to the player should be stopped set stopAll to true and soundName left empty.
+func (s *Session) StopSound(soundName string, stopAll bool) {
+	s.writePacket(&packet.StopSound{
+		SoundName: soundName,
+		StopAll:   stopAll,
+	})
+}
+
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {

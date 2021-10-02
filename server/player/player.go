@@ -1940,6 +1940,18 @@ func (p *Player) PlaySound(sound world.Sound) {
 	p.session().ViewSound(entity.EyePosition(p), sound)
 }
 
+// StopSound stop play a sound by sound name while sound playing to player
+func (p *Player) StopSound(soundName string) (err error) {
+	p.session().StopSound(soundName, false)
+	return
+}
+
+// StopAllSound stop all play sound while sound playing to player
+func (p *Player) StopAllSound() (err error) {
+	p.session().StopSound("", true)
+	return
+}
+
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present or if the Player cannot edit it, an error is returned
 func (p *Player) EditSign(pos cube.Pos, text string) error {
