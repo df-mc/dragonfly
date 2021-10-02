@@ -13,7 +13,7 @@ type WoodStairs struct {
 	transparent
 	bass
 
-	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
+	// Wood is the type of mushroom of the stairs. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part
@@ -83,7 +83,7 @@ func (s WoodStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), w)
 }
 
-// allWoodStairs returns all states of wood stairs.
+// allWoodStairs returns all states of mushroom stairs.
 func allWoodStairs() (stairs []world.Block) {
 	f := func(facing cube.Direction, upsideDown bool) {
 		for _, w := range WoodTypes() {

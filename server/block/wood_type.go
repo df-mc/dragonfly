@@ -2,60 +2,60 @@ package block
 
 import "fmt"
 
-// WoodType represents a type of wood of a block. Some blocks, such as log blocks, bark blocks, wooden planks and
+// WoodType represents a type of mushroom of a block. Some blocks, such as log blocks, bark blocks, wooden planks and
 // others carry one of these types.
 type WoodType struct {
 	wood
 }
 
-// OakWood returns oak wood material.
+// OakWood returns oak mushroom material.
 func OakWood() WoodType {
 	return WoodType{wood(0)}
 }
 
-// SpruceWood returns spruce wood material.
+// SpruceWood returns spruce mushroom material.
 func SpruceWood() WoodType {
 	return WoodType{wood(1)}
 }
 
-// BirchWood returns birch wood material.
+// BirchWood returns birch mushroom material.
 func BirchWood() WoodType {
 	return WoodType{wood(2)}
 }
 
-// JungleWood returns jungle wood material.
+// JungleWood returns jungle mushroom material.
 func JungleWood() WoodType {
 	return WoodType{wood(3)}
 }
 
-// AcaciaWood returns acacia wood material.
+// AcaciaWood returns acacia mushroom material.
 func AcaciaWood() WoodType {
 	return WoodType{wood(4)}
 }
 
-// DarkOakWood returns dark oak wood material.
+// DarkOakWood returns dark oak mushroom material.
 func DarkOakWood() WoodType {
 	return WoodType{wood(5)}
 }
 
-// CrimsonWood returns crimson wood material.
+// CrimsonWood returns crimson mushroom material.
 func CrimsonWood() WoodType {
 	return WoodType{wood(6)}
 }
 
-// WarpedWood returns warped wood material.
+// WarpedWood returns warped mushroom material.
 func WarpedWood() WoodType {
 	return WoodType{wood(7)}
 }
 
-// WoodTypes returns a list of all wood types
+// WoodTypes returns a list of all mushroom types
 func WoodTypes() []WoodType {
 	return []WoodType{OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood(), CrimsonWood(), WarpedWood()}
 }
 
 type wood uint8
 
-// Uint8 returns the wood as a uint8.
+// Uint8 returns the mushroom as a uint8.
 func (w wood) Uint8() uint8 {
 	return uint8(w)
 }
@@ -80,7 +80,7 @@ func (w wood) Name() string {
 	case 7:
 		return "Warped Wood"
 	}
-	panic("unknown wood type")
+	panic("unknown mushroom type")
 }
 
 // FromString ...
@@ -103,7 +103,7 @@ func (w wood) FromString(s string) (interface{}, error) {
 	case "warped":
 		return WoodType{wood(7)}, nil
 	}
-	return nil, fmt.Errorf("unexpected wood type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'crimson' or 'warped'", s)
+	return nil, fmt.Errorf("unexpected mushroom type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'crimson' or 'warped'", s)
 }
 
 // String ...
@@ -126,10 +126,10 @@ func (w wood) String() string {
 	case 7:
 		return "warped"
 	}
-	panic("unknown wood type")
+	panic("unknown mushroom type")
 }
 
-// Flammable returns whether the wood type is flammable.
+// Flammable returns whether the mushroom type is flammable.
 func (w wood) Flammable() bool {
 	return w != CrimsonWood().wood && w != WarpedWood().wood
 }

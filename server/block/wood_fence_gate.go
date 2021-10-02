@@ -14,7 +14,7 @@ type WoodFenceGate struct {
 	transparent
 	bass
 
-	// Wood is the type of wood of the fence gate. This field must have one of the values found in the material
+	// Wood is the type of mushroom of the fence gate. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// Facing is the direction the fence gate swings open.

@@ -13,10 +13,10 @@ import (
 type Leaves struct {
 	leaves
 
-	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
+	// Wood is the type of mushroom of the leaves. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
-	// Persistent specifies if the leaves are persistent, meaning they will not decay as a result of no wood
+	// Persistent specifies if the leaves are persistent, meaning they will not decay as a result of no mushroom
 	// being nearby.
 	Persistent bool
 
@@ -109,7 +109,7 @@ func (l Leaves) EncodeItem() (name string, meta int16) {
 	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", int16(l.Wood.Uint8() - 4)
 	}
-	panic("invalid wood type")
+	panic("invalid mushroom type")
 }
 
 // LightDiffusionLevel ...
@@ -136,7 +136,7 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
 	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	}
-	panic("invalid wood type")
+	panic("invalid mushroom type")
 }
 
 // allLogs returns a list of all possible leaves states.
