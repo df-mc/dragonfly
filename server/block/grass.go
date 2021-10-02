@@ -56,7 +56,7 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BoneMeal ...
 func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
-	plants := plantSelection()
+	plants := plantSelection() // TODO: Differ plants based on biomes when a proper implementation of it is made.
 	for c := 0; c < 14; c++ {
 		x := randWithinRange(pos.X()-3, pos.X()+3)
 		z := randWithinRange(pos.Z()-3, pos.Z()+3)
