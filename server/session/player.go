@@ -213,16 +213,6 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
-// SendSound play a sound to the client, such as playing music in resource pack.
-func (s *Session) SendSound(soundName string, position mgl64.Vec3, volume, pitch float32) {
-	s.writePacket(&packet.PlaySound{
-		SoundName: soundName,
-		Position:  vec64To32(position),
-		Volume:    volume,
-		Pitch:     pitch,
-	})
-}
-
 // StopSound stop a sound playing to the player.
 // if all sounds currently playing to the player should be stopped set stopAll to true and soundName left empty.
 func (s *Session) StopSound(soundName string, stopAll bool) {

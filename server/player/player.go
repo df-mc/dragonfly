@@ -1912,21 +1912,8 @@ func (p *Player) EyeHeight() float64 {
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
 // to players around it.
 // if passing world.Sound argument it should be use LevelSoundEvent, if passing string argument it should be use PlaySound
-func (p *Player) PlaySound(sound ...interface{}) {
-	switch so := sound[0].(type) {
-	case world.Sound:
-		p.session().ViewSound(entity.EyePosition(p), so)
-	case string:
-		volume := float32(1.0)
-		if v, ok := sound[1].(float32); ok {
-			volume = v
-		}
-		pitch := float32(1.0)
-		if v, ok := sound[2].(float32); ok {
-			pitch = v
-		}
-		p.session().SendSound(so, entity.EyePosition(p), volume, pitch)
-	}
+func (p *Player) PlaySound(sound world.Sound) {
+	p.session().ViewSound(entity.EyePosition(p), sound)
 }
 
 // StopSound stop play a sound by sound name while sound playing to player
