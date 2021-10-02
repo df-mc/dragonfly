@@ -216,7 +216,24 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
+	id := int32(packet.GameTypeSurvivalSpectator)
+
+	// Creative or spectator players:
+	if mode.AllowsFlying() && mode.CreativeInventory() {
+		id = packet.GameTypeCreative
+		// Cannot interact with the world, so this is a spectator.
+		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
+			id = packet.GameTypeCreativeSpectator
+		}
+	}
+
+	s.sendAdventureSettings(mode)
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
+}
+
+// sendAdventureSettings sends adventure settings to a player based on a game mode.
+func (s *Session) sendAdventureSettings(mode world.GameMode) {
+	flags, perms := uint32(0), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
 	}
@@ -236,21 +253,13 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
 	}
-	// Creative or spectator players:
-	if mode.AllowsFlying() && mode.CreativeInventory() {
-		id = packet.GameTypeCreative
-		// Cannot interact with the world, so this is a spectator.
-		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
-			id = packet.GameTypeCreativeSpectator
-		}
-	}
+
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,
 		ActionPermissions: perms,
 	})
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
 // SendHealth sends the health and max health to the player.

@@ -341,6 +341,7 @@ func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:            nil,
 		packet.IDAnimate:               nil,
+		packet.IDAdventureSettings:     &AdventureSettingsHandler{},
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
