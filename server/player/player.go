@@ -1911,7 +1911,6 @@ func (p *Player) EyeHeight() float64 {
 
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
 // to players around it.
-// if passing world.Sound argument it should be use LevelSoundEvent, if passing string argument it should be use PlaySound
 func (p *Player) PlaySound(sound world.Sound) {
 	p.session().ViewSound(entity.EyePosition(p), sound)
 }
