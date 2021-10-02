@@ -166,11 +166,13 @@ type ParamInfo struct {
 func (cmd Command) Params(src Source) [][]ParamInfo {
 	params := make([][]ParamInfo, 0, len(cmd.v))
 	for _, runnable := range cmd.v {
+		elem := reflect.New(runnable.Type()).Elem()
+		elem.Set(runnable)
+
 		if allower, ok := runnable.Interface().(Allower); ok && !allower.Allow(src) {
 			// This source cannot execute this runnable.
 			continue
 		}
-		elem := runnable.Elem()
 
 		n := elem.NumField()
 		fields := make([]ParamInfo, n)

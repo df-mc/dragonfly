@@ -70,8 +70,8 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible,
-	immobile, onGround, usingItem atomic.Bool
+	sneaking, sprinting, swimming, flying,
+	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
 	fireTicks    atomic.Int64
@@ -902,6 +902,28 @@ func (p *Player) StopSwimming() {
 	p.updateState()
 }
 
+// StartFlying makes the player start flying if they aren't already. It requires the player to be in a gamemode which
+// allows flying.
+func (p *Player) StartFlying() {
+	if !p.GameMode().AllowsFlying() || !p.flying.CAS(false, true) {
+		return
+	}
+	p.session().SendGameMode(p.GameMode())
+}
+
+// Flying checks if the player is currently flying.
+func (p *Player) Flying() bool {
+	return p.flying.Load()
+}
+
+// StopFlying makes the player stop flying if it currently is.
+func (p *Player) StopFlying() {
+	if !p.flying.CAS(true, false) {
+		return
+	}
+	p.session().SendGameMode(p.GameMode())
+}
+
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
 	if !p.invisible.CAS(false, true) {
@@ -1019,6 +1041,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 
 	p.session().SendGameMode(mode)
 
+	if !mode.AllowsFlying() {
+		p.StopFlying()
+	}
 	if !mode.Visible() {
 		p.SetInvisible()
 	} else if !previous.Visible() {
