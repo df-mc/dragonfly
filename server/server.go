@@ -169,7 +169,7 @@ func (server *Server) Start() error {
 		return err
 	}
 	if server.c.Server.Console {
-		console := Console{chat.Global}
+		console := Console{chat.StdoutSubscriber{}}
 		go console.ReadInput()
 	}
 	go server.wait()
