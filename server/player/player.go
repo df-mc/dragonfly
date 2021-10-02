@@ -2,6 +2,13 @@ package player
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -32,12 +39,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
-	"math"
-	"math/rand"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -1739,7 +1740,12 @@ func (p *Player) OpenBlockContainer(pos cube.Pos) {
 	if p.session() == session.Nop {
 		return
 	}
-	p.session().OpenBlockContainer(pos)
+	ctx := event.C()
+	p.handler().HandleOpenContainer(ctx, pos)
+
+	ctx.Continue(func() {
+		p.session().OpenBlockContainer(pos)
+	})
 }
 
 // Latency returns a rolling average of latency between the sending and the receiving end of the connection of

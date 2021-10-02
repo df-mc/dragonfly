@@ -1,6 +1,8 @@
 package player
 
 import (
+	"net"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -11,7 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"net"
 )
 
 // Handler handles events that are called by a player. Implementations of Handler may be used to listen to
@@ -83,6 +84,8 @@ type Handler interface {
 	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64)
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
+	// HandleOpenContainer handles when the player opens a container
+	HandleOpenContainer(ctx *event.Context, pos cube.Pos)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *event.Context, oldText, newText string)
@@ -173,6 +176,9 @@ func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *fl
 
 // HandlePunchAir ...
 func (NopHandler) HandlePunchAir(*event.Context) {}
+
+//HandleOpenContainer ...
+func (NopHandler) HandleOpenContainer(*event.Context, cube.Pos) {}
 
 // HandleHurt ...
 func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source) {}
