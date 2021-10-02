@@ -49,7 +49,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 	for x := -2; x <= 2; x++ {
 		distance := -int(math.Abs(float64(x))) + 2
-		for z := 0 - distance; z <= 0+distance; z++ {
+		for z := -distance; z <= distance; z++ {
 			for y := -1; y < 1; y++ {
 				if (x == 0 && y == 0 && z == 0) || rand.Intn(6) != 0 {
 					continue
