@@ -8,6 +8,7 @@ import (
 )
 
 // BrownMushroom is a variety of fungus that grows and spreads in dark areas.
+// TODO: Spreading
 type BrownMushroom struct {
 	empty
 	transparent

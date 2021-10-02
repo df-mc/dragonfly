@@ -8,6 +8,7 @@ import (
 )
 
 // RedMushroom is a variety of fungus that grows and spreads in dark areas.
+// TODO: Spreading
 type RedMushroom struct {
 	empty
 	transparent
