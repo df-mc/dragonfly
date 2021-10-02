@@ -52,8 +52,13 @@ func (board *Scoreboard) Set(index int, s string) (err error) {
 		return fmt.Errorf("index out of range %v", index)
 	}
 
-	// Remove new lines from the string
-	board.lines[index] = strings.TrimSuffix(strings.TrimSuffix(s, "\n"), "\n")
+	if s == "" {
+		// If s is nothing, remove the line
+		board.lines = append(board.lines[:index], board.lines[index+1:]...)
+	} else {
+		// Remove new lines from the string
+		board.lines[index] = strings.TrimSuffix(strings.TrimSuffix(s, "\n"), "\n")
+	}
 	return nil
 }
 
