@@ -367,24 +367,6 @@ func (p *Player) Transfer(address string) (err error) {
 	return
 }
 
-// SendSound send play a sound to the player. If sound to have in vanilla or custom resource pack will be not work
-func (p *Player) SendSound(soundName string, volume, pitch float32) (err error) {
-	p.session().SendSound(soundName, p.Position(), volume, pitch)
-	return
-}
-
-// StopSound stop play a sound by sound name while sound playing to player
-func (p *Player) StopSound(soundName string) (err error) {
-	p.session().StopSound(soundName, false)
-	return
-}
-
-// StopAllSound stop all play sound while sound playing to player
-func (p *Player) StopAllSound() (err error) {
-	p.session().StopSound("", true)
-	return
-}
-
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
@@ -1929,8 +1911,34 @@ func (p *Player) EyeHeight() float64 {
 
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
 // to players around it.
-func (p *Player) PlaySound(sound world.Sound) {
-	p.session().ViewSound(entity.EyePosition(p), sound)
+// if passing world.Sound argument it should be use LevelSoundEvent, if passing string argument it should be use PlaySound
+func (p *Player) PlaySound(sound ...interface{}) {
+	switch so := sound[0].(type) {
+	case world.Sound:
+		p.session().ViewSound(entity.EyePosition(p), so)
+	case string:
+		volume := float32(1.0)
+		if v, ok := sound[1].(float32); ok {
+			volume = v
+		}
+		pitch := float32(1.0)
+		if v, ok := sound[2].(float32); ok {
+			pitch = v
+		}
+		p.session().SendSound(so, entity.EyePosition(p), volume, pitch)
+	}
+}
+
+// StopSound stop play a sound by sound name while sound playing to player
+func (p *Player) StopSound(soundName string) (err error) {
+	p.session().StopSound(soundName, false)
+	return
+}
+
+// StopAllSound stop all play sound while sound playing to player
+func (p *Player) StopAllSound() (err error) {
+	p.session().StopSound("", true)
+	return
 }
 
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
