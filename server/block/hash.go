@@ -16,6 +16,7 @@ const (
 	hashBlueIce
 	hashBoneBlock
 	hashBricks
+	hashBrownMushroom
 	hashCake
 	hashCalcite
 	hashCarpet
@@ -99,6 +100,7 @@ const (
 	hashRawCopperBlock
 	hashRawGoldBlock
 	hashRawIronBlock
+	hashRedMushroom
 	hashSand
 	hashSandstone
 	hashSeaLantern
@@ -177,6 +179,10 @@ func (b BoneBlock) Hash() uint64 {
 
 func (Bricks) Hash() uint64 {
 	return hashBricks
+}
+
+func (BrownMushroom) Hash() uint64 {
+	return hashBrownMushroom
 }
 
 func (c Cake) Hash() uint64 {
@@ -509,6 +515,10 @@ func (RawGoldBlock) Hash() uint64 {
 
 func (RawIronBlock) Hash() uint64 {
 	return hashRawIronBlock
+}
+
+func (RedMushroom) Hash() uint64 {
+	return hashRedMushroom
 }
 
 func (s Sand) Hash() uint64 {
