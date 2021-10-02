@@ -57,4 +57,3 @@ func readConfig() (server.Config, error) {
 	}
 	return c, nil
 }
-
