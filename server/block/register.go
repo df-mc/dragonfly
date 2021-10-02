@@ -144,6 +144,7 @@ func init() {
 	registerAll(allSigns())
 	registerAll(allLight())
 	registerAll(allLadders())
+	registerAll(allSandstoneStairs())
 }
 
 func init() {
