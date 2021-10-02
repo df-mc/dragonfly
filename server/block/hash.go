@@ -101,6 +101,7 @@ const (
 	hashRawIronBlock
 	hashSand
 	hashSandstone
+	hashSandstoneStairs
 	hashSeaLantern
 	hashShroomlight
 	hashSign
@@ -517,6 +518,10 @@ func (s Sand) Hash() uint64 {
 
 func (s Sandstone) Hash() uint64 {
 	return hashSandstone | uint64(s.Type.Uint8())<<7 | uint64(boolByte(s.Red))<<9
+}
+
+func (s SandstoneStairs) Hash() uint64 {
+	return hashSandstoneStairs | uint64(boolByte(s.Smooth))<<7 | uint64(boolByte(s.Red))<<8 | uint64(boolByte(s.UpsideDown))<<9 | uint64(s.Facing)<<10
 }
 
 func (SeaLantern) Hash() uint64 {
