@@ -19,6 +19,9 @@
   # QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
   # %v is the placeholder for the username of the player. Set this to "" to disable.
   QuitMessage = "%v has left the game"
+  # Console is the state of the console
+	# 'true' if enabled and 'false'if disabled.
+  Console = true
 
 [World]
   # The name of the world of the server. The name will show up at the top of the player list in the in-game

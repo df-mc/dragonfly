@@ -23,6 +23,9 @@ type Config struct {
 		// QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
 		// %v is the placeholder for the username of the player
 		QuitMessage string
+		// Console is the state of the console
+		// 'true' if enabled and 'false'if disabled.
+		Console bool
 	}
 	World struct {
 		// Name is the name of the world that the server holds. A world with this name will be loaded and

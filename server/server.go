@@ -21,6 +21,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
@@ -166,6 +167,10 @@ func (server *Server) Start() error {
 
 	if err := server.startListening(); err != nil {
 		return err
+	}
+	if server.c.Server.Console {
+		console := Console{chat.Global}
+		go console.ReadInput()
 	}
 	go server.wait()
 	return nil
