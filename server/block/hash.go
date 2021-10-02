@@ -87,6 +87,7 @@ const (
 	hashNetherrack
 	hashNoteBlock
 	hashObsidian
+	hashPackedIce
 	hashPlanks
 	hashPodzol
 	hashPotato
@@ -462,6 +463,10 @@ func (n NoteBlock) Hash() uint64 {
 
 func (o Obsidian) Hash() uint64 {
 	return hashObsidian | uint64(boolByte(o.Crying))<<7
+}
+
+func (PackedIce) Hash() uint64 {
+	return hashPackedIce
 }
 
 func (p Planks) Hash() uint64 {
