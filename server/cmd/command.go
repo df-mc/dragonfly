@@ -106,6 +106,17 @@ func (cmd Command) Aliases() []string {
 	return cmd.aliases
 }
 
+// Allow returns whether the provided source is allowed to run the command. It will check each Runnable, and
+// will return true if one or more Runnables allow the source to run the command.
+func (cmd Command) Allow(source Source) bool {
+	for _, runnable := range cmd.v {
+		if allower, ok := runnable.Interface().(Allower); !ok || allower.Allow(source) {
+			return true
+		}
+	}
+	return false
+}
+
 // Execute executes the Command as a source with the args passed. The args are parsed assuming they do not
 // start with the command name. Execute will attempt to parse and execute one Runnable at a time. If one of
 // the Runnable was able to parse args correctly, it will be executed and no more Runnables will be attempted
