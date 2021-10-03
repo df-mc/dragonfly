@@ -835,7 +835,7 @@ func (p *Player) StartSprinting() {
 	}
 	ctx := event.C()
 	p.handler().HandleToggleSprint(ctx, true)
-	ctx.Continue(func(){
+	ctx.Continue(func() {
 		p.StopSneaking()
 		p.SetSpeed(p.Speed() * 1.3)
 
@@ -855,7 +855,7 @@ func (p *Player) StopSprinting() {
 	}
 	ctx := event.C()
 	p.handler().HandleToggleSprint(ctx, false)
-	ctx.Continue(func(){
+	ctx.Continue(func() {
 		p.SetSpeed(p.Speed() / 1.3)
 
 		p.updateState()
