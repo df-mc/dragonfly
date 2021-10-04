@@ -15,10 +15,11 @@ type SeaPickle struct {
 	empty
 	transparent
 
-	// ClusterCount is the amount of additional sea pickles clustered together.
-	ClusterCount int
-	// Alive is whether the sea pickle is alive.
-	Alive bool
+	// AdditionalCount is the amount of additional sea pickles clustered together.
+	AdditionalCount int
+	// Dead is whether the sea pickles are not alive. Sea pickles are only considered alive when inside of water. While
+	// alive, sea pickles emit light & can be grown with bone meal.
+	Dead bool
 }
 
 // canSurvive ...
@@ -35,15 +36,15 @@ func (SeaPickle) canSurvive(pos cube.Pos, w *world.World) bool {
 
 // BoneMeal ...
 func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
-	if !s.Alive {
+	if s.Dead {
 		return false
 	}
 	if coral, ok := w.Block(pos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 		return false
 	}
 
-	if s.ClusterCount != 3 {
-		s.ClusterCount = 3
+	if s.AdditionalCount != 3 {
+		s.AdditionalCount = 3
 		w.PlaceBlock(pos, s)
 	}
 
@@ -62,7 +63,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 				if coral, ok := w.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 					continue
 				}
-				w.PlaceBlock(newPos, SeaPickle{ClusterCount: rand.Intn(3) + 1, Alive: true})
+				w.PlaceBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1})
 			}
 		}
 	}
@@ -73,11 +74,11 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 // UseOnBlock ...
 func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	if existing, ok := w.Block(pos).(SeaPickle); ok {
-		if existing.ClusterCount >= 3 {
+		if existing.AdditionalCount >= 3 {
 			return false
 		}
 
-		existing.ClusterCount++
+		existing.AdditionalCount++
 		w.PlaceBlock(pos, existing)
 		ctx.CountSub = 1
 		return true
@@ -91,8 +92,10 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 
+	s.Dead = true
 	if liquid, ok := w.Liquid(pos); ok {
-		_, s.Alive = liquid.(Water)
+		_, ok = liquid.(Water)
+		s.Dead = !ok
 	}
 
 	place(w, pos, s, user, ctx)
@@ -110,8 +113,8 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if liquid, ok := w.Liquid(pos); ok {
 		_, alive = liquid.(Water)
 	}
-	if s.Alive != alive {
-		s.Alive = alive
+	if s.Dead == alive {
+		s.Dead = !alive
 		w.PlaceBlock(pos, s)
 	}
 }
@@ -134,15 +137,15 @@ func (SeaPickle) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // LightEmissionLevel ...
 func (s SeaPickle) LightEmissionLevel() uint8 {
-	if s.Alive {
-		return uint8(6 + s.ClusterCount*3)
+	if s.Dead {
+		return 0
 	}
-	return 0
+	return uint8(6 + s.AdditionalCount*3)
 }
 
 // BreakInfo ...
 func (s SeaPickle) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.ClusterCount+1)))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
 }
 
 // EncodeItem ...
@@ -152,14 +155,14 @@ func (SeaPickle) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (s SeaPickle) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:sea_pickle", map[string]interface{}{"cluster_count": int32(s.ClusterCount), "dead_bit": !s.Alive}
+	return "minecraft:sea_pickle", map[string]interface{}{"cluster_count": int32(s.AdditionalCount), "dead_bit": s.Dead}
 }
 
 // allSeaPickles ...
 func allSeaPickles() (b []world.Block) {
 	for i := 0; i <= 3; i++ {
-		b = append(b, SeaPickle{ClusterCount: i})
-		b = append(b, SeaPickle{ClusterCount: i, Alive: true})
+		b = append(b, SeaPickle{AdditionalCount: i})
+		b = append(b, SeaPickle{AdditionalCount: i, Dead: true})
 	}
 	return
 }

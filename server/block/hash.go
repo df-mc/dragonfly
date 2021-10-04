@@ -530,7 +530,7 @@ func (SeaLantern) Hash() uint64 {
 }
 
 func (s SeaPickle) Hash() uint64 {
-	return hashSeaPickle | uint64(s.ClusterCount)<<7 | uint64(boolByte(s.Alive))<<15
+	return hashSeaPickle | uint64(s.AdditionalCount)<<7 | uint64(boolByte(s.Dead))<<15
 }
 
 func (Shroomlight) Hash() uint64 {
