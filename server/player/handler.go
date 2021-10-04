@@ -22,8 +22,9 @@ type Handler interface {
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
-	// HandleToggleSneak handles when the player starts or stops sneaking
-	HandleToggleSneak(ctx *event.Context, toggle bool)
+	// HandleToggleSneak handles when the player starts or stops sneaking.
+	// After is true if the player is sneaking after toggling (changing their sneaking state).
+	HandleToggleSneak(ctx *event.Context, after bool)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
