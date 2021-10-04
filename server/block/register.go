@@ -91,6 +91,7 @@ func init() {
 	world.RegisterBlock(HoneycombBlock{})
 	world.RegisterBlock(Podzol{})
 	world.RegisterBlock(AmethystBlock{})
+	world.RegisterBlock(PackedIce{})
 	world.RegisterBlock(DeadBush{})
 
 	registerAll(allBarrels())
@@ -145,6 +146,7 @@ func init() {
 	registerAll(allSigns())
 	registerAll(allLight())
 	registerAll(allLadders())
+	registerAll(allSandstoneStairs())
 }
 
 func init() {
@@ -243,6 +245,7 @@ func init() {
 	world.RegisterItem(Podzol{})
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(AmethystBlock{})
+	world.RegisterItem(PackedIce{})
 	world.RegisterItem(DeadBush{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})

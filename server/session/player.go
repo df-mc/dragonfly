@@ -219,6 +219,9 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
+		if s.c.Flying() {
+			flags |= packet.AdventureFlagFlying
+		}
 	}
 	if !mode.HasCollision() {
 		flags |= packet.AdventureFlagNoClip
