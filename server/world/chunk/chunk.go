@@ -195,5 +195,5 @@ func subIndex(y int16) int16 {
 
 // subY returns the sub chunk Y value matching the index passed.
 func subY(index int16) int16 {
-	return (index + minSubChunkY) >> 4
+	return (index + minSubChunkY) << 4
 }
