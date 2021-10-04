@@ -1,7 +1,6 @@
 package world
 
 import (
-	"context"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
@@ -31,10 +30,8 @@ type World struct {
 	lastPos   ChunkPos
 	lastChunk *chunkData
 
-	stopTick         context.Context
-	cancelTick       context.CancelFunc
-	stopCacheJanitor chan struct{}
-	doneTicking      chan struct{}
+	closing chan struct{}
+	running sync.WaitGroup
 
 	handlerMu sync.RWMutex
 	handler   Handler
@@ -79,23 +76,19 @@ type World struct {
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
 func New(log internal.Logger, simulationDistance int) *World {
-	ctx, cancel := context.WithCancel(context.Background())
 	w := &World{
-		r:                rand.New(rand.NewSource(time.Now().Unix())),
-		blockUpdates:     map[cube.Pos]int64{},
-		entities:         map[Entity]ChunkPos{},
-		viewers:          map[Viewer]struct{}{},
-		prov:             NoIOProvider{},
-		gen:              NopGenerator{},
-		handler:          NopHandler{},
-		doneTicking:      make(chan struct{}),
-		stopCacheJanitor: make(chan struct{}),
-		simDistSq:        int32(simulationDistance * simulationDistance),
-		randomTickSpeed:  *atomic.NewUint32(3),
-		log:              log,
-		stopTick:         ctx,
-		cancelTick:       cancel,
-		set:              defaultSettings(),
+		r:               rand.New(rand.NewSource(time.Now().Unix())),
+		blockUpdates:    map[cube.Pos]int64{},
+		entities:        map[Entity]ChunkPos{},
+		viewers:         map[Viewer]struct{}{},
+		prov:            NoIOProvider{},
+		gen:             NopGenerator{},
+		handler:         NopHandler{},
+		simDistSq:       int32(simulationDistance * simulationDistance),
+		randomTickSpeed: *atomic.NewUint32(3),
+		log:             log,
+		set:             defaultSettings(),
+		closing:         make(chan struct{}),
 	}
 
 	w.initChunkCache()
@@ -1100,8 +1093,8 @@ func (w *World) Close() error {
 	if w == nil {
 		return nil
 	}
-	w.cancelTick()
-	<-w.doneTicking
+	close(w.closing)
+	w.running.Wait()
 
 	w.log.Debugf("Saving chunks in memory to disk...")
 
@@ -1138,13 +1131,14 @@ func (w *World) startTicking() {
 	ticker := time.NewTicker(time.Second / 20)
 	defer ticker.Stop()
 
+	w.running.Add(1)
 	for {
 		select {
 		case <-ticker.C:
 			w.tick()
-		case <-w.stopTick.Done():
-			// The world was closed, so we should stop ticking.
-			close(w.doneTicking)
+		case <-w.closing:
+			// World is being closed: Stop ticking and get rid of a task.
+			w.running.Done()
 			return
 		}
 	}
@@ -1831,22 +1825,12 @@ func (w *World) initChunkCache() {
 	w.chunkMu.Unlock()
 }
 
-// CloseChunkCacheJanitor closes the chunk cache janitor of the world. Calling this method will prevent chunks
-// from unloading until the World is closed, preventing entities from despawning. As a result, this could lead
-// to a memory leak if the size of the world can grow. This method should therefore only be used in places
-// where the movement of players is limited to a confined space such as a hub.
-func (w *World) CloseChunkCacheJanitor() {
-	if w == nil {
-		return
-	}
-	close(w.stopCacheJanitor)
-}
-
-// chunkCacheJanitor runs until the world is closed, cleaning chunks that are no longer in use from the cache.
+// chunkCacheJanitor runs until the world is running, cleaning chunks that are no longer in use from the cache.
 func (w *World) chunkCacheJanitor() {
 	t := time.NewTicker(time.Minute * 5)
 	defer t.Stop()
 
+	w.running.Add(1)
 	chunksToRemove := map[ChunkPos]*chunkData{}
 	for {
 		select {
@@ -1867,9 +1851,8 @@ func (w *World) chunkCacheJanitor() {
 				w.saveChunk(pos, c)
 				delete(chunksToRemove, pos)
 			}
-		case <-w.stopTick.Done():
-			return
-		case <-w.stopCacheJanitor:
+		case <-w.closing:
+			w.running.Done()
 			return
 		}
 	}
