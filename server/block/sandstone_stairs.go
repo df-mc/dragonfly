@@ -8,7 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// SandstoneStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using end bricks.
+// SandstoneStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using sandstone.
 type SandstoneStairs struct {
 	transparent
 
