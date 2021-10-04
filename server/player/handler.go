@@ -22,8 +22,9 @@ type Handler interface {
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
-	// HandleToggleSprint handles when the player starts or stops sprinting
-	HandleToggleSprint(ctx *event.Context, toggle bool)
+	// HandleToggleSprint handles when the player starts or stops sprinting.
+	// After is true if the player is sprinting after toggling (changing their sprinting state).
+	HandleToggleSprint(ctx *event.Context, after bool)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
