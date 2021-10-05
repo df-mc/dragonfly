@@ -60,22 +60,10 @@ func (Mushroom) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // EncodeItem ...
 func (m Mushroom) EncodeItem() (name string, meta int16) {
-	switch m.Type {
-	case RedMushroom():
-		return "minecraft:red_mushroom", 0
-	case BrownMushroom():
-		return "minecraft:brown_mushroom", 0
-	}
-	panic("should never happen")
+	return "minecraft:" + m.Type.String() + "_mushroom", 0
 }
 
 // EncodeBlock ...
 func (m Mushroom) EncodeBlock() (name string, properties map[string]interface{}) {
-	switch m.Type {
-	case RedMushroom():
-		return "minecraft:red_mushroom", map[string]interface{}{}
-	case BrownMushroom():
-		return "minecraft:brown_mushroom", map[string]interface{}{}
-	}
-	panic("should never happen")
+	return "minecraft:" + m.Type.String() + "_mushroom", nil
 }

@@ -26,3 +26,14 @@ type mushroom uint8
 func (m mushroom) Uint8() uint8 {
 	return uint8(m)
 }
+
+// String returns the mushroom as a string.
+func (m mushroom) String() string {
+	switch m {
+	case 0:
+		return "brown"
+	case 1:
+		return "red"
+	}
+	panic("unknown mushroom type")
+}
