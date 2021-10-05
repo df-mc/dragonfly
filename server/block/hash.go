@@ -105,6 +105,7 @@ const (
 	hashSandstone
 	hashSandstoneStairs
 	hashSeaLantern
+	hashSeaPickle
 	hashShroomlight
 	hashSign
 	hashSoulSand
@@ -536,6 +537,10 @@ func (s SandstoneStairs) Hash() uint64 {
 
 func (SeaLantern) Hash() uint64 {
 	return hashSeaLantern
+}
+
+func (s SeaPickle) Hash() uint64 {
+	return hashSeaPickle | uint64(s.AdditionalCount)<<7 | uint64(boolByte(s.Dead))<<15
 }
 
 func (Shroomlight) Hash() uint64 {
