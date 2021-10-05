@@ -14,7 +14,7 @@ import (
 type WoodSlab struct {
 	bass
 
-	// Wood is the type of mushroom of the slabs. This field must have one of the values found in the material
+	// Wood is the type of wood of the slabs. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// Top specifies if the slab is in the top part of the block.
@@ -53,7 +53,7 @@ func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 	}
 	if sideSlab, ok := w.Block(pos.Side(face)).(WoodSlab); ok && !replaceableWith(w, pos, s) && !s.Double {
 		// The block on the side of the one clicked was a slab and the block clicked was not replaceableWith, so
-		// the slab on the side must've been half and may now be filled if the mushroom types are the same.
+		// the slab on the side must've been half and may now be filled if the wood types are the same.
 		if !sideSlab.Double && sideSlab.Wood == s.Wood {
 			sideSlab.Double = true
 
@@ -123,7 +123,7 @@ func (s WoodSlab) EncodeItem() (name string, meta int16) {
 		}
 		return "minecraft:warped_slab", 0
 	}
-	panic("invalid mushroom type")
+	panic("invalid wood type")
 }
 
 // EncodeBlock ...
@@ -152,7 +152,7 @@ func (s WoodSlab) SideClosed(pos, side cube.Pos, _ *world.World) bool {
 	return !s.Top && side[1] == pos[1]-1
 }
 
-// allWoodSlabs returns all states of mushroom slabs.
+// allWoodSlabs returns all states of wood slabs.
 func allWoodSlabs() (slabs []world.Block) {
 	f := func(double bool, upsideDown bool) {
 		for _, w := range WoodTypes() {

@@ -12,7 +12,7 @@ type WoodFence struct {
 	transparent
 	bass
 
-	// Wood is the type of mushroom of the fence. This field must have one of the values found in the mushroom
+	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
 	Wood WoodType
 }

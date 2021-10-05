@@ -15,7 +15,7 @@ type WoodTrapdoor struct {
 	transparent
 	bass
 
-	// Wood is the type of mushroom of the trapdoor. This field must have one of the values found in the material
+	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// Facing is the direction the trapdoor is facing.

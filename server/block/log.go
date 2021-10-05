@@ -14,7 +14,7 @@ type Log struct {
 	solid
 	bass
 
-	// Wood is the type of mushroom of the log. This field must have one of the values found in the material
+	// Wood is the type of wood of the log. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// Stripped specifies if the log is stripped or not.
@@ -71,7 +71,7 @@ func (l Log) EncodeItem() (name string, meta int16) {
 	case CrimsonWood(), WarpedWood():
 		return "minecraft:stripped_" + l.Wood.String() + "_stem", 0
 	}
-	panic("invalid mushroom type")
+	panic("invalid wood type")
 }
 
 // EncodeBlock ...
@@ -92,7 +92,7 @@ func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
 	case CrimsonWood(), WarpedWood():
 		return "minecraft:stripped_" + l.Wood.String() + "_stem", map[string]interface{}{"pillar_axis": l.Axis.String()}
 	}
-	panic("invalid mushroom type")
+	panic("invalid wood type")
 }
 
 // allLogs returns a list of all possible log states.

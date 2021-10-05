@@ -17,7 +17,7 @@ type Sign struct {
 	empty
 	bass
 
-	// Wood is the type of mushroom of the sign. This field must have one of the values found in the material
+	// Wood is the type of wood of the sign. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// Attach is the attachment of the Sign. It is either of the type WallAttachment or StandingAttachment.

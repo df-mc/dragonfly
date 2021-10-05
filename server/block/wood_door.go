@@ -14,7 +14,7 @@ type WoodDoor struct {
 	transparent
 	bass
 
-	// Wood is the type of mushroom of the door. This field must have one of the values found in the material
+	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
 	// Facing is the direction the door is facing.
@@ -144,7 +144,7 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 	case WarpedWood():
 		return "minecraft:warped_door", 0
 	}
-	panic("invalid mushroom type")
+	panic("invalid wood type")
 }
 
 // EncodeBlock ...
