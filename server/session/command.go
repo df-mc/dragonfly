@@ -75,7 +75,7 @@ func (s *Session) startCommandTicking() {
 
 		resendCommands:
 			s.SendAvailableCommands()
-		case _, _ = <-stop:
+		case <-stop:
 			ticker.Stop()
 			return
 		}
