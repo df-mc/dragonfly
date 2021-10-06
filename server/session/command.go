@@ -1,11 +1,39 @@
 package session
 
 import (
+	"bytes"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"time"
 )
+
+// startCommandTicking starts a ticker that will check every minute for changes in the command data,
+// and if so sync this with the client.
+func (s *Session) startCommandTicking() {
+	ticker := time.NewTicker(time.Minute)
+	stop := make(chan struct{})
+	go func() {
+		select {
+		case <-ticker.C:
+			oldCommands := s.lastCommands
+			newCommands := s.buildAvailableCommands()
+
+			oldBuff, newBuff := bytes.NewBuffer([]byte), bytes.NewBuffer([]byte)
+
+			oldCommands.Marshal(protocol.NewWriter(oldBuff, 0))
+			newCommands.Marshal(protocol.NewWriter(newBuff, 0))
+
+			if bytes.Compare(oldBuff.Bytes(), newBuff.Bytes()) != 0 {
+				s.writePacket(newCommands)
+			}
+		case <-stop:
+			ticker.Stop()
+			return
+		}
+	}()
+}
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
 // command, which might be the player or a websocket server.
@@ -39,6 +67,14 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 // SendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
 func (s *Session) SendAvailableCommands() {
+	pk := s.buildAvailableCommands()
+	s.lastCommands = pk
+	s.writePacket(pk)
+}
+
+// buildAvailableCommands packet builds a new up-to-date packet containing all command data such as aliases,
+// enums, etc.
+func (s *Session) buildAvailableCommands() *packet.AvailableCommands {
 	commands := cmd.Commands()
 	pk := &packet.AvailableCommands{}
 	for alias, c := range commands {
@@ -76,7 +112,7 @@ func (s *Session) SendAvailableCommands() {
 			})
 		}
 	}
-	s.writePacket(pk)
+	return pk
 }
 
 // valueToParamType finds the command argument type of a value passed and returns it, in addition to creating

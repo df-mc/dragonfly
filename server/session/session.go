@@ -71,6 +71,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.String
+
+	lastCommands *packet.AvailableCommands
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
