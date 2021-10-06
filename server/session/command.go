@@ -50,13 +50,23 @@ func (s *Session) startCommandTicking() {
 						goto writePacket
 					}
 					for y, param := range params {
-						o := oldParams[x][y]
+						old := oldParams[x][y]
 
-						if o.Name != param.Name ||
-							o.Optional != param.Optional ||
-							o.Suffix != param.Suffix {
+						if old.Name != param.Name ||
+							old.Optional != param.Optional ||
+							old.Suffix != param.Suffix {
 							goto writePacket
 						}
+						t1, p1 := valueToParamType(old.Value, s.c)
+						t2, p2 := valueToParamType(param.Value, s.c)
+						if t1 != t2 || p1.Dynamic != p2.Dynamic || p1.Type != p2.Type {
+							goto writePacket
+						}
+						if len(p1.Options) != len(p2.Options) {
+							goto writePacket
+						}
+						// Assume that if the length of the options is the same, the parameters are
+						// most likely equal.
 					}
 				}
 			}
