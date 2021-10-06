@@ -17,16 +17,17 @@ func (s *Session) startCommandTicking() {
 	for {
 		select {
 		case <-ticker.C:
+			// Check if there are any new changes to the commands compared to what the client can currently see.
 			allOldParams := s.lastParams
 			oldCommands := s.lastCommands
 			newCommands := cmd.Commands()
 
 			if len(oldCommands) != len(newCommands) {
-				goto writePacket
+				goto resendCommands
 			}
 			for alias, c := range newCommands {
 				if _, ok := oldCommands[alias]; !ok {
-					goto writePacket
+					goto resendCommands
 				}
 				// We only need to check the parameters of each command once.
 				// To ensure this, we ignore all alias entries.
@@ -37,17 +38,17 @@ func (s *Session) startCommandTicking() {
 				// since we already did this before.
 				oldCommand := oldCommands[alias]
 				if oldCommand.Usage() != c.Usage() || oldCommand.Description() != c.Description() {
-					goto writePacket
+					goto resendCommands
 				}
 				// Compare all parameters of both commands.
 				oldParams := allOldParams[oldCommand.Name()]
 				newParams := c.Params(s.c)
 				if len(oldParams) != len(newParams) {
-					goto writePacket
+					goto resendCommands
 				}
 				for x, params := range newParams {
 					if len(params) != len(oldParams[x]) {
-						goto writePacket
+						goto resendCommands
 					}
 					for y, param := range params {
 						old := oldParams[x][y]
@@ -55,15 +56,15 @@ func (s *Session) startCommandTicking() {
 						if old.Name != param.Name ||
 							old.Optional != param.Optional ||
 							old.Suffix != param.Suffix {
-							goto writePacket
+							goto resendCommands
 						}
 						t1, p1 := valueToParamType(old.Value, s.c)
 						t2, p2 := valueToParamType(param.Value, s.c)
 						if t1 != t2 || p1.Dynamic != p2.Dynamic || p1.Type != p2.Type {
-							goto writePacket
+							goto resendCommands
 						}
 						if len(p1.Options) != len(p2.Options) {
-							goto writePacket
+							goto resendCommands
 						}
 						// Assume that if the length of the options is the same, the parameters are
 						// most likely equal.
@@ -72,7 +73,7 @@ func (s *Session) startCommandTicking() {
 			}
 			continue
 
-		writePacket:
+		resendCommands:
 			s.SendAvailableCommands()
 		case _, _ = <-stop:
 			ticker.Stop()
