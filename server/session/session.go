@@ -73,6 +73,7 @@ type Session struct {
 	joinMessage, quitMessage *atomic.String
 
 	lastCommands *packet.AvailableCommands
+	commandSync  chan struct{}
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -214,6 +215,8 @@ func (s *Session) Close() error {
 	s.entityRuntimeIDs = map[world.Entity]uint64{}
 	s.entities = map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
+
+	close(s.commandSync)
 
 	if s.onStop != nil {
 		s.onStop(s.c)

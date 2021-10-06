@@ -14,13 +14,14 @@ import (
 func (s *Session) startCommandTicking() {
 	ticker := time.NewTicker(time.Minute)
 	stop := make(chan struct{})
+	s.commandSync = stop
 	go func() {
 		select {
 		case <-ticker.C:
 			oldCommands := s.lastCommands
 			newCommands := s.buildAvailableCommands()
 
-			oldBuff, newBuff := bytes.NewBuffer([]byte), bytes.NewBuffer([]byte)
+			oldBuff, newBuff := bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 
 			oldCommands.Marshal(protocol.NewWriter(oldBuff, 0))
 			newCommands.Marshal(protocol.NewWriter(newBuff, 0))
@@ -28,7 +29,7 @@ func (s *Session) startCommandTicking() {
 			if bytes.Compare(oldBuff.Bytes(), newBuff.Bytes()) != 0 {
 				s.writePacket(newCommands)
 			}
-		case <-stop:
+		case _, _ = <-stop:
 			ticker.Stop()
 			return
 		}
