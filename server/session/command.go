@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -15,25 +14,61 @@ func (s *Session) startCommandTicking() {
 	ticker := time.NewTicker(time.Minute)
 	stop := make(chan struct{})
 	s.commandSync = stop
-	go func() {
+	for {
 		select {
 		case <-ticker.C:
+			allOldParams := s.lastParams
 			oldCommands := s.lastCommands
-			newCommands := s.buildAvailableCommands()
+			newCommands := cmd.Commands()
 
-			oldBuff, newBuff := bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
-
-			oldCommands.Marshal(protocol.NewWriter(oldBuff, 0))
-			newCommands.Marshal(protocol.NewWriter(newBuff, 0))
-
-			if bytes.Compare(oldBuff.Bytes(), newBuff.Bytes()) != 0 {
-				s.writePacket(newCommands)
+			if len(oldCommands) != len(newCommands) {
+				goto writePacket
 			}
+			for alias, c := range newCommands {
+				if _, ok := oldCommands[alias]; !ok {
+					goto writePacket
+				}
+				// We only need to check the parameters of each command once.
+				// To ensure this, we ignore all alias entries.
+				if alias != c.Name() {
+					continue
+				}
+				// Check if the commands themselves are equal. We don't need to check name or aliases,
+				// since we already did this before.
+				oldCommand := oldCommands[alias]
+				if oldCommand.Usage() != c.Usage() || oldCommand.Description() != c.Description() {
+					goto writePacket
+				}
+				// Compare all parameters of both commands.
+				oldParams := allOldParams[oldCommand.Name()]
+				newParams := c.Params(s.c)
+				if len(oldParams) != len(newParams) {
+					goto writePacket
+				}
+				for x, params := range newParams {
+					if len(params) != len(oldParams[x]) {
+						goto writePacket
+					}
+					for y, param := range params {
+						o := oldParams[x][y]
+
+						if o.Name != param.Name ||
+							o.Optional != param.Optional ||
+							o.Suffix != param.Suffix {
+							goto writePacket
+						}
+					}
+				}
+			}
+			continue
+
+		writePacket:
+			s.SendAvailableCommands()
 		case _, _ = <-stop:
 			ticker.Stop()
 			return
 		}
-	}()
+	}
 }
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
@@ -68,14 +103,7 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 // SendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
 func (s *Session) SendAvailableCommands() {
-	pk := s.buildAvailableCommands()
-	s.lastCommands = pk
-	s.writePacket(pk)
-}
-
-// buildAvailableCommands packet builds a new up-to-date packet containing all command data such as aliases,
-// enums, etc.
-func (s *Session) buildAvailableCommands() *packet.AvailableCommands {
+	allParams := map[string][][]cmd.ParamInfo{}
 	commands := cmd.Commands()
 	pk := &packet.AvailableCommands{}
 	for alias, c := range commands {
@@ -84,6 +112,7 @@ func (s *Session) buildAvailableCommands() *packet.AvailableCommands {
 			continue
 		}
 		params := c.Params(s.c)
+		allParams[c.Name()] = params
 		overloads := make([]protocol.CommandOverload, len(params))
 		for i, params := range params {
 			for _, paramInfo := range params {
@@ -113,7 +142,9 @@ func (s *Session) buildAvailableCommands() *packet.AvailableCommands {
 			})
 		}
 	}
-	return pk
+	s.writePacket(pk)
+	s.lastCommands = commands
+	s.lastParams = allParams
 }
 
 // valueToParamType finds the command argument type of a value passed and returns it, in addition to creating

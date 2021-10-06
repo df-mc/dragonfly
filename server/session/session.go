@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -72,7 +73,8 @@ type Session struct {
 
 	joinMessage, quitMessage *atomic.String
 
-	lastCommands *packet.AvailableCommands
+	lastCommands map[string]cmd.Command
+	lastParams   map[string][][]cmd.ParamInfo
 	commandSync  chan struct{}
 }
 
@@ -189,6 +191,8 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+
+	go s.startCommandTicking()
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
