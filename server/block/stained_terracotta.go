@@ -15,6 +15,12 @@ type StainedTerracotta struct {
 	Colour item.Colour
 }
 
+// SoilFor ...
+func (t StainedTerracotta) SoilFor(block world.Block) bool {
+	_, ok := block.(DeadBush)
+	return ok
+}
+
 // BreakInfo ...
 func (t StainedTerracotta) BreakInfo() BreakInfo {
 	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))

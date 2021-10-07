@@ -70,8 +70,8 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	sneaking, sprinting, swimming, invisible,
-	immobile, onGround, usingItem atomic.Bool
+	sneaking, sprinting, swimming, flying,
+	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
 	fireTicks    atomic.Int64
@@ -902,6 +902,28 @@ func (p *Player) StopSwimming() {
 	p.updateState()
 }
 
+// StartFlying makes the player start flying if they aren't already. It requires the player to be in a gamemode which
+// allows flying.
+func (p *Player) StartFlying() {
+	if !p.GameMode().AllowsFlying() || !p.flying.CAS(false, true) {
+		return
+	}
+	p.session().SendGameMode(p.GameMode())
+}
+
+// Flying checks if the player is currently flying.
+func (p *Player) Flying() bool {
+	return p.flying.Load()
+}
+
+// StopFlying makes the player stop flying if it currently is.
+func (p *Player) StopFlying() {
+	if !p.flying.CAS(true, false) {
+		return
+	}
+	p.session().SendGameMode(p.GameMode())
+}
+
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
 	if !p.invisible.CAS(false, true) {
@@ -1019,6 +1041,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 
 	p.session().SendGameMode(mode)
 
+	if !mode.AllowsFlying() {
+		p.StopFlying()
+	}
 	if !mode.Visible() {
 		p.SetInvisible()
 	} else if !previous.Visible() {
@@ -1070,18 +1095,16 @@ func (p *Player) UseItem() {
 			if !p.usingItem.CAS(false, true) {
 				// The player is currently using the item held. This is a signal the item was consumed, so we
 				// consume it and start using it again.
+				p.ReleaseItem()
+
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
 				// slightly increase the duration to combat this.
 				duration := time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
-
-				held, left := p.HeldItems()
 				if duration < usable.ConsumeDuration() {
-					// The required duration for consuming this item was not met, so we don't consume it and stop
-					// consuming.
-					p.ReleaseItem()
+					// The required duration for consuming this item was not met, so we don't consume it.
 					return
 				}
-				p.SetHeldItems(p.subtractItem(held, 1), left)
+				p.SetHeldItems(p.subtractItem(i, 1), left)
 				p.addNewItem(&item.UseContext{NewItem: usable.Consume(w, p)})
 				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 			}
@@ -1296,6 +1319,10 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		}
 
 		p.breaking.Store(true)
+
+		if p.GameMode().CreativeInventory() {
+			return
+		}
 
 		p.SwingArm()
 
@@ -1713,10 +1740,25 @@ func (p *Player) Drop(s item.Stack) (n int) {
 // present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.
 func (p *Player) OpenBlockContainer(pos cube.Pos) {
-	if p.session() == session.Nop {
-		return
+	if p.session() != session.Nop {
+		p.session().OpenBlockContainer(pos)
 	}
-	p.session().OpenBlockContainer(pos)
+}
+
+// HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
+// made visible again through a call to ShowEntity.
+func (p *Player) HideEntity(e world.Entity) {
+	if p.session() != session.Nop {
+		p.session().StopShowingEntity(e)
+	}
+}
+
+// ShowEntity shows a world.Entity previously hidden from the Player using HideEntity. It does nothing if the entity
+// wasn't currently hidden.
+func (p *Player) ShowEntity(e world.Entity) {
+	if p.session() != session.Nop {
+		p.session().StartShowingEntity(e)
+	}
 }
 
 // Latency returns a rolling average of latency between the sending and the receiving end of the connection of

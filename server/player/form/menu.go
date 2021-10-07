@@ -3,7 +3,6 @@ package form
 import (
 	"encoding/json"
 	"fmt"
-	"go/ast"
 	"reflect"
 )
 
@@ -64,18 +63,17 @@ func (m Menu) Body() string {
 // Buttons returns a list of all buttons of the MenuSubmittable. It parses them from the fields using
 // reflection and returns them.
 func (m Menu) Buttons() []Button {
-	v := reflect.ValueOf(m.submittable)
-	t := reflect.TypeOf(m.submittable)
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
 
 	var buttons []Button
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		field := v.Field(i)
+		if !field.CanSet() {
 			continue
 		}
 		// Each exported field is guaranteed to be of type Button.
-		buttons = append(buttons, fieldV.Interface().(Button))
+		buttons = append(buttons, field.Interface().(Button))
 	}
 	buttons = append(buttons, m.buttons...)
 	return buttons
@@ -107,10 +105,8 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 // not valid.
 func (m Menu) verify() {
 	v := reflect.ValueOf(m.submittable)
-	t := reflect.TypeOf(m.submittable)
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		if !v.Field(i).CanSet() {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {

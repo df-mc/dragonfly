@@ -73,11 +73,10 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 		if t.Kind() == reflect.Ptr {
 			original = original.Elem()
 		}
-		val := reflect.New(original.Type())
-		if err := verifySignature(val); err != nil {
+		if err := verifySignature(original); err != nil {
 			panic(err.Error())
 		}
-		runnableValues[i], usages[i] = val, parseUsage(name, val)
+		runnableValues[i], usages[i] = original, parseUsage(name, original)
 	}
 
 	return Command{name: name, description: description, aliases: aliases, v: runnableValues, usage: strings.Join(usages, "\n")}
@@ -125,7 +124,9 @@ func (cmd Command) Execute(args string, source Source) {
 	leastArgsLeft := len(strings.Split(args, " "))
 
 	for _, v := range cmd.v {
-		line, err := cmd.executeRunnable(v, args, source, output)
+		cp := reflect.New(v.Type())
+		cp.Elem().Set(v)
+		line, err := cmd.executeRunnable(cp, args, source, output)
 		if err == nil {
 			// Command was executed successfully: We won't execute any of the other Runnable values passed, as
 			// we've already found an overload that works.
@@ -165,11 +166,13 @@ type ParamInfo struct {
 func (cmd Command) Params(src Source) [][]ParamInfo {
 	params := make([][]ParamInfo, 0, len(cmd.v))
 	for _, runnable := range cmd.v {
+		elem := reflect.New(runnable.Type()).Elem()
+		elem.Set(runnable)
+
 		if allower, ok := runnable.Interface().(Allower); ok && !allower.Allow(src) {
 			// This source cannot execute this runnable.
 			continue
 		}
-		elem := runnable.Elem()
 
 		n := elem.NumField()
 		fields := make([]ParamInfo, n)
@@ -243,9 +246,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 // parseUsage parses the usage of a command found in value v using the name passed. It accounts for optional
 // parameters and converts types to a more friendly representation.
-func parseUsage(commandName string, v reflect.Value) string {
-	command := v.Elem()
-
+func parseUsage(commandName string, command reflect.Value) string {
 	parts := make([]string, 0, command.NumField()+1)
 	parts = append(parts, "/"+commandName)
 
@@ -271,9 +272,7 @@ func parseUsage(commandName string, v reflect.Value) string {
 // verifySignature verifies the passed struct pointer value signature to ensure it is a valid command,
 // checking things such as the validity of the optional struct tags.
 // If not valid, an error is returned.
-func verifySignature(v reflect.Value) error {
-	command := v.Elem()
-
+func verifySignature(command reflect.Value) error {
 	optionalField := false
 	for i := 0; i < command.NumField(); i++ {
 		field := command.Field(i)

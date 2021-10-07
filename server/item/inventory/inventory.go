@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
-	"go.uber.org/atomic"
 	"math"
 	"strings"
 	"sync"
@@ -16,10 +15,9 @@ import (
 // an inventory is invalid. Use New() to obtain a new inventory.
 // Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
-	mu          sync.RWMutex
-	h           Handler
-	slots       []item.Stack
-	lockedSlots atomic.Uint64
+	mu    sync.RWMutex
+	h     Handler
+	slots []item.Stack
 
 	f      func(slot int, item item.Stack)
 	canAdd func(s item.Stack, slot int) bool
@@ -28,9 +26,6 @@ type Inventory struct {
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
 var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Size()")
-
-// ErrSlotLocked is returned by a call to SetItem if the slot passed is locked and cannot be edited.
-var ErrSlotLocked = errors.New("slot is locked and cannot be edited")
 
 // New creates a new inventory with the size passed. The inventory size cannot be changed after it has been
 // constructed.
@@ -69,9 +64,6 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	inv.check()
 	if !inv.validSlot(slot) {
 		return ErrSlotOutOfRange
-	}
-	if inv.SlotLocked(slot) {
-		return ErrSlotLocked
 	}
 
 	inv.mu.Lock()
@@ -142,7 +134,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 
 	inv.mu.Lock()
 	for slot, invIt := range inv.slots {
-		if invIt.Empty() || inv.SlotLocked(slot) {
+		if invIt.Empty() {
 			// This slot was empty, and we should first try to add the item stack to existing stacks.
 			continue
 		}
@@ -159,7 +151,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		}
 	}
 	for slot, invIt := range inv.slots {
-		if !invIt.Empty() || inv.SlotLocked(slot) {
+		if !invIt.Empty() {
 			// We can only use empty slots now: Items existing stacks have already been filled up.
 			continue
 		}
@@ -189,7 +181,7 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 
 	inv.mu.Lock()
 	for slot, slotIt := range inv.slots {
-		if slotIt.Empty() || inv.SlotLocked(slot) || !slotIt.Comparable(it) {
+		if slotIt.Empty() || !slotIt.Comparable(it) {
 			continue
 		}
 		f := inv.setItem(slot, slotIt.Grow(-toRemove))
@@ -210,23 +202,6 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 	}
 	inv.mu.Unlock()
 	return fmt.Errorf("could not remove all items from the inventory")
-}
-
-// LockSlot locks a slot in the inventory at the offset passed, so that setting items to it will return an
-// error.
-func (inv *Inventory) LockSlot(slot int) {
-	inv.lockedSlots.Store(inv.lockedSlots.Load() | (1 << uint64(slot)))
-}
-
-// UnlockSlot unlocks a slot after having called LockSlot, so that calling SetItem on the slot will work
-// again.
-func (inv *Inventory) UnlockSlot(slot int) {
-	inv.lockedSlots.Store(inv.lockedSlots.Load() & ^(1 << uint64(slot)))
-}
-
-// SlotLocked checks if the slot passed is currently locked.
-func (inv *Inventory) SlotLocked(slot int) bool {
-	return (inv.lockedSlots.Load() & (1 << uint64(slot))) > 0
 }
 
 // Contents returns a list of all contents of the inventory. This method excludes air items, so the method
@@ -261,9 +236,6 @@ func (inv *Inventory) Empty() bool {
 func (inv *Inventory) Clear() {
 	inv.mu.Lock()
 	for slot := range inv.slots {
-		if inv.SlotLocked(slot) {
-			continue
-		}
 		f := inv.setItem(slot, item.Stack{})
 		//noinspection GoDeferInLoop
 		defer f()
