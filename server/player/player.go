@@ -1320,6 +1320,10 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 
 		p.breaking.Store(true)
 
+		if p.GameMode().CreativeInventory() {
+			return
+		}
+
 		p.SwingArm()
 
 		breakTime := p.breakTime(pos)
