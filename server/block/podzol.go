@@ -11,7 +11,7 @@ type Podzol struct {
 // SoilFor ...
 func (p Podzol) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, DeadBush:
 		return true
 	}
 	return false

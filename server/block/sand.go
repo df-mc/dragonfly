@@ -15,6 +15,12 @@ type Sand struct {
 	Red bool
 }
 
+// SoilFor ...
+func (s Sand) SoilFor(block world.Block) bool {
+	_, ok := block.(DeadBush)
+	return ok
+}
+
 // NeighbourUpdateTick ...
 func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	s.fall(s, pos, w)

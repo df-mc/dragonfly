@@ -32,6 +32,7 @@ const (
 	hashCopperOre
 	hashCoral
 	hashCoralBlock
+	hashDeadBush
 	hashDiamondBlock
 	hashDiamondOre
 	hashDiorite
@@ -104,6 +105,7 @@ const (
 	hashSandstone
 	hashSandstoneStairs
 	hashSeaLantern
+	hashSeaPickle
 	hashShroomlight
 	hashSign
 	hashSoulSand
@@ -243,6 +245,10 @@ func (c Coral) Hash() uint64 {
 
 func (c CoralBlock) Hash() uint64 {
 	return hashCoralBlock | uint64(c.Type.Uint8())<<7 | uint64(boolByte(c.Dead))<<10
+}
+
+func (d DeadBush) Hash() uint64 {
+	return hashDeadBush
 }
 
 func (DiamondBlock) Hash() uint64 {
@@ -531,6 +537,10 @@ func (s SandstoneStairs) Hash() uint64 {
 
 func (SeaLantern) Hash() uint64 {
 	return hashSeaLantern
+}
+
+func (s SeaPickle) Hash() uint64 {
+	return hashSeaPickle | uint64(s.AdditionalCount)<<7 | uint64(boolByte(s.Dead))<<15
 }
 
 func (Shroomlight) Hash() uint64 {
