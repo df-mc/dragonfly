@@ -2,6 +2,13 @@ package player
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -32,12 +39,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
-	"math"
-	"math/rand"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -576,6 +577,16 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 			p.kill(source)
 		}
 	})
+}
+
+//SetHealth sets the new health of the player.
+//no sound is played on damage or on death.
+//if the new health passed is over the max health of the player, is already the current health of the player or is negative, SetHealth won't do anything.
+func (p *Player) SetHealth(health float64) {
+	if p.Health() == health || p.MaxHealth() < health || p.Dead() || health < 0 {
+		return
+	}
+	p.addHealth(-(p.Health() - health))
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
