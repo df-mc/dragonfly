@@ -92,7 +92,7 @@ func New(log internal.Logger, simulationDistance int) *World {
 		log:             log,
 		set:             defaultSettings(),
 		closing:         make(chan struct{}),
-		tr:               lcgRand.New(&lcgRand.PCGSource{}),
+		tr:              lcgRand.New(&lcgRand.PCGSource{}),
 	}
 
 	w.initChunkCache()
@@ -713,12 +713,17 @@ func (w *World) setThunderTime(new int) {
 	w.set.ThunderTime = int32(new)
 }
 
-// setThunderLevel sets the thunder level.
-func (w *World) setThunderLevel(new int) {
+// To make it stop raining, set new to false.
+// To make it start raining, set new to true.
+func (w *World) setThunderLevel(new bool) {
 	if w == nil {
 		return
 	}
-	w.set.ThunderLevel = float32(new)
+	var f float32
+	if new {
+		f = 1
+	}
+	w.set.ThunderLevel = f
 }
 
 // Raining returns a bool that decides whether it is raining or not.
@@ -1613,11 +1618,7 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 		w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
 	}
 
-	level := 0
-	if thundering {
-		level = 1
-	}
-	w.setThunderLevel(level)
+	w.setThunderLevel(thundering)
 
 	for _, v := range w.allViewers() {
 		v.ViewThunder(thundering)
