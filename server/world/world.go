@@ -713,9 +713,10 @@ func (w *World) setThunderTime(new int) {
 	w.set.ThunderTime = int32(new)
 }
 
+// setThundering is an internal method that sets the thunder level.
 // To make it stop raining, set new to false.
 // To make it start raining, set new to true.
-func (w *World) setThunderLevel(new bool) {
+func (w *World) setThundering(new bool) {
 	if w == nil {
 		return
 	}
@@ -1618,7 +1619,7 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 		w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
 	}
 
-	w.setThunderLevel(thundering)
+	w.setThundering(thundering)
 
 	for _, v := range w.allViewers() {
 		v.ViewThunder(thundering)
