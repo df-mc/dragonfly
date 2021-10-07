@@ -26,18 +26,15 @@ func (s *Session) startCommandTicking() {
 				goto resendCommands
 			}
 			for alias, c := range newCommands {
-				if _, ok := oldCommands[alias]; !ok {
-					goto resendCommands
-				}
 				// We only need to check the parameters of each command once.
 				// To ensure this, we ignore all alias entries.
 				if alias != c.Name() {
 					continue
 				}
-				// Check if the commands themselves are equal. We don't need to check name or aliases,
-				// since we already did this before.
-				oldCommand := oldCommands[alias]
-				if oldCommand.Usage() != c.Usage() || oldCommand.Description() != c.Description() {
+
+				oldCommand, ok := oldCommands[alias]
+				if !ok {
+					// This should not happen as currently there is no support for unregistering commands.
 					goto resendCommands
 				}
 				// Compare all parameters of both commands.
