@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"reflect"
 	"time"
 )
 
@@ -19,6 +20,7 @@ func (s *Session) startCommandTicking() {
 		case <-ticker.C:
 			// Check if there are any new changes to the commands compared to what the client can currently see.
 			allOldParams := s.lastParams
+			allOldEnums := s.lastEnums
 			oldCommands := s.lastCommands
 			newCommands := cmd.Commands()
 
@@ -55,16 +57,19 @@ func (s *Session) startCommandTicking() {
 							old.Suffix != param.Suffix {
 							goto resendCommands
 						}
-						t1, p1 := valueToParamType(old.Value, s.c)
-						t2, p2 := valueToParamType(param.Value, s.c)
-						if t1 != t2 || p1.Dynamic != p2.Dynamic || p1.Type != p2.Type {
+						if reflect.TypeOf(old.Value) != reflect.TypeOf(param.Value) {
 							goto resendCommands
 						}
-						if len(p1.Options) != len(p2.Options) {
-							goto resendCommands
+						// Check if the actual enum options have changed. We only need to do this
+						// if the type of the parameter is cmd.Enum, since other types' values should
+						// remain the same.
+						if enum, ok := param.Value.(cmd.Enum); ok {
+							for _, v := range enum.Options(s.c) {
+								if _, ok = allOldEnums[c.Name()][x][y][v]; !ok {
+									goto resendCommands
+								}
+							}
 						}
-						// Assume that if the length of the options is the same, the parameters are
-						// most likely equal.
 					}
 				}
 			}
@@ -112,6 +117,7 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 // /help list and will be auto-completed.
 func (s *Session) SendAvailableCommands() {
 	allParams := map[string][][]cmd.ParamInfo{}
+	allEnums := map[string][][]map[string]struct{}{}
 	commands := cmd.Commands()
 	pk := &packet.AvailableCommands{}
 	for alias, c := range commands {
@@ -122,8 +128,19 @@ func (s *Session) SendAvailableCommands() {
 		params := c.Params(s.c)
 		allParams[c.Name()] = params
 		overloads := make([]protocol.CommandOverload, len(params))
+
+		allEnums[c.Name()] = make([][]map[string]struct{}, len(params))
 		for i, params := range params {
-			for _, paramInfo := range params {
+			allEnums[c.Name()][i] = make([]map[string]struct{}, len(params))
+			for j, paramInfo := range params {
+				allEnums[c.Name()][i][j] = map[string]struct{}{}
+				// Store the enums the client has received, so we can check whether they have changed in the
+				// future and require resending.
+				if enum, ok := paramInfo.Value.(cmd.Enum); ok {
+					for _, opt := range enum.Options(s.c) {
+						allEnums[c.Name()][i][j][opt] = struct{}{}
+					}
+				}
 				t, enum := valueToParamType(paramInfo.Value, s.c)
 				t |= protocol.CommandArgValid
 
@@ -153,6 +170,7 @@ func (s *Session) SendAvailableCommands() {
 	s.writePacket(pk)
 	s.lastCommands = commands
 	s.lastParams = allParams
+	s.lastEnums = allEnums
 }
 
 // valueToParamType finds the command argument type of a value passed and returns it, in addition to creating

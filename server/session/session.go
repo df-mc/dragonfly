@@ -75,6 +75,7 @@ type Session struct {
 
 	lastCommands map[string]cmd.Command
 	lastParams   map[string][][]cmd.ParamInfo
+	lastEnums    map[string][][]map[string]struct{}
 	commandSync  chan struct{}
 }
 
