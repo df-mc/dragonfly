@@ -858,12 +858,12 @@ func (p *Player) StopSprinting() {
 // anything.
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
-	if !p.sneaking.CAS(false, true) {
-		return
-	}
 	ctx := event.C()
 	p.handler().HandleToggleSneak(ctx, true)
 	ctx.Continue(func() {
+		if !p.sneaking.CAS(false, true) {
+			return
+		}
 		p.StopSprinting()
 		p.updateState()
 	})
