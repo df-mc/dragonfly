@@ -586,7 +586,7 @@ func (p *Player) SetHealth(health float64) {
 	if p.Health() == health || p.MaxHealth() < health || p.Dead() || health < 0 {
 		return
 	}
-	p.addHealth(-(p.Health() - health))
+	p.addHealth(health - p.Health())
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
