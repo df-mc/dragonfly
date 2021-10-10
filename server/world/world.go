@@ -1267,7 +1267,7 @@ func (w *World) tick() {
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.setThunder(w.set.ThunderLevel <= 0, time.Second*time.Duration(rand.Intn(600)+180))
+			w.setThunder(true, time.Second*time.Duration(rand.Intn(600)+180))
 		}
 	}
 	w.mu.Unlock()
