@@ -95,10 +95,10 @@ func (p *Provider) Settings() world.Settings {
 		Time:            p.d.Time,
 		TimeCycle:       p.d.DoDayLightCycle,
 		WeatherCycle:    p.d.DoWeatherCycle,
-		RainTime:        p.d.RainTime,
-		RainLevel:       p.d.RainLevel,
-		ThunderTime:     p.d.LightningTime,
-		ThunderLevel:    p.d.LightningLevel,
+		RainTime:        int64(p.d.RainTime),
+		Raining:         p.d.RainLevel > 0,
+		ThunderTime:     int64(p.d.LightningTime),
+		Thundering:      p.d.LightningLevel > 0,
 		CurrentTick:     p.d.CurrentTick,
 		DefaultGameMode: p.LoadDefaultGameMode(),
 		Difficulty:      p.LoadDifficulty(),
@@ -112,8 +112,14 @@ func (p *Provider) SaveSettings(s world.Settings) {
 	p.d.Time = s.Time
 	p.d.DoDayLightCycle = s.TimeCycle
 	p.d.DoWeatherCycle = s.WeatherCycle
-	p.d.RainTime, p.d.RainLevel = s.RainTime, s.RainLevel
-	p.d.LightningTime, p.d.LightningLevel = s.ThunderTime, s.ThunderLevel
+	p.d.RainTime, p.d.RainLevel = int32(s.RainTime), 0
+	p.d.LightningTime, p.d.LightningLevel = int32(s.ThunderTime), 0
+	if s.Raining {
+		p.d.RainLevel = 1
+	}
+	if s.Thundering {
+		p.d.LightningLevel = 1
+	}
 	p.d.CurrentTick = s.CurrentTick
 	p.SaveDefaultGameMode(s.DefaultGameMode)
 	p.SaveDifficulty(s.Difficulty)

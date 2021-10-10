@@ -15,13 +15,13 @@ type Settings struct {
 	// TimeCycle specifies if the time should advance every tick. If set to false, time won't change.
 	TimeCycle bool
 	// RainTime is the current rain time of the World. It advances every tick if WeatherCycle is set to true.
-	RainTime int32
-	// RainLevel is the current rain level of the World.
-	RainLevel float32
+	RainTime int64
+	// Raining is the current rain level of the World.
+	Raining bool
 	// ThunderTime is the current thunder time of the World. It advances every tick if WeatherCycle is set to true.
-	ThunderTime int32
+	ThunderTime int64
 	// Thunder is the current thunder level of the World.
-	ThunderLevel float32
+	Thundering bool
 	// WeatherCycle specifies if weather should be enabled in this world. If set to false, weather will be disabled.
 	WeatherCycle bool
 	// CurrentTick is the current tick of the world. This is similar to the Time, except that it has no visible effect

@@ -694,15 +694,15 @@ func (w *World) setRainTime(new int) {
 	if w == nil {
 		return
 	}
-	w.set.RainTime = int32(new)
+	w.set.RainTime = int64(new)
 }
 
 // setRainLevel sets the rain level.
-func (w *World) setRainLevel(new int) {
+func (w *World) setRainLevel(new bool) {
 	if w == nil {
 		return
 	}
-	w.set.RainLevel = float32(new)
+	w.set.Raining = new
 }
 
 // setThunderTime sets the thunder time.
@@ -710,7 +710,7 @@ func (w *World) setThunderTime(new int) {
 	if w == nil {
 		return
 	}
-	w.set.ThunderTime = int32(new)
+	w.set.ThunderTime = int64(new)
 }
 
 // setThundering is an internal method that sets the thunder level.
@@ -720,11 +720,7 @@ func (w *World) setThundering(new bool) {
 	if w == nil {
 		return
 	}
-	var f float32
-	if new {
-		f = 1
-	}
-	w.set.ThunderLevel = f
+	w.set.Thundering = new
 }
 
 // Raining returns a bool that decides whether it is raining or not.
@@ -733,7 +729,7 @@ func (w *World) Raining() bool {
 		return false
 	}
 	w.mu.Lock()
-	a := w.set.RainLevel > 0
+	a := w.set.Raining
 	w.mu.Unlock()
 	return a
 }
@@ -744,7 +740,7 @@ func (w *World) raining() bool {
 	if w == nil {
 		return false
 	}
-	a := w.set.RainLevel > 0
+	a := w.set.Raining
 	return a
 }
 
@@ -754,7 +750,7 @@ func (w *World) Thundering() bool {
 		return false
 	}
 	w.mu.Lock()
-	a := w.set.ThunderLevel > 0
+	a := w.set.Thundering
 	w.mu.Unlock()
 	return a
 }
@@ -1261,13 +1257,13 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.setRaining(w.set.RainLevel <= 0, time.Second*time.Duration(rand.Intn(600)+600))
+			w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
 		}
 
 		// Thunder
 		w.set.ThunderTime--
 		if w.set.ThunderTime <= 0 {
-			w.setThunder(w.set.ThunderLevel <= 0, time.Second*time.Duration(rand.Intn(600)+180))
+			w.setThunder(true, time.Second*time.Duration(rand.Intn(600)+180))
 		}
 	}
 	w.mu.Unlock()
@@ -1581,11 +1577,7 @@ func (w *World) StopRaining() {
 // setRaining toggles raining depending on the raining argument.
 // This does not lock the world mutex as opposed to StartRaining and StopRaining.
 func (w *World) setRaining(raining bool, x time.Duration) {
-	level := 0
-	if raining {
-		level = 1
-	}
-	w.setRainLevel(level)
+	w.setRainLevel(raining)
 
 	for _, v := range w.allViewers() {
 		v.ViewRain(raining)
