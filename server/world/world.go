@@ -1261,7 +1261,7 @@ func (w *World) tick() {
 		// Raining
 		w.set.RainTime--
 		if w.set.RainTime <= 0 {
-			w.setRaining(w.set.RainLevel <= 0, time.Second*time.Duration(rand.Intn(600)+600))
+			w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
 		}
 
 		// Thunder
