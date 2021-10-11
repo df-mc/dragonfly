@@ -1940,7 +1940,7 @@ func (p *Player) PlaySound(sound world.Sound) {
 	p.session().ViewSound(entity.EyePosition(p), sound)
 }
 
-// StopSound stop play a sound by sound name while sound playing to player
+// StopSound stop play a sound by sound name while sound playing to player.
 func (p *Player) StopSound(soundName string) (err error) {
 	p.session().StopSound(soundName, false)
 	return
