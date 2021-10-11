@@ -1946,8 +1946,8 @@ func (p *Player) StopSound(soundName string) (err error) {
 	return
 }
 
-// StopAllSound stop all play sound while sound playing to player
-func (p *Player) StopAllSound() (err error) {
+// StopAllSounds stop all play sound while sound playing to player
+func (p *Player) StopAllSounds() (err error) {
 	p.session().StopSound("", true)
 	return
 }
