@@ -858,11 +858,15 @@ func (p *Player) StopSprinting() {
 // anything.
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
-	if !p.sneaking.CAS(false, true) {
-		return
-	}
-	p.StopSprinting()
-	p.updateState()
+	ctx := event.C()
+	p.handler().HandleToggleSneak(ctx, true)
+	ctx.Continue(func() {
+		if !p.sneaking.CAS(false, true) {
+			return
+		}
+		p.StopSprinting()
+		p.updateState()
+	})
 }
 
 // Sneaking checks if the player is currently sneaking.
@@ -873,10 +877,14 @@ func (p *Player) Sneaking() bool {
 // StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
 // will not do anything.
 func (p *Player) StopSneaking() {
-	if !p.sneaking.CAS(true, false) {
-		return
-	}
-	p.updateState()
+	ctx := event.C()
+	p.handler().HandleToggleSneak(ctx, false)
+	ctx.Continue(func() {
+		if !p.sneaking.CAS(true, false) {
+			return
+		}
+		p.updateState()
+	})
 }
 
 // StartSwimming makes the player start swimming if it is not currently doing so. If the player is sneaking
