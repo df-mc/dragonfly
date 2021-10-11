@@ -57,6 +57,7 @@ func (f Custom) Title() string {
 // Elements returns a list of all elements as set in the Submittable passed to form.New().
 func (f Custom) Elements() []Element {
 	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
 	n := v.NumField()
 
 	elements := make([]Element, 0, n)

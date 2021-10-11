@@ -63,7 +63,8 @@ func (m Menu) Body() string {
 // Buttons returns a list of all buttons of the MenuSubmittable. It parses them from the fields using
 // reflection and returns them.
 func (m Menu) Buttons() []Button {
-	v := reflect.ValueOf(m.submittable)
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
 
 	var buttons []Button
 	for i := 0; i < v.NumField(); i++ {
