@@ -127,6 +127,7 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
+// projectile represents an entity that can be launched.
 type projectile interface {
 	world.Entity
 	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
