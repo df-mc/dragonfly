@@ -14,17 +14,6 @@ func (s Snowball) MaxCount() int {
 	return 16
 }
 
-type projectile interface {
-	world.Entity
-	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
-}
-
-type owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // Use ...
 func (s Snowball) Use(w *world.World, user User, ctx *UseContext) bool {
 	yaw, pitch := user.Rotation()

@@ -113,13 +113,10 @@ type nameable interface {
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
-	world.Entity
 	Carrier
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
-	Position() mgl64.Vec3
-	Rotation() (yaw, pitch float64)
 }
 
 // Carrier represents an entity that is able to carry an item.
@@ -128,6 +125,18 @@ type Carrier interface {
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
+}
+
+type projectile interface {
+	world.Entity
+	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+}
+
+// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
+type owned interface {
+	world.Entity
+	Owner() world.Entity
+	Own(owner world.Entity)
 }
 
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast

@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
@@ -22,14 +23,6 @@ type Snowball struct {
 	c *ProjectileComputer
 }
 
-func (s *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
-	return nil
-}
-
-func (s *Snowball) EncodeNBT() map[string]interface{} {
-	return nil
-}
-
 // NewSnowball ...
 func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Snowball {
 	s := &Snowball{
@@ -45,6 +38,28 @@ func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Snowba
 	s.transform = newTransform(s, pos)
 
 	return s
+}
+
+// Name ...
+func (s *Snowball) Name() string {
+	return "Snowball"
+}
+
+// EncodeEntity ...
+func (s *Snowball) EncodeEntity() string {
+	return "minecraft:snowball"
+}
+
+// AABB ...
+func (s *Snowball) AABB() physics.AABB {
+	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{0.25, 0.25, 0.25})
+}
+
+// Rotation ...
+func (s *Snowball) Rotation() (float64, float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.yaw, s.pitch
 }
 
 // Tick ...
@@ -103,24 +118,24 @@ func (s *Snowball) Own(owner world.Entity) {
 	s.owner = owner
 }
 
-// Rotation ...
-func (s *Snowball) Rotation() (float64, float64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.yaw, s.pitch
+// DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
+func (it *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
+	return it.Launch(
+		nbtconv.MapVec3(data, "Pos"),
+		nbtconv.MapVec3(data, "Motion"),
+		float64(nbtconv.MapFloat32(data, "Pitch")),
+		float64(nbtconv.MapFloat32(data, "Yaw")),
+	)
 }
 
-// Name ...
-func (s *Snowball) Name() string {
-	return "Snowball"
-}
-
-// EncodeEntity ...
-func (s *Snowball) EncodeEntity() string {
-	return "minecraft:snowball"
-}
-
-// AABB ...
-func (s *Snowball) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{0.25, 0.25, 0.25})
+// EncodeNBT encodes the Snowball entity's properties as a map and returns it.
+func (it *Snowball) EncodeNBT() map[string]interface{} {
+	yaw, pitch := it.Rotation()
+	return map[string]interface{}{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Yaw":    yaw,
+		"Pitch":  pitch,
+		"Motion": nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Damage": 0.0,
+	}
 }

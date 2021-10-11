@@ -14,7 +14,7 @@ type Owned interface {
 	Own(owner world.Entity)
 }
 
-// Projectile ...
+// Projectile represents an entity that can be launched.
 type Projectile interface {
 	world.Entity
 	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
@@ -35,14 +35,13 @@ func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw
 	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	end := pos.Add(vel)
 	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), append(ignoredEntities, e)...)
-
-	c.onGround = ok
 	if ok {
 		vel = zeroVec3
 		end = hit.Position()
 	} else {
 		yaw, pitch = math.Atan2(vel[0], vel[2])*180/math.Pi, math.Atan2(vel[1], math.Sqrt(vel[0]*vel[0]+vel[2]*vel[2]))*180/math.Pi
 	}
+	c.onGround = ok
 
 	c.sendMovement(e, viewers, end, end.Sub(pos), vel, yaw, pitch)
 
