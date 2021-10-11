@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
@@ -16,19 +17,25 @@ func (s Snowball) MaxCount() int {
 
 // Use ...
 func (s Snowball) Use(w *world.World, user User, ctx *UseContext) bool {
+	snow, ok := world.EntityByName("minecraft:snowball")
+	if !ok {
+		return false
+	}
+
+	p, ok := snow.(projectile)
+	if !ok {
+		return false
+	}
+
 	yaw, pitch := user.Rotation()
-
-	var e world.Entity
-
-	snow, _ := world.EntityByName("minecraft:snowball")
-	if snow, ok := snow.(projectile); ok {
-		e = snow.Launch(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
-		if e, ok := e.(owned); ok {
-			e.Own(user)
-		}
+	e := p.Launch(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
+	if o, ok := e.(owned); ok {
+		o.Own(user)
 	}
 
 	ctx.SubtractFromCount(1)
+
+	w.PlaySound(user.Position(), sound.ItemThrow{})
 
 	w.AddEntity(e)
 
