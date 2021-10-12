@@ -1,7 +1,6 @@
 package sound
 
-// Named is a sound from resource pack, You can use custom sound from resource packs.
-type Named struct {
+type PlaySound struct {
 	// SoundName is the name of the sound to play.
 	SoundName string
 	// Volume is the relative volume of the sound to play. It will be less loud for the player if it is
