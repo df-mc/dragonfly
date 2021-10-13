@@ -336,37 +336,38 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				return w.Block(cube.Pos{actualX, y, actualZ})
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
-			for i, sub := range c.Sub() {
+			subs := c.Sub()
+			for i, sub := range subs {
+				baseY := i << 4
 				if sub == nil {
-					// This never happens due to light always needing to be filled.
-					continue
+					c.SetRuntimeID(0, int16(baseY), 0, 0, airRID)
+					sub = subs[i]
 				}
 
-				baseY := i << 4
-				if baseY < pos[1]>>4 {
+				if i < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
 					break
 				}
 
-				for localX := 0; localX < 16; localX++ {
-					xOffset := baseX + localX
-					if xOffset < pos[0] || xOffset >= maxX {
+				for localY := 0; localY < 16; localY++ {
+					yOffset := baseY + localY
+					if yOffset > cube.MaxY || yOffset >= maxY {
+						// We've hit the height limit for blocks.
+						break
+					} else if yOffset < cube.MinY || yOffset < pos[1] {
+						// We've got a block below the minimum, but other blocks might still reach above
+						// it, so don't break but continue.
 						continue
 					}
-					for localZ := 0; localZ < 16; localZ++ {
-						zOffset := baseZ + localZ
-						if zOffset < pos[2] || zOffset >= maxZ {
+					for localX := 0; localX < 16; localX++ {
+						xOffset := baseX + localX
+						if xOffset < pos[0] || xOffset >= maxX {
 							continue
 						}
-						for localY := 0; localY < 16; localY++ {
-							yOffset := baseY + localY
-							if yOffset > cube.MaxY || yOffset >= maxY {
-								// We've hit the height limit for blocks.
-								break
-							} else if yOffset < cube.MinY || yOffset < pos[1] {
-								// We've got a block below the minimum, but other blocks might still reach above
-								// it, so don't break but continue.
+						for localZ := 0; localZ < 16; localZ++ {
+							zOffset := baseZ + localZ
+							if zOffset < pos[2] || zOffset >= maxZ {
 								continue
 							}
 							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
