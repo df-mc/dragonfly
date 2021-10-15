@@ -45,6 +45,8 @@ type Data struct {
 	GameMode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.
 	Inventory InventoryData
+	// EnderChestInventory contains the items in the player's ender chest.
+	EnderChestInventory []item.Stack
 	// Effects contains all the currently active potions effects the player has.
 	Effects []effect.Effect
 	// FireTicks is the amount of ticks the player will be on fire for.

@@ -13,16 +13,7 @@ func invToData(data player.InventoryData) jsonInventoryData {
 		MainHandSlot: data.MainHandSlot,
 		OffHand:      encodeItem(data.OffHand),
 	}
-	for slot, i := range data.Items {
-		itemData := encodeItem(i)
-		if itemData == nil {
-			continue
-		}
-		d.Items = append(d.Items, jsonSlot{
-			Slot: slot,
-			Item: itemData,
-		})
-	}
+	d.Items = encodeItems(data.Items)
 	d.Boots = encodeItem(data.Boots)
 	d.Leggings = encodeItem(data.Leggings)
 	d.Chestplate = encodeItem(data.Chestplate)
@@ -36,14 +27,31 @@ func dataToInv(data jsonInventoryData) player.InventoryData {
 		OffHand:      decodeItem(data.OffHand),
 		Items:        make([]item.Stack, 36),
 	}
-	for _, i := range data.Items {
-		d.Items[i.Slot] = decodeItem(i.Item)
-	}
+	decodeItems(data.Items, d.Items)
 	d.Boots = decodeItem(data.Boots)
 	d.Leggings = decodeItem(data.Leggings)
 	d.Chestplate = decodeItem(data.Chestplate)
 	d.Helmet = decodeItem(data.Helmet)
 	return d
+}
+
+func encodeItems(items []item.Stack) (encoded []jsonSlot) {
+	encoded = make([]jsonSlot, 0, len(items))
+	for slot, i := range items {
+		data := encodeItem(i)
+		if data == nil {
+			continue
+		}
+		encoded = append(encoded, jsonSlot{Slot: slot, Item: data})
+	}
+	return
+}
+
+func decodeItems(encoded []jsonSlot, items []item.Stack) {
+	for _, i := range encoded {
+		items[i.Slot] = decodeItem(i.Item)
+	}
+	return
 }
 
 func encodeItem(item item.Stack) []byte {

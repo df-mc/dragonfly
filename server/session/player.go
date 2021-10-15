@@ -52,8 +52,12 @@ func (s *Session) closeCurrentContainer() {
 	}
 	s.closeWindow()
 	pos := s.openedPos.Load().(cube.Pos)
-	if container, ok := s.c.World().Block(pos).(block.Container); ok {
-		container.RemoveViewer(s, s.c.World(), pos)
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
+		container.RemoveViewer(s, w, pos)
+	} else if enderChest, ok := b.(block.EnderChest); ok {
+		enderChest.RemoveViewer(w, pos)
 	}
 }
 
@@ -112,6 +116,8 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load().(*inventory.Inventory), true
+			} else if _, enderChest := b.(block.EnderChest); enderChest {
 				return s.openedWindow.Load().(*inventory.Inventory), true
 			}
 		}

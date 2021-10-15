@@ -66,9 +66,9 @@ type Player struct {
 	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
 	h Handler
 
-	inv, offHand *inventory.Inventory
-	armour       *inventory.Armour
-	heldSlot     *atomic.Uint32
+	inv, offHand, enderChest *inventory.Inventory
+	armour                   *inventory.Armour
+	heldSlot                 *atomic.Uint32
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -103,6 +103,10 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 			if slot == int(p.heldSlot.Load()) {
 				p.broadcastItems(slot, item)
 			}
+		}),
+		enderChest: inventory.New(27, func(slot int, item item.Stack) {
+			// TODO: This will send the player the change even when they aren't viewing the inventory.
+			p.session().ViewSlotChange(slot, item)
 		}),
 		uuid:     uuid.New(),
 		offHand:  inventory.New(1, p.broadcastItems),
@@ -1037,6 +1041,12 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
+}
+
+// EnderChestInventory returns the player's ender chest inventory. Its accessed by the player when opening
+// ender chests anywhere.
+func (p *Player) EnderChestInventory() *inventory.Inventory {
+	return p.enderChest
 }
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
@@ -2172,6 +2182,9 @@ func (p *Player) load(data Data) {
 	p.fallDistance.Store(data.FallDistance)
 
 	p.loadInventory(data.Inventory)
+	for slot, stack := range data.EnderChestInventory {
+		_ = p.enderChest.SetItem(slot, stack)
+	}
 }
 
 // loadInventory loads all the data associated with the player inventory.
@@ -2218,9 +2231,10 @@ func (p *Player) Data() Data {
 			OffHand:      offHand,
 			MainHandSlot: p.heldSlot.Load(),
 		},
-		Effects:      p.Effects(),
-		FireTicks:    p.fireTicks.Load(),
-		FallDistance: p.fallDistance.Load(),
+		EnderChestInventory: p.enderChest.Items(),
+		Effects:             p.Effects(),
+		FireTicks:           p.fireTicks.Load(),
+		FallDistance:        p.fallDistance.Load(),
 	}
 }
 

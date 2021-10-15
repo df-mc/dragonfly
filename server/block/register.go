@@ -102,6 +102,7 @@ func init() {
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allChests())
+	registerAll(allEnderChests())
 	registerAll(allConcrete())
 	registerAll(allConcretePowder())
 	registerAll(allCocoaBeans())

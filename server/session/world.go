@@ -174,7 +174,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 		sessionMu.Lock()
 		for _, s := range sessions {
-			if uuid.MustParse(s.conn.IdentityData().Identity) == v.UUID() {
+			if s.c.UUID() == v.UUID() {
 				actualPlayer = true
 				break
 			}
@@ -626,9 +626,9 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	}
 	s.closeCurrentContainer()
 
-	b := s.c.World().Block(pos)
-	container, ok := b.(block.Container)
-	if ok {
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
 		s.openNormalContainer(container, pos)
 		return
 	}
@@ -639,9 +639,14 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	s.openedPos.Store(pos)
 
 	var containerType byte
-	switch b.(type) {
+	switch b := b.(type) {
 	case block.Beacon:
 		containerType = 13
+	case block.EnderChest:
+		b.AddViewer(w, pos)
+		inv := s.c.EnderChestInventory()
+		s.openedWindow.Store(inv)
+		defer s.sendInv(inv, uint32(nextID))
 	}
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
