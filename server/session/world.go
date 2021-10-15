@@ -621,6 +621,9 @@ func (s *Session) ViewEntityState(e world.Entity) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
+	if s.containerOpened.Load() && s.openedPos.Load() == pos {
+		return
+	}
 	s.closeCurrentContainer()
 
 	b := s.c.World().Block(pos)
