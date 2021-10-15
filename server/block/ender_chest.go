@@ -37,7 +37,7 @@ func NewEnderChest() EnderChest {
 
 // BreakInfo ...
 func (c EnderChest) BreakInfo() BreakInfo {
-	return newBreakInfo(22.5, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(Obsidian{}, 8)))
+	return newBreakInfo(22.5, pickaxeHarvestable, pickaxeEffective, silkTouchDrop(item.NewStack(Obsidian{}, 8), item.NewStack(NewEnderChest(), 1)))
 }
 
 // LightEmissionLevel ...
@@ -62,7 +62,7 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	if !used {
 		return
 	}
-
+	//noinspection GoAssignmentToReceiver
 	c = NewEnderChest()
 	c.Facing = user.Facing().Opposite()
 
@@ -79,10 +79,9 @@ func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.U
 
 // AddViewer ...
 func (c EnderChest) AddViewer(w *world.World, pos cube.Pos) {
-	if c.viewers.Load() == 0 {
+	if c.viewers.Inc() == 1 {
 		c.open(w, pos)
 	}
-	c.viewers.Inc()
 }
 
 // RemoveViewer ...

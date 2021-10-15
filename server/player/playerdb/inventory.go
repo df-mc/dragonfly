@@ -51,7 +51,6 @@ func decodeItems(encoded []jsonSlot, items []item.Stack) {
 	for _, i := range encoded {
 		items[i.Slot] = decodeItem(i.Item)
 	}
-	return
 }
 
 func encodeItem(item item.Stack) []byte {
