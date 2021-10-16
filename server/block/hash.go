@@ -250,6 +250,7 @@ func (c CoralBlock) Hash() uint64 {
 
 func (CraftingTable) Hash() uint64 {
 	return hashCraftingTable
+}
 
 func (d DeadBush) Hash() uint64 {
 	return hashDeadBush
