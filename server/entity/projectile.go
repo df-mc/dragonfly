@@ -17,6 +17,8 @@ type Owned interface {
 // Projectile represents an entity that can be launched.
 type Projectile interface {
 	world.Entity
+	// Launch creates the projectile with the position, velocity, yaw, and pitch provided. It doesn't spawn
+	// the projectile, only returns it.
 	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
 }
 

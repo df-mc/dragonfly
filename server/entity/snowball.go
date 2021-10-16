@@ -97,7 +97,8 @@ func (s *Snowball) Tick(current int64) {
 	}
 }
 
-// Launch ...
+// Launch creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
+// only returns it.
 func (s *Snowball) Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 	snow := NewSnowball(pos, yaw, pitch, nil)
 	snow.vel = vel
