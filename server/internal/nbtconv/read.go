@@ -23,13 +23,8 @@ func ReadItem(data map[string]interface{}, s *item.Stack) item.Stack {
 
 // ReadBlock decodes the data of a block into a world.Block.
 func ReadBlock(m map[string]interface{}) world.Block {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	nameVal, _ := m["name"]
-	name, _ := nameVal.(string)
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	statesVal, _ := m["states"]
-	properties, _ := statesVal.(map[string]interface{})
-
+	name, _ := m["name"].(string)
+	properties, _ := m["states"].(map[string]interface{})
 	b, _ := world.BlockByName(name, properties)
 	return b
 }
@@ -63,19 +58,17 @@ func readDamage(m map[string]interface{}, s *item.Stack, disk bool) {
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
 func readEnchantments(m map[string]interface{}, s *item.Stack) {
-	if enchantmentList, ok := m["ench"]; ok {
-		enchantments, ok := enchantmentList.([]map[string]interface{})
-		if !ok {
-			for _, e := range MapSlice(m, "ench") {
-				if v, ok := e.(map[string]interface{}); ok {
-					enchantments = append(enchantments, v)
-				}
+	enchantments, ok := m["ench"].([]map[string]interface{})
+	if !ok {
+		for _, e := range MapSlice(m, "ench") {
+			if v, ok := e.(map[string]interface{}); ok {
+				enchantments = append(enchantments, v)
 			}
 		}
-		for _, ench := range enchantments {
-			if e, ok := item.EnchantmentByID(int(MapInt16(ench, "id"))); ok {
-				*s = s.WithEnchantment(e.WithLevel(int(MapInt16(ench, "lvl"))))
-			}
+	}
+	for _, ench := range enchantments {
+		if e, ok := item.EnchantmentByID(int(MapInt16(ench, "id"))); ok {
+			*s = s.WithEnchantment(e.WithLevel(int(MapInt16(ench, "lvl"))))
 		}
 	}
 }
@@ -83,23 +76,19 @@ func readEnchantments(m map[string]interface{}, s *item.Stack) {
 // readDisplay reads the display data present in the display field in the NBT. It includes a custom name of the item
 // and the lore.
 func readDisplay(m map[string]interface{}, s *item.Stack) {
-	if displayInterface, ok := m["display"]; ok {
-		if display, ok := displayInterface.(map[string]interface{}); ok {
-			if _, ok := display["Name"]; ok {
-				// Only add the custom name if actually set.
-				*s = s.WithCustomName(MapString(display, "Name"))
+	if display, ok := m["display"].(map[string]interface{}); ok {
+		if name, ok := display["Name"].(string); ok {
+			// Only add the custom name if actually set.
+			*s = s.WithCustomName(name)
+		}
+		if lore, ok := display["Lore"].([]string); ok {
+			*s = s.WithLore(lore...)
+		} else if lore, ok := display["Lore"].([]interface{}); ok {
+			loreLines := make([]string, 0, len(lore))
+			for _, l := range lore {
+				loreLines = append(loreLines, l.(string))
 			}
-			if loreInterface, ok := display["Lore"]; ok {
-				if lore, ok := loreInterface.([]string); ok {
-					*s = s.WithLore(lore...)
-				} else if lore, ok := loreInterface.([]interface{}); ok {
-					loreLines := make([]string, 0, len(lore))
-					for _, l := range lore {
-						loreLines = append(loreLines, l.(string))
-					}
-					*s = s.WithLore(loreLines...)
-				}
-			}
+			*s = s.WithLore(loreLines...)
 		}
 	}
 }

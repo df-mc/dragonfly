@@ -5,63 +5,65 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// LightBlocks is a list of block light levels (0-15) indexed by block runtime IDs. The map is used to do a
-// fast lookup of block light.
-var LightBlocks = make([]uint8, 0, 7000)
+// SkyLight holds a light implementation that can be used for propagating sky light through a sub chunk.
+var SkyLight skyLight
 
-// FilteringBlocks is a map for checking if a block runtime ID filters light, and if so, how many levels.
-// Light is able to propagate through these blocks, but will have its level reduced.
-var FilteringBlocks = make([]uint8, 0, 7000)
+// BlockLight holds a light implementation that can be used for propagating block light through a sub chunk.
+var BlockLight blockLight
 
-// lightNode is a node pushed to the queue which is used to propagate light.
-type lightNode struct {
-	x, z  int8
-	y     int16
-	level uint8
-	first bool
+// light is a type that can be used to set and retrieve light of a specific type in a sub chunk.
+type light interface {
+	light(sub *SubChunk, x, y, z uint8) uint8
+	setLight(sub *SubChunk, x, y, z, v uint8)
 }
 
-// neighbours returns all neighbouring nodes of the current one.
-func (n lightNode) neighbours() []lightNode {
-	neighbours := make([]lightNode, 6)
-	neighbours[0] = lightNode{x: n.x - 1, y: n.y, z: n.z}
-	neighbours[1] = lightNode{x: n.x + 1, y: n.y, z: n.z}
-	neighbours[2] = lightNode{x: n.x, y: n.y, z: n.z - 1}
-	neighbours[3] = lightNode{x: n.x, y: n.y, z: n.z + 1}
+type skyLight struct{}
 
-	if n.y == cube.MaxY {
-		neighbours[4] = lightNode{x: n.x, y: n.y - 1, z: n.z}
-		return neighbours[:5]
-	} else if n.y == cube.MinY {
-		neighbours[4] = lightNode{x: n.x, y: n.y + 1, z: n.z}
-		return neighbours[:5]
-	}
-	neighbours[4] = lightNode{x: n.x, y: n.y + 1, z: n.z}
-	neighbours[5] = lightNode{x: n.x, y: n.y - 1, z: n.z}
+func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.SkyLightAt(x, y, z) }
+func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setSkyLight(x, y, z, v) }
 
-	return neighbours
-}
+type blockLight struct{}
+
+func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.blockLightAt(x, y, z) }
+func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setBlockLight(x, y, z, v) }
 
 // FillLight executes the light 'filling' stage, where the chunk is filled with light coming only from the
 // chunk itself, without light crossing chunk borders.
 func FillLight(c *Chunk) {
 	removeEmptySubChunks(c)
-	fillBlockLight(c)
-	fillSkyLight(c)
+	queue := list.New()
+
+	insertBlockLightNodes(queue, c)
+	for queue.Len() != 0 {
+		fillPropagate(queue, c, BlockLight)
+	}
+	insertSkyLightNodes(queue, c)
+	for queue.Len() != 0 {
+		fillPropagate(queue, c, SkyLight)
+	}
 }
 
 // SpreadLight executes the light 'spreading' stage, where the chunk has its light spread into the
 // neighbouring chunks. The neighbouring chunks must have passed the light 'filling' stage before this
 // function is called for a chunk.
 func SpreadLight(c *Chunk, neighbours []*Chunk) {
-	spreadBlockLight(c, neighbours)
-	spreadSkyLight(c, neighbours)
+	queue := list.New()
+	spreadLight(c, neighbours, queue, BlockLight)
+	spreadLight(c, neighbours, queue, SkyLight)
 
 	// Spreading light might create new sub chunks, but we don't want those as sky light might not be
 	// initially spread there.
 	removeEmptySubChunks(c)
 	for i := range neighbours {
 		removeEmptySubChunks(neighbours[i])
+	}
+}
+
+// spreadLight spreads the light from Chunk c into its neighbours. The nodes are added to the list.List passed.
+func spreadLight(c *Chunk, neighbours []*Chunk, queue *list.List, lt light) {
+	insertLightSpreadingNodes(queue, c, neighbours, lt)
+	for queue.Len() != 0 {
+		spreadPropagate(queue, c, neighbours, lt)
 	}
 }
 
@@ -83,61 +85,35 @@ func removeEmptySubChunks(c *Chunk) {
 	}
 }
 
-// spreadSkyLight spreads the sky light from the current chunk into the chunks around it. The neighbours are
-// in (-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1) order, with a total length of
-// 8 chunks (around the centre chunk).
-func spreadSkyLight(c *Chunk, neighbourChunks []*Chunk) {
-	queue := list.New()
-	insertSkyLightSpreadingNodes(queue, c, neighbourChunks)
-	for queue.Len() != 0 {
-		spreadPropagate(queue, c, neighbourChunks, true)
-	}
-}
-
-// spreadBlockLight spreads the block light from the current chunk into the chunks around it. The neighbours
-// are in (-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1) order, with a total length of
-// 8 chunks (around the centre chunk).
-func spreadBlockLight(c *Chunk, neighbourChunks []*Chunk) {
-	queue := list.New()
-	insertBlockLightSpreadingNodes(queue, c, neighbourChunks)
-	for queue.Len() != 0 {
-		spreadPropagate(queue, c, neighbourChunks, false)
-	}
-}
-
-// fillSkyLight fills the chunk passed with sky light that has its source only within the bounds of the chunk
-// passed.
-func fillSkyLight(c *Chunk) {
-	queue := list.New()
-	insertSkyLightNodes(queue, c)
-	for queue.Len() != 0 {
-		fillPropagate(queue, c, true)
-	}
-}
-
-// fillBlockLight fills the chunk passed with block light that has its source only within the bounds of the
-// chunk passed.
-func fillBlockLight(c *Chunk) {
-	queue := list.New()
-	if anyBlockLight(c) {
-		insertBlockLightNodes(queue, c)
-		for queue.Len() != 0 {
-			fillPropagate(queue, c, false)
-		}
-	}
-}
-
-// anyBlockLight checks if there are any blocks in the Chunk passed that emit light.
-func anyBlockLight(c *Chunk) bool {
-	for _, sub := range c.sub {
-		if sub == nil {
+// insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
+// If one is found, a node is added for it to the node queue.
+func insertBlockLightNodes(queue *list.List, c *Chunk) {
+	for index, sub := range c.sub {
+		// Potential fast path out: We first check the palette to see if there are any blocks that emit light in the
+		// block storage. If not, we don't need to iterate the full storage.
+		if sub == nil || !anyBlockLight(sub) {
 			continue
 		}
-		for _, layer := range sub.storages {
-			for _, id := range layer.palette.blockRuntimeIDs {
-				if LightBlocks[id] != 0 {
-					return true
+		baseY := subY(int16(index))
+		for y := uint8(0); y < 16; y++ {
+			actualY := int16(y) + baseY
+			for x := uint8(0); x < 16; x++ {
+				for z := uint8(0); z < 16; z++ {
+					if level := highestEmissionLevel(sub, x, y, z); level > 0 {
+						queue.PushBack(lightNode{x: int8(x), z: int8(z), y: actualY, level: level})
+					}
 				}
+			}
+		}
+	}
+}
+
+// anyBlockLight checks if there are any blocks in the SubChunk passed that emit light.
+func anyBlockLight(sub *SubChunk) bool {
+	for _, layer := range sub.storages {
+		for _, id := range layer.palette.blockRuntimeIDs {
+			if LightBlocks[id] != 0 {
+				return true
 			}
 		}
 	}
@@ -204,30 +180,9 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 	}
 }
 
-// insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
-// If one is found, a node is added for it to the node queue.
-func insertBlockLightNodes(queue *list.List, c *Chunk) {
-	for index, sub := range c.sub {
-		if sub == nil {
-			continue
-		}
-		baseY := subY(int16(index))
-		for y := uint8(0); y < 16; y++ {
-			actualY := int16(y) + baseY
-			for x := uint8(0); x < 16; x++ {
-				for z := uint8(0); z < 16; z++ {
-					if level := highestEmissionLevel(sub, x, y, z); level > 0 {
-						queue.PushBack(lightNode{x: int8(x), z: int8(z), y: actualY, level: level})
-					}
-				}
-			}
-		}
-	}
-}
-
-// insertSkyLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
+// insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
-func insertSkyLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk) {
+func insertLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk, lt light) {
 	for index, sub := range c.sub {
 		if sub == nil {
 			continue
@@ -240,7 +195,7 @@ func insertSkyLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chun
 					if z != 0 && z != 15 && x != 0 && x != 15 {
 						break
 					}
-					l := sub.SkyLightAt(x, y, z)
+					l := lt.light(sub, x, y, z)
 					if l <= 1 {
 						// The light level was either 0 or 1, meaning it cannot propagate either way.
 						continue
@@ -248,76 +203,26 @@ func insertSkyLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chun
 					nodeNeeded := false
 					if x == 0 {
 						subNeighbour := neighbours[1].sub[index]
-						if subNeighbour != nil && subNeighbour.SkyLightAt(15, y, z) < l {
+						if subNeighbour != nil && lt.light(subNeighbour, 15, y, z) < l {
 							nodeNeeded = true
 						}
 					} else if x == 15 {
 						subNeighbour := neighbours[6].sub[index]
-						if subNeighbour != nil && subNeighbour.SkyLightAt(0, y, z) < l {
+						if subNeighbour != nil && lt.light(subNeighbour, 0, y, z) < l {
 							nodeNeeded = true
 						}
 					}
-					if z == 0 {
-						subNeighbour := neighbours[3].sub[index]
-						if subNeighbour != nil && subNeighbour.SkyLightAt(x, y, 15) < l {
-							nodeNeeded = true
-						}
-					} else if z == 15 {
-						subNeighbour := neighbours[4].sub[index]
-						if subNeighbour != nil && subNeighbour.SkyLightAt(x, y, 0) < l {
-							nodeNeeded = true
-						}
-					}
-					if nodeNeeded {
-						queue.PushBack(lightNode{x: int8(x), y: totalY, z: int8(z), level: l, first: true})
-					}
-				}
-			}
-		}
-	}
-}
-
-// insertSkyLightSpreadingNodes inserts block light nodes into the node queue passed which, when propagated,
-// will spread into the neighbouring chunks.
-func insertBlockLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk) {
-	for index, sub := range c.sub {
-		if sub == nil {
-			continue
-		}
-		baseY := subY(int16(index))
-		for y := uint8(0); y < 16; y++ {
-			totalY := int16(y) + baseY
-			for x := uint8(0); x < 16; x++ {
-				for z := uint8(0); z < 16; z++ {
-					if z != 0 && z != 15 && x != 0 && x != 15 {
-						break
-					}
-					l := sub.blockLightAt(x, y, z)
-					if l <= 1 {
-						// The light level was either 0 or 1, meaning it cannot propagate either way.
-						continue
-					}
-					nodeNeeded := false
-					if x == 0 {
-						subNeighbour := neighbours[1].sub[index]
-						if subNeighbour != nil && subNeighbour.blockLightAt(15, y, z) < l {
-							nodeNeeded = true
-						}
-					} else if x == 15 {
-						subNeighbour := neighbours[6].sub[index]
-						if subNeighbour != nil && subNeighbour.blockLightAt(0, y, z) < l {
-							nodeNeeded = true
-						}
-					}
-					if z == 0 {
-						subNeighbour := neighbours[3].sub[index]
-						if subNeighbour != nil && subNeighbour.blockLightAt(x, y, 15) < l {
-							nodeNeeded = true
-						}
-					} else if z == 15 {
-						subNeighbour := neighbours[4].sub[index]
-						if subNeighbour != nil && subNeighbour.blockLightAt(x, y, 0) < l {
-							nodeNeeded = true
+					if !nodeNeeded {
+						if z == 0 {
+							subNeighbour := neighbours[3].sub[index]
+							if subNeighbour != nil && lt.light(subNeighbour, x, y, 15) < l {
+								nodeNeeded = true
+							}
+						} else if z == 15 {
+							subNeighbour := neighbours[4].sub[index]
+							if subNeighbour != nil && lt.light(subNeighbour, x, y, 0) < l {
+								nodeNeeded = true
+							}
 						}
 					}
 					if nodeNeeded {
@@ -331,41 +236,25 @@ func insertBlockLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Ch
 
 // spreadPropagate propagates a sky light node in the queue past through the chunk passed and its neighbours,
 // unlike fillPropagate, which only propagates within the chunk.
-func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, skylight bool) {
+func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, lt light) {
 	node := queue.Remove(queue.Front()).(lightNode)
 
 	x, y, z := uint8(node.x&0xf), node.y, uint8(node.z&0xf)
 	yLocal := uint8(y & 0xf)
 	sub := subByY(y, chunkByNode(node, c, neighbourChunks))
 
-	if skylight {
-		if !node.first {
-			filter := filterLevel(sub, x, yLocal, z) + 1
-			if filter >= node.level {
-				return
-			}
-			node.level -= filter
-			if sub.SkyLightAt(x, yLocal, z) >= node.level {
-				// This neighbour already had either as high of a level as what we're updating it to, or
-				// higher already, so spreading it further is pointless as that will already have been done.
-				return
-			}
-			sub.setSkyLight(x, yLocal, z, node.level)
+	if !node.first {
+		filter := filterLevel(sub, x, yLocal, z) + 1
+		if filter >= node.level {
+			return
 		}
-	} else {
-		if !node.first {
-			filter := filterLevel(sub, x, yLocal, z) + 1
-			if filter >= node.level {
-				return
-			}
-			node.level -= filter
-			if sub.blockLightAt(x, yLocal, z) >= node.level {
-				// This neighbour already had either as high of a level as what we're updating it to, or
-				// higher already, so spreading it further is pointless as that will already have been done.
-				return
-			}
-			sub.setBlockLight(x, yLocal, z, node.level)
+		node.level -= filter
+		if lt.light(sub, x, yLocal, z) >= node.level {
+			// This neighbour already had either as high of a level as what we're updating it to, or
+			// higher already, so spreading it further is pointless as that will already have been done.
+			return
 		}
+		lt.setLight(sub, x, yLocal, z, node.level)
 	}
 	for _, neighbour := range node.neighbours() {
 		neighbour.level = node.level
@@ -375,28 +264,19 @@ func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, skyli
 
 // fillPropagate propagates a sky light node in the node queue passed within the chunk itself. It does not
 // spread the light beyond the chunk.
-func fillPropagate(queue *list.List, c *Chunk, skyLight bool) {
+func fillPropagate(queue *list.List, c *Chunk, lt light) {
 	node := queue.Remove(queue.Front()).(lightNode)
 
 	x, y, z := uint8(node.x), node.y, uint8(node.z)
 	yLocal := uint8(y & 0xf)
 	sub := subByY(y, c)
 
-	if skyLight {
-		if sub.SkyLightAt(x, yLocal, z) >= node.level {
-			// This neighbour already had either as high of a level as what we're updating it to, or
-			// higher already, so spreading it further is pointless as that will already have been done.
-			return
-		}
-		sub.setSkyLight(x, yLocal, z, node.level)
-	} else {
-		if sub.blockLightAt(x, yLocal, z) >= node.level {
-			// This neighbour already had either as high of a level as what we're updating it to, or
-			// higher already, so spreading it further is pointless as that will already have been done.
-			return
-		}
-		sub.setBlockLight(x, yLocal, z, node.level)
+	if lt.light(sub, x, yLocal, z) >= node.level {
+		// This neighbour already had either as high of a level as what we're updating it to, or
+		// higher already, so spreading it further is pointless as that will already have been done.
+		return
 	}
+	lt.setLight(sub, x, yLocal, z, node.level)
 
 	// If the level is 1 or lower, it won't be able to propagate any further.
 	if node.level > 1 {
@@ -414,6 +294,43 @@ func fillPropagate(queue *list.List, c *Chunk, skyLight bool) {
 			queue.PushBack(neighbour)
 		}
 	}
+}
+
+// LightBlocks is a list of block light levels (0-15) indexed by block runtime IDs. The map is used to do a
+// fast lookup of block light.
+var LightBlocks = make([]uint8, 0, 7000)
+
+// FilteringBlocks is a map for checking if a block runtime ID filters light, and if so, how many levels.
+// Light is able to propagate through these blocks, but will have its level reduced.
+var FilteringBlocks = make([]uint8, 0, 7000)
+
+// lightNode is a node pushed to the queue which is used to propagate light.
+type lightNode struct {
+	x, z  int8
+	y     int16
+	level uint8
+	first bool
+}
+
+// neighbours returns all neighbouring nodes of the current one.
+func (n lightNode) neighbours() []lightNode {
+	neighbours := make([]lightNode, 6)
+	neighbours[0] = lightNode{x: n.x - 1, y: n.y, z: n.z}
+	neighbours[1] = lightNode{x: n.x + 1, y: n.y, z: n.z}
+	neighbours[2] = lightNode{x: n.x, y: n.y, z: n.z - 1}
+	neighbours[3] = lightNode{x: n.x, y: n.y, z: n.z + 1}
+
+	if n.y == cube.MaxY {
+		neighbours[4] = lightNode{x: n.x, y: n.y - 1, z: n.z}
+		return neighbours[:5]
+	} else if n.y == cube.MinY {
+		neighbours[4] = lightNode{x: n.x, y: n.y + 1, z: n.z}
+		return neighbours[:5]
+	}
+	neighbours[4] = lightNode{x: n.x, y: n.y + 1, z: n.z}
+	neighbours[5] = lightNode{x: n.x, y: n.y - 1, z: n.z}
+
+	return neighbours
 }
 
 // subByY returns a sub chunk in the chunk passed by a Y value. If one doesn't yet exist, it is created.

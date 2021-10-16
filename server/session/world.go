@@ -135,9 +135,17 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	s.chunkBuf.Reset()
 }
 
+// entityHidden checks if a world.Entity is being explicitly hidden from the Session.
+func (s *Session) entityHidden(e world.Entity) bool {
+	s.entityMutex.RLock()
+	_, ok := s.hiddenEntities[e]
+	s.entityMutex.RUnlock()
+	return ok
+}
+
 // ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
-	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID || s.entityHidden(e) {
 		return
 	}
 	var runtimeID uint64
@@ -245,8 +253,7 @@ func (s *Session) HideEntity(e world.Entity) {
 // ViewEntityMovement ...
 func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool) {
 	id := s.entityRuntimeID(e)
-
-	if id == selfEntityRuntimeID {
+	if id == selfEntityRuntimeID || s.entityHidden(e) {
 		return
 	}
 
@@ -276,6 +283,9 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, yaw, pitch 
 
 // ViewEntityVelocity ...
 func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
+	if s.entityHidden(e) {
+		return
+	}
 	s.writePacket(&packet.SetActorMotion{
 		EntityRuntimeID: s.entityRuntimeID(e),
 		Velocity:        vec64To32(velocity),
@@ -303,6 +313,9 @@ func (s *Session) ViewTime(time int) {
 // ViewEntityTeleport ...
 func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
+	if s.entityHidden(e) {
+		return
+	}
 
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
@@ -337,7 +350,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 // ViewEntityItems ...
 func (s *Session) ViewEntityItems(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
-	if runtimeID == selfEntityRuntimeID {
+	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
@@ -364,7 +377,7 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 // ViewEntityArmour ...
 func (s *Session) ViewEntityArmour(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
-	if runtimeID == selfEntityRuntimeID {
+	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
@@ -608,6 +621,9 @@ func (s *Session) ViewEntityState(e world.Entity) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
+	if s.containerOpened.Load() && s.openedPos.Load() == pos {
+		return
+	}
 	s.closeCurrentContainer()
 
 	b := s.c.World().Block(pos)
