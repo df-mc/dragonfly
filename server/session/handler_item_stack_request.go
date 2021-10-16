@@ -393,12 +393,16 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
 	}
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return fmt.Errorf("slot pointed to inventory with id %v, but inventory could not be found", slot.ContainerID)
+	}
 
 	i, err := h.itemInSlot(slot, s)
 	if err != nil {
 		return err
 	}
-	clientID, err := h.resolveID(s, slot)
+	clientID, err := h.resolveID(inv, slot)
 	if err != nil {
 		return err
 	}
@@ -413,17 +417,13 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 // resolveID resolves the stack network ID in the slot passed. If it is negative, it points to an earlier
 // request, in which case it will look it up in the changes of an earlier response to a request to find the
 // actual stack network ID in the slot. If it is positive, the ID will be returned again.
-func (h *ItemStackRequestHandler) resolveID(s *Session, slot protocol.StackRequestSlotInfo) (int32, error) {
+func (h *ItemStackRequestHandler) resolveID(inv *inventory.Inventory, slot protocol.StackRequestSlotInfo) (int32, error) {
 	if slot.StackNetworkID >= 0 {
 		return slot.StackNetworkID, nil
 	}
 	containerChanges, ok := h.responseChanges[slot.StackNetworkID]
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v, but request could not be found", slot.StackNetworkID)
-	}
-	inv, ok := s.invByID(int32(slot.ContainerID))
-	if !ok {
-		return 0, fmt.Errorf("slot pointed to inventory with id %v, but inventory could not be found", slot.ContainerID)
 	}
 	changes, ok := containerChanges[inv]
 	if !ok {
