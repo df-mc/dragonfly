@@ -52,6 +52,7 @@ type Session struct {
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
+	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot         *atomic.Uint32
@@ -136,6 +137,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
+		hiddenEntities:         map[world.Entity]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),

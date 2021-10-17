@@ -505,7 +505,7 @@ func (p *Player) fall(fallDistance float64) {
 		return
 	}
 
-	p.Hurt(p.FinalDamageFrom(math.Ceil(fallDamage), damage.SourceFall{}), damage.SourceFall{})
+	p.Hurt(math.Ceil(fallDamage), damage.SourceFall{})
 }
 
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
@@ -866,11 +866,15 @@ func (p *Player) StopSprinting() {
 // anything.
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
-	if !p.sneaking.CAS(false, true) {
-		return
-	}
-	p.StopSprinting()
-	p.updateState()
+	ctx := event.C()
+	p.handler().HandleToggleSneak(ctx, true)
+	ctx.Continue(func() {
+		if !p.sneaking.CAS(false, true) {
+			return
+		}
+		p.StopSprinting()
+		p.updateState()
+	})
 }
 
 // Sneaking checks if the player is currently sneaking.
@@ -881,10 +885,14 @@ func (p *Player) Sneaking() bool {
 // StopSneaking makes a player stop sneaking if it currently is. If the player is not sneaking, StopSneaking
 // will not do anything.
 func (p *Player) StopSneaking() {
-	if !p.sneaking.CAS(true, false) {
-		return
-	}
-	p.updateState()
+	ctx := event.C()
+	p.handler().HandleToggleSneak(ctx, false)
+	ctx.Continue(func() {
+		if !p.sneaking.CAS(true, false) {
+			return
+		}
+		p.updateState()
+	})
 }
 
 // StartSwimming makes the player start swimming if it is not currently doing so. If the player is sneaking
@@ -1328,6 +1336,10 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 
 		p.breaking.Store(true)
 
+		if p.GameMode().CreativeInventory() {
+			return
+		}
+
 		p.SwingArm()
 
 		breakTime := p.breakTime(pos)
@@ -1744,10 +1756,25 @@ func (p *Player) Drop(s item.Stack) (n int) {
 // present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.
 func (p *Player) OpenBlockContainer(pos cube.Pos) {
-	if p.session() == session.Nop {
-		return
+	if p.session() != session.Nop {
+		p.session().OpenBlockContainer(pos)
 	}
-	p.session().OpenBlockContainer(pos)
+}
+
+// HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
+// made visible again through a call to ShowEntity.
+func (p *Player) HideEntity(e world.Entity) {
+	if p.session() != session.Nop {
+		p.session().StopShowingEntity(e)
+	}
+}
+
+// ShowEntity shows a world.Entity previously hidden from the Player using HideEntity. It does nothing if the entity
+// wasn't currently hidden.
+func (p *Player) ShowEntity(e world.Entity) {
+	if p.session() != session.Nop {
+		p.session().StartShowingEntity(e)
+	}
 }
 
 // Latency returns a rolling average of latency between the sending and the receiving end of the connection of

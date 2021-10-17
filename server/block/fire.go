@@ -187,7 +187,7 @@ func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
 	below := w.Block(pos.Side(cube.FaceDown))
-	if !below.Model().FaceSolid(pos, cube.FaceUp, w) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
+	if diffuser, ok := below.(LightDiffuser); (ok && diffuser.LightDiffusionLevel() != 15) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
 		w.BreakBlockWithoutParticles(pos)
 		return
 	}

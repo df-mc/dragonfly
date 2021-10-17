@@ -43,6 +43,13 @@ func MapByte(m map[string]interface{}, key string) byte {
 	return b
 }
 
+// MapFloat32 reads an float32 from a map at the key passed.
+//noinspection GoCommentLeadingSpace
+func MapFloat32(m map[string]interface{}, key string) float32 {
+	b, _ := m[key].(float32)
+	return b
+}
+
 // MapVec3 converts x, y and z values in an NBT map to an mgl64.Vec3.
 func MapVec3(x map[string]interface{}, k string) mgl64.Vec3 {
 	if i, ok := x[k].([]interface{}); ok {

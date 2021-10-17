@@ -28,6 +28,8 @@ func init() {
 
 	world.RegisterItem(Shears{})
 
+	world.RegisterItem(Snowball{})
+
 	world.RegisterItem(Diamond{})
 	world.RegisterItem(GlowstoneDust{})
 	world.RegisterItem(LapisLazuli{})

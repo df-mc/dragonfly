@@ -25,6 +25,9 @@ type Handler interface {
 	// HandleToggleSprint handles when the player starts or stops sprinting.
 	// After is true if the player is sprinting after toggling (changing their sprinting state).
 	HandleToggleSprint(ctx *event.Context, after bool)
+	// HandleToggleSneak handles when the player starts or stops sneaking.
+	// After is true if the player is sneaking after toggling (changing their sneaking state).
+	HandleToggleSneak(ctx *event.Context, after bool)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
@@ -131,6 +134,9 @@ func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
 
 // HandleToggleSprint ...
 func (NopHandler) HandleToggleSprint(*event.Context, bool) {}
+
+// HandleToggleSneak ...
+func (NopHandler) HandleToggleSneak(*event.Context, bool) {}
 
 // HandleCommandExecution ...
 func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) {}
