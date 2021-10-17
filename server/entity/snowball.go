@@ -18,6 +18,8 @@ type Snowball struct {
 
 	ticksLived int
 
+	closeNextTick bool
+
 	owner world.Entity
 
 	c *ProjectileComputer
@@ -64,6 +66,10 @@ func (s *Snowball) Rotation() (float64, float64) {
 
 // Tick ...
 func (s *Snowball) Tick(current int64) {
+	if s.closeNextTick {
+		_ = s.Close()
+		return
+	}
 	var result trace.Result
 	s.mu.Lock()
 	if s.ticksLived < 5 {
@@ -76,7 +82,7 @@ func (s *Snowball) Tick(current int64) {
 	s.mu.Unlock()
 
 	if pos[1] < cube.MinY && current%10 == 0 {
-		_ = s.Close()
+		s.closeNextTick = true
 		return
 	}
 
@@ -93,7 +99,7 @@ func (s *Snowball) Tick(current int64) {
 			}
 		}
 
-		_ = s.Close()
+		s.closeNextTick = true
 	}
 }
 
