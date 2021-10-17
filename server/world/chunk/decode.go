@@ -89,12 +89,20 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error
 			return nil, err
 		}
 		sub.storages = append(sub.storages, storage)
-	case 8:
+	case 8, 9:
 		// Version 8 allows up to 256 layers for one sub chunk.
 		storageCount, err := buf.ReadByte()
 		if err != nil {
 			return nil, fmt.Errorf("error reading storage count: %w", err)
 		}
+		if ver == 9 {
+			// Data driven dimension heights. This is useless right now.
+			_, err = buf.ReadByte()
+			if err != nil {
+				return nil, fmt.Errorf("error reading data driven dimension heights: %w", err)
+			}
+		}
+
 		sub.storages = make([]*BlockStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
@@ -104,6 +112,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error
 			}
 		}
 	}
+
 	return sub, nil
 }
 
