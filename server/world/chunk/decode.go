@@ -99,7 +99,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error
 			// Absolute index for data driven dimension heights. This is useless right now.
 			_, err = buf.ReadByte()
 			if err != nil {
-				return nil, fmt.Errorf("error reading data driven dimension heights: %w", err)
+				return nil, fmt.Errorf("error reading absolute index: %w", err)
 			}
 		}
 
