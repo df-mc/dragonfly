@@ -52,7 +52,7 @@ func (s *Snowball) EncodeEntity() string {
 
 // AABB ...
 func (s *Snowball) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{0.25, 0.25, 0.25})
+	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
 }
 
 // Rotation ...
