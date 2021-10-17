@@ -451,6 +451,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
+	case particle.EndermanTeleportParticle:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleEndermanTeleport,
+			Position:  vec64To32(pos),
+		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleEvaporateWater,
@@ -480,6 +485,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundDoorCrash,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
 	case sound.Thunder:
@@ -489,11 +495,19 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundClick,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.Pop:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundPop,
 			Position:  vec64To32(pos),
 		})
+		return
+	case sound.EndermanTeleport:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundEndermanTeleport,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:

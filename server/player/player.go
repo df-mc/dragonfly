@@ -77,6 +77,9 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
+	coolDowns  map[itemHash]time.Time
+	coolDownMu sync.Mutex
+
 	speed    atomic.Float64
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
@@ -104,21 +107,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:     uuid.New(),
-		offHand:  inventory.New(1, p.broadcastItems),
-		armour:   inventory.NewArmour(p.broadcastArmour),
-		hunger:   newHungerManager(),
-		health:   entity.NewHealthManager(),
-		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeAdventure{},
-		h:        NopHandler{},
-		name:     name,
-		skin:     skin,
-		speed:    *atomic.NewFloat64(0.1),
-		nameTag:  *atomic.NewString(name),
-		heldSlot: atomic.NewUint32(0),
-		locale:   language.BritishEnglish,
-		scale:    *atomic.NewFloat64(1),
+		coolDowns: make(map[itemHash]time.Time),
+		uuid:      uuid.New(),
+		offHand:   inventory.New(1, p.broadcastItems),
+		armour:    inventory.NewArmour(p.broadcastArmour),
+		hunger:    newHungerManager(),
+		health:    entity.NewHealthManager(),
+		effects:   entity.NewEffectManager(),
+		gameMode:  world.GameModeAdventure{},
+		h:         NopHandler{},
+		name:      name,
+		skin:      skin,
+		speed:     *atomic.NewFloat64(0.1),
+		nameTag:   *atomic.NewString(name),
+		heldSlot:  atomic.NewUint32(0),
+		locale:    language.BritishEnglish,
+		scale:     *atomic.NewFloat64(1),
 	}
 	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
@@ -1069,6 +1073,46 @@ func (p *Player) GameMode() world.GameMode {
 	return mode
 }
 
+// itemHash is used as a hash for a world.Item.
+type itemHash struct {
+	// Name is the name of the item.
+	Name string
+	// Meta is the item's metadata value.
+	Meta int16
+}
+
+// hashFromItem returns an item hash from an item.
+func hashFromItem(item world.Item) itemHash {
+	name, meta := item.EncodeItem()
+	return itemHash{
+		Name: name,
+		Meta: meta,
+	}
+}
+
+// coolDownItem represents an item that has a cool down.
+type coolDownItem interface {
+	// CoolDown is the duration of the cooldown.
+	CoolDown() time.Duration
+}
+
+// HasCoolDown returns true if the item passed has an active cool down.
+func (p *Player) HasCoolDown(item world.Item) bool {
+	p.coolDownMu.Lock()
+	defer p.coolDownMu.Unlock()
+
+	_, ok := p.coolDowns[hashFromItem(item)]
+	return ok
+}
+
+// SetCoolDown sets a cool down for an item.
+func (p *Player) SetCoolDown(item world.Item, coolDown time.Duration) {
+	p.coolDownMu.Lock()
+	defer p.coolDownMu.Unlock()
+
+	p.coolDowns[hashFromItem(item)] = time.Now().Add(coolDown)
+}
+
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
@@ -1081,8 +1125,17 @@ func (p *Player) UseItem() {
 	p.handler().HandleItemUse(ctx)
 
 	ctx.Continue(func() {
+		it := i.Item()
 		w := p.World()
-		switch usable := i.Item().(type) {
+		if p.HasCoolDown(it) {
+			return
+		}
+
+		if coolDown, ok := it.(coolDownItem); ok {
+			p.SetCoolDown(it, coolDown.CoolDown())
+		}
+
+		switch usable := it.(type) {
 		case item.Usable:
 			ctx := &item.UseContext{}
 			if usable.Use(w, p, ctx) {
@@ -1810,6 +1863,16 @@ func (p *Player) Tick(current int64) {
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
 			p.Hurt(1, damage.SourceFireTick{})
 		}
+	}
+
+	if len(p.coolDowns) > 0 {
+		p.coolDownMu.Lock()
+		for it, ti := range p.coolDowns {
+			if time.Now().After(ti) {
+				delete(p.coolDowns, it)
+			}
+		}
+		p.coolDownMu.Unlock()
 	}
 
 	if current%4 == 0 && p.usingItem.Load() {
