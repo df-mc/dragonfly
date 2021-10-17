@@ -8,4 +8,5 @@ func init() {
 	world.RegisterEntity(&Text{})
 	world.RegisterEntity(&FallingBlock{})
 	world.RegisterEntity(&Item{})
+	world.RegisterEntity(&Snowball{})
 }

@@ -41,7 +41,7 @@ func (r EntityResult) Entity() world.Entity {
 // EntityIntercept returns an EntityResult with the entity collided with and with the colliding vector closest to the start position,
 // if no colliding point was found, a zero BlockResult is returned ok is false.
 func EntityIntercept(e world.Entity, start, end mgl64.Vec3) (result EntityResult, ok bool) {
-	bb := e.AABB().Translate(e.Position()).Grow(-3.0)
+	bb := e.AABB().Translate(e.Position()).Grow(0.3)
 
 	r, ok := AABBIntercept(bb, start, end)
 	if !ok {
