@@ -1,7 +1,6 @@
 package item
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"time"
@@ -19,13 +18,11 @@ func (EnderPearl) CoolDown() time.Duration {
 func (e EnderPearl) Use(w *world.World, user User, ctx *UseContext) bool {
 	pearl, ok := world.EntityByName("minecraft:ender_pearl")
 	if !ok {
-		fmt.Println("pearl dont exist")
 		return false
 	}
 
 	p, ok := pearl.(projectile)
 	if !ok {
-		fmt.Println("pearl aint projectile")
 		return false
 	}
 
