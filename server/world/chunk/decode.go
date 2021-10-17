@@ -90,7 +90,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error
 		}
 		sub.storages = append(sub.storages, storage)
 	case 8, 9:
-		// Version 8 allows up to 256 layers for one sub chunk.
+		// Version 8 and 9 allow for up to 256 layers for one sub chunk.
 		storageCount, err := buf.ReadByte()
 		if err != nil {
 			return nil, fmt.Errorf("error reading storage count: %w", err)
