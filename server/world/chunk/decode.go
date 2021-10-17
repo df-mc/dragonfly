@@ -96,7 +96,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error
 			return nil, fmt.Errorf("error reading storage count: %w", err)
 		}
 		if ver == 9 {
-			// Data driven dimension heights. This is useless right now.
+			// Absolute index for data driven dimension heights. This is useless right now.
 			_, err = buf.ReadByte()
 			if err != nil {
 				return nil, fmt.Errorf("error reading data driven dimension heights: %w", err)
