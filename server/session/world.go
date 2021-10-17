@@ -543,6 +543,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			break
 		}
 		pk.SoundType = packet.SoundEventBucketEmptyLava
+	case sound.ItemThrow:
+		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
 	}
 	s.writePacket(pk)
 }
