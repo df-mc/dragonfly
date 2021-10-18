@@ -151,19 +151,19 @@ func (s Stack) Item() world.Item {
 	return s.item
 }
 
-// Tool checks if the stack is a tool
+// Tool checks if the stack is a tool.
 func (s Stack) Tool() bool {
 	_, ok := s.Item().(tool.Tool)
 	return ok
 }
 
-// Armour checks if the stack is an armour
+// Armour checks if the stack is an armour.
 func (s Stack) Armour() bool {
 	_, ok := s.Item().(armour.Armour)
 	return ok
 }
 
-// Sword checks if the stack is a sword
+// Sword checks if the stack is a sword.
 func (s Stack) Sword() bool {
 	_, ok := s.Item().(Sword)
 	return ok
