@@ -2,6 +2,8 @@ package item
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/item/armour"
+	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"strings"
@@ -147,6 +149,24 @@ func (s Stack) Item() world.Item {
 		return nil
 	}
 	return s.item
+}
+
+// Tool checks if the stack is a tool
+func (s Stack) Tool() bool {
+	_, ok := s.Item().(tool.Tool)
+	return ok
+}
+
+// Armour checks if the stack is an armour
+func (s Stack) Armour() bool {
+	_, ok := s.Item().(armour.Armour)
+	return ok
+}
+
+// Sword checks if the stack is a sword
+func (s Stack) Sword() bool {
+	_, ok := s.Item().(Sword)
+	return ok
 }
 
 // AttackDamage returns the attack damage of the stack. By default, the value returned is 2.0. If the item

@@ -3,7 +3,6 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 )
@@ -43,6 +42,5 @@ func (e Unbreaking) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Unbreaking) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(tool.Tool)
-	return ok && t.ToolType() == tool.TypePickaxe
+	return s.Armour() || s.Sword() || s.Tool()
 }
