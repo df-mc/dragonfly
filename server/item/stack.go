@@ -2,7 +2,6 @@ package item
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
@@ -154,18 +153,6 @@ func (s Stack) Item() world.Item {
 // Tool checks if the stack is a tool.
 func (s Stack) Tool() bool {
 	_, ok := s.Item().(tool.Tool)
-	return ok
-}
-
-// Armour checks if the stack is an armour.
-func (s Stack) Armour() bool {
-	_, ok := s.Item().(armour.Armour)
-	return ok
-}
-
-// Sword checks if the stack is a sword.
-func (s Stack) Sword() bool {
-	_, ok := s.Item().(Sword)
 	return ok
 }
 

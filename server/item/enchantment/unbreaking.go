@@ -42,5 +42,6 @@ func (e Unbreaking) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Unbreaking) CompatibleWith(s item.Stack) bool {
-	return s.Armour() || s.Sword() || s.Tool()
+	_, ok := s.Item().(item.Durable)
+	return ok
 }
