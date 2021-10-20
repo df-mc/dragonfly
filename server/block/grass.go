@@ -12,6 +12,7 @@ type Grass struct {
 }
 
 // plantSelection are the plants that are picked from when a bone meal is attempted.
+// TODO: Base plant selection on current biome.
 var plantSelection = []world.Block{
 	Flower{Type: OxeyeDaisy()},
 	Flower{Type: PinkTulip()},
