@@ -13,7 +13,7 @@ import (
 // and may be used for behaviour in the Command.
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
-// float32, float64, string, bool, mgl64.Vec3, Varargs, []Target
+// float32, float64, string, bool, mgl64.Vec3, Varargs, Target, []Target
 // or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
@@ -310,6 +310,9 @@ func getTypeName(i interface{}) string {
 	case mgl64.Vec3:
 		return "x y z"
 	case []Target:
+		return "target"
+	}
+	if reflect.TypeOf(i) == reflect.TypeOf(Target(nil)) {
 		return "target"
 	}
 	if param, ok := i.(Parameter); ok {

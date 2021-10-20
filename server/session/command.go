@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"reflect"
 )
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
@@ -91,7 +92,7 @@ func valueToParamType(i interface{}, source cmd.Source) (t uint32, enum protocol
 		return protocol.CommandArgTypeString, enum
 	case cmd.Varargs:
 		return protocol.CommandArgTypeRawText, enum
-	case cmd.Target, []cmd.Target:
+	case []cmd.Target:
 		return protocol.CommandArgTypeTarget, enum
 	case bool:
 		return 0, protocol.CommandEnum{
@@ -100,6 +101,9 @@ func valueToParamType(i interface{}, source cmd.Source) (t uint32, enum protocol
 		}
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
+	}
+	if reflect.TypeOf(i) == reflect.TypeOf(cmd.Target(nil)) {
+		return protocol.CommandArgTypeTarget, enum
 	}
 	if sub, ok := i.(cmd.SubCommand); ok {
 		return 0, protocol.CommandEnum{

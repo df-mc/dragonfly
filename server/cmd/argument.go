@@ -92,6 +92,10 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 	case []Target:
 		err = p.targets(line, v)
 	default:
+		if reflect.TypeOf(i) == reflect.TypeOf(Target(nil)) {
+			err = p.target(line, v)
+			break
+		}
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
 			break
@@ -236,6 +240,24 @@ func (p parser) vec3(line *Line, v reflect.Value) error {
 // varargs ...
 func (p parser) varargs(line *Line, v reflect.Value) error {
 	v.SetString(strings.Join(line.Leftover(), " "))
+	return nil
+}
+
+// target ...
+func (p parser) target(line *Line, v reflect.Value) error {
+	targets, err := p.parseTargets(line)
+	if err != nil {
+		return err
+	}
+	if len(targets) == 0 {
+		return fmt.Errorf("no target found")
+	}
+	line.Next()
+	if len(targets) != 1 {
+		arg, _ := line.Next()
+		return fmt.Errorf(`invalid argument "%v" for target parameter, must be a single target`, arg)
+	}
+	v.Set(reflect.ValueOf(targets[0]))
 	return nil
 }
 
