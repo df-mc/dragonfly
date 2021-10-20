@@ -830,13 +830,17 @@ func (p *Player) StartSprinting() {
 	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	if !p.sprinting.CAS(false, true) {
-		return
-	}
-	p.StopSneaking()
-	p.SetSpeed(p.Speed() * 1.3)
+	ctx := event.C()
+	p.handler().HandleToggleSprint(ctx, true)
+	ctx.Continue(func() {
+		if !p.sprinting.CAS(false, true) {
+			return
+		}
+		p.StopSneaking()
+		p.SetSpeed(p.Speed() * 1.3)
 
-	p.updateState()
+		p.updateState()
+	})
 }
 
 // Sprinting checks if the player is currently sprinting.
@@ -846,12 +850,16 @@ func (p *Player) Sprinting() bool {
 
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
 func (p *Player) StopSprinting() {
-	if !p.sprinting.CAS(true, false) {
-		return
-	}
-	p.SetSpeed(p.Speed() / 1.3)
+	ctx := event.C()
+	p.handler().HandleToggleSprint(ctx, false)
+	ctx.Continue(func() {
+		if !p.sprinting.CAS(true, false) {
+			return
+		}
+		p.SetSpeed(p.Speed() / 1.3)
 
-	p.updateState()
+		p.updateState()
+	})
 }
 
 // StartSneaking makes a player start sneaking. If the player is already sneaking, StartSneaking will not do
