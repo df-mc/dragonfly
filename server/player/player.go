@@ -510,24 +510,33 @@ func (p *Player) fall(fallDistance float64) {
 // If the final damage exceeds the health that the player currently has, the player is killed and will have to
 // respawn.
 // If the damage passed is negative, Hurt will not do anything.
-func (p *Player) Hurt(dmg float64, source damage.Source) {
-	if p.Dead() || dmg < 0 || !p.GameMode().AllowsTakingDamage() {
-		return
+// Hurt returns the final damage dealt to the Player and if the Player was vulnerable to this kind of damage.
+func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
+	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
+		return 0, false
 	}
 	for _, e := range p.Effects() {
 		if _, ok := e.Type().(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
-			return
+			return 0, false
 		}
 	}
-
-	ctx := event.C()
+	var (
+		ctx        = event.C()
+		vulnerable = false
+		n          = 0.0
+	)
 	p.handler().HandleHurt(ctx, &dmg, source)
 
 	ctx.Continue(func() {
+		vulnerable = true
+		if dmg < 0 {
+			return
+		}
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
 		finalDamage := p.FinalDamageFrom(dmg, source)
+		n = finalDamage
 
 		a := p.absorption()
 		if a > 0 && (effect.Absorption{}).Absorbs(source) {
@@ -573,6 +582,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 			p.kill(source)
 		}
 	})
+	return n, vulnerable
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -1260,7 +1270,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 		p.StopSprinting()
 
-		healthBefore := living.Health()
 		damageDealt := i.AttackDamage()
 		for _, e := range p.Effects() {
 			if strength, ok := e.Type().(effect.Strength); ok {
@@ -1274,24 +1283,25 @@ func (p *Player) AttackEntity(e world.Entity) {
 			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
 		}
 
-		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
-
-		if mgl64.FloatEqual(healthBefore, living.Health()) {
+		n, vulnerable := living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
+		if mgl64.FloatEqual(n, 0) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
 		} else {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
+		}
+		if vulnerable {
 			p.Exhaust(0.1)
 			living.KnockBack(p.Position(), force, height)
-		}
 
-		if flammable, ok := living.(entity.Flammable); ok {
-			if f, ok := i.Enchantment(enchantment.FireAspect{}); ok {
-				flammable.SetOnFire((enchantment.FireAspect{}).Duration(f.Level()))
+			if flammable, ok := living.(entity.Flammable); ok {
+				if f, ok := i.Enchantment(enchantment.FireAspect{}); ok {
+					flammable.SetOnFire((enchantment.FireAspect{}).Duration(f.Level()))
+				}
 			}
-		}
 
-		if durable, ok := i.Item().(item.Durable); ok {
-			p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+			if durable, ok := i.Item().(item.Durable); ok {
+				p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+			}
 		}
 	})
 }
