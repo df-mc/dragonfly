@@ -307,9 +307,6 @@ func (p *Player) RemoveBossBar() {
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player and is formatted following the rules of fmt.Sprintln.
 func (p *Player) Chat(msg ...interface{}) {
-	if p.Dead() {
-		return
-	}
 	message := format(msg)
 	ctx := event.C()
 	p.handler().HandleChat(ctx, &message)
