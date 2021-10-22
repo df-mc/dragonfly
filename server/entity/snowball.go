@@ -72,11 +72,7 @@ func (s *Snowball) Tick(current int64) {
 	}
 	var result trace.Result
 	s.mu.Lock()
-	if s.ticksLived < 5 {
-		s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.owner)
-	} else {
-		s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch)
-	}
+	s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.ignores)
 	pos := s.pos
 	s.ticksLived++
 	s.mu.Unlock()
@@ -102,6 +98,12 @@ func (s *Snowball) Tick(current int64) {
 
 		s.closeNextTick = true
 	}
+}
+
+// ignores returns whether the snowball should ignore collision with the entity passed.
+func (s *Snowball) ignores(entity world.Entity) bool {
+	_, ok := entity.(Living)
+	return !ok || entity == s || (s.ticksLived < 5 && entity == s.owner)
 }
 
 // Launch creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,

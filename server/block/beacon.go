@@ -185,7 +185,7 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
 		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
 		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
-	))
+	), nil)
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
 			if primaryEff.Type() != nil {
