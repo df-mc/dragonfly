@@ -86,7 +86,10 @@ func (li *Lightning) Tick(_ int64) {
 		w.PlaySound(pos, sound.Explosion{})
 
 		bb := li.AABB().Translate(pos).Grow(3)
-		for _, e := range w.CollidingEntities(bb) {
+		for _, e := range w.EntitiesWithin(bb.Grow(8), nil) {
+			if !e.AABB().Translate(e.Position()).IntersectsWith(bb) {
+				continue
+			}
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
 				l.Hurt(5, damage.SourceLightning{})
@@ -100,9 +103,7 @@ func (li *Lightning) Tick(_ int64) {
 		}
 	}
 
-	li.state--
-
-	if li.state < 0 {
+	if li.state--; li.state < 0 {
 		if li.liveTime == 0 {
 			_ = li.Close()
 		} else if li.state < -rand.Intn(10) {

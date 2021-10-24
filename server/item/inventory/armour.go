@@ -92,8 +92,13 @@ func (a *Armour) Boots() item.Stack {
 	return i
 }
 
-// Items returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,
+// Slots returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,
 // boots.
+func (a *Armour) Slots() []item.Stack {
+	return a.inv.Slots()
+}
+
+// Items returns a slice of all non-empty armour items equipped.
 func (a *Armour) Items() []item.Stack {
 	return a.inv.Items()
 }

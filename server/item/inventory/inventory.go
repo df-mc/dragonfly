@@ -74,8 +74,9 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	return nil
 }
 
-// Items returns the full content of the inventory, copying all items into a new slice.
-func (inv *Inventory) Items() []item.Stack {
+// Slots returns the all slots in the inventory as a slice. The index in the slice is the slot of the inventory that a
+// specific item.Stack is in. Note that this item.Stack might be empty.
+func (inv *Inventory) Slots() []item.Stack {
 	r := make([]item.Stack, inv.Size())
 	inv.mu.RLock()
 	copy(r, inv.slots)
@@ -83,9 +84,23 @@ func (inv *Inventory) Items() []item.Stack {
 	return r
 }
 
+// Items returns a list of all contents of the inventory. This method excludes air items, so the method
+// only ever returns item stacks which actually represent an item.
+func (inv *Inventory) Items() []item.Stack {
+	contents := make([]item.Stack, 0, inv.Size())
+	inv.mu.RLock()
+	for _, it := range inv.slots {
+		if !it.Empty() {
+			contents = append(contents, it)
+		}
+	}
+	inv.mu.RUnlock()
+	return contents
+}
+
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
-	for slot, it := range inv.Items() {
+	for slot, it := range inv.Slots() {
 		if !it.Empty() && it.Comparable(item) {
 			return slot, true
 		}
@@ -95,7 +110,7 @@ func (inv *Inventory) First(item item.Stack) (int, bool) {
 
 // FirstEmpty returns the first empty slot if found. Second return value describes whether an empty slot was found.
 func (inv *Inventory) FirstEmpty() (int, bool) {
-	for slot, it := range inv.Items() {
+	for slot, it := range inv.Slots() {
 		if it.Empty() {
 			return slot, true
 		}
@@ -204,20 +219,6 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 	return fmt.Errorf("could not remove all items from the inventory")
 }
 
-// Contents returns a list of all contents of the inventory. This method excludes air items, so the method
-// only ever returns item stacks which actually represent an item.
-func (inv *Inventory) Contents() []item.Stack {
-	contents := make([]item.Stack, 0, inv.Size())
-	inv.mu.RLock()
-	for _, it := range inv.slots {
-		if !it.Empty() {
-			contents = append(contents, it)
-		}
-	}
-	inv.mu.RUnlock()
-	return contents
-}
-
 // Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
 // it is empty.
 func (inv *Inventory) Empty() bool {
@@ -232,7 +233,7 @@ func (inv *Inventory) Empty() bool {
 	return true
 }
 
-// Clear clears the entire inventory. Items items are removed, except for items in locked slots.
+// Clear clears the entire inventory. All items are removed, except for items in locked slots.
 func (inv *Inventory) Clear() {
 	inv.mu.Lock()
 	for slot := range inv.slots {

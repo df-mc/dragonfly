@@ -99,7 +99,7 @@ func (it *Item) Tick(current int64) {
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby(pos mgl64.Vec3) {
 	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(pos).Grow(2)) {
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(pos).Grow(2), nil) {
 		if e == it {
 			// Skip the item entity itself.
 			continue

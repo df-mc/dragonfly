@@ -324,7 +324,6 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
 			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
 			// block updates, but instead send a single chunk update once.
-
 			chunkPos := ChunkPos{int32(chunkX), int32(chunkZ)}
 			c, err := w.chunk(chunkPos)
 			if err != nil {
@@ -877,51 +876,9 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 }
 
-// CollidingEntities returns the entities colliding with the AABB passed.
-func (w *World) CollidingEntities(aabb physics.AABB, ignoredEntities ...Entity) []Entity {
-	if w == nil {
-		return nil
-	}
-
-	// Make an estimate of 16 entities on average.
-	m := make([]Entity, 0, 16)
-
-	// We expand it by 3 blocks in all horizontal directions to account for entities that may be in
-	// neighbouring chunks while having a bounding box that extends into the current one.
-	minPos, maxPos := chunkPosFromVec3(aabb.Min().Sub(mgl64.Vec3{3.0, 0, 3.0})), chunkPosFromVec3(aabb.Max().Add(mgl64.Vec3{3.0, 0, 3.0}))
-
-	for x := minPos[0]; x <= maxPos[0]; x++ {
-		for z := minPos[1]; z <= maxPos[1]; z++ {
-			c, ok := w.chunkFromCache(ChunkPos{x, z})
-			if !ok {
-				// The chunk wasn't loaded, so there are no entities here.
-				continue
-			}
-			c.Lock()
-			for _, entity := range c.entities {
-				var ignored bool
-				for _, e := range ignoredEntities {
-					if entity == e {
-						ignored = true
-						break
-					}
-				}
-				if !ignored {
-					if aabb.IntersectsWith(entity.AABB().Translate(entity.Position())) {
-						// The entities AABB was within the AABB, so we add it to the slice to return.
-						m = append(m, entity)
-					}
-				}
-			}
-			c.Unlock()
-		}
-	}
-	return m
-}
-
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
 // those which are contained within the AABB when it comes to their position.
-func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
+func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []Entity {
 	if w == nil {
 		return nil
 	}
@@ -939,6 +896,9 @@ func (w *World) EntitiesWithin(aabb physics.AABB) []Entity {
 			}
 			c.Lock()
 			for _, entity := range c.entities {
+				if ignored != nil && ignored(entity) {
+					continue
+				}
 				if aabb.Vec3Within(entity.Position()) {
 					// The entity position was within the AABB, so we add it to the slice to return.
 					m = append(m, entity)

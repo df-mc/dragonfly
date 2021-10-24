@@ -510,24 +510,33 @@ func (p *Player) fall(fallDistance float64) {
 // If the final damage exceeds the health that the player currently has, the player is killed and will have to
 // respawn.
 // If the damage passed is negative, Hurt will not do anything.
-func (p *Player) Hurt(dmg float64, source damage.Source) {
-	if p.Dead() || dmg < 0 || !p.GameMode().AllowsTakingDamage() {
-		return
+// Hurt returns the final damage dealt to the Player and if the Player was vulnerable to this kind of damage.
+func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
+	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
+		return 0, false
 	}
 	for _, e := range p.Effects() {
 		if _, ok := e.Type().(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
-			return
+			return 0, false
 		}
 	}
-
-	ctx := event.C()
+	var (
+		ctx        = event.C()
+		vulnerable = false
+		n          = 0.0
+	)
 	p.handler().HandleHurt(ctx, &dmg, source)
 
 	ctx.Continue(func() {
+		vulnerable = true
+		if dmg < 0 {
+			return
+		}
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 		}
 		finalDamage := p.FinalDamageFrom(dmg, source)
+		n = finalDamage
 
 		a := p.absorption()
 		if a > 0 && (effect.Absorption{}).Absorbs(source) {
@@ -543,7 +552,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 
 		if src, ok := source.(damage.SourceEntityAttack); ok {
 			var d int
-			for i, it := range p.armour.Items() {
+			for i, it := range p.armour.Slots() {
 				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
 					if rand.Float64() < float64(t.Level())*0.15 {
 						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 3))
@@ -573,6 +582,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) {
 			p.kill(source)
 		}
 	})
+	return n, vulnerable
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -585,7 +595,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		if damageToArmour == 0 {
 			damageToArmour++
 		}
-		for i, it := range p.armour.Items() {
+		for i, it := range p.armour.Slots() {
 			if a, ok := it.Item().(armour.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
@@ -1260,7 +1270,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 		p.StopSprinting()
 
-		healthBefore := living.Health()
 		damageDealt := i.AttackDamage()
 		for _, e := range p.Effects() {
 			if strength, ok := e.Type().(effect.Strength); ok {
@@ -1274,24 +1283,25 @@ func (p *Player) AttackEntity(e world.Entity) {
 			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
 		}
 
-		living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
-
-		if mgl64.FloatEqual(healthBefore, living.Health()) {
+		n, vulnerable := living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
+		if mgl64.FloatEqual(n, 0) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
 		} else {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
+		}
+		if vulnerable {
 			p.Exhaust(0.1)
 			living.KnockBack(p.Position(), force, height)
-		}
 
-		if flammable, ok := living.(entity.Flammable); ok {
-			if f, ok := i.Enchantment(enchantment.FireAspect{}); ok {
-				flammable.SetOnFire((enchantment.FireAspect{}).Duration(f.Level()))
+			if flammable, ok := living.(entity.Flammable); ok {
+				if f, ok := i.Enchantment(enchantment.FireAspect{}); ok {
+					flammable.SetOnFire((enchantment.FireAspect{}).Duration(f.Level()))
+				}
 			}
-		}
 
-		if durable, ok := i.Item().(item.Durable); ok {
-			p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+			if durable, ok := i.Item().(item.Durable); ok {
+				p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+			}
 		}
 	})
 }
@@ -1487,7 +1497,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()))
+	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside of item entities is fine.
@@ -1556,7 +1566,7 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	if container, ok := b.(block.Container); ok {
 		// If the block is a container, it should drop its inventory contents regardless whether the
 		// player is in creative mode or not.
-		drops = container.Inventory().Contents()
+		drops = container.Inventory().Items()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
 				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
@@ -2215,7 +2225,7 @@ func (p *Player) Data() Data {
 		SaturationLevel: p.hunger.saturationLevel,
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
-			Items:        p.Inventory().Items(),
+			Items:        p.Inventory().Slots(),
 			Boots:        p.armour.Boots(),
 			Leggings:     p.armour.Leggings(),
 			Chestplate:   p.armour.Chestplate(),
