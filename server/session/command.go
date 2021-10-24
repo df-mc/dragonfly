@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -19,7 +18,6 @@ func (s *Session) startCommandTicking() {
 	for {
 		select {
 		case <-ticker.C:
-			start := time.Now()
 			// Check if there are any new changes to the commands compared to what the client can currently see.
 			allOldParams := s.lastParams
 			allOldEnums := s.lastEnums
@@ -74,7 +72,6 @@ func (s *Session) startCommandTicking() {
 						}
 					}
 				}
-				fmt.Println(time.Now().Sub(start))
 			}
 			continue
 
