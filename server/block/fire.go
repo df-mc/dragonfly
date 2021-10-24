@@ -84,7 +84,18 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	}
 	infinitelyBurns := infinitelyBurning(pos, w)
 
-	// TODO: !infinitelyBurning && raining && exposed to rain && 20 + age * 3% = extinguish & return
+	raining := w.RainingAt(pos)
+	for _, face := range cube.HorizontalFaces() {
+		if raining {
+			break
+		}
+		raining = w.RainingAt(pos.Side(face))
+	}
+	if !infinitelyBurns && raining && (20+f.Age*3) > r.Intn(100) {
+		// Fire is extinguished by the rain.
+		w.SetBlock(pos, Air{})
+		return
+	}
 
 	if f.Age < 15 && r.Intn(3) == 0 {
 		f.Age++
@@ -163,7 +174,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EntityInside ...
-func (f Fire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
+func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
 		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
 			l.Hurt(1, damage.SourceFire{})

@@ -127,10 +127,10 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// projectile represents an entity that can be launched.
+// projectile represents an entity that can be launched as a projectile.
 type projectile interface {
 	world.Entity
-	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
 }
 
 // owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
