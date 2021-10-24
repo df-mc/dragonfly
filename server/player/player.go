@@ -552,7 +552,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		if src, ok := source.(damage.SourceEntityAttack); ok {
 			var d int
-			for i, it := range p.armour.Items() {
+			for i, it := range p.armour.Slots() {
 				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
 					if rand.Float64() < float64(t.Level())*0.15 {
 						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 3))
@@ -595,7 +595,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		if damageToArmour == 0 {
 			damageToArmour++
 		}
-		for i, it := range p.armour.Items() {
+		for i, it := range p.armour.Slots() {
 			if a, ok := it.Item().(armour.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
@@ -1566,7 +1566,7 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	if container, ok := b.(block.Container); ok {
 		// If the block is a container, it should drop its inventory contents regardless whether the
 		// player is in creative mode or not.
-		drops = container.Inventory().Contents()
+		drops = container.Inventory().Items()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
 				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
@@ -2225,7 +2225,7 @@ func (p *Player) Data() Data {
 		SaturationLevel: p.hunger.saturationLevel,
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
-			Items:        p.Inventory().Items(),
+			Items:        p.Inventory().Slots(),
 			Boots:        p.armour.Boots(),
 			Leggings:     p.armour.Leggings(),
 			Chestplate:   p.armour.Chestplate(),
