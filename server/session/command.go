@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -12,12 +13,13 @@ import (
 // startCommandTicking starts a ticker that will check every minute for changes in the command data,
 // and if so sync this with the client.
 func (s *Session) startCommandTicking() {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Second * 5)
 	stop := make(chan struct{})
 	s.commandSync = stop
 	for {
 		select {
 		case <-ticker.C:
+			start := time.Now()
 			// Check if there are any new changes to the commands compared to what the client can currently see.
 			allOldParams := s.lastParams
 			allOldEnums := s.lastEnums
@@ -72,6 +74,7 @@ func (s *Session) startCommandTicking() {
 						}
 					}
 				}
+				fmt.Println(time.Now().Sub(start))
 			}
 			continue
 
