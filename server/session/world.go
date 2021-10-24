@@ -20,6 +20,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"math/rand"
 )
 
 // ViewChunk ...
@@ -761,6 +762,28 @@ func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 		Dimension:     packet.DimensionOverworld,
 		SpawnPosition: blockPos,
 	})
+}
+
+// ViewRain ...
+func (s *Session) ViewRain(raining bool) {
+	pk := &packet.LevelEvent{
+		EventType: packet.EventStopRain,
+	}
+	if raining {
+		pk.EventType, pk.EventData = packet.EventStartRain, int32(rand.Intn(50000)+10000)
+	}
+	s.writePacket(pk)
+}
+
+// ViewThunder ...
+func (s *Session) ViewThunder(thundering bool) {
+	pk := &packet.LevelEvent{
+		EventType: packet.EventStopThunder,
+	}
+	if thundering {
+		pk.EventType, pk.EventData = packet.EventStartThunder, int32(rand.Intn(50000)+10000)
+	}
+	s.writePacket(pk)
 }
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.

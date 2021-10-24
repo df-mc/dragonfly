@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
+	lcgRand "golang.org/x/exp/rand"
 	"math/rand"
 	"sync"
 	"time"
@@ -70,6 +71,8 @@ type World struct {
 
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
+
+	tr *lcgRand.Rand
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -89,6 +92,7 @@ func New(log internal.Logger, simulationDistance int) *World {
 		log:             log,
 		set:             defaultSettings(),
 		closing:         make(chan struct{}),
+		tr:              lcgRand.New(&lcgRand.PCGSource{}),
 	}
 
 	w.initChunkCache()
@@ -666,6 +670,92 @@ func (w *World) enableTimeCycle(v bool) {
 	w.set.TimeCycle = v
 }
 
+// StopWeatherCycle disables weather of the World.
+func (w *World) StopWeatherCycle() {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.WeatherCycle = false
+}
+
+// StartWeatherCycle enables weather of the World.
+func (w *World) StartWeatherCycle() {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.WeatherCycle = true
+}
+
+// setRainTime sets the rain time.
+func (w *World) setRainTime(new int) {
+	if w == nil {
+		return
+	}
+	w.set.RainTime = int64(new)
+}
+
+// setRainLevel sets the rain level.
+func (w *World) setRainLevel(new bool) {
+	if w == nil {
+		return
+	}
+	w.set.Raining = new
+}
+
+// setThunderTime sets the thunder time.
+func (w *World) setThunderTime(new int) {
+	if w == nil {
+		return
+	}
+	w.set.ThunderTime = int64(new)
+}
+
+// setThundering is an internal method that sets the thunder level.
+// To make it stop raining, set new to false.
+// To make it start raining, set new to true.
+func (w *World) setThundering(new bool) {
+	if w == nil {
+		return
+	}
+	w.set.Thundering = new
+}
+
+// Raining returns a bool that decides whether it is raining or not.
+func (w *World) Raining() bool {
+	if w == nil {
+		return false
+	}
+	w.mu.Lock()
+	a := w.set.Raining
+	w.mu.Unlock()
+	return a
+}
+
+// raining returns a bool that decides whether it is raining or not.
+// This does not lock the world mutex as opposed to Raining.
+func (w *World) raining() bool {
+	if w == nil {
+		return false
+	}
+	a := w.set.Raining
+	return a
+}
+
+// Thundering returns a bool that decides whether it is thundering or not.
+func (w *World) Thundering() bool {
+	if w == nil {
+		return false
+	}
+	w.mu.Lock()
+	a := w.set.Thundering
+	w.mu.Unlock()
+	return a
+}
+
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
 func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
@@ -1160,6 +1250,23 @@ func (w *World) tick() {
 		w.set.Time++
 	}
 	t := int(w.set.Time)
+
+	if w.set.WeatherCycle {
+		// Tick Weather
+		// NOTE: The following numbers/calculations you see are taken from Minecraft.
+
+		// Raining
+		w.set.RainTime--
+		if w.set.RainTime <= 0 {
+			w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
+		}
+
+		// Thunder
+		w.set.ThunderTime--
+		if w.set.ThunderTime <= 0 {
+			w.setThunder(true, time.Second*time.Duration(rand.Intn(600)+180))
+		}
+	}
 	w.mu.Unlock()
 
 	if tick%20 == 0 {
@@ -1168,10 +1275,20 @@ func (w *World) tick() {
 		}
 	}
 
+	if w.Thundering() {
+		if rand.Intn(10000) == 0 {
+			for pos := range w.chunks {
+				performThunder(w, pos, w.tr)
+			}
+		}
+	}
+
 	w.tickEntities(tick)
 	w.tickRandomBlocks(viewers, tick)
 	w.tickScheduledBlocks(tick)
 }
+
+var performThunder func(w *World, pos ChunkPos, tr *lcgRand.Rand)
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
 // execution.
@@ -1442,6 +1559,70 @@ func (w *World) tickEntities(tick int64) {
 		ticker.Tick(tick)
 	}
 	w.entitiesToTick = w.entitiesToTick[:0]
+}
+
+// StartRaining makes it rain in the current world where time.Duration will determine the length.
+func (w *World) StartRaining(x time.Duration) {
+	w.mu.Lock()
+	w.setRaining(true, x)
+	w.mu.Unlock()
+}
+
+// StopRaining makes it stop raining in the current world.
+func (w *World) StopRaining() {
+	w.mu.Lock()
+	w.setRaining(false, 0)
+	w.mu.Unlock()
+}
+
+// setRaining toggles raining depending on the raining argument.
+// This does not lock the world mutex as opposed to StartRaining and StopRaining.
+func (w *World) setRaining(raining bool, x time.Duration) {
+	w.setRainLevel(raining)
+
+	for _, v := range w.allViewers() {
+		v.ViewRain(raining)
+	}
+
+	if raining {
+		w.setRainTime(int(x.Seconds() * 20))
+	} else {
+		w.setRainTime(rand.Intn(168000) + 12000)
+	}
+}
+
+// StartThundering makes it thunder in the current world where time.Duration will determine the length.
+func (w *World) StartThundering(x time.Duration) {
+	w.mu.Lock()
+	w.setThunder(true, x)
+	w.mu.Unlock()
+}
+
+// StopThundering makes it stop thundering in the current world.
+func (w *World) StopThundering() {
+	w.mu.Lock()
+	w.setThunder(false, 0)
+	w.mu.Unlock()
+}
+
+// setThunder toggles thundering depending on the thundering argument.
+// This does not lock the world mutex as opposed to StartThundering and StopThundering.
+func (w *World) setThunder(thundering bool, x time.Duration) {
+	if thundering && !w.raining() {
+		w.setRaining(true, time.Second*time.Duration(rand.Intn(600)+600))
+	}
+
+	w.setThundering(thundering)
+
+	for _, v := range w.allViewers() {
+		v.ViewThunder(thundering)
+	}
+
+	if thundering {
+		w.setThunderTime(int(x.Seconds() * 20))
+	} else {
+		w.setThunderTime(rand.Intn(168000) + 12000)
+	}
 }
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.

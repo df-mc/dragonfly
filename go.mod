@@ -17,6 +17,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	go.uber.org/atomic v1.9.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914 // indirect
