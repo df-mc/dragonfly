@@ -177,11 +177,11 @@ func runtimeID(w *World, pos cube.Pos) uint32 {
 // passed in the world.
 func (w *World) HighestLightBlocker(x, z int) int16 {
 	if w == nil {
-		return 0
+		return cube.MinY
 	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
-		return 0
+		return cube.MinY
 	}
 	v := c.HighestLightBlocker(uint8(x), uint8(z))
 	c.Unlock()
@@ -192,15 +192,32 @@ func (w *World) HighestLightBlocker(x, z int) int16 {
 // value of the highest block is returned, or 0 if no blocks were present in the column.
 func (w *World) HighestBlock(x, z int) int {
 	if w == nil {
-		return 0
+		return cube.MinY
 	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
-		return 0
+		return cube.MinY
 	}
 	v := c.HighestBlock(uint8(x), uint8(z))
 	c.Unlock()
 	return int(v)
+}
+
+// highestObstructingBlock returns the highest block in the world at a given x and z that has at least a solid top or
+// bottom face.
+func (w *World) highestObstructingBlock(x, z int) int {
+	if w == nil {
+		return 0
+	}
+	yHigh := w.HighestBlock(x, z)
+	for y := yHigh; y >= cube.MinY; y-- {
+		pos := cube.Pos{x, y, z}
+		m := w.Block(pos).Model()
+		if m.FaceSolid(pos, cube.FaceUp, w) || m.FaceSolid(pos, cube.FaceDown, w) {
+			return y
+		}
+	}
+	return cube.MinY
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -665,6 +682,51 @@ func (w *World) enableTimeCycle(v bool) {
 	w.set.TimeCycle = v
 }
 
+// StopWeatherCycle disables weather of the World.
+func (w *World) StopWeatherCycle() {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.WeatherCycle = false
+}
+
+// StartWeatherCycle enables weather of the World.
+func (w *World) StartWeatherCycle() {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.WeatherCycle = true
+}
+
+// RainingAt returns a bool that indicates whether it is raining at a position in the world.
+// TODO: Take into account biomes when deciding if it is raining at a position when we implement biomes.
+func (w *World) RainingAt(pos cube.Pos) bool {
+	if w == nil {
+		return false
+	}
+	w.mu.Lock()
+	a := w.set.Raining
+	w.mu.Unlock()
+	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+}
+
+// ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
+// raining and thundering at the same time and if the position passed is exposed to rain.
+// TODO: Take into account biomes when deciding if it is thundering at a position when we implement biomes.
+func (w *World) ThunderingAt(pos cube.Pos) bool {
+	if w == nil {
+		return false
+	}
+	w.mu.Lock()
+	a := w.set.Thundering && w.set.Raining
+	w.mu.Unlock()
+	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+}
+
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
 func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
@@ -853,7 +915,7 @@ func (w *World) Spawn() cube.Pos {
 	s := w.set.Spawn
 	w.mu.Unlock()
 	if s[1] > cube.MaxY {
-		s[1] = w.HighestBlock(s[0], s[2])
+		s[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
 	return s
 }
@@ -1120,7 +1182,50 @@ func (w *World) tick() {
 		w.set.Time++
 	}
 	t := int(w.set.Time)
+
+	if w.set.WeatherCycle {
+		w.set.RainTime--
+		if w.set.RainTime <= 0 {
+			// Wiki: The rain counter counts down to zero, and each time it reaches zero, the rain is toggled on or off.
+			// When the rain is turned on, the counter is reset to a value between 12,000-23,999 ticks (0.5-1 game days)
+			// and when the rain is turned off it is reset to a value of 12,000-179,999 ticks (0.5-7.5 game days).
+			if w.set.Raining {
+				w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+			} else {
+				w.setRaining(true, time.Second*time.Duration(w.r.Intn(600)+600))
+			}
+		}
+		w.set.ThunderTime--
+		if w.set.ThunderTime <= 0 {
+			// Wiki: the thunder counter toggles thunder on/off when it reaches zero, but clear weather overrides the
+			// "on" state. When thunder is turned on, the thunder counter is reset to 3,600-15,999 ticks (3-13 minutes),
+			// and when thunder is turned off the counter rests to 12,000-179,999 ticks (0.5-7.5 days).
+			if w.set.Thundering {
+				w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+			} else {
+				w.setThunder(true, time.Second*time.Duration(w.r.Intn(620)+180))
+			}
+		}
+	}
+	thunder := w.set.Thundering && w.set.Raining
 	w.mu.Unlock()
+
+	if thunder {
+		w.chunkMu.Lock()
+		positions := make([]ChunkPos, 0, len(w.chunks)/100000)
+		for pos := range w.chunks {
+			// Wiki: For each loaded chunk, every tick there is a 1⁄100,000 chance of an attempted lightning strike
+			// during a thunderstorm
+			if w.r.Intn(100000) == 0 {
+				positions = append(positions, pos)
+			}
+		}
+		w.chunkMu.Unlock()
+
+		for _, pos := range positions {
+			w.strikeLightning(pos)
+		}
+	}
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
@@ -1131,6 +1236,51 @@ func (w *World) tick() {
 	w.tickEntities(tick)
 	w.tickRandomBlocks(viewers, tick)
 	w.tickScheduledBlocks(tick)
+}
+
+// strikeLightning attempts to strike lightning in the world at a specific ChunkPos. The final position is influenced by
+// living entities that might be near the lightning strike. If there is no rain at the final position selected, the
+// lightning strike will fail.
+func (w *World) strikeLightning(c ChunkPos) {
+	v := int32(w.r.Uint32())
+	x, z := float64(c[0]<<4+(v&0xf)), float64(c[1]<<4+((v>>8)&0xf))
+
+	vec := mgl64.Vec3{x, float64(w.HighestBlock(int(x), int(z)) + 1), z}
+	ent := w.EntitiesWithin(physics.NewAABB(vec, vec.Add(mgl64.Vec3{0, 255})).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
+
+	list := make([]mgl64.Vec3, 0, len(ent)/3)
+	for _, e := range ent {
+		if h, ok := e.(interface{ Health() float64 }); ok && h.Health() > 0 {
+			// Any (living) entity that is positioned higher than the highest block at its position is eligible to be
+			// struck by lightning. We first save all entity positions where this is the case.
+			pos := cube.PosFromVec3(e.Position())
+			if w.HighestBlock(pos[0], pos[1]) < pos[2] {
+				list = append(list, e.Position())
+			}
+		}
+	}
+	// We then select one of the positions of entities higher than the highest block and adjust the position of the
+	// lightning to it, so that the entity is struck directly.
+	if len(list) > 0 {
+		vec = list[w.r.Intn(len(list))]
+	}
+
+	pos := cube.PosFromVec3(vec)
+	if len(w.Block(pos).Model().AABB(pos, w)) != 0 {
+		// If lightning is about to strike inside of a block that is not fully transparent. In this case, move the
+		// lightning up by one block so that it strikes above the block.
+		vec = vec.Add(mgl64.Vec3{0, 1})
+	}
+	if !w.ThunderingAt(pos) {
+		// No thunder at this position, meaning we were either under an obstructing block or in a biome where it does
+		// not rain.
+		return
+	}
+
+	e, _ := EntityByName("minecraft:lightning_bolt")
+	w.AddEntity(e.(interface {
+		New(mgl64.Vec3) Entity
+	}).New(vec))
 }
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
@@ -1404,6 +1554,57 @@ func (w *World) tickEntities(tick int64) {
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
+// StartRaining makes it rain in the current world where time.Duration will determine the length.
+func (w *World) StartRaining(x time.Duration) {
+	w.mu.Lock()
+	w.setRaining(true, x)
+	w.mu.Unlock()
+}
+
+// StopRaining makes it stop raining in the current world.
+func (w *World) StopRaining() {
+	w.mu.Lock()
+	w.setRaining(false, 0)
+	w.mu.Unlock()
+}
+
+// setRaining toggles raining depending on the raining argument.
+// This does not lock the world mutex as opposed to StartRaining and StopRaining.
+func (w *World) setRaining(raining bool, x time.Duration) {
+	w.set.Raining = raining
+	w.set.RainTime = int64(x.Seconds() * 20)
+	for _, v := range w.allViewers() {
+		v.ViewWeather(raining, w.set.Thundering)
+	}
+}
+
+// StartThundering makes it thunder in the current world where time.Duration will determine the length.
+func (w *World) StartThundering(x time.Duration) {
+	w.mu.Lock()
+	w.setThunder(true, x)
+	w.setRaining(true, x)
+	w.mu.Unlock()
+}
+
+// StopThundering makes it stop thundering in the current world.
+func (w *World) StopThundering() {
+	w.mu.Lock()
+	w.setThunder(false, 0)
+	w.mu.Unlock()
+}
+
+// setThunder toggles thundering depending on the thundering argument.
+// This does not lock the world mutex as opposed to StartThundering and StopThundering.
+func (w *World) setThunder(thundering bool, x time.Duration) {
+	w.set.Thundering = thundering
+	w.set.ThunderTime = int64(x.Seconds() * 20)
+	for _, v := range w.allViewers() {
+		// Thunderstorms only happen if it is already raining. Clear weather overrides thunder, so only make it thunder
+		// if it's both raining and thundering.
+		v.ViewWeather(w.set.Raining, w.set.Raining && thundering)
+	}
+}
+
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
 func (w *World) allViewers() (v []Viewer) {
 	w.viewersMu.Lock()
@@ -1423,6 +1624,10 @@ func (w *World) addWorldViewer(viewer Viewer) {
 	w.viewers[viewer] = struct{}{}
 	w.viewersMu.Unlock()
 	viewer.ViewTime(w.Time())
+	w.mu.Lock()
+	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
+	w.mu.Unlock()
+	viewer.ViewWeather(raining, thundering)
 	viewer.ViewWorldSpawn(w.Spawn())
 }
 

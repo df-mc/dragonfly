@@ -17,9 +17,9 @@ type Owned interface {
 // Projectile represents an entity that can be launched.
 type Projectile interface {
 	world.Entity
-	// Launch creates the projectile with the position, velocity, yaw, and pitch provided. It doesn't spawn
-	// the projectile, only returns it.
-	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+	// New creates a new projectile with the position, velocity, yaw, and pitch provided. It does not spawn
+	// the projectile.
+	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
 }
 
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.

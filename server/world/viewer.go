@@ -62,4 +62,6 @@ type Viewer interface {
 	ViewSkin(e Entity)
 	// ViewWorldSpawn views the current spawn location of the world.
 	ViewWorldSpawn(pos cube.Pos)
+	// ViewWeather views the weather of the world, including rain and thunder.
+	ViewWeather(raining, thunder bool)
 }
