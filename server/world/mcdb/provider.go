@@ -85,6 +85,9 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.MultiPlayerGame = true
 	p.d.SpawnY = math.MaxInt32
 	p.d.Difficulty = 2
+	p.d.DoWeatherCycle = true
+	p.d.RainLevel = 1.0
+	p.d.LightningLevel = 1.0
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.

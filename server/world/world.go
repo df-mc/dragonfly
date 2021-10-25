@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
-	lcgRand "golang.org/x/exp/rand"
 	"math/rand"
 	"sync"
 	"time"
@@ -71,8 +70,6 @@ type World struct {
 
 	viewersMu sync.Mutex
 	viewers   map[Viewer]struct{}
-
-	tr *lcgRand.Rand
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -92,7 +89,6 @@ func New(log internal.Logger, simulationDistance int) *World {
 		log:             log,
 		set:             defaultSettings(),
 		closing:         make(chan struct{}),
-		tr:              lcgRand.New(&lcgRand.PCGSource{}),
 	}
 
 	w.initChunkCache()
@@ -1247,9 +1243,9 @@ func (w *World) tick() {
 // lightning strike will fail.
 func (w *World) strikeLightning(c ChunkPos) {
 	v := int32(w.r.Uint32())
-	x, z := float64(c[0]+(v&0xf)), float64(c[1]+((v>>8)&0xf))
+	x, z := float64(c[0]<<4+(v&0xf)), float64(c[1]<<4+((v>>8)&0xf))
 
-	vec := mgl64.Vec3{x, float64(w.HighestBlock(int(x), int(z))), z}
+	vec := mgl64.Vec3{x, float64(w.HighestBlock(int(x), int(z)) + 1), z}
 	ent := w.EntitiesWithin(physics.NewAABB(vec, vec.Add(mgl64.Vec3{0, 255})).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
 
 	list := make([]mgl64.Vec3, 0, len(ent)/3)
@@ -1586,6 +1582,7 @@ func (w *World) setRaining(raining bool, x time.Duration) {
 func (w *World) StartThundering(x time.Duration) {
 	w.mu.Lock()
 	w.setThunder(true, x)
+	w.setRaining(true, x)
 	w.mu.Unlock()
 }
 
@@ -1627,6 +1624,10 @@ func (w *World) addWorldViewer(viewer Viewer) {
 	w.viewers[viewer] = struct{}{}
 	w.viewersMu.Unlock()
 	viewer.ViewTime(w.Time())
+	w.mu.Lock()
+	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
+	w.mu.Unlock()
+	viewer.ViewWeather(raining, thundering)
 	viewer.ViewWorldSpawn(w.Spawn())
 }
 
