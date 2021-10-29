@@ -37,18 +37,20 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	data := chunk.Encode(c, chunk.NetworkEncoding)
 
-	var count uint32
+	count := byte(0)
 	for y := byte(0); y < 16; y++ {
 		if data.SubChunks[y] != nil {
-			count++
+			count = y + 1
 		}
 	}
 
 	blobs := make([][]byte, 0, count+1)
-	for y := uint32(0); y < count; y++ {
-		if data.SubChunks[y] != nil {
-			blobs = append(blobs, data.SubChunks[y])
+	for y := byte(0); y < count; y++ {
+		if data.SubChunks[y] == nil {
+			blobs = append(blobs, []byte{chunk.SubChunkVersion, 0})
+			continue
 		}
+		blobs = append(blobs, data.SubChunks[y])
 	}
 	blobs = append(blobs, data.Data2D[:256])
 
@@ -87,7 +89,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
 		ChunkZ:        pos[1],
-		SubChunkCount: count,
+		SubChunkCount: uint32(count),
 		CacheEnabled:  true,
 		BlobHashes:    hashes,
 		RawPayload:    raw.Bytes(),
@@ -98,16 +100,21 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	data := chunk.Encode(c, chunk.NetworkEncoding)
 
-	var count uint32
+	count := byte(0)
 	for y := byte(0); y < 16; y++ {
 		if data.SubChunks[y] != nil {
-			count++
+			count = y + 1
 		}
 	}
-	for y := uint32(0); y < count; y++ {
-		if data.SubChunks[y] != nil {
-			_, _ = s.chunkBuf.Write(data.SubChunks[y])
+	for y := byte(0); y < count; y++ {
+		if data.SubChunks[y] == nil {
+			_ = s.chunkBuf.WriteByte(chunk.SubChunkVersion)
+			// We write zero here, meaning the sub chunk has no block storages: The sub chunk is completely
+			// empty.
+			_ = s.chunkBuf.WriteByte(0)
+			continue
 		}
+		_, _ = s.chunkBuf.Write(data.SubChunks[y])
 	}
 	_, _ = s.chunkBuf.Write(data.Data2D)
 
@@ -123,7 +130,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
 		ChunkZ:        pos[1],
-		SubChunkCount: count,
+		SubChunkCount: uint32(count),
 		RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
 	})
 	s.chunkBuf.Reset()

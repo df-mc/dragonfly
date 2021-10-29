@@ -8,7 +8,7 @@ import (
 const (
 	// SubChunkVersion is the current version of the written sub chunks, specifying the format they are
 	// written on disk and over network.
-	SubChunkVersion = 9
+	SubChunkVersion = 8
 	// CurrentBlockVersion is the current version of blocks (states) of the game. This version is composed
 	// of 4 bytes indicating a version, interpreted as a big endian int. The current version represents
 	// 1.16.0.14 {1, 16, 0, 14}.
@@ -73,8 +73,7 @@ func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData)
 			// The sub chunk at this Y value is empty, so don't write it.
 			continue
 		}
-		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), byte(y)})
-
+		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages))})
 		for _, storage := range sub.storages {
 			encodeBlockStorage(buf, storage, e)
 		}
