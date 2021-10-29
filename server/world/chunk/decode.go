@@ -21,7 +21,8 @@ func NetworkDecode(air uint32, data []byte, subChunkCount int) (*Chunk, error) {
 		err error
 	)
 	for y := 0; y < subChunkCount; y++ {
-		c.sub[y], err = decodeSubChunk(buf, air, NetworkEncoding)
+		index := uint8(y)
+		c.sub[index], err = decodeSubChunk(buf, air, &index, NetworkEncoding)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +64,8 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 			// No data for this sub chunk.
 			continue
 		}
-		c.sub[y], err = decodeSubChunk(bytes.NewBuffer(sub), air, DiskEncoding)
+		index := uint8(y)
+		c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), air, &index, DiskEncoding)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +75,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 
 // decodeSubChunk decodes a SubChunk from a bytes.Buffer. The Encoding passed defines how the block storages of the
 // SubChunk are decoded.
-func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error) {
+func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*SubChunk, error) {
 	ver, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
@@ -89,11 +91,17 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, e Encoding) (*SubChunk, error
 			return nil, err
 		}
 		sub.storages = append(sub.storages, storage)
-	case 8:
+	case 8, 9:
 		// Version 8 allows up to 256 layers for one sub chunk.
 		storageCount, err := buf.ReadByte()
 		if err != nil {
 			return nil, fmt.Errorf("error reading storage count: %w", err)
+		}
+		if ver == 9 {
+			*index, err = buf.ReadByte()
+			if err != nil {
+				return nil, fmt.Errorf("error reading subchunk index: %w", err)
+			}
 		}
 		sub.storages = make([]*BlockStorage, storageCount)
 
