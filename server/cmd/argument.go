@@ -206,7 +206,7 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 	if found == "" {
 		return fmt.Errorf(`invalid argument "%v" for enum parameter "%v"`, arg, v.Type())
 	}
-	v.SetOption(found, val)
+	val.SetString(found)
 	return nil
 }
 
