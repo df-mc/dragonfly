@@ -23,39 +23,36 @@ type Result interface {
 // with the ray.
 func Perform(start, end mgl64.Vec3, w *world.World, aabb physics.AABB, ignored func(world.Entity) bool) (hit Result, ok bool) {
 	// Check if there's any blocks that we may collide with.
-	TraverseBlocks(start, end, func(blockPos cube.Pos) (cont bool) {
-		dist := math.MaxFloat64
-		// Check if there's any entities that we may collide with.
-		bb := aabb.Translate(blockPos.Vec3Centre())
-		for _, entity := range w.EntitiesWithin(bb.Grow(8), ignored) {
-			if ignored != nil && ignored(entity) {
-				continue
-			}
-			// Check if we collide with the entities bounding box.
-			result, ok := EntityIntercept(entity, start, end)
-			if !ok {
-				continue
-			}
-
-			if distance := start.Sub(result.Position()).LenSqr(); distance < dist {
-				dist = distance
-				hit = result
-			}
-		}
-
-		if hit != nil {
-			return false
-		}
-
-		b := w.Block(blockPos)
+	TraverseBlocks(start, end, func(pos cube.Pos) (cont bool) {
+		b := w.Block(pos)
 
 		// Check if we collide with the block's model.
-		if result, ok := BlockIntercept(blockPos, w, b, start, end); ok {
+		if result, ok := BlockIntercept(pos, w, b, start, end); ok {
 			hit = result
+			end = hit.Position()
 			return false
 		}
 		return true
 	})
+
+	// Now check for any entities that we may collide with.
+	dist := math.MaxFloat64
+	bb := aabb.Translate(start).Extend(end.Sub(start))
+	for _, entity := range w.EntitiesWithin(bb.Grow(8.0), ignored) {
+		if ignored != nil && ignored(entity) || !entity.AABB().Translate(entity.Position()).IntersectsWith(bb) {
+			continue
+		}
+		// Check if we collide with the entities bounding box.
+		result, ok := EntityIntercept(entity, start, end)
+		if !ok {
+			continue
+		}
+
+		if distance := start.Sub(result.Position()).LenSqr(); distance < dist {
+			dist = distance
+			hit = result
+		}
+	}
 
 	return hit, hit != nil
 }

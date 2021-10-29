@@ -2003,7 +2003,10 @@ func (w *World) chunkCacheJanitor() {
 		case <-t.C:
 			w.chunkMu.Lock()
 			for pos, c := range w.chunks {
-				if len(c.v) == 0 {
+				c.Lock()
+				v := len(c.v)
+				c.Unlock()
+				if v == 0 {
 					chunksToRemove[pos] = c
 					delete(w.chunks, pos)
 					if w.lastPos == pos {
