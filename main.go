@@ -3,14 +3,29 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
+	"time"
 )
 
+import _ "net/http/pprof"
+
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
@@ -27,12 +42,31 @@ func main() {
 	if err := srv.Start(); err != nil {
 		log.Fatalln(err)
 	}
+	srv.World().StartWeatherCycle()
+	srv.World().StartThundering(time.Hour)
 
 	for {
-		if _, err := srv.Accept(); err != nil {
+		if p, err := srv.Accept(); err != nil {
 			return
+		} else {
+			p.Inventory().AddItem(item.NewStack(item.Snowball{}, 128))
+			p.Handle(h{p: p})
 		}
 	}
+}
+
+type h struct {
+	player.NopHandler
+	p *player.Player
+}
+
+func (h h) HandleItemUse(ctx *event.Context) {
+	v := entity.DirectionVector(h.p)
+	pos := h.p.Position().Add(mgl64.Vec3{0, h.p.EyeHeight()})
+	for (h.p.World().Block(cube.PosFromVec3(pos)) == block.Air{}) {
+		pos = pos.Add(v)
+	}
+	h.p.World().AddEntity(entity.NewLightning(pos.Add(mgl64.Vec3{0, 1})))
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.

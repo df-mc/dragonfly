@@ -36,5 +36,5 @@ type Settings struct {
 
 // defaultSettings returns the default Settings for a new World.
 func defaultSettings() Settings {
-	return Settings{Name: "World", DefaultGameMode: GameModeSurvival{}, Difficulty: DifficultyNormal{}, TimeCycle: true, WeatherCycle: true}
+	return Settings{Name: "World", DefaultGameMode: survival{}, Difficulty: DifficultyNormal{}, TimeCycle: true, WeatherCycle: true}
 }

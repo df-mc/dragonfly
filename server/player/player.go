@@ -110,7 +110,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		hunger:   newHungerManager(),
 		health:   entity.NewHealthManager(),
 		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeAdventure{},
+		gameMode: world.GameModeSurvival,
 		h:        NopHandler{},
 		name:     name,
 		skin:     skin,
@@ -631,19 +631,14 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
 		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
 	}
-	if dmg < 0 {
-		dmg = 0
-	}
-	return dmg
+	return math.Max(dmg, 0)
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
 // actually increase the maximum health. Once the hearts are lost, they will not regenerate.
 // Nothing happens if a negative number is passed.
 func (p *Player) SetAbsorption(health float64) {
-	if health < 0 {
-		return
-	}
+	health = math.Max(health, 0)
 	p.absorptionHealth.Store(health)
 	p.session().SendAbsorption(health)
 }

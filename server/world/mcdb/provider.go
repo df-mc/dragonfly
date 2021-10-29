@@ -201,21 +201,19 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 func (p *Provider) LoadDefaultGameMode() world.GameMode {
 	switch p.d.GameType {
 	default:
-		return world.GameModeAdventure{}
-	case 0:
-		return world.GameModeSurvival{}
+		return world.GameModeSurvival
 	case 1:
-		return world.GameModeCreative{}
+		return world.GameModeCreative
 	case 2:
-		return world.GameModeAdventure{}
+		return world.GameModeAdventure
 	case 3:
-		return world.GameModeSpectator{}
+		return world.GameModeSpectator
 	}
 }
 
 // SaveDefaultGameMode changes the default game mode in the level.dat.
 func (p *Provider) SaveDefaultGameMode(mode world.GameMode) {
-	switch mode.(type) {
+	switch mode {
 	case world.GameModeSurvival:
 		p.d.GameType = 0
 	case world.GameModeCreative:
