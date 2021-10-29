@@ -175,15 +175,19 @@ func (cmd Command) Params(src Source) [][]ParamInfo {
 		}
 
 		n := elem.NumField()
-		fields := make([]ParamInfo, n)
+		fields := make([]ParamInfo, 0, n)
 		for i := 0; i < n; i++ {
+			field := elem.Field(i)
+			if !field.CanSet() {
+				continue
+			}
 			fieldType := elem.Type().Field(i)
-			fields[i] = ParamInfo{
+			fields = append(fields, ParamInfo{
 				Name:     name(fieldType),
-				Value:    reflect.New(elem.Field(i).Type()).Elem().Interface(),
+				Value:    field.Interface(),
 				Optional: optional(fieldType),
 				Suffix:   suffix(fieldType),
-			}
+			})
 		}
 		params = append(params, fields)
 	}
