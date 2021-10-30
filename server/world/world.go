@@ -1554,10 +1554,10 @@ func (w *World) tickEntities(tick int64) {
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
-// StartRaining makes it rain in the current world where time.Duration will determine the length.
-func (w *World) StartRaining(x time.Duration) {
+// StartRaining makes it rain in the current world where the time.Duration passed will determine how long it will rain.
+func (w *World) StartRaining(dur time.Duration) {
 	w.mu.Lock()
-	w.setRaining(true, x)
+	w.setRaining(true, dur)
 	w.mu.Unlock()
 }
 
@@ -1578,11 +1578,12 @@ func (w *World) setRaining(raining bool, x time.Duration) {
 	}
 }
 
-// StartThundering makes it thunder in the current world where time.Duration will determine the length.
-func (w *World) StartThundering(x time.Duration) {
+// StartThundering makes it thunder in the current world where the time.Duration passed will determine how long it will
+// thunder. StartThundering will also make it rain.
+func (w *World) StartThundering(dur time.Duration) {
 	w.mu.Lock()
-	w.setThunder(true, x)
-	w.setRaining(true, x)
+	w.setThunder(true, dur)
+	w.setRaining(true, dur)
 	w.mu.Unlock()
 }
 
