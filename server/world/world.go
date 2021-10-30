@@ -1564,7 +1564,13 @@ func (w *World) StartRaining(dur time.Duration) {
 // StopRaining makes it stop raining in the current world.
 func (w *World) StopRaining() {
 	w.mu.Lock()
-	w.setRaining(false, 0)
+	if w.set.Raining {
+		w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+		if w.set.Thundering {
+			// Also reset thunder if it was previously thundering.
+			w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+		}
+	}
 	w.mu.Unlock()
 }
 
@@ -1574,7 +1580,7 @@ func (w *World) setRaining(raining bool, x time.Duration) {
 	w.set.Raining = raining
 	w.set.RainTime = int64(x.Seconds() * 20)
 	for _, v := range w.allViewers() {
-		v.ViewWeather(raining, w.set.Thundering)
+		v.ViewWeather(raining, w.set.Raining && w.set.Thundering)
 	}
 }
 
@@ -1590,7 +1596,9 @@ func (w *World) StartThundering(dur time.Duration) {
 // StopThundering makes it stop thundering in the current world.
 func (w *World) StopThundering() {
 	w.mu.Lock()
-	w.setThunder(false, 0)
+	if w.set.Thundering && w.set.Raining {
+		w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+	}
 	w.mu.Unlock()
 }
 
