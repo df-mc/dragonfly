@@ -51,7 +51,7 @@ func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // Activate ...
-func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
@@ -60,10 +60,12 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
 		c.Bites++
 		if c.Bites > 6 {
 			w.BreakBlockWithoutParticles(pos)
-			return
+			return true
 		}
 		w.PlaceBlock(pos, c)
+		return true
 	}
+	return false
 }
 
 // BreakInfo ...

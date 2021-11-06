@@ -1174,8 +1174,9 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				p.SwingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
 				// used.
-				activatable.Activate(pos, face, p.World(), p)
-				return
+				if activatable.Activate(pos, face, p.World(), p) {
+					return
+				}
 			}
 		}
 		if i.Empty() {

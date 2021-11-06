@@ -116,10 +116,12 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 }
 
 // Activate ...
-func (c Chest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
+func (c Chest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
+		return true
 	}
+	return false
 }
 
 // UseOnBlock ...

@@ -53,13 +53,14 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
-		return
+		return false
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, w)
 	w.SetBlock(pos, n)
+	return true
 }
 
 // BreakInfo ...
