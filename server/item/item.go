@@ -80,8 +80,12 @@ const DefaultConsumeDuration = (time.Second * 161) / 100
 // UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
 // after the action is complete.
 type UseContext struct {
-	Damage     int
-	CountSub   int
+	// Damage is the amount of damage that should be dealt to the item as a result of using it.
+	Damage int
+	// CountSub is how much of the count should be subtracted after using the item.
+	CountSub int
+	// IgnoreAABB specifies if placing the item should ignore the AABB of the player placing this. This is the case for
+	// items such as cocoa beans.
 	IgnoreAABB bool
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
