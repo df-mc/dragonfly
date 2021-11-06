@@ -1455,6 +1455,9 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 	w := p.World()
 	defer func() {
 		if !success {
+			pos.Neighbours(func(neighbour cube.Pos) {
+				w.SetBlock(neighbour, w.Block(neighbour))
+			})
 			w.SetBlock(pos, w.Block(pos))
 		}
 	}()
@@ -1474,12 +1477,6 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 		w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 		p.SwingArm()
 		success = true
-	})
-	ctx.Stop(func() {
-		pos.Neighbours(func(neighbour cube.Pos) {
-			w.SetBlock(neighbour, w.Block(neighbour))
-		})
-		w.SetBlock(pos, w.Block(pos))
 	})
 	return
 }
