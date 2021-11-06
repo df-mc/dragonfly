@@ -184,8 +184,7 @@ func columnOffset(x, z uint8) uint8 {
 
 // subChunk finds the correct SubChunk in the Chunk by a Y value.
 func (chunk *Chunk) subChunk(y int16) *SubChunk {
-	i := subIndex(y)
-	return chunk.sub[i]
+	return chunk.sub[subIndex(y)]
 }
 
 // subIndex returns the sub chunk Y index matching the y value passed.
