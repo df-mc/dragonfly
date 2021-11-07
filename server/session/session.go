@@ -422,7 +422,6 @@ func (s *Session) sendAvailableEntities() {
 	var entityData []actorIdentifier
 	for _, entity := range entities {
 		id := entity.EncodeEntity()
-		s.log.Debugf("entity %v\n", id)
 		entityData = append(entityData, actorIdentifier{ID: id})
 	}
 	serializedEntityData, err := nbt.Marshal(map[string]interface{}{"idlist": entityData})
