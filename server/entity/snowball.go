@@ -70,14 +70,15 @@ func (s *Snowball) Tick(current int64) {
 		_ = s.Close()
 		return
 	}
-	var result trace.Result
 	s.mu.Lock()
-	s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.ignores)
-	pos := s.pos
-	s.ticksLived++
+	m, result := s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.ignores)
+	s.pos, s.vel, s.yaw, s.pitch = m.pos, m.vel, m.yaw, m.pitch
 	s.mu.Unlock()
 
-	if pos[1] < cube.MinY && current%10 == 0 {
+	s.ticksLived++
+	m.Send()
+
+	if m.pos[1] < cube.MinY && current%10 == 0 {
 		s.closeNextTick = true
 		return
 	}
@@ -91,7 +92,7 @@ func (s *Snowball) Tick(current int64) {
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
 				if _, vulnerable := l.Hurt(0.0, damage.SourceEntityAttack{Attacker: s}); vulnerable {
-					l.KnockBack(pos, 0.45, 0.3608)
+					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
 		}

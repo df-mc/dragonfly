@@ -53,10 +53,12 @@ func (f *FallingBlock) Block() world.Block {
 // Tick ...
 func (f *FallingBlock) Tick(_ int64) {
 	f.mu.Lock()
-	f.pos, f.vel = f.c.TickMovement(f, f.pos, f.vel, 0, 0)
-	pos := cube.PosFromVec3(f.pos)
+	m := f.c.TickMovement(f, f.pos, f.vel, 0, 0)
+	f.pos, f.vel = m.pos, m.vel
 	f.mu.Unlock()
 
+	m.Send()
+	pos := cube.PosFromVec3(m.pos)
 	w := f.World()
 
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {

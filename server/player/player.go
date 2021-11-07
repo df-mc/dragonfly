@@ -1659,7 +1659,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.handler().HandleMove(ctx, res, resYaw, resPitch)
 	ctx.Continue(func() {
 		for _, v := range p.viewers() {
-			v.ViewEntityMovement(p, res, resYaw, resPitch, p.onGround.Load())
+			v.ViewEntityMovement(p, res, resYaw, resPitch, p.OnGround())
 		}
 
 		p.pos.Store(res)
@@ -1680,7 +1680,9 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 	})
 	ctx.Stop(func() {
-		p.teleport(pos)
+		if p.session() != session.Nop {
+			p.teleport(pos)
+		}
 	})
 }
 
@@ -1830,11 +1832,10 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	if p.session() == session.Nop {
-		pos, vel := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
-
-		p.pos.Store(pos)
-		p.vel.Store(vel)
+	if p.session() == session.Nop && !p.Immobile() {
+		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+		p.vel.Store(m.Velocity())
+		p.Move(m.Position().Sub(p.Position()), 0, 0)
 	}
 }
 
@@ -1958,6 +1959,9 @@ func (p *Player) SetScale(s float64) {
 
 // OnGround checks if the player is considered to be on the ground.
 func (p *Player) OnGround() bool {
+	if p.session() == session.Nop {
+		return p.mc.OnGround()
+	}
 	return p.onGround.Load()
 }
 
