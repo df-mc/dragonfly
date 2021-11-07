@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -104,6 +105,12 @@ type Conn interface {
 	StartGame(data minecraft.GameData) error
 }
 
+// actorIdentifier represents the structure of an actor identifier sent over the network.
+type actorIdentifier struct {
+	// Unique namespaced identifier for an entity.
+	ID string `nbt:"id"`
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -166,6 +173,8 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
 	s.chunkLoader.Move(w.Spawn().Vec3Middle())
+
+	s.sendAvailableEntities()
 
 	s.initPlayerList()
 
@@ -405,4 +414,20 @@ func (s *Session) closePlayerList() {
 	}
 	sessions = n
 	sessionMu.Unlock()
+}
+
+// sendAvailableEntities sends all registered entities to the player.
+func (s *Session) sendAvailableEntities() {
+	entities := world.Entities()
+	var entityData []actorIdentifier
+	for _, entity := range entities {
+		id := entity.EncodeEntity()
+		s.log.Debugf("entity %v\n", id)
+		entityData = append(entityData, actorIdentifier{ID: id})
+	}
+	serializedEntityData, err := nbt.Marshal(map[string]interface{}{"idlist": entityData})
+	if err != nil {
+		panic(fmt.Errorf("failed to serialize entity data: %v", err))
+	}
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }

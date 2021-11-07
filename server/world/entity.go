@@ -67,3 +67,8 @@ func EntityByName(name string) (SaveableEntity, bool) {
 	e, ok := entities[name]
 	return e, ok
 }
+
+// Entities returns all registered entities.
+func Entities() map[string]SaveableEntity {
+	return entities
+}
