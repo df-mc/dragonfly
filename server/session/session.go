@@ -105,12 +105,6 @@ type Conn interface {
 	StartGame(data minecraft.GameData) error
 }
 
-// actorIdentifier represents the structure of an actor identifier sent over the network.
-type actorIdentifier struct {
-	// Unique namespaced identifier for an entity.
-	ID string `nbt:"id"`
-}
-
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -418,6 +412,12 @@ func (s *Session) closePlayerList() {
 
 // sendAvailableEntities sends all registered entities to the player.
 func (s *Session) sendAvailableEntities() {
+	// actorIdentifier represents the structure of an actor identifier sent over the network.
+	type actorIdentifier struct {
+		// Unique namespaced identifier for an entity.
+		ID string `nbt:"id"`
+	}
+
 	entities := world.Entities()
 	var entityData []actorIdentifier
 	for _, entity := range entities {
