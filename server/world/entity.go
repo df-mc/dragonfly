@@ -69,6 +69,10 @@ func EntityByName(name string) (SaveableEntity, bool) {
 }
 
 // Entities returns all registered entities.
-func Entities() map[string]SaveableEntity {
-	return entities
+func Entities() []SaveableEntity {
+	es := make([]SaveableEntity, 0, len(entities))
+	for _, e := range entities {
+		es = append(es, e)
+	}
+	return es
 }
