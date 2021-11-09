@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
@@ -52,6 +53,13 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	if s, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(s.Scale())
 	}
+
+	if r, ok := e.(entity.Rider); ok {
+		m[dataKeyRiderSeatPosition] = r.SeatPosition()
+		if r.Riding() != 0 {
+			m.setFlag(dataKeyFlags, dataFlagRiding)
+		}
+	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
 		m[dataKeyAlwaysShowNameTag] = uint8(1)
@@ -98,6 +106,7 @@ const (
 	dataKeyScale             = 38
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
+	dataKeyRiderSeatPosition = 56
 	dataKeyAlwaysShowNameTag = 81
 )
 

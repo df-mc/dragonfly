@@ -29,6 +29,9 @@ type Viewer interface {
 	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
 	// target position.
 	ViewEntityTeleport(e Entity, position mgl64.Vec3)
+	// ViewEntityLink views the linking of one entity to another. It is called when any entity rides another or
+	// changes its link type.
+	ViewEntityLink(r Entity, rd Entity, linkType byte)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockNBT map[cube.Pos]Block)

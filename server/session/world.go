@@ -348,6 +348,18 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	}
 }
 
+// ViewEntityLink ...
+func (s *Session) ViewEntityLink(r world.Entity, rd world.Entity, linkType byte) {
+	riddenID := s.entityRuntimeID(rd)
+	s.writePacket(&packet.SetActorLink{EntityLink: protocol.EntityLink{
+		RiddenEntityUniqueID: int64(riddenID),
+		RiderEntityUniqueID:  int64(s.entityRuntimeID(r)),
+		Type:                 linkType,
+		RiderInitiated:       true,
+	}})
+	s.c.SetRiding(riddenID)
+}
+
 // ViewEntityItems ...
 func (s *Session) ViewEntityItems(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)

@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 )
@@ -57,6 +58,14 @@ type Controllable interface {
 	StartFlying()
 	Flying() bool
 	StopFlying()
+
+	SeatPosition() mgl32.Vec3
+	RideEntity(e world.Entity)
+	DismountEntity(e world.Entity)
+	CheckSeats(e world.Entity)
+	GetSeat(e world.Entity) int
+	Riding() uint64
+	SetRiding(id uint64)
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)

@@ -28,8 +28,10 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
 	"math"
@@ -69,6 +71,10 @@ type Player struct {
 	inv, offHand *inventory.Inventory
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
+
+	seatMu       sync.RWMutex
+	seatPosition atomic.Value
+	riding       atomic.Uint64
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -125,6 +131,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
+	p.seatPosition.Store(mgl32.Vec3{0, 0, 0})
 	return p
 }
 
@@ -2048,6 +2055,91 @@ func (p *Player) PunchAir() {
 		p.SwingArm()
 		p.World().PlaySound(p.Position(), sound.Attack{})
 	})
+}
+
+// RideEntity links the player to an entity if the entity is rideable and if there is a seat available.
+func (p *Player) RideEntity(e world.Entity) {
+	if rideable, ok := e.(entity.Rideable); ok {
+		p.seatMu.Lock()
+		if p.GetSeat(e) == -1 {
+			rideable.AddRider(p)
+			riders := rideable.Riders()
+			seat := len(riders)
+			positions := rideable.SeatPositions()
+			if len(positions) >= seat {
+				p.seatPosition.Store(positions[seat-1])
+				p.updateState()
+				linkType := protocol.EntityLinkPassenger
+				if seat-1 == 0 {
+					linkType = protocol.EntityLinkRider
+				}
+				for _, v := range p.viewers() {
+					v.ViewEntityLink(p, e, byte(linkType))
+				}
+			}
+		}
+		p.seatMu.Unlock()
+	}
+}
+
+// DismountEntity unlinks the player from an entity.
+func (p *Player) DismountEntity(e world.Entity) {
+	if rideable, ok := e.(entity.Rideable); ok {
+		rideable.RemoveRider(p)
+		for _, v := range p.viewers() {
+			v.ViewEntityLink(p, e, protocol.EntityLinkRemove)
+		}
+		for _, r := range rideable.Riders() {
+			r.GetSeat(e)
+		}
+	}
+}
+
+// CheckSeats moves a player to the seat corresponding to their current index within the slice of riders.
+func (p *Player) CheckSeats(e world.Entity) {
+	if rideable, ok := e.(entity.Rideable); ok {
+		seat := p.GetSeat(e)
+		if seat != -1 {
+			positions := rideable.SeatPositions()
+			if positions[seat] != p.seatPosition.Load() {
+				p.seatPosition.Store(positions[seat])
+				if seat == 0 {
+					for _, v := range p.viewers() {
+						v.ViewEntityLink(p, e, protocol.EntityLinkRider)
+					}
+				}
+				p.updateState()
+			}
+		}
+	}
+}
+
+// SeatPosition returns the position of the player's seat.
+func (p *Player) SeatPosition() mgl32.Vec3 {
+	return p.seatPosition.Load().(mgl32.Vec3)
+}
+
+// GetSeat returns the index of a player within the slice of riders.
+func (p *Player) GetSeat(e world.Entity) int {
+	if rideable, ok := e.(entity.Rideable); ok {
+		riders := rideable.Riders()
+		for i, r := range riders {
+			if r == p {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// Riding returns the runtime ID of the entity the player is riding.
+func (p *Player) Riding() uint64 {
+	return p.riding.Load()
+}
+
+// SetRiding saves the runtime ID of the entity the player is riding.
+func (p *Player) SetRiding(id uint64) {
+	p.riding.Store(id)
 }
 
 // EncodeEntity ...

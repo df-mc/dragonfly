@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -33,6 +34,15 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		held, _ := s.c.HeldItems()
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
 			return nil
+		}
+		if pk.TransactionData.(*protocol.UseItemOnEntityTransactionData).ActionType == protocol.UseItemOnEntityActionInteract {
+			// Check if the entity is rideable, and if so ride the entity.
+			e, found := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
+			if found {
+				if _, ok := e.(entity.Rideable); ok {
+					s.c.RideEntity(e)
+				}
+			}
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
