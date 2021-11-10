@@ -72,9 +72,8 @@ type Player struct {
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
 
-	seatMu       sync.RWMutex
 	seatPosition atomic.Value
-	riding       atomic.Uint64
+	riding       atomic.Value
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -2084,6 +2083,7 @@ func (p *Player) RideEntity(e world.Entity) {
 func (p *Player) DismountEntity(e world.Entity) {
 	if rideable, ok := e.(entity.Rideable); ok {
 		rideable.RemoveRider(p)
+		p.SetRiding(nil)
 		for _, v := range p.viewers() {
 			v.ViewEntityLink(p, e, protocol.EntityLinkRemove)
 		}
@@ -2130,14 +2130,17 @@ func (p *Player) Seat(e world.Entity) int {
 	return -1
 }
 
-// Riding returns the runtime ID of the entity the player is riding.
-func (p *Player) Riding() uint64 {
-	return p.riding.Load()
+// Riding returns the entity that the player is riding.
+func (p *Player) Riding() world.Entity {
+	if e, ok := p.riding.Load().(world.Entity); ok {
+		return e
+	}
+	return nil
 }
 
-// SetRiding saves the runtime ID of the entity the player is riding.
-func (p *Player) SetRiding(id uint64) {
-	p.riding.Store(id)
+// SetRiding saves the entity the Rider is currently riding.
+func (p *Player) SetRiding(e world.Entity) {
+	p.riding.Store(e)
 }
 
 // EncodeEntity ...

@@ -64,8 +64,8 @@ type Controllable interface {
 	DismountEntity(e world.Entity)
 	CheckSeats(e world.Entity)
 	Seat(e world.Entity) int
-	Riding() uint64
-	SetRiding(id uint64)
+	Riding() world.Entity
+	SetRiding(e world.Entity)
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)

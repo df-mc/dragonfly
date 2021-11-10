@@ -56,7 +56,7 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 
 	if r, ok := e.(entity.Rider); ok {
 		m[dataKeyRiderSeatPosition] = r.SeatPosition()
-		if r.Riding() != 0 {
+		if r.Riding() != nil {
 			m.setFlag(dataKeyFlags, dataFlagRiding)
 		}
 	}

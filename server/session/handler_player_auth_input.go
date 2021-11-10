@@ -33,9 +33,10 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	}
 
 	// Check if player is riding an entity, and move the entity.
-	if e, found := s.entityFromRuntimeID(s.c.Riding()); found {
-		if mounted := s.c.Seat(e); mounted == 0 {
-			rideable, _ := e.(entity.Rideable)
+	riding := s.c.Riding()
+	if riding != nil {
+		if mounted := s.c.Seat(riding); mounted == 0 {
+			rideable, _ := riding.(entity.Rideable)
 			rideable.Move(pk.MoveVector, pk.Yaw, pk.Pitch)
 		}
 	}

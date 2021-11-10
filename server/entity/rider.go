@@ -18,8 +18,8 @@ type Rider interface {
 	CheckSeats(e world.Entity)
 	// Seat returns the index of a Rider within the slice of riders.
 	Seat(e world.Entity) int
-	// Riding returns the runtime ID of the entity the Rider is riding.
-	Riding() uint64
-	// SetRiding saves the runtime ID of the entity the Rider is riding.
-	SetRiding(id uint64)
+	// Riding returns the entity that the player is currently riding.
+	Riding() world.Entity
+	// SetRiding saves the entity the Rider is currently riding.
+	SetRiding(e world.Entity)
 }
