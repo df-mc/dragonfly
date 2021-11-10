@@ -2088,7 +2088,7 @@ func (p *Player) DismountEntity(e world.Entity) {
 			v.ViewEntityLink(p, e, protocol.EntityLinkRemove)
 		}
 		for _, r := range rideable.Riders() {
-			r.GetSeat(e)
+			r.CheckSeats(e)
 		}
 	}
 }
