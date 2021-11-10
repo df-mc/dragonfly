@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// Rider is an interface for entities that can ride other entities.
 type Rider interface {
 	// SeatPosition returns the Rider's current seat position.
 	SeatPosition() mgl32.Vec3
