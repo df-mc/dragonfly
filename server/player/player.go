@@ -2060,8 +2060,7 @@ func (p *Player) PunchAir() {
 // RideEntity links the player to an entity if the entity is rideable and if there is a seat available.
 func (p *Player) RideEntity(e world.Entity) {
 	if rideable, ok := e.(entity.Rideable); ok {
-		p.seatMu.Lock()
-		if p.GetSeat(e) == -1 {
+		if p.Seat(e) == -1 {
 			rideable.AddRider(p)
 			riders := rideable.Riders()
 			seat := len(riders)
@@ -2078,7 +2077,6 @@ func (p *Player) RideEntity(e world.Entity) {
 				}
 			}
 		}
-		p.seatMu.Unlock()
 	}
 }
 
@@ -2098,7 +2096,7 @@ func (p *Player) DismountEntity(e world.Entity) {
 // CheckSeats moves a player to the seat corresponding to their current index within the slice of riders.
 func (p *Player) CheckSeats(e world.Entity) {
 	if rideable, ok := e.(entity.Rideable); ok {
-		seat := p.GetSeat(e)
+		seat := p.Seat(e)
 		if seat != -1 {
 			positions := rideable.SeatPositions()
 			if positions[seat] != p.seatPosition.Load() {
@@ -2119,8 +2117,8 @@ func (p *Player) SeatPosition() mgl32.Vec3 {
 	return p.seatPosition.Load().(mgl32.Vec3)
 }
 
-// GetSeat returns the index of a player within the slice of riders.
-func (p *Player) GetSeat(e world.Entity) int {
+// Seat returns the index of a player within the slice of riders.
+func (p *Player) Seat(e world.Entity) int {
 	if rideable, ok := e.(entity.Rideable); ok {
 		riders := rideable.Riders()
 		for i, r := range riders {

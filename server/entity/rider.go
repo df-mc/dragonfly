@@ -15,8 +15,8 @@ type Rider interface {
 	// CheckSeats moves a Rider to the seat corresponding to their current index within the slice of riders.
 	// It is called whenever a Rider dismounts an entity.
 	CheckSeats(e world.Entity)
-	// GetSeat returns the index of a Rider within the slice of riders.
-	GetSeat(e world.Entity) int
+	// Seat returns the index of a Rider within the slice of riders.
+	Seat(e world.Entity) int
 	// Riding returns the runtime ID of the entity the Rider is riding.
 	Riding() uint64
 	// SetRiding saves the runtime ID of the entity the Rider is riding.

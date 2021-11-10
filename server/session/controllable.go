@@ -63,7 +63,7 @@ type Controllable interface {
 	RideEntity(e world.Entity)
 	DismountEntity(e world.Entity)
 	CheckSeats(e world.Entity)
-	GetSeat(e world.Entity) int
+	Seat(e world.Entity) int
 	Riding() uint64
 	SetRiding(id uint64)
 
