@@ -26,13 +26,11 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session) error {
 			WindowID:      0,
 			ContainerType: 0xff,
 		})
-		break
 	case packet.InteractActionLeaveVehicle:
 		if s.c.Riding() == nil {
 			return nil
 		}
 		s.c.DismountEntity(s.c.Riding())
-		break
 	default:
 		return fmt.Errorf("unexpected interact packet action %v", pk.ActionType)
 	}
