@@ -62,10 +62,7 @@ type Controllable interface {
 	SeatPosition() mgl32.Vec3
 	RideEntity(e world.Entity)
 	DismountEntity(e world.Entity)
-	CheckSeats(e world.Entity)
-	Seat(e world.Entity) int
-	Riding() world.Entity
-	SetRiding(e world.Entity)
+	RidingEntity() (world.Entity, int)
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Rideable is an interface for entities that can be ridden.
@@ -15,5 +16,5 @@ type Rideable interface {
 	// RemoveRider removes a rider from the entity.
 	RemoveRider(e Rider)
 	// Move moves the entity using the given vector, yaw, and pitch.
-	Move(vector mgl32.Vec2, yaw, pitch float32)
+	Move(vector mgl64.Vec2, yaw, pitch float32)
 }

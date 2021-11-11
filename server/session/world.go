@@ -356,7 +356,6 @@ func (s *Session) ViewEntityLink(r world.Entity, rd world.Entity, linkType byte)
 		Type:                 linkType,
 		RiderInitiated:       true,
 	}})
-	s.c.SetRiding(rd)
 }
 
 // ViewEntityItems ...
