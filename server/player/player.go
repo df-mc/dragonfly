@@ -2148,14 +2148,13 @@ func (p *Player) RidingEntity() (world.Entity, int) {
 	p.ridingMu.Lock()
 	defer p.ridingMu.Unlock()
 	if p.riding != nil {
-		rideable := p.riding.(world.Entity)
-		riders := rideable.(entity.Rideable).Riders()
+		riders := p.riding.(entity.Rideable).Riders()
 		for i, r := range riders {
 			if r == p {
-				return rideable, i
+				return p.riding, i
 			}
 		}
-		return rideable, -1
+		return p.riding, -1
 	}
 	return nil, -1
 }
