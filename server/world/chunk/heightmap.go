@@ -45,3 +45,30 @@ func (h heightmap) at(x, z uint8) int16 {
 func (h heightmap) set(x, z uint8, val int16) {
 	h[(uint16(x)<<4)|uint16(z)] = val
 }
+
+// highestNeighbour returns the heightmap value of the highest directly neighbouring column of the x and z values
+// passed.
+func (h heightmap) highestNeighbour(x, z uint8) int16 {
+	highest := h.at(x, z)
+	if x != 15 {
+		if val := h.at(x+1, z); val > highest {
+			highest = val
+		}
+	}
+	if x != 0 {
+		if val := h.at(x-1, z); val > highest {
+			highest = val
+		}
+	}
+	if z != 15 {
+		if val := h.at(x, z+1); val > highest {
+			highest = val
+		}
+	}
+	if z != 0 {
+		if val := h.at(x, z-1); val > highest {
+			highest = val
+		}
+	}
+	return highest
+}
