@@ -195,6 +195,18 @@ func (cmd Command) Params(src Source) [][]ParamInfo {
 	return params
 }
 
+// Runnables returns a map of all Runnable implementations of the Command that a Source can execute.
+func (cmd Command) Runnables(src Source) map[int]Runnable {
+	m := make(map[int]Runnable, len(cmd.v))
+	for i, runnable := range cmd.v {
+		v := runnable.Interface().(Runnable)
+		if allower, ok := v.(Allower); !ok || allower.Allow(src) {
+			m[i] = v
+		}
+	}
+	return m
+}
+
 // String returns the usage of the command. The usage will be roughly equal to the one showed by the client
 // in-game.
 func (cmd Command) String() string {
