@@ -184,42 +184,48 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 		return fmt.Errorf("invalid recipe network id sent")
 	}
 
-	// Get our inputs and outputs.
-	expectedInputs, output := r.Inputs(), r.Output()
-	if auto {
-		// Grow the input stacks by the scale.
-		newExpectedInputs := make([]recipe.InputItem, len(expectedInputs))
-		for i, input := range expectedInputs {
-			input.Stack = input.Grow(input.Count() * (timesCrafted - 1))
-			newExpectedInputs[i] = input
+	// Ensure that the recipe can be crafted.
+	switch r.(type) {
+	case *recipe.ShapedRecipe, *recipe.ShapelessRecipe:
+		// Get our inputs and outputs.
+		expectedInputs, output := r.Inputs(), r.Output()
+		if auto {
+			// Grow the input stacks by the scale.
+			newExpectedInputs := make([]recipe.InputItem, len(expectedInputs))
+			for i, input := range expectedInputs {
+				input.Stack = input.Grow(input.Count() * (timesCrafted - 1))
+				newExpectedInputs[i] = input
+			}
+
+			// Check and remove inventory inputs.
+			if !h.hasRequiredInventoryInputs(newExpectedInputs, s) {
+				return fmt.Errorf("tried crafting without required inventory inputs")
+			}
+			if err := h.removeInventoryInputs(newExpectedInputs, s); err != nil {
+				return err
+			}
+
+			// Grow our output stack by the scale.
+			output = output.Grow(output.Count() * (timesCrafted - 1))
+		} else {
+			// Check and remove grid inputs.
+			if !h.hasRequiredGridInputs(expectedInputs, s) {
+				return fmt.Errorf("tried crafting without required inputs")
+			}
+			if err := h.removeGridInputs(expectedInputs, s); err != nil {
+				return err
+			}
 		}
 
-		// Check and remove inventory inputs.
-		if !h.hasRequiredInventoryInputs(newExpectedInputs, s) {
-			return fmt.Errorf("tried crafting without required inventory inputs")
-		}
-		if err := h.removeInventoryInputs(newExpectedInputs, s); err != nil {
-			return err
-		}
-
-		// Grow our output stack by the scale.
-		output = output.Grow(output.Count() * (timesCrafted - 1))
-	} else {
-		// Check and remove grid inputs.
-		if !h.hasRequiredGridInputs(expectedInputs, s) {
-			return fmt.Errorf("tried crafting without required inputs")
-		}
-		if err := h.removeGridInputs(expectedInputs, s); err != nil {
-			return err
-		}
+		// Update the output item in the inventory.
+		h.setItemInSlot(protocol.StackRequestSlotInfo{
+			ContainerID:    containerCraftingResult,
+			Slot:           craftingResultIndex,
+			StackNetworkID: item_id(output),
+		}, output, s)
+		return nil
 	}
-
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingResult,
-		Slot:           craftingResultIndex,
-		StackNetworkID: item_id(output),
-	}, output, s)
-	return nil
+	return fmt.Errorf("tried crafting an invalid recipe")
 }
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
