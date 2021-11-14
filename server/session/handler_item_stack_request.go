@@ -561,39 +561,24 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	h.changes = map[byte]map[byte]changeInfo{}
 }
 
-// inputData is used for input maps for inventory input checking and removing.
-type inputData struct {
-	// count is the count of the input.
-	count int
-	// metadataValue is the metadata value of the input.
-	metadataValue int16
-	// allTypes is true if the input applies to all of it's kind.
-	allTypes bool
-}
-
 // inputMapFromInputs makes an input map from inputs.
-func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.InputItem) map[string]inputData {
-	inputMap := make(map[string]inputData)
+func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.InputItem) map[string]recipe.InputItem {
+	inputMap := make(map[string]recipe.InputItem)
 	for _, input := range inputs {
 		it := input.Item()
 		if it == nil {
 			continue
 		}
-
 		name, meta := it.EncodeItem()
-		data := inputData{
-			count:         input.Count(),
-			metadataValue: meta,
-			allTypes:      input.Variants,
-		}
 
-		if newData, ok := inputMap[name]; ok {
-			if newData.metadataValue == data.metadataValue || newData.allTypes && data.allTypes {
-				data.count = data.count + newData.count
+		if otherInput, ok := inputMap[name]; ok {
+			_, otherMeta := otherInput.Item().EncodeItem()
+			if meta == otherMeta || input.Variants && otherInput.Variants {
+				input.Stack = input.Grow(otherInput.Count())
 			}
 		}
 
-		inputMap[name] = data
+		inputMap[name] = input
 	}
 
 	return inputMap
@@ -602,23 +587,25 @@ func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.InputItem) 
 // hasRequiredInventoryInputs checks and validates if the player inventory has the necessary inputs.
 func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.InputItem, s *Session) bool {
 	inputMap := h.inputMapFromInputs(inputs)
-
 	for _, oldSt := range append(s.inv.Items(), s.ui.Items()...) {
 		name, meta := oldSt.Item().EncodeItem()
-		if data, ok := inputMap[name]; ok {
-			if data.metadataValue == meta || data.allTypes {
-				data.count -= oldSt.Count()
-				inputMap[name] = data
+		if input, ok := inputMap[name]; ok {
+			if input.Empty() {
+				continue
+			}
+			_, otherMeta := input.Item().EncodeItem()
+			if meta == otherMeta || input.Variants {
+				input.Stack = input.Grow(-oldSt.Count())
+				inputMap[name] = input
 			}
 		}
 	}
 
 	for _, data := range inputMap {
-		if data.count > 0 {
+		if !data.Empty() {
 			return false
 		}
 	}
-
 	return true
 }
 
@@ -646,9 +633,8 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputIte
 			continue
 		}
 
-		currentInputToMatch := inputs[satisfiedInputs]
-
 		// Items that apply to all types, so we just compare with the name and count.
+		currentInputToMatch := inputs[satisfiedInputs]
 		if currentInputToMatch.Variants {
 			name, _ := oldSt.Item().EncodeItem()
 			otherName, _ := currentInputToMatch.Item().EncodeItem()
@@ -675,12 +661,16 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.InputIte
 		}
 
 		name, meta := oldSt.Item().EncodeItem()
-		if data, ok := inputMap[name]; ok {
-			if data.metadataValue == meta || data.allTypes {
-				if data.count > 0 {
+		if input, ok := inputMap[name]; ok {
+			if input.Empty() {
+				return
+			}
+			_, otherMeta := input.Item().EncodeItem()
+			if meta == otherMeta || input.Variants {
+				if !input.Empty() {
 					targetRemoval := oldSt.Count()
-					if data.count < oldSt.Count() {
-						targetRemoval = data.count
+					if input.Count() < oldSt.Count() {
+						targetRemoval = input.Count()
 					}
 
 					st := oldSt.Grow(-targetRemoval)
@@ -690,8 +680,8 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.InputIte
 						StackNetworkID: item_id(st),
 					}, st, s)
 
-					data.count -= targetRemoval
-					inputMap[name] = data
+					input.Stack = input.Grow(-targetRemoval)
+					inputMap[name] = input
 				}
 			}
 		}
