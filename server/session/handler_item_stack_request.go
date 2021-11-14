@@ -8,6 +8,8 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
+	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -19,7 +21,7 @@ import (
 type ItemStackRequestHandler struct {
 	currentRequest  int32
 	changes         map[byte]map[byte]changeInfo
-	responseChanges map[int32]map[byte]map[byte]responseChange
+	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
 	current         time.Time
 	ignoreDestroy   bool
 }
@@ -71,6 +73,10 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 
 	for _, action := range req.Actions {
 		switch a := action.(type) {
+		case *protocol.AutoCraftRecipeStackRequestAction:
+			err = h.handleCraft(a.RecipeNetworkID, true, int(a.TimesCrafted), s)
+		case *protocol.CraftRecipeStackRequestAction:
+			err = h.handleCraft(a.RecipeNetworkID, false, 1, s)
 		case *protocol.TakeStackRequestAction:
 			err = h.handleTake(a, s)
 		case *protocol.PlaceStackRequestAction:
@@ -85,7 +91,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
-		case *protocol.CraftResultsDeprecatedStackRequestAction:
+		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
 			return fmt.Errorf("unhandled stack request action %#v", action)
@@ -166,6 +172,62 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
+
+	return nil
+}
+
+// handleCraft handles the Craft stack request action.
+func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool, timesCrafted int, s *Session) error {
+	r, ok := s.recipeMapping[recipeNetworkID]
+	if !ok {
+		return fmt.Errorf("invalid recipe network id sent")
+	}
+
+	var expectedInputs []recipe.InputItem
+	var output item.Stack
+
+	switch r := r.(type) {
+	case recipe.ShapelessRecipe:
+		expectedInputs, output = r.Inputs, r.Output
+	case recipe.ShapedRecipe:
+		expectedInputs, output = r.Inputs, r.Output
+	default:
+		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
+	}
+
+	if auto {
+		var newExpectedInputs []recipe.InputItem
+		for _, input := range expectedInputs {
+			newExpectedInputs = append(newExpectedInputs, recipe.InputItem{
+				Stack:    input.Grow(input.Count() * (timesCrafted - 1)),
+				Variants: input.Variants,
+			})
+		}
+
+		if !h.hasRequiredInventoryInputs(newExpectedInputs, s) {
+			return fmt.Errorf("tried crafting without required inventory inputs")
+		}
+
+		if err := h.removeInventoryInputs(newExpectedInputs, s); err != nil {
+			return err
+		}
+
+		output = output.Grow(output.Count() * (timesCrafted - 1))
+	} else {
+		if !h.hasRequiredGridInputs(expectedInputs, s) {
+			return fmt.Errorf("tried crafting without required inputs")
+		}
+
+		if err := h.removeGridInputs(expectedInputs, s); err != nil {
+			return err
+		}
+	}
+
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID:    containerCraftingResult,
+		Slot:           craftingResultIndex,
+		StackNetworkID: item_id(output),
+	}, output, s)
 
 	return nil
 }
@@ -325,16 +387,22 @@ func (h *ItemStackRequestHandler) verifySlots(s *Session, slots ...protocol.Stac
 
 // verifySlot checks if the slot passed by the client is the same as that expected by the server.
 func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo, s *Session) error {
-	h.tryAcknowledgeChanges(slot)
+	if err := h.tryAcknowledgeChanges(s, slot); err != nil {
+		return err
+	}
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
+	}
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return fmt.Errorf("slot pointed to inventory with id %v, but inventory could not be found", slot.ContainerID)
 	}
 
 	i, err := h.itemInSlot(slot, s)
 	if err != nil {
 		return err
 	}
-	clientID, err := h.resolveID(slot)
+	clientID, err := h.resolveID(inv, slot)
 	if err != nil {
 		return err
 	}
@@ -349,7 +417,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 // resolveID resolves the stack network ID in the slot passed. If it is negative, it points to an earlier
 // request, in which case it will look it up in the changes of an earlier response to a request to find the
 // actual stack network ID in the slot. If it is positive, the ID will be returned again.
-func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) (int32, error) {
+func (h *ItemStackRequestHandler) resolveID(inv *inventory.Inventory, slot protocol.StackRequestSlotInfo) (int32, error) {
 	if slot.StackNetworkID >= 0 {
 		return slot.StackNetworkID, nil
 	}
@@ -357,7 +425,7 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v, but request could not be found", slot.StackNetworkID)
 	}
-	changes, ok := containerChanges[slot.ContainerID]
+	changes, ok := containerChanges[inv]
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.ContainerID)
 	}
@@ -371,37 +439,44 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 // tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
 // info passed from the client has the right stack network ID in any of the stored slots. If this is the case,
 // that entry is removed, so that the maps are cleaned up eventually.
-func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
+func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protocol.StackRequestSlotInfo) error {
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return fmt.Errorf("could not find container with id %v", slot.ContainerID)
+	}
+
 	for requestID, containerChanges := range h.responseChanges {
-		for containerID, changes := range containerChanges {
+		for newInv, changes := range containerChanges {
 			for slotIndex, val := range changes {
-				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && newInv == inv) || h.current.Sub(val.timestamp) > time.Second*5 {
 					delete(changes, slotIndex)
 				}
 			}
 			if len(changes) == 0 {
-				delete(containerChanges, containerID)
+				delete(containerChanges, newInv)
 			}
 		}
 		if len(containerChanges) == 0 {
 			delete(h.responseChanges, requestID)
 		}
 	}
+
+	return nil
 }
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
 func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session) (item.Stack, error) {
-	inventory, ok := s.invByID(int32(slot.ContainerID))
+	inv, ok := s.invByID(int32(slot.ContainerID))
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
 	}
 
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	i, err := inventory.Item(sl)
+	i, err := inv.Item(sl)
 	if err != nil {
 		return i, err
 	}
@@ -410,15 +485,15 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
-	inventory, _ := s.invByID(int32(slot.ContainerID))
+	inv, _ := s.invByID(int32(slot.ContainerID))
 
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	before, _ := inventory.Item(sl)
-	_ = inventory.SetItem(sl, i)
+	before, _ := inv.Item(sl)
+	_ = inv.SetItem(sl, i)
 
 	respSlot := protocol.StackResponseSlotInfo{
 		Slot:           slot.Slot,
@@ -436,12 +511,12 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	}
 
 	if h.responseChanges[h.currentRequest] == nil {
-		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
+		h.responseChanges[h.currentRequest] = map[*inventory.Inventory]map[byte]responseChange{}
 	}
-	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
-		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
+	if h.responseChanges[h.currentRequest][inv] == nil {
+		h.responseChanges[h.currentRequest][inv] = map[byte]responseChange{}
 	}
-	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+	h.responseChanges[h.currentRequest][inv][slot.Slot] = responseChange{
 		id:        respSlot.StackNetworkID,
 		timestamp: h.current,
 	}
@@ -484,4 +559,195 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 		}
 	}
 	h.changes = map[byte]map[byte]changeInfo{}
+}
+
+// inputData is used for input maps for inventory input checking and removing.
+type inputData struct {
+	// count is the count of the input.
+	count int
+	// metadataValue is the metadata value of the input.
+	metadataValue int16
+	// allTypes is true if the input applies to all of it's kind.
+	allTypes bool
+}
+
+// inputMapFromInputs makes an input map from inputs.
+func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.InputItem) map[string]inputData {
+	inputMap := make(map[string]inputData)
+	for _, input := range inputs {
+		it := input.Item()
+		if it == nil {
+			continue
+		}
+
+		name, meta := it.EncodeItem()
+		data := inputData{
+			count:         input.Count(),
+			metadataValue: meta,
+			allTypes:      input.Variants,
+		}
+
+		if newData, ok := inputMap[name]; ok {
+			if newData.metadataValue == data.metadataValue || newData.allTypes && data.allTypes {
+				data.count = data.count + newData.count
+			}
+		}
+
+		inputMap[name] = data
+	}
+
+	return inputMap
+}
+
+// hasRequiredInventoryInputs checks and validates if the player inventory has the necessary inputs.
+func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.InputItem, s *Session) bool {
+	inputMap := h.inputMapFromInputs(inputs)
+
+	for _, oldSt := range append(s.inv.Contents(), s.ui.Contents()...) {
+		name, meta := oldSt.Item().EncodeItem()
+		if data, ok := inputMap[name]; ok {
+			if data.metadataValue == meta || data.allTypes {
+				data.count -= oldSt.Count()
+				inputMap[name] = data
+			}
+		}
+	}
+
+	for _, data := range inputMap {
+		if data.count > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// hasRequiredGridInputs checks and validates the inputs for a crafting grid.
+func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputItem, s *Session) bool {
+	offset := s.craftingOffset()
+
+	var satisfiedInputs int
+	for i := byte(0); i < s.craftingSize(); i++ {
+		if satisfiedInputs == len(inputs) {
+			break
+		}
+
+		slot := i + offset
+		oldSt, err := s.ui.Item(int(slot))
+		if err != nil {
+			return false
+		}
+		if oldSt.Empty() {
+			// We should still up the satisfied inputs count if both stacks are empty.
+			if inputs[satisfiedInputs].Empty() {
+				satisfiedInputs++
+			}
+
+			continue
+		}
+
+		currentInputToMatch := inputs[satisfiedInputs]
+
+		// Items that apply to all types, so we just compare with the name and count.
+		if currentInputToMatch.Variants {
+			name, _ := oldSt.Item().EncodeItem()
+			otherName, _ := currentInputToMatch.Item().EncodeItem()
+			if name == otherName && oldSt.Count() >= currentInputToMatch.Count() {
+				satisfiedInputs++
+			}
+		} else {
+			if oldSt.Comparable(currentInputToMatch.Stack) {
+				satisfiedInputs++
+			}
+		}
+	}
+
+	return satisfiedInputs == len(inputs)
+}
+
+// removeInventoryInputs removes the inputs in the player inventory.
+func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.InputItem, s *Session) error {
+	inputMap := h.inputMapFromInputs(inputs)
+
+	updateStack := func(container byte, slot byte, oldSt item.Stack) {
+		if oldSt.Empty() {
+			return
+		}
+
+		name, meta := oldSt.Item().EncodeItem()
+		if data, ok := inputMap[name]; ok {
+			if data.metadataValue == meta || data.allTypes {
+				if data.count > 0 {
+					targetRemoval := oldSt.Count()
+					if data.count < oldSt.Count() {
+						targetRemoval = data.count
+					}
+
+					st := oldSt.Grow(-targetRemoval)
+					h.setItemInSlot(protocol.StackRequestSlotInfo{
+						ContainerID:    container,
+						Slot:           slot,
+						StackNetworkID: item_id(st),
+					}, st, s)
+
+					data.count -= targetRemoval
+					inputMap[name] = data
+				}
+			}
+		}
+	}
+
+	for slot, oldSt := range s.inv.Items() {
+		updateStack(containerFullInventory, byte(slot), oldSt)
+	}
+
+	offset := s.craftingOffset()
+	for i := byte(0); i < s.craftingSize(); i++ {
+		slot := i + offset
+
+		oldSt, err := s.ui.Item(int(slot))
+		if err != nil {
+			return err
+		}
+
+		updateStack(containerCraftingGrid, slot, oldSt)
+	}
+
+	return nil
+}
+
+// removeGridInputs removes the inputs passed in the crafting grid.
+func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.InputItem, s *Session) error {
+	offset := s.craftingOffset()
+
+	var index int
+	for i := byte(0); i < s.craftingSize(); i++ {
+		if index == len(inputs) {
+			break
+		}
+
+		slot := i + offset
+		oldSt, err := s.ui.Item(int(slot))
+		if err != nil {
+			return fmt.Errorf("expected item doesn't exist: " + err.Error())
+		}
+		if oldSt.Empty() {
+			// We should still up the index if the expected input is empty.
+			if inputs[index].Empty() {
+				index++
+			}
+
+			continue
+		}
+
+		st := oldSt.Grow(-inputs[index].Count())
+		h.setItemInSlot(protocol.StackRequestSlotInfo{
+			ContainerID:    containerCraftingGrid,
+			Slot:           slot,
+			StackNetworkID: item_id(st),
+		}, st, s)
+		index++
+	}
+
+	return nil
 }

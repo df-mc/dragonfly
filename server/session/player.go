@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -66,6 +67,11 @@ func (s *Session) SendRespawn() {
 	})
 }
 
+// sendRecipes sends the current crafting recipes to the session.
+func (s *Session) sendRecipes() {
+	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+}
+
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
@@ -79,6 +85,15 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 const (
+	craftingSizeSmall       = 4
+	craftingSizeLarge       = 9
+	craftingGridSmallOffset = 28
+	craftingGridLargeOffset = 32
+	craftingResultIndex     = 50
+	craftingFlagAll         = 32767
+)
+
+const (
 	containerArmour         = 6
 	containerChest          = 7
 	containerBeacon         = 8
@@ -87,9 +102,11 @@ const (
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
+	containerCraftingOffset = 46
 	containerBarrel         = 57
 	containerCursor         = 58
 	containerCreativeOutput = 59
+	containerCraftingResult = containerCraftingGrid + containerCraftingOffset
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -576,15 +593,79 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
+// itemToRecipeIngredientItem converts a recipe.InputItem into a type that can be used over the protocol.
+func itemToRecipeIngredientItem(s recipe.InputItem) protocol.RecipeIngredientItem {
+	if s.Item() == nil {
+		return protocol.RecipeIngredientItem{}
+	}
+	rid, meta, ok := world.ItemRuntimeID(s.Item())
+	if !ok {
+		panic("should never happen")
+	}
+
+	if s.Variants {
+		meta = craftingFlagAll
+	}
+
+	return protocol.RecipeIngredientItem{
+		NetworkID:     rid,
+		MetadataValue: int32(meta),
+		Count:         int32(s.Count()),
+	}
+}
+
+// itemsToRecipeIngredientItems converts a list of recipe.Items into a type that can be used over the protocol.
+func itemsToRecipeIngredientItems(s []recipe.InputItem) (r []protocol.RecipeIngredientItem) {
+	for _, st := range s {
+		r = append(r, itemToRecipeIngredientItem(st))
+	}
+	return
+}
+
+// deleteDamage strips the damage from a protocol item.
+func deleteDamage(st protocol.ItemStack) protocol.ItemStack {
+	delete(st.NBTData, "Damage")
+	return st
+}
+
+// protocolRecipes returns all recipes as protocol recipes.
+func (s *Session) protocolRecipes() []protocol.Recipe {
+	recipeList := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
+		networkID := uint32(index) + 1
+		s.recipeMapping[networkID] = i
+
+		switch newRecipe := i.(type) {
+		case recipe.ShapelessRecipe:
+			recipeList = append(recipeList, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
+				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output))},
+				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shapeless recipes are added.
+				RecipeNetworkID: networkID,
+			})
+		case recipe.ShapedRecipe:
+			recipeList = append(recipeList, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Width:           int32(newRecipe.Dimensions[0]),
+				Height:          int32(newRecipe.Dimensions[1]),
+				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
+				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output))},
+				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shaped recipes are added.
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	return recipeList
+}
+
 // creativeItems returns all creative inventory items as protocol item stacks.
 func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
 	for index, i := range creative.Items() {
-		v := stackFromItem(i)
-		delete(v.NBTData, "Damage")
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  v,
+			Item:                  deleteDamage(stackFromItem(i)),
 		})
 	}
 	return it
