@@ -636,7 +636,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		s.recipeMapping[networkID] = i
 
 		switch newRecipe := i.(type) {
-		case recipe.ShapelessRecipe:
+		case *recipe.ShapelessRecipe:
 			recipeList = append(recipeList, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs()),
@@ -644,7 +644,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Block:           "crafting_table", // This won't always be the case in the future, but for now it's fine.
 				RecipeNetworkID: networkID,
 			})
-		case recipe.ShapedRecipe:
+		case *recipe.ShapedRecipe:
 			recipeList = append(recipeList, &protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
 				Width:           int32(newRecipe.Dimensions[0]),

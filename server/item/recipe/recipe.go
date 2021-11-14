@@ -37,21 +37,21 @@ type recipe struct {
 }
 
 // Inputs ...
-func (r recipe) Inputs() []InputItem {
+func (r *recipe) Inputs() []InputItem {
 	return r.inputs
 }
 
 // UpdateInputs ...
-func (r recipe) UpdateInputs(inputs []InputItem) {
+func (r *recipe) UpdateInputs(inputs []InputItem) {
 	r.inputs = inputs
 }
 
 // Output ...
-func (r recipe) Output() item.Stack {
+func (r *recipe) Output() item.Stack {
 	return r.output
 }
 
 // UpdateOutput ...
-func (r recipe) UpdateOutput(output item.Stack) {
+func (r *recipe) UpdateOutput(output item.Stack) {
 	r.output = output
 }
