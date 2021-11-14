@@ -332,8 +332,8 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxY, maxZ := pos[0]+width, pos[1]+height, pos[2]+length
 
-	for chunkX := pos[0] >> 4; chunkX < (maxX>>4)+1; chunkX++ {
-		for chunkZ := pos[2] >> 4; chunkZ < (maxZ>>4)+1; chunkZ++ {
+	for chunkX := pos[0] >> 4; chunkX <= maxX>>4; chunkX++ {
+		for chunkZ := pos[2] >> 4; chunkZ <= maxZ>>4; chunkZ++ {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
 			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
 			// block updates, but instead send a single chunk update once.
@@ -344,12 +344,12 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				continue
 			}
 			f := func(x, y, z int) Block {
-				actualX, actualZ := chunkX+x, chunkZ+z
+				actualX, actualY, actualZ := pos[0]+x, pos[1]+y, pos[2]+z
 				if actualX>>4 == chunkX && actualZ>>4 == chunkZ {
-					b, _ := w.blockInChunk(c, cube.Pos{actualX, y, actualZ})
+					b, _ := w.blockInChunk(c, cube.Pos{actualX, actualY, actualZ})
 					return b
 				}
-				return w.Block(cube.Pos{actualX, y, actualZ})
+				return w.Block(cube.Pos{actualX, actualY, actualZ})
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
@@ -400,8 +400,6 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								} else {
 									delete(c.e, pos)
 								}
-							} else {
-								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, airRID)
 							}
 							if liq != nil {
 								rid, ok := BlockRuntimeID(liq)
