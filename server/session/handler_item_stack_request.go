@@ -178,46 +178,37 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 
 // handleCraft handles the Craft stack request action.
 func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool, timesCrafted int, s *Session) error {
+	// Get our recipe.
 	r, ok := s.recipeMapping[recipeNetworkID]
 	if !ok {
 		return fmt.Errorf("invalid recipe network id sent")
 	}
 
-	var expectedInputs []recipe.InputItem
-	var output item.Stack
-
-	switch r := r.(type) {
-	case recipe.ShapelessRecipe:
-		expectedInputs, output = r.Inputs, r.Output
-	case recipe.ShapedRecipe:
-		expectedInputs, output = r.Inputs, r.Output
-	default:
-		return fmt.Errorf("tried crafting an invalid recipe: %T", r)
-	}
-
+	// Get our inputs and outputs.
+	expectedInputs, output := r.Inputs(), r.Output()
 	if auto {
-		var newExpectedInputs []recipe.InputItem
-		for _, input := range expectedInputs {
-			newExpectedInputs = append(newExpectedInputs, recipe.InputItem{
-				Stack:    input.Grow(input.Count() * (timesCrafted - 1)),
-				Variants: input.Variants,
-			})
+		// Grow the input stacks by the scale.
+		newExpectedInputs := make([]recipe.InputItem, len(expectedInputs))
+		for i, input := range expectedInputs {
+			input.Stack = input.Grow(input.Count() * (timesCrafted - 1))
+			newExpectedInputs[i] = input
 		}
 
+		// Check and remove inventory inputs.
 		if !h.hasRequiredInventoryInputs(newExpectedInputs, s) {
 			return fmt.Errorf("tried crafting without required inventory inputs")
 		}
-
 		if err := h.removeInventoryInputs(newExpectedInputs, s); err != nil {
 			return err
 		}
 
+		// Grow our output stack by the scale.
 		output = output.Grow(output.Count() * (timesCrafted - 1))
 	} else {
+		// Check and remove grid inputs.
 		if !h.hasRequiredGridInputs(expectedInputs, s) {
 			return fmt.Errorf("tried crafting without required inputs")
 		}
-
 		if err := h.removeGridInputs(expectedInputs, s); err != nil {
 			return err
 		}
@@ -228,7 +219,6 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 		Slot:           craftingResultIndex,
 		StackNetworkID: item_id(output),
 	}, output, s)
-
 	return nil
 }
 

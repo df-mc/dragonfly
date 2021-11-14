@@ -639,9 +639,9 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		case recipe.ShapelessRecipe:
 			recipeList = append(recipeList, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
-				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
-				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output))},
-				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shapeless recipes are added.
+				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs()),
+				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output()))},
+				Block:           "crafting_table", // This won't always be the case in the future, but for now it's fine.
 				RecipeNetworkID: networkID,
 			})
 		case recipe.ShapedRecipe:
@@ -649,9 +649,9 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				RecipeID:        uuid.New().String(),
 				Width:           int32(newRecipe.Dimensions[0]),
 				Height:          int32(newRecipe.Dimensions[1]),
-				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs),
-				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output))},
-				Block:           "crafting_table", // TODO: Stop hardcoding this once more blocks that support shaped recipes are added.
+				Input:           itemsToRecipeIngredientItems(newRecipe.Inputs()),
+				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output()))},
+				Block:           "crafting_table", // This won't always be the case in the future, but for now it's fine.
 				RecipeNetworkID: networkID,
 			})
 		}
