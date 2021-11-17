@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	MaxY = 255
-	MinY = 0
+	MaxY = 320
+	MinY = -64
 )
 
 // Pos holds the position of a block. The position is represented of an array with an x, y and z value,
