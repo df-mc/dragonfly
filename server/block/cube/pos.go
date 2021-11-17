@@ -35,7 +35,7 @@ func (p Pos) Z() int {
 	return p[2]
 }
 
-// OutOfBounds checks if the Y value is either bigger than 255 or smaller than 0.
+// OutOfBounds checks if the Y value is either bigger than MaxY or smaller than MinY.
 func (p Pos) OutOfBounds() bool {
 	y := p[1]
 	return y > MaxY || y < MinY
