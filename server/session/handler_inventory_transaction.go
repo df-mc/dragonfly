@@ -35,15 +35,6 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
 			return nil
 		}
-		if pk.TransactionData.(*protocol.UseItemOnEntityTransactionData).ActionType == protocol.UseItemOnEntityActionInteract {
-			// Check if the entity is rideable, and if so ride the entity.
-			e, found := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
-			if found {
-				if _, ok := e.(entity.Rideable); ok {
-					s.c.RideEntity(e)
-				}
-			}
-		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		held, _ := s.c.HeldItems()
@@ -121,6 +112,10 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	}
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
+		// Check if the entity is rideable, and if so ride the entity.
+		if r, ok := e.(entity.Rideable); ok {
+			s.c.MountEntity(r)
+		}
 		s.c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
 		s.c.AttackEntity(e)

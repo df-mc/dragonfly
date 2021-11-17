@@ -31,7 +31,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
 	"math"
@@ -2058,24 +2057,24 @@ func (p *Player) PunchAir() {
 	})
 }
 
-// RideEntity links the player to an entity if the entity is rideable and if there is a seat available.
-func (p *Player) RideEntity(e world.Entity) {
-	if rideable, ok := e.(entity.Rideable); ok {
+// MountEntity mounts the player to an entity if the entity is rideable and if there is a seat available.
+func (p *Player) MountEntity(r entity.Rideable) {
+	if e, ok := r.(world.Entity); ok {
 		if p.seat(e) == -1 {
-			rideable.AddRider(p)
+			r.AddRider(p)
 			p.setRiding(e)
-			riders := rideable.Riders()
+			riders := r.Riders()
 			seat := len(riders)
-			positions := rideable.SeatPositions()
+			positions := r.SeatPositions()
 			if len(positions) >= seat {
 				p.seatPosition.Store(positions[seat-1])
 				p.updateState()
-				linkType := protocol.EntityLinkPassenger
+				driver := false
 				if seat-1 == 0 {
-					linkType = protocol.EntityLinkRider
+					driver = true
 				}
 				for _, v := range p.viewers() {
-					v.ViewEntityLink(p, e, byte(linkType))
+					v.ViewEntityMount(p, e, driver)
 				}
 			}
 		} else {
@@ -2085,21 +2084,24 @@ func (p *Player) RideEntity(e world.Entity) {
 	}
 }
 
-// DismountEntity unlinks the player from an entity.
-func (p *Player) DismountEntity(e world.Entity) {
-	if rideable, ok := e.(entity.Rideable); ok {
-		rideable.RemoveRider(p)
-		p.setRiding(nil)
-		for _, v := range p.viewers() {
-			v.ViewEntityLink(p, e, protocol.EntityLinkRemove)
-		}
-		for _, r := range rideable.Riders() {
-			r.RideEntity(e)
+// DismountEntity dismounts the player from an entity.
+func (p *Player) DismountEntity() {
+	e, _ := p.RidingEntity()
+	if e != nil {
+		if rideable, ok := e.(entity.Rideable); ok {
+			rideable.RemoveRider(p)
+			p.setRiding(nil)
+			for _, v := range p.viewers() {
+				v.ViewEntityDismount(p, e)
+			}
+			for _, r := range rideable.Riders() {
+				r.MountEntity(rideable)
+			}
 		}
 	}
 }
 
-// CheckSeats moves a player to the seat corresponding to their current index within the slice of riders.
+// checkSeats moves a player to the seat corresponding to their current index within the slice of riders.
 func (p *Player) checkSeats(e world.Entity) {
 	if rideable, ok := e.(entity.Rideable); ok {
 		seat := p.seat(e)
@@ -2109,7 +2111,7 @@ func (p *Player) checkSeats(e world.Entity) {
 				p.seatPosition.Store(positions[seat])
 				if seat == 0 {
 					for _, v := range p.viewers() {
-						v.ViewEntityLink(p, e, protocol.EntityLinkRider)
+						v.ViewEntityMount(p, e, true)
 					}
 				}
 				p.updateState()

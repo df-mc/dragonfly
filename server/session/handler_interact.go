@@ -28,7 +28,7 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session) error {
 		})
 	case packet.InteractActionLeaveVehicle:
 		if e, _ := s.c.RidingEntity(); e != nil {
-			s.c.DismountEntity(e)
+			s.c.DismountEntity()
 		}
 	default:
 		return fmt.Errorf("unexpected interact packet action %v", pk.ActionType)
