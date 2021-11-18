@@ -354,13 +354,13 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
 			for i, sub := range subs {
-				baseY := i << 4
+				baseY := (i + (cube.MinY >> 4)) << 4
 				if sub == nil {
 					c.SetRuntimeID(0, int16(baseY), 0, 0, airRID)
 					sub = subs[i]
 				}
 
-				if i < pos[1]>>4 {
+				if baseY>>4 < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
 					break
@@ -1388,7 +1388,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		for j := uint32(0); j < tickSpeed; j++ {
 			generateNew := true
 			var x, y, z uint8
-			for subY, sub := range subChunks {
+			for i, sub := range subChunks {
 				if sub == nil {
 					// No sub chunk present, so skip it right away.
 					continue
@@ -1399,15 +1399,13 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					continue
 				}
 				layer := layers[0]
-				p := layer.Palette()
-				if p.Len() == 1 && p.RuntimeID(0) == airRID {
+				if p := layer.Palette(); p.Len() == 1 && p.RuntimeID(0) == airRID {
 					// Empty layer present, so skip it right away.
 					continue
 				}
 				if generateNew {
 					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
-
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
@@ -1418,7 +1416,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 
 				if randomTickBlocks[rid] {
-					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY<<4 + int(y), cz + int(z)}})
+					subY := (i + (cube.MinY >> 4)) << 4
+					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY + int(y), cz + int(z)}})
 					generateNew = true
 					continue
 				}
