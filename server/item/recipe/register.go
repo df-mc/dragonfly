@@ -10,5 +10,6 @@ func Register(recipe Recipe) {
 
 // Recipes returns each recipe in a slice.
 func Recipes() []Recipe {
-	return recipes
+	// Return a copy of the slice.
+	return append([]Recipe(nil), recipes...)
 }
