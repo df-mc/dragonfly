@@ -3,6 +3,7 @@ package recipe
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"math"
 )
 
 // InputItem is a recipe item. It is an item stack inherently, but it also has an extra value for if it applies to all types.
@@ -30,7 +31,7 @@ func (i inputItemData) inputItem() (InputItem, bool) {
 		return InputItem{}, false
 	}
 
-	return InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.MetadataValue == 32767}, true
+	return InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.MetadataValue == math.MaxInt16}, true
 }
 
 // inputItems is an array of input items.
