@@ -33,7 +33,7 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shapeless {
-		inputs, ok := s.Input.toInputItems()
+		inputs, ok := s.Input.inputItems()
 		if !ok {
 			continue
 		}
@@ -48,7 +48,7 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shaped {
-		inputs, ok := s.Input.toInputItems()
+		inputs, ok := s.Input.inputItems()
 		if !ok {
 			continue
 		}

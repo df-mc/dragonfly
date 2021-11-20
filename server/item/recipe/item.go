@@ -13,8 +13,8 @@ type InputItem struct {
 	Variants bool
 }
 
-// inputItem is an item that is inputted to a crafting menu.
-type inputItem struct {
+// inputItemData contains data for an item that is inputted to a crafting menu.
+type inputItemData struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
 	// MetadataValue is the meta of the item. This can change the item almost completely, or act as durability.
@@ -23,11 +23,8 @@ type inputItem struct {
 	Count int32 `nbt:"count"`
 }
 
-// toInputItem converts an inputItem to an InputItem.
-func (i inputItem) toInputItem() (InputItem, bool) {
-	if len(i.Name) == 0 {
-		return InputItem{}, true
-	}
+// inputItem converts an inputItemData to an InputItem.
+func (i inputItemData) inputItem() (InputItem, bool) {
 	it, ok := world.ItemByName(i.Name, int16(i.MetadataValue))
 	if !ok {
 		return InputItem{}, false
@@ -37,12 +34,12 @@ func (i inputItem) toInputItem() (InputItem, bool) {
 }
 
 // inputItems is an array of input items.
-type inputItems []inputItem
+type inputItems []inputItemData
 
-// toInputItems converts inputItems into an array of InputItems.
-func (i inputItems) toInputItems() (s []InputItem, ok bool) {
+// inputItems converts inputItems into an array of InputItems.
+func (i inputItems) inputItems() (s []InputItem, ok bool) {
 	for _, it := range i {
-		st, ok := it.toInputItem()
+		st, ok := it.inputItem()
 		if !ok {
 			return nil, false
 		}
