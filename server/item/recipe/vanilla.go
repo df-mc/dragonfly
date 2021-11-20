@@ -33,12 +33,9 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shapeless {
-		inputs, ok := s.Input.inputItems()
-		if !ok {
-			continue
-		}
-		output, ok := s.Output.Stack()
-		if !ok {
+		inputs, inputsOK := s.Input.Items()
+		output, outputOk := s.Output.Stack()
+		if !inputsOK || !outputOk {
 			continue
 		}
 		Register(&ShapelessRecipe{recipe{
@@ -48,12 +45,9 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shaped {
-		inputs, ok := s.Input.inputItems()
-		if !ok {
-			continue
-		}
-		output, ok := s.Output.Stack()
-		if !ok {
+		inputs, inputsOK := s.Input.Items()
+		output, outputOK := s.Output.Stack()
+		if !inputsOK || !outputOK {
 			continue
 		}
 		Register(&ShapedRecipe{

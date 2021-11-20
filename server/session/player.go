@@ -89,6 +89,7 @@ const (
 	craftingSizeLarge       = 9
 	craftingGridSmallOffset = 28
 	craftingGridLargeOffset = 32
+	craftingOffset          = 46
 	craftingResultIndex     = 50
 	craftingFlagAll         = 32767
 )
@@ -102,11 +103,10 @@ const (
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
-	containerCraftingOffset = 46
 	containerBarrel         = 57
 	containerCursor         = 58
 	containerCreativeOutput = 59
-	containerCraftingResult = containerCraftingGrid + containerCraftingOffset
+	containerCraftingResult = containerCraftingGrid + craftingOffset
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool

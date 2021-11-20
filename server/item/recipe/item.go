@@ -36,8 +36,8 @@ func (i inputItemData) inputItem() (InputItem, bool) {
 // inputItems is an array of input items.
 type inputItems []inputItemData
 
-// inputItems converts inputItems into an array of InputItems.
-func (i inputItems) inputItems() (s []InputItem, ok bool) {
+// Items converts inputItems into an array of input items.
+func (i inputItems) Items() (s []InputItem, ok bool) {
 	for _, it := range i {
 		st, ok := it.inputItem()
 		if !ok {
