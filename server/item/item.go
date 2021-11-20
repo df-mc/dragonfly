@@ -103,6 +103,12 @@ type Weapon interface {
 	AttackDamage() float64
 }
 
+// CoolDown represents an item that has a cool down.
+type CoolDown interface {
+	// CoolDown is the duration of the cool down.
+	CoolDown() time.Duration
+}
+
 // nameable represents a block that may be named. These are often containers such as chests, which have a
 // name displayed in their interface.
 type nameable interface {

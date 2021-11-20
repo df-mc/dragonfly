@@ -77,8 +77,8 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	coolDowns  map[itemHash]time.Time
 	coolDownMu sync.Mutex
+	coolDowns  map[itemHash]time.Time
 
 	speed    atomic.Float64
 	health   *entity.HealthManager
@@ -1090,12 +1090,6 @@ func hashFromItem(item world.Item) itemHash {
 	}
 }
 
-// coolDownItem represents an item that has a cool down.
-type coolDownItem interface {
-	// CoolDown is the duration of the cooldown.
-	CoolDown() time.Duration
-}
-
 // HasCoolDown returns true if the item passed has an active cool down.
 func (p *Player) HasCoolDown(item world.Item) bool {
 	p.coolDownMu.Lock()
@@ -1131,7 +1125,7 @@ func (p *Player) UseItem() {
 			return
 		}
 
-		if coolDown, ok := it.(coolDownItem); ok {
+		if coolDown, ok := it.(item.CoolDown); ok {
 			p.SetCoolDown(it, coolDown.CoolDown())
 		}
 
@@ -1865,15 +1859,13 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	if len(p.coolDowns) > 0 {
-		p.coolDownMu.Lock()
-		for it, ti := range p.coolDowns {
-			if time.Now().After(ti) {
-				delete(p.coolDowns, it)
-			}
+	p.coolDownMu.Lock()
+	for it, ti := range p.coolDowns {
+		if time.Now().After(ti) {
+			delete(p.coolDowns, it)
 		}
-		p.coolDownMu.Unlock()
 	}
+	p.coolDownMu.Unlock()
 
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()

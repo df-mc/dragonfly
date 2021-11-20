@@ -103,8 +103,9 @@ func (e *EnderPearl) Tick(current int64) {
 			}
 		}
 
-		if e.owner != nil {
-			if user, ok := e.owner.(teleporter); ok {
+		owner := e.Owner()
+		if owner != nil {
+			if user, ok := owner.(teleporter); ok {
 				shooterPos := user.Position()
 				w.PlaySound(shooterPos, sound.EndermanTeleport{})
 
