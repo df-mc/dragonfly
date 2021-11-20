@@ -181,7 +181,7 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 	// Get our recipe.
 	r, ok := s.recipeMapping[recipeNetworkID]
 	if !ok {
-		return fmt.Errorf("invalid recipe network id sent")
+		return fmt.Errorf("invalid recipe network id sent (%v)", recipeNetworkID)
 	}
 
 	// Ensure that the recipe can be crafted.
