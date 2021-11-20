@@ -27,7 +27,7 @@ func (e EnderPearl) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	yaw, pitch := user.Rotation()
-	entity := p.Launch(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
+	entity := p.New(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
 	if o, ok := entity.(owned); ok {
 		o.Own(user)
 	}

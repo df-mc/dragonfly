@@ -78,18 +78,12 @@ func (e *EnderPearl) Tick(current int64) {
 		_ = e.Close()
 		return
 	}
-	var result trace.Result
 	e.mu.Lock()
-	if e.ticksLived < 5 {
-		e.pos, e.vel, e.yaw, e.pitch, result = e.c.TickMovement(e, e.pos, e.vel, e.yaw, e.pitch, e.owner)
-	} else {
-		e.pos, e.vel, e.yaw, e.pitch, result = e.c.TickMovement(e, e.pos, e.vel, e.yaw, e.pitch)
-	}
-	pos := e.pos
-	e.ticksLived++
+	m, result := e.c.TickMovement(e, e.pos, e.vel, e.yaw, e.pitch, e.ignores)
+	e.pos, e.vel, e.yaw, e.pitch = m.pos, m.vel, m.yaw, m.pitch
 	e.mu.Unlock()
 
-	if pos[1] < cube.MinY && current%10 == 0 {
+	if m.pos[1] < cube.MinY && current%10 == 0 {
 		e.closeNextTick = true
 		return
 	}
@@ -98,12 +92,14 @@ func (e *EnderPearl) Tick(current int64) {
 		w := e.World()
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				l.Hurt(0.0, damage.SourceEntityAttack{Attacker: e})
-				l.KnockBack(pos, 0.45, 0.3608)
+				if _, vulnerable := l.Hurt(0.0, damage.SourceEntityAttack{Attacker: e}); vulnerable {
+					l.KnockBack(m.pos, 0.45, 0.3608)
+				}
 			}
 		}
 
 		owner := e.Owner()
+		pos := result.Position()
 		if owner != nil {
 			if user, ok := owner.(teleporter); ok {
 				shooterPos := user.Position()
@@ -122,12 +118,18 @@ func (e *EnderPearl) Tick(current int64) {
 	}
 }
 
-// Launch creates a EnderPearl with the position, velocity, yaw, and pitch provided. It doesn't spawn the EnderPearl,
+// ignores returns whether the ender pearl should ignore collision with the entity passed.
+func (e *EnderPearl) ignores(entity world.Entity) bool {
+	_, ok := entity.(Living)
+	return !ok || entity == e || (e.ticksLived < 5 && entity == e.owner)
+}
+
+// New creates an ender pearl with the position, velocity, yaw, and pitch provided. It doesn't spawn the ender pearl,
 // only returns it.
-func (e *EnderPearl) Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
-	snow := NewEnderPearl(pos, yaw, pitch, nil)
-	snow.vel = vel
-	return snow
+func (e *EnderPearl) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
+	pearl := NewEnderPearl(pos, yaw, pitch, nil)
+	pearl.vel = vel
+	return pearl
 }
 
 // Owner ...
@@ -146,7 +148,7 @@ func (e *EnderPearl) Own(owner world.Entity) {
 
 // DecodeNBT decodes the properties in a map to a EnderPearl and returns a new EnderPearl entity.
 func (e *EnderPearl) DecodeNBT(data map[string]interface{}) interface{} {
-	return e.Launch(
+	return e.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
