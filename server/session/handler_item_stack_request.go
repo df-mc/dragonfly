@@ -557,7 +557,8 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	h.changes = map[byte]map[byte]changeInfo{}
 }
 
-// inputMapFromInputs makes an input map from inputs.
+// inputMapFromInputs takes an initial array of inputs, and returns a map of merged inputs, usually by
+// their name, so that we can easily request the exact item and amount of the item.
 func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.InputItem) map[string]recipe.InputItem {
 	inputMap := make(map[string]recipe.InputItem)
 	for _, input := range inputs {
@@ -565,8 +566,8 @@ func (h *ItemStackRequestHandler) inputMapFromInputs(inputs []recipe.InputItem) 
 		if it == nil {
 			continue
 		}
-		name, meta := it.EncodeItem()
 
+		name, meta := it.EncodeItem()
 		if otherInput, ok := inputMap[name]; ok {
 			_, otherMeta := otherInput.Item().EncodeItem()
 			if meta == otherMeta || input.Variants && otherInput.Variants {
