@@ -389,10 +389,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
 	}
-	inv, ok := s.invByID(int32(slot.ContainerID))
-	if !ok {
-		return fmt.Errorf("slot pointed to inventory with id %v, but inventory could not be found", slot.ContainerID)
-	}
+	inv, _ := s.invByID(int32(slot.ContainerID))
 
 	i, err := h.itemInSlot(slot, s)
 	if err != nil {
