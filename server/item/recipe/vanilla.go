@@ -17,13 +17,15 @@ func init() {
 		Shaped []struct {
 			Input    inputItems `nbt:"input"`
 			Output   outputItem `nbt:"output"`
-			Priority int32      `nbt:"priority"`
 			Width    int32      `nbt:"width"`
 			Height   int32      `nbt:"height"`
+			Block    string     `nbt:"block"`
+			Priority int32      `nbt:"priority"`
 		} `nbt:"shaped"`
 		Shapeless []struct {
 			Input    inputItems `nbt:"input"`
 			Output   outputItem `nbt:"output"`
+			Block    string     `nbt:"block"`
 			Priority int32      `nbt:"priority"`
 		} `nbt:"shapeless"`
 	}
@@ -41,6 +43,7 @@ func init() {
 		Register(&ShapelessRecipe{recipe{
 			input:  input,
 			output: output,
+			block:  s.Block,
 		}})
 	}
 
@@ -55,6 +58,7 @@ func init() {
 			recipe: recipe{
 				input:  input,
 				output: output,
+				block:  s.Block,
 			},
 		})
 	}

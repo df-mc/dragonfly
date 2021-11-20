@@ -8,6 +8,8 @@ type Recipe interface {
 	Input() []InputItem
 	// Output returns the item that is produced when the recipe is crafted.
 	Output() item.Stack
+	// Block returns the block the recipe is for.
+	Block() string
 }
 
 // ShapelessRecipe is a recipe that has no particular shape.
@@ -30,6 +32,8 @@ type recipe struct {
 	input []InputItem
 	// output is an item that is created as a result of crafting the recipe.
 	output item.Stack
+	// block is the block the recipe is for.
+	block string
 }
 
 // Input ...
@@ -40,4 +44,9 @@ func (r *recipe) Input() []InputItem {
 // Output ...
 func (r *recipe) Output() item.Stack {
 	return r.output
+}
+
+// Block ...
+func (r *recipe) Block() string {
+	return r.block
 }

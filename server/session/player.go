@@ -641,7 +641,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				RecipeID:        uuid.New().String(),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Input()),
 				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output()))},
-				Block:           "crafting_table", // This won't always be the case in the future, but for now it's fine.
+				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		case *recipe.ShapedRecipe:
@@ -651,7 +651,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Height:          int32(newRecipe.Dimensions[1]),
 				Input:           itemsToRecipeIngredientItems(newRecipe.Input()),
 				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output()))},
-				Block:           "crafting_table", // This won't always be the case in the future, but for now it's fine.
+				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		}
