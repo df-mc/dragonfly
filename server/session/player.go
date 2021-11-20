@@ -91,7 +91,6 @@ const (
 	craftingGridLargeOffset = 32
 	craftingOffset          = 46
 	craftingResultIndex     = 50
-	craftingFlagAll         = 32767
 )
 
 const (
@@ -604,7 +603,8 @@ func itemToRecipeIngredientItem(s recipe.InputItem) protocol.RecipeIngredientIte
 	}
 
 	if s.Variants {
-		meta = craftingFlagAll
+		// math.MaxInt16 is used to represent "any variant".
+		meta = math.MaxInt16
 	}
 
 	return protocol.RecipeIngredientItem{
