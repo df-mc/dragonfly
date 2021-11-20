@@ -6,12 +6,8 @@ import "github.com/df-mc/dragonfly/server/item"
 type Recipe interface {
 	// Inputs returns the items required to craft the recipe.
 	Inputs() []InputItem
-	// UpdateInputs updates the inputs of the recipe.
-	UpdateInputs(inputs []InputItem)
 	// Output returns the item that is produced when the recipe is crafted.
 	Output() item.Stack
-	// UpdateOutput updates the output of the recipe.
-	UpdateOutput(output item.Stack)
 }
 
 // ShapelessRecipe is a recipe that has no particular shape.
@@ -41,17 +37,7 @@ func (r *recipe) Inputs() []InputItem {
 	return r.inputs
 }
 
-// UpdateInputs ...
-func (r *recipe) UpdateInputs(inputs []InputItem) {
-	r.inputs = inputs
-}
-
 // Output ...
 func (r *recipe) Output() item.Stack {
 	return r.output
-}
-
-// UpdateOutput ...
-func (r *recipe) UpdateOutput(output item.Stack) {
-	r.output = output
 }
