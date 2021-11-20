@@ -188,7 +188,7 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 	switch r.(type) {
 	case *recipe.ShapedRecipe, *recipe.ShapelessRecipe:
 		// Get our inputs and outputs.
-		expectedInputs, output := r.Inputs(), r.Output()
+		expectedInputs, output := r.Input(), r.Output()
 		if auto {
 			// Grow the input stacks by the scale.
 			newExpectedInputs := make([]recipe.InputItem, len(expectedInputs))
