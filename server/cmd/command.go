@@ -14,7 +14,8 @@ import (
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
 // float32, float64, string, bool, mgl64.Vec3, Varargs, []Target
-// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface.
+// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface. cmd.Enum implementations
+// must be of the type string.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
 // to specify a name different than the field name for the parameter.
@@ -175,19 +176,35 @@ func (cmd Command) Params(src Source) [][]ParamInfo {
 		}
 
 		n := elem.NumField()
-		fields := make([]ParamInfo, n)
+		fields := make([]ParamInfo, 0, n)
 		for i := 0; i < n; i++ {
+			field := elem.Field(i)
+			if !field.CanSet() {
+				continue
+			}
 			fieldType := elem.Type().Field(i)
-			fields[i] = ParamInfo{
+			fields = append(fields, ParamInfo{
 				Name:     name(fieldType),
-				Value:    reflect.New(elem.Field(i).Type()).Elem().Interface(),
+				Value:    field.Interface(),
 				Optional: optional(fieldType),
 				Suffix:   suffix(fieldType),
-			}
+			})
 		}
 		params = append(params, fields)
 	}
 	return params
+}
+
+// Runnables returns a map of all Runnable implementations of the Command that a Source can execute.
+func (cmd Command) Runnables(src Source) map[int]Runnable {
+	m := make(map[int]Runnable, len(cmd.v))
+	for i, runnable := range cmd.v {
+		v := runnable.Interface().(Runnable)
+		if allower, ok := v.(Allower); !ok || allower.Allow(src) {
+			m[i] = v
+		}
+	}
+	return m
 }
 
 // String returns the usage of the command. The usage will be roughly equal to the one showed by the client
@@ -279,6 +296,9 @@ func verifySignature(command reflect.Value) error {
 		if !field.CanSet() {
 			// Unexported field, we can't modify this so just ignore it.
 			continue
+		}
+		if _, ok := field.Interface().(Enum); ok && field.Kind() != reflect.String {
+			return fmt.Errorf("parameters implementing Enum must be of the type string")
 		}
 		o := optional(command.Type().Field(i))
 		// If the field is not optional, while the last field WAS optional, we return an error, as this is

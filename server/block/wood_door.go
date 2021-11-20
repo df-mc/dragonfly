@@ -94,7 +94,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	d.Open = !d.Open
 	w.PlaceBlock(pos, d)
 
@@ -106,6 +106,7 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Use
 	}
 
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	return true
 }
 
 // BreakInfo ...

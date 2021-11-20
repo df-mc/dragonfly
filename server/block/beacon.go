@@ -34,10 +34,12 @@ func (b Beacon) BreakInfo() BreakInfo {
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
+		return true
 	}
+	return true
 }
 
 // DecodeNBT ...
@@ -185,7 +187,7 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
 		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
 		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
-	))
+	), nil)
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
 			if primaryEff.Type() != nil {

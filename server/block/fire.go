@@ -64,8 +64,7 @@ func infinitelyBurning(pos cube.Pos, w *world.World) bool {
 // burn attempts to burn a block.
 func (f Fire) burn(pos cube.Pos, w *world.World, r *rand.Rand, chanceBound int) {
 	if flammable, ok := w.Block(pos).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
-		//TODO: Check if not raining
-		if r.Intn(f.Age+10) < 5 {
+		if r.Intn(f.Age+10) < 5 && !rainingAround(pos, w) {
 			age := min(15, f.Age+r.Intn(5)/4)
 
 			w.PlaceBlock(pos, Fire{Type: f.Type, Age: age})
@@ -77,14 +76,29 @@ func (f Fire) burn(pos cube.Pos, w *world.World, r *rand.Rand, chanceBound int) 
 	}
 }
 
+// rainingAround checks if it is raining either at the cube.Pos passed or at any of its horizontal neighbours.
+func rainingAround(pos cube.Pos, w *world.World) bool {
+	raining := w.RainingAt(pos)
+	for _, face := range cube.HorizontalFaces() {
+		if raining {
+			break
+		}
+		raining = w.RainingAt(pos.Side(face))
+	}
+	return raining
+}
+
 // tick ...
 func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if f.Type == SoulFire() {
 		return
 	}
 	infinitelyBurns := infinitelyBurning(pos, w)
-
-	// TODO: !infinitelyBurning && raining && exposed to rain && 20 + age * 3% = extinguish & return
+	if !infinitelyBurns && (20+f.Age*3) > r.Intn(100) && rainingAround(pos, w) {
+		// Fire is extinguished by the rain.
+		w.SetBlock(pos, Air{})
+		return
+	}
 
 	if f.Age < 15 && r.Intn(3) == 0 {
 		f.Age++
@@ -150,8 +164,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				//TODO: Divide chance by 2 in high humidity
 				maxChance := (encouragement + 40 + w.Difficulty().FireSpreadIncrease()) / (f.Age + 30)
 
-				//TODO: Check if exposed to rain
-				if maxChance > 0 && r.Intn(randomBound) <= maxChance {
+				if maxChance > 0 && r.Intn(randomBound) <= maxChance && !rainingAround(blockPos, w) {
 					age := min(15, f.Age+r.Intn(5)/4)
 
 					w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
@@ -163,7 +176,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EntityInside ...
-func (f Fire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
+func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if flammable, ok := e.(entity.Flammable); ok {
 		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
 			l.Hurt(1, damage.SourceFire{})

@@ -52,13 +52,14 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.V
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
 	}
 	w.PlaceBlock(pos, f)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	return true
 }
 
 // CanDisplace ...

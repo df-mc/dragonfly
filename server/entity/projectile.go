@@ -17,9 +17,9 @@ type Owned interface {
 // Projectile represents an entity that can be launched.
 type Projectile interface {
 	world.Entity
-	// Launch creates the projectile with the position, velocity, yaw, and pitch provided. It doesn't spawn
-	// the projectile, only returns it.
-	Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+	// New creates a new projectile with the position, velocity, yaw, and pitch provided. It does not spawn
+	// the projectile.
+	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
 }
 
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.
@@ -30,13 +30,15 @@ type ProjectileComputer struct {
 // TickMovement performs a movement tick on a projectile. Velocity is applied and changed according to the values
 // of its Drag and Gravity. A ray trace is performed to see if the projectile has collided with any block or entity,
 // the ray trace result is returned.
-func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw, pitch float64, ignoredEntities ...world.Entity) (mgl64.Vec3, mgl64.Vec3, float64, float64, trace.Result) {
+// The resulting Movement can be sent to viewers by calling Movement.Send.
+func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw, pitch float64, ignored func(world.Entity) bool) (*Movement, trace.Result) {
 	w := e.World()
 	viewers := w.Viewers(pos)
 
+	velBefore := vel
 	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	end := pos.Add(vel)
-	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), append(ignoredEntities, e)...)
+	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), ignored)
 	if ok {
 		vel = zeroVec3
 		end = hit.Position()
@@ -45,7 +47,8 @@ func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw
 	}
 	c.onGround = ok
 
-	c.sendMovement(e, viewers, end, end.Sub(pos), vel, yaw, pitch)
-
-	return end, vel, yaw, pitch, hit
+	return &Movement{v: viewers, e: e,
+		pos: end, vel: vel, dpos: end.Sub(pos), dvel: vel.Sub(velBefore),
+		yaw: yaw, pitch: pitch, onGround: c.onGround,
+	}, hit
 }

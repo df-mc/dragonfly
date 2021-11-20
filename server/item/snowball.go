@@ -28,7 +28,7 @@ func (s Snowball) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	yaw, pitch := user.Rotation()
-	e := p.Launch(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
+	e := p.New(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
 	if o, ok := e.(owned); ok {
 		o.Own(user)
 	}

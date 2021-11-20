@@ -69,14 +69,13 @@ func spreadLight(c *Chunk, neighbours []*Chunk, queue *list.List, lt light) {
 
 // removeEmptySubChunks removes any empty sub chunks from the top of the chunk passed.
 func removeEmptySubChunks(c *Chunk) {
-	for index, sub := range c.sub {
+	for index := len(c.sub) - 1; index >= 0; index-- {
+		sub := c.sub[index]
 		if sub == nil {
 			continue
 		}
-		if len(sub.storages) == 0 {
-			c.sub[index] = nil
-		} else if len(sub.storages) == 1 && len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == c.air {
-			// Sub chunk with only air in it.
+		if len(sub.storages) == 0 ||
+			(len(sub.storages) == 1 && len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == c.air) {
 			c.sub[index] = nil
 		} else {
 			// We found a sub chunk that has blocks, so break out.

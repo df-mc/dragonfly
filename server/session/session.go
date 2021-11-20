@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -12,6 +13,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -167,11 +169,12 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
 	s.chunkLoader.Move(w.Spawn().Vec3Middle())
 
+	s.sendAvailableEntities()
+
 	s.initPlayerList()
 
 	w.AddEntity(s.c)
 	s.c.SetGameMode(gm)
-	s.SendAvailableCommands()
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
 		s.SendEffect(e)
@@ -259,6 +262,7 @@ func (s *Session) handlePackets() {
 		_ = s.Close()
 	}()
 	go s.sendChunks(c)
+	go s.sendCommands(c)
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
@@ -273,7 +277,7 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// sendChunks continuously sends chunks to the player, until a value is sent to the closeChan passed.
+// sendChunks continuously sends chunks to the player, until a value is sent to the stop channel passed.
 func (s *Session) sendChunks(stop <-chan struct{}) {
 	const maxChunkTransactions = 8
 	t := time.NewTicker(time.Second / 20)
@@ -297,6 +301,38 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 				s.log.Debugf("error loading chunk: %v", err)
 				return
 			}
+		case <-stop:
+			return
+		}
+	}
+}
+
+// sendCommands continuously checks if commands need to be resent and resends them when needed. sendCommands returns
+// when the channel passed has a value sent to it.
+func (s *Session) sendCommands(stop <-chan struct{}) {
+	tc := time.NewTicker(time.Second * 5)
+	te := time.NewTicker(time.Second)
+	defer func() {
+		tc.Stop()
+		te.Stop()
+	}()
+	var (
+		r          map[string]map[int]cmd.Runnable
+		enumValues map[string][]string
+		enums      map[string]cmd.Enum
+		ok         bool
+	)
+	for {
+		select {
+		case <-tc.C:
+			r, ok = s.resendCommands(r)
+			if ok {
+				enums, enumValues = s.enums()
+			}
+		case <-te.C:
+			// Enum resending happens relatively often and frequent updates are more important than with full command
+			// changes. Those are generally only related to permission changes, which doesn't happen often.
+			s.resendEnums(enums, enumValues)
 		case <-stop:
 			return
 		}
@@ -405,4 +441,25 @@ func (s *Session) closePlayerList() {
 	}
 	sessions = n
 	sessionMu.Unlock()
+}
+
+// sendAvailableEntities sends all registered entities to the player.
+func (s *Session) sendAvailableEntities() {
+	// actorIdentifier represents the structure of an actor identifier sent over the network.
+	type actorIdentifier struct {
+		// Unique namespaced identifier for an entity.
+		ID string `nbt:"id"`
+	}
+
+	entities := world.Entities()
+	var entityData []actorIdentifier
+	for _, entity := range entities {
+		id := entity.EncodeEntity()
+		entityData = append(entityData, actorIdentifier{ID: id})
+	}
+	serializedEntityData, err := nbt.Marshal(map[string]interface{}{"idlist": entityData})
+	if err != nil {
+		panic(fmt.Errorf("failed to serialize entity data: %v", err))
+	}
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }

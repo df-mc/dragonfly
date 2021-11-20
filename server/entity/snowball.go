@@ -70,18 +70,15 @@ func (s *Snowball) Tick(current int64) {
 		_ = s.Close()
 		return
 	}
-	var result trace.Result
 	s.mu.Lock()
-	if s.ticksLived < 5 {
-		s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.owner)
-	} else {
-		s.pos, s.vel, s.yaw, s.pitch, result = s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch)
-	}
-	pos := s.pos
-	s.ticksLived++
+	m, result := s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.ignores)
+	s.pos, s.vel, s.yaw, s.pitch = m.pos, m.vel, m.yaw, m.pitch
 	s.mu.Unlock()
 
-	if pos[1] < cube.MinY && current%10 == 0 {
+	s.ticksLived++
+	m.Send()
+
+	if m.pos[1] < cube.MinY && current%10 == 0 {
 		s.closeNextTick = true
 		return
 	}
@@ -94,8 +91,9 @@ func (s *Snowball) Tick(current int64) {
 
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				l.Hurt(0.0, damage.SourceEntityAttack{Attacker: s})
-				l.KnockBack(pos, 0.45, 0.3608)
+				if _, vulnerable := l.Hurt(0.0, damage.SourceEntityAttack{Attacker: s}); vulnerable {
+					l.KnockBack(m.pos, 0.45, 0.3608)
+				}
 			}
 		}
 
@@ -103,9 +101,15 @@ func (s *Snowball) Tick(current int64) {
 	}
 }
 
-// Launch creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
+// ignores returns whether the snowball should ignore collision with the entity passed.
+func (s *Snowball) ignores(entity world.Entity) bool {
+	_, ok := entity.(Living)
+	return !ok || entity == s || (s.ticksLived < 5 && entity == s.owner)
+}
+
+// New creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
 // only returns it.
-func (s *Snowball) Launch(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
+func (s *Snowball) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 	snow := NewSnowball(pos, yaw, pitch, nil)
 	snow.vel = vel
 	return snow
@@ -126,8 +130,8 @@ func (s *Snowball) Own(owner world.Entity) {
 }
 
 // DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
-func (it *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
-	return it.Launch(
+func (s *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
+	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
@@ -136,13 +140,13 @@ func (it *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the Snowball entity's properties as a map and returns it.
-func (it *Snowball) EncodeNBT() map[string]interface{} {
-	yaw, pitch := it.Rotation()
+func (s *Snowball) EncodeNBT() map[string]interface{} {
+	yaw, pitch := s.Rotation()
 	return map[string]interface{}{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Yaw":    yaw,
 		"Pitch":  pitch,
-		"Motion": nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
 		"Damage": 0.0,
 	}
 }

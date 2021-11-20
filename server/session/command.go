@@ -24,28 +24,28 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 		})
 	}
 
-	h := s.handlers[packet.IDCommandRequest]
-	if h == nil { // This will be nil if the player has been disconnected
-		return
-	}
 	s.writePacket(&packet.CommandOutput{
-		CommandOrigin:  h.(*CommandRequestHandler).origin,
-		OutputType:     3,
+		CommandOrigin:  s.handlers[packet.IDCommandRequest].(*CommandRequestHandler).origin,
+		OutputType:     packet.CommandOutputTypeAllOutput,
 		SuccessCount:   uint32(output.MessageCount()),
 		OutputMessages: messages,
 	})
 }
 
-// SendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
+// sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
-func (s *Session) SendAvailableCommands() {
+func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
+	m := make(map[string]map[int]cmd.Runnable, len(commands))
+
 	pk := &packet.AvailableCommands{}
 	for alias, c := range commands {
 		if c.Name() != alias {
 			// Don't add duplicate entries for aliases.
 			continue
 		}
+		m[alias] = c.Runnables(s.c)
+
 		params := c.Params(s.c)
 		overloads := make([]protocol.CommandOverload, len(params))
 		for i, params := range params {
@@ -77,6 +77,7 @@ func (s *Session) SendAvailableCommands() {
 		}
 	}
 	s.writePacket(pk)
+	return m
 }
 
 // valueToParamType finds the command argument type of a value passed and returns it, in addition to creating
@@ -111,7 +112,72 @@ func valueToParamType(i interface{}, source cmd.Source) (t uint32, enum protocol
 		return 0, protocol.CommandEnum{
 			Type:    enum.Type(),
 			Options: enum.Options(source),
+			Dynamic: true,
 		}
 	}
 	return protocol.CommandArgTypeValue, enum
+}
+
+// resendCommands resends all commands that a Session has access to if the map of runnable commands passed does not
+// match with the commands that the Session is currently allowed to execute.
+// True is returned if the commands were resent.
+func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable) (map[string]map[int]cmd.Runnable, bool) {
+	commands := cmd.Commands()
+	m := make(map[string]map[int]cmd.Runnable, len(commands))
+
+	for alias, c := range commands {
+		if c.Name() == alias {
+			m[alias] = c.Runnables(s.c)
+		}
+	}
+	if len(before) != len(m) {
+		return s.sendAvailableCommands(), true
+	}
+	for name, r := range m {
+		for k := range r {
+			if _, ok := before[name][k]; !ok {
+				return s.sendAvailableCommands(), true
+			}
+		}
+	}
+	return m, false
+}
+
+// enums returns a map of all enums exposed to the Session and records the values those enums currently hold.
+func (s *Session) enums() (map[string]cmd.Enum, map[string][]string) {
+	enums, enumValues := make(map[string]cmd.Enum), make(map[string][]string)
+	for alias, c := range cmd.Commands() {
+		if c.Name() == alias {
+			for _, params := range c.Params(s.c) {
+				for _, paramInfo := range params {
+					if enum, ok := paramInfo.Value.(cmd.Enum); ok {
+						enums[enum.Type()] = enum
+						enumValues[enum.Type()] = enum.Options(s.c)
+					}
+				}
+			}
+		}
+	}
+	return enums, enumValues
+}
+
+// resendEnums checks the options of the enums passed against the values that were previously recorded. If they do not
+// match, the enum is resent to the client and the values are updated in the before map.
+func (s *Session) resendEnums(enums map[string]cmd.Enum, before map[string][]string) {
+	for name, enum := range enums {
+		valuesBefore := before[name]
+		values := enum.Options(s.c)
+		before[name] = values
+
+		if len(valuesBefore) != len(values) {
+			s.writePacket(&packet.UpdateSoftEnum{EnumType: name, Options: values, ActionType: packet.SoftEnumActionSet})
+			continue
+		}
+		for k, v := range values {
+			if valuesBefore[k] != v {
+				s.writePacket(&packet.UpdateSoftEnum{EnumType: name, Options: values, ActionType: packet.SoftEnumActionSet})
+				break
+			}
+		}
+	}
 }

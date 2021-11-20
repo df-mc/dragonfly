@@ -22,6 +22,9 @@ type Handler interface {
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
+	// HandleToggleSprint handles when the player starts or stops sprinting.
+	// After is true if the player is sprinting after toggling (changing their sprinting state).
+	HandleToggleSprint(ctx *event.Context, after bool)
 	// HandleToggleSneak handles when the player starts or stops sneaking.
 	// After is true if the player is sneaking after toggling (changing their sneaking state).
 	HandleToggleSneak(ctx *event.Context, after bool)
@@ -128,6 +131,9 @@ func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
 
 // HandleTeleport ...
 func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
+
+// HandleToggleSprint ...
+func (NopHandler) HandleToggleSprint(*event.Context, bool) {}
 
 // HandleToggleSneak ...
 func (NopHandler) HandleToggleSneak(*event.Context, bool) {}

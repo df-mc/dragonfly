@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/google/uuid"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -16,7 +15,8 @@ import (
 type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User)
+	// Activate returns a bool indicating if activating the block was used successfully.
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
 }
 
 // Punchable represents a block that may be punched by a viewer of the world. When punched, the block
@@ -44,11 +44,6 @@ type LightDiffuser interface {
 	// this block. Some blocks, such as leaves, have this behaviour. A diffusion level of 15 means that all
 	// light will be completely blocked when it passes through the block.
 	LightDiffusionLevel() uint8
-}
-
-// SignEditor represents something that can edit a sign, typically players.
-type SignEditor interface {
-	UUID() uuid.UUID
 }
 
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,

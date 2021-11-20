@@ -99,10 +99,12 @@ func (b Barrel) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 }
 
 // Activate ...
-func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
+func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
+		return true
 	}
+	return false
 }
 
 // UseOnBlock ...
@@ -121,7 +123,7 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w 
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Contents(), item.NewStack(b, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...))
 }
 
 // FlammabilityInfo ...

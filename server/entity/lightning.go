@@ -74,6 +74,11 @@ func (li *Lightning) Name() string {
 	return "Lightning Bolt"
 }
 
+// New strikes the Lightning at a specific position in a new world.
+func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
+	return NewLightning(pos)
+}
+
 // Tick ...
 func (li *Lightning) Tick(_ int64) {
 	pos, w := li.Position(), li.World()
@@ -85,8 +90,8 @@ func (li *Lightning) Tick(_ int64) {
 		w.PlaySound(pos, sound.Thunder{})
 		w.PlaySound(pos, sound.Explosion{})
 
-		bb := li.AABB().Translate(pos).Grow(3)
-		for _, e := range w.CollidingEntities(bb) {
+		bb := li.AABB().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
+		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
 				l.Hurt(5, damage.SourceLightning{})
@@ -100,9 +105,7 @@ func (li *Lightning) Tick(_ int64) {
 		}
 	}
 
-	li.state--
-
-	if li.state < 0 {
+	if li.state--; li.state < 0 {
 		if li.liveTime == 0 {
 			_ = li.Close()
 		} else if li.state < -rand.Intn(10) {
@@ -114,6 +117,16 @@ func (li *Lightning) Tick(_ int64) {
 			}
 		}
 	}
+}
+
+// DecodeNBT does nothing.
+func (li *Lightning) DecodeNBT(map[string]interface{}) interface{} {
+	return nil
+}
+
+// EncodeNBT does nothing.
+func (li *Lightning) EncodeNBT() map[string]interface{} {
+	return map[string]interface{}{}
 }
 
 // fire returns a fire block.

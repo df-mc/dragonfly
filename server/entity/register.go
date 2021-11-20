@@ -10,4 +10,5 @@ func init() {
 	world.RegisterEntity(&Item{})
 	world.RegisterEntity(&EnderPearl{})
 	world.RegisterEntity(&Snowball{})
+	world.RegisterEntity(&Lightning{})
 }

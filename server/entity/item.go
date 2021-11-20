@@ -74,11 +74,13 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(current int64) {
 	it.mu.Lock()
-	it.pos, it.vel = it.c.TickMovement(it, it.pos, it.vel, 0, 0)
-	pos := it.pos
+	m := it.c.TickMovement(it, it.pos, it.vel, 0, 0)
+	it.pos, it.vel = m.pos, m.vel
 	it.mu.Unlock()
 
-	if pos[1] < cube.MinY && current%10 == 0 {
+	m.Send()
+
+	if m.pos[1] < cube.MinY && current%10 == 0 {
 		_ = it.Close()
 		return
 	}
@@ -88,7 +90,7 @@ func (it *Item) Tick(current int64) {
 	}
 
 	if it.pickupDelay == 0 {
-		it.checkNearby(pos)
+		it.checkNearby(m.pos)
 	} else if it.pickupDelay != math.MaxInt16 {
 		it.pickupDelay--
 	}
@@ -99,7 +101,7 @@ func (it *Item) Tick(current int64) {
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby(pos mgl64.Vec3) {
 	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(pos).Grow(2)) {
+	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(pos).Grow(2), nil) {
 		if e == it {
 			// Skip the item entity itself.
 			continue

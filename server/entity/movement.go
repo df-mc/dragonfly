@@ -11,30 +11,70 @@ import (
 // MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
 // the movement is computed for must be passed.
 type MovementComputer struct {
-	Gravity           float64
+	Gravity, Drag     float64
 	DragBeforeGravity bool
-	Drag              float64
 
-	lastVel  mgl64.Vec3
 	onGround bool
+}
+
+// Movement represents the movement of a world.Entity as a result of a call to MovementComputer.TickMovement. The
+// resulting position and velocity can be obtained by calling Position and Velocity. These can be sent to viewers by
+// calling Send.
+type Movement struct {
+	v                    []world.Viewer
+	e                    world.Entity
+	pos, vel, dpos, dvel mgl64.Vec3
+	yaw, pitch           float64
+	onGround             bool
+}
+
+// Send sends the Movement to any viewers watching the entity at the time of the movement. If the position/velocity
+// changes were negligible, nothing is sent.
+func (m *Movement) Send() {
+	posChanged := !m.dpos.ApproxEqualThreshold(zeroVec3, epsilon)
+	velChanged := !m.dvel.ApproxEqualThreshold(zeroVec3, epsilon)
+
+	for _, v := range m.v {
+		if posChanged {
+			v.ViewEntityMovement(m.e, m.pos, m.yaw, m.pitch, m.onGround)
+		}
+		if velChanged {
+			v.ViewEntityVelocity(m.e, m.vel)
+		}
+	}
+}
+
+// Position returns the position as a result of the Movement as an mgl64.Vec3.
+func (m *Movement) Position() mgl64.Vec3 {
+	return m.pos
+}
+
+// Velocity returns the velocity after the Movement as an mgl64.Vec3.
+func (m *Movement) Velocity() mgl64.Vec3 {
+	return m.vel
+}
+
+// Rotation returns the rotation, yaw and pitch, of the entity after the Movement.
+func (m *Movement) Rotation() (yaw, pitch float64) {
+	return m.yaw, m.pitch
 }
 
 // TickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
-func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) (mgl64.Vec3, mgl64.Vec3) {
+// The resulting Movement can be sent to viewers by calling Movement.Send.
+func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
 	w := e.World()
 	viewers := w.Viewers(pos)
 
+	velBefore := vel
 	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	dPos, vel := c.checkCollision(e, pos, vel)
 
-	c.sendMovement(e, viewers, pos, dPos, vel, yaw, pitch)
-
-	if dPos.ApproxEqualThreshold(zeroVec3, epsilon) {
-		return pos, vel
+	return &Movement{v: viewers, e: e,
+		pos: pos.Add(dPos), vel: vel, dpos: dPos, dvel: vel.Sub(velBefore),
+		yaw: yaw, pitch: pitch, onGround: c.onGround,
 	}
-	return pos.Add(dPos), vel
 }
 
 // OnGround checks if the entity that this computer calculates is currently on the ground.
@@ -47,25 +87,6 @@ var zeroVec3 mgl64.Vec3
 
 // epsilon is the epsilon used for thresholds for change used for change in position and velocity.
 const epsilon = 0.001
-
-// sendMovement sends the movement of the world.Entity passed (dPos and vel) to all viewers passed.
-func (c *MovementComputer) sendMovement(e world.Entity, viewers []world.Viewer, pos, dPos, vel mgl64.Vec3, yaw, pitch float64) {
-	posChanged := !dPos.ApproxEqualThreshold(zeroVec3, epsilon)
-	velChanged := !vel.ApproxEqualThreshold(c.lastVel, epsilon)
-
-	still, wasStill := vel.ApproxEqualThreshold(zeroVec3, epsilon), c.lastVel.ApproxEqualThreshold(zeroVec3, epsilon)
-	if posChanged || wasStill != still {
-		for _, v := range viewers {
-			v.ViewEntityMovement(e, pos, yaw, pitch, c.onGround)
-		}
-	}
-	if velChanged || (!wasStill && still) {
-		c.lastVel = vel
-		for _, v := range viewers {
-			v.ViewEntityVelocity(e, vel)
-		}
-	}
-}
 
 // applyVerticalForces applies gravity and drag on the Y axis, based on the Gravity and Drag values set.
 func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {

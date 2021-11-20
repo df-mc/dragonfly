@@ -67,6 +67,7 @@ func New(dir string) (*Provider, error) {
 // initDefaultLevelDat initialises a default level.dat file.
 func (p *Provider) initDefaultLevelDat() {
 	p.d.DoDayLightCycle = true
+	p.d.DoWeatherCycle = true
 	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.LevelName = "World"
 	p.d.GameType = 1
@@ -84,6 +85,9 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.MultiPlayerGame = true
 	p.d.SpawnY = math.MaxInt32
 	p.d.Difficulty = 2
+	p.d.DoWeatherCycle = true
+	p.d.RainLevel = 1.0
+	p.d.LightningLevel = 1.0
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
@@ -93,6 +97,11 @@ func (p *Provider) Settings() world.Settings {
 		Spawn:           cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)},
 		Time:            p.d.Time,
 		TimeCycle:       p.d.DoDayLightCycle,
+		WeatherCycle:    p.d.DoWeatherCycle,
+		RainTime:        int64(p.d.RainTime),
+		Raining:         p.d.RainLevel > 0,
+		ThunderTime:     int64(p.d.LightningTime),
+		Thundering:      p.d.LightningLevel > 0,
 		CurrentTick:     p.d.CurrentTick,
 		DefaultGameMode: p.LoadDefaultGameMode(),
 		Difficulty:      p.LoadDifficulty(),
@@ -105,6 +114,15 @@ func (p *Provider) SaveSettings(s world.Settings) {
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
 	p.d.Time = s.Time
 	p.d.DoDayLightCycle = s.TimeCycle
+	p.d.DoWeatherCycle = s.WeatherCycle
+	p.d.RainTime, p.d.RainLevel = int32(s.RainTime), 0
+	p.d.LightningTime, p.d.LightningLevel = int32(s.ThunderTime), 0
+	if s.Raining {
+		p.d.RainLevel = 1
+	}
+	if s.Thundering {
+		p.d.LightningLevel = 1
+	}
 	p.d.CurrentTick = s.CurrentTick
 	p.SaveDefaultGameMode(s.DefaultGameMode)
 	p.SaveDifficulty(s.Difficulty)
@@ -183,21 +201,19 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 func (p *Provider) LoadDefaultGameMode() world.GameMode {
 	switch p.d.GameType {
 	default:
-		return world.GameModeAdventure{}
-	case 0:
-		return world.GameModeSurvival{}
+		return world.GameModeSurvival
 	case 1:
-		return world.GameModeCreative{}
+		return world.GameModeCreative
 	case 2:
-		return world.GameModeAdventure{}
+		return world.GameModeAdventure
 	case 3:
-		return world.GameModeSpectator{}
+		return world.GameModeSpectator
 	}
 }
 
 // SaveDefaultGameMode changes the default game mode in the level.dat.
 func (p *Provider) SaveDefaultGameMode(mode world.GameMode) {
-	switch mode.(type) {
+	switch mode {
 	case world.GameModeSurvival:
 		p.d.GameType = 0
 	case world.GameModeCreative:

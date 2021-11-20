@@ -60,6 +60,9 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
+	// pwg is a sync.WaitGroup used to wait for all players to be disconnected before server shutdown, so that their
+	// data is saved properly.
+	pwg sync.WaitGroup
 
 	wg sync.WaitGroup
 
@@ -285,6 +288,7 @@ func (server *Server) Close() error {
 		p.Disconnect(text.Colourf("<yellow>%v</yellow>", server.c.Server.ShutdownMessage))
 	}
 	server.playerMutex.RUnlock()
+	server.pwg.Wait()
 
 	server.log.Debugf("Closing player provider...")
 	err := server.playerProvider.Close()
@@ -437,17 +441,16 @@ func (server *Server) checkNetIsolation() {
 }
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
-func (server *Server) handleSessionClose(controllable session.Controllable) {
+func (server *Server) handleSessionClose(c session.Controllable) {
 	server.playerMutex.Lock()
-	p, ok := server.p[controllable.UUID()]
-	delete(server.p, controllable.UUID())
+	p := server.p[c.UUID()]
+	delete(server.p, c.UUID())
 	server.playerMutex.Unlock()
-	if ok {
-		err := server.playerProvider.Save(controllable.UUID(), p.Data())
-		if err != nil {
-			server.log.Errorf("Error while saving data: %v", err)
-		}
+	err := server.playerProvider.Save(p.UUID(), p.Data())
+	if err != nil {
+		server.log.Errorf("Error while saving data: %v", err)
 	}
+	server.pwg.Done()
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
@@ -459,6 +462,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 		gm = data.GameMode
 	}
 	s.Start(p, server.world, gm, server.handleSessionClose)
+	server.pwg.Add(1)
 	return p
 }
 

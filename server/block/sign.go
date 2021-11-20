@@ -83,6 +83,11 @@ func (s Sign) Ink(glowing bool) (world.Block, bool) {
 	return s, true
 }
 
+// SignEditor represents something that can edit a sign, typically players.
+type SignEditor interface {
+	UUID() uuid.UUID
+}
+
 // EditableBy returns whether a SignEditor can edit the sign or not. This is based on whether the SignEditor
 // placed the sign and the sign's chunk has yet to be unloaded.
 func (s Sign) EditableBy(editor SignEditor) bool {
