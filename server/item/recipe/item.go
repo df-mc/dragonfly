@@ -66,12 +66,8 @@ type outputItem struct {
 	NBTData map[string]interface{} `nbt:"data"`
 }
 
-// ToStack converts an output item to an item stack.
-func (o outputItem) ToStack() (item.Stack, bool) {
-	if len(o.Name) == 0 {
-		return item.Stack{}, true
-	}
-
+// Stack converts an output item to an item stack.
+func (o outputItem) Stack() (item.Stack, bool) {
 	var it world.Item
 	var ok bool
 	if o.State.Version != 0 {

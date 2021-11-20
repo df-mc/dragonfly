@@ -37,7 +37,7 @@ func init() {
 		if !ok {
 			continue
 		}
-		output, ok := s.Output.ToStack()
+		output, ok := s.Output.Stack()
 		if !ok {
 			continue
 		}
@@ -52,7 +52,7 @@ func init() {
 		if !ok {
 			continue
 		}
-		output, ok := s.Output.ToStack()
+		output, ok := s.Output.Stack()
 		if !ok {
 			continue
 		}
