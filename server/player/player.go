@@ -1105,8 +1105,16 @@ func (p *Player) HasCoolDown(item world.Item) bool {
 	p.coolDownMu.Lock()
 	defer p.coolDownMu.Unlock()
 
-	_, ok := p.coolDowns[hashFromItem(item)]
-	return ok
+	hash := hashFromItem(item)
+	otherTime, ok := p.coolDowns[hash]
+	if !ok {
+		return false
+	}
+	if time.Now().After(otherTime) {
+		delete(p.coolDowns, hash)
+		return false
+	}
+	return true
 }
 
 // SetCoolDown sets a cool down for an item.
