@@ -2059,16 +2059,43 @@ func (p *Player) PunchAir() {
 
 // MountEntity mounts the player to an entity if the entity is rideable and if there is a seat available.
 func (p *Player) MountEntity(r entity.Rideable) {
-	if e, ok := r.(world.Entity); ok {
-		if p.seat(e) == -1 {
-			r.AddRider(p)
-			p.setRiding(e)
-			riders := r.Riders()
-			seat := len(riders)
-			positions := r.SeatPositions()
-			if len(positions) >= seat {
-				p.seatPosition.Store(positions[seat-1])
-				p.updateState()
+	ctx := event.C()
+	p.handler().HandleMount(ctx, r)
+	ctx.Continue(func() {
+		if e, ok := r.(world.Entity); ok {
+			if p.seat(e) == -1 {
+				r.AddRider(p)
+				p.setRiding(e)
+				riders := r.Riders()
+				seat := len(riders)
+				positions := r.SeatPositions()
+				if len(positions) >= seat {
+					p.seatPosition.Store(positions[seat-1])
+					p.updateState()
+					driver := false
+					if seat-1 == 0 {
+						driver = true
+					}
+					for _, v := range p.viewers() {
+						v.ViewEntityMount(p, e, driver)
+					}
+				}
+			} else {
+				// Check and update seat position
+				p.checkSeats(e)
+			}
+		}
+	})
+}
+
+// DismountEntity dismounts the player from an entity.
+func (p *Player) DismountEntity() {
+	ctx := event.C()
+	e, seat := p.RidingEntity()
+	if e != nil {
+		if rideable, ok := e.(entity.Rideable); ok {
+			p.handler().HandleDismount(ctx)
+			ctx.Stop(func() {
 				driver := false
 				if seat-1 == 0 {
 					driver = true
@@ -2076,27 +2103,17 @@ func (p *Player) MountEntity(r entity.Rideable) {
 				for _, v := range p.viewers() {
 					v.ViewEntityMount(p, e, driver)
 				}
-			}
-		} else {
-			// Check and update seat position
-			p.checkSeats(e)
-		}
-	}
-}
-
-// DismountEntity dismounts the player from an entity.
-func (p *Player) DismountEntity() {
-	e, _ := p.RidingEntity()
-	if e != nil {
-		if rideable, ok := e.(entity.Rideable); ok {
-			rideable.RemoveRider(p)
-			p.setRiding(nil)
-			for _, v := range p.viewers() {
-				v.ViewEntityDismount(p, e)
-			}
-			for _, r := range rideable.Riders() {
-				r.MountEntity(rideable)
-			}
+			})
+			ctx.Continue(func() {
+				rideable.RemoveRider(p)
+				p.setRiding(nil)
+				for _, v := range p.viewers() {
+					v.ViewEntityDismount(p, e)
+				}
+				for _, r := range rideable.Riders() {
+					r.MountEntity(rideable)
+				}
+			})
 		}
 	}
 }
