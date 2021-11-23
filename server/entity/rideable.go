@@ -1,12 +1,14 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Rideable is an interface for entities that can be ridden.
 type Rideable interface {
+	world.Entity
 	// SeatPositions returns the possible seat positions for an entity in the order that they will be filled.
 	SeatPositions() []mgl32.Vec3
 	// Riders returns a slice entities that are currently riding an entity in the order that they were added.

@@ -2062,24 +2062,22 @@ func (p *Player) MountEntity(r entity.Rideable) {
 	ctx := event.C()
 	p.handler().HandleMount(ctx, r)
 	ctx.Continue(func() {
-		if e, ok := r.(world.Entity); ok {
-			if p.seat(e) == -1 {
-				r.AddRider(p)
-				p.setRiding(e)
-				riders := r.Riders()
-				seat := len(riders)
-				positions := r.SeatPositions()
-				if len(positions) >= seat {
-					p.seatPosition.Store(positions[seat-1])
-					p.updateState()
-					for _, v := range p.viewers() {
-						v.ViewEntityMount(p, e, seat-1 == 0)
-					}
+		if p.seat(r) == -1 {
+			r.AddRider(p)
+			p.setRiding(r)
+			riders := r.Riders()
+			seat := len(riders)
+			positions := r.SeatPositions()
+			if len(positions) >= seat {
+				p.seatPosition.Store(positions[seat-1])
+				p.updateState()
+				for _, v := range p.viewers() {
+					v.ViewEntityMount(p, r, seat-1 == 0)
 				}
-			} else {
-				// Check and update seat position
-				p.checkSeats(e)
 			}
+		} else {
+			// Check and update seat position
+			p.checkSeats(r)
 		}
 	})
 }
