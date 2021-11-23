@@ -2072,12 +2072,8 @@ func (p *Player) MountEntity(r entity.Rideable) {
 				if len(positions) >= seat {
 					p.seatPosition.Store(positions[seat-1])
 					p.updateState()
-					driver := false
-					if seat-1 == 0 {
-						driver = true
-					}
 					for _, v := range p.viewers() {
-						v.ViewEntityMount(p, e, driver)
+						v.ViewEntityMount(p, e, seat-1 == 0)
 					}
 				}
 			} else {
@@ -2096,13 +2092,7 @@ func (p *Player) DismountEntity() {
 		if rideable, ok := e.(entity.Rideable); ok {
 			p.handler().HandleDismount(ctx)
 			ctx.Stop(func() {
-				driver := false
-				if seat-1 == 0 {
-					driver = true
-				}
-				for _, v := range p.viewers() {
-					v.ViewEntityMount(p, e, driver)
-				}
+				p.s.ViewEntityMount(p, e, seat-1 == 0)
 			})
 			ctx.Continue(func() {
 				rideable.RemoveRider(p)
