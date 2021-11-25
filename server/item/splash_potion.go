@@ -49,7 +49,7 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 
 // EncodeItem ...
 func (s SplashPotion) EncodeItem() (name string, meta int16) {
-	return "minecraft:splash_potion", 0
+	return "minecraft:splash_potion", int16(s.Variant.Uint8())
 }
 
 // splashPotion represents an entity instance of a SplashPotion.
