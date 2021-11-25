@@ -36,9 +36,8 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	riding, seat := s.c.RidingEntity()
 	if riding != nil {
 		if seat == 0 {
-			rideable, _ := riding.(entity.Rideable)
 			m := pk.MoveVector
-			rideable.Move(mgl64.Vec2{float64(m[0]), float64(m[1])}, pk.Yaw, pk.Pitch)
+			riding.Move(mgl64.Vec2{float64(m[0]), float64(m[1])}, pk.Yaw, pk.Pitch)
 		}
 		s.ViewEntityMount(s.c, riding, seat-1 == 0)
 	}
