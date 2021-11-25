@@ -12,6 +12,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
+	"math"
+	"time"
 )
 
 // SplashPotion is an item that grants effects when thrown.
@@ -155,7 +157,14 @@ func (s *SplashPotion) Tick(current int64) {
 						splashEntity.AddEffect(eff.WithPotency(distanceMultiplier))
 						continue
 					}
-					// TODO: Non-instant splash potion support.
+
+					ticks := float64(eff.Duration().Milliseconds()) / 50
+					newTicks := math.Round(ticks * 0.75 * distanceMultiplier)
+					if newTicks < 20 {
+						continue
+					}
+
+					splashEntity.AddEffect(eff.WithDuration(time.Duration(newTicks*50) * time.Millisecond))
 				}
 			}
 		} else if blockResult, ok := result.(trace.BlockResult); ok && pot.Equals(potion.Water()) {
