@@ -797,6 +797,7 @@ func (p *Player) kill(src damage.Source) {
 	// Wait for a little bit before removing the entity. The client displays a death animation while the
 	// player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
+		p.DismountEntity()
 		if p.session() == session.Nop {
 			_ = p.Close()
 			return
@@ -2246,7 +2247,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // disconnecting of players.
 func (p *Player) close() {
 	p.handler().HandleQuit()
-
+	p.DismountEntity()
 	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
 
