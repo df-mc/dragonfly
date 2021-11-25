@@ -63,7 +63,7 @@ type Controllable interface {
 	SeatPosition() mgl32.Vec3
 	MountEntity(e entity.Rideable)
 	DismountEntity()
-	RidingEntity() (world.Entity, int)
+	RidingEntity() (entity.Rideable, int)
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)

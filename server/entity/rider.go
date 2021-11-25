@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -12,5 +11,5 @@ type Rider interface {
 	// MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
 	MountEntity(e Rideable)
 	// RidingEntity returns the entity the player is currently riding and the player's seat index.
-	RidingEntity() (world.Entity, int)
+	RidingEntity() (Rideable, int)
 }

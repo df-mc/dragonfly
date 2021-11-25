@@ -73,7 +73,7 @@ type Player struct {
 
 	seatPosition atomic.Value
 	ridingMu     sync.Mutex
-	riding       world.Entity
+	riding       entity.Rideable
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -122,7 +122,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		speed:    *atomic.NewFloat64(0.1),
 		nameTag:  *atomic.NewString(name),
 		heldSlot: atomic.NewUint32(0),
-		riding:   nil,
 		locale:   language.BritishEnglish,
 		scale:    *atomic.NewFloat64(1),
 	}
@@ -2075,10 +2074,10 @@ func (p *Player) MountEntity(r entity.Rideable) {
 					v.ViewEntityMount(p, r, seat-1 == 0)
 				}
 			}
-		} else {
-			// Check and update seat position
-			p.checkSeats(r)
+			return
 		}
+		// Check and update seat position
+		p.checkSeats(r)
 	})
 }
 
@@ -2087,40 +2086,36 @@ func (p *Player) DismountEntity() {
 	ctx := event.C()
 	e, seat := p.RidingEntity()
 	if e != nil {
-		if rideable, ok := e.(entity.Rideable); ok {
-			p.handler().HandleDismount(ctx)
-			ctx.Stop(func() {
-				p.s.ViewEntityMount(p, e, seat-1 == 0)
-			})
-			ctx.Continue(func() {
-				rideable.RemoveRider(p)
-				p.setRiding(nil)
-				for _, v := range p.viewers() {
-					v.ViewEntityDismount(p, e)
-				}
-				for _, r := range rideable.Riders() {
-					r.MountEntity(rideable)
-				}
-			})
-		}
+		p.handler().HandleDismount(ctx)
+		ctx.Stop(func() {
+			p.s.ViewEntityMount(p, e, seat-1 == 0)
+		})
+		ctx.Continue(func() {
+			e.RemoveRider(p)
+			p.setRiding(nil)
+			for _, v := range p.viewers() {
+				v.ViewEntityDismount(p, e)
+			}
+			for _, r := range e.Riders() {
+				r.MountEntity(e)
+			}
+		})
 	}
 }
 
 // checkSeats moves a player to the seat corresponding to their current index within the slice of riders.
-func (p *Player) checkSeats(e world.Entity) {
-	if rideable, ok := e.(entity.Rideable); ok {
-		seat := p.seat(e)
-		if seat != -1 {
-			positions := rideable.SeatPositions()
-			if positions[seat] != p.seatPosition.Load() {
-				p.seatPosition.Store(positions[seat])
-				if seat == 0 {
-					for _, v := range p.viewers() {
-						v.ViewEntityMount(p, e, true)
-					}
+func (p *Player) checkSeats(e entity.Rideable) {
+	seat := p.seat(e)
+	if seat != -1 {
+		positions := e.SeatPositions()
+		if positions[seat] != p.seatPosition.Load() {
+			p.seatPosition.Store(positions[seat])
+			if seat == 0 {
+				for _, v := range p.viewers() {
+					v.ViewEntityMount(p, e, true)
 				}
-				p.updateState()
 			}
+			p.updateState()
 		}
 	}
 }
@@ -2131,31 +2126,29 @@ func (p *Player) SeatPosition() mgl32.Vec3 {
 }
 
 // seat returns the index of a player within the slice of riders.
-func (p *Player) seat(e world.Entity) int {
-	if rideable, ok := e.(entity.Rideable); ok {
-		riders := rideable.Riders()
-		for i, r := range riders {
-			if r == p {
-				return i
-			}
+func (p *Player) seat(e entity.Rideable) int {
+	riders := e.Riders()
+	for i, r := range riders {
+		if r == p {
+			return i
 		}
 	}
 	return -1
 }
 
 // setRiding saves the entity the Rider is currently riding.
-func (p *Player) setRiding(e world.Entity) {
+func (p *Player) setRiding(e entity.Rideable) {
 	p.ridingMu.Lock()
 	p.riding = e
 	p.ridingMu.Unlock()
 }
 
 // RidingEntity returns the entity the player is currently riding and the player's seat index.
-func (p *Player) RidingEntity() (world.Entity, int) {
+func (p *Player) RidingEntity() (entity.Rideable, int) {
 	p.ridingMu.Lock()
 	defer p.ridingMu.Unlock()
 	if p.riding != nil {
-		riders := p.riding.(entity.Rideable).Riders()
+		riders := p.riding.Riders()
 		for i, r := range riders {
 			if r == p {
 				return p.riding, i
