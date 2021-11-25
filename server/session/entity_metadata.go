@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -58,6 +59,15 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
 		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
 	}
+	if s, ok := e.(splash); ok {
+		pot := s.Potion()
+		id := pot.Uint8()
+
+		m[dataKeyPotionAuxValue] = int16(id)
+		if len(pot.Effects) > 0 {
+			m.setFlag(dataKeyFlags, dataFlagEnchanted)
+		}
+	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
 		if (colour != color.RGBA{}) {
@@ -95,6 +105,7 @@ const (
 	dataKeyAir
 	dataKeyPotionColour
 	dataKeyPotionAmbient
+	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
@@ -115,6 +126,7 @@ const (
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
 	dataFlagAffectedByGravity = 48
+	dataFlagEnchanted         = 51
 	dataFlagSwimming          = 56
 )
 
@@ -148,6 +160,10 @@ type scaled interface {
 
 type named interface {
 	NameTag() string
+}
+
+type splash interface {
+	Potion() potion.Potion
 }
 
 type onFire interface {

@@ -462,6 +462,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.EventAddParticleMask | 15,
 			Position:  vec64To32(pos),
 		})
+	case particle.Splash:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleSplash,
+			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -527,6 +533,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.blockRuntimeID(so.Block))
 	case sound.Fizz:
 		pk.SoundType = packet.SoundEventFizz
+	case sound.GlassBreak:
+		pk.SoundType = packet.SoundEventGlass
 	case sound.Attack:
 		pk.SoundType, pk.EntityType = packet.SoundEventAttackStrong, "minecraft:player"
 		if !so.Damage {
