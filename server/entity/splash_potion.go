@@ -48,7 +48,7 @@ func NewSplashPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Sp
 
 // Name ...
 func (s *SplashPotion) Name() string {
-	return "Splash Potion"
+	return "Splash Variant"
 }
 
 // EncodeEntity ...

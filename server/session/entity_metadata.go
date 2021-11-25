@@ -60,7 +60,7 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
 	}
 	if s, ok := e.(splash); ok {
-		pot := s.Potion()
+		pot := s.Variant()
 		id := pot.Uint8()
 
 		m[dataKeyPotionAuxValue] = int16(id)
@@ -163,7 +163,7 @@ type named interface {
 }
 
 type splash interface {
-	Potion() potion.Potion
+	Variant() potion.Potion
 }
 
 type onFire interface {
