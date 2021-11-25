@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
@@ -82,6 +83,15 @@ func (s *SplashPotion) Rotation() (float64, float64) {
 	return s.yaw, s.pitch
 }
 
+// splashable represents an entity that can be splashed by a potion.
+type splashable interface {
+	Living
+	Eyed
+
+	// AddEffect adds a specific effect to the entity that implements this interface.
+	AddEffect(e effect.Effect)
+}
+
 // Tick ...
 func (s *SplashPotion) Tick(current int64) {
 	if s.closeNextTick {
@@ -104,6 +114,7 @@ func (s *SplashPotion) Tick(current int64) {
 	if result != nil {
 		w := s.World()
 		pos := s.Position()
+		aabb := s.AABB().Translate(pos)
 
 		pot := s.variant
 		effects := pot.Effects
@@ -117,7 +128,49 @@ func (s *SplashPotion) Tick(current int64) {
 		w.AddParticle(pos, particle.Splash{Colour: colour})
 		w.PlaySound(pos, sound.GlassBreak{})
 
-		// TODO: Actually apply the effects to the nearby entities.
+		if hasEffects {
+			ignoreFunc := func(entity world.Entity) bool {
+				_, canSplash := entity.(splashable)
+				if !canSplash || entity == s {
+					return true
+				}
+				return false
+			}
+
+			for _, otherEntity := range w.EntitiesNearby(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignoreFunc) {
+				splashEntity := otherEntity.(splashable)
+
+				distance := world.Distance(splashEntity.Position().Add(mgl64.Vec3{0, splashEntity.EyeHeight(), 0}), pos)
+				if distance > 4 {
+					continue
+				}
+
+				distanceMultiplier := 1 - (distance / 4)
+				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == otherEntity {
+					distanceMultiplier = 1.0
+				}
+
+				for _, eff := range effects {
+					if (eff.Type() == effect.InstantHealth{} || eff.Type() == effect.InstantDamage{}) {
+						splashEntity.AddEffect(eff.WithPotency(distanceMultiplier))
+						continue
+					}
+					// TODO: Non-instant splash potion support.
+				}
+			}
+		} else if blockResult, ok := result.(trace.BlockResult); ok && pot.Equals(potion.Water()) {
+			blockPos := blockResult.BlockPosition().Side(blockResult.Face())
+			if w.Block(blockPos) == fire() {
+				w.SetBlock(blockPos, air())
+			}
+
+			for _, f := range cube.HorizontalFaces() {
+				horizontalPos := blockPos.Side(f)
+				if w.Block(horizontalPos) == fire() {
+					w.SetBlock(horizontalPos, air())
+				}
+			}
+		}
 
 		s.closeNextTick = true
 	}
@@ -171,4 +224,13 @@ func (s *SplashPotion) EncodeNBT() map[string]interface{} {
 		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
 		"Damage": 0.0,
 	}
+}
+
+// air returns an air block.
+func air() world.Block {
+	f, ok := world.BlockByName("minecraft:air", map[string]interface{}{})
+	if !ok {
+		panic("could not find air block")
+	}
+	return f
 }

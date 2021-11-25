@@ -235,6 +235,11 @@ func StrongSlowness() Potion {
 	return Potion{42, []effect.Effect{effect.New(effect.Slowness{}, 4, 20*time.Second)}}
 }
 
+// Equals ...
+func (p Potion) Equals(other Potion) bool {
+	return p.Uint8() == other.Uint8()
+}
+
 type potion uint8
 
 // Uint8 returns the potion type as a uint8.

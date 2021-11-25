@@ -57,6 +57,21 @@ func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
 	return Effect{t: t, lvl: lvl, d: d, ambient: true}
 }
 
+// potencyType represents an effect type which can have its potency changed.
+type potencyType interface {
+	Type
+	// WithPotency updates the potency of the type with the one given and returns it.
+	WithPotency(potency float64) Type
+}
+
+// WithPotency returns a new effect with the given potency, if the effect type allows for it.
+func (e Effect) WithPotency(potency float64) Effect {
+	if t, ok := e.t.(potencyType); ok {
+		e.t = t.WithPotency(potency)
+	}
+	return e
+}
+
 // WithoutParticles returns the same Effect with particles disabled. Adding the effect to players will not display the
 // particles around the player.
 func (e Effect) WithoutParticles() Effect {

@@ -846,6 +846,39 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 }
 
+// EntitiesNearby returns a list of entities that are intersecting the bounding box given.
+func (w *World) EntitiesNearby(aabb physics.AABB, ignored func(Entity) bool) []Entity {
+	if w == nil {
+		return nil
+	}
+	// Make an estimate of 16 entities on average.
+	m := make([]Entity, 0, 16)
+
+	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
+
+	for x := minPos[0]; x <= maxPos[0]; x++ {
+		for z := minPos[1]; z <= maxPos[1]; z++ {
+			c, ok := w.chunkFromCache(ChunkPos{x, z})
+			if !ok {
+				// The chunk wasn't loaded, so there are no entities here.
+				continue
+			}
+			c.Lock()
+			for _, entity := range c.entities {
+				if ignored != nil && ignored(entity) {
+					continue
+				}
+				if aabb.IntersectsWith(entity.AABB().Translate(entity.Position())) {
+					// The entity position intersected the AABB, so we add it to the slice to return.
+					m = append(m, entity)
+				}
+			}
+			c.Unlock()
+		}
+	}
+	return m
+}
+
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
 // those which are contained within the AABB when it comes to their position.
 func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []Entity {
