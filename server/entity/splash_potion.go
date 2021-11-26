@@ -155,7 +155,11 @@ func (s *SplashPotion) Tick(current int64) {
 						continue
 					}
 
-					splashEntity.AddEffect(eff.WithDuration(time.Duration(float64(eff.Duration().Milliseconds())*0.75*distanceMultiplier) * time.Millisecond))
+					distanceAccountedDuration := time.Duration(float64(eff.Duration().Milliseconds())*0.75*distanceMultiplier) * time.Millisecond
+					if distanceAccountedDuration < time.Second {
+						continue
+					}
+					splashEntity.AddEffect(eff.WithDuration(distanceAccountedDuration))
 				}
 			}
 		} else if blockResult, ok := result.(trace.BlockResult); ok && s.t.Equals(potion.Water()) {
