@@ -35,7 +35,7 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 		o.Own(user)
 	}
 	if pot, ok := e.(splashPotion); ok {
-		pot.SetVariant(s.Type)
+		pot.SetType(s.Type)
 	}
 
 	ctx.SubtractFromCount(1)
@@ -54,8 +54,8 @@ func (s SplashPotion) EncodeItem() (name string, meta int16) {
 
 // splashPotion represents an entity instance of a SplashPotion.
 type splashPotion interface {
-	// SetVariant sets the variant of the splash potion.
-	SetVariant(variant potion.Potion)
-	// Variant returns the variant of the splash potion.
-	Variant() potion.Potion
+	// SetType sets the type of the splash potion.
+	SetType(variant potion.Potion)
+	// Type returns the type of the splash potion.
+	Type() potion.Potion
 }

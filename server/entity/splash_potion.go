@@ -62,8 +62,8 @@ func (s *SplashPotion) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
 }
 
-// SetVariant ...
-func (s *SplashPotion) SetVariant(variant potion.Potion) {
+// SetType ...
+func (s *SplashPotion) SetType(variant potion.Potion) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -73,8 +73,8 @@ func (s *SplashPotion) SetVariant(variant potion.Potion) {
 	}
 }
 
-// Variant ...
-func (s *SplashPotion) Variant() potion.Potion {
+// Type ...
+func (s *SplashPotion) Type() potion.Potion {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.t
