@@ -57,8 +57,8 @@ func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
 	return Effect{t: t, lvl: lvl, d: d, ambient: true}
 }
 
-// potencyType represents an effect type which can have its potency changed.
-type potencyType interface {
+// potentType represents an effect type which can have its potency changed.
+type potentType interface {
 	Type
 	// WithPotency updates the potency of the type with the one given and returns it.
 	WithPotency(potency float64) Type
@@ -66,7 +66,7 @@ type potencyType interface {
 
 // WithPotency returns a new effect with the given potency, if the effect type allows for it.
 func (e Effect) WithPotency(potency float64) Effect {
-	if t, ok := e.t.(potencyType); ok {
+	if t, ok := e.t.(potentType); ok {
 		e.t = t.WithPotency(potency)
 	}
 	return e
