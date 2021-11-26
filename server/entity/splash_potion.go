@@ -27,8 +27,7 @@ type SplashPotion struct {
 
 	owner world.Entity
 
-	variant potion.Potion
-
+	t potion.Potion
 	c *ProjectileComputer
 }
 
@@ -68,14 +67,14 @@ func (s *SplashPotion) AABB() physics.AABB {
 func (s *SplashPotion) SetVariant(variant potion.Potion) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.variant = variant
+	s.t = variant
 }
 
 // Variant ...
 func (s *SplashPotion) Variant() potion.Potion {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.variant
+	return s.t
 }
 
 // Rotation ...
@@ -117,7 +116,7 @@ func (s *SplashPotion) Tick(current int64) {
 		w := s.World()
 		aabb := s.AABB().Translate(m.pos)
 
-		effects := s.variant.Effects()
+		effects := s.t.Effects()
 		hasEffects := len(effects) > 0
 
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
@@ -162,7 +161,7 @@ func (s *SplashPotion) Tick(current int64) {
 					splashEntity.AddEffect(eff.WithDuration(time.Duration(newTicks*50) * time.Millisecond))
 				}
 			}
-		} else if blockResult, ok := result.(trace.BlockResult); ok && s.variant.Equals(potion.Water()) {
+		} else if blockResult, ok := result.(trace.BlockResult); ok && s.t.Equals(potion.Water()) {
 			blockPos := blockResult.BlockPosition().Side(blockResult.Face())
 			if w.Block(blockPos) == fire() {
 				w.SetBlock(blockPos, air())
@@ -216,7 +215,7 @@ func (s *SplashPotion) DecodeNBT(data map[string]interface{}) interface{} {
 		float64(nbtconv.MapFloat32(data, "Pitch")),
 		float64(nbtconv.MapFloat32(data, "Yaw")),
 	).(*SplashPotion)
-	p.variant = potion.From(nbtconv.MapInt32(data, "PotionId"))
+	p.t = potion.From(nbtconv.MapInt32(data, "PotionId"))
 	return p
 }
 
@@ -229,7 +228,7 @@ func (s *SplashPotion) EncodeNBT() map[string]interface{} {
 		"Pitch":    pitch,
 		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
 		"Damage":   0.0,
-		"PotionId": s.variant.Uint8(),
+		"PotionId": s.t.Uint8(),
 	}
 }
 
