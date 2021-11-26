@@ -1143,7 +1143,7 @@ func (p *Player) UseItem() {
 			return
 		}
 
-		if coolDown, ok := it.(item.CoolDown); ok {
+		if coolDown, ok := it.(item.CooledDown); ok {
 			p.SetCoolDown(it, coolDown.CoolDown())
 		}
 
