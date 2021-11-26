@@ -67,7 +67,11 @@ func (s *SplashPotion) AABB() physics.AABB {
 func (s *SplashPotion) SetVariant(variant potion.Potion) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	s.t = variant
+	for _, v := range s.e.World().Viewers(s.pos) {
+		v.ViewEntityState(s.e)
+	}
 }
 
 // Variant ...
