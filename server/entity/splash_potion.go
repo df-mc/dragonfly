@@ -131,15 +131,12 @@ func (s *SplashPotion) Tick(current int64) {
 		w.PlaySound(pos, sound.GlassBreak{})
 
 		if hasEffects {
-			ignoreFunc := func(entity world.Entity) bool {
+			ignore := func(entity world.Entity) bool {
 				_, canSplash := entity.(splashable)
-				if !canSplash || entity == s {
-					return true
-				}
-				return false
+				return !canSplash || entity == s
 			}
 
-			for _, otherEntity := range w.EntitiesNearby(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignoreFunc) {
+			for _, otherEntity := range w.EntitiesNearby(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignore) {
 				splashEntity := otherEntity.(splashable)
 
 				distance := world.Distance(EyePosition(splashEntity), pos)
