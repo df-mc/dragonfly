@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -50,18 +51,21 @@ func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // Activate ...
-func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
 		i.Saturate(2, 0.4)
+		w.PlaySound(u.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 		c.Bites++
 		if c.Bites > 6 {
 			w.BreakBlockWithoutParticles(pos)
-			return
+			return true
 		}
 		w.PlaceBlock(pos, c)
+		return true
 	}
+	return false
 }
 
 // BreakInfo ...

@@ -80,8 +80,12 @@ const DefaultConsumeDuration = (time.Second * 161) / 100
 // UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
 // after the action is complete.
 type UseContext struct {
-	Damage     int
-	CountSub   int
+	// Damage is the amount of damage that should be dealt to the item as a result of using it.
+	Damage int
+	// CountSub is how much of the count should be subtracted after using the item.
+	CountSub int
+	// IgnoreAABB specifies if placing the item should ignore the AABB of the player placing this. This is the case for
+	// items such as cocoa beans.
 	IgnoreAABB bool
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
@@ -117,14 +121,27 @@ type User interface {
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
-	Position() mgl64.Vec3
 }
 
 // Carrier represents an entity that is able to carry an item.
 type Carrier interface {
+	world.Entity
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
+}
+
+// projectile represents an entity that can be launched as a projectile.
+type projectile interface {
+	world.Entity
+	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+}
+
+// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
+type owned interface {
+	world.Entity
+	Owner() world.Entity
+	Own(owner world.Entity)
 }
 
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast

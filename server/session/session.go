@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -12,11 +13,13 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"go.uber.org/atomic"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -28,7 +31,7 @@ type Session struct {
 	log internal.Logger
 
 	c        Controllable
-	conn     *minecraft.Conn
+	conn     Conn
 	handlers map[uint32]packetHandler
 
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
@@ -44,13 +47,14 @@ type Session struct {
 	teleportMu  sync.Mutex
 	teleportPos *mgl64.Vec3
 
+	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
-	currentEntityRuntimeID atomic.Uint64
-	entityMutex            sync.RWMutex
+	currentEntityRuntimeID uint64
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
+	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot         *atomic.Uint32
@@ -72,6 +76,36 @@ type Session struct {
 	joinMessage, quitMessage *atomic.String
 }
 
+// Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
+// information on the identity of the Session.
+type Conn interface {
+	io.Closer
+	// IdentityData returns the login.IdentityData of a Conn. It contains the UUID, XUID and username of the connection.
+	IdentityData() login.IdentityData
+	// ClientData returns the login.ClientData of a Conn. This includes less sensitive data of the player like its skin,
+	// language code and other non-essential information.
+	ClientData() login.ClientData
+	// ClientCacheEnabled specifies if the Conn has the client cache, used for caching chunks client-side, enabled or
+	// not. Some platforms, like the Nintendo Switch, have this disabled at all times.
+	ClientCacheEnabled() bool
+	// ChunkRadius returns the chunk radius as requested by the client at the other end of the Conn.
+	ChunkRadius() int
+	// Latency returns the current latency measured over the Conn.
+	Latency() time.Duration
+	// Flush flushes the packets buffered by the Conn, sending all of them out immediately.
+	Flush() error
+	// RemoteAddr returns the remote network address.
+	RemoteAddr() net.Addr
+	// ReadPacket reads a packet.Packet from the Conn. An error is returned if a deadline was set that was
+	// exceeded or if the Conn was closed while awaiting a packet.
+	ReadPacket() (pk packet.Packet, err error)
+	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
+	// packet.
+	WritePacket(pk packet.Packet) error
+	// StartGame starts the game for the Conn with a timeout.
+	StartGame(data minecraft.GameData) error
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -91,7 +125,7 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(conn *minecraft.Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
+func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -105,12 +139,13 @@ func New(conn *minecraft.Conn, maxChunkRadius int, log internal.Logger, joinMess
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
+		hiddenEntities:         map[world.Entity]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
 		conn:                   conn,
 		log:                    log,
-		currentEntityRuntimeID: *atomic.NewUint64(1),
+		currentEntityRuntimeID: 1,
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
@@ -134,11 +169,12 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
 	s.chunkLoader.Move(w.Spawn().Vec3Middle())
 
+	s.sendAvailableEntities()
+
 	s.initPlayerList()
 
 	w.AddEntity(s.c)
 	s.c.SetGameMode(gm)
-	s.SendAvailableCommands()
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
 		s.SendEffect(e)
@@ -226,6 +262,7 @@ func (s *Session) handlePackets() {
 		_ = s.Close()
 	}()
 	go s.sendChunks(c)
+	go s.sendCommands(c)
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
@@ -240,7 +277,7 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// sendChunks continuously sends chunks to the player, until a value is sent to the closeChan passed.
+// sendChunks continuously sends chunks to the player, until a value is sent to the stop channel passed.
 func (s *Session) sendChunks(stop <-chan struct{}) {
 	const maxChunkTransactions = 8
 	t := time.NewTicker(time.Second / 20)
@@ -264,6 +301,38 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 				s.log.Debugf("error loading chunk: %v", err)
 				return
 			}
+		case <-stop:
+			return
+		}
+	}
+}
+
+// sendCommands continuously checks if commands need to be resent and resends them when needed. sendCommands returns
+// when the channel passed has a value sent to it.
+func (s *Session) sendCommands(stop <-chan struct{}) {
+	tc := time.NewTicker(time.Second * 5)
+	te := time.NewTicker(time.Second)
+	defer func() {
+		tc.Stop()
+		te.Stop()
+	}()
+	var (
+		r          map[string]map[int]cmd.Runnable
+		enumValues map[string][]string
+		enums      map[string]cmd.Enum
+		ok         bool
+	)
+	for {
+		select {
+		case <-tc.C:
+			r, ok = s.resendCommands(r)
+			if ok {
+				enums, enumValues = s.enums()
+			}
+		case <-te.C:
+			// Enum resending happens relatively often and frequent updates are more important than with full command
+			// changes. Those are generally only related to permission changes, which doesn't happen often.
+			s.resendEnums(enums, enumValues)
 		case <-stop:
 			return
 		}
@@ -309,7 +378,9 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:            nil,
+		packet.IDAdventureSettings:     &AdventureSettingsHandler{},
 		packet.IDAnimate:               nil,
+		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
@@ -319,7 +390,7 @@ func (s *Session) registerHandlers() {
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]protocol.StackResponseSlotInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
@@ -372,9 +443,23 @@ func (s *Session) closePlayerList() {
 	sessionMu.Unlock()
 }
 
-// connection returns the minecraft connection.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func (s *Session) connection() *minecraft.Conn {
-	return s.conn
+// sendAvailableEntities sends all registered entities to the player.
+func (s *Session) sendAvailableEntities() {
+	// actorIdentifier represents the structure of an actor identifier sent over the network.
+	type actorIdentifier struct {
+		// Unique namespaced identifier for an entity.
+		ID string `nbt:"id"`
+	}
+
+	entities := world.Entities()
+	var entityData []actorIdentifier
+	for _, entity := range entities {
+		id := entity.EncodeEntity()
+		entityData = append(entityData, actorIdentifier{ID: id})
+	}
+	serializedEntityData, err := nbt.Marshal(map[string]interface{}{"idlist": entityData})
+	if err != nil {
+		panic(fmt.Errorf("failed to serialize entity data: %v", err))
+	}
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }

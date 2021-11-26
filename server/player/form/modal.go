@@ -3,7 +3,6 @@ package form
 import (
 	"encoding/json"
 	"fmt"
-	"go/ast"
 	"reflect"
 )
 
@@ -70,6 +69,13 @@ func (m Modal) Body() string {
 // SubmitJSON submits a JSON byte slice to the modal form. This byte slice contains a JSON encoded bool in it,
 // which is used to determine which button was clicked.
 func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
+	if b == nil {
+		if closer, ok := m.submittable.(Closer); ok {
+			closer.Close(submitter)
+		}
+		return nil
+	}
+
 	var value bool
 	if err := json.Unmarshal(b, &value); err != nil {
 		return fmt.Errorf("error parsing JSON as bool: %w", err)
@@ -84,18 +90,17 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 
 // Buttons returns a list of all buttons of the Modal form, which will always be a total of two buttons.
 func (m Modal) Buttons() []Button {
-	v := reflect.ValueOf(m.submittable)
-	t := reflect.TypeOf(m.submittable)
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
 
 	buttons := make([]Button, 0, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		fieldV := v.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		field := v.Field(i)
+		if !field.CanSet() {
 			continue
 		}
 		// Each exported field is guaranteed to be of type Button.
-		buttons = append(buttons, fieldV.Interface().(Button))
+		buttons = append(buttons, field.Interface().(Button))
 	}
 	return buttons
 }
@@ -106,10 +111,8 @@ func (m Modal) verify() {
 	var count int
 
 	v := reflect.ValueOf(m.submittable)
-	t := reflect.TypeOf(m.submittable)
 	for i := 0; i < v.NumField(); i++ {
-		fieldT := t.Field(i)
-		if !ast.IsExported(fieldT.Name) {
+		if !v.Field(i).CanSet() {
 			continue
 		}
 		if _, ok := v.Field(i).Interface().(Button); !ok {

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
-	"go.uber.org/atomic"
 	"math"
 	"strings"
 	"sync"
@@ -16,9 +15,9 @@ import (
 // an inventory is invalid. Use New() to obtain a new inventory.
 // Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
-	mu          sync.RWMutex
-	slots       []item.Stack
-	lockedSlots atomic.Uint64
+	mu    sync.RWMutex
+	h     Handler
+	slots []item.Stack
 
 	f      func(slot int, item item.Stack)
 	canAdd func(s item.Stack, slot int) bool
@@ -27,9 +26,6 @@ type Inventory struct {
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
 var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Size()")
-
-// ErrSlotLocked is returned by a call to SetItem if the slot passed is locked and cannot be edited.
-var ErrSlotLocked = errors.New("slot is locked and cannot be edited")
 
 // New creates a new inventory with the size passed. The inventory size cannot be changed after it has been
 // constructed.
@@ -42,7 +38,7 @@ func New(size int, f func(slot int, item item.Stack)) *Inventory {
 	if f == nil {
 		f = func(slot int, item item.Stack) {}
 	}
-	return &Inventory{slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
@@ -69,9 +65,6 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	if !inv.validSlot(slot) {
 		return ErrSlotOutOfRange
 	}
-	if inv.SlotLocked(slot) {
-		return ErrSlotLocked
-	}
 
 	inv.mu.Lock()
 	f := inv.setItem(slot, item)
@@ -81,8 +74,9 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	return nil
 }
 
-// Items returns the full content of the inventory, copying all items into a new slice.
-func (inv *Inventory) Items() []item.Stack {
+// Slots returns the all slots in the inventory as a slice. The index in the slice is the slot of the inventory that a
+// specific item.Stack is in. Note that this item.Stack might be empty.
+func (inv *Inventory) Slots() []item.Stack {
 	r := make([]item.Stack, inv.Size())
 	inv.mu.RLock()
 	copy(r, inv.slots)
@@ -90,9 +84,23 @@ func (inv *Inventory) Items() []item.Stack {
 	return r
 }
 
+// Items returns a list of all contents of the inventory. This method excludes air items, so the method
+// only ever returns item stacks which actually represent an item.
+func (inv *Inventory) Items() []item.Stack {
+	contents := make([]item.Stack, 0, inv.Size())
+	inv.mu.RLock()
+	for _, it := range inv.slots {
+		if !it.Empty() {
+			contents = append(contents, it)
+		}
+	}
+	inv.mu.RUnlock()
+	return contents
+}
+
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
-	for slot, it := range inv.Items() {
+	for slot, it := range inv.Slots() {
 		if !it.Empty() && it.Comparable(item) {
 			return slot, true
 		}
@@ -102,7 +110,7 @@ func (inv *Inventory) First(item item.Stack) (int, bool) {
 
 // FirstEmpty returns the first empty slot if found. Second return value describes whether an empty slot was found.
 func (inv *Inventory) FirstEmpty() (int, bool) {
-	for slot, it := range inv.Items() {
+	for slot, it := range inv.Slots() {
 		if it.Empty() {
 			return slot, true
 		}
@@ -141,7 +149,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 
 	inv.mu.Lock()
 	for slot, invIt := range inv.slots {
-		if invIt.Empty() || inv.SlotLocked(slot) {
+		if invIt.Empty() {
 			// This slot was empty, and we should first try to add the item stack to existing stacks.
 			continue
 		}
@@ -158,7 +166,7 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		}
 	}
 	for slot, invIt := range inv.slots {
-		if !invIt.Empty() || inv.SlotLocked(slot) {
+		if !invIt.Empty() {
 			// We can only use empty slots now: Items existing stacks have already been filled up.
 			continue
 		}
@@ -188,7 +196,7 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 
 	inv.mu.Lock()
 	for slot, slotIt := range inv.slots {
-		if slotIt.Empty() || inv.SlotLocked(slot) || !slotIt.Comparable(it) {
+		if slotIt.Empty() || !slotIt.Comparable(it) {
 			continue
 		}
 		f := inv.setItem(slot, slotIt.Grow(-toRemove))
@@ -211,37 +219,6 @@ func (inv *Inventory) RemoveItem(it item.Stack) error {
 	return fmt.Errorf("could not remove all items from the inventory")
 }
 
-// LockSlot locks a slot in the inventory at the offset passed, so that setting items to it will return an
-// error.
-func (inv *Inventory) LockSlot(slot int) {
-	inv.lockedSlots.Store(inv.lockedSlots.Load() | (1 << uint64(slot)))
-}
-
-// UnlockSlot unlocks a slot after having called LockSlot, so that calling SetItem on the slot will work
-// again.
-func (inv *Inventory) UnlockSlot(slot int) {
-	inv.lockedSlots.Store(inv.lockedSlots.Load() & ^(1 << uint64(slot)))
-}
-
-// SlotLocked checks if the slot passed is currently locked.
-func (inv *Inventory) SlotLocked(slot int) bool {
-	return (inv.lockedSlots.Load() & (1 << uint64(slot))) > 0
-}
-
-// Contents returns a list of all contents of the inventory. This method excludes air items, so the method
-// only ever returns item stacks which actually represent an item.
-func (inv *Inventory) Contents() []item.Stack {
-	contents := make([]item.Stack, 0, inv.Size())
-	inv.mu.RLock()
-	for _, it := range inv.slots {
-		if !it.Empty() {
-			contents = append(contents, it)
-		}
-	}
-	inv.mu.RUnlock()
-	return contents
-}
-
 // Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
 // it is empty.
 func (inv *Inventory) Empty() bool {
@@ -256,18 +233,34 @@ func (inv *Inventory) Empty() bool {
 	return true
 }
 
-// Clear clears the entire inventory. Items items are removed, except for items in locked slots.
+// Clear clears the entire inventory. All items are removed, except for items in locked slots.
 func (inv *Inventory) Clear() {
 	inv.mu.Lock()
 	for slot := range inv.slots {
-		if inv.SlotLocked(slot) {
-			continue
-		}
 		f := inv.setItem(slot, item.Stack{})
 		//noinspection GoDeferInLoop
 		defer f()
 	}
 	inv.mu.Unlock()
+}
+
+// Handle assigns a Handler to an Inventory so that its methods are called for the respective events. Nil may be passed
+// to set the default NopHandler.
+func (inv *Inventory) Handle(h Handler) {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+
+	if h == nil {
+		h = NopHandler{}
+	}
+	inv.h = h
+}
+
+// Handler returns the Handler currently assigned to the Inventory. This is the NopHandler by default.
+func (inv *Inventory) Handler() Handler {
+	inv.mu.RLock()
+	defer inv.mu.RUnlock()
+	return inv.h
 }
 
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is

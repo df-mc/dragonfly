@@ -17,6 +17,13 @@ func (ctx *Context) Cancel() {
 	ctx.cancel = true
 }
 
+// After calls the function passed after the action of the event has been completed, either by a call to
+// (*Context).Continue() or (*Context).Stop().
+// After can be executed multiple times to attach more functions to be called after the event is executed.
+func (ctx *Context) After(f func(cancelled bool)) {
+	ctx.after = append(ctx.after, f)
+}
+
 // Continue calls the function f if the context is not cancelled. If it is cancelled, Continue will return
 // immediately.
 // These functions are not generally useful for handling events. See After() for executing code after the
@@ -42,11 +49,4 @@ func (ctx *Context) Stop(f func()) {
 			v(ctx.cancel)
 		}
 	}
-}
-
-// After calls the function passed after the action of the event has been completed, either by a call to
-// (*Context).Continue() or (*Context).Stop().
-// After can be executed multiple times to attach more functions to be called after the event is executed.
-func (ctx *Context) After(f func(cancelled bool)) {
-	ctx.after = append(ctx.after, f)
 }

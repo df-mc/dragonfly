@@ -8,128 +8,166 @@ import (
 	"math"
 )
 
-// boxes returns the axis aligned bounding box of a block.
-func boxes(b world.Block, pos cube.Pos, w *world.World) []physics.AABB {
-	return b.Model().AABB(pos, w)
-}
-
-// MovementComputer is used to compute movement of an entity. When constructed, the gravity of the entity
+// MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
 // the movement is computed for must be passed.
 type MovementComputer struct {
-	onGround          bool
-	gravity           float64
-	dragBeforeGravity bool
-	drag              float64
+	Gravity, Drag     float64
+	DragBeforeGravity bool
+
+	onGround bool
 }
 
-// tickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
-// of its drag and gravity.
-// The new position of the entity after movement is returned.
-func (c *MovementComputer) tickMovement(e world.Entity) mgl64.Vec3 {
-	viewers := e.World().Viewers(e.Position())
-	if !e.Velocity().ApproxEqualThreshold(mgl64.Vec3{}, 0.001) {
-		for _, v := range viewers {
-			v.ViewEntityVelocity(e, e.Velocity())
+// Movement represents the movement of a world.Entity as a result of a call to MovementComputer.TickMovement. The
+// resulting position and velocity can be obtained by calling Position and Velocity. These can be sent to viewers by
+// calling Send.
+type Movement struct {
+	v                    []world.Viewer
+	e                    world.Entity
+	pos, vel, dpos, dvel mgl64.Vec3
+	yaw, pitch           float64
+	onGround             bool
+}
+
+// Send sends the Movement to any viewers watching the entity at the time of the movement. If the position/velocity
+// changes were negligible, nothing is sent.
+func (m *Movement) Send() {
+	posChanged := !m.dpos.ApproxEqualThreshold(zeroVec3, epsilon)
+	velChanged := !m.dvel.ApproxEqualThreshold(zeroVec3, epsilon)
+
+	for _, v := range m.v {
+		if posChanged {
+			v.ViewEntityMovement(m.e, m.pos, m.yaw, m.pitch, m.onGround)
+		}
+		if velChanged {
+			v.ViewEntityVelocity(m.e, m.vel)
 		}
 	}
-
-	toMove, velocity := c.handleCollision(e)
-	e.SetVelocity(velocity)
-	v := c.move(e, toMove, viewers)
-	e.SetVelocity(c.applyGravity(e))
-	e.SetVelocity(c.applyFriction(e))
-	return v
 }
 
-// applyGravity applies gravity to the entity's velocity. By default, 0.08 is subtracted from the y value, or
-// a different value if the Gravity
-func (c *MovementComputer) applyGravity(e world.Entity) mgl64.Vec3 {
-	velocity := e.Velocity()
-	if c.dragBeforeGravity {
-		velocity[1] *= 1 - c.drag
-	}
-	velocity[1] -= c.gravity
-	if !c.dragBeforeGravity {
-		velocity[1] *= 1 - c.drag
-	}
-	return velocity
+// Position returns the position as a result of the Movement as an mgl64.Vec3.
+func (m *Movement) Position() mgl64.Vec3 {
+	return m.pos
 }
 
-// applyFriction applies friction to the entity, reducing its velocity on the X and Z axes.
-func (c *MovementComputer) applyFriction(e world.Entity) mgl64.Vec3 {
-	friction := 1 - c.drag
-	velocity := e.Velocity()
+// Velocity returns the velocity after the Movement as an mgl64.Vec3.
+func (m *Movement) Velocity() mgl64.Vec3 {
+	return m.vel
+}
+
+// Rotation returns the rotation, yaw and pitch, of the entity after the Movement.
+func (m *Movement) Rotation() (yaw, pitch float64) {
+	return m.yaw, m.pitch
+}
+
+// TickMovement performs a movement tick on an entity. Velocity is applied and changed according to the values
+// of its Drag and Gravity.
+// The new position of the entity after movement is returned.
+// The resulting Movement can be sent to viewers by calling Movement.Send.
+func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
+	w := e.World()
+	viewers := w.Viewers(pos)
+
+	velBefore := vel
+	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
+	dPos, vel := c.checkCollision(e, pos, vel)
+
+	return &Movement{v: viewers, e: e,
+		pos: pos.Add(dPos), vel: vel, dpos: dPos, dvel: vel.Sub(velBefore),
+		yaw: yaw, pitch: pitch, onGround: c.onGround,
+	}
+}
+
+// OnGround checks if the entity that this computer calculates is currently on the ground.
+func (c *MovementComputer) OnGround() bool {
+	return c.onGround
+}
+
+// zeroVec3 is a mgl64.Vec3 with zero values.
+var zeroVec3 mgl64.Vec3
+
+// epsilon is the epsilon used for thresholds for change used for change in position and velocity.
+const epsilon = 0.001
+
+// applyVerticalForces applies gravity and drag on the Y axis, based on the Gravity and Drag values set.
+func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {
+	if c.DragBeforeGravity {
+		vel[1] *= 1 - c.Drag
+	}
+	vel[1] -= c.Gravity
+	if !c.DragBeforeGravity {
+		vel[1] *= 1 - c.Drag
+	}
+	return vel
+}
+
+// applyHorizontalForces applies friction to the velocity based on the Drag value, reducing it on the X and Z axes.
+func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.Vec3) mgl64.Vec3 {
+	friction := 1 - c.Drag
 	if c.onGround {
-		friction = 0.6
+		if f, ok := w.Block(cube.PosFromVec3(pos).Side(cube.FaceDown)).(interface {
+			Friction() float64
+		}); ok {
+			friction *= f.Friction()
+		} else {
+			friction *= 0.6
+		}
 	}
-	velocity[0] *= friction
-	velocity[2] *= friction
-	return velocity
+	vel[0] *= friction
+	vel[2] *= friction
+	return vel
 }
 
-// move moves the entity so that all viewers in the world can see it, adding the velocity to the position.
-func (c *MovementComputer) move(e world.Entity, deltaPos mgl64.Vec3, viewers []world.Viewer) mgl64.Vec3 {
-	if deltaPos.ApproxEqualThreshold(mgl64.Vec3{}, 0.01) {
-		return e.Position()
-	}
-	for _, v := range viewers {
-		v.ViewEntityMovement(e, deltaPos, 0, 0)
-	}
-	return e.Position().Add(deltaPos)
-}
-
-// handleCollision handles the collision of the entity with blocks, adapting the velocity of the entity if it
+// checkCollision handles the collision of the entity with blocks, adapting the velocity of the entity if it
 // happens to collide with a block.
 // The final velocity and the Vec3 that the entity should move is returned.
-func (c *MovementComputer) handleCollision(e world.Entity) (move mgl64.Vec3, velocity mgl64.Vec3) {
+func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (mgl64.Vec3, mgl64.Vec3) {
 	// TODO: Implement collision with other entities.
-	velocity = e.Velocity()
-	deltaX, deltaY, deltaZ := velocity[0], velocity[1], velocity[2]
+	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	// Entities only ever have a single bounding box.
-	entityAABB := e.AABB().Translate(e.Position())
-	blocks := blockAABBsAround(e, entityAABB.Extend(velocity))
+	entityAABB := e.AABB().Translate(pos)
+	blocks := blockAABBsAround(e, entityAABB.Extend(vel))
 
-	if !mgl64.FloatEqual(deltaY, 0) {
+	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
 		// First we move the entity AABB on the Y axis.
 		for _, blockAABB := range blocks {
 			deltaY = entityAABB.CalculateYOffset(blockAABB, deltaY)
 		}
 		entityAABB = entityAABB.Translate(mgl64.Vec3{0, deltaY})
 	}
-	if !mgl64.FloatEqual(deltaX, 0) {
+	if !mgl64.FloatEqualThreshold(deltaX, 0, epsilon) {
 		// Then on the X axis.
 		for _, blockAABB := range blocks {
 			deltaX = entityAABB.CalculateXOffset(blockAABB, deltaX)
 		}
 		entityAABB = entityAABB.Translate(mgl64.Vec3{deltaX})
 	}
-	if !mgl64.FloatEqual(deltaZ, 0) {
+	if !mgl64.FloatEqualThreshold(deltaZ, 0, epsilon) {
 		// And finally on the Z axis.
 		for _, blockAABB := range blocks {
 			deltaZ = entityAABB.CalculateZOffset(blockAABB, deltaZ)
 		}
 	}
-	if !mgl64.FloatEqual(velocity[0], 0) {
+	if !mgl64.FloatEqual(vel[1], 0) {
 		// The Y velocity of the entity is currently not 0, meaning it is moving either up or down. We can
 		// then assume the entity is not currently on the ground.
 		c.onGround = false
 	}
-	if !mgl64.FloatEqual(deltaX, velocity[0]) {
-		velocity[0] = 0
+	if !mgl64.FloatEqual(deltaX, vel[0]) {
+		vel[0] = 0
 	}
-	if !mgl64.FloatEqual(deltaY, velocity[1]) {
+	if !mgl64.FloatEqual(deltaY, vel[1]) {
 		// The entity either hit the ground or hit the ceiling.
-		if velocity[1] < 0 {
+		if vel[1] < 0 {
 			// The entity was going down, so we can assume it is now on the ground.
 			c.onGround = true
 		}
-		velocity[1] = 0
+		vel[1] = 0
 	}
-	if !mgl64.FloatEqual(deltaZ, velocity[2]) {
-		velocity[2] = 0
+	if !mgl64.FloatEqual(deltaZ, vel[2]) {
+		vel[2] = 0
 	}
-	return mgl64.Vec3{deltaX, deltaY, deltaZ}, velocity
+	return mgl64.Vec3{deltaX, deltaY, deltaZ}, vel
 }
 
 // blockAABBsAround returns all blocks around the entity passed, using the AABB passed to make a prediction of
@@ -147,7 +185,7 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				boxes := boxes(w.Block(pos), pos, w)
+				boxes := w.Block(pos).Model().AABB(pos, w)
 				for _, box := range boxes {
 					blockAABBs = append(blockAABBs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
 				}
@@ -155,9 +193,4 @@ func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
 		}
 	}
 	return blockAABBs
-}
-
-// OnGround checks if the entity that this computer calculates is currently on the ground.
-func (c *MovementComputer) OnGround() bool {
-	return c.onGround
 }

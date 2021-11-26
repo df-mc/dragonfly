@@ -1,10 +1,10 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"reflect"
 	"sync"
-	"time"
 )
 
 // EffectManager manages the effects of an entity. The effect manager will only store effects that last for
@@ -24,40 +24,45 @@ func NewEffectManager() *EffectManager {
 // Tick method is called.
 // Effect levels of 0 or below will not do anything.
 // Effect returns the final effect it added to the entity. That might be the effect passed or an effect with
-// a higher level/duration than the one passed.
+// a higher level/duration than the one passed. Add panics if the effect has a negative duration or level.
 func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
-	if e.Level() <= 0 {
+	lvl, dur := e.Level(), e.Duration()
+	if lvl <= 0 {
+		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have level of 0 or below: %v", lvl))
+	}
+	if dur < 0 {
+		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
+	}
+	t, ok := e.Type().(effect.LastingType)
+	if !ok {
+		e.Type().Apply(entity, lvl, 0)
 		return e
 	}
-	if e.Instant() {
-		e.Apply(entity)
-		return e
-	}
-	t := reflect.TypeOf(e)
+	typ := reflect.TypeOf(e.Type())
 
 	m.mu.Lock()
-	existing, ok := m.effects[t]
+	existing, ok := m.effects[typ]
 	if !ok {
-		m.effects[t] = e
+		m.effects[typ] = e
 		m.mu.Unlock()
 
-		e.Start(entity)
+		t.Start(entity, lvl)
 		return e
 	}
-	if existing.Level() > e.Level() || (existing.Level() == e.Level() && existing.Duration() > e.Duration()) {
+	if existing.Level() > lvl || (existing.Level() == lvl && existing.Duration() > dur) {
 		m.mu.Unlock()
 		return existing
 	}
-	m.effects[t] = e
+	m.effects[typ] = e
 	m.mu.Unlock()
 
-	existing.End(entity)
-	e.Start(entity)
+	existing.Type().(effect.LastingType).End(entity, existing.Level())
+	t.Start(entity, lvl)
 	return e
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
-func (m *EffectManager) Remove(e effect.Effect, entity Living) {
+func (m *EffectManager) Remove(e effect.Type, entity Living) {
 	t := reflect.TypeOf(e)
 
 	m.mu.Lock()
@@ -66,7 +71,7 @@ func (m *EffectManager) Remove(e effect.Effect, entity Living) {
 	m.mu.Unlock()
 
 	if ok {
-		existing.End(entity)
+		existing.Type().(effect.LastingType).End(entity, existing.Level())
 	}
 }
 
@@ -91,21 +96,22 @@ func (m *EffectManager) Tick(entity Living) {
 	var toEnd []effect.Effect
 
 	for i, eff := range m.effects {
-		e = append(e, eff)
-
-		m.effects[i] = eff.WithSettings(eff.Duration()-time.Second/20, eff.Level(), eff.AmbientSource())
 		if m.expired(eff) {
 			delete(m.effects, i)
 			toEnd = append(toEnd, eff)
+			continue
 		}
+		eff = eff.TickDuration()
+		e = append(e, eff)
+		m.effects[i] = eff
 	}
 	m.mu.Unlock()
 
 	for _, eff := range e {
-		eff.Apply(entity)
+		eff.Type().Apply(entity, eff.Level(), eff.Duration())
 	}
 	for _, eff := range toEnd {
-		eff.End(entity)
+		eff.Type().(effect.LastingType).End(entity, eff.Level())
 	}
 }
 

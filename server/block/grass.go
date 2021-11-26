@@ -11,6 +11,29 @@ type Grass struct {
 	solid
 }
 
+// plantSelection are the plants that are picked from when a bone meal is attempted.
+// TODO: Base plant selection on current biome.
+var plantSelection = []world.Block{
+	Flower{Type: OxeyeDaisy()},
+	Flower{Type: PinkTulip()},
+	Flower{Type: Cornflower()},
+	Flower{Type: WhiteTulip()},
+	Flower{Type: RedTulip()},
+	Flower{Type: OrangeTulip()},
+	Flower{Type: Dandelion()},
+	Flower{Type: Poppy()},
+}
+
+// init adds extra variants of TallGrass to the plant selection.
+func init() {
+	for i := 0; i < 8; i++ {
+		plantSelection = append(plantSelection, TallGrass{Type: Fern()})
+	}
+	for i := 0; i < 12; i++ {
+		plantSelection = append(plantSelection, TallGrass{Type: NormalGrass()})
+	}
+}
+
 // SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
@@ -54,6 +77,19 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	}
 }
 
+// BoneMeal ...
+func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
+	for c := 0; c < 14; c++ {
+		x := randWithinRange(pos.X()-3, pos.X()+3)
+		z := randWithinRange(pos.Z()-3, pos.Z()+3)
+		if (w.Block(cube.Pos{x, pos.Y() + 1, z}) == Air{}) && (w.Block(cube.Pos{x, pos.Y(), z}) == Grass{}) {
+			w.SetBlock(cube.Pos{x, pos.Y() + 1, z}, plantSelection[randWithinRange(0, len(plantSelection)-1)])
+		}
+	}
+
+	return false
+}
+
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
@@ -77,4 +113,9 @@ func (g Grass) Till() (world.Block, bool) {
 // Shovel ...
 func (g Grass) Shovel() (world.Block, bool) {
 	return DirtPath{}, true
+}
+
+// randWithinRange returns a random integer within a range.
+func randWithinRange(min, max int) int {
+	return rand.Intn(max-min) + min
 }

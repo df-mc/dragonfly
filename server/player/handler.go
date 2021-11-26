@@ -22,6 +22,12 @@ type Handler interface {
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
+	// HandleToggleSprint handles when the player starts or stops sprinting.
+	// After is true if the player is sprinting after toggling (changing their sprinting state).
+	HandleToggleSprint(ctx *event.Context, after bool)
+	// HandleToggleSneak handles when the player starts or stops sneaking.
+	// After is true if the player is sneaking after toggling (changing their sneaking state).
+	HandleToggleSneak(ctx *event.Context, after bool)
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
@@ -79,7 +85,13 @@ type Handler interface {
 	// and the target won't be knocked back.
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
-	HandleAttackEntity(ctx *event.Context, e world.Entity)
+	// The knock back force and height is also provided which can be modified.
+	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64)
+	// HandlePunchAir handles the player punching air.
+	HandlePunchAir(ctx *event.Context)
+	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
+	// has both the old text passed and the text after the edit. This typically only has a change of one character.
+	HandleSignEdit(ctx *event.Context, oldText, newText string)
 	// HandleItemDamage handles the event wherein the item either held by the player or as armour takes
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
@@ -120,6 +132,12 @@ func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
 // HandleTeleport ...
 func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
 
+// HandleToggleSprint ...
+func (NopHandler) HandleToggleSprint(*event.Context, bool) {}
+
+// HandleToggleSneak ...
+func (NopHandler) HandleToggleSneak(*event.Context, bool) {}
+
 // HandleCommandExecution ...
 func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) {}
 
@@ -144,6 +162,9 @@ func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
 // HandleBlockPick ...
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block) {}
 
+// HandleSignEdit ...
+func (NopHandler) HandleSignEdit(*event.Context, string, string) {}
+
 // HandleItemPickup ...
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
 
@@ -160,7 +181,10 @@ func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 
 // HandleAttackEntity ...
-func (NopHandler) HandleAttackEntity(*event.Context, world.Entity) {}
+func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64) {}
+
+// HandlePunchAir ...
+func (NopHandler) HandlePunchAir(*event.Context) {}
 
 // HandleHurt ...
 func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source) {}

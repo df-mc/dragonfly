@@ -22,10 +22,9 @@ type Controllable interface {
 	cmd.Source
 	SetHeldItems(right, left item.Stack)
 
-	Move(deltaPos mgl64.Vec3)
+	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	Speed() float64
-	EyeHeight() float64
-	Rotate(deltaYaw, deltaPitch float64)
+	Facing() cube.Direction
 
 	Chat(msg ...interface{})
 	ExecuteCommand(commandLine string)
@@ -42,6 +41,7 @@ type Controllable interface {
 	AttackEntity(e world.Entity)
 	Drop(s item.Stack) (n int)
 	SwingArm()
+	PunchAir()
 
 	Respawn()
 
@@ -54,6 +54,9 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	StartFlying()
+	Flying() bool
+	StopFlying()
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)
@@ -61,6 +64,8 @@ type Controllable interface {
 	AbortBreaking()
 
 	Exhaust(points float64)
+
+	EditSign(pos cube.Pos, text string) error
 
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.

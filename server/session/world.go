@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/action"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -21,6 +20,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"math/rand"
 )
 
 // ViewChunk ...
@@ -35,7 +35,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
 func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	data := chunk.NetworkEncode(c)
+	data := chunk.Encode(c, chunk.NetworkEncoding)
 
 	count := byte(0)
 	for y := byte(0); y < 16; y++ {
@@ -98,7 +98,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 
 // sendNetworkChunk sends a network encoded chunk to the client.
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	data := chunk.NetworkEncode(c)
+	data := chunk.Encode(c, chunk.NetworkEncoding)
 
 	count := byte(0)
 	for y := byte(0); y < 16; y++ {
@@ -136,20 +136,29 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	s.chunkBuf.Reset()
 }
 
+// entityHidden checks if a world.Entity is being explicitly hidden from the Session.
+func (s *Session) entityHidden(e world.Entity) bool {
+	s.entityMutex.RLock()
+	_, ok := s.hiddenEntities[e]
+	s.entityMutex.RUnlock()
+	return ok
+}
+
 // ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
-	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID || s.entityHidden(e) {
 		return
 	}
 	var runtimeID uint64
 
-	s.entityMutex.Lock()
 	_, controllable := e.(Controllable)
 
+	s.entityMutex.Lock()
 	if id, ok := s.entityRuntimeIDs[e]; ok && controllable {
 		runtimeID = id
 	} else {
-		runtimeID = s.currentEntityRuntimeID.Add(1)
+		s.currentEntityRuntimeID += 1
+		runtimeID = s.currentEntityRuntimeID
 		s.entityRuntimeIDs[e] = runtimeID
 		s.entities[runtimeID] = e
 	}
@@ -157,6 +166,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 	yaw, pitch := e.Rotation()
 
+	metadata := map[uint32]interface{}{}
+
+	id := e.EncodeEntity()
 	switch v := e.(type) {
 	case Controllable:
 		actualPlayer := false
@@ -192,6 +204,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				UUID: v.UUID(),
 			}}})
 		}
+		return
 	case *entity.Item:
 		s.writePacket(&packet.AddItemActor{
 			EntityUniqueID:  int64(runtimeID),
@@ -199,28 +212,23 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Item:            instanceFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
 		})
+		return
 	case *entity.FallingBlock:
-		s.writePacket(&packet.AddActor{
-			EntityUniqueID:  int64(runtimeID),
-			EntityRuntimeID: runtimeID,
-			EntityType:      "minecraft:falling_block",
-			EntityMetadata:  map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))},
-			Position:        vec64To32(e.Position()),
-			Pitch:           float32(pitch),
-			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-		})
-	default:
-		s.writePacket(&packet.AddActor{
-			EntityUniqueID:  int64(runtimeID),
-			EntityRuntimeID: runtimeID,
-			EntityType:      e.EncodeEntity(),
-			Position:        vec64To32(e.Position()),
-			Pitch:           float32(pitch),
-			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-		})
+		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))}
+	case *entity.Text:
+		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
+		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
+	s.writePacket(&packet.AddActor{
+		EntityUniqueID:  int64(runtimeID),
+		EntityRuntimeID: runtimeID,
+		EntityType:      id,
+		EntityMetadata:  metadata,
+		Position:        vec64To32(e.Position()),
+		Pitch:           float32(pitch),
+		Yaw:             float32(yaw),
+		HeadYaw:         float32(yaw),
+	})
 }
 
 // HideEntity ...
@@ -244,33 +252,31 @@ func (s *Session) HideEntity(e world.Entity) {
 }
 
 // ViewEntityMovement ...
-func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
+func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool) {
 	id := s.entityRuntimeID(e)
-
-	if id == selfEntityRuntimeID {
+	if id == selfEntityRuntimeID || s.entityHidden(e) {
 		return
 	}
-	yaw, pitch := e.Rotation()
 
 	switch e.(type) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
-			Pitch:           float32(pitch + deltaPitch),
-			Yaw:             float32(yaw + deltaYaw),
-			HeadYaw:         float32(yaw + deltaYaw),
-			OnGround:        e.OnGround(),
+			Position:        vec64To32(pos.Add(entityOffset(e))),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
+			OnGround:        onGround,
 		})
 	default:
 		flags := byte(0)
-		if e.OnGround() {
+		if onGround {
 			flags |= packet.MoveFlagOnGround
 		}
 		s.writePacket(&packet.MoveActorAbsolute{
 			EntityRuntimeID: id,
-			Position:        vec64To32(e.Position().Add(deltaPos).Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch + deltaPitch, yaw + deltaYaw}),
+			Position:        vec64To32(pos.Add(entityOffset(e))),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw}),
 			Flags:           flags,
 		})
 	}
@@ -278,6 +284,9 @@ func (s *Session) ViewEntityMovement(e world.Entity, deltaPos mgl64.Vec3, deltaY
 
 // ViewEntityVelocity ...
 func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
+	if s.entityHidden(e) {
+		return
+	}
 	s.writePacket(&packet.SetActorMotion{
 		EntityRuntimeID: s.entityRuntimeID(e),
 		Velocity:        vec64To32(velocity),
@@ -305,6 +314,9 @@ func (s *Session) ViewTime(time int) {
 // ViewEntityTeleport ...
 func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
+	if s.entityHidden(e) {
+		return
+	}
 
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
@@ -339,7 +351,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 // ViewEntityItems ...
 func (s *Session) ViewEntityItems(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
-	if runtimeID == selfEntityRuntimeID {
+	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
@@ -366,7 +378,7 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 // ViewEntityArmour ...
 func (s *Session) ViewEntityArmour(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
-	if runtimeID == selfEntityRuntimeID {
+	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
@@ -445,6 +457,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.EventParticleEvaporateWater,
 			Position:  vec64To32(pos),
 		})
+	case particle.SnowballPoof:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventAddParticleMask | 15,
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -466,6 +483,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		})
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
+	case sound.Thunder:
+		pk.SoundType, pk.EntityType = packet.SoundEventThunder, "minecraft:lightning_bolt"
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundClick,
@@ -525,6 +544,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			break
 		}
 		pk.SoundType = packet.SoundEventBucketEmptyLava
+	case sound.ItemThrow:
+		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
 	}
 	s.writePacket(pk)
 }
@@ -540,9 +561,11 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 		Layer:             uint32(layer),
 	})
 	if v, ok := b.(world.NBTer); ok {
+		NBTData := v.EncodeNBT()
+		NBTData["x"], NBTData["y"], NBTData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 		s.writePacket(&packet.BlockActorData{
 			Position: blockPos,
-			NBTData:  v.EncodeNBT(),
+			NBTData:  NBTData,
 		})
 	}
 }
@@ -597,47 +620,18 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 }
 
 // ViewEntityState ...
-func (s *Session) ViewEntityState(e world.Entity, states []state.State) {
-	m := defaultEntityMetadata(e)
-	for _, eState := range states {
-		switch st := eState.(type) {
-		case state.Sneaking:
-			m.setFlag(dataKeyFlags, dataFlagSneaking)
-		case state.Sprinting:
-			m.setFlag(dataKeyFlags, dataFlagSprinting)
-		case state.Breathing:
-			m.setFlag(dataKeyFlags, dataFlagBreathing)
-		case state.Invisible:
-			m.setFlag(dataKeyFlags, dataFlagInvisible)
-		case state.Immobile:
-			m.setFlag(dataKeyFlags, dataFlagNoAI)
-		case state.Swimming:
-			m.setFlag(dataKeyFlags, dataFlagSwimming)
-		case state.UsingItem:
-			m.setFlag(dataKeyFlags, dataFlagUsingItem)
-		case state.Scaled:
-			m[dataKeyScale] = float32(st.Scale)
-		case state.Named:
-			m[dataKeyNameTag] = st.NameTag
-		case state.EffectBearing:
-			m[dataKeyPotionColour] = (int32(st.ParticleColour.A) << 24) | (int32(st.ParticleColour.R) << 16) | (int32(st.ParticleColour.G) << 8) | int32(st.ParticleColour.B)
-			if st.Ambient {
-				m[dataKeyPotionAmbient] = byte(1)
-			} else {
-				m[dataKeyPotionAmbient] = byte(0)
-			}
-		case state.OnFire:
-			m.setFlag(dataKeyFlags, dataFlagOnFire)
-		}
-	}
+func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  m,
+		EntityMetadata:  parseEntityMetadata(e),
 	})
 }
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
+	if s.containerOpened.Load() && s.openedPos.Load() == pos {
+		return
+	}
 	s.closeCurrentContainer()
 
 	b := s.c.World().Block(pos)
@@ -768,6 +762,25 @@ func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 		Dimension:     packet.DimensionOverworld,
 		SpawnPosition: blockPos,
 	})
+}
+
+// ViewWeather ...
+func (s *Session) ViewWeather(raining, thunder bool) {
+	pk := &packet.LevelEvent{
+		EventType: packet.EventStopRain,
+	}
+	if raining {
+		pk.EventType, pk.EventData = packet.EventStartRain, int32(rand.Intn(50000)+10000)
+	}
+	s.writePacket(pk)
+
+	pk = &packet.LevelEvent{
+		EventType: packet.EventStopThunder,
+	}
+	if thunder {
+		pk.EventType, pk.EventData = packet.EventStartThunder, int32(rand.Intn(50000)+10000)
+	}
+	s.writePacket(pk)
 }
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.

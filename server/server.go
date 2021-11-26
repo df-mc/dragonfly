@@ -5,6 +5,17 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/rand"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"sync"
+	"syscall"
+	"time"
+	_ "unsafe" // Imported for compiler directives.
+
 	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
@@ -27,14 +38,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
-	"os"
-	"os/exec"
-	"os/signal"
-	"runtime"
-	"sync"
-	"syscall"
-	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -46,11 +49,11 @@ type Server struct {
 	joinMessage, quitMessage atomic.String
 	playerProvider           player.Provider
 
-	c        Config
-	log      internal.Logger
-	listener *minecraft.Listener
-	world    *world.World
-	players  chan *player.Player
+	c         Config
+	log       internal.Logger
+	world     *world.World
+	players   chan *player.Player
+	resources []*resource.Pack
 
 	startTime time.Time
 
@@ -58,6 +61,19 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
 	p map[uuid.UUID]*player.Player
+	// pwg is a sync.WaitGroup used to wait for all players to be disconnected before server shutdown, so that their
+	// data is saved properly.
+	pwg sync.WaitGroup
+
+	wg sync.WaitGroup
+
+	listenMu  sync.Mutex
+	listeners []Listener
+}
+
+func init() {
+	// Seeding the random for things like lightning that need to use RNG.
+	rand.Seed(time.Now().UnixNano())
 }
 
 // New returns a new server using the Config passed. If nil is passed, a default configuration is returned.
@@ -86,6 +102,7 @@ func New(c *Config, log internal.Logger) *Server {
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
 
+	s.loadResources(c.Resources.Folder, log)
 	s.checkNetIsolation()
 
 	if !c.Players.SaveData {
@@ -135,7 +152,7 @@ func (server *Server) Run() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	server.run()
+	server.wait()
 	return nil
 }
 
@@ -154,7 +171,7 @@ func (server *Server) Start() error {
 	if err := server.startListening(); err != nil {
 		return err
 	}
-	go server.run()
+	go server.wait()
 	return nil
 }
 
@@ -272,6 +289,7 @@ func (server *Server) Close() error {
 		p.Disconnect(text.Colourf("<yellow>%v</yellow>", server.c.Server.ShutdownMessage))
 	}
 	server.playerMutex.RUnlock()
+	server.pwg.Wait()
 
 	server.log.Debugf("Closing player provider...")
 	err := server.playerProvider.Close()
@@ -281,11 +299,46 @@ func (server *Server) Close() error {
 
 	server.log.Debugf("Closing world...")
 	if err = server.world.Close(); err != nil {
-		return err
+		server.log.Errorf("Error while closing world: %v", err)
 	}
 
-	server.log.Debugf("Closing listener...")
-	return server.listener.Close()
+	server.log.Debugf("Closing listeners...")
+	server.listenMu.Lock()
+	defer server.listenMu.Unlock()
+	for _, l := range server.listeners {
+		if err := l.Close(); err != nil {
+			server.log.Errorf("Error closing listener: %v", err)
+		}
+	}
+	return nil
+}
+
+// Listen makes the Server listen for new connections from the Listener passed. This may be used to listen for players
+// on different interfaces. Note that the maximum player count of additional Listeners added is not enforced
+// automatically. The limit must be enforced by the Listener.
+func (server *Server) Listen(l Listener) {
+	server.listenMu.Lock()
+	server.listeners = append(server.listeners, l)
+	server.listenMu.Unlock()
+
+	server.wg.Add(1)
+
+	wg := new(sync.WaitGroup)
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				// First wait until all connections that are being handled are done inserting the player into the channel.
+				// Afterwards, when we're sure no more values will be inserted in the players channel, we can return so the
+				// player channel can be closed.
+				wg.Wait()
+				server.wg.Done()
+				return
+			}
+			wg.Add(1)
+			go server.finaliseConn(c, l, wg)
+		}
+	}()
 }
 
 // CloseOnProgramEnd closes the server right before the program ends, so that all data of the server are
@@ -322,39 +375,30 @@ func (server *Server) startListening() error {
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
-		ResourcePacks:          packs,
+		ResourcePacks:          server.resources,
 		TexturePacksRequired:   true,
 	}
 
-	var err error
-	//noinspection SpellCheckingInspection
-	server.listener, err = cfg.Listen("raknet", server.c.Network.Address)
+	l, err := cfg.Listen("raknet", server.c.Network.Address)
 	if err != nil {
 		return fmt.Errorf("listening on address failed: %w", err)
 	}
+	server.Listen(listener{Listener: l})
 
-	server.log.Infof("Server running on %v.\n", server.listener.Addr())
+	server.log.Infof("Server running on %v.\n", l.Addr())
 	return nil
 }
 
-// run runs the server, continuously accepting new connections from players. It returns when the server is
-// closed by a call to Close.
-func (server *Server) run() {
-	for {
-		c, err := server.listener.Accept()
-		if err != nil {
-			// Accept will only return an error if the Listener was closed, meaning trying to continue
-			// listening is futile.
-			close(server.players)
-			return
-		}
-		go server.handleConn(c.(*minecraft.Conn))
-	}
+// wait awaits the closing of all Listeners added to the Server through a call to Listen and closed the players channel
+// once that happens.
+func (server *Server) wait() {
+	server.wg.Wait()
+	close(server.players)
 }
 
-// handleConn handles an incoming connection accepted from the Listener.
-func (server *Server) handleConn(conn *minecraft.Conn) {
-	//noinspection SpellCheckingInspection
+// finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
+func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitGroup) {
+	defer wg.Done()
 	data := minecraft.GameData{
 		Yaw:            90,
 		WorldName:      server.c.World.Name,
@@ -370,20 +414,18 @@ func (server *Server) handleConn(conn *minecraft.Conn) {
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
 	}
-	id, err := uuid.Parse(conn.IdentityData().Identity)
-	if err != nil {
-		_ = conn.Close()
-		server.log.Debugf("connection %v has a malformed UUID ('%v')\n", conn.RemoteAddr(), id)
-		return
-	}
+	// UUID is validated by gophertunnel.
+	id, _ := uuid.Parse(conn.IdentityData().Identity)
+
 	var playerData *player.Data
 	if d, err := server.playerProvider.Load(id); err == nil {
 		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 		playerData = &d
 	}
-	if err = conn.StartGame(data); err != nil {
-		_ = server.listener.Disconnect(conn, "Connection timeout.")
+
+	if err := conn.StartGame(data); err != nil {
+		_ = l.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
@@ -409,21 +451,20 @@ func (server *Server) checkNetIsolation() {
 }
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
-func (server *Server) handleSessionClose(controllable session.Controllable) {
+func (server *Server) handleSessionClose(c session.Controllable) {
 	server.playerMutex.Lock()
-	p, ok := server.p[controllable.UUID()]
-	delete(server.p, controllable.UUID())
+	p := server.p[c.UUID()]
+	delete(server.p, c.UUID())
 	server.playerMutex.Unlock()
-	if ok {
-		err := server.playerProvider.Save(controllable.UUID(), p.Data())
-		if err != nil {
-			server.log.Errorf("Error while saving data: %v", err)
-		}
+	err := server.playerProvider.Save(p.UUID(), p.Data())
+	if err != nil {
+		server.log.Errorf("Error while saving data: %v", err)
 	}
+	server.pwg.Done()
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *player.Data) *player.Player {
+func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *player.Player {
 	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, server.world.Spawn().Vec3Middle(), data)
 	gm := server.world.DefaultGameMode()
@@ -431,6 +472,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn *minecraft.Conn, data *pla
 		gm = data.GameMode
 	}
 	s.Start(p, server.world, gm, server.handleSessionClose)
+	server.pwg.Add(1)
 	return p
 }
 
@@ -524,4 +566,24 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 		})
 	}
 	return
+}
+
+// loadResources loads resource packs from path of specifed directory.
+func (server *Server) loadResources(p string, log internal.Logger) {
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		_ = os.Mkdir(p, 0777)
+	}
+	resources, err := os.ReadDir(p)
+	if err != nil {
+		panic(err)
+	}
+	for _, entry := range resources {
+		r, err := resource.Compile(filepath.Join(p, entry.Name()))
+		if err != nil {
+			log.Infof("Failed to load resource: %v", entry.Name())
+			continue
+		}
+
+		server.resources = append(server.resources, r)
+	}
 }

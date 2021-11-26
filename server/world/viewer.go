@@ -4,7 +4,6 @@ import (
 	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
-	"github.com/df-mc/dragonfly/server/entity/state"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -23,7 +22,7 @@ type Viewer interface {
 	HideEntity(e Entity)
 	// ViewEntityMovement views the movement of an entity. The entity is moved with a delta position, yaw and
 	// pitch, which, when applied to values of the entity, will result in the final values.
-	ViewEntityMovement(e Entity, deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+	ViewEntityMovement(e Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool)
 	// ViewEntityVelocity views the velocity of an entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.
 	ViewEntityVelocity(e Entity, velocity mgl64.Vec3)
@@ -45,7 +44,7 @@ type Viewer interface {
 	ViewEntityAction(e Entity, a action.Action)
 	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
 	// physical appearance, for example when sprinting.
-	ViewEntityState(e Entity, s []state.State)
+	ViewEntityState(e Entity)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)
@@ -63,4 +62,6 @@ type Viewer interface {
 	ViewSkin(e Entity)
 	// ViewWorldSpawn views the current spawn location of the world.
 	ViewWorldSpawn(pos cube.Pos)
+	// ViewWeather views the weather of the world, including rain and thunder.
+	ViewWeather(raining, thunder bool)
 }

@@ -52,6 +52,8 @@ type Config struct {
 	Resources struct {
 		// AutoBuildPack is if the server should automatically generate a resource pack for custom features.
 		AutoBuildPack bool
+		// Folder controls the location where resource packs will be loaded from.
+		Folder string
 	}
 }
 
@@ -71,5 +73,6 @@ func DefaultConfig() Config {
 	c.Players.SaveData = true
 	c.Players.Folder = "players"
 	c.Resources.AutoBuildPack = true
+	c.Resources.Folder = "resources"
 	return c
 }

@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/instrument"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -34,7 +35,7 @@ func (n NoteBlock) instrument(pos cube.Pos, w *world.World) instrument.Instrumen
 
 // DecodeNBT ...
 func (n NoteBlock) DecodeNBT(data map[string]interface{}) interface{} {
-	n.Pitch = int(readByte(data, "note"))
+	n.Pitch = int(nbtconv.MapByte(data, "note"))
 	return n
 }
 
@@ -52,13 +53,14 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
-		return
+		return false
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, w)
 	w.SetBlock(pos, n)
+	return true
 }
 
 // BreakInfo ...

@@ -14,7 +14,8 @@ import (
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
 // float32, float64, string, bool, mgl64.Vec3, Varargs, []Target
-// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface.
+// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface. cmd.Enum implementations
+// must be of the type string.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
 // to specify a name different than the field name for the parameter.
@@ -73,11 +74,10 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 		if t.Kind() == reflect.Ptr {
 			original = original.Elem()
 		}
-		val := reflect.New(original.Type())
-		if err := verifySignature(val); err != nil {
+		if err := verifySignature(original); err != nil {
 			panic(err.Error())
 		}
-		runnableValues[i], usages[i] = val, parseUsage(name, val)
+		runnableValues[i], usages[i] = original, parseUsage(name, original)
 	}
 
 	return Command{name: name, description: description, aliases: aliases, v: runnableValues, usage: strings.Join(usages, "\n")}
@@ -125,7 +125,9 @@ func (cmd Command) Execute(args string, source Source) {
 	leastArgsLeft := len(strings.Split(args, " "))
 
 	for _, v := range cmd.v {
-		line, err := cmd.executeRunnable(v, args, source, output)
+		cp := reflect.New(v.Type())
+		cp.Elem().Set(v)
+		line, err := cmd.executeRunnable(cp, args, source, output)
 		if err == nil {
 			// Command was executed successfully: We won't execute any of the other Runnable values passed, as
 			// we've already found an overload that works.
@@ -165,26 +167,44 @@ type ParamInfo struct {
 func (cmd Command) Params(src Source) [][]ParamInfo {
 	params := make([][]ParamInfo, 0, len(cmd.v))
 	for _, runnable := range cmd.v {
+		elem := reflect.New(runnable.Type()).Elem()
+		elem.Set(runnable)
+
 		if allower, ok := runnable.Interface().(Allower); ok && !allower.Allow(src) {
 			// This source cannot execute this runnable.
 			continue
 		}
-		elem := runnable.Elem()
 
 		n := elem.NumField()
-		fields := make([]ParamInfo, n)
+		fields := make([]ParamInfo, 0, n)
 		for i := 0; i < n; i++ {
+			field := elem.Field(i)
+			if !field.CanSet() {
+				continue
+			}
 			fieldType := elem.Type().Field(i)
-			fields[i] = ParamInfo{
+			fields = append(fields, ParamInfo{
 				Name:     name(fieldType),
-				Value:    reflect.New(elem.Field(i).Type()).Elem().Interface(),
+				Value:    field.Interface(),
 				Optional: optional(fieldType),
 				Suffix:   suffix(fieldType),
-			}
+			})
 		}
 		params = append(params, fields)
 	}
 	return params
+}
+
+// Runnables returns a map of all Runnable implementations of the Command that a Source can execute.
+func (cmd Command) Runnables(src Source) map[int]Runnable {
+	m := make(map[int]Runnable, len(cmd.v))
+	for i, runnable := range cmd.v {
+		v := runnable.Interface().(Runnable)
+		if allower, ok := v.(Allower); !ok || allower.Allow(src) {
+			m[i] = v
+		}
+	}
+	return m
 }
 
 // String returns the usage of the command. The usage will be roughly equal to the one showed by the client
@@ -243,9 +263,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 // parseUsage parses the usage of a command found in value v using the name passed. It accounts for optional
 // parameters and converts types to a more friendly representation.
-func parseUsage(commandName string, v reflect.Value) string {
-	command := v.Elem()
-
+func parseUsage(commandName string, command reflect.Value) string {
 	parts := make([]string, 0, command.NumField()+1)
 	parts = append(parts, "/"+commandName)
 
@@ -271,15 +289,16 @@ func parseUsage(commandName string, v reflect.Value) string {
 // verifySignature verifies the passed struct pointer value signature to ensure it is a valid command,
 // checking things such as the validity of the optional struct tags.
 // If not valid, an error is returned.
-func verifySignature(v reflect.Value) error {
-	command := v.Elem()
-
+func verifySignature(command reflect.Value) error {
 	optionalField := false
 	for i := 0; i < command.NumField(); i++ {
 		field := command.Field(i)
 		if !field.CanSet() {
 			// Unexported field, we can't modify this so just ignore it.
 			continue
+		}
+		if _, ok := field.Interface().(Enum); ok && field.Kind() != reflect.String {
+			return fmt.Errorf("parameters implementing Enum must be of the type string")
 		}
 		o := optional(command.Type().Field(i))
 		// If the field is not optional, while the last field WAS optional, we return an error, as this is

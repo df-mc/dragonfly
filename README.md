@@ -2,7 +2,7 @@
 
 # Dragonfly
 
-Dragonfly is a server software for Minecraft Bedrock Edition written in Go. It was written with scalability
+Dragonfly is a heavily asynchronous server software for Minecraft Bedrock Edition written in Go. It was written with scalability
 and simplicity in mind and aims to make the process of setting up a server and modifying it easy. Unlike other
 Minecraft server software, Dragonfly is generally used as a library to extend.
 

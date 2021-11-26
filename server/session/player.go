@@ -25,6 +25,26 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
+// StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
+// StartShowingEntity is made.
+func (s *Session) StopShowingEntity(e world.Entity) {
+	s.HideEntity(e)
+	s.entityMutex.Lock()
+	s.hiddenEntities[e] = struct{}{}
+	s.entityMutex.Unlock()
+}
+
+// StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
+func (s *Session) StartShowingEntity(e world.Entity) {
+	s.entityMutex.Lock()
+	delete(s.hiddenEntities, e)
+	s.entityMutex.Unlock()
+	s.ViewEntity(e)
+	s.ViewEntityState(e)
+	s.ViewEntityItems(e)
+	s.ViewEntityArmour(e)
+}
+
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
 	if !s.containerOpened.Load() {
@@ -52,7 +72,7 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 		WindowID: windowID,
 		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
 	}
-	for _, i := range inv.Items() {
+	for _, i := range inv.Slots() {
 		pk.Content = append(pk.Content, instanceFromItem(i))
 	}
 	s.writePacket(pk)
@@ -216,22 +236,42 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id := uint32(0), int32(packet.GameTypeSurvival)
-	switch mode.(type) {
-	case world.GameModeCreative:
-		flags = packet.AdventureFlagAllowFlight
-		id = packet.GameTypeCreative
-	case world.GameModeAdventure:
+	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
+	if mode.AllowsFlying() {
+		flags |= packet.AdventureFlagAllowFlight
+		if s.c.Flying() {
+			flags |= packet.AdventureFlagFlying
+		}
+	}
+	if !mode.HasCollision() {
+		flags |= packet.AdventureFlagNoClip
+	}
+	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
-		id = packet.GameTypeAdventure
-	case world.GameModeSpectator:
-		flags, id = packet.AdventureFlagWorldImmutable|packet.AdventureFlagAllowFlight|packet.AdventureFlagMuted|packet.AdventureFlagNoClip|packet.AdventureFlagNoPVP, packet.GameTypeCreativeSpectator
+	} else {
+		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
+	}
+	if !mode.AllowsInteraction() {
+		flags |= packet.AdventureFlagNoPVP
+	} else {
+		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
+	}
+	if !mode.Visible() {
+		flags |= packet.AdventureFlagMuted
+	}
+	// Creative or spectator players:
+	if mode.AllowsFlying() && mode.CreativeInventory() {
+		id = packet.GameTypeCreative
+		// Cannot interact with the world, so this is a spectator.
+		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
+			id = packet.GameTypeCreativeSpectator
+		}
 	}
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
-		PlayerUniqueID:    1,
-		ActionPermissions: uint32(packet.ActionPermissionBuild | packet.ActionPermissionMine | packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs),
+		PlayerUniqueID:    selfEntityRuntimeID,
+		ActionPermissions: perms,
 	})
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
@@ -267,20 +307,20 @@ func (s *Session) SendAbsorption(value float64) {
 
 // SendEffect sends an effects passed to the player.
 func (s *Session) SendEffect(e effect.Effect) {
-	s.SendEffectRemoval(e)
-	id, _ := effect.ID(e)
+	s.SendEffectRemoval(e.Type())
+	id, _ := effect.ID(e.Type())
 	s.writePacket(&packet.MobEffect{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Operation:       packet.MobEffectAdd,
 		EffectType:      int32(id),
 		Amplifier:       int32(e.Level() - 1),
-		Particles:       e.ShowParticles(),
+		Particles:       !e.ParticlesHidden(),
 		Duration:        int32(e.Duration() / (time.Second / 20)),
 	})
 }
 
 // SendEffectRemoval sends the removal of an effect passed.
-func (s *Session) SendEffectRemoval(e effect.Effect) {
+func (s *Session) SendEffectRemoval(e effect.Type) {
 	id, ok := effect.ID(e)
 	if !ok {
 		panic(fmt.Sprintf("unregistered effect type %T", e))
@@ -304,15 +344,22 @@ func (s *Session) EnableCoordinates(enable bool) {
 	s.sendGameRules([]protocol.GameRule{{Name: "showcoordinates", Value: enable}})
 }
 
+// EnableInstantRespawn will either enable or disable instant respawn for the player depending on the value given.
+func (s *Session) EnableInstantRespawn(enable bool) {
+	//noinspection SpellCheckingInspection
+	s.sendGameRules([]protocol.GameRule{{Name: "doimmediaterespawn", Value: enable}})
+}
+
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
 // in-game pause menu screen.
 func (s *Session) addToPlayerList(session *Session) {
 	c := session.c
 
-	s.entityMutex.Lock()
 	runtimeID := uint64(1)
+	s.entityMutex.Lock()
 	if session != s {
-		runtimeID = s.currentEntityRuntimeID.Add(1)
+		s.currentEntityRuntimeID += 1
+		runtimeID = s.currentEntityRuntimeID
 	}
 	s.entityRuntimeIDs[c] = runtimeID
 	s.entities[runtimeID] = c
@@ -409,7 +456,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	s.offHand = inventory.New(2, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -417,7 +464,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			viewer.ViewEntityItems(s.c)
 		}
 		if !s.inTransaction.Load() {
-			i, _ := s.offHand.Item(1)
+			i, _ := s.offHand.Item(0)
 			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
 				Content: []protocol.ItemInstance{
@@ -489,7 +536,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 		BlockRuntimeID: int32(blockRuntimeID),
 		HasNetworkID:   true,
 		Count:          uint16(it.Count()),
-		NBTData:        nbtconv.ItemToNBT(it, true),
+		NBTData:        nbtconv.WriteItem(it, false),
 	}
 }
 
@@ -526,7 +573,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.ItemFromNBT(it.NBTData, &s)
+	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
 // creativeItems returns all creative inventory items as protocol item stacks.

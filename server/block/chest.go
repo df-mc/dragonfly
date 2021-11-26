@@ -116,10 +116,12 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 }
 
 // Activate ...
-func (c Chest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
+func (c Chest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
+		return true
 	}
+	return false
 }
 
 // UseOnBlock ...
@@ -138,17 +140,12 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Contents(), item.NewStack(c, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Items(), item.NewStack(c, 1))...))
 }
 
 // FlammabilityInfo ...
 func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
-}
-
-// Drops returns the drops of the chest. This includes all items held in the inventory and the chest itself.
-func (c Chest) Drops() []item.Stack {
-	return append(c.inventory.Contents(), item.NewStack(c, 1))
 }
 
 // DecodeNBT ...
@@ -157,8 +154,8 @@ func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
 	c.Facing = facing
-	c.CustomName = readString(data, "CustomName")
-	nbtconv.InvFromNBT(c.inventory, readSlice(data, "Items"))
+	c.CustomName = nbtconv.MapString(data, "CustomName")
+	nbtconv.InvFromNBT(c.inventory, nbtconv.MapSlice(data, "Items"))
 	return c
 }
 

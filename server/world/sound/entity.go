@@ -17,3 +17,6 @@ type Pop struct{ sound }
 
 // Explosion is a sound played when an explosion happens, such as from a creeper or TNT.
 type Explosion struct{ sound }
+
+// Thunder is a sound played when lightning strikes the ground.
+type Thunder struct{ sound }

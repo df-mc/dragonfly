@@ -28,6 +28,8 @@ func init() {
 
 	world.RegisterItem(Shears{})
 
+	world.RegisterItem(Snowball{})
+
 	world.RegisterItem(Diamond{})
 	world.RegisterItem(GlowstoneDust{})
 	world.RegisterItem(LapisLazuli{})
@@ -89,11 +91,11 @@ func init() {
 	world.RegisterItem(Feather{})
 	world.RegisterItem(FermentedSpiderEye{})
 	world.RegisterItem(GhastTear{})
-	world.RegisterItem(GlowInkSac{})
 	world.RegisterItem(Gunpowder{})
 	world.RegisterItem(HeartOfTheSea{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(InkSac{})
+	world.RegisterItem(InkSac{Glowing: true})
 	world.RegisterItem(IronNugget{})
 	world.RegisterItem(NautilusShell{})
 	world.RegisterItem(NetherBrick{})

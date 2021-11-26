@@ -15,7 +15,8 @@ import (
 type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User)
+	// Activate returns a bool indicating if activating the block was used successfully.
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
 }
 
 // Punchable represents a block that may be punched by a viewer of the world. When punched, the block
@@ -59,6 +60,26 @@ type BeaconSource interface {
 	PowersBeacon() bool
 }
 
+// EntityLander represents a block that reacts to an entity landing on it after falling.
+type EntityLander interface {
+	// EntityLand is called when an entity lands on the block.
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+}
+
+// EntityInsider represents a block that reacts to an entity going inside of its 1x1x1 axis
+// aligned bounding box.
+type EntityInsider interface {
+	// EntityInside is called when an entity goes inside of the block's 1x1x1 axis aligned bounding box.
+	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
+}
+
+// Frictional represents a block that may have a custom friction value, friction is used for entity drag when the
+// entity is on ground. If a block does not implement this interface, it should be assumed that its friction is 0.6.
+type Frictional interface {
+	// Friction returns the block's friction value.
+	Friction() float64
+}
+
 // beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
 type beaconAffected interface {
 	// AddEffect adds a specific effect to the entity that implements this interface.
@@ -100,7 +121,7 @@ func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 	}
 	b := w.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
-		return replaceable.ReplaceableBy(with)
+		return replaceable.ReplaceableBy(with) && b != with
 	}
 	return false
 }
@@ -191,7 +212,7 @@ type Flammable interface {
 // FlammabilityInfo contains values related to block behaviors involving fire.
 type FlammabilityInfo struct {
 	// Encouragement is the chance a block will catch on fire during attempted fire spread.
-	Encouragement,
+	Encouragement int
 	// Flammability is the chance a block will burn away during a fire block tick.
 	Flammability int
 	// LavaFlammable returns whether it can catch on fire from lava.
@@ -207,16 +228,12 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 	}
 }
 
-// EntityCollider is an interface for blocks with special behaviors on entity collision.
-type EntityCollider interface {
-	// EntityCollide is called on entity collision.
-	EntityCollide(e world.Entity)
-}
-
 // FallDistanceEntity is an entity that has a fall distance.
 type FallDistanceEntity interface {
 	// ResetFallDistance resets the entities fall distance.
 	ResetFallDistance()
+	// FallDistance returns the entities fall distance.
+	FallDistance() float64
 }
 
 // InstrumentBlock represents a block that creates a note block sound other than the piano.

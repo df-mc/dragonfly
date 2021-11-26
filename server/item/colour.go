@@ -1,6 +1,9 @@
 package item
 
-import "fmt"
+import (
+	"fmt"
+	"image/color"
+)
 
 // Colour represents the colour of a block. Typically, Minecraft blocks have a total of 16 different colours.
 type Colour struct {
@@ -95,7 +98,48 @@ func Colours() []Colour {
 	}
 }
 
+// colour is the underlying value of a Colour struct.
 type colour uint8
+
+// RGBA returns the colour as RGBA. The alpha channel is always set to the maximum value. Colour values as returned here
+// were obtained by placing signs in a world with all possible dyes used on them. The world was then loaded in Dragonfly
+// to read their respective colours.
+func (c colour) RGBA() color.RGBA {
+	switch c {
+	case 0:
+		return color.RGBA{R: 0xf0, G: 0xf0, B: 0xf0, A: 0xff}
+	case 1:
+		return color.RGBA{R: 0xf9, G: 0x80, B: 0x1d, A: 0xff}
+	case 2:
+		return color.RGBA{R: 0xc7, G: 0x4e, B: 0xbd, A: 0xff}
+	case 3:
+		return color.RGBA{R: 0x3a, G: 0xb3, B: 0xda, A: 0xff}
+	case 4:
+		return color.RGBA{R: 0xfe, G: 0xd8, B: 0x3d, A: 0xff}
+	case 5:
+		return color.RGBA{R: 0x80, G: 0xc7, B: 0x1f, A: 0xff}
+	case 6:
+		return color.RGBA{R: 0xf3, G: 0x8b, B: 0xaa, A: 0xff}
+	case 7:
+		return color.RGBA{R: 0x47, G: 0x4f, B: 0x52, A: 0xff}
+	case 8:
+		return color.RGBA{R: 0x9d, G: 0x9d, B: 0x97, A: 0xff}
+	case 9:
+		return color.RGBA{R: 0x16, G: 0x9c, B: 0x9c, A: 0xff}
+	case 10:
+		return color.RGBA{R: 0x89, G: 0x32, B: 0xb8, A: 0xff}
+	case 11:
+		return color.RGBA{R: 0x3c, G: 0x44, B: 0xaa, A: 0xff}
+	case 12:
+		return color.RGBA{R: 0x83, G: 0x54, B: 0x32, A: 0xff}
+	case 13:
+		return color.RGBA{R: 0x5e, G: 0x7c, B: 0x16, A: 0xff}
+	case 14:
+		return color.RGBA{R: 0xb0, G: 0x2e, B: 0x26, A: 0xff}
+	default:
+		return color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xff}
+	}
+}
 
 // String ...
 func (c colour) String() string {

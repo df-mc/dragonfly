@@ -10,22 +10,17 @@ import (
 // Regeneration is an effect that causes the entity that it is added to to slowly regenerate health. The level
 // of the effect influences the speed with which the entity regenerates.
 type Regeneration struct {
-	lastingEffect
+	nopLasting
 }
 
 // Apply applies health to the world.Entity passed if the duration of the effect is at the right tick.
-func (r Regeneration) Apply(e world.Entity) {
-	interval := 50 >> r.Lvl
-	if tickDuration(r.Dur)%interval == 0 {
-		if living, ok := e.(living); ok {
-			living.Heal(1, healing.SourceRegenerationEffect{})
+func (Regeneration) Apply(e world.Entity, lvl int, d time.Duration) {
+	interval := 50 >> lvl
+	if tickDuration(d)%interval == 0 {
+		if l, ok := e.(living); ok {
+			l.Heal(1, healing.SourceRegenerationEffect{})
 		}
 	}
-}
-
-// WithSettings ...
-func (r Regeneration) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Regeneration{r.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

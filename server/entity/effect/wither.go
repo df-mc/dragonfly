@@ -10,22 +10,17 @@ import (
 // Wither is a lasting effect that causes an entity to take continuous damage that is capable of killing an
 // entity.
 type Wither struct {
-	lastingEffect
+	nopLasting
 }
 
 // Apply ...
-func (w Wither) Apply(e world.Entity) {
-	interval := 80 >> w.Lvl
-	if tickDuration(w.Dur)%interval == 0 {
-		if living, ok := e.(living); ok {
-			living.Hurt(1, damage.SourceWitherEffect{})
+func (Wither) Apply(e world.Entity, lvl int, d time.Duration) {
+	interval := 80 >> lvl
+	if tickDuration(d)%interval == 0 {
+		if l, ok := e.(living); ok {
+			l.Hurt(1, damage.SourceWitherEffect{})
 		}
 	}
-}
-
-// WithSettings ...
-func (w Wither) WithSettings(d time.Duration, level int, ambient bool) Effect {
-	return Wither{w.withSettings(d, level, ambient)}
 }
 
 // RGBA ...

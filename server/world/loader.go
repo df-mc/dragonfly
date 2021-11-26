@@ -168,15 +168,15 @@ func (l *Loader) populateLoadQueue() {
 
 	for x := -r; x <= r; x++ {
 		for z := -r; z <= r; z++ {
-			pos := ChunkPos{x + chunkX, z + chunkZ}
-			if _, ok := l.loaded[pos]; ok {
-				// The chunk was already loaded, so we don't need to do anything.
-				continue
-			}
 			distance := math.Sqrt(float64(x*x) + float64(z*z))
 			chunkDistance := int32(math.Round(distance))
 			if chunkDistance > r {
 				// The chunk was outside of the chunk radius.
+				continue
+			}
+			pos := ChunkPos{x + chunkX, z + chunkZ}
+			if _, ok := l.loaded[pos]; ok {
+				// The chunk was already loaded, so we don't need to do anything.
 				continue
 			}
 			if m, ok := toLoad[chunkDistance]; ok {

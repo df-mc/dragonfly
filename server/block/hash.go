@@ -4,6 +4,7 @@ package block
 
 const (
 	hashAir = iota
+	hashAmethystBlock
 	hashAncientDebris
 	hashAndesite
 	hashBarrel
@@ -31,6 +32,7 @@ const (
 	hashCopperOre
 	hashCoral
 	hashCoralBlock
+	hashDeadBush
 	hashDiamondBlock
 	hashDiamondOre
 	hashDiorite
@@ -65,6 +67,7 @@ const (
 	hashIronBlock
 	hashIronOre
 	hashKelp
+	hashLadder
 	hashLantern
 	hashLapisBlock
 	hashLapisOre
@@ -85,6 +88,7 @@ const (
 	hashNetherrack
 	hashNoteBlock
 	hashObsidian
+	hashPackedIce
 	hashPlanks
 	hashPodzol
 	hashPotato
@@ -99,8 +103,11 @@ const (
 	hashRawIronBlock
 	hashSand
 	hashSandstone
+	hashSandstoneStairs
 	hashSeaLantern
+	hashSeaPickle
 	hashShroomlight
+	hashSign
 	hashSoulSand
 	hashSoulSoil
 	hashSponge
@@ -126,6 +133,10 @@ const (
 
 func (Air) Hash() uint64 {
 	return hashAir
+}
+
+func (AmethystBlock) Hash() uint64 {
+	return hashAmethystBlock
 }
 
 func (AncientDebris) Hash() uint64 {
@@ -234,6 +245,10 @@ func (c Coral) Hash() uint64 {
 
 func (c CoralBlock) Hash() uint64 {
 	return hashCoralBlock | uint64(c.Type.Uint8())<<7 | uint64(boolByte(c.Dead))<<10
+}
+
+func (d DeadBush) Hash() uint64 {
+	return hashDeadBush
 }
 
 func (DiamondBlock) Hash() uint64 {
@@ -372,6 +387,10 @@ func (k Kelp) Hash() uint64 {
 	return hashKelp | uint64(k.Age)<<7
 }
 
+func (l Ladder) Hash() uint64 {
+	return hashLadder | uint64(l.Facing)<<7
+}
+
 func (l Lantern) Hash() uint64 {
 	return hashLantern | uint64(boolByte(l.Hanging))<<7 | uint64(l.Type.Uint8())<<8
 }
@@ -452,6 +471,10 @@ func (o Obsidian) Hash() uint64 {
 	return hashObsidian | uint64(boolByte(o.Crying))<<7
 }
 
+func (PackedIce) Hash() uint64 {
+	return hashPackedIce
+}
+
 func (p Planks) Hash() uint64 {
 	return hashPlanks | uint64(p.Wood.Uint8())<<7
 }
@@ -508,12 +531,24 @@ func (s Sandstone) Hash() uint64 {
 	return hashSandstone | uint64(s.Type.Uint8())<<7 | uint64(boolByte(s.Red))<<9
 }
 
+func (s SandstoneStairs) Hash() uint64 {
+	return hashSandstoneStairs | uint64(boolByte(s.Smooth))<<7 | uint64(boolByte(s.Red))<<8 | uint64(boolByte(s.UpsideDown))<<9 | uint64(s.Facing)<<10
+}
+
 func (SeaLantern) Hash() uint64 {
 	return hashSeaLantern
 }
 
+func (s SeaPickle) Hash() uint64 {
+	return hashSeaPickle | uint64(s.AdditionalCount)<<7 | uint64(boolByte(s.Dead))<<15
+}
+
 func (Shroomlight) Hash() uint64 {
 	return hashShroomlight
+}
+
+func (s Sign) Hash() uint64 {
+	return hashSign | uint64(s.Wood.Uint8())<<7 | uint64(s.Attach.Uint8())<<10
 }
 
 func (SoulSand) Hash() uint64 {
