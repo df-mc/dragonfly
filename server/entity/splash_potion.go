@@ -119,7 +119,7 @@ func (s *SplashPotion) Tick(current int64) {
 		aabb := s.AABB().Translate(pos)
 
 		pot := s.variant
-		effects := pot.Effects
+		effects := pot.Effects()
 		hasEffects := len(effects) > 0
 
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
@@ -212,23 +212,26 @@ func (s *SplashPotion) Own(owner world.Entity) {
 
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
 func (s *SplashPotion) DecodeNBT(data map[string]interface{}) interface{} {
-	return s.New(
+	p := s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
 		float64(nbtconv.MapFloat32(data, "Yaw")),
-	)
+	).(*SplashPotion)
+	p.variant = potion.From(nbtconv.MapInt32(data, "PotionId"))
+	return p
 }
 
 // EncodeNBT encodes the SplashPotion entity's properties as a map and returns it.
 func (s *SplashPotion) EncodeNBT() map[string]interface{} {
 	yaw, pitch := s.Rotation()
 	return map[string]interface{}{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Yaw":    yaw,
-		"Pitch":  pitch,
-		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"Damage": 0.0,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
+		"Yaw":      yaw,
+		"Pitch":    pitch,
+		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
+		"Damage":   0.0,
+		"PotionId": s.variant.Uint8(),
 	}
 }
 

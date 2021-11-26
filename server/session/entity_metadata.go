@@ -64,7 +64,7 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		id := pot.Uint8()
 
 		m[dataKeyPotionAuxValue] = int16(id)
-		if len(pot.Effects) > 0 {
+		if len(pot.Effects()) > 0 {
 			m.setFlag(dataKeyFlags, dataFlagEnchanted)
 		}
 	}
