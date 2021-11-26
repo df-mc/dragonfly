@@ -138,8 +138,11 @@ func (s *SplashPotion) Tick(current int64) {
 				return !canSplash || entity == s
 			}
 
-			for _, otherEntity := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignore) {
+			for _, otherEntity := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
 				splashEntity := otherEntity.(splashable)
+				if !splashEntity.AABB().Translate(splashEntity.Position()).IntersectsWith(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
+					continue
+				}
 
 				distance := world.Distance(EyePosition(splashEntity), m.pos)
 				if distance > 4 {
@@ -148,7 +151,7 @@ func (s *SplashPotion) Tick(current int64) {
 
 				distanceMultiplier := 1 - (distance / 4)
 				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == otherEntity {
-					distanceMultiplier = 1.0
+					distanceMultiplier = 1
 				}
 
 				for _, eff := range effects {
