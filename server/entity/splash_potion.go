@@ -142,7 +142,7 @@ func (s *SplashPotion) Tick(current int64) {
 			for _, otherEntity := range w.EntitiesNearby(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignoreFunc) {
 				splashEntity := otherEntity.(splashable)
 
-				distance := world.Distance(splashEntity.Position().Add(mgl64.Vec3{0, splashEntity.EyeHeight(), 0}), pos)
+				distance := world.Distance(EyePosition(splashEntity), pos)
 				if distance > 4 {
 					continue
 				}
