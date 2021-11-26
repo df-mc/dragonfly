@@ -115,11 +115,9 @@ func (s *SplashPotion) Tick(current int64) {
 
 	if result != nil {
 		w := s.World()
-		pos := s.Position()
-		aabb := s.AABB().Translate(pos)
+		aabb := s.AABB().Translate(m.pos)
 
-		pot := s.variant
-		effects := pot.Effects()
+		effects := s.variant.Effects()
 		hasEffects := len(effects) > 0
 
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
@@ -127,8 +125,8 @@ func (s *SplashPotion) Tick(current int64) {
 			colour, _ = effect.ResultingColour(effects)
 		}
 
-		w.AddParticle(pos, particle.Splash{Colour: colour})
-		w.PlaySound(pos, sound.GlassBreak{})
+		w.AddParticle(m.pos, particle.Splash{Colour: colour})
+		w.PlaySound(m.pos, sound.GlassBreak{})
 
 		if hasEffects {
 			ignore := func(entity world.Entity) bool {
@@ -139,7 +137,7 @@ func (s *SplashPotion) Tick(current int64) {
 			for _, otherEntity := range w.EntitiesNearby(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignore) {
 				splashEntity := otherEntity.(splashable)
 
-				distance := world.Distance(EyePosition(splashEntity), pos)
+				distance := world.Distance(EyePosition(splashEntity), m.pos)
 				if distance > 4 {
 					continue
 				}
@@ -164,7 +162,7 @@ func (s *SplashPotion) Tick(current int64) {
 					splashEntity.AddEffect(eff.WithDuration(time.Duration(newTicks*50) * time.Millisecond))
 				}
 			}
-		} else if blockResult, ok := result.(trace.BlockResult); ok && pot.Equals(potion.Water()) {
+		} else if blockResult, ok := result.(trace.BlockResult); ok && s.variant.Equals(potion.Water()) {
 			blockPos := blockResult.BlockPosition().Side(blockResult.Face())
 			if w.Block(blockPos) == fire() {
 				w.SetBlock(blockPos, air())
