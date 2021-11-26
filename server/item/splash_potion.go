@@ -55,7 +55,7 @@ func (s SplashPotion) EncodeItem() (name string, meta int16) {
 // splashPotion represents an entity instance of a SplashPotion.
 type splashPotion interface {
 	// SetType sets the type of the splash potion.
-	SetType(variant potion.Potion)
+	SetType(t potion.Potion)
 	// Type returns the type of the splash potion.
 	Type() potion.Potion
 }

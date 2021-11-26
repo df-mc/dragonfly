@@ -31,16 +31,18 @@ type SplashPotion struct {
 }
 
 // NewSplashPotion ...
-func NewSplashPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *SplashPotion {
+func NewSplashPotion(t potion.Potion, pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *SplashPotion {
 	s := &SplashPotion{
 		yaw:   yaw,
 		pitch: pitch,
+		owner: owner,
+
+		t: t,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
 			DragBeforeGravity: true,
 		}},
-		owner: owner,
 	}
 	s.transform = newTransform(s, pos)
 
@@ -63,11 +65,11 @@ func (s *SplashPotion) AABB() physics.AABB {
 }
 
 // SetType ...
-func (s *SplashPotion) SetType(variant potion.Potion) {
+func (s *SplashPotion) SetType(t potion.Potion) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.t = variant
+	s.t = t
 	for _, v := range s.e.World().Viewers(s.pos) {
 		v.ViewEntityState(s.e)
 	}
@@ -189,7 +191,7 @@ func (s *SplashPotion) ignores(entity world.Entity) bool {
 // New creates a SplashPotion with the position, velocity, yaw, and pitch provided. It doesn't spawn the SplashPotion,
 // only returns it.
 func (s *SplashPotion) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
-	splash := NewSplashPotion(pos, yaw, pitch, nil)
+	splash := NewSplashPotion(potion.Water(), pos, yaw, pitch, nil)
 	splash.vel = vel
 	return splash
 }
@@ -210,13 +212,14 @@ func (s *SplashPotion) Own(owner world.Entity) {
 
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
 func (s *SplashPotion) DecodeNBT(data map[string]interface{}) interface{} {
-	p := s.New(
+	p := NewSplashPotion(
+		potion.From(nbtconv.MapInt32(data, "PotionId")),
 		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
 		float64(nbtconv.MapFloat32(data, "Yaw")),
-	).(*SplashPotion)
-	p.t = potion.From(nbtconv.MapInt32(data, "PotionId"))
+		nil,
+	)
+	p.vel = nbtconv.MapVec3(data, "Motion")
 	return p
 }
 
