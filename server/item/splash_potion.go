@@ -8,8 +8,8 @@ import (
 
 // SplashPotion is an item that grants effects when thrown.
 type SplashPotion struct {
-	// Variant is the type of splash potion.
-	Variant potion.Potion
+	// Type is the type of splash potion.
+	Type potion.Potion
 }
 
 // MaxCount ...
@@ -35,7 +35,7 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 		o.Own(user)
 	}
 	if pot, ok := e.(splashPotion); ok {
-		pot.SetVariant(s.Variant)
+		pot.SetVariant(s.Type)
 	}
 
 	ctx.SubtractFromCount(1)
@@ -49,7 +49,7 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 
 // EncodeItem ...
 func (s SplashPotion) EncodeItem() (name string, meta int16) {
-	return "minecraft:splash_potion", int16(s.Variant.Uint8())
+	return "minecraft:splash_potion", int16(s.Type.Uint8())
 }
 
 // splashPotion represents an entity instance of a SplashPotion.

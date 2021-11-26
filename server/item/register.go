@@ -30,7 +30,7 @@ func init() {
 
 	world.RegisterItem(Snowball{})
 	for _, pot := range potion.All() {
-		world.RegisterItem(SplashPotion{Variant: pot})
+		world.RegisterItem(SplashPotion{Type: pot})
 	}
 
 	world.RegisterItem(Diamond{})
