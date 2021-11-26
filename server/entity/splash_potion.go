@@ -150,7 +150,7 @@ func (s *SplashPotion) Tick(current int64) {
 				}
 
 				for _, eff := range effects {
-					if (eff.Type() == effect.InstantHealth{} || eff.Type() == effect.InstantDamage{}) {
+					if _, ok := eff.Type().(effect.LastingType); !ok {
 						splashEntity.AddEffect(eff.WithPotency(distanceMultiplier))
 						continue
 					}
