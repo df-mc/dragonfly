@@ -9,7 +9,7 @@ import (
 // EnderPearl is a smooth, greenish-blue item used to teleport and to make an eye of ender.
 type EnderPearl struct{}
 
-// CooledDown ...
+// CoolDown ...
 func (EnderPearl) CoolDown() time.Duration {
 	return time.Second
 }
