@@ -133,7 +133,7 @@ func (s *SplashPotion) Tick(current int64) {
 				return !canSplash || entity == s
 			}
 
-			for _, otherEntity := range w.EntitiesNearby(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignore) {
+			for _, otherEntity := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125}), ignore) {
 				splashEntity := otherEntity.(splashable)
 
 				distance := world.Distance(EyePosition(splashEntity), m.pos)
