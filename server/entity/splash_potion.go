@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"image/color"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
@@ -11,9 +14,9 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
-	"time"
 )
+
+var defaultColor = color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
 
 // SplashPotion is an item that grants effects when thrown.
 type SplashPotion struct {
@@ -26,8 +29,9 @@ type SplashPotion struct {
 
 	owner world.Entity
 
-	t potion.Potion
-	c *ProjectileComputer
+	t      potion.Potion
+	c      *ProjectileComputer
+	colour color.RGBA
 }
 
 // NewSplashPotion ...
@@ -43,6 +47,7 @@ func NewSplashPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, t p
 			Drag:              0.01,
 			DragBeforeGravity: true,
 		}},
+		colour: defaultColor,
 	}
 	s.transform = newTransform(s, pos)
 
@@ -89,6 +94,16 @@ func (s *SplashPotion) Rotation() (float64, float64) {
 	return s.yaw, s.pitch
 }
 
+// SetColour sets the potion colour to the colour passed
+func (s *SplashPotion) SetColour(colour color.RGBA) {
+	s.colour = colour
+}
+
+// CustomColour returns a bool of if the colour is the default color or not
+func (s *SplashPotion) CustomColour() bool {
+	return s.colour != defaultColor
+}
+
 // splashable represents an entity that can be splashed by a potion.
 type splashable interface {
 	Living
@@ -124,10 +139,10 @@ func (s *SplashPotion) Tick(current int64) {
 		effects := s.t.Effects()
 		hasEffects := len(effects) > 0
 
-		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
-
 		if hasEffects {
-			colour, _ = effect.ResultingColour(effects)
+			if !s.CustomColour() {
+				s.colour, _ = effect.ResultingColour(effects)
+			}
 
 			ignore := func(entity world.Entity) bool {
 				_, canSplash := entity.(splashable)
@@ -177,7 +192,7 @@ func (s *SplashPotion) Tick(current int64) {
 			}
 		}
 
-		w.AddParticle(m.pos, particle.Splash{Colour: colour})
+		w.AddParticle(m.pos, particle.Splash{Colour: s.colour})
 		w.PlaySound(m.pos, sound.GlassBreak{})
 
 		s.closeNextTick = true
