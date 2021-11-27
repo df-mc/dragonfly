@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -324,9 +325,12 @@ func (server *Server) Listen(l Listener) {
 
 	wg := new(sync.WaitGroup)
 	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
 		for {
 			c, err := l.Accept()
 			if err != nil {
+				// Cancel the context so that any call to StartGameContext is cancelled rapidly.
+				cancel()
 				// First wait until all connections that are being handled are done inserting the player into the channel.
 				// Afterwards, when we're sure no more values will be inserted in the players channel, we can return so the
 				// player channel can be closed.
@@ -335,7 +339,7 @@ func (server *Server) Listen(l Listener) {
 				return
 			}
 			wg.Add(1)
-			go server.finaliseConn(c, l, wg)
+			go server.finaliseConn(ctx, c, l, wg)
 		}
 	}()
 }
@@ -387,7 +391,7 @@ func (server *Server) wait() {
 }
 
 // finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
-func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitGroup) {
+func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
 	data := minecraft.GameData{
 		Yaw:            90,
@@ -414,7 +418,7 @@ func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitG
 		playerData = &d
 	}
 
-	if err := conn.StartGame(data); err != nil {
+	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
