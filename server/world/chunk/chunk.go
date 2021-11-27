@@ -30,8 +30,8 @@ type Chunk struct {
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
-func New(airRuntimeID uint32) *Chunk {
-	return &Chunk{air: airRuntimeID, blockEntities: make(map[cube.Pos]map[string]interface{})}
+func New(air uint32) *Chunk {
+	return &Chunk{air: air, blockEntities: make(map[cube.Pos]map[string]interface{})}
 }
 
 // Sub returns a list of all sub chunks present in the chunk.
@@ -79,7 +79,7 @@ func (chunk *Chunk) RuntimeID(x uint8, y int16, z uint8, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
 		return sub.air
 	}
-	return sub.storages[layer].RuntimeID(x, uint8(y), z)
+	return sub.storages[layer].At(x, uint8(y), z)
 }
 
 // fullSkyLight is used to copy full light to newly created sub chunks.
@@ -106,7 +106,7 @@ func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtime
 		// Don't do anything with this, just return.
 		return
 	}
-	sub.Layer(layer).SetRuntimeID(x, uint8(y), z, runtimeID)
+	sub.Layer(layer).Set(x, uint8(y), z, runtimeID)
 }
 
 // HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the
@@ -120,7 +120,7 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
 		}
 		for y := 15; y >= 0; y-- {
 			totalY := int16(y) | subY(index)
-			if FilteringBlocks[sub.storages[0].RuntimeID(x, uint8(totalY), z)] == 15 {
+			if FilteringBlocks[sub.storages[0].At(x, uint8(totalY), z)] == 15 {
 				return totalY
 			}
 		}
@@ -138,7 +138,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
 		}
 		for y := 15; y >= 0; y-- {
 			totalY := int16(y) | subY(index)
-			rid := sub.storages[0].RuntimeID(x, uint8(totalY), z)
+			rid := sub.storages[0].At(x, uint8(totalY), z)
 			if rid != chunk.air {
 				return totalY
 			}

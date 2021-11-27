@@ -65,7 +65,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 			continue
 		}
 		index := uint8(y)
-		c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), air, &index, DiskEncoding)
+		c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c.air, &index, DiskEncoding)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 				return nil, fmt.Errorf("error reading subchunk index: %w", err)
 			}
 		}
-		sub.storages = make([]*BlockStorage, storageCount)
+		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
 			sub.storages[i], err = decodeBlockStorage(buf, e)
@@ -117,7 +117,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 
 // decodeBlockStorage decodes a block storage from a bytes.Buffer. The Encoding passed is used to read either a network
 // or disk block storage.
-func decodeBlockStorage(buf *bytes.Buffer, e Encoding) (*BlockStorage, error) {
+func decodeBlockStorage(buf *bytes.Buffer, e Encoding) (*PalettedStorage, error) {
 	blockSize, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
@@ -149,5 +149,5 @@ func decodeBlockStorage(buf *bytes.Buffer, e Encoding) (*BlockStorage, error) {
 		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
 	}
 	p, err := e.decodePalette(buf, paletteSize(blockSize))
-	return newBlockStorage(uint32s, p), err
+	return newPalettedStorage(uint32s, p), err
 }

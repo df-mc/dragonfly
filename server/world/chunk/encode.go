@@ -83,13 +83,13 @@ func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData)
 	return
 }
 
-// encodeBlockStorage encodes a BlockStorage into a bytes.Buffer. The Encoding passed is used to write the Palette of
-// the BlockStorage.
-func encodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage, e Encoding) {
-	b := make([]byte, len(storage.blocks)*4+1)
-	b[0] = byte(storage.bitsPerBlock<<1) | e.network()
+// encodeBlockStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette of
+// the PalettedStorage.
+func encodeBlockStorage(buf *bytes.Buffer, storage *PalettedStorage, e Encoding) {
+	b := make([]byte, len(storage.indices)*4+1)
+	b[0] = byte(storage.bitsPerIndex<<1) | e.network()
 
-	for i, v := range storage.blocks {
+	for i, v := range storage.indices {
 		// Explicitly don't use the binary package to greatly improve performance of writing the uint32s.
 		b[i*4+1], b[i*4+2], b[i*4+3], b[i*4+4] = byte(v), byte(v>>8), byte(v>>16), byte(v>>24)
 	}

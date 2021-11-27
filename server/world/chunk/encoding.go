@@ -34,7 +34,7 @@ func (diskEncoding) data2D(c *Chunk) []byte { return append(emptyHeightMap, c.bi
 func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
 	_ = binary.Write(buf, binary.LittleEndian, uint32(p.Len()))
 	blocks := make([]blockEntry, p.Len())
-	for index, runtimeID := range p.blockRuntimeIDs {
+	for index, runtimeID := range p.values {
 		// Get the block state registered with the runtime IDs we have in the palette of the block storage
 		// as we need the name and data value to store.
 		name, props, _ := RuntimeIDToState(runtimeID)
@@ -64,7 +64,7 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize) (*Pa
 		if err := dec.Decode(&e); err != nil {
 			return nil, fmt.Errorf("error decoding block: %w", err)
 		}
-		palette.blockRuntimeIDs[i], ok = StateToRuntimeID(e.Name, e.State)
+		palette.values[i], ok = StateToRuntimeID(e.Name, e.State)
 		if !ok {
 			return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", e.Name, e.State)
 		}
@@ -80,7 +80,7 @@ func (networkEncoding) encoding() nbt.Encoding { return nbt.NetworkLittleEndian 
 func (networkEncoding) data2D(c *Chunk) []byte { return append(c.biomes[:], 0) }
 func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
 	_ = protocol.WriteVarint32(buf, int32(p.Len()))
-	for _, runtimeID := range p.blockRuntimeIDs {
+	for _, runtimeID := range p.values {
 		_ = protocol.WriteVarint32(buf, int32(runtimeID))
 	}
 }
@@ -100,5 +100,5 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize) (
 		}
 		blocks[i] = uint32(temp)
 	}
-	return &Palette{blockRuntimeIDs: blocks, size: blockSize}, nil
+	return &Palette{values: blocks, size: blockSize}, nil
 }

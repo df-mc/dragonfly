@@ -2,36 +2,36 @@ package chunk
 
 import "math"
 
-// paletteSize is the size of a palette. It indicates the amount of bits occupied per block saved.
+// paletteSize is the size of a palette. It indicates the amount of bits occupied per value stored.
 type paletteSize byte
 
-// Palette is a palette of runtime IDs that every block storage has. Block storages hold 'pointers' to indexes
+// Palette is a palette of values that every PalettedStorage has. Storages hold 'pointers' to indices
 // in this palette.
 type Palette struct {
 	last      uint32
 	lastIndex int16
 	size      paletteSize
 
-	// blockRuntimeIDs is a map of runtime IDs. The block storages point to the index to this runtime ID.
-	blockRuntimeIDs []uint32
+	// values is a map of values. A PalettedStorage points to the index to this value.
+	values []uint32
 }
 
-// newPalette returns a new palette with size and a slice of added runtime IDs.
-func newPalette(size paletteSize, runtimeIDs []uint32) *Palette {
-	return &Palette{size: size, blockRuntimeIDs: runtimeIDs, last: math.MaxUint32}
+// newPalette returns a new Palette with size and a slice of added values.
+func newPalette(size paletteSize, values []uint32) *Palette {
+	return &Palette{size: size, values: values, last: math.MaxUint32}
 }
 
-// Len returns the amount of unique block runtime IDs in the palette.
+// Len returns the amount of unique values in the Palette.
 func (palette *Palette) Len() int {
-	return len(palette.blockRuntimeIDs)
+	return len(palette.values)
 }
 
-// Add adds a runtime ID to the palette. It does not first if the runtime ID was already set in the palette.
-// The index at which the runtime ID was added is returned.
-// Another bool is returned indicating if the palette was resized as a result of the adding of the runtime ID.
-func (palette *Palette) Add(runtimeID uint32) (index int16, resize bool) {
-	i := int16(len(palette.blockRuntimeIDs))
-	palette.blockRuntimeIDs = append(palette.blockRuntimeIDs, runtimeID)
+// Add adds a values to the Palette. It does not first check if the value was already set in the Palette.
+// The index at which the value was added is returned. Another bool is returned indicating if the Palette
+// was resized as a result of adding the value.
+func (palette *Palette) Add(v uint32) (index int16, resize bool) {
+	i := int16(len(palette.values))
+	palette.values = append(palette.values, v)
 
 	if palette.needsResize() {
 		palette.increaseSize()
@@ -40,18 +40,18 @@ func (palette *Palette) Add(runtimeID uint32) (index int16, resize bool) {
 	return i, false
 }
 
-// Replace calls the function passed for each runtime ID present in the palette. The value returned by the
-// function replaces the runtime ID present at the index of the runtime ID passed.
-func (palette *Palette) Replace(f func(runtimeID uint32) uint32) {
+// Replace calls the function passed for each value present in the Palette. The value returned by the
+// function replaces the value present at the index of the value passed.
+func (palette *Palette) Replace(f func(v uint32) uint32) {
 	// Reset last runtime ID as it now has a different offset.
 	palette.last = math.MaxUint32
-	for index, id := range palette.blockRuntimeIDs {
-		palette.blockRuntimeIDs[index] = f(id)
+	for index, v := range palette.values {
+		palette.values[index] = f(v)
 	}
 }
 
-// Index loops through the runtime IDs of the palette and looks for the index of the given runtime ID. If the
-// runtime ID can not be found, -1 is returned.
+// Index loops through the values of the Palette and looks for the index of the given value. If the value could
+// not be found, -1 is returned.
 func (palette *Palette) Index(runtimeID uint32) int16 {
 	if runtimeID == palette.last {
 		// Fast path out.
@@ -61,12 +61,11 @@ func (palette *Palette) Index(runtimeID uint32) int16 {
 	return palette.indexSlow(runtimeID)
 }
 
-// indexSlow searches the index of a runtime ID in the palette's block runtime IDs by iterating through the
-// palette's block runtime IDs.
+// indexSlow searches the index of a value in the Palette's values by iterating through the Palette's values.
 func (palette *Palette) indexSlow(runtimeID uint32) int16 {
-	l := len(palette.blockRuntimeIDs)
+	l := len(palette.values)
 	for i := 0; i < l; i++ {
-		if palette.blockRuntimeIDs[i] == runtimeID {
+		if palette.values[i] == runtimeID {
 			palette.last = runtimeID
 			v := int16(i)
 			palette.lastIndex = v
@@ -76,26 +75,37 @@ func (palette *Palette) indexSlow(runtimeID uint32) int16 {
 	return -1
 }
 
-// RuntimeID returns the runtime ID at the palette index given.
-func (palette *Palette) RuntimeID(paletteIndex uint16) uint32 {
-	return palette.blockRuntimeIDs[paletteIndex]
+// Value returns the value in the Palette at a specific index.
+func (palette *Palette) Value(i uint16) uint32 {
+	return palette.values[i]
 }
 
-// needsResize checks if the palette and with it the holding block storage needs to be resized to a bigger
+// needsResize checks if the Palette, and with it the holding PalettedStorage, needs to be resized to a bigger
 // size.
 func (palette *Palette) needsResize() bool {
-	return len(palette.blockRuntimeIDs) > (1 << palette.size)
+	return len(palette.values) > (1 << palette.size)
 }
 
-var sizes = [...]paletteSize{1, 2, 3, 4, 5, 6, 8, 16}
-var offsets = [...]int{1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 16: 7}
+var sizes = [...]paletteSize{0, 1, 2, 3, 4, 5, 6, 8, 16}
+var offsets = [...]int{0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 8: 7, 16: 8}
 
-// increaseSize increases the size of the palette to the next palette size.
+// increaseSize increases the size of the Palette to the next palette size.
 func (palette *Palette) increaseSize() {
 	palette.size = sizes[offsets[palette.size]+1]
 }
 
-// padded returns true if the palette size is 3, 5 or 6.
+// padded returns true if the Palette size is 3, 5 or 6.
 func (p paletteSize) padded() bool {
 	return p == 3 || p == 5 || p == 6
+}
+
+// paletteSizeFor finds a suitable paletteSize for the amount of values passed n.
+func paletteSizeFor(n int) paletteSize {
+	for _, size := range sizes {
+		if n <= (1 << size) {
+			return size
+		}
+	}
+	// Should never happen.
+	return 0
 }

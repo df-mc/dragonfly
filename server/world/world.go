@@ -1399,7 +1399,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					continue
 				}
 				layer := layers[0]
-				if p := layer.Palette(); p.Len() == 1 && p.RuntimeID(0) == airRID {
+				if p := layer.Palette(); p.Len() == 1 && p.Value(0) == airRID {
 					// Empty layer present, so skip it right away.
 					continue
 				}
@@ -1409,7 +1409,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.RuntimeID(x, y, z)
+				rid := layer.At(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
