@@ -32,7 +32,9 @@ func (diskEncoding) network() byte          { return 0 }
 func (diskEncoding) encoding() nbt.Encoding { return nbt.LittleEndian }
 func (diskEncoding) data2D(c *Chunk) []byte { return append(emptyHeightMap, c.biomes[:]...) }
 func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
-	_ = binary.Write(buf, binary.LittleEndian, uint32(p.Len()))
+	if p.size != 0 {
+		_ = binary.Write(buf, binary.LittleEndian, uint32(p.Len()))
+	}
 	blocks := make([]blockEntry, p.Len())
 	for index, runtimeID := range p.values {
 		// Get the block state registered with the runtime IDs we have in the palette of the block storage
@@ -47,18 +49,22 @@ func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
 	}
 }
 func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize) (*Palette, error) {
-	// The next 4 bytes are an LE int32, but we simply read it and decode the int32 ourselves, as it's much
-	// faster here.
-	data := buf.Next(4)
-	if len(data) != 4 {
-		return nil, fmt.Errorf("cannot read palette entry count: expected 4 bytes, got %v", len(data))
-	}
-	var (
+	paletteCount := uint32(1)
+	if blockSize != 0 {
+		// The next 4 bytes are an LE int32, but we simply read it and decode the int32 ourselves, as it's much
+		// faster here.
+		data := buf.Next(4)
+		if len(data) != 4 {
+			return nil, fmt.Errorf("cannot read palette entry count: expected 4 bytes, got %v", len(data))
+		}
 		paletteCount = binary.LittleEndian.Uint32(data)
-		palette      = newPalette(blockSize, make([]uint32, paletteCount))
-		dec          = nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
-		e            blockEntry
-		ok           bool
+	}
+
+	var (
+		palette = newPalette(blockSize, make([]uint32, paletteCount))
+		dec     = nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
+		e       blockEntry
+		ok      bool
 	)
 	for i := uint32(0); i < paletteCount; i++ {
 		if err := dec.Decode(&e); err != nil {
@@ -79,18 +85,22 @@ func (networkEncoding) network() byte          { return 1 }
 func (networkEncoding) encoding() nbt.Encoding { return nbt.NetworkLittleEndian }
 func (networkEncoding) data2D(c *Chunk) []byte { return append(c.biomes[:], 0) }
 func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette) {
-	_ = protocol.WriteVarint32(buf, int32(p.Len()))
+	if p.size != 0 {
+		_ = protocol.WriteVarint32(buf, int32(p.Len()))
+	}
 	for _, runtimeID := range p.values {
 		_ = protocol.WriteVarint32(buf, int32(runtimeID))
 	}
 }
 func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize) (*Palette, error) {
-	var paletteCount int32
-	if err := protocol.Varint32(buf, &paletteCount); err != nil {
-		return nil, fmt.Errorf("error reading palette entry count: %w", err)
-	}
-	if paletteCount <= 0 {
-		return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+	var paletteCount int32 = 1
+	if blockSize != 0 {
+		if err := protocol.Varint32(buf, &paletteCount); err != nil {
+			return nil, fmt.Errorf("error reading palette entry count: %w", err)
+		}
+		if paletteCount <= 0 {
+			return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+		}
 	}
 
 	blocks, temp := make([]uint32, paletteCount), int32(0)

@@ -86,7 +86,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodeBlockStorage(buf, e)
+		storage, err := decodePalettedStorage(buf, e)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +106,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodeBlockStorage(buf, e)
+			sub.storages[i], err = decodePalettedStorage(buf, e)
 			if err != nil {
 				return nil, err
 			}
@@ -115,25 +115,25 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 	return sub, nil
 }
 
-// decodeBlockStorage decodes a block storage from a bytes.Buffer. The Encoding passed is used to read either a network
-// or disk block storage.
-func decodeBlockStorage(buf *bytes.Buffer, e Encoding) (*PalettedStorage, error) {
+// decodePalettedStorage decodes a PalettedStorage from a bytes.Buffer. The Encoding passed is used to read either a
+// network or disk block storage.
+func decodePalettedStorage(buf *bytes.Buffer, e Encoding) (*PalettedStorage, error) {
 	blockSize, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
 	blockSize >>= 1
 
-	// blocksPerUint32 is the amount of blocks that may be stored in a single uint32.
-	blocksPerUint32 := 32 / int(blockSize)
+	// indicesPerUint32 is the amount of indices that may be stored in a single uint32.
+	indicesPerUint32 := 32 / int(blockSize)
 
-	// uint32Count is the amount of uint32s required to store all blocks: 4096 blocks need to be stored in
+	// uint32Count is the amount of uint32s required to store all indices: 4096 indices need to be stored in
 	// total.
-	uint32Count := 4096 / blocksPerUint32
+	uint32Count := 4096 / indicesPerUint32
 
 	if paletteSize(blockSize).padded() {
-		// We've got one of the padded sizes, so the block storage has another uint32 to be able to store
-		// every block.
+		// We've got one of the padded sizes, so the storage has another uint32 to be able to store
+		// every index.
 		uint32Count++
 	}
 

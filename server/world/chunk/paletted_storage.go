@@ -133,8 +133,8 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 	}
 	n := make([]uint32, requiredUint32s)
 
-	// Construct a new block storage, set all indices in there manually. We can't easily do this in a better
-	// way, because all indices will be at a different offset with a different length.
+	// Construct a new storage and set all values in there manually. We can't easily do this in a better
+	// way, because all values will be at a different index with a different length.
 	newStorage := newPalettedStorage(n, storage.palette)
 	for x := byte(0); x < 16; x++ {
 		for y := byte(0); y < 16; y++ {
@@ -168,8 +168,8 @@ func (storage *PalettedStorage) compact() {
 			newRuntimeIDs = append(newRuntimeIDs, storage.palette.values[index])
 		}
 	}
-	// Construct a new block storage, set all blocks in there manually. We can't easily do this in a better
-	// way, because all blocks will be at a different offset with a different length.
+	// Construct a new storage and set all values in there manually. We can't easily do this in a better
+	// way, because all values will be at a different index with a different length.
 	newStorage := newPalettedStorage(newRuntimeIDs, newPalette(paletteSizeFor(len(newRuntimeIDs)), newRuntimeIDs))
 
 	for x := byte(0); x < 16; x++ {

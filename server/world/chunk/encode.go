@@ -75,7 +75,7 @@ func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData)
 		}
 		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages))})
 		for _, storage := range sub.storages {
-			encodeBlockStorage(buf, storage, e)
+			encodePalettedStorage(buf, storage, e)
 		}
 		d.SubChunks[y] = make([]byte, buf.Len())
 		_, _ = buf.Read(d.SubChunks[y])
@@ -83,9 +83,9 @@ func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData)
 	return
 }
 
-// encodeBlockStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette of
-// the PalettedStorage.
-func encodeBlockStorage(buf *bytes.Buffer, storage *PalettedStorage, e Encoding) {
+// encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
+// of the PalettedStorage.
+func encodePalettedStorage(buf *bytes.Buffer, storage *PalettedStorage, e Encoding) {
 	b := make([]byte, len(storage.indices)*4+1)
 	b[0] = byte(storage.bitsPerIndex<<1) | e.network()
 
