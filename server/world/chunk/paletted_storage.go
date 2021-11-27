@@ -22,8 +22,6 @@ type PalettedStorage struct {
 	// bitsPerIndex is the amount of bits required to store one block. The number increases as the block
 	// storage holds more unique block states.
 	bitsPerIndex uint16
-	//
-	empty bool
 	// filledBitsPerIndex returns the amount of blocks that are actually filled per uint32.
 	filledBitsPerIndex uint16
 	// indexMask is the equivalent of 1 << bitsPerIndex - 1.
