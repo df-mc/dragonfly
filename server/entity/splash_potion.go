@@ -149,7 +149,7 @@ func (s *SplashPotion) Tick(current int64) {
 					continue
 				}
 
-				distanceMultiplier := 1 - (distance / 4)
+				distanceMultiplier := 1 - distance/4
 				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == otherEntity {
 					distanceMultiplier = 1
 				}
