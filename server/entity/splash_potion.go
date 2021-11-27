@@ -125,14 +125,10 @@ func (s *SplashPotion) Tick(current int64) {
 		hasEffects := len(effects) > 0
 
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
+
 		if hasEffects {
 			colour, _ = effect.ResultingColour(effects)
-		}
 
-		w.AddParticle(m.pos, particle.Splash{Colour: colour})
-		w.PlaySound(m.pos, sound.GlassBreak{})
-
-		if hasEffects {
 			ignore := func(entity world.Entity) bool {
 				_, canSplash := entity.(splashable)
 				return !canSplash || entity == s
@@ -180,6 +176,9 @@ func (s *SplashPotion) Tick(current int64) {
 				}
 			}
 		}
+
+		w.AddParticle(m.pos, particle.Splash{Colour: colour})
+		w.PlaySound(m.pos, sound.GlassBreak{})
 
 		s.closeNextTick = true
 	}
