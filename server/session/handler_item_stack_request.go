@@ -618,27 +618,26 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputIte
 		if err != nil {
 			return false
 		}
-		if oldSt.Empty() {
-			// We should still up the satisfied inputs count if both stacks are empty.
-			if inputs[satisfiedInputs].Empty() {
-				satisfiedInputs++
+		input := inputs[satisfiedInputs]
+		if !oldSt.Empty() {
+			// Items that apply to all types, so we just compare with the name and count.
+			if input.Variants {
+				name, _ := oldSt.Item().EncodeItem()
+				otherName, _ := input.Item().EncodeItem()
+				if name == otherName && oldSt.Count() >= input.Count() {
+					satisfiedInputs++
+				}
+			} else {
+				if oldSt.Comparable(input.Stack) {
+					satisfiedInputs++
+				}
 			}
-
 			continue
 		}
 
-		// Items that apply to all types, so we just compare with the name and count.
-		currentInputToMatch := inputs[satisfiedInputs]
-		if currentInputToMatch.Variants {
-			name, _ := oldSt.Item().EncodeItem()
-			otherName, _ := currentInputToMatch.Item().EncodeItem()
-			if name == otherName && oldSt.Count() >= currentInputToMatch.Count() {
-				satisfiedInputs++
-			}
-		} else {
-			if oldSt.Comparable(currentInputToMatch.Stack) {
-				satisfiedInputs++
-			}
+		// We should still up the satisfied inputs count if both stacks are empty.
+		if input.Empty() {
+			satisfiedInputs++
 		}
 	}
 
@@ -715,22 +714,22 @@ func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.InputItem, s 
 		if err != nil {
 			return fmt.Errorf("expected item doesn't exist: " + err.Error())
 		}
-		if oldSt.Empty() {
-			// We should still up the index if the expected input is empty.
-			if inputs[index].Empty() {
-				index++
-			}
-
+		input := inputs[index]
+		if !oldSt.Empty() {
+			st := oldSt.Grow(-input.Count())
+			h.setItemInSlot(protocol.StackRequestSlotInfo{
+				ContainerID:    containerCraftingGrid,
+				Slot:           slot,
+				StackNetworkID: item_id(st),
+			}, st, s)
+			index++
 			continue
 		}
 
-		st := oldSt.Grow(-inputs[index].Count())
-		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID:    containerCraftingGrid,
-			Slot:           slot,
-			StackNetworkID: item_id(st),
-		}, st, s)
-		index++
+		// We should still up the index if the expected input is empty.
+		if input.Empty() {
+			index++
+		}
 	}
 
 	return nil
