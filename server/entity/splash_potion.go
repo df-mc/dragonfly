@@ -94,12 +94,12 @@ func (s *SplashPotion) Rotation() (float64, float64) {
 	return s.yaw, s.pitch
 }
 
-// SetColour sets the potion colour to the colour passed
+// SetColour sets the potion colour to the colour passed.
 func (s *SplashPotion) SetColour(colour color.RGBA) {
 	s.colour = colour
 }
 
-// CustomColour returns a bool of if the colour is the default color or not
+// CustomColour returns a bool of if the colour is the default color or not.
 func (s *SplashPotion) CustomColour() bool {
 	return s.colour != defaultColor
 }
