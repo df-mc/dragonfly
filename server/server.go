@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -69,6 +70,9 @@ type Server struct {
 
 	listenMu  sync.Mutex
 	listeners []Listener
+
+	aMu sync.Mutex
+	a   Allower
 }
 
 func init() {
@@ -98,6 +102,7 @@ func New(c *Config, log internal.Logger) *Server {
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewString(c.Server.Name),
 		playerProvider: player.NopProvider{},
+		a:              allower{},
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
@@ -313,6 +318,17 @@ func (server *Server) Close() error {
 	return nil
 }
 
+// Allow makes the Server filter which connections to the Server are accepted. Connections on which the Allower returns
+// false are rejected immediately. If nil is passed, all connections are accepted.
+func (server *Server) Allow(a Allower) {
+	if a == nil {
+		a = allower{}
+	}
+	server.aMu.Lock()
+	defer server.aMu.Unlock()
+	server.a = a
+}
+
 // Listen makes the Server listen for new connections from the Listener passed. This may be used to listen for players
 // on different interfaces. Note that the maximum player count of additional Listeners added is not enforced
 // automatically. The limit must be enforced by the Listener.
@@ -337,6 +353,15 @@ func (server *Server) Listen(l Listener) {
 				wg.Wait()
 				server.wg.Done()
 				return
+			}
+			server.aMu.Lock()
+			a := server.a
+			server.aMu.Unlock()
+
+			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData()); !ok {
+				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
+				_ = c.Close()
+				continue
 			}
 			wg.Add(1)
 			go server.finaliseConn(ctx, c, l, wg)
