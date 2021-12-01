@@ -18,8 +18,6 @@ const (
 var (
 	// RuntimeIDToState must hold a function to convert a runtime ID to a name and its state properties.
 	RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]interface{}, found bool)
-	// emptyHeightMap holds an empty height map. It is written as 256 int16s, or 512 bytes.
-	emptyHeightMap = make([]byte, 512)
 	// pool is used to pool byte buffers used for encoding chunks.
 	pool = sync.Pool{
 		New: func() interface{} {
