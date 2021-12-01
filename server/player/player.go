@@ -295,7 +295,7 @@ func (p *Player) RemoveScoreboard() {
 // player's screen.
 // The boss bar may be removed by calling Player.RemoveBossBar().
 func (p *Player) SendBossBar(bar bossbar.BossBar) {
-	p.session().SendBossBar(bar.Text(), bar.HealthPercentage())
+	p.session().SendBossBar(bar.Text(), bar.Colour().Uint8(), bar.HealthPercentage())
 }
 
 // RemoveBossBar removes any boss bar currently active on the player's screen. If no boss bar is currently
