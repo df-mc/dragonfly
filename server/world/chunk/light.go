@@ -20,13 +20,13 @@ type light interface {
 
 type skyLight struct{}
 
-func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.SkyLightAt(x, y, z) }
-func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setSkyLight(x, y, z, v) }
+func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.SkyLight(x, y, z) }
+func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.SetSkyLight(x, y, z, v) }
 
 type blockLight struct{}
 
-func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.blockLightAt(x, y, z) }
-func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setBlockLight(x, y, z, v) }
+func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.BlockLight(x, y, z) }
+func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.SetBlockLight(x, y, z, v) }
 
 // FillLight executes the light 'filling' stage, where the chunk is filled with light coming only from the
 // chunk itself, without light crossing chunk borders.
@@ -177,7 +177,7 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 					continue
 				}
 				// Fill the rest of the column with sky light on full strength.
-				c.sub[subIndex(y+1)].setSkyLight(x, uint8((y+1)&0xf), z, 15)
+				c.sub[subIndex(y+1)].SetSkyLight(x, uint8((y+1)&0xf), z, 15)
 			}
 		}
 	}

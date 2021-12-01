@@ -36,35 +36,22 @@ func (sub *SubChunk) Layers() []*PalettedStorage {
 	return sub.storages
 }
 
-// RuntimeID returns the runtime ID of the block located at the given X, Y and Z. X, Y and Z must be in a
+// Block returns the runtime ID of the block located at the given X, Y and Z. X, Y and Z must be in a
 // range of 0-15.
-func (sub *SubChunk) RuntimeID(x, y, z byte, layer uint8) uint32 {
+func (sub *SubChunk) Block(x, y, z byte, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
 		return sub.air
 	}
 	return sub.storages[layer].At(x, y, z)
 }
 
-// SetRuntimeID sets the given runtime ID at the given X, Y and Z. X, Y and Z must be in a range of 0-15.
-func (sub *SubChunk) SetRuntimeID(x, y, z byte, layer uint8, runtimeID uint32) {
-	sub.Layer(layer).Set(x, y, z, runtimeID)
+// SetBlock sets the given block runtime ID at the given X, Y and Z. X, Y and Z must be in a range of 0-15.
+func (sub *SubChunk) SetBlock(x, y, z byte, layer uint8, block uint32) {
+	sub.Layer(layer).Set(x, y, z, block)
 }
 
-// Light returns the light level at a specific position in the sub chunk. It is max(block light, sky light).
-func (sub *SubChunk) Light(x, y, z byte) uint8 {
-	sky := sub.SkyLightAt(x, y, z)
-	if sky == 15 {
-		// The sky light was already on the maximum value, so return it without checking block light.
-		return sky
-	}
-	if block := sub.blockLightAt(x, y, z); block > sky {
-		return block
-	}
-	return sky
-}
-
-// setBlockLight sets the block light value at a specific position in the sub chunk.
-func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
+// SetBlockLight sets the block light value at a specific position in the sub chunk.
+func (sub *SubChunk) SetBlockLight(x, y, z byte, level uint8) {
 	if ptr := &sub.blockLight[0]; ptr == noLightPtr {
 		// Copy the block light as soon as it is changed to create a COW system.
 		sub.blockLight = append([]byte(nil), sub.blockLight...)
@@ -76,15 +63,15 @@ func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
 	sub.blockLight[i] = (sub.blockLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
-// blockLightAt returns the block light value at a specific value at a specific position in the sub chunk.
-func (sub *SubChunk) blockLightAt(x, y, z byte) uint8 {
+// BlockLight returns the block light value at a specific value at a specific position in the sub chunk.
+func (sub *SubChunk) BlockLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
 	return (sub.blockLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
-// setSkyLight sets the sky light value at a specific position in the sub chunk.
-func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
+// SetSkyLight sets the sky light value at a specific position in the sub chunk.
+func (sub *SubChunk) SetSkyLight(x, y, z byte, level uint8) {
 	if ptr := &sub.skyLight[0]; ptr == fullLightPtr || ptr == noLightPtr {
 		// Copy the sky light as soon as it is changed to create a COW system.
 		sub.skyLight = append([]byte(nil), sub.skyLight...)
@@ -96,8 +83,8 @@ func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
 	sub.skyLight[i] = (sub.skyLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
-// SkyLightAt returns the sky light value at a specific value at a specific position in the sub chunk.
-func (sub *SubChunk) SkyLightAt(x, y, z byte) uint8 {
+// SkyLight returns the sky light value at a specific value at a specific position in the sub chunk.
+func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
 	return (sub.skyLight[index>>1] >> ((index & 1) << 2)) & 0xf

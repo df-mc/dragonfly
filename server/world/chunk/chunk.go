@@ -41,6 +41,28 @@ func (chunk *Chunk) Sub() []*SubChunk {
 	return chunk.sub[:]
 }
 
+// Block returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
+// sub chunk exists at the given y, the block is assumed to be air.
+func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
+	sub := chunk.subChunk(y)
+	if sub.Empty() || uint8(len(sub.storages)) <= layer {
+		return chunk.air
+	}
+	return sub.storages[layer].At(x, uint8(y), z)
+}
+
+// SetBlock sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
+// SubChunk exists at the given y, a new SubChunk is created and the block is set.
+func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint32) {
+	sub := chunk.sub[subIndex(y)]
+	if uint8(len(sub.storages)) <= layer && block == chunk.air {
+		// Air was set at n layer, but there were less than n layers, so there already was air there.
+		// Don't do anything with this, just return.
+		return
+	}
+	sub.Layer(layer).Set(x, uint8(y), z, block)
+}
+
 // Biome returns the biome ID at a specific column in the chunk.
 func (chunk *Chunk) Biome(x uint8, y int16, z uint8) uint32 {
 	return chunk.biomes[subIndex(y)].At(x, uint8(y), z)
@@ -53,34 +75,21 @@ func (chunk *Chunk) SetBiome(x uint8, y int16, z uint8, biome uint32) {
 
 // Light returns the light level at a specific position in the chunk.
 func (chunk *Chunk) Light(x uint8, y int16, z uint8) uint8 {
-	return chunk.subChunk(y).Light(x&15, uint8(y&15), z&15)
+	sub, uy := chunk.subChunk(y), uint8(y)
+	sky := sub.SkyLight(x, uy, z)
+	if sky == 15 {
+		// The sky light was already on the maximum value, so return it without checking block light.
+		return sky
+	}
+	if block := sub.BlockLight(x, uy, z); block > sky {
+		return block
+	}
+	return sky
 }
 
 // SkyLight returns the sky light level at a specific position in the chunk.
 func (chunk *Chunk) SkyLight(x uint8, y int16, z uint8) uint8 {
-	return chunk.subChunk(y).SkyLightAt(x&15, uint8(y&15), z&15)
-}
-
-// RuntimeID returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
-// sub chunk exists at the given y, the block is assumed to be air.
-func (chunk *Chunk) RuntimeID(x uint8, y int16, z uint8, layer uint8) uint32 {
-	sub := chunk.subChunk(y)
-	if sub.Empty() || uint8(len(sub.storages)) <= layer {
-		return chunk.air
-	}
-	return sub.storages[layer].At(x, uint8(y), z)
-}
-
-// SetRuntimeID sets the runtime ID of a block at a given x, y and z in a chunk at the given layer. If no
-// SubChunk exists at the given y, a new SubChunk is created and the block is set.
-func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtimeID uint32) {
-	sub := chunk.sub[subIndex(y)]
-	if uint8(len(sub.storages)) <= layer && runtimeID == chunk.air {
-		// Air was set at n layer, but there were less than n layers, so there already was air there.
-		// Don't do anything with this, just return.
-		return
-	}
-	sub.Layer(layer).Set(x, uint8(y), z, runtimeID)
+	return chunk.subChunk(y).SkyLight(x&15, uint8(y&15), z&15)
 }
 
 // HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the
