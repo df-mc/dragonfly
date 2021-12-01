@@ -124,10 +124,11 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 			return nil, fmt.Errorf("error reading storage count: %w", err)
 		}
 		if ver == 9 {
-			*index, err = buf.ReadByte()
+			uIndex, err := buf.ReadByte()
 			if err != nil {
 				return nil, fmt.Errorf("error reading subchunk index: %w", err)
 			}
+			*index = uint8(int8(uIndex) - minSubChunkY)
 		}
 		sub.storages = make([]*PalettedStorage, storageCount)
 

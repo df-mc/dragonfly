@@ -69,13 +69,13 @@ func Encode(c *Chunk, e Encoding) SerialisedData {
 // encodeSubChunks encodes the sub chunks of the Chunk passed into the bytes.Buffer buf. It uses the encoding passed to
 // encode the block storages and returns the resulting SerialisedData.
 func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData) {
-	for y, sub := range c.sub {
-		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), uint8(y)})
+	for i, sub := range c.sub {
+		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), uint8(i + minSubChunkY)})
 		for _, storage := range sub.storages {
 			encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
 		}
-		d.SubChunks[y] = make([]byte, buf.Len())
-		_, _ = buf.Read(d.SubChunks[y])
+		d.SubChunks[i] = make([]byte, buf.Len())
+		_, _ = buf.Read(d.SubChunks[i])
 	}
 	return
 }
