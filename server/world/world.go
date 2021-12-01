@@ -355,11 +355,6 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			subs := c.Sub()
 			for i, sub := range subs {
 				baseY := (i + (cube.MinY >> 4)) << 4
-				if sub == nil {
-					c.SetRuntimeID(0, int16(baseY), 0, 0, airRID)
-					sub = subs[i]
-				}
-
 				if baseY>>4 < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
@@ -1389,8 +1384,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 			generateNew := true
 			var x, y, z uint8
 			for i, sub := range subChunks {
-				if sub == nil {
-					// No sub chunk present, so skip it right away.
+				if sub.Empty() {
+					// SubChunk is empty, so skip it right away.
 					continue
 				}
 				layers := sub.Layers()
@@ -1399,7 +1394,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					continue
 				}
 				layer := layers[0]
-				if p := layer.Palette(); p.Len() == 1 && p.RuntimeID(0) == airRID {
+				if p := layer.Palette(); p.Len() == 1 && p.Value(0) == airRID {
 					// Empty layer present, so skip it right away.
 					continue
 				}
@@ -1409,7 +1404,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.RuntimeID(x, y, z)
+				rid := layer.At(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
@@ -1776,11 +1771,14 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 		var err error
 		c, err = w.loadChunk(pos)
 		if err != nil {
+			w.chunkMu.Unlock()
+			w.log.Errorf("%v\n", err)
 			return nil, err
 		}
-
+		chunk.FillLight(c.Chunk)
 		c.Unlock()
 		w.chunkMu.Lock()
+
 		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos
@@ -1788,31 +1786,6 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 
 	c.Lock()
 	return c, nil
-}
-
-// setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
-// position.
-//lint:ignore U1000 This method is explicitly present to be used using compiler directives.
-func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
-	if w == nil {
-		return
-	}
-	w.chunkMu.Lock()
-	defer w.chunkMu.Unlock()
-
-	data, ok := w.chunks[pos]
-	if ok {
-		data.Chunk = c
-	} else {
-		data = newChunkData(c)
-		w.chunks[pos] = data
-	}
-	blockNBT := make([]map[string]interface{}, 0, len(c.BlockNBT()))
-	for pos, e := range c.BlockNBT() {
-		e["x"], e["y"], e["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		blockNBT = append(blockNBT, e)
-	}
-	w.loadIntoBlocks(data, blockNBT)
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
@@ -1831,14 +1804,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		w.chunkMu.Unlock()
 
 		w.generator().GenerateChunk(pos, c)
-		for _, sub := range c.Sub() {
-			if sub == nil {
-				continue
-			}
-			// Creating new sub chunks will create a fully lit sub chunk, but we don't want that here as
-			// light updates aren't happening (yet).
-			sub.ClearLight()
-		}
 		return data, nil
 	}
 	data := newChunkData(c)
@@ -1878,8 +1843,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 // calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
 // neighbours if they have all chunks loaded around it as a result of the one passed.
 func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
-	chunk.FillLight(c)
-
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
 			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
