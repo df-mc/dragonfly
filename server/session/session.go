@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -102,8 +103,8 @@ type Conn interface {
 	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
 	// packet.
 	WritePacket(pk packet.Packet) error
-	// StartGame starts the game for the Conn with a timeout.
-	StartGame(data minecraft.GameData) error
+	// StartGameContext starts the game for the Conn with a context to cancel it.
+	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.

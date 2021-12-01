@@ -10,6 +10,7 @@ type statusProvider struct {
 	s *Server
 }
 
+// ServerStatus returns the player count, max players and the server's name as a minecraft.ServerStatus.
 func (s statusProvider) ServerStatus(playerCount, maxPlayers int) minecraft.ServerStatus {
 	return minecraft.ServerStatus{
 		ServerName:  s.s.name.Load(),
