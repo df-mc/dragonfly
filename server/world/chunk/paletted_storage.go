@@ -54,6 +54,11 @@ func newPalettedStorage(indices []uint32, palette *Palette) *PalettedStorage {
 	return &PalettedStorage{filledBitsPerIndex: filledBitsPerIndex, indexMask: indexMask, indicesStart: indicesStart, bitsPerIndex: bitsPerIndex, indices: indices, palette: palette}
 }
 
+// emptyStorage creates a PalettedStorage filled completely with a value v.
+func emptyStorage(v uint32) *PalettedStorage {
+	return newPalettedStorage([]uint32{}, newPalette(0, []uint32{v}))
+}
+
 // Palette returns the Palette of the PalettedStorage.
 func (storage *PalettedStorage) Palette() *Palette {
 	return storage.palette

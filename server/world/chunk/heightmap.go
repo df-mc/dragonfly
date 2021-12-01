@@ -26,7 +26,7 @@ func calculateHeightmap(c *Chunk) heightmap {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			for y := highestY; y >= cube.MinY; y-- {
-				if filterLevel(subByY(y, c), x, uint8(y)&0xf, z) > 0 {
+				if filterLevel(c.sub[subIndex(y)], x, uint8(y)&0xf, z) > 0 {
 					h.set(x, z, y)
 					break
 				}

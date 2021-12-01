@@ -5,13 +5,19 @@ package chunk
 type SubChunk struct {
 	air        uint32
 	storages   []*PalettedStorage
-	blockLight [2048]uint8
-	skyLight   [2048]uint8
+	blockLight []uint8
+	skyLight   []uint8
 }
 
 // NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
 func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
+}
+
+// Empty checks if the SubChunk is considered empty. This is the case if the SubChunk has 0 block storages or if it has
+// a single one that is completely filled with air.
+func (sub *SubChunk) Empty() bool {
+	return len(sub.storages) == 0 || (len(sub.storages) == 1 && len(sub.storages[0].palette.values) == 1 && sub.storages[0].palette.values[0] == sub.air)
 }
 
 // Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer
@@ -20,16 +26,9 @@ func (sub *SubChunk) Layer(layer uint8) *PalettedStorage {
 	for i := uint8(len(sub.storages)); i <= layer; i++ {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		sub.addLayer()
+		sub.storages = append(sub.storages, emptyStorage(sub.air))
 	}
 	return sub.storages[layer]
-}
-
-// addLayer adds a new storage at the next layer. This is forced to not inline to guarantee that Layer is
-// inlined.
-//go:noinline
-func (sub *SubChunk) addLayer() {
-	sub.storages = append(sub.storages, newPalettedStorage([]uint32{}, newPalette(0, []uint32{sub.air})))
 }
 
 // Layers returns all layers in the sub chunk. This method may also return an empty slice.
@@ -53,26 +52,23 @@ func (sub *SubChunk) SetRuntimeID(x, y, z byte, layer uint8, runtimeID uint32) {
 
 // Light returns the light level at a specific position in the sub chunk. It is max(block light, sky light).
 func (sub *SubChunk) Light(x, y, z byte) uint8 {
-	skyLight := sub.SkyLightAt(x, y, z)
-	if skyLight == 15 {
-		// The sky light was already on the maximum value, so return it with checking block light.
-		return 15
+	sky := sub.SkyLightAt(x, y, z)
+	if sky == 15 {
+		// The sky light was already on the maximum value, so return it without checking block light.
+		return sky
 	}
-	blockLight := sub.blockLightAt(x, y, z)
-	if skyLight > blockLight {
-		return skyLight
+	if block := sub.blockLightAt(x, y, z); block > sky {
+		return block
 	}
-	return blockLight
-}
-
-// ClearLight clears all light of the sub chunk.
-func (sub *SubChunk) ClearLight() {
-	sub.skyLight = [2048]uint8{}
-	sub.blockLight = [2048]uint8{}
+	return sky
 }
 
 // setBlockLight sets the block light value at a specific position in the sub chunk.
 func (sub *SubChunk) setBlockLight(x, y, z byte, level uint8) {
+	if ptr := &sub.blockLight[0]; ptr == noLightPtr {
+		// Copy the block light as soon as it is changed to create a COW system.
+		sub.blockLight = append([]byte(nil), sub.blockLight...)
+	}
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
 	i := index >> 1
@@ -89,6 +85,10 @@ func (sub *SubChunk) blockLightAt(x, y, z byte) uint8 {
 
 // setSkyLight sets the sky light value at a specific position in the sub chunk.
 func (sub *SubChunk) setSkyLight(x, y, z byte, level uint8) {
+	if ptr := &sub.skyLight[0]; ptr == fullLightPtr || ptr == noLightPtr {
+		// Copy the sky light as soon as it is changed to create a COW system.
+		sub.skyLight = append([]byte(nil), sub.skyLight...)
+	}
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
 	i := index >> 1
