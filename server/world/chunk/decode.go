@@ -63,25 +63,27 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		err  error
 		last *PalettedStorage
 	)
-	for i := 0; i < subChunkCount; i++ {
-		b, err := decodePalettedStorage(buf, DiskEncoding, BiomePaletteEncoding)
-		if err != nil {
-			return nil, err
-		}
-		// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
-		// inherit whatever palette we decoded last.
-		if i == 0 && b == nil {
-			// This should never happen and there is no way to handle this.
-			return nil, fmt.Errorf("first biome storage pointed to previous one")
-		}
-		if b == nil {
-			// This means this paletted storage had the flag pointing to the previous one. It basically means we should
+	if buf.Len() != 0 {
+		for i := 0; i < subChunkCount; i++ {
+			b, err := decodePalettedStorage(buf, DiskEncoding, BiomePaletteEncoding)
+			if err != nil {
+				return nil, err
+			}
+			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
 			// inherit whatever palette we decoded last.
-			b = last
-		} else {
-			last = b
+			if i == 0 && b == nil {
+				// This should never happen and there is no way to handle this.
+				return nil, fmt.Errorf("first biome storage pointed to previous one")
+			}
+			if b == nil {
+				// This means this paletted storage had the flag pointing to the previous one. It basically means we should
+				// inherit whatever palette we decoded last.
+				b = last
+			} else {
+				last = b
+			}
+			c.biomes[i] = b
 		}
-		c.biomes[i] = b
 	}
 	for y, sub := range data.SubChunks {
 		if len(sub) == 0 {
@@ -151,23 +153,8 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		return nil, nil
 	}
 
-	uint32Count := 0
-	if blockSize != 0 {
-		if blockSize > byte(len(sizes)-1) || offsets[blockSize] == 0 {
-			return nil, fmt.Errorf("unknown palette size of %v", blockSize)
-		}
-		// indicesPerUint32 is the amount of indices that may be stored in a single uint32.
-		indicesPerUint32 := 32 / int(blockSize)
-		// uint32Count is the amount of uint32s required to store all indices: 4096 indices need to be stored in
-		// total.
-		uint32Count = 4096 / indicesPerUint32
-	}
-
-	if paletteSize(blockSize).padded() {
-		// We've got one of the padded sizes, so the storage has another uint32 to be able to store
-		// every index.
-		uint32Count++
-	}
+	size := paletteSize(blockSize)
+	uint32Count := size.uint32s()
 
 	uint32s := make([]uint32, uint32Count)
 	byteCount := uint32Count * 4

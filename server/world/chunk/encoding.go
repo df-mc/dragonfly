@@ -107,8 +107,8 @@ func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEnc
 	if p.size != 0 {
 		_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	}
-	for _, runtimeID := range p.values {
-		_ = protocol.WriteVarint32(buf, int32(runtimeID))
+	for _, val := range p.values {
+		_ = protocol.WriteVarint32(buf, int32(val))
 	}
 }
 func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {

@@ -127,18 +127,9 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 	if newPaletteSize == paletteSize(storage.bitsPerIndex) {
 		return // Don't resize if the size is already equal.
 	}
-
-	const subChunkBlockCount = 16 * 16 * 16
-	requiredUint32s := subChunkBlockCount / int(uint32BitSize/newPaletteSize)
-	if newPaletteSize.padded() {
-		// Add one uint32 if the palette size is one of the padded sizes.
-		requiredUint32s++
-	}
-	n := make([]uint32, requiredUint32s)
-
 	// Construct a new storage and set all values in there manually. We can't easily do this in a better
 	// way, because all values will be at a different index with a different length.
-	newStorage := newPalettedStorage(n, storage.palette)
+	newStorage := newPalettedStorage(make([]uint32, newPaletteSize.uint32s()), storage.palette)
 	for x := byte(0); x < 16; x++ {
 		for y := byte(0); y < 16; y++ {
 			for z := byte(0); z < 16; z++ {
@@ -173,7 +164,8 @@ func (storage *PalettedStorage) compact() {
 	}
 	// Construct a new storage and set all values in there manually. We can't easily do this in a better
 	// way, because all values will be at a different index with a different length.
-	newStorage := newPalettedStorage(newRuntimeIDs, newPalette(paletteSizeFor(len(newRuntimeIDs)), newRuntimeIDs))
+	size := paletteSizeFor(len(newRuntimeIDs))
+	newStorage := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, newRuntimeIDs))
 
 	for x := byte(0); x < 16; x++ {
 		for y := byte(0); y < 16; y++ {

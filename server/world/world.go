@@ -1775,10 +1775,10 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 			w.log.Errorf("%v\n", err)
 			return nil, err
 		}
-		w.chunkMu.Lock()
-
 		chunk.FillLight(c.Chunk)
 		c.Unlock()
+		w.chunkMu.Lock()
+
 		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos

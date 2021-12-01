@@ -1,6 +1,8 @@
 package chunk
 
-import "math"
+import (
+	"math"
+)
 
 // paletteSize is the size of a palette. It indicates the amount of bits occupied per value stored.
 type paletteSize byte
@@ -108,4 +110,22 @@ func paletteSizeFor(n int) paletteSize {
 	}
 	// Should never happen.
 	return 0
+}
+
+// uint32s returns the amount of uint32s needed to represent a storage with this palette size.
+func (p paletteSize) uint32s() (n int) {
+	uint32Count := 0
+	if p != 0 {
+		// indicesPerUint32 is the amount of indices that may be stored in a single uint32.
+		indicesPerUint32 := 32 / int(p)
+		// uint32Count is the amount of uint32s required to store all indices: 4096 indices need to be stored in
+		// total.
+		uint32Count = 4096 / indicesPerUint32
+	}
+	if p.padded() {
+		// We've got one of the padded sizes, so the storage has another uint32 to be able to store
+		// every index.
+		uint32Count++
+	}
+	return uint32Count
 }

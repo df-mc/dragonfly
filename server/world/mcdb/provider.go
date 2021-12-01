@@ -147,13 +147,13 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	}
 
 	data.Biomes, err = p.db.Get(append(key, key3DData), nil)
-	if err == leveldb.ErrNotFound || len(data.Biomes) <= 512 {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, true, fmt.Errorf("error reading 3D data: %w", err)
+	if err != nil && err != leveldb.ErrNotFound {
+		return nil, false, fmt.Errorf("error reading 3D data: %w", err)
 	}
-	// Strip the heightmap from the biomes.
-	data.Biomes = data.Biomes[512:]
+	if len(data.Biomes) > 512 {
+		// Strip the heightmap from the biomes.
+		data.Biomes = data.Biomes[512:]
+	}
 
 	data.BlockNBT, err = p.db.Get(append(key, keyBlockEntities), nil)
 	// Block entities aren't present when there aren't any, so it's okay if we can't find the key.
