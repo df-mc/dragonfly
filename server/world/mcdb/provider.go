@@ -160,15 +160,14 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	if err != nil && err != leveldb.ErrNotFound {
 		return nil, true, fmt.Errorf("error reading block entities: %w", err)
 	}
-
-	for y := byte(0); y < 16; y++ {
-		data.SubChunks[y], err = p.db.Get(append(key, keySubChunkData, y), nil)
+	for i := range data.SubChunks {
+		data.SubChunks[i], err = p.db.Get(append(key, keySubChunkData, uint8(i+cube.MinY>>4)), nil)
 		if err == leveldb.ErrNotFound {
 			// No sub chunk present at this Y level. We skip this one and move to the next, which might still
 			// be present.
 			continue
 		} else if err != nil {
-			return nil, true, fmt.Errorf("error reading sub chunk data %v: %w", y, err)
+			return nil, true, fmt.Errorf("error reading sub chunk data %v: %w", i, err)
 		}
 	}
 	c, err = chunk.DiskDecode(data)
@@ -189,8 +188,8 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 	binary.LittleEndian.PutUint32(finalisation, 2)
 	_ = p.db.Put(append(key, keyFinalisation), finalisation, nil)
 
-	for y, sub := range data.SubChunks {
-		_ = p.db.Put(append(key, keySubChunkData, byte(y)), sub, nil)
+	for i, sub := range data.SubChunks {
+		_ = p.db.Put(append(key, keySubChunkData, byte(i+cube.MinY>>4)), sub, nil)
 	}
 	return nil
 }

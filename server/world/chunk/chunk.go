@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	MaxSubChunkIndex = (cube.MaxY >> 4) - minSubChunkY
+	maxSubChunkIndex = (cube.MaxY >> 4) - minSubChunkY
 
 	minSubChunkY  = cube.MinY >> 4
-	subChunkCount = MaxSubChunkIndex + 1
+	subChunkCount = maxSubChunkIndex + 1
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -87,7 +87,7 @@ func (chunk *Chunk) SetRuntimeID(x uint8, y int16, z uint8, layer uint8, runtime
 // highest block that completely blocks any light from going through. If none is found, the value returned is
 // 0.
 func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
-	for index := int16(MaxSubChunkIndex); index >= 0; index-- {
+	for index := int16(maxSubChunkIndex); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
 				if FilteringBlocks[sub.storages[0].At(x, uint8(y), z)] == 15 {
@@ -102,7 +102,7 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
 // HighestBlock iterates from the highest non-empty sub chunk downwards to find the Y value of the highest
 // non-air block at an x and z. If no blocks are present in the column, 0 is returned.
 func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
-	for index := int16(MaxSubChunkIndex); index >= 0; index-- {
+	for index := int16(maxSubChunkIndex); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
 				if rid := sub.storages[0].At(x, uint8(y), z); rid != chunk.air {

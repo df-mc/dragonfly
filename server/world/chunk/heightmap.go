@@ -13,7 +13,7 @@ func calculateHeightmap(c *Chunk) heightmap {
 	h := make(heightmap, 256)
 
 	highestY := int16(cube.MinY)
-	for y := int16(0); y <= MaxSubChunkIndex; y++ {
+	for y := int16(0); y <= maxSubChunkIndex; y++ {
 		if c.sub[y] != nil {
 			highestY = subY(y) + 15
 		}
