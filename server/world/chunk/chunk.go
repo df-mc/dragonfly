@@ -75,8 +75,7 @@ func (chunk *Chunk) SetBiome(x uint8, y int16, z uint8, biome uint32) {
 
 // Light returns the light level at a specific position in the chunk.
 func (chunk *Chunk) Light(x uint8, y int16, z uint8) uint8 {
-	ux, uy, uz := x&0xf, uint8(y&0xf), z&0xf
-	sub := chunk.subChunk(y)
+	ux, uy, uz, sub := x&0xf, uint8(y&0xf), z&0xf, chunk.subChunk(y)
 	sky := sub.SkyLight(ux, uy, uz)
 	if sky == 15 {
 		// The sky light was already on the maximum value, so return it without checking block light.

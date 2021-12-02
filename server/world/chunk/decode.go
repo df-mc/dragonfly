@@ -57,42 +57,19 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 		panic("cannot find air runtime ID")
 	}
 
-	var (
-		c    = New(air)
-		buf  = bytes.NewBuffer(data.Biomes)
-		err  error
-		last *PalettedStorage
-	)
-	if buf.Len() != 0 {
-		for i := 0; i < subChunkCount; i++ {
-			b, err := decodePalettedStorage(buf, DiskEncoding, BiomePaletteEncoding)
-			if err != nil {
-				return nil, err
-			}
-			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
-			// inherit whatever palette we decoded last.
-			if i == 0 && b == nil {
-				// This should never happen and there is no way to handle this.
-				return nil, fmt.Errorf("first biome storage pointed to previous one")
-			}
-			if b == nil {
-				// This means this paletted storage had the flag pointing to the previous one. It basically means we should
-				// inherit whatever palette we decoded last.
-				b = last
-			} else {
-				last = b
-			}
-			c.biomes[i] = b
-		}
+	c := New(air)
+
+	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
+	if err != nil {
+		return nil, err
 	}
-	for y, sub := range data.SubChunks {
+	for i, sub := range data.SubChunks {
 		if len(sub) == 0 {
 			// No data for this sub chunk.
 			continue
 		}
-		index := uint8(y)
-		c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c.air, &index, DiskEncoding)
-		if err != nil {
+		index := uint8(i)
+		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c.air, &index, DiskEncoding); err != nil {
 			return nil, err
 		}
 	}
@@ -140,6 +117,34 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 		}
 	}
 	return sub, nil
+}
+
+// decodeBiomes reads the paletted storages holding biomes from buf and stores it into the Chunk passed.
+func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
+	var last *PalettedStorage
+	if buf.Len() != 0 {
+		for i := 0; i < subChunkCount; i++ {
+			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
+			if err != nil {
+				return err
+			}
+			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
+			// inherit whatever palette we decoded last.
+			if i == 0 && b == nil {
+				// This should never happen and there is no way to handle this.
+				return fmt.Errorf("first biome storage pointed to previous one")
+			}
+			if b == nil {
+				// This means this paletted storage had the flag pointing to the previous one. It basically means we should
+				// inherit whatever palette we decoded last.
+				b = last
+			} else {
+				last = b
+			}
+			c.biomes[i] = b
+		}
+	}
+	return nil
 }
 
 // decodePalettedStorage decodes a PalettedStorage from a bytes.Buffer. The Encoding passed is used to read either a
