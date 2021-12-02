@@ -8,23 +8,55 @@ import (
 // FillLight executes the light 'filling' stage, where the chunk is filled with light coming only from the
 // chunk itself, without light crossing chunk borders.
 func FillLight(a *Area) {
+	initialiseLightSlices(c)
 	queue := list.New()
-	insertBlockLightNodes(queue, a)
-	insertSkyLightNodes(queue, a)
+
+	insertBlockLightNodes(queue, c)
 	for queue.Len() != 0 {
-		propagate(queue, a)
+		fillPropagate(queue, c, BlockLight)
+	}
+	insertSkyLightNodes(queue, c)
+	for queue.Len() != 0 {
+		fillPropagate(queue, c, SkyLight)
 	}
 }
 
 // SpreadLight executes the light 'spreading' stage, where the chunk has its light spread into the
 // neighbouring chunks. The neighbouring chunks must have passed the light 'filling' stage before this
 // function is called for a chunk.
-func SpreadLight(a *Area) {
+func SpreadLight(c *Chunk, neighbours []*Chunk) {
 	queue := list.New()
 	insertLightSpreadingNodes(queue, a, BlockLight)
 	insertLightSpreadingNodes(queue, a, SkyLight)
 	for queue.Len() != 0 {
 		propagate(queue, a)
+	}
+}
+
+var (
+	fullLight    = bytes.Repeat([]byte{0xff}, 2048)
+	fullLightPtr = &fullLight[0]
+	noLight      = make([]uint8, 2048)
+	noLightPtr   = &noLight[0]
+)
+
+// initialiseLightSlices initialises the light slices in all SubChunks held by the Chunk.
+func initialiseLightSlices(c *Chunk) {
+	index := len(c.sub) - 1
+	for index >= 0 {
+		if sub := c.sub[index]; sub.Empty() {
+			sub.skyLight = fullLight
+			sub.blockLight = noLight
+			index--
+			continue
+		}
+		// We've hit the topmost empty SubChunk.
+		break
+	}
+	for index >= 0 {
+		c.sub[index].skyLight = noLight
+		c.sub[index].blockLight = noLight
+		index--
 	}
 }
 
@@ -61,7 +93,7 @@ func insertBlockLightNodes(queue *list.List, a *Area) {
 // anyBlockLight checks if there are any blocks in the SubChunk passed that emit light.
 func anyBlockLight(sub *SubChunk) bool {
 	for _, layer := range sub.storages {
-		for _, id := range layer.palette.blockRuntimeIDs {
+		for _, id := range layer.palette.values {
 			if LightBlocks[id] != 0 {
 				return true
 			}
@@ -193,11 +225,20 @@ func propagate(queue *list.List, a *Area) {
 	}
 }
 
+// LightBlocks is a list of block light levels (0-15) indexed by block runtime IDs. The map is used to do a
+// fast lookup of block light.
+var LightBlocks = make([]uint8, 0, 7000)
+
+// FilteringBlocks is a map for checking if a block runtime ID filters light, and if so, how many levels.
+// Light is able to propagate through these blocks, but will have its level reduced.
+var FilteringBlocks = make([]uint8, 0, 7000)
+
 // lightNode is a node pushed to the queue which is used to propagate light.
 type lightNode struct {
 	pos   cube.Pos
 	lt    light
 	level uint8
+	first bool
 }
 
 // node creates a new lightNode using the position, level and light type passed.
@@ -226,7 +267,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	case 0:
 		return 0
 	case 1:
-		id := storages[0].RuntimeID(x, y, z)
+		id := storages[0].At(x, y, z)
 		if id == sub.air {
 			return 0
 		}
@@ -234,12 +275,12 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	case 2:
 		var highest uint8
 
-		id := storages[0].RuntimeID(x, y, z)
+		id := storages[0].At(x, y, z)
 		if id != sub.air {
 			highest = FilteringBlocks[id]
 		}
 
-		id = storages[1].RuntimeID(x, y, z)
+		id = storages[1].At(x, y, z)
 		if id != sub.air {
 			if v := FilteringBlocks[id]; v > highest {
 				highest = v

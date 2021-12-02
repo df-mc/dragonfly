@@ -23,7 +23,9 @@ func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session) error
 	for _, miss := range pk.MissHashes {
 		blob, ok := s.blobs[miss]
 		if !ok {
-			s.log.Debugf("missing blob hash could not be recovered: %v", miss)
+			// This is expected to happen sometimes, for example when we send the same block storage or biomes a lot of
+			// times in a short timeframe. There is no need to log this, it'll just cause unnecessary noise that doesn't
+			// actually aid in terms of information.
 			continue
 		}
 		resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: miss, Payload: blob})

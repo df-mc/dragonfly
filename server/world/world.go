@@ -120,7 +120,7 @@ func (w *World) Block(pos cube.Pos) Block {
 		w.log.Errorf("error getting block: %v", err)
 		return air()
 	}
-	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
 	b, _ := BlockByRuntimeID(rid)
 	if nbtBlocks[rid] {
@@ -142,7 +142,7 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		// Fast way out.
 		return air(), nil
 	}
-	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	b, _ := BlockByRuntimeID(rid)
 
 	if nbtBlocks[rid] {
@@ -167,7 +167,7 @@ func runtimeID(w *World, pos cube.Pos) uint32 {
 	if err != nil {
 		return airRID
 	}
-	rid := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	c.Unlock()
 
 	return rid
@@ -244,7 +244,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		w.log.Errorf("runtime ID of block %+v not found", b)
 		return
 	}
-	c.SetRuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
+	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
 
 	if nbtBlocks[rid] {
 		c.e[pos] = b
@@ -332,8 +332,8 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxY, maxZ := pos[0]+width, pos[1]+height, pos[2]+length
 
-	for chunkX := pos[0] >> 4; chunkX < (maxX>>4)+1; chunkX++ {
-		for chunkZ := pos[2] >> 4; chunkZ < (maxZ>>4)+1; chunkZ++ {
+	for chunkX := pos[0] >> 4; chunkX <= maxX>>4; chunkX++ {
+		for chunkZ := pos[2] >> 4; chunkZ <= maxZ>>4; chunkZ++ {
 			// We approach this on a per-chunk basis, so that we can keep only one chunk in memory at a time
 			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
 			// block updates, but instead send a single chunk update once.
@@ -344,23 +344,18 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				continue
 			}
 			f := func(x, y, z int) Block {
-				actualX, actualZ := chunkX+x, chunkZ+z
+				actualX, actualY, actualZ := pos[0]+x, pos[1]+y, pos[2]+z
 				if actualX>>4 == chunkX && actualZ>>4 == chunkZ {
-					b, _ := w.blockInChunk(c, cube.Pos{actualX, y, actualZ})
+					b, _ := w.blockInChunk(c, cube.Pos{actualX, actualY, actualZ})
 					return b
 				}
-				return w.Block(cube.Pos{actualX, y, actualZ})
+				return w.Block(cube.Pos{actualX, actualY, actualZ})
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
 			for i, sub := range subs {
-				baseY := i << 4
-				if sub == nil {
-					c.SetRuntimeID(0, int16(baseY), 0, 0, airRID)
-					sub = subs[i]
-				}
-
-				if i < pos[1]>>4 {
+				baseY := (i + (cube.MinY >> 4)) << 4
+				if baseY>>4 < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
 					break
@@ -393,15 +388,13 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 									w.log.Errorf("error setting block of structure: runtime ID of block state %+v not found", b)
 									continue
 								}
-								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								if nbtBlocks[rid] {
 									c.e[pos] = b
 								} else {
 									delete(c.e, pos)
 								}
-							} else {
-								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, airRID)
 							}
 							if liq != nil {
 								rid, ok := BlockRuntimeID(liq)
@@ -409,12 +402,12 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 									w.log.Errorf("runtime ID of block state %+v not found", liq)
 									continue
 								}
-								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, rid)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, rid)
 							} else {
 								if len(sub.Layers()) < 2 {
 									continue
 								}
-								sub.SetRuntimeID(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
 							}
 						}
 					}
@@ -445,7 +438,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	}
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
-	id := c.RuntimeID(x, y, z, 0)
+	id := c.Block(x, y, z, 0)
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
@@ -457,7 +450,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 		return liq, true
 	}
 
-	id = c.RuntimeID(x, y, z, 1)
+	id = c.Block(x, y, z, 1)
 	b, ok = BlockByRuntimeID(id)
 	c.Unlock()
 	if !ok {
@@ -511,12 +504,12 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 		return
 	}
 	if w.removeLiquids(c, pos) {
-		c.SetRuntimeID(x, y, z, 0, runtimeID)
+		c.SetBlock(x, y, z, 0, runtimeID)
 		for _, v := range c.v {
 			v.ViewBlockUpdate(pos, b, 0)
 		}
 	} else {
-		c.SetRuntimeID(x, y, z, 1, runtimeID)
+		c.SetBlock(x, y, z, 1, runtimeID)
 		for _, v := range c.v {
 			v.ViewBlockUpdate(pos, b, 1)
 		}
@@ -552,7 +545,7 @@ func (w *World) removeLiquids(c *chunkData, pos cube.Pos) bool {
 // removeLiquidOnLayer removes a liquid block from a specific layer in the chunk passed, returning true if
 // successful.
 func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer uint8) (bool, bool) {
-	id := c.RuntimeID(x, y, z, layer)
+	id := c.Block(x, y, z, layer)
 
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
@@ -560,7 +553,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer u
 		return false, false
 	}
 	if _, ok := b.(Liquid); ok {
-		c.SetRuntimeID(x, y, z, layer, airRID)
+		c.SetBlock(x, y, z, layer, airRID)
 		return true, true
 	}
 	return id == airRID, false
@@ -578,7 +571,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
 		return nil, false
 	}
-	id := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
+	id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
 	c.Unlock()
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
@@ -1390,9 +1383,9 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		for j := uint32(0); j < tickSpeed; j++ {
 			generateNew := true
 			var x, y, z uint8
-			for subY, sub := range subChunks {
-				if sub == nil {
-					// No sub chunk present, so skip it right away.
+			for i, sub := range subChunks {
+				if sub.Empty() {
+					// SubChunk is empty, so skip it right away.
 					continue
 				}
 				layers := sub.Layers()
@@ -1401,26 +1394,25 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					continue
 				}
 				layer := layers[0]
-				p := layer.Palette()
-				if p.Len() == 1 && p.RuntimeID(0) == airRID {
+				if p := layer.Palette(); p.Len() == 1 && p.Value(0) == airRID {
 					// Empty layer present, so skip it right away.
 					continue
 				}
 				if generateNew {
 					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
-
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.RuntimeID(x, y, z)
+				rid := layer.At(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
 				}
 
 				if randomTickBlocks[rid] {
-					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY<<4 + int(y), cz + int(z)}})
+					subY := (i + (cube.MinY >> 4)) << 4
+					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY + int(y), cz + int(z)}})
 					generateNew = true
 					continue
 				}
@@ -1779,11 +1771,14 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 		var err error
 		c, err = w.loadChunk(pos)
 		if err != nil {
+			w.chunkMu.Unlock()
+			w.log.Errorf("%v\n", err)
 			return nil, err
 		}
-
+		chunk.FillLight(c.Chunk)
 		c.Unlock()
 		w.chunkMu.Lock()
+
 		w.calculateLight(c.Chunk, pos)
 	}
 	w.lastChunk, w.lastPos = c, pos
@@ -1791,31 +1786,6 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 
 	c.Lock()
 	return c, nil
-}
-
-// setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
-// position.
-//lint:ignore U1000 This method is explicitly present to be used using compiler directives.
-func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk) {
-	if w == nil {
-		return
-	}
-	w.chunkMu.Lock()
-	defer w.chunkMu.Unlock()
-
-	data, ok := w.chunks[pos]
-	if ok {
-		data.Chunk = c
-	} else {
-		data = newChunkData(c)
-		w.chunks[pos] = data
-	}
-	blockNBT := make([]map[string]interface{}, 0, len(c.BlockNBT()))
-	for pos, e := range c.BlockNBT() {
-		e["x"], e["y"], e["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		blockNBT = append(blockNBT, e)
-	}
-	w.loadIntoBlocks(data, blockNBT)
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
@@ -1834,14 +1804,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		w.chunkMu.Unlock()
 
 		w.generator().GenerateChunk(pos, c)
-		for _, sub := range c.Sub() {
-			if sub == nil {
-				continue
-			}
-			// Creating new sub chunks will create a fully lit sub chunk, but we don't want that here as
-			// light updates aren't happening (yet).
-			sub.ClearLight()
-		}
 		return data, nil
 	}
 	data := newChunkData(c)
@@ -1881,8 +1843,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 // calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
 // neighbours if they have all chunks loaded around it as a result of the one passed.
 func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
-	chunk.FillLight(c)
-
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
 			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
@@ -1939,7 +1899,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interf
 	for _, data := range blockEntityData {
 		pos := blockPosFromNBT(data)
 
-		id := c.RuntimeID(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+		id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 		b, ok := BlockByRuntimeID(id)
 		if !ok {
 			w.log.Errorf("error loading block entity data: could not find block state by runtime ID %v", id)
