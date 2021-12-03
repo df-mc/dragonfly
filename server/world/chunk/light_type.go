@@ -26,7 +26,7 @@ type (
 	blockLight struct{}
 )
 
-func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8   { return sub.SkyLightAt(x, y, z) }
-func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8)   { sub.setSkyLight(x, y, z, v) }
-func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.blockLightAt(x, y, z) }
-func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setBlockLight(x, y, z, v) }
+func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8   { return sub.SkyLight(x, y, z) }
+func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8)   { sub.SetSkyLight(x, y, z, v) }
+func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.BlockLight(x, y, z) }
+func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.SetBlockLight(x, y, z, v) }
