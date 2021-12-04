@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -318,10 +317,9 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 		te.Stop()
 	}()
 	var (
-		r          map[string]map[int]cmd.Runnable
-		enumValues map[string][]string
-		enums      map[string]cmd.Enum
-		ok         bool
+		r                 = s.sendAvailableCommands()
+		enums, enumValues = s.enums()
+		ok                bool
 	)
 	for {
 		select {
