@@ -2133,7 +2133,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
-// close closed the player without disconnecting it. It executes code shared by both the closing and the
+// close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
 	p.handler().HandleQuit()
