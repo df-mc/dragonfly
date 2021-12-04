@@ -2136,6 +2136,11 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if p.Dead() {
+		p.Respawn()
+	}
 	p.handler().HandleQuit()
 
 	p.Handle(NopHandler{})
