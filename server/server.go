@@ -3,9 +3,11 @@ package server
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
 	"os"
@@ -575,10 +577,7 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 // itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
-	for _, it := range world.Items() {
-		name, _ := it.EncodeItem()
-		rid, _, _ := world.ItemRuntimeID(it)
-
+	for name, rid := range itemRuntimeIDs {
 		entries = append(entries, protocol.ItemEntry{
 			Name:      name,
 			RuntimeID: int16(rid),
@@ -605,4 +604,15 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 
 		server.resources = append(server.resources, r)
 	}
+}
+
+var (
+	//go:embed world/item_runtime_ids.nbt
+	itemRuntimeIDData []byte
+	itemRuntimeIDs    = map[string]int32{}
+)
+
+// init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
+func init() {
+	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }
