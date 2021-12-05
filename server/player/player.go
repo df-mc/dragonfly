@@ -295,7 +295,7 @@ func (p *Player) RemoveScoreboard() {
 // player's screen.
 // The boss bar may be removed by calling Player.RemoveBossBar().
 func (p *Player) SendBossBar(bar bossbar.BossBar) {
-	p.session().SendBossBar(bar.Text(), bar.HealthPercentage())
+	p.session().SendBossBar(bar.Text(), bar.Colour().Uint8(), bar.HealthPercentage())
 }
 
 // RemoveBossBar removes any boss bar currently active on the player's screen. If no boss bar is currently
@@ -1523,14 +1523,15 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleBlockBreak(ctx, pos)
+	held, left := p.HeldItems()
+	drops := p.drops(held, b)
+	p.handler().HandleBlockBreak(ctx, pos, &drops)
 
 	ctx.Continue(func() {
 		p.SwingArm()
 		w.BreakBlock(pos)
-		held, left := p.HeldItems()
 
-		for _, drop := range p.drops(held, b) {
+		for _, drop := range drops {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
 			itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 			w.AddEntity(itemEntity)
@@ -2133,9 +2134,14 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
-// close closed the player without disconnecting it. It executes code shared by both the closing and the
+// close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if p.Dead() {
+		p.Respawn()
+	}
 	p.handler().HandleQuit()
 
 	p.Handle(NopHandler{})
