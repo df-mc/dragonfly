@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
@@ -735,9 +736,13 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 // PlaySound plays a sound at a specific position in the world. Viewers of that position will be able to hear
 // the sound if they're close enough.
 func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
-	for _, viewer := range w.Viewers(pos) {
-		viewer.ViewSound(pos, s)
-	}
+	ctx := event.C()
+	w.Handler().HandleSound(ctx, s, pos)
+	ctx.Continue(func() {
+		for _, viewer := range w.Viewers(pos) {
+			viewer.ViewSound(pos, s)
+		}
+	})
 }
 
 var (
