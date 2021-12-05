@@ -145,17 +145,22 @@ func (s *SplashPotion) Tick(current int64) {
 					splashEntity.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), distRatedDuration))
 				}
 			}
-		} else if blockResult, ok := result.(trace.BlockResult); ok && s.t.Equals(potion.Water()) {
-			blockPos := blockResult.BlockPosition().Side(blockResult.Face())
-			if w.Block(blockPos) == fire() {
-				w.SetBlock(blockPos, air())
-			}
-
-			for _, f := range cube.HorizontalFaces() {
-				horizontalPos := blockPos.Side(f)
-				if w.Block(horizontalPos) == fire() {
-					w.SetBlock(horizontalPos, air())
+		} else if s.t.Equals(potion.Water()) {
+			switch blockResult := result.(type) {
+			case trace.BlockResult:
+				blockPos := blockResult.BlockPosition().Side(blockResult.Face())
+				if w.Block(blockPos) == fire() {
+					w.SetBlock(blockPos, air())
 				}
+
+				for _, f := range cube.HorizontalFaces() {
+					horizontalPos := blockPos.Side(f)
+					if w.Block(horizontalPos) == fire() {
+						w.SetBlock(horizontalPos, air())
+					}
+				}
+			case trace.EntityResult:
+				// TODO: Damage endermen, blazes, striders and snow golems when implemented.
 			}
 		}
 
