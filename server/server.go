@@ -150,7 +150,7 @@ func (server *Server) Run() error {
 		panic("server already running")
 	}
 
-	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
+	server.log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
 
@@ -169,7 +169,7 @@ func (server *Server) Start() error {
 		panic("server already running")
 	}
 
-	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
+	server.log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
 
