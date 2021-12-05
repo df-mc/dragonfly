@@ -138,11 +138,11 @@ func (s *SplashPotion) Tick(current int64) {
 						continue
 					}
 
-					distRatedDuration := time.Duration(float64(eff.Duration()) * 0.75 * distFactor)
-					if distRatedDuration < time.Second {
+					dur := time.Duration(float64(eff.Duration()) * 0.75 * distFactor)
+					if dur < time.Second {
 						continue
 					}
-					splashEntity.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), distRatedDuration))
+					splashEntity.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
 				}
 			}
 		} else if s.t.Equals(potion.Water()) {
