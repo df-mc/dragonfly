@@ -122,7 +122,7 @@ func (s *SplashPotion) Tick(current int64) {
 					continue
 				}
 
-				dist := world.Distance(EyePosition(splashEntity), m.pos)
+				dist := world.Distance(splashEntity.Position(), m.pos)
 				if dist > 4 {
 					continue
 				}
