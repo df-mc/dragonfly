@@ -12,6 +12,11 @@ func C() *Context {
 	return &Context{}
 }
 
+// Cancelled returns whether the context has been cancelled.
+func (ctx *Context) Cancelled() bool {
+	return ctx.cancel
+}
+
 // Cancel cancels the context.
 func (ctx *Context) Cancel() {
 	ctx.cancel = true

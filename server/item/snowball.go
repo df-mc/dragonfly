@@ -22,7 +22,9 @@ func (s Snowball) Use(w *world.World, user User, ctx *UseContext) bool {
 		return false
 	}
 
-	p, ok := snow.(projectile)
+	p, ok := snow.(interface {
+		New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+	})
 	if !ok {
 		return false
 	}
