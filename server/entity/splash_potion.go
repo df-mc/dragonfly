@@ -64,6 +64,13 @@ func (s *SplashPotion) AABB() physics.AABB {
 	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
 }
 
+// Type ...
+func (s *SplashPotion) Type() potion.Potion {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.t
+}
+
 // Rotation ...
 func (s *SplashPotion) Rotation() (float64, float64) {
 	s.mu.Lock()
