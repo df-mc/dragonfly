@@ -1523,14 +1523,15 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleBlockBreak(ctx, pos)
+	held, left := p.HeldItems()
+	drops := p.drops(held, b)
+	p.handler().HandleBlockBreak(ctx, pos, &drops)
 
 	ctx.Continue(func() {
 		p.SwingArm()
 		w.BreakBlock(pos)
-		held, left := p.HeldItems()
 
-		for _, drop := range p.drops(held, b) {
+		for _, drop := range drops {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
 			itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 			w.AddEntity(itemEntity)
