@@ -77,8 +77,8 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	coolDownMu sync.Mutex
-	coolDowns  map[itemHash]time.Time
+	cooldownMu sync.Mutex
+	cooldowns  map[itemHash]time.Time
 
 	speed    atomic.Float64
 	health   *entity.HealthManager
@@ -122,7 +122,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		heldSlot:  atomic.NewUint32(0),
 		locale:    language.BritishEnglish,
 		scale:     *atomic.NewFloat64(1),
-		coolDowns: make(map[itemHash]time.Time),
+		cooldowns: make(map[itemHash]time.Time),
 	}
 	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
@@ -1100,29 +1100,29 @@ func hashFromItem(item world.Item) itemHash {
 	}
 }
 
-// HasCoolDown returns true if the item passed has an active cool down.
-func (p *Player) HasCoolDown(item world.Item) bool {
-	p.coolDownMu.Lock()
-	defer p.coolDownMu.Unlock()
+// HasCooldown returns true if the item passed has an active cooldown.
+func (p *Player) HasCooldown(item world.Item) bool {
+	p.cooldownMu.Lock()
+	defer p.cooldownMu.Unlock()
 
 	hash := hashFromItem(item)
-	otherTime, ok := p.coolDowns[hash]
+	otherTime, ok := p.cooldowns[hash]
 	if !ok {
 		return false
 	}
 	if time.Now().After(otherTime) {
-		delete(p.coolDowns, hash)
+		delete(p.cooldowns, hash)
 		return false
 	}
 	return true
 }
 
-// SetCoolDown sets a cool down for an item.
-func (p *Player) SetCoolDown(item world.Item, coolDown time.Duration) {
-	p.coolDownMu.Lock()
-	defer p.coolDownMu.Unlock()
+// SetCooldown sets a cooldown for an item.
+func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
+	p.cooldownMu.Lock()
+	defer p.cooldownMu.Unlock()
 
-	p.coolDowns[hashFromItem(item)] = time.Now().Add(coolDown)
+	p.cooldowns[hashFromItem(item)] = time.Now().Add(cooldown)
 }
 
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
@@ -1139,12 +1139,12 @@ func (p *Player) UseItem() {
 	ctx.Continue(func() {
 		it := i.Item()
 		w := p.World()
-		if p.HasCoolDown(it) {
+		if p.HasCooldown(it) {
 			return
 		}
 
-		if coolDown, ok := it.(item.CooledDown); ok {
-			p.SetCoolDown(it, coolDown.CoolDown())
+		if coolDown, ok := it.(item.CoolDown); ok {
+			p.SetCooldown(it, coolDown.CoolDown())
 		}
 
 		switch usable := it.(type) {
@@ -1877,13 +1877,13 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	p.coolDownMu.Lock()
-	for it, ti := range p.coolDowns {
+	p.cooldownMu.Lock()
+	for it, ti := range p.cooldowns {
 		if time.Now().After(ti) {
-			delete(p.coolDowns, it)
+			delete(p.cooldowns, it)
 		}
 	}
-	p.coolDownMu.Unlock()
+	p.cooldownMu.Unlock()
 
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()

@@ -108,9 +108,9 @@ type Weapon interface {
 	AttackDamage() float64
 }
 
-// CooledDown represents an item that has a cool down.
-type CooledDown interface {
-	// CoolDown is the duration of the cool down.
+// CoolDown represents an item that has a cooldown.
+type CoolDown interface {
+	// CoolDown is the duration of the cooldown.
 	CoolDown() time.Duration
 }
 
