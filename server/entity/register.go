@@ -9,5 +9,6 @@ func init() {
 	world.RegisterEntity(&FallingBlock{})
 	world.RegisterEntity(&Item{})
 	world.RegisterEntity(&Snowball{})
+	world.RegisterEntity(&SplashPotion{})
 	world.RegisterEntity(&Lightning{})
 }

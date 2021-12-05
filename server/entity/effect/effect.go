@@ -21,6 +21,13 @@ type LastingType interface {
 	End(e world.Entity, lvl int)
 }
 
+// PotentType represents an effect type which can have its potency changed.
+type PotentType interface {
+	Type
+	// WithPotency updates the potency of the type with the one given and returns it.
+	WithPotency(potency float64) Type
+}
+
 // Type is an effect implementation that can be applied to an entity.
 type Type interface {
 	// Apply applies the effect to an entity. This method applies the effect to an entity once for instant effects, such

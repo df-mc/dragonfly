@@ -24,6 +24,9 @@ type BlockBreaking struct {
 	sound
 }
 
+// GlassBreak is a sound played when a glass block or item is broken.
+type GlassBreak struct{ sound }
+
 // Fizz is a sound sent when a lava block and a water block interact with each other in a way that one of
 // them turns into a solid block.
 type Fizz struct{ sound }
