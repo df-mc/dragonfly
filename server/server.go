@@ -143,26 +143,6 @@ func (server *Server) World() *world.World {
 	return server.world
 }
 
-// Run runs the server and blocks until it is closed using a call to Close(). When called, the server will
-// accept incoming connections. Run will block the current goroutine until the server is stopped. To start
-// the server on a different goroutine, use (*Server).Start() instead.
-// After a call to Run, calls to Server.Accept() may be made to accept players into the server.
-func (server *Server) Run() error {
-	if !server.started.CAS(false, true) {
-		panic("server already running")
-	}
-
-	server.log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
-	server.loadWorld()
-	server.registerTargetFunc()
-
-	if err := server.startListening(); err != nil {
-		return err
-	}
-	server.wait()
-	return nil
-}
-
 // Start runs the server but does not block, unlike Run, but instead accepts connections on a different
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // Once started, players may be accepted using Server.Accept().
