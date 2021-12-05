@@ -158,7 +158,7 @@ func (s *SplashPotion) Tick(current int64) {
 					}
 				}
 			case trace.EntityResult:
-				// TODO: Damage endermen, blazes, striders and snow golems when implemented.
+				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
 			}
 		}
 
