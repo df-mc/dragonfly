@@ -122,27 +122,27 @@ func (s *SplashPotion) Tick(current int64) {
 					continue
 				}
 
-				distance := world.Distance(EyePosition(splashEntity), m.pos)
-				if distance > 4 {
+				dist := world.Distance(EyePosition(splashEntity), m.pos)
+				if dist > 4 {
 					continue
 				}
 
-				distanceMultiplier := 1 - distance/4
+				distFactor := 1 - dist/4
 				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == otherEntity {
-					distanceMultiplier = 1
+					distFactor = 1
 				}
 
 				for _, eff := range effects {
 					if potentEff, ok := eff.Type().(effect.PotentType); ok {
-						splashEntity.AddEffect(effect.NewInstant(potentEff.WithPotency(distanceMultiplier), eff.Level()))
+						splashEntity.AddEffect(effect.NewInstant(potentEff.WithPotency(distFactor), eff.Level()))
 						continue
 					}
 
-					distanceAccountedDuration := time.Duration(float64(eff.Duration().Milliseconds())*0.75*distanceMultiplier) * time.Millisecond
-					if distanceAccountedDuration < time.Second {
+					distRatedDuration := time.Duration(float64(eff.Duration().Milliseconds())*0.75*distFactor) * time.Millisecond
+					if distRatedDuration < time.Second {
 						continue
 					}
-					splashEntity.AddEffect(eff.WithDuration(distanceAccountedDuration))
+					splashEntity.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), distRatedDuration))
 				}
 			}
 		} else if blockResult, ok := result.(trace.BlockResult); ok && s.t.Equals(potion.Water()) {

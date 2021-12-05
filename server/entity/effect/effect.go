@@ -81,12 +81,6 @@ func (e Effect) Level() int {
 	return e.lvl
 }
 
-// WithDuration returns a new effect with the given duration.
-func (e Effect) WithDuration(d time.Duration) Effect {
-	e.d = d
-	return e
-}
-
 // Duration returns the leftover duration of the Effect. The duration returned is always 0 if NewInstant was used to
 // create the effect.
 func (e Effect) Duration() time.Duration {
