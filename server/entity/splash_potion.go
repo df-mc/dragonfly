@@ -102,11 +102,9 @@ func (s *SplashPotion) Tick(current int64) {
 		aabb := s.AABB().Translate(m.pos)
 
 		effects := s.t.Effects()
-		hasEffects := len(effects) > 0
-
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
 
-		if hasEffects {
+		if len(effects) > 0 {
 			colour, _ = effect.ResultingColour(effects)
 
 			ignore := func(entity world.Entity) bool {
