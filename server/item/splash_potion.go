@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // SplashPotion is an item that grants effects when thrown.
@@ -24,18 +25,17 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 		return false
 	}
 
-	p, ok := splash.(projectile)
+	p, ok := splash.(interface {
+		New(pos, vel mgl64.Vec3, yaw, pitch float64, t potion.Potion) world.Entity
+	})
 	if !ok {
 		return false
 	}
 
 	yaw, pitch := user.Rotation()
-	e := p.New(eyePosition(user), directionVector(user).Mul(0.5), yaw, pitch)
+	e := p.New(eyePosition(user), directionVector(user).Mul(0.5), yaw, pitch, s.Type)
 	if o, ok := e.(owned); ok {
 		o.Own(user)
-	}
-	if pot, ok := e.(splashPotion); ok {
-		pot.SetType(s.Type)
 	}
 
 	ctx.SubtractFromCount(1)
@@ -50,12 +50,4 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 // EncodeItem ...
 func (s SplashPotion) EncodeItem() (name string, meta int16) {
 	return "minecraft:splash_potion", int16(s.Type.Uint8())
-}
-
-// splashPotion represents an entity instance of a SplashPotion.
-type splashPotion interface {
-	// SetType sets the type of the splash potion.
-	SetType(t potion.Potion)
-	// Type returns the type of the splash potion.
-	Type() potion.Potion
 }
