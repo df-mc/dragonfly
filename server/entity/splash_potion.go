@@ -138,7 +138,7 @@ func (s *SplashPotion) Tick(current int64) {
 						continue
 					}
 
-					distRatedDuration := time.Duration(float64(eff.Duration()*time.Millisecond) * 0.75 * distFactor)
+					distRatedDuration := time.Duration(float64(eff.Duration()) * 0.75 * distFactor)
 					if distRatedDuration < time.Second {
 						continue
 					}
