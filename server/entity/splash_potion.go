@@ -151,8 +151,8 @@ func (s *SplashPotion) Tick(current int64) {
 				}
 
 				for _, eff := range effects {
-					if _, ok := eff.Type().(effect.LastingType); !ok {
-						splashEntity.AddEffect(eff.WithPotency(distanceMultiplier))
+					if potentEff, ok := eff.Type().(effect.PotentType); ok {
+						splashEntity.AddEffect(effect.NewInstant(potentEff.WithPotency(distanceMultiplier), eff.Level()))
 						continue
 					}
 

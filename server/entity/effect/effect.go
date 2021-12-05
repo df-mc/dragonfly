@@ -21,6 +21,13 @@ type LastingType interface {
 	End(e world.Entity, lvl int)
 }
 
+// PotentType represents an effect type which can have its potency changed.
+type PotentType interface {
+	Type
+	// WithPotency updates the potency of the type with the one given and returns it.
+	WithPotency(potency float64) Type
+}
+
 // Type is an effect implementation that can be applied to an entity.
 type Type interface {
 	// Apply applies the effect to an entity. This method applies the effect to an entity once for instant effects, such
@@ -55,21 +62,6 @@ func New(t LastingType, lvl int, d time.Duration) Effect {
 // to an entity, the time.Duration passed will be ticked down by the entity until it reaches a duration of 0.
 func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
 	return Effect{t: t, lvl: lvl, d: d, ambient: true}
-}
-
-// potentType represents an effect type which can have its potency changed.
-type potentType interface {
-	Type
-	// WithPotency updates the potency of the type with the one given and returns it.
-	WithPotency(potency float64) Type
-}
-
-// WithPotency returns a new effect with the given potency, if the effect type allows for it.
-func (e Effect) WithPotency(potency float64) Effect {
-	if t, ok := e.t.(potentType); ok {
-		e.t = t.WithPotency(potency)
-	}
-	return e
 }
 
 // WithoutParticles returns the same Effect with particles disabled. Adding the effect to players will not display the
