@@ -78,13 +78,6 @@ func (s *SplashPotion) Type() potion.Potion {
 	return s.t
 }
 
-// splashable represents an entity that can be splashed by a potion.
-type splashable interface {
-	Living
-	// AddEffect adds a specific effect to the entity that implements this interface.
-	AddEffect(e effect.Effect)
-}
-
 // Tick ...
 func (s *SplashPotion) Tick(current int64) {
 	if s.closeNextTick {
@@ -117,12 +110,12 @@ func (s *SplashPotion) Tick(current int64) {
 			colour, _ = effect.ResultingColour(effects)
 
 			ignore := func(entity world.Entity) bool {
-				_, canSplash := entity.(splashable)
+				_, canSplash := entity.(Living)
 				return !canSplash || entity == s
 			}
 
 			for _, otherEntity := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
-				splashEntity := otherEntity.(splashable)
+				splashEntity := otherEntity.(Living)
 				if !splashEntity.AABB().Translate(splashEntity.Position()).IntersectsWith(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 					continue
 				}
