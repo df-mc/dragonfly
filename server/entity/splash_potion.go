@@ -74,8 +74,6 @@ func (s *SplashPotion) Rotation() (float64, float64) {
 // splashable represents an entity that can be splashed by a potion.
 type splashable interface {
 	Living
-	Eyed
-
 	// AddEffect adds a specific effect to the entity that implements this interface.
 	AddEffect(e effect.Effect)
 }
