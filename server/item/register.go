@@ -29,6 +29,9 @@ func init() {
 	world.RegisterItem(Shears{})
 
 	world.RegisterItem(Snowball{})
+	for _, pot := range potion.All() {
+		world.RegisterItem(SplashPotion{Type: pot})
+	}
 
 	world.RegisterItem(Diamond{})
 	world.RegisterItem(GlowstoneDust{})

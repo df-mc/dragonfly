@@ -15,6 +15,12 @@ type InstantHealth struct {
 	Potency float64
 }
 
+// WithPotency ...
+func (i InstantHealth) WithPotency(potency float64) Type {
+	i.Potency = potency
+	return i
+}
+
 // Apply instantly heals the world.Entity passed for a bit of health, depending on the effect level and
 // potency.
 func (i InstantHealth) Apply(e world.Entity, lvl int, _ time.Duration) {

@@ -15,6 +15,12 @@ type InstantDamage struct {
 	Potency float64
 }
 
+// WithPotency ...
+func (i InstantDamage) WithPotency(potency float64) Type {
+	i.Potency = potency
+	return i
+}
+
 // Apply ...
 func (i InstantDamage) Apply(e world.Entity, lvl int, _ time.Duration) {
 	if i.Potency == 0 {
