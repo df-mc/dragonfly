@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
@@ -486,7 +488,12 @@ func (server *Server) loadWorld() {
 		server.log.Fatalf("error loading world: %v", err)
 	}
 	server.world.Provider(p)
-	server.world.Generator(generator.Flat{})
+	server.world.Generator(generator.Flat{Layers: []world.Block{
+		block.StainedGlass{Colour: item.ColourCyan()},
+		block.Dirt{},
+		block.Dirt{},
+		block.Bedrock{},
+	}})
 
 	server.log.Debugf("Loaded world '%v'.", server.world.Name())
 }
