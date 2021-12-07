@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
@@ -22,7 +21,6 @@ import (
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 
-	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
@@ -489,7 +487,7 @@ func (server *Server) loadWorld() {
 	}
 	server.world.Provider(p)
 	server.world.Generator(generator.Flat{Layers: []world.Block{
-		block.StainedGlass{Colour: item.ColourCyan()},
+		block.Grass{},
 		block.Dirt{},
 		block.Dirt{},
 		block.Bedrock{},
