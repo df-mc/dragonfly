@@ -1319,7 +1319,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if living.AttackImmune() {
 			return
 		}
-		p.StopSprinting()
 
 		damageDealt := i.AttackDamage()
 		for _, e := range p.Effects() {
