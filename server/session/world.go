@@ -193,6 +193,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityRuntimeID: runtimeID,
 			Item:            instanceFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
+			Velocity:        vec64To32(v.Velocity()),
 		})
 		return
 	case *entity.FallingBlock:
@@ -201,12 +202,19 @@ func (s *Session) ViewEntity(e world.Entity) {
 		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
 		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
+
+	var vel mgl64.Vec3
+	if v, ok := e.(interface{ Velocity() mgl64.Vec3 }); ok {
+		vel = v.Velocity()
+	}
+
 	s.writePacket(&packet.AddActor{
 		EntityUniqueID:  int64(runtimeID),
 		EntityRuntimeID: runtimeID,
 		EntityType:      id,
 		EntityMetadata:  metadata,
 		Position:        vec64To32(e.Position()),
+		Velocity:        vec64To32(vel),
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
