@@ -192,14 +192,6 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	})
 }
 
-// SendVelocity sends the velocity of the player to the client.
-func (s *Session) SendVelocity(velocity mgl64.Vec3) {
-	s.writePacket(&packet.SetActorMotion{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Velocity:        vec64To32(velocity),
-	})
-}
-
 // SendForm sends a form to the client of the connection. The Submit method of the form is called when the
 // client submits the form.
 func (s *Session) SendForm(f form.Form) {

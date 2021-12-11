@@ -1766,9 +1766,12 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // SetVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
-	s := p.session()
-	if s.SendVelocity(velocity); s == session.Nop {
+	if p.session() == session.Nop {
 		p.vel.Store(velocity)
+		return
+	}
+	for _, v := range p.viewers() {
+		v.ViewEntityVelocity(p, velocity)
 	}
 }
 
