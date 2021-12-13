@@ -3,6 +3,7 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 	"time"
 )
 
@@ -32,4 +33,9 @@ func (i InstantHealth) Apply(e world.Entity, lvl int, _ time.Duration) {
 	if l, ok := e.(living); ok {
 		l.Heal(float64(base)*i.Potency, healing.SourceInstantHealthEffect{})
 	}
+}
+
+// RGBA ...
+func (InstantHealth) RGBA() color.RGBA {
+	return color.RGBA{R: 0xf8, G: 0x24, B: 0x23, A: 0xff}
 }

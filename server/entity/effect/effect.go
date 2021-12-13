@@ -12,9 +12,6 @@ import (
 // with the LastingType.
 type LastingType interface {
 	Type
-	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
-	// together to form a new colour.
-	RGBA() color.RGBA
 	// Start is called for lasting effects when they are initially added to an entity.
 	Start(e world.Entity, lvl int)
 	// End is called for lasting effects when they are removed from an entity.
@@ -30,6 +27,9 @@ type PotentType interface {
 
 // Type is an effect implementation that can be applied to an entity.
 type Type interface {
+	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
+	// together to form a new colour.
+	RGBA() color.RGBA
 	// Apply applies the effect to an entity. This method applies the effect to an entity once for instant effects, such
 	// as healing the world.Entity for instant health.
 	// Apply always has a duration of 0 passed to it for instant effect implementations. For lasting effects that
@@ -131,16 +131,14 @@ func ResultingColour(effects []Effect) (color.RGBA, bool) {
 			// after all.
 			continue
 		}
-		if t, ok := e.Type().(LastingType); ok {
-			c := t.RGBA()
-			r += int(c.R)
-			g += int(c.G)
-			b += int(c.B)
-			a += int(c.A)
-			l++
-			if !e.Ambient() {
-				ambient = false
-			}
+		c := e.Type().RGBA()
+		r += int(c.R)
+		g += int(c.G)
+		b += int(c.B)
+		a += int(c.A)
+		l++
+		if !e.Ambient() {
+			ambient = false
 		}
 	}
 	if l == 0 {

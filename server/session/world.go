@@ -193,6 +193,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityRuntimeID: runtimeID,
 			Item:            instanceFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
+			Velocity:        vec64To32(v.Velocity()),
 		})
 		return
 	case *entity.FallingBlock:
@@ -201,12 +202,19 @@ func (s *Session) ViewEntity(e world.Entity) {
 		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
 		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
+
+	var vel mgl64.Vec3
+	if v, ok := e.(interface{ Velocity() mgl64.Vec3 }); ok {
+		vel = v.Velocity()
+	}
+
 	s.writePacket(&packet.AddActor{
 		EntityUniqueID:  int64(runtimeID),
 		EntityRuntimeID: runtimeID,
 		EntityType:      id,
 		EntityMetadata:  metadata,
 		Position:        vec64To32(e.Position()),
+		Velocity:        vec64To32(vel),
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
@@ -434,6 +442,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
+	case particle.EndermanTeleportParticle:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleEndermanTeleport,
+			Position:  vec64To32(pos),
+		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleEvaporateWater,
@@ -469,6 +482,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundDoorCrash,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
 	case sound.Thunder:
@@ -478,11 +492,19 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundClick,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.Pop:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundPop,
 			Position:  vec64To32(pos),
 		})
+		return
+	case sound.EndermanTeleport:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundEndermanTeleport,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
