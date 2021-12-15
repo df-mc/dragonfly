@@ -185,36 +185,29 @@ func (a *Arrow) Own(owner world.Entity) {
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
 func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
-	pickupValue := nbtconv.MapByte(data, "Pickup")
 	return a.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
 		float64(nbtconv.MapFloat32(data, "Yaw")),
 		false, // Vanilla doesn't save this value, so we don't either.
-		pickupValue > 0,
-		pickupValue == 2,
+		nbtconv.MapByte(data, "IsGlobal") == 1,
+		nbtconv.MapByte(data, "IsCreative") == 1,
 		float64(nbtconv.MapFloat32(data, "Damage")),
 	).(*Arrow)
 }
 
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
 func (a *Arrow) EncodeNBT() map[string]interface{} {
-	var pickupValue byte
-	if a.creativePickup {
-		pickupValue = 2
-	} else if a.canPickup {
-		pickupValue = 1
-	}
-
 	yaw, pitch := a.Rotation()
 	return map[string]interface{}{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":    yaw,
-		"Pitch":  pitch,
-		"Motion": nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage": a.baseDamage,
-		"Pickup": pickupValue,
+		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":        yaw,
+		"Pitch":      pitch,
+		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"Damage":     a.baseDamage,
+		"IsGlobal":   a.canPickup,
+		"IsCreative": a.creativePickup,
 	}
 }
 
@@ -254,4 +247,12 @@ func (a *Arrow) damage() float64 {
 		return base + float64(rand.Intn(int(base/2+1)))
 	}
 	return base
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }
