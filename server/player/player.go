@@ -1149,6 +1149,15 @@ func (p *Player) UseItem() {
 
 		switch usable := it.(type) {
 		case item.Releasable:
+			if !p.GameMode().CreativeInventory() {
+				inv := p.Inventory()
+				for _, requirement := range usable.Requirements() {
+					if _, ok := inv.First(requirement); !ok {
+						return
+					}
+				}
+			}
+
 			p.usingSince.Store(time.Now().UnixNano())
 			p.usingItem.Store(true)
 		case item.Usable:

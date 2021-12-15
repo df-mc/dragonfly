@@ -25,7 +25,7 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 }
 
 // Release ...
-func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
+func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	if !releaser.GameMode().Visible() {
 		return
 	}
@@ -75,6 +75,11 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 
 	releaser.PlaySound(sound.BowShoot{})
 	releaser.World().AddEntity(e)
+}
+
+// Requirements returns the required items to release this item.
+func (Bow) Requirements() []Stack {
+	return []Stack{NewStack(Arrow{}, 1)}
 }
 
 // EncodeItem ...
