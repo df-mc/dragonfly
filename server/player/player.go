@@ -1198,8 +1198,6 @@ func (p *Player) UseItem() {
 // the item started being used.
 func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
-		p.updateState()
-
 		i, _ := p.HeldItems()
 		if releasable, ok := i.Item().(item.Releasable); ok {
 			ctx := &item.UseContext{Require: func(stack item.Stack) bool {
@@ -1208,6 +1206,7 @@ func (p *Player) ReleaseItem() {
 			}}
 
 			releasable.Release(p, p.useDuration(), ctx)
+			p.updateState()
 			p.handleUseContext(ctx)
 		}
 	}
