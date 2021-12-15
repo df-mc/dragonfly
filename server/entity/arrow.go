@@ -191,8 +191,8 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		float64(nbtconv.MapFloat32(data, "Pitch")),
 		float64(nbtconv.MapFloat32(data, "Yaw")),
 		false, // Vanilla doesn't save this value, so we don't either.
-		nbtconv.MapByte(data, "IsGlobal") == 1,
-		nbtconv.MapByte(data, "IsCreative") == 1,
+		nbtconv.MapByte(data, "player") == 1,
+		nbtconv.MapByte(data, "isCreative") == 1,
 		float64(nbtconv.MapFloat32(data, "Damage")),
 	).(*Arrow)
 }
@@ -206,8 +206,8 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Pitch":      pitch,
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":     a.baseDamage,
-		"IsGlobal":   boolByte(a.canPickup),
-		"IsCreative": boolByte(a.creativePickup),
+		"player":     boolByte(a.canPickup),
+		"isCreative": boolByte(a.creativePickup),
 	}
 }
 
