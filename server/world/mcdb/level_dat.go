@@ -117,4 +117,7 @@ type data struct {
 	Experiments                    map[string]interface{} `nbt:"experiments"`
 	FreezeDamage                   uint8                  `nbt:"freezedamage"`
 	WorldPolicies                  map[string]interface{} `nbt:"world_policies"`
+	WorldVersion                   int32                  `nbt:"WorldVersion"`
+	RespawnBlocksExplode           bool                   `nbt:"respawnblocksexplode"`
+	ShowBorderEffect               bool                   `nbt:"showbordereffect"`
 }

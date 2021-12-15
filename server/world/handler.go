@@ -3,6 +3,7 @@ package world
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Handler handles events that are called by a world. Implementations of Handler may be used to listen to
@@ -15,6 +16,9 @@ type Handler interface {
 	// liquidHardened, and the liquid that caused it to harden, otherLiquid, are passed. The block created
 	// as a result is also passed.
 	HandleLiquidHarden(ctx *event.Context, hardenedPos cube.Pos, liquidHardened, otherLiquid, newBlock Block)
+	// HandleSound handles a Sound being played in the World at a specific position. ctx.Cancel() may be called
+	// to stop the Sound from playing to viewers of the position.
+	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -30,3 +34,6 @@ func (NopHandler) HandleLiquidFlow(*event.Context, cube.Pos, cube.Pos, Block, Bl
 
 // HandleLiquidHarden ...
 func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Block) {}
+
+// HandleSound ...
+func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}

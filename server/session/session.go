@@ -2,10 +2,10 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -102,8 +102,8 @@ type Conn interface {
 	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
 	// packet.
 	WritePacket(pk packet.Packet) error
-	// StartGame starts the game for the Conn with a timeout.
-	StartGame(data minecraft.GameData) error
+	// StartGameContext starts the game for the Conn with a context to cancel it.
+	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -317,10 +317,9 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 		te.Stop()
 	}()
 	var (
-		r          map[string]map[int]cmd.Runnable
-		enumValues map[string][]string
-		enums      map[string]cmd.Enum
-		ok         bool
+		r                 = s.sendAvailableCommands()
+		enums, enumValues = s.enums()
+		ok                bool
 	)
 	for {
 		select {

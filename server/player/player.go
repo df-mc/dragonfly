@@ -77,6 +77,9 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
+	cooldownMu sync.Mutex
+	cooldowns  map[itemHash]time.Time
+
 	speed    atomic.Float64
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
@@ -104,21 +107,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:     uuid.New(),
-		offHand:  inventory.New(1, p.broadcastItems),
-		armour:   inventory.NewArmour(p.broadcastArmour),
-		hunger:   newHungerManager(),
-		health:   entity.NewHealthManager(),
-		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeSurvival,
-		h:        NopHandler{},
-		name:     name,
-		skin:     skin,
-		speed:    *atomic.NewFloat64(0.1),
-		nameTag:  *atomic.NewString(name),
-		heldSlot: atomic.NewUint32(0),
-		locale:   language.BritishEnglish,
-		scale:    *atomic.NewFloat64(1),
+		uuid:      uuid.New(),
+		offHand:   inventory.New(1, p.broadcastItems),
+		armour:    inventory.NewArmour(p.broadcastArmour),
+		hunger:    newHungerManager(),
+		health:    entity.NewHealthManager(),
+		effects:   entity.NewEffectManager(),
+		gameMode:  world.GameModeSurvival,
+		h:         NopHandler{},
+		name:      name,
+		skin:      skin,
+		speed:     *atomic.NewFloat64(0.1),
+		nameTag:   *atomic.NewString(name),
+		heldSlot:  atomic.NewUint32(0),
+		locale:    language.BritishEnglish,
+		scale:     *atomic.NewFloat64(1),
+		cooldowns: make(map[itemHash]time.Time),
 	}
 	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
@@ -295,7 +299,7 @@ func (p *Player) RemoveScoreboard() {
 // player's screen.
 // The boss bar may be removed by calling Player.RemoveBossBar().
 func (p *Player) SendBossBar(bar bossbar.BossBar) {
-	p.session().SendBossBar(bar.Text(), bar.HealthPercentage())
+	p.session().SendBossBar(bar.Text(), bar.Colour().Uint8(), bar.HealthPercentage())
 }
 
 // RemoveBossBar removes any boss bar currently active on the player's screen. If no boss bar is currently
@@ -1079,6 +1083,48 @@ func (p *Player) GameMode() world.GameMode {
 	return mode
 }
 
+// itemHash is used as a hash for a world.Item.
+type itemHash struct {
+	// Name is the name of the item.
+	Name string
+	// Meta is the item's metadata value.
+	Meta int16
+}
+
+// hashFromItem returns an item hash from an item.
+func hashFromItem(item world.Item) itemHash {
+	name, meta := item.EncodeItem()
+	return itemHash{
+		Name: name,
+		Meta: meta,
+	}
+}
+
+// HasCooldown returns true if the item passed has an active cooldown.
+func (p *Player) HasCooldown(item world.Item) bool {
+	p.cooldownMu.Lock()
+	defer p.cooldownMu.Unlock()
+
+	hash := hashFromItem(item)
+	otherTime, ok := p.cooldowns[hash]
+	if !ok {
+		return false
+	}
+	if time.Now().After(otherTime) {
+		delete(p.cooldowns, hash)
+		return false
+	}
+	return true
+}
+
+// SetCooldown sets a cooldown for an item.
+func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
+	p.cooldownMu.Lock()
+	defer p.cooldownMu.Unlock()
+
+	p.cooldowns[hashFromItem(item)] = time.Now().Add(cooldown)
+}
+
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
@@ -1091,8 +1137,17 @@ func (p *Player) UseItem() {
 	p.handler().HandleItemUse(ctx)
 
 	ctx.Continue(func() {
+		it := i.Item()
 		w := p.World()
-		switch usable := i.Item().(type) {
+		if p.HasCooldown(it) {
+			return
+		}
+
+		if cooldown, ok := it.(item.Cooldown); ok {
+			p.SetCooldown(it, cooldown.Cooldown())
+		}
+
+		switch usable := it.(type) {
 		case item.Releasable:
 			p.usingSince.Store(time.Now().UnixNano())
 			p.usingItem.Store(true)
@@ -1293,7 +1348,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if living.AttackImmune() {
 			return
 		}
-		p.StopSprinting()
 
 		damageDealt := i.AttackDamage()
 		for _, e := range p.Effects() {
@@ -1552,14 +1606,15 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleBlockBreak(ctx, pos)
+	held, left := p.HeldItems()
+	drops := p.drops(held, b)
+	p.handler().HandleBlockBreak(ctx, pos, &drops)
 
 	ctx.Continue(func() {
 		p.SwingArm()
 		w.BreakBlock(pos)
-		held, left := p.HeldItems()
 
-		for _, drop := range p.drops(held, b) {
+		for _, drop := range drops {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
 			itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 			w.AddEntity(itemEntity)
@@ -1740,9 +1795,12 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // SetVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
-	s := p.session()
-	if s.SendVelocity(velocity); s == session.Nop {
+	if p.session() == session.Nop {
 		p.vel.Store(velocity)
+		return
+	}
+	for _, v := range p.viewers() {
+		v.ViewEntityVelocity(p, velocity)
 	}
 }
 
@@ -1861,8 +1919,18 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
+	p.cooldownMu.Lock()
+	for it, ti := range p.cooldowns {
+		if time.Now().After(ti) {
+			delete(p.cooldowns, it)
+		}
+	}
+	p.cooldownMu.Unlock()
+
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+		m.Send()
+
 		p.vel.Store(m.Velocity())
 		p.Move(m.Position().Sub(p.Position()), 0, 0)
 	}
@@ -2162,9 +2230,14 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
-// close closed the player without disconnecting it. It executes code shared by both the closing and the
+// close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if p.Dead() {
+		p.Respawn()
+	}
 	p.handler().HandleQuit()
 
 	p.Handle(NopHandler{})

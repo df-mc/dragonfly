@@ -110,7 +110,9 @@ func (m Modal) Buttons() []Button {
 func (m Modal) verify() {
 	var count int
 
-	v := reflect.ValueOf(m.submittable)
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
+
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
 			continue

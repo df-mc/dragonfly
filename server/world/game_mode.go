@@ -85,5 +85,5 @@ func (spectator) AllowsTakingDamage() bool { return false }
 func (spectator) CreativeInventory() bool  { return true }
 func (spectator) HasCollision() bool       { return false }
 func (spectator) AllowsFlying() bool       { return true }
-func (spectator) AllowsInteraction() bool  { return true }
+func (spectator) AllowsInteraction() bool  { return false }
 func (spectator) Visible() bool            { return false }

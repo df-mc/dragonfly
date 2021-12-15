@@ -118,6 +118,12 @@ type Weapon interface {
 	AttackDamage() float64
 }
 
+// Cooldown represents an item that has a cooldown.
+type Cooldown interface {
+	// Cooldown is the duration of the cooldown.
+	Cooldown() time.Duration
+}
+
 // nameable represents a block that may be named. These are often containers such as chests, which have a
 // name displayed in their interface.
 type nameable interface {
@@ -155,12 +161,6 @@ type Carrier interface {
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
 	HeldItems() (mainHand, offHand Stack)
-}
-
-// projectile represents an entity that can be launched as a projectile.
-type projectile interface {
-	world.Entity
-	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
 }
 
 // owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".

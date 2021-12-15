@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	MaxY = 255
-	MinY = 0
+	MaxY = 320
+	MinY = -64
 )
 
 // Pos holds the position of a block. The position is represented of an array with an x, y and z value,
@@ -35,7 +35,7 @@ func (p Pos) Z() int {
 	return p[2]
 }
 
-// OutOfBounds checks if the Y value is either bigger than 255 or smaller than 0.
+// OutOfBounds checks if the Y value is either bigger than MaxY or smaller than MinY.
 func (p Pos) OutOfBounds() bool {
 	y := p[1]
 	return y > MaxY || y < MinY

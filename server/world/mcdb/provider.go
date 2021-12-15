@@ -26,7 +26,7 @@ type Provider struct {
 }
 
 // chunkVersion is the current version of chunks.
-const chunkVersion = 19
+const chunkVersion = 27
 
 // New creates a new provider reading and writing files to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
@@ -146,11 +146,13 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 		return nil, true, fmt.Errorf("error reading version: %w", err)
 	}
 
-	data.Data2D, err = p.db.Get(append(key, key2DData), nil)
-	if err == leveldb.ErrNotFound {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, true, fmt.Errorf("error reading 2D data: %w", err)
+	data.Biomes, err = p.db.Get(append(key, key3DData), nil)
+	if err != nil && err != leveldb.ErrNotFound {
+		return nil, false, fmt.Errorf("error reading 3D data: %w", err)
+	}
+	if len(data.Biomes) > 512 {
+		// Strip the heightmap from the biomes.
+		data.Biomes = data.Biomes[512:]
 	}
 
 	data.BlockNBT, err = p.db.Get(append(key, keyBlockEntities), nil)
@@ -158,15 +160,14 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	if err != nil && err != leveldb.ErrNotFound {
 		return nil, true, fmt.Errorf("error reading block entities: %w", err)
 	}
-
-	for y := byte(0); y < 16; y++ {
-		data.SubChunks[y], err = p.db.Get(append(key, keySubChunkData, y), nil)
+	for i := range data.SubChunks {
+		data.SubChunks[i], err = p.db.Get(append(key, keySubChunkData, uint8(i+cube.MinY>>4)), nil)
 		if err == leveldb.ErrNotFound {
 			// No sub chunk present at this Y level. We skip this one and move to the next, which might still
 			// be present.
 			continue
 		} else if err != nil {
-			return nil, true, fmt.Errorf("error reading 2D sub chunk %v: %w", y, err)
+			return nil, true, fmt.Errorf("error reading sub chunk data %v: %w", i, err)
 		}
 	}
 	c, err = chunk.DiskDecode(data)
@@ -180,19 +181,15 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 
 	key := index(position)
 	_ = p.db.Put(append(key, keyVersion), []byte{chunkVersion}, nil)
-	_ = p.db.Put(append(key, key2DData), data.Data2D, nil)
+	// Write the heightmap by just writing 512 empty bytes.
+	_ = p.db.Put(append(key, key3DData), append(make([]byte, 512), data.Biomes...), nil)
 
 	finalisation := make([]byte, 4)
 	binary.LittleEndian.PutUint32(finalisation, 2)
 	_ = p.db.Put(append(key, keyFinalisation), finalisation, nil)
 
-	for y, sub := range data.SubChunks {
-		if len(sub) == 0 {
-			// No sub chunk here: Delete it from the database and continue.
-			_ = p.db.Delete(append(key, keySubChunkData, byte(y)), nil)
-			continue
-		}
-		_ = p.db.Put(append(key, keySubChunkData, byte(y)), sub, nil)
+	for i, sub := range data.SubChunks {
+		_ = p.db.Put(append(key, keySubChunkData, byte(i+cube.MinY>>4)), sub, nil)
 	}
 	return nil
 }
