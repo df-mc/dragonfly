@@ -191,7 +191,7 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
 		float64(nbtconv.MapFloat32(data, "Yaw")),
-		nbtconv.MapByte(data, "Crit") == 1,
+		false, // Vanilla doesn't save this value, so we don't either.
 		pickupValue > 0,
 		pickupValue == 2,
 		float64(nbtconv.MapFloat32(data, "Damage")),
@@ -207,11 +207,6 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		pickupValue = 1
 	}
 
-	var criticalValue byte
-	if a.critical {
-		criticalValue = 1
-	}
-
 	yaw, pitch := a.Rotation()
 	return map[string]interface{}{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(a.Position()),
@@ -219,7 +214,6 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Pitch":  pitch,
 		"Motion": nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage": a.baseDamage,
-		"Crit":   criticalValue,
 		"Pickup": pickupValue,
 	}
 }
