@@ -49,6 +49,11 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	if u, ok := e.(using); ok && u.UsingItem() {
 		m.setFlag(dataKeyFlags, dataFlagUsingItem)
 	}
+	if c, ok := e.(arrow); ok {
+		if c.Critical() {
+			m.setFlag(dataKeyFlags, dataFlagCritical)
+		}
+	}
 	if s, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(s.Scale())
 	}
@@ -109,6 +114,7 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagCritical          = 13
 	dataFlagCanShowNameTag    = 14
 	dataFlagAlwaysShowNameTag = 15
 	dataFlagNoAI              = 16
@@ -160,4 +166,8 @@ type effectBearer interface {
 
 type using interface {
 	UsingItem() bool
+}
+
+type arrow interface {
+	Critical() bool
 }

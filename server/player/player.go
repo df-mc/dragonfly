@@ -1093,15 +1093,19 @@ func (p *Player) UseItem() {
 	ctx.Continue(func() {
 		w := p.World()
 		switch usable := i.Item().(type) {
+		case item.Releasable:
+			p.usingSince.Store(time.Now().UnixNano())
+			p.usingItem.Store(true)
 		case item.Usable:
-			ctx := &item.UseContext{}
+			ctx := &item.UseContext{Require: func(stack item.Stack) bool {
+				_, ok := p.Inventory().First(stack)
+				return ok
+			}}
 			if usable.Use(w, p, ctx) {
 				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 				// reason to swing the arm.
 				p.SwingArm()
-
-				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
-				p.addNewItem(ctx)
+				p.handleUseContext(ctx)
 			}
 		case item.Consumable:
 			if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
@@ -1117,7 +1121,7 @@ func (p *Player) UseItem() {
 
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
 				// slightly increase the duration to combat this.
-				duration := time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
+				duration := p.useDuration()
 				if duration < usable.ConsumeDuration() {
 					// The required duration for consuming this item was not met, so we don't consume it.
 					return
@@ -1141,8 +1145,33 @@ func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
 		p.updateState()
 
-		// TODO: Release items such as bows.
+		i, _ := p.HeldItems()
+		if releasable, ok := i.Item().(item.Releasable); ok {
+			ctx := &item.UseContext{Require: func(stack item.Stack) bool {
+				_, ok := p.Inventory().First(stack)
+				return ok
+			}}
+
+			releasable.Release(p, p.useDuration(), ctx)
+			p.handleUseContext(ctx)
+		}
 	}
+}
+
+// handleUseContext handles the item.UseContext after the item has been used.
+func (p *Player) handleUseContext(ctx *item.UseContext) {
+	i, left := p.HeldItems()
+
+	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+	p.addNewItem(ctx)
+	for _, it := range ctx.ConsumedItems {
+		_ = p.Inventory().RemoveItem(it)
+	}
+}
+
+// useDuration returns the duration the player has been using the item in the main hand.
+func (p *Player) useDuration() time.Duration {
+	return time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
 }
 
 // UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an

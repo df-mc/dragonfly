@@ -26,6 +26,9 @@ func init() {
 
 	world.RegisterItem(Bucket{})
 
+	world.RegisterItem(Bow{})
+	world.RegisterItem(Arrow{})
+
 	world.RegisterItem(Shears{})
 
 	world.RegisterItem(Snowball{})

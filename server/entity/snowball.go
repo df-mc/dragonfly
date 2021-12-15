@@ -32,8 +32,8 @@ func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Snowba
 		pitch: pitch,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.03,
-			DragBeforeGravity: true,
 			Drag:              0.01,
+			DragBeforeGravity: true,
 		}},
 		owner: owner,
 	}

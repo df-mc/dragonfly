@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"time"
 )
 
@@ -90,8 +91,18 @@ type UseContext struct {
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack
+	// ConsumedItems contains a list of items that were consumed in the process of using the item.
+	ConsumedItems []Stack
+	// Require checks if the required item passed is given in the context. It returns true if it is, and false
+	// otherwise.
+	Require func(Stack) bool
 	// NewItemSurvivalOnly will add any new items only in survival mode.
 	NewItemSurvivalOnly bool
+}
+
+// Consume consumes the provided item when the context is handled.
+func (ctx *UseContext) Consume(s Stack) {
+	ctx.ConsumedItems = append(ctx.ConsumedItems, s)
 }
 
 // DamageItem damages the item used by d points.
@@ -112,6 +123,21 @@ type Weapon interface {
 type nameable interface {
 	// WithName returns the block itself, except with a custom name applied to it.
 	WithName(a ...interface{}) world.Item
+}
+
+// Releaser represents an entity that can release items, such as bows.
+type Releaser interface {
+	User
+	// GameMode returns the gamemode of the releaser.
+	GameMode() world.GameMode
+	// PlaySound plays a world.Sound that only this Releaser can hear.
+	PlaySound(sound world.Sound)
+}
+
+// Releasable represents an item that can be released.
+type Releasable interface {
+	// Release is called when an item is released.
+	Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 }
 
 // User represents an entity that is able to use an item in the world, typically entities such as players,
@@ -161,4 +187,28 @@ func (defaultFood) AlwaysConsumable() bool {
 // ConsumeDuration ...
 func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
+}
+
+// directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
+// returned is always 1.
+func directionVector(e world.Entity) mgl64.Vec3 {
+	yaw, pitch := e.Rotation()
+	yawRad, pitchRad := mgl64.DegToRad(yaw), mgl64.DegToRad(pitch)
+	m := math.Cos(pitchRad)
+
+	return mgl64.Vec3{
+		-m * math.Sin(yawRad),
+		-math.Sin(pitchRad),
+		m * math.Cos(yawRad),
+	}.Normalize()
+}
+
+// eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the
+// actual position if it doesn't.
+func eyePosition(e world.Entity) mgl64.Vec3 {
+	pos := e.Position()
+	if eyed, ok := e.(interface{ EyeHeight() float64 }); ok {
+		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
+	}
+	return pos
 }

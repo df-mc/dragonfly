@@ -1,5 +1,7 @@
 package action
 
+import "time"
+
 // Action represents an action that may be performed by an entity. Typically, these actions are sent to
 // viewers in a world so that they can see these actions.
 type Action interface {
@@ -21,12 +23,18 @@ type Death struct{ action }
 // eaten.
 type Eat struct{ action }
 
+// ArrowShake makes an entity display the arrow shake action.
+type ArrowShake struct {
+	// Duration is the duration of the shake.
+	Duration time.Duration
+	action
+}
+
 // PickedUp makes an item get picked up by a collector. After this animation, the item disappears from viewers
 // watching it.
 type PickedUp struct {
 	// Collector is the entity that collected the item.
 	Collector interface{}
-
 	action
 }
 
