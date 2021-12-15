@@ -206,8 +206,8 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Pitch":      pitch,
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":     a.baseDamage,
-		"IsGlobal":   a.canPickup,
-		"IsCreative": a.creativePickup,
+		"IsGlobal":   boolByte(a.canPickup),
+		"IsCreative": boolByte(a.creativePickup),
 	}
 }
 
