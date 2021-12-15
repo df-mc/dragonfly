@@ -28,7 +28,7 @@ type Arrow struct {
 	collidedBlockPos cube.Pos
 	collidedBlock    world.Block
 
-	shakeNextTick, closeNextTick, critical bool
+	closeNextTick, critical bool
 
 	owner                     world.Entity
 	canPickup, creativePickup bool
@@ -103,13 +103,6 @@ func (a *Arrow) Tick(current int64) {
 		_ = a.Close()
 		return
 	}
-	if a.shakeNextTick {
-		for _, v := range a.World().Viewers(a.Position()) {
-			v.ViewEntityAction(a, action.ArrowShake{Duration: time.Millisecond * 350})
-		}
-		a.shakeNextTick = false
-		return
-	}
 
 	w := a.World()
 	if w.Block(a.collidedBlockPos) == a.collidedBlock {
@@ -142,7 +135,10 @@ func (a *Arrow) Tick(current int64) {
 		if blockResult, ok := result.(trace.BlockResult); ok {
 			a.collidedBlockPos = blockResult.BlockPosition()
 			a.collidedBlock = w.Block(a.collidedBlockPos)
-			a.shakeNextTick = true
+
+			for _, v := range a.World().Viewers(a.Position()) {
+				v.ViewEntityAction(a, action.ArrowShake{Duration: time.Millisecond * 350})
+			}
 		} else if entityResult, ok := result.(trace.EntityResult); ok {
 			if living, ok := entityResult.Entity().(Living); ok {
 				if !living.AttackImmune() {
