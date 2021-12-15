@@ -23,7 +23,10 @@ type Arrow struct {
 	yaw, pitch float64
 	baseDamage float64
 
-	ticksLived, ticksOnGround int
+	ticksLived, collisionTicks int
+
+	collidedBlockPos cube.Pos
+	collidedBlock    world.Block
 
 	shakeNextTick, closeNextTick, critical bool
 
@@ -108,12 +111,22 @@ func (a *Arrow) Tick(current int64) {
 		return
 	}
 
+	w := a.World()
+	if w.Block(a.collidedBlockPos) == a.collidedBlock {
+		if a.collisionTicks > 5 {
+			a.checkNearby()
+		}
+		a.collisionTicks++
+		return
+	}
+
 	a.mu.Lock()
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.mu.Unlock()
 
 	a.ticksLived++
+	a.collisionTicks = 0
 	m.Send()
 
 	if m.pos[1] < cube.MinY && current%10 == 0 {
@@ -121,30 +134,23 @@ func (a *Arrow) Tick(current int64) {
 		return
 	}
 
-	moved := !m.dpos.ApproxEqualThreshold(zeroVec3, epsilon)
-	if moved {
-		if result != nil {
-			a.SetCritical(false)
-			a.World().PlaySound(a.Position(), sound.ArrowHit{})
+	if result != nil {
+		a.SetCritical(false)
+		w.PlaySound(a.Position(), sound.ArrowHit{})
 
-			if _, ok := result.(trace.BlockResult); ok {
-				a.shakeNextTick = true
-			} else if entityResult, ok := result.(trace.EntityResult); ok {
-				if living, ok := entityResult.Entity().(Living); ok {
-					if !living.AttackImmune() {
-						living.Hurt(a.damage(), damage.SourceProjectile{Owner: a.owner})
-						living.KnockBack(a.Position(), 0.45, 0.3608)
-					}
+		if blockResult, ok := result.(trace.BlockResult); ok {
+			a.collidedBlockPos = blockResult.BlockPosition()
+			a.collidedBlock = w.Block(a.collidedBlockPos)
+			a.shakeNextTick = true
+		} else if entityResult, ok := result.(trace.EntityResult); ok {
+			if living, ok := entityResult.Entity().(Living); ok {
+				if !living.AttackImmune() {
+					living.Hurt(a.damage(), damage.SourceProjectile{Owner: a.owner})
+					living.KnockBack(a.Position(), 0.45, 0.3608)
 				}
-				a.closeNextTick = true
 			}
+			a.closeNextTick = true
 		}
-		a.ticksOnGround = 0
-	} else {
-		if a.ticksOnGround > 5 {
-			a.checkNearby()
-		}
-		a.ticksOnGround++
 	}
 }
 
