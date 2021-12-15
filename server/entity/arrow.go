@@ -127,6 +127,7 @@ func (a *Arrow) Tick(current int64) {
 
 	a.ticksLived++
 	a.collisionTicks = 0
+	a.collidedBlockPos, a.collidedBlock = cube.Pos{}, nil
 	m.Send()
 
 	if m.pos[1] < cube.MinY && current%10 == 0 {
