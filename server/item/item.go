@@ -144,8 +144,6 @@ type Releaser interface {
 type Releasable interface {
 	// Release is called when an item is released.
 	Release(releaser Releaser, duration time.Duration, ctx *UseContext)
-	// Requirements returns the required items to release this item.
-	Requirements() []Stack
 }
 
 // User represents an entity that is able to use an item in the world, typically entities such as players,
