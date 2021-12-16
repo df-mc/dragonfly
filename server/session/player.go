@@ -216,6 +216,22 @@ func (s *Session) SendForm(f form.Form) {
 	})
 }
 
+// SendNameTag changes the nickname of an entity only for the player
+func (s *Session) SendNameTag(e world.Entity, nametag string) {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+		return
+	}
+
+	metadata := map[uint32]interface{}{
+		dataKeyNameTag: string(nametag),
+	}
+
+	s.writePacket(&packet.SetActorData{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		EntityMetadata:  metadata,
+	})
+}
+
 // Transfer transfers the player to a server with the IP and port passed.
 func (s *Session) Transfer(ip net.IP, port int) {
 	s.writePacket(&packet.Transfer{
