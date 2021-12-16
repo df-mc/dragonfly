@@ -373,6 +373,12 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
 }
 
+func (p *Player) SendFakeBlock(pos cube.Pos, b world.Block, w *world.World, time int) {
+	if p.session() != session.Nop {
+		p.session().SendFakeBlock(pos, b, w, 0, time)
+	}
+}
+
 // SendForm sends a form to the player for the client to fill out. Once the client fills it out, the Submit
 // method of the form will be called.
 // Note that the client may also close the form instead of filling it out, which will result in the form not
