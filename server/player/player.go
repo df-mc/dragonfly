@@ -368,6 +368,13 @@ func (p *Player) Transfer(address string) (err error) {
 	return
 }
 
+// SendNameTag changes the nickname of an entity only for the player
+func (p *Player) SendNameTag(e world.Entity, nametag string) {
+	if p.session() != session.Nop {
+		p.session().SendNameTag(e, nametag)
+	}
+}
+
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
