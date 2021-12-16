@@ -216,6 +216,41 @@ func (s *Session) SendForm(f form.Form) {
 	})
 }
 
+
+func (s *Session) SendFakeBlock(pos cube.Pos, b world.Block, w *world.World, layer int, t int) {
+	runtimeID, _ := world.BlockRuntimeID(b)
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+
+	actual := w.Block(pos)
+
+	s.writePacket(&packet.UpdateBlock{
+		Position:          blockPos,
+		NewBlockRuntimeID: runtimeID,
+		Flags:             packet.BlockUpdateNetwork,
+		Layer:             uint32(layer),
+	})
+
+	if t != 0 {
+		go s.deleteFakeBlock(pos, actual, w, layer, t)
+	}
+}
+
+func (s *Session) deleteFakeBlock(pos cube.Pos, b world.Block, w *world.World, layer int, t int) {
+	ticker := time.Tick(time.Duration(t) * time.Second)
+
+	for range ticker {
+		runtimeID, _ := world.BlockRuntimeID(b)
+		blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+
+		s.writePacket(&packet.UpdateBlock{
+			Position:          blockPos,
+			NewBlockRuntimeID: runtimeID,
+			Flags:             packet.BlockUpdateNetwork,
+			Layer:             uint32(layer),
+		})
+	}
+}
+
 // Transfer transfers the player to a server with the IP and port passed.
 func (s *Session) Transfer(ip net.IP, port int) {
 	s.writePacket(&packet.Transfer{
