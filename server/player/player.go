@@ -2327,6 +2327,19 @@ func (p *Player) session() *session.Session {
 
 // useContext returns an item.UseContext initialised for a Player.
 func (p *Player) useContext() *item.UseContext {
+	call := func(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+		var err error
+		ctx.Stop(func() {
+			err = fmt.Errorf("action was cancelled")
+		})
+		ctx.Continue(func() {
+			f(ctx, slot, it)
+			ctx.Stop(func() {
+				err = fmt.Errorf("action was cancelled")
+			})
+		})
+		return err
+	}
 	return &item.UseContext{SwapHeldWithArmour: func(i int) {
 		src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
 		srcIt, _ := srcInv.Item(src)
@@ -2341,22 +2354,6 @@ func (p *Player) useContext() *item.UseContext {
 			_ = dstInv.SetItem(dst, srcIt)
 		}
 	}}
-}
-
-// call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
-// the event.Context was cancelled either before or after the call.
-func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
-	var err error
-	ctx.Stop(func() {
-		err = fmt.Errorf("action was cancelled")
-	})
-	ctx.Continue(func() {
-		f(ctx, slot, it)
-		ctx.Stop(func() {
-			err = fmt.Errorf("action was cancelled")
-		})
-	})
-	return err
 }
 
 // handler returns the Handler of the player.
