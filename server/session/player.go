@@ -105,7 +105,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.offHand, true
 	case containerArmour:
 		// Armour inventory.
-		return s.armour.Inv(), true
+		return s.armour.Inventory(), true
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {

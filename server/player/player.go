@@ -559,14 +559,14 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 			for i, it := range p.armour.Slots() {
 				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
 					if rand.Float64() < float64(t.Level())*0.15 {
-						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 3))
+						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 3))
 						if t.Level() > 10 {
 							d += t.Level() - 10
 							continue
 						}
 						d += 1 + rand.Intn(4)
 					} else {
-						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 1))
+						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 1))
 					}
 				}
 			}
@@ -603,7 +603,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 			if a, ok := it.Item().(armour.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
-					_ = p.armour.Inv().SetItem(i, p.damageItem(it, damageToArmour))
+					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
 				}
 			}
 		}
@@ -1032,7 +1032,7 @@ func (p *Player) Inventory() *inventory.Inventory {
 
 // Armour returns the armour inventory of the player. This inventory yields 4 slots, for the helmet,
 // chestplate, leggings and boots respectively.
-func (p *Player) Armour() item.ArmourContainer {
+func (p *Player) Armour() *inventory.Armour {
 	return p.armour
 }
 
@@ -1149,7 +1149,7 @@ func (p *Player) UseItem() {
 
 		switch usable := it.(type) {
 		case item.Usable:
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usable.Use(w, p, ctx) {
 				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 				// reason to swing the arm.
@@ -1178,7 +1178,10 @@ func (p *Player) UseItem() {
 					return
 				}
 				p.SetHeldItems(p.subtractItem(i, 1), left)
-				p.addNewItem(&item.UseContext{NewItem: usable.Consume(w, p)})
+
+				ctx := p.useContext()
+				ctx.NewItem = usable.Consume(w, p)
+				p.addNewItem(ctx)
 				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 			}
 			p.usingSince.Store(time.Now().UnixNano())
@@ -1239,7 +1242,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		}
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -1285,7 +1288,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -2320,6 +2323,40 @@ func (p *Player) session() *session.Session {
 		return session.Nop
 	}
 	return s
+}
+
+// useContext returns an item.UseContext initialised for a Player.
+func (p *Player) useContext() *item.UseContext {
+	return &item.UseContext{SwapHeldWithArmour: func(i int) {
+		src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
+		srcIt, _ := srcInv.Item(src)
+		dstIt, _ := dstInv.Item(dst)
+
+		ctx := event.C()
+		_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
+		_ = call(ctx, src, dstIt, srcInv.Handler().HandlePlace)
+		_ = call(ctx, dst, dstIt, dstInv.Handler().HandleTake)
+		if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
+			_ = srcInv.SetItem(src, dstIt)
+			_ = dstInv.SetItem(dst, srcIt)
+		}
+	}}
+}
+
+// call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
+// the event.Context was cancelled either before or after the call.
+func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+	var err error
+	ctx.Stop(func() {
+		err = fmt.Errorf("action was cancelled")
+	})
+	ctx.Continue(func() {
+		f(ctx, slot, it)
+		ctx.Stop(func() {
+			err = fmt.Errorf("action was cancelled")
+		})
+	})
+	return err
 }
 
 // handler returns the Handler of the player.

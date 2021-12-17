@@ -372,7 +372,9 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
-	armoured, ok := e.(item.Armoured)
+	armoured, ok := e.(interface {
+		Armour() *inventory.Armour
+	})
 	if !ok {
 		return
 	}
