@@ -11,7 +11,7 @@ import (
 // to write formatted text to the scoreboard.
 type Scoreboard struct {
 	name  string
-	lines []string
+	lines map[int]string
 }
 
 // New returns a new scoreboard with the display name passed. Once returned, lines may be added to the
@@ -19,7 +19,7 @@ type Scoreboard struct {
 // Changing the scoreboard after sending it to a player will not update the scoreboard of the player
 // automatically: Player.SendScoreboard() must be called again to update it.
 func New(name ...interface{}) *Scoreboard {
-	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n")}
+	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n"), lines: make(map[int]string)}
 }
 
 // Name returns the display name of the scoreboard, as passed during the construction of the scoreboard.
@@ -37,7 +37,7 @@ func (board *Scoreboard) Write(p []byte) (n int, err error) {
 // the scoreboard.
 func (board *Scoreboard) WriteString(s string) (n int, err error) {
 	lines := strings.Split(s, "\n")
-	board.lines = append(board.lines, lines...)
+	board.lines[len(lines)-1] = s
 
 	// Scoreboards can have up to 15 lines. (16 including the title.)
 	if len(board.lines) >= 15 {
@@ -47,27 +47,17 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 }
 
 // Set changes a specific line in the scoreboard.
-func (board *Scoreboard) Set(index int, s string) (err error) {
-	if index < 0 || len(board.lines) <= index {
-		return fmt.Errorf("index out of range %v", index)
-	}
+func (board *Scoreboard) Set(index int, s string) {
 	// Remove new lines from the string
 	board.lines[index] = strings.TrimSuffix(strings.TrimSuffix(s, "\n"), "\n")
-
-	return nil
 }
 
 // Remove removes a specific line from the scoreboard.
-func (board *Scoreboard) Remove(index int) (err error) {
-	if index < 0 || len(board.lines) <= index {
-		return fmt.Errorf("index out of range %v", index)
-	}
-	board.lines = append(board.lines[:index], board.lines[index+1:]...)
-
-	return nil
+func (board *Scoreboard) Remove(index int) {
+	delete(board.lines, index)
 }
 
 // Lines returns the data of the Scoreboard as a slice of strings.
-func (board *Scoreboard) Lines() []string {
+func (board *Scoreboard) Lines() map[int]string {
 	return board.lines
 }
