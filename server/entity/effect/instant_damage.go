@@ -3,6 +3,7 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 	"time"
 )
 
@@ -31,4 +32,9 @@ func (i InstantDamage) Apply(e world.Entity, lvl int, _ time.Duration) {
 	if l, ok := e.(living); ok {
 		l.Hurt(float64(base)*i.Potency, damage.SourceInstantDamageEffect{})
 	}
+}
+
+// RGBA ...
+func (InstantDamage) RGBA() color.RGBA {
+	return color.RGBA{R: 0x43, G: 0x0a, B: 0x09, A: 0xff}
 }

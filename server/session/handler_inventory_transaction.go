@@ -56,7 +56,7 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
-	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
+	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 }
 
 // handleNormalTransaction ...

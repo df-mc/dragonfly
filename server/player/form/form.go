@@ -182,7 +182,9 @@ func (f Custom) parseValue(elem Element, s interface{}) (reflect.Value, error) {
 func (f Custom) verify() {
 	el := reflect.TypeOf((*Element)(nil)).Elem()
 
-	v := reflect.ValueOf(f.submittable)
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
+
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {

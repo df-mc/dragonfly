@@ -35,3 +35,6 @@ type BucketEmpty struct {
 
 	sound
 }
+
+// EndermanTeleport is a sound played upon teleportation of an enderman, or teleportation of a player by an ender pearl or a chorus fruit.
+type EndermanTeleport struct{ sound }

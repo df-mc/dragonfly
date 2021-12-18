@@ -77,6 +77,9 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
+	cooldownMu sync.Mutex
+	cooldowns  map[itemHash]time.Time
+
 	speed    atomic.Float64
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
@@ -104,21 +107,22 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:     uuid.New(),
-		offHand:  inventory.New(1, p.broadcastItems),
-		armour:   inventory.NewArmour(p.broadcastArmour),
-		hunger:   newHungerManager(),
-		health:   entity.NewHealthManager(),
-		effects:  entity.NewEffectManager(),
-		gameMode: world.GameModeSurvival,
-		h:        NopHandler{},
-		name:     name,
-		skin:     skin,
-		speed:    *atomic.NewFloat64(0.1),
-		nameTag:  *atomic.NewString(name),
-		heldSlot: atomic.NewUint32(0),
-		locale:   language.BritishEnglish,
-		scale:    *atomic.NewFloat64(1),
+		uuid:      uuid.New(),
+		offHand:   inventory.New(1, p.broadcastItems),
+		armour:    inventory.NewArmour(p.broadcastArmour),
+		hunger:    newHungerManager(),
+		health:    entity.NewHealthManager(),
+		effects:   entity.NewEffectManager(),
+		gameMode:  world.GameModeSurvival,
+		h:         NopHandler{},
+		name:      name,
+		skin:      skin,
+		speed:     *atomic.NewFloat64(0.1),
+		nameTag:   *atomic.NewString(name),
+		heldSlot:  atomic.NewUint32(0),
+		locale:    language.BritishEnglish,
+		scale:     *atomic.NewFloat64(1),
+		cooldowns: make(map[itemHash]time.Time),
 	}
 	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
@@ -555,14 +559,14 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 			for i, it := range p.armour.Slots() {
 				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
 					if rand.Float64() < float64(t.Level())*0.15 {
-						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 3))
+						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 3))
 						if t.Level() > 10 {
 							d += t.Level() - 10
 							continue
 						}
 						d += 1 + rand.Intn(4)
 					} else {
-						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 1))
+						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 1))
 					}
 				}
 			}
@@ -599,7 +603,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 			if a, ok := it.Item().(armour.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
-					_ = p.armour.Inv().SetItem(i, p.damageItem(it, damageToArmour))
+					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
 				}
 			}
 		}
@@ -1028,7 +1032,7 @@ func (p *Player) Inventory() *inventory.Inventory {
 
 // Armour returns the armour inventory of the player. This inventory yields 4 slots, for the helmet,
 // chestplate, leggings and boots respectively.
-func (p *Player) Armour() item.ArmourContainer {
+func (p *Player) Armour() *inventory.Armour {
 	return p.armour
 }
 
@@ -1079,6 +1083,48 @@ func (p *Player) GameMode() world.GameMode {
 	return mode
 }
 
+// itemHash is used as a hash for a world.Item.
+type itemHash struct {
+	// Name is the name of the item.
+	Name string
+	// Meta is the item's metadata value.
+	Meta int16
+}
+
+// hashFromItem returns an item hash from an item.
+func hashFromItem(item world.Item) itemHash {
+	name, meta := item.EncodeItem()
+	return itemHash{
+		Name: name,
+		Meta: meta,
+	}
+}
+
+// HasCooldown returns true if the item passed has an active cooldown.
+func (p *Player) HasCooldown(item world.Item) bool {
+	p.cooldownMu.Lock()
+	defer p.cooldownMu.Unlock()
+
+	hash := hashFromItem(item)
+	otherTime, ok := p.cooldowns[hash]
+	if !ok {
+		return false
+	}
+	if time.Now().After(otherTime) {
+		delete(p.cooldowns, hash)
+		return false
+	}
+	return true
+}
+
+// SetCooldown sets a cooldown for an item.
+func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
+	p.cooldownMu.Lock()
+	defer p.cooldownMu.Unlock()
+
+	p.cooldowns[hashFromItem(item)] = time.Now().Add(cooldown)
+}
+
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
@@ -1091,10 +1137,19 @@ func (p *Player) UseItem() {
 	p.handler().HandleItemUse(ctx)
 
 	ctx.Continue(func() {
+		it := i.Item()
 		w := p.World()
-		switch usable := i.Item().(type) {
+		if p.HasCooldown(it) {
+			return
+		}
+
+		if cooldown, ok := it.(item.Cooldown); ok {
+			p.SetCooldown(it, cooldown.Cooldown())
+		}
+
+		switch usable := it.(type) {
 		case item.Usable:
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usable.Use(w, p, ctx) {
 				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 				// reason to swing the arm.
@@ -1123,7 +1178,10 @@ func (p *Player) UseItem() {
 					return
 				}
 				p.SetHeldItems(p.subtractItem(i, 1), left)
-				p.addNewItem(&item.UseContext{NewItem: usable.Consume(w, p)})
+
+				ctx := p.useContext()
+				ctx.NewItem = usable.Consume(w, p)
+				p.addNewItem(ctx)
 				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 			}
 			p.usingSince.Store(time.Now().UnixNano())
@@ -1184,7 +1242,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		}
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -1230,7 +1288,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -1264,7 +1322,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if living.AttackImmune() {
 			return
 		}
-		p.StopSprinting()
 
 		damageDealt := i.AttackDamage()
 		for _, e := range p.Effects() {
@@ -1712,9 +1769,12 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // SetVelocity updates the players velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
-	s := p.session()
-	if s.SendVelocity(velocity); s == session.Nop {
+	if p.session() == session.Nop {
 		p.vel.Store(velocity)
+		return
+	}
+	for _, v := range p.viewers() {
+		v.ViewEntityVelocity(p, velocity)
 	}
 }
 
@@ -1767,7 +1827,7 @@ func (p *Player) OpenBlockContainer(pos cube.Pos) {
 // HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
 // made visible again through a call to ShowEntity.
 func (p *Player) HideEntity(e world.Entity) {
-	if p.session() != session.Nop {
+	if p.session() != session.Nop && p != e {
 		p.session().StopShowingEntity(e)
 	}
 }
@@ -1833,8 +1893,18 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
+	p.cooldownMu.Lock()
+	for it, ti := range p.cooldowns {
+		if time.Now().After(ti) {
+			delete(p.cooldowns, it)
+		}
+	}
+	p.cooldownMu.Unlock()
+
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+		m.Send()
+
 		p.vel.Store(m.Velocity())
 		p.Move(m.Position().Sub(p.Position()), 0, 0)
 	}
@@ -2142,9 +2212,12 @@ func (p *Player) close() {
 	if p.Dead() {
 		p.Respawn()
 	}
-	p.handler().HandleQuit()
+	p.hMutex.Lock()
+	h := p.h
+	p.h = NopHandler{}
+	p.hMutex.Unlock()
+	h.HandleQuit()
 
-	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
 
 	p.sMutex.Lock()
@@ -2253,6 +2326,37 @@ func (p *Player) session() *session.Session {
 		return session.Nop
 	}
 	return s
+}
+
+// useContext returns an item.UseContext initialised for a Player.
+func (p *Player) useContext() *item.UseContext {
+	call := func(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+		var err error
+		ctx.Stop(func() {
+			err = fmt.Errorf("action was cancelled")
+		})
+		ctx.Continue(func() {
+			f(ctx, slot, it)
+			ctx.Stop(func() {
+				err = fmt.Errorf("action was cancelled")
+			})
+		})
+		return err
+	}
+	return &item.UseContext{SwapHeldWithArmour: func(i int) {
+		src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
+		srcIt, _ := srcInv.Item(src)
+		dstIt, _ := dstInv.Item(dst)
+
+		ctx := event.C()
+		_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
+		_ = call(ctx, src, dstIt, srcInv.Handler().HandlePlace)
+		_ = call(ctx, dst, dstIt, dstInv.Handler().HandleTake)
+		if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
+			_ = srcInv.SetItem(src, dstIt)
+			_ = dstInv.SetItem(dst, srcIt)
+		}
+	}}
 }
 
 // handler returns the Handler of the player.
