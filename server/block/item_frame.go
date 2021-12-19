@@ -16,7 +16,7 @@ type ItemFrame struct {
 	empty
 	transparent
 
-	// Facing is the direction from the torch to the block.
+	// Facing is the direction from the item frame to the block.
 	Facing cube.Face
 	// Item is the item that is displayed inside the frame.
 	Item item.Stack
