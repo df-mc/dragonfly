@@ -16,27 +16,28 @@ type ItemFrame struct {
 	empty
 	transparent
 
-	// Facing is the direction from the item frame to the block.
+	// Facing is the direction from the frame to the block.
 	Facing cube.Face
 	// Item is the item that is displayed inside the frame.
 	Item item.Stack
-	// Rotations is the number of rotations the item in the frame has.
+	// Rotations is the number of rotations for the item in the frame. Each rotation is 45 degrees, with the exception
+	// being maps having 90 degree rotations.
 	Rotations uint8
 	// Drops is the chance of the item dropping when the frame is broken. In vanilla, this is always 1.0.
 	Drops float64
 	// Glowing makes the frame the glowing variant.
 	Glowing bool
-	// Large makes the item frame show up large, as with maps.
+	// Large makes the frame show up large. This typically only occurs with maps.
 	Large bool
 }
 
 // Activate ...
 func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
-	held, other := u.HeldItems()
 	if !i.Item.Empty() {
+		// TODO: Item frames w/ maps can only be rotated 4 times
 		i.Rotations = (i.Rotations + 1) % 8
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRotate{})
-	} else if !held.Empty() {
+	} else if held, other := u.HeldItems(); !held.Empty() {
 		i.Item = held.Grow(-held.Count() + 1)
 		// TODO: When maps are implemented, check the item is a map, and if so, force the large boolean to true.
 		u.SetHeldItems(held.Grow(-1), other)
