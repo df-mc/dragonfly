@@ -50,9 +50,7 @@ type World struct {
 	// These are tracked so that a call to RemoveEntity can find the correct entity.
 	entities map[Entity]ChunkPos
 
-	r         *rand.Rand
-	simDistSq int32
-
+	r               *rand.Rand
 	randomTickSpeed atomic.Uint32
 
 	updateMu sync.Mutex
@@ -76,7 +74,7 @@ type World struct {
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log internal.Logger, simulationDistance int) *World {
+func New(log internal.Logger) *World {
 	w := &World{
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
@@ -85,7 +83,6 @@ func New(log internal.Logger, simulationDistance int) *World {
 		prov:            NoIOProvider{},
 		gen:             NopGenerator{},
 		handler:         NopHandler{},
-		simDistSq:       int32(simulationDistance * simulationDistance),
 		randomTickSpeed: *atomic.NewUint32(3),
 		log:             log,
 		set:             defaultSettings(),
@@ -944,6 +941,24 @@ func (w *World) DefaultGameMode() GameMode {
 	return w.set.DefaultGameMode
 }
 
+// SetTickRange sets the range in chunks around each Viewer that will have the chunks (their blocks and entities)
+// ticked when the World is ticked.
+func (w *World) SetTickRange(v int) {
+	if w == nil {
+		return
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.set.TickRange = int32(v)
+}
+
+// tickRange returns the tick range around each Viewer.
+func (w *World) tickRange() int {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return int(w.set.TickRange)
+}
+
 // SetDefaultGameMode changes the default game mode of the world. When players join, they are then given that
 // game mode.
 func (w *World) SetDefaultGameMode(mode GameMode) {
@@ -1337,7 +1352,8 @@ type blockEntityToTick struct {
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered from the viewers passed.
 func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
-	if w.simDistSq == 0 {
+	r := int32(w.tickRange())
+	if r == 0 {
 		// NOP if the simulation distance is 0.
 		return
 	}
@@ -1360,7 +1376,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		withinSimDist := false
 		for _, chunkPos := range w.positionCache {
 			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
-			if (xDiff*xDiff)+(zDiff*zDiff) <= w.simDistSq {
+			if (xDiff*xDiff)+(zDiff*zDiff) <= r*r {
 				// The chunk was within the simulation distance of at least one viewer, so we can proceed to
 				// ticking the block.
 				withinSimDist = true
