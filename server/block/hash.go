@@ -66,6 +66,7 @@ const (
 	hashIronBars
 	hashIronBlock
 	hashIronOre
+	hashItemFrame
 	hashKelp
 	hashLadder
 	hashLantern
@@ -381,6 +382,10 @@ func (IronBlock) Hash() uint64 {
 
 func (i IronOre) Hash() uint64 {
 	return hashIronOre | uint64(i.Type.Uint8())<<7
+}
+
+func (i ItemFrame) Hash() uint64 {
+	return hashItemFrame | uint64(i.Facing)<<7 | uint64(boolByte(i.Large))<<10 | uint64(boolByte(i.Glowing))<<11
 }
 
 func (k Kelp) Hash() uint64 {
