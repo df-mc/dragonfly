@@ -11,6 +11,11 @@ import (
 // WriteItem encodes an item stack into a map that can be encoded using NBT.
 func WriteItem(s item.Stack, disk bool) map[string]interface{} {
 	m := make(map[string]interface{})
+	if nbt, ok := s.Item().(world.NBTer); ok {
+		for k, v := range nbt.EncodeNBT() {
+			m[k] = v
+		}
+	}
 	if disk {
 		writeItemStack(m, s)
 	}
@@ -40,11 +45,6 @@ func writeItemStack(m map[string]interface{}, s item.Stack) {
 		m["Block"] = v
 	}
 	m["Count"] = byte(s.Count())
-	if nbt, ok := s.Item().(world.NBTer); ok {
-		for k, v := range nbt.EncodeNBT() {
-			m[k] = v
-		}
-	}
 }
 
 // writeBlock writes the name, properties and version of a block to a map ready for NBT encoding.
