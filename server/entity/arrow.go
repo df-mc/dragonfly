@@ -30,14 +30,14 @@ type Arrow struct {
 
 	closeNextTick, critical bool
 
-	owner                     world.Entity
-	canPickup, creativePickup bool
+	owner                        world.Entity
+	shotByPlayer, shotInCreative bool
 
 	c *ProjectileComputer
 }
 
 // NewArrow ...
-func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, canPickup, creativePickup bool, baseDamage float64) *Arrow {
+func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, shotByPlayer, shotInCreative bool, baseDamage float64) *Arrow {
 	s := &Arrow{
 		yaw:   yaw,
 		pitch: pitch,
@@ -47,8 +47,8 @@ func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, 
 			DragBeforeGravity: true,
 		}},
 		baseDamage:     baseDamage,
-		canPickup:      canPickup,
-		creativePickup: creativePickup,
+		shotByPlayer:   shotByPlayer,
+		shotInCreative: shotInCreative,
 		critical:       critical,
 		owner:          owner,
 	}
@@ -159,8 +159,8 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 
 // New creates an arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the arrow,
 // only returns it.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, canPickup, creativePickup bool, baseDamage float64) world.Entity {
-	arrow := NewArrow(pos, yaw, pitch, nil, critical, canPickup, creativePickup, baseDamage)
+func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64) world.Entity {
+	arrow := NewArrow(pos, yaw, pitch, nil, critical, shotByPlayer, shotInCreative, baseDamage)
 	arrow.vel = vel
 	return arrow
 }
@@ -202,8 +202,8 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Pitch":      pitch,
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":     a.baseDamage,
-		"player":     boolByte(a.canPickup),
-		"isCreative": boolByte(a.creativePickup),
+		"player":     boolByte(a.shotByPlayer),
+		"isCreative": boolByte(a.shotInCreative),
 	}
 }
 
@@ -218,14 +218,14 @@ func (a *Arrow) checkNearby() {
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				isCreative := collector.GameMode() == world.GameModeCreative
-				if !a.canPickup {
+				if !a.shotByPlayer {
 					return
 				}
 
 				for _, viewer := range w.Viewers(a.Position()) {
 					viewer.ViewEntityAction(a, action.PickedUp{Collector: collector})
 				}
-				if !isCreative && !a.creativePickup {
+				if !isCreative && !a.shotInCreative {
 					// A collector was within range to pick up the entity.
 					_ = collector.Collect(item.NewStack(item.Arrow{}, 1))
 				}

@@ -63,7 +63,7 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 	}
 
 	p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, canPickup, creativePickup bool, baseDamage float64) world.Entity
+		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64) world.Entity
 	})
 	if !ok {
 		return
