@@ -21,6 +21,8 @@ import (
 // A nil *World is safe to use but not functional.
 type World struct {
 	log internal.Logger
+	d   Dimension
+	ra  cube.Range
 
 	mu   sync.Mutex
 	set  Settings
@@ -74,7 +76,7 @@ type World struct {
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log internal.Logger) *World {
+func New(log internal.Logger, d Dimension) *World {
 	w := &World{
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
@@ -87,6 +89,8 @@ func New(log internal.Logger) *World {
 		log:             log,
 		set:             defaultSettings(),
 		closing:         make(chan struct{}),
+		d:               d,
+		ra:              d.Range(),
 	}
 
 	w.initChunkCache()
@@ -104,11 +108,22 @@ func (w *World) Name() string {
 	return w.set.Name
 }
 
+// Dimension returns the Dimension assigned to the World in world.New. The sky colour and behaviour of a variety of
+// world features differ based on the Dimension assigned to a World.
+func (w *World) Dimension() Dimension {
+	return w.d
+}
+
+// Range returns the range in blocks of the World (min and max). It is equivalent to calling World.Dimension().Range().
+func (w *World) Range() cube.Range {
+	return w.ra
+}
+
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos cube.Pos) Block {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return air()
 	}
@@ -136,7 +151,7 @@ func (w *World) Block(pos cube.Pos) Block {
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return air(), nil
 	}
@@ -153,48 +168,30 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 	return b, nil
 }
 
-// runtimeID gets the block runtime ID at a specific position in the world.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func runtimeID(w *World, pos cube.Pos) uint32 {
-	if w == nil || pos.OutOfBounds() {
-		// Fast way out.
-		return airRID
-	}
-	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
-	if err != nil {
-		return airRID
-	}
-	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	c.Unlock()
-
-	return rid
-}
-
 // HighestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
 // passed in the world.
-func (w *World) HighestLightBlocker(x, z int) int16 {
+func (w *World) HighestLightBlocker(x, z int) int {
 	if w == nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	v := c.HighestLightBlocker(uint8(x), uint8(z))
 	c.Unlock()
-	return v
+	return int(v)
 }
 
 // HighestBlock looks up the highest non-air block in the world at a specific x and z in the world. The y
 // value of the highest block is returned, or 0 if no blocks were present in the column.
 func (w *World) HighestBlock(x, z int) int {
 	if w == nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	v := c.HighestBlock(uint8(x), uint8(z))
 	c.Unlock()
@@ -208,14 +205,14 @@ func (w *World) highestObstructingBlock(x, z int) int {
 		return 0
 	}
 	yHigh := w.HighestBlock(x, z)
-	for y := yHigh; y >= cube.MinY; y-- {
+	for y := yHigh; y >= w.ra[0]; y-- {
 		pos := cube.Pos{x, y, z}
 		m := w.Block(pos).Model()
 		if m.FaceSolid(pos, cube.FaceUp, w) || m.FaceSolid(pos, cube.FaceDown, w) {
 			return y
 		}
 	}
-	return cube.MinY
+	return w.ra[0]
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -225,7 +222,7 @@ func (w *World) highestObstructingBlock(x, z int) int {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return
 	}
@@ -352,7 +349,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
 			for i, sub := range subs {
-				baseY := (i + (cube.MinY >> 4)) << 4
+				baseY := (i + (w.ra[0] >> 4)) << 4
 				if baseY>>4 < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
@@ -361,10 +358,10 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 
 				for localY := 0; localY < 16; localY++ {
 					yOffset := baseY + localY
-					if yOffset > cube.MaxY || yOffset >= maxY {
+					if yOffset > w.ra[1] || yOffset >= maxY {
 						// We've hit the height limit for blocks.
 						break
-					} else if yOffset < cube.MinY || yOffset < pos[1] {
+					} else if yOffset < w.ra[0] || yOffset < pos[1] {
 						// We've got a block below the minimum, but other blocks might still reach above
 						// it, so don't break but continue.
 						continue
@@ -425,7 +422,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
 func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return nil, false
 	}
@@ -466,7 +463,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 // there already is a liquid at that position, in which case it will be overwritten.
 // If nil is passed for the liquid, any liquid currently present will be removed.
 func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return
 	}
@@ -560,7 +557,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer u
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
 // liquid if so.
 func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return nil, false
 	}
@@ -584,12 +581,12 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < cube.MinY {
+	if w == nil || pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > cube.MaxY {
-		// Above the rest of the world, so full sky light.
+	if pos[1] > w.ra[1] {
+		// Above the rest of the world, so full skylight.
 		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
@@ -606,11 +603,11 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < cube.MinY {
+	if w == nil || pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > cube.MaxY {
+	if pos[1] > w.ra[1] {
 		// Above the rest of the world, so full sky light.
 		return 15
 	}
@@ -909,7 +906,7 @@ func (w *World) Spawn() cube.Pos {
 	w.mu.Lock()
 	s := w.set.Spawn
 	w.mu.Unlock()
-	if s[1] > cube.MaxY {
+	if s[1] > w.ra[1] {
 		s[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
 	return s
@@ -1004,7 +1001,7 @@ func (w *World) SetRandomTickSpeed(v int) {
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
 func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		return
 	}
 	w.updateMu.Lock()
@@ -1022,7 +1019,7 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
 func (w *World) doBlockUpdatesAround(pos cube.Pos) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		return
 	}
 
@@ -1032,7 +1029,7 @@ func (w *World) doBlockUpdatesAround(pos cube.Pos) {
 	w.updateNeighbour(pos, changed)
 	pos.Neighbours(func(pos cube.Pos) {
 		w.updateNeighbour(pos, changed)
-	})
+	}, w.ra)
 	w.updateMu.Unlock()
 }
 
@@ -1432,7 +1429,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 
 				if randomTickBlocks[rid] {
-					subY := (i + (cube.MinY >> 4)) << 4
+					subY := (i + (w.ra[0] >> 4)) << 4
 					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY + int(y), cz + int(z)}})
 					generateNew = true
 					continue
@@ -1818,7 +1815,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New(airRID)
+		c = chunk.New(airRID, w.d.Range())
 		data := newChunkData(c)
 		w.chunks[pos] = data
 		data.Lock()

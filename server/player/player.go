@@ -1255,7 +1255,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				// The block clicked was either not replaceable, or not replaceable using the block passed.
 				replacedPos = pos.Side(face)
 			}
-			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds() {
+			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds(w.Range()) {
 				if p.placeBlock(replacedPos, b, false) && !p.GameMode().CreativeInventory() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
@@ -1514,7 +1514,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 		if !success {
 			pos.Neighbours(func(neighbour cube.Pos) {
 				w.SetBlock(neighbour, w.Block(neighbour))
-			})
+			}, w.Range())
 			w.SetBlock(pos, w.Block(pos))
 		}
 	}()
@@ -1869,7 +1869,7 @@ func (p *Player) Tick(current int64) {
 
 	p.tickFood()
 	p.effects.Tick(p)
-	if p.Position()[1] < cube.MinY && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < float64(p.World().Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 

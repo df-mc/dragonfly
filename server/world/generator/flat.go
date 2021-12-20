@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
@@ -24,10 +23,11 @@ func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 		m[i], _ = world.BlockRuntimeID(b)
 	}
 
+	min := int16(chunk.Range()[0])
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			for y := int16(0); y < l; y++ {
-				chunk.SetBlock(x, cube.MinY+y, z, 0, m[l-y-1])
+				chunk.SetBlock(x, min+y, z, 0, m[l-y-1])
 			}
 		}
 	}

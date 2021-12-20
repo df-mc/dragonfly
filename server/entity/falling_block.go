@@ -61,7 +61,7 @@ func (f *FallingBlock) Tick(_ int64) {
 	pos := cube.PosFromVec3(m.pos)
 	w := f.World()
 
-	if pos[1] < cube.MinY {
+	if pos[1] < f.World().Range()[0] {
 		_ = f.Close()
 	}
 

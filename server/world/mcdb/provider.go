@@ -21,6 +21,7 @@ import (
 // Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
 type Provider struct {
 	db  *leveldb.DB
+	dim world.Dimension
 	dir string
 	d   data
 }
@@ -31,10 +32,10 @@ const chunkVersion = 27
 // New creates a new provider reading and writing files to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
 // error is returned.
-func New(dir string) (*Provider, error) {
+func New(dir string, d world.Dimension) (*Provider, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	p := &Provider{dir: dir}
+	p := &Provider{dir: dir, dim: d}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
@@ -163,8 +164,9 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	if err != nil && err != leveldb.ErrNotFound {
 		return nil, true, fmt.Errorf("error reading block entities: %w", err)
 	}
+	data.SubChunks = make([][]byte, (p.dim.Range().Height()>>4)+1)
 	for i := range data.SubChunks {
-		data.SubChunks[i], err = p.db.Get(append(key, keySubChunkData, uint8(i+cube.MinY>>4)), nil)
+		data.SubChunks[i], err = p.db.Get(append(key, keySubChunkData, uint8(i+(p.dim.Range()[0]>>4))), nil)
 		if err == leveldb.ErrNotFound {
 			// No sub chunk present at this Y level. We skip this one and move to the next, which might still
 			// be present.
@@ -173,7 +175,7 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 			return nil, true, fmt.Errorf("error reading sub chunk data %v: %w", i, err)
 		}
 	}
-	c, err = chunk.DiskDecode(data)
+	c, err = chunk.DiskDecode(data, p.dim.Range())
 	return c, true, err
 }
 
@@ -192,7 +194,7 @@ func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
 	_ = p.db.Put(append(key, keyFinalisation), finalisation, nil)
 
 	for i, sub := range data.SubChunks {
-		_ = p.db.Put(append(key, keySubChunkData, byte(i+cube.MinY>>4)), sub, nil)
+		_ = p.db.Put(append(key, keySubChunkData, byte(i+(c.Range()[0]>>4))), sub, nil)
 	}
 	return nil
 }

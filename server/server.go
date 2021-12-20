@@ -100,7 +100,7 @@ func New(c *Config, log internal.Logger) *Server {
 		c:              *c,
 		log:            log,
 		players:        make(chan *player.Player),
-		world:          world.New(log),
+		world:          world.New(log, world.Overworld),
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewString(c.Server.Name),
 		playerProvider: player.NopProvider{},
@@ -400,20 +400,25 @@ func (server *Server) wait() {
 // finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
 func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	// TODO: Lookup the right world/dimension for the player.
+	w := server.World()
+
 	data := minecraft.GameData{
 		Yaw:            90,
-		WorldName:      server.c.World.Name,
-		PlayerPosition: vec64To32(server.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
+		WorldName:      w.Name(),
+		PlayerPosition: vec64To32(w.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
-		Time:                         int64(server.world.Time()),
+		Time:                         int64(w.Time()),
 		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 		Difficulty:                   2,
 		Items:                        server.itemEntries(),
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
+		Dimension:                    int32(w.Dimension().EncodeDimension()),
 	}
 	// UUID is validated by gophertunnel.
 	id, _ := uuid.Parse(conn.IdentityData().Identity)
@@ -481,7 +486,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 func (server *Server) loadWorld() {
 	server.log.Debugf("Loading world...")
 
-	p, err := mcdb.New(server.c.World.Folder)
+	p, err := mcdb.New(server.c.World.Folder, server.world.Dimension())
 	if err != nil {
 		server.log.Fatalf("error loading world: %v", err)
 	}
