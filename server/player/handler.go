@@ -55,8 +55,9 @@ type Handler interface {
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
-	// the block being broken.
-	HandleBlockBreak(ctx *event.Context, pos cube.Pos)
+	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
+	// to change what items will actually be dropped.
+	HandleBlockBreak(ctx *event.Context, pos cube.Pos, drops *[]item.Stack)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *event.Context, pos cube.Pos, b world.Block)
@@ -154,7 +155,7 @@ func (NopHandler) HandleSkinChange(*event.Context, skin.Skin) {}
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
 
 // HandleBlockBreak ...
-func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos) {}
+func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack) {}
 
 // HandleBlockPlace ...
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}

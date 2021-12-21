@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"bytes"
 	"container/list"
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
@@ -19,18 +20,18 @@ type light interface {
 
 type skyLight struct{}
 
-func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.SkyLightAt(x, y, z) }
-func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setSkyLight(x, y, z, v) }
+func (skyLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.SkyLight(x, y, z) }
+func (skyLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.SetSkyLight(x, y, z, v) }
 
 type blockLight struct{}
 
-func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.blockLightAt(x, y, z) }
-func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.setBlockLight(x, y, z, v) }
+func (blockLight) light(sub *SubChunk, x, y, z uint8) uint8 { return sub.BlockLight(x, y, z) }
+func (blockLight) setLight(sub *SubChunk, x, y, z, v uint8) { sub.SetBlockLight(x, y, z, v) }
 
 // FillLight executes the light 'filling' stage, where the chunk is filled with light coming only from the
 // chunk itself, without light crossing chunk borders.
 func FillLight(c *Chunk) {
-	removeEmptySubChunks(c)
+	initialiseLightSlices(c)
 	queue := list.New()
 
 	insertBlockLightNodes(queue, c)
@@ -50,13 +51,6 @@ func SpreadLight(c *Chunk, neighbours []*Chunk) {
 	queue := list.New()
 	spreadLight(c, neighbours, queue, BlockLight)
 	spreadLight(c, neighbours, queue, SkyLight)
-
-	// Spreading light might create new sub chunks, but we don't want those as sky light might not be
-	// initially spread there.
-	removeEmptySubChunks(c)
-	for i := range neighbours {
-		removeEmptySubChunks(neighbours[i])
-	}
 }
 
 // spreadLight spreads the light from Chunk c into its neighbours. The nodes are added to the list.List passed.
@@ -67,20 +61,30 @@ func spreadLight(c *Chunk, neighbours []*Chunk, queue *list.List, lt light) {
 	}
 }
 
-// removeEmptySubChunks removes any empty sub chunks from the top of the chunk passed.
-func removeEmptySubChunks(c *Chunk) {
-	for index := len(c.sub) - 1; index >= 0; index-- {
-		sub := c.sub[index]
-		if sub == nil {
+var (
+	fullLight    = bytes.Repeat([]byte{0xff}, 2048)
+	fullLightPtr = &fullLight[0]
+	noLight      = make([]uint8, 2048)
+	noLightPtr   = &noLight[0]
+)
+
+// initialiseLightSlices initialises the light slices in all SubChunks held by the Chunk.
+func initialiseLightSlices(c *Chunk) {
+	index := len(c.sub) - 1
+	for index >= 0 {
+		if sub := c.sub[index]; sub.Empty() {
+			sub.skyLight = fullLight
+			sub.blockLight = noLight
+			index--
 			continue
 		}
-		if len(sub.storages) == 0 ||
-			(len(sub.storages) == 1 && len(sub.storages[0].palette.blockRuntimeIDs) == 1 && sub.storages[0].palette.blockRuntimeIDs[0] == c.air) {
-			c.sub[index] = nil
-		} else {
-			// We found a sub chunk that has blocks, so break out.
-			break
-		}
+		// We've hit the topmost empty SubChunk.
+		break
+	}
+	for index >= 0 {
+		c.sub[index].skyLight = noLight
+		c.sub[index].blockLight = noLight
+		index--
 	}
 }
 
@@ -90,7 +94,7 @@ func insertBlockLightNodes(queue *list.List, c *Chunk) {
 	for index, sub := range c.sub {
 		// Potential fast path out: We first check the palette to see if there are any blocks that emit light in the
 		// block storage. If not, we don't need to iterate the full storage.
-		if sub == nil || !anyBlockLight(sub) {
+		if !anyBlockLight(sub) {
 			continue
 		}
 		baseY := subY(int16(index))
@@ -110,7 +114,7 @@ func insertBlockLightNodes(queue *list.List, c *Chunk) {
 // anyBlockLight checks if there are any blocks in the SubChunk passed that emit light.
 func anyBlockLight(sub *SubChunk) bool {
 	for _, layer := range sub.storages {
-		for _, id := range layer.palette.blockRuntimeIDs {
+		for _, id := range layer.palette.values {
 			if LightBlocks[id] != 0 {
 				return true
 			}
@@ -173,7 +177,7 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 					continue
 				}
 				// Fill the rest of the column with sky light on full strength.
-				c.sub[subIndex(y+1)].setSkyLight(x, uint8((y+1)&0xf), z, 15)
+				c.sub[subIndex(y+1)].SetSkyLight(x, uint8((y+1)&0xf), z, 15)
 			}
 		}
 	}
@@ -183,9 +187,6 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 // spread into the neighbouring chunks.
 func insertLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk, lt light) {
 	for index, sub := range c.sub {
-		if sub == nil {
-			continue
-		}
 		baseY := subY(int16(index))
 		for y := uint8(0); y < 16; y++ {
 			totalY := int16(y) + baseY
@@ -240,7 +241,7 @@ func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, lt li
 
 	x, y, z := uint8(node.x&0xf), node.y, uint8(node.z&0xf)
 	yLocal := uint8(y & 0xf)
-	sub := subByY(y, chunkByNode(node, c, neighbourChunks))
+	sub := chunkByNode(node, c, neighbourChunks).sub[subIndex(y)]
 
 	if !node.first {
 		filter := filterLevel(sub, x, yLocal, z) + 1
@@ -268,7 +269,7 @@ func fillPropagate(queue *list.List, c *Chunk, lt light) {
 
 	x, y, z := uint8(node.x), node.y, uint8(node.z)
 	yLocal := uint8(y & 0xf)
-	sub := subByY(y, c)
+	sub := c.sub[subIndex(y)]
 
 	if lt.light(sub, x, yLocal, z) >= node.level {
 		// This neighbour already had either as high of a level as what we're updating it to, or
@@ -284,7 +285,7 @@ func fillPropagate(queue *list.List, c *Chunk, lt light) {
 				// In the fill stage, we don't propagate sky light out of the chunk.
 				continue
 			}
-			sub := filterLevel(subByY(neighbour.y, c), uint8(neighbour.x), uint8(neighbour.y&0xf), uint8(neighbour.z)) + 1
+			sub := filterLevel(c.sub[subIndex(neighbour.y)], uint8(neighbour.x), uint8(neighbour.y&0xf), uint8(neighbour.z)) + 1
 			if sub >= node.level {
 				// No light left to propagate.
 				continue
@@ -332,18 +333,6 @@ func (n lightNode) neighbours() []lightNode {
 	return neighbours
 }
 
-// subByY returns a sub chunk in the chunk passed by a Y value. If one doesn't yet exist, it is created.
-func subByY(y int16, c *Chunk) *SubChunk {
-	index := subIndex(y)
-	sub := c.sub[index]
-
-	if sub == nil {
-		sub = NewSubChunk(c.air)
-		c.sub[index] = sub
-	}
-	return sub
-}
-
 // chunkByNode selects a chunk (either the centre or one of the neighbours) depending on the position of the
 // node passed.
 func chunkByNode(node lightNode, centre *Chunk, neighbours []*Chunk) *Chunk {
@@ -378,18 +367,18 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	case 0:
 		return 0
 	case 1:
-		id := storages[0].RuntimeID(x, y, z)
+		id := storages[0].At(x, y, z)
 		if id == sub.air {
 			return 0
 		}
 		return LightBlocks[id]
 	case 2:
 		var highest uint8
-		id := storages[0].RuntimeID(x, y, z)
+		id := storages[0].At(x, y, z)
 		if id != sub.air {
 			highest = LightBlocks[id]
 		}
-		id = storages[1].RuntimeID(x, y, z)
+		id = storages[1].At(x, y, z)
 		if id != sub.air {
 			if v := LightBlocks[id]; v > highest {
 				highest = v
@@ -399,7 +388,7 @@ func highestEmissionLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	}
 	var highest uint8
 	for i := range storages {
-		if l := LightBlocks[storages[i].RuntimeID(x, y, z)]; l > highest {
+		if l := LightBlocks[storages[i].At(x, y, z)]; l > highest {
 			highest = l
 		}
 	}
@@ -415,7 +404,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	case 0:
 		return 0
 	case 1:
-		id := storages[0].RuntimeID(x, y, z)
+		id := storages[0].At(x, y, z)
 		if id == sub.air {
 			return 0
 		}
@@ -423,12 +412,12 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	case 2:
 		var highest uint8
 
-		id := storages[0].RuntimeID(x, y, z)
+		id := storages[0].At(x, y, z)
 		if id != sub.air {
 			highest = FilteringBlocks[id]
 		}
 
-		id = storages[1].RuntimeID(x, y, z)
+		id = storages[1].At(x, y, z)
 		if id != sub.air {
 			if v := FilteringBlocks[id]; v > highest {
 				highest = v
@@ -438,7 +427,7 @@ func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
 	}
 	var highest uint8
 	for i := range storages {
-		id := storages[i].RuntimeID(x, y, z)
+		id := storages[i].At(x, y, z)
 		if id != sub.air {
 			if l := FilteringBlocks[id]; l > highest {
 				highest = l

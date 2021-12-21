@@ -15,7 +15,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -122,7 +121,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.offHand, true
 	case containerArmour:
 		// Armour inventory.
-		return s.armour.Inv(), true
+		return s.armour.Inventory(), true
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
@@ -205,14 +204,6 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 				Max:   5, Min: 0, Default: 0,
 			},
 		},
-	})
-}
-
-// SendVelocity sends the velocity of the player to the client.
-func (s *Session) SendVelocity(velocity mgl64.Vec3) {
-	s.writePacket(&packet.SetActorMotion{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Velocity:        vec64To32(velocity),
 	})
 }
 

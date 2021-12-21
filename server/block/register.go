@@ -321,14 +321,6 @@ func init() {
 	}
 }
 
-//noinspection GoCommentLeadingSpace
-
-//noinspection GoCommentLeadingSpace
-
-//noinspection GoCommentLeadingSpace
-
-//noinspection GoCommentLeadingSpace
-
 func registerAll(blocks []world.Block) {
 	for _, b := range blocks {
 		world.RegisterBlock(b)

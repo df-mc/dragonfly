@@ -1,18 +1,24 @@
 package cube
 
 import (
+	"fmt"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
 
 const (
-	MaxY = 255
-	MinY = 0
+	MaxY = 320
+	MinY = -64
 )
 
 // Pos holds the position of a block. The position is represented of an array with an x, y and z value,
 // where the y value is positive.
 type Pos [3]int
+
+// String converts the Pos to a string in the format (1,2,3) and returns it.
+func (p Pos) String() string {
+	return fmt.Sprintf("(%v,%v,%v)", p[0], p[1], p[2])
+}
 
 // X returns the X coordinate of the block position.
 func (p Pos) X() int {
@@ -29,7 +35,7 @@ func (p Pos) Z() int {
 	return p[2]
 }
 
-// OutOfBounds checks if the Y value is either bigger than 255 or smaller than 0.
+// OutOfBounds checks if the Y value is either bigger than MaxY or smaller than MinY.
 func (p Pos) OutOfBounds() bool {
 	y := p[1]
 	return y > MaxY || y < MinY

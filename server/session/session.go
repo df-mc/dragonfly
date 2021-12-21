@@ -2,13 +2,13 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
-	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
@@ -67,10 +67,7 @@ type Session struct {
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
 	openedWindow, openedPos        atomic.Value
-	openedContainerID              atomic.Uint32
 	swingingArm                    atomic.Bool
-
-	recipeMapping map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
@@ -106,8 +103,8 @@ type Conn interface {
 	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
 	// packet.
 	WritePacket(pk packet.Packet) error
-	// StartGame starts the game for the Conn with a timeout.
-	StartGame(data minecraft.GameData) error
+	// StartGameContext starts the game for the Conn with a context to cancel it.
+	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -167,8 +164,6 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
-
-	s.recipeMapping = make(map[uint32]recipe.Recipe)
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = c
 
@@ -195,9 +190,7 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
-	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
-
-	s.sendRecipes()
+	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
 
@@ -285,22 +278,6 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// craftingSize gets the crafting size based on the opened container ID.
-func (s *Session) craftingSize() byte {
-	if s.openedContainerID.Load() == 1 {
-		return craftingSizeLarge
-	}
-	return craftingSizeSmall
-}
-
-// craftingOffset gets the crafting offset based on the opened container ID.
-func (s *Session) craftingOffset() byte {
-	if s.openedContainerID.Load() == 1 {
-		return craftingGridLargeOffset
-	}
-	return craftingGridSmallOffset
-}
-
 // sendChunks continuously sends chunks to the player, until a value is sent to the stop channel passed.
 func (s *Session) sendChunks(stop <-chan struct{}) {
 	const maxChunkTransactions = 8
@@ -341,10 +318,9 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 		te.Stop()
 	}()
 	var (
-		r          map[string]map[int]cmd.Runnable
-		enumValues map[string][]string
-		enums      map[string]cmd.Enum
-		ok         bool
+		r                 = s.sendAvailableCommands()
+		enums, enumValues = s.enums()
+		ok                bool
 	)
 	for {
 		select {
@@ -410,12 +386,11 @@ func (s *Session) registerHandlers() {
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
 		packet.IDContainerClose:        &ContainerCloseHandler{},
-		packet.IDCraftingEvent:         nil, // Not needed as we handle ItemStackRequest actions instead.
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},

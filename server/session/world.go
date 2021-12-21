@@ -35,102 +35,84 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
 func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	data := chunk.Encode(c, chunk.NetworkEncoding)
-
-	count := byte(0)
-	for y := byte(0); y < 16; y++ {
-		if data.SubChunks[y] != nil {
-			count = y + 1
-		}
+	var (
+		data   = chunk.Encode(c, chunk.NetworkEncoding)
+		count  = uint32(len(data.SubChunks))
+		blobs  = make([][]byte, count+1)
+		hashes = make([]uint64, len(blobs))
+		m      = make(map[uint64]struct{}, len(blobs))
+	)
+	for i := range data.SubChunks {
+		blobs[i] = data.SubChunks[i]
 	}
+	blobs[len(blobs)-1] = data.Biomes
 
-	blobs := make([][]byte, 0, count+1)
-	for y := byte(0); y < count; y++ {
-		if data.SubChunks[y] == nil {
-			blobs = append(blobs, []byte{chunk.SubChunkVersion, 0})
-			continue
-		}
-		blobs = append(blobs, data.SubChunks[y])
-	}
-	blobs = append(blobs, data.Data2D[:256])
-
-	m := make(map[uint64]struct{}, len(blobs))
-	hashes := make([]uint64, len(blobs))
 	for i, blob := range blobs {
 		h := xxhash.Sum64(blob)
-		hashes[i] = h
-		m[h] = struct{}{}
+		hashes[i], m[h] = h, struct{}{}
 	}
 
 	s.blobMu.Lock()
 	s.openChunkTransactions = append(s.openChunkTransactions, m)
-	l := len(s.blobs)
-	if l > 4096 {
+	if l := len(s.blobs); l > 4096 {
 		s.blobMu.Unlock()
 		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), l)
 		_ = s.c.Close()
 		return
 	}
-	for i, hash := range hashes {
-		s.blobs[hash] = blobs[i]
+	for i := range hashes {
+		s.blobs[hashes[i]] = blobs[i]
 	}
 	s.blobMu.Unlock()
 
+	// Length of 1 byte for the border block count.
 	raw := bytes.NewBuffer(make([]byte, 1, 32))
 	enc := nbt.NewEncoderWithEncoding(raw, nbt.NetworkLittleEndian)
-	for pos, b := range blockEntities {
+	for bp, b := range blockEntities {
 		if n, ok := b.(world.NBTer); ok {
-			data := n.EncodeNBT()
-			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-			_ = enc.Encode(data)
+			d := n.EncodeNBT()
+			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
+			_ = enc.Encode(d)
 		}
 	}
 
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
 		ChunkZ:        pos[1],
-		SubChunkCount: uint32(count),
+		SubChunkCount: count,
 		CacheEnabled:  true,
 		BlobHashes:    hashes,
 		RawPayload:    raw.Bytes(),
 	})
 }
 
+var emptyHeightmap = make([]byte, 512)
+
 // sendNetworkChunk sends a network encoded chunk to the client.
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	data := chunk.Encode(c, chunk.NetworkEncoding)
 
-	count := byte(0)
-	for y := byte(0); y < 16; y++ {
-		if data.SubChunks[y] != nil {
-			count = y + 1
-		}
+	for i := range data.SubChunks {
+		_, _ = s.chunkBuf.Write(data.SubChunks[i])
 	}
-	for y := byte(0); y < count; y++ {
-		if data.SubChunks[y] == nil {
-			_ = s.chunkBuf.WriteByte(chunk.SubChunkVersion)
-			// We write zero here, meaning the sub chunk has no block storages: The sub chunk is completely
-			// empty.
-			_ = s.chunkBuf.WriteByte(0)
-			continue
-		}
-		_, _ = s.chunkBuf.Write(data.SubChunks[y])
-	}
-	_, _ = s.chunkBuf.Write(data.Data2D)
+	_, _ = s.chunkBuf.Write(append(emptyHeightmap, data.Biomes...))
+
+	// Length of 1 byte for the border block count.
+	s.chunkBuf.WriteByte(0)
 
 	enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
-	for pos, b := range blockEntities {
+	for bp, b := range blockEntities {
 		if n, ok := b.(world.NBTer); ok {
-			data := n.EncodeNBT()
-			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-			_ = enc.Encode(data)
+			d := n.EncodeNBT()
+			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
+			_ = enc.Encode(d)
 		}
 	}
 
 	s.writePacket(&packet.LevelChunk{
 		ChunkX:        pos[0],
 		ChunkZ:        pos[1],
-		SubChunkCount: uint32(count),
+		SubChunkCount: uint32(len(data.SubChunks)),
 		RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
 	})
 	s.chunkBuf.Reset()
@@ -211,6 +193,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityRuntimeID: runtimeID,
 			Item:            instanceFromItem(v.Item()),
 			Position:        vec64To32(v.Position()),
+			Velocity:        vec64To32(v.Velocity()),
 		})
 		return
 	case *entity.FallingBlock:
@@ -219,12 +202,19 @@ func (s *Session) ViewEntity(e world.Entity) {
 		metadata = map[uint32]interface{}{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
 		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
+
+	var vel mgl64.Vec3
+	if v, ok := e.(interface{ Velocity() mgl64.Vec3 }); ok {
+		vel = v.Velocity()
+	}
+
 	s.writePacket(&packet.AddActor{
 		EntityUniqueID:  int64(runtimeID),
 		EntityRuntimeID: runtimeID,
 		EntityType:      id,
 		EntityMetadata:  metadata,
 		Position:        vec64To32(e.Position()),
+		Velocity:        vec64To32(vel),
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
@@ -382,7 +372,9 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 		// Don't view the items of the entity if the entity is the Controllable of the session.
 		return
 	}
-	armoured, ok := e.(item.Armoured)
+	armoured, ok := e.(interface {
+		Armour() *inventory.Armour
+	})
 	if !ok {
 		return
 	}
@@ -452,6 +444,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
+	case particle.EndermanTeleportParticle:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleEndermanTeleport,
+			Position:  vec64To32(pos),
+		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventParticleEvaporateWater,
@@ -460,6 +457,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	case particle.SnowballPoof:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventAddParticleMask | 15,
+			Position:  vec64To32(pos),
+		})
+	case particle.Splash:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventParticleSplash,
+			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
 			Position:  vec64To32(pos),
 		})
 	}
@@ -481,6 +484,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundDoorCrash,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
 	case sound.Thunder:
@@ -490,11 +494,19 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			EventType: packet.EventSoundClick,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.Pop:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.EventSoundPop,
 			Position:  vec64To32(pos),
 		})
+		return
+	case sound.EndermanTeleport:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundEndermanTeleport,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
@@ -527,6 +539,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.blockRuntimeID(so.Block))
 	case sound.Fizz:
 		pk.SoundType = packet.SoundEventFizz
+	case sound.GlassBreak:
+		pk.SoundType = packet.SoundEventGlass
 	case sound.Attack:
 		pk.SoundType, pk.EntityType = packet.SoundEventAttackStrong, "minecraft:player"
 		if !so.Damage {

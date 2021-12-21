@@ -14,14 +14,6 @@ type Owned interface {
 	Own(owner world.Entity)
 }
 
-// Projectile represents an entity that can be launched.
-type Projectile interface {
-	world.Entity
-	// New creates a new projectile with the position, velocity, yaw, and pitch provided. It does not spawn
-	// the projectile.
-	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
-}
-
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.
 type ProjectileComputer struct {
 	*MovementComputer
@@ -31,7 +23,7 @@ type ProjectileComputer struct {
 // of its Drag and Gravity. A ray trace is performed to see if the projectile has collided with any block or entity,
 // the ray trace result is returned.
 // The resulting Movement can be sent to viewers by calling Movement.Send.
-func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw, pitch float64, ignored func(world.Entity) bool) (*Movement, trace.Result) {
+func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64, ignored func(world.Entity) bool) (*Movement, trace.Result) {
 	w := e.World()
 	viewers := w.Viewers(pos)
 

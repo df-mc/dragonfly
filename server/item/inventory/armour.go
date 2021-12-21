@@ -113,9 +113,16 @@ func (a *Armour) String() string {
 	return fmt.Sprintf("{helmet: %v, chestplate: %v, leggings: %v, boots: %v}", a.Helmet(), a.Chestplate(), a.Leggings(), a.Boots())
 }
 
-// Inv returns the underlying Inventory instance.
-func (a *Armour) Inv() *Inventory {
+// Inventory returns the underlying Inventory instance.
+func (a *Armour) Inventory() *Inventory {
 	return a.inv
+}
+
+// Handle assigns a Handler to an Armour inventory so that its methods are called for the respective events. Nil may be
+// passed to set the default NopHandler.
+// Handle is the equivalent of calling (*Armour).Inventory().Handle.
+func (a *Armour) Handle(h Handler) {
+	a.inv.Handle(h)
 }
 
 // Close closes the armour inventory, removing the slot change function.

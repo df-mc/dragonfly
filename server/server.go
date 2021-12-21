@@ -2,9 +2,14 @@ package server
 
 import (
 	"bytes"
+	"context"
+	_ "embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -16,7 +21,6 @@ import (
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 
-	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
@@ -68,6 +72,9 @@ type Server struct {
 
 	listenMu  sync.Mutex
 	listeners []Listener
+
+	aMu sync.Mutex
+	a   Allower
 }
 
 func init() {
@@ -97,6 +104,7 @@ func New(c *Config, log internal.Logger) *Server {
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewString(c.Server.Name),
 		playerProvider: player.NopProvider{},
+		a:              allower{},
 	}
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
@@ -135,26 +143,6 @@ func (server *Server) World() *world.World {
 	return server.world
 }
 
-// Run runs the server and blocks until it is closed using a call to Close(). When called, the server will
-// accept incoming connections. Run will block the current goroutine until the server is stopped. To start
-// the server on a different goroutine, use (*Server).Start() instead.
-// After a call to Run, calls to Server.Accept() may be made to accept players into the server.
-func (server *Server) Run() error {
-	if !server.started.CAS(false, true) {
-		panic("server already running")
-	}
-
-	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
-	server.loadWorld()
-	server.registerTargetFunc()
-
-	if err := server.startListening(); err != nil {
-		return err
-	}
-	server.wait()
-	return nil
-}
-
 // Start runs the server but does not block, unlike Run, but instead accepts connections on a different
 // goroutine. Connections will be accepted until the listener is closed using a call to Close.
 // Once started, players may be accepted using Server.Accept().
@@ -163,7 +151,7 @@ func (server *Server) Start() error {
 		panic("server already running")
 	}
 
-	server.log.Infof("Starting Minecraft Bedrock Edition server for v%v...", protocol.CurrentVersion)
+	server.log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
 	server.loadWorld()
 	server.registerTargetFunc()
 
@@ -312,6 +300,17 @@ func (server *Server) Close() error {
 	return nil
 }
 
+// Allow makes the Server filter which connections to the Server are accepted. Connections on which the Allower returns
+// false are rejected immediately. If nil is passed, all connections are accepted.
+func (server *Server) Allow(a Allower) {
+	if a == nil {
+		a = allower{}
+	}
+	server.aMu.Lock()
+	defer server.aMu.Unlock()
+	server.a = a
+}
+
 // Listen makes the Server listen for new connections from the Listener passed. This may be used to listen for players
 // on different interfaces. Note that the maximum player count of additional Listeners added is not enforced
 // automatically. The limit must be enforced by the Listener.
@@ -324,9 +323,12 @@ func (server *Server) Listen(l Listener) {
 
 	wg := new(sync.WaitGroup)
 	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
 		for {
 			c, err := l.Accept()
 			if err != nil {
+				// Cancel the context so that any call to StartGameContext is cancelled rapidly.
+				cancel()
 				// First wait until all connections that are being handled are done inserting the player into the channel.
 				// Afterwards, when we're sure no more values will be inserted in the players channel, we can return so the
 				// player channel can be closed.
@@ -334,8 +336,17 @@ func (server *Server) Listen(l Listener) {
 				server.wg.Done()
 				return
 			}
+			server.aMu.Lock()
+			a := server.a
+			server.aMu.Unlock()
+
+			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData()); !ok {
+				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
+				_ = c.Close()
+				continue
+			}
 			wg.Add(1)
-			go server.finaliseConn(c, l, wg)
+			go server.finaliseConn(ctx, c, l, wg)
 		}
 	}()
 }
@@ -387,7 +398,7 @@ func (server *Server) wait() {
 }
 
 // finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
-func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitGroup) {
+func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
 	data := minecraft.GameData{
 		Yaw:            90,
@@ -414,7 +425,7 @@ func (server *Server) finaliseConn(conn session.Conn, l Listener, wg *sync.WaitG
 		playerData = &d
 	}
 
-	if err := conn.StartGame(data); err != nil {
+	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
@@ -475,7 +486,12 @@ func (server *Server) loadWorld() {
 		server.log.Fatalf("error loading world: %v", err)
 	}
 	server.world.Provider(p)
-	server.world.Generator(generator.Flat{})
+	server.world.Generator(generator.Flat{Layers: []world.Block{
+		block.Grass{},
+		block.Dirt{},
+		block.Dirt{},
+		block.Bedrock{},
+	}})
 
 	server.log.Debugf("Loaded world '%v'.", server.world.Name())
 }
@@ -546,10 +562,7 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 // itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
-	for _, it := range world.Items() {
-		name, _ := it.EncodeItem()
-		rid, _, _ := world.ItemRuntimeID(it)
-
+	for name, rid := range itemRuntimeIDs {
 		entries = append(entries, protocol.ItemEntry{
 			Name:      name,
 			RuntimeID: int16(rid),
@@ -576,4 +589,15 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 
 		server.resources = append(server.resources, r)
 	}
+}
+
+var (
+	//go:embed world/item_runtime_ids.nbt
+	itemRuntimeIDData []byte
+	itemRuntimeIDs    = map[string]int32{}
+)
+
+// init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
+func init() {
+	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }

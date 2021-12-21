@@ -17,6 +17,9 @@ type Handler interface {
 	HandleDrop(ctx *event.Context, slot int, it item.Stack)
 }
 
+// Check to make sure NopHandler implements Handler.
+var _ Handler = NopHandler{}
+
 // NopHandler is an implementation of Handler that does not run any code in any of its methods. It is the default
 // Handler of an Inventory.
 type NopHandler struct{}
