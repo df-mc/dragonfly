@@ -80,9 +80,11 @@ func (b *hashBuilder) sortNames() {
 	for name := range b.blockFields {
 		b.names = append(b.names, name)
 	}
-	sort.Slice(b.names, func(i, j int) bool {
-		return b.names[i] < b.names[j]
-	})
+	sort.Slice(
+		b.names, func(i, j int) bool {
+			return b.names[i] < b.names[j]
+		},
+	)
 }
 
 // writePackage writes the package at the top of the file.
@@ -159,7 +161,10 @@ func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 				}
 
 				if bitSize > 64 {
-					log.Println("Hash size of block properties of", name, "exceeds", 64-baseBits, "bits. Please look at this manually.")
+					log.Println(
+						"Hash size of block properties of", name, "exceeds", 64-baseBits,
+						"bits. Please look at this manually.",
+					)
 				} else {
 					h += " | " + str + "<<" + strconv.Itoa(bitSize)
 				}
@@ -203,7 +208,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 		return "uint64(" + s + ".Uint8())", 4
 	case "WoodType", "CoralType":
 		return "uint64(" + s + ".Uint8())", 3
-	case "SandstoneType", "PrismarineType":
+	case "SandstoneType", "PrismarineType", "StoneBricksType":
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "GrassType":
 		return "uint64(" + s + ".Uint8())", 1
@@ -212,7 +217,10 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 	case "Face":
 		return "uint64(" + s + ")", 3
 	default:
-		log.Println("Found unhandled field type", "'"+name+"'", "in block", structName+".", "Assuming this field is not included in block states. Please make sure this is correct or add the type to cmd/blockhash.")
+		log.Println(
+			"Found unhandled field type", "'"+name+"'", "in block", structName+".",
+			"Assuming this field is not included in block states. Please make sure this is correct or add the type to cmd/blockhash.",
+		)
 	}
 	return "", 0
 }

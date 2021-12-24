@@ -116,6 +116,7 @@ const (
 	hashStainedGlassPane
 	hashStainedTerracotta
 	hashStone
+	hashStoneBricks
 	hashTallGrass
 	hashTerracotta
 	hashTorch
@@ -581,6 +582,10 @@ func (t StainedTerracotta) Hash() uint64 {
 
 func (s Stone) Hash() uint64 {
 	return hashStone | uint64(boolByte(s.Smooth))<<7
+}
+
+func (c StoneBricks) Hash() uint64 {
+	return hashStoneBricks | uint64(c.Type.Uint8())<<7
 }
 
 func (g TallGrass) Hash() uint64 {

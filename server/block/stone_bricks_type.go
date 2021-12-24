@@ -1,0 +1,103 @@
+package block
+
+import "fmt"
+
+// StoneBricksType represents a type of stone bricks.
+type StoneBricksType struct {
+	stoneBricks
+}
+
+type stoneBricks uint8
+
+// NormalStoneBricks is the normal variant of stone bricks.
+func NormalStoneBricks() StoneBricksType {
+	return StoneBricksType{stoneBricks(0)}
+}
+
+// MossyStoneBricks is the mossy variant of stone bricks.
+func MossyStoneBricks() StoneBricksType {
+	return StoneBricksType{stoneBricks(1)}
+}
+
+// CrackedStoneBricks is the mossy variant of stone bricks.
+func CrackedStoneBricks() StoneBricksType {
+	return StoneBricksType{stoneBricks(2)}
+}
+
+// ChiseledStoneBricks is the mossy variant of stone bricks.
+func ChiseledStoneBricks() StoneBricksType {
+	return StoneBricksType{stoneBricks(3)}
+}
+
+// SmoothStoneBricks is the mossy variant of stone bricks.
+func SmoothStoneBricks() StoneBricksType {
+	return StoneBricksType{stoneBricks(4)}
+}
+
+// Uint8 returns the sandstone as a uint8.
+func (s stoneBricks) Uint8() uint8 {
+	return uint8(s)
+}
+
+// Hardness ...
+func (s stoneBricks) Hardness() float64 {
+	return 1.5
+}
+
+// Name ...
+func (s stoneBricks) Name() string {
+	switch s {
+	case 0:
+		return "Stone Bricks"
+	case 1:
+		return "Mossy Stone Bricks"
+	case 2:
+		return "Cracked Stone Bricks"
+	case 3:
+		return "Chiseled Stone Bricks"
+	case 4:
+		return "Smooth Stone Bricks"
+	}
+	panic("unknown stone bricks type")
+}
+
+// FromString ...
+func (s stoneBricks) FromString(str string) (interface{}, error) {
+	switch str {
+	case "normal", "default":
+		return NormalStoneBricks(), nil
+	case "mossy":
+		return MossyStoneBricks(), nil
+	case "cracked":
+		return CrackedStoneBricks(), nil
+	case "chiseled":
+		return ChiseledStoneBricks(), nil
+	case "smooth":
+		return SmoothStoneBricks(), nil
+	}
+	return nil, fmt.Errorf("unexpected stone bricks type '%v'", s)
+}
+
+// String ...
+func (s stoneBricks) String() string {
+	switch s {
+	case 0:
+		return "default"
+	case 1:
+		return "mossy"
+	case 2:
+		return "cracked"
+	case 3:
+		return "chiseled"
+	case 4:
+		return "smooth"
+	}
+	panic("unknown stone bricks type")
+}
+
+// StoneBricksTypes ...
+func StoneBricksTypes() []StoneBricksType {
+	return []StoneBricksType{
+		NormalStoneBricks(), MossyStoneBricks(), CrackedStoneBricks(), ChiseledStoneBricks(), SmoothStoneBricks(),
+	}
+}
