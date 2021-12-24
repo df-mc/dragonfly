@@ -21,7 +21,7 @@ type ItemFrame struct {
 	// Item is the item that is displayed inside the frame.
 	Item item.Stack
 	// Rotations is the number of rotations the item in the frame has.
-	Rotations uint8
+	Rotations int
 	// Drops is the chance of the item dropping when the frame is broken. In vanilla, this is always 1.0.
 	Drops float64
 	// Glowing makes the frame the glowing variant.
@@ -114,7 +114,7 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}
 // DecodeNBT ...
 func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
 	i.Drops = float64(nbtconv.MapFloat32(data, "ItemDropChance"))
-	i.Rotations = nbtconv.MapByte(data, "ItemRotation")
+	i.Rotations = int(nbtconv.MapByte(data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
 	return i
 }
@@ -123,7 +123,7 @@ func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
 func (i ItemFrame) EncodeNBT() map[string]interface{} {
 	m := map[string]interface{}{
 		"ItemDropChance": float32(i.Drops),
-		"ItemRotation":   i.Rotations,
+		"ItemRotation":   uint8(i.Rotations),
 		"id":             "ItemFrame",
 	}
 	if i.Glowing {
@@ -156,11 +156,10 @@ func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 // allItemFrames ...
 func allItemFrames() (frames []world.Block) {
 	for _, f := range cube.Faces() {
-		for _, g := range []bool{true, false} {
-			for _, l := range []bool{true, false} {
-				frames = append(frames, ItemFrame{Facing: f, Large: l, Glowing: g})
-			}
-		}
+		frames = append(frames, ItemFrame{Facing: f, Large: true, Glowing: true})
+		frames = append(frames, ItemFrame{Facing: f, Large: false, Glowing: false})
+		frames = append(frames, ItemFrame{Facing: f, Large: true, Glowing: false})
+		frames = append(frames, ItemFrame{Facing: f, Large: false, Glowing: true})
 	}
 	return
 }
