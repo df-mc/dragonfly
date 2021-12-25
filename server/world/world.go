@@ -24,6 +24,9 @@ type World struct {
 	d   Dimension
 	ra  cube.Range
 
+	portalMu sync.Mutex
+	npd, epd *World
+
 	mu   sync.Mutex
 	set  Settings
 	prov Provider
@@ -693,7 +696,7 @@ func (w *World) StartWeatherCycle() {
 // RainingAt returns a bool that indicates whether it is raining at a position in the world.
 // TODO: Take into account biomes when deciding if it is raining at a position when we implement biomes.
 func (w *World) RainingAt(pos cube.Pos) bool {
-	if w == nil {
+	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
 	w.mu.Lock()
@@ -706,7 +709,7 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 // raining and thundering at the same time and if the position passed is exposed to rain.
 // TODO: Take into account biomes when deciding if it is thundering at a position when we implement biomes.
 func (w *World) ThunderingAt(pos cube.Pos) bool {
-	if w == nil {
+	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
 	w.mu.Lock()
@@ -1121,6 +1124,23 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	return
 }
 
+// SetPortalDestinations sets the destination worlds for any nether and end portals in the World respectively. In order
+// for either portals to work, SetPortalDestinations must first be called.
+// Nil may be passed as destination to prevent the respective portal from transporting entities in it.
+func (w *World) SetPortalDestinations(nether, end *World) {
+	w.portalMu.Lock()
+	defer w.portalMu.Unlock()
+	w.npd, w.epd = nether, end
+}
+
+// PortalDestinations returns the destination worlds for nether and end portals respectively. Upon entering portals in
+// this World, entities are moved to the respective destination worlds.
+func (w *World) PortalDestinations() (nether, end *World) {
+	w.portalMu.Lock()
+	defer w.portalMu.Unlock()
+	return w.npd, w.epd
+}
+
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
 	if w == nil {
@@ -1147,6 +1167,7 @@ func (w *World) Close() error {
 
 	if !w.rdonly.Load() {
 		w.log.Debugf("Updating level.dat values...")
+
 		w.provider().SaveSettings(w.set)
 	}
 

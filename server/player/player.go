@@ -2246,7 +2246,6 @@ func (p *Player) close() {
 func (p *Player) load(data Data) {
 	p.yaw.Store(data.Yaw)
 	p.pitch.Store(data.Pitch)
-	p.pos.Store(data.Position)
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
@@ -2312,6 +2311,7 @@ func (p *Player) Data() Data {
 		Effects:      p.Effects(),
 		FireTicks:    p.fireTicks.Load(),
 		FallDistance: p.fallDistance.Load(),
+		Dimension:    p.World().Dimension().EncodeDimension(),
 	}
 }
 
