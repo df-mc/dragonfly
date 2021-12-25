@@ -93,6 +93,7 @@ func init() {
 	world.RegisterBlock(AmethystBlock{})
 	world.RegisterBlock(PackedIce{})
 	world.RegisterBlock(DeadBush{})
+	world.RegisterBlock(Snow{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -250,6 +251,7 @@ func init() {
 	world.RegisterItem(PackedIce{})
 	world.RegisterItem(DeadBush{})
 	world.RegisterItem(SeaPickle{})
+	world.RegisterItem(Snow{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
