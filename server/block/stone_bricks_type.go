@@ -19,29 +19,24 @@ func MossyStoneBricks() StoneBricksType {
 	return StoneBricksType{stoneBricks(1)}
 }
 
-// CrackedStoneBricks is the mossy variant of stone bricks.
+// CrackedStoneBricks is the cracked variant of stone bricks.
 func CrackedStoneBricks() StoneBricksType {
 	return StoneBricksType{stoneBricks(2)}
 }
 
-// ChiseledStoneBricks is the mossy variant of stone bricks.
+// ChiseledStoneBricks is the chiseled variant of stone bricks.
 func ChiseledStoneBricks() StoneBricksType {
 	return StoneBricksType{stoneBricks(3)}
 }
 
-// SmoothStoneBricks is the mossy variant of stone bricks.
+// SmoothStoneBricks is the smooth variant of stone bricks.
 func SmoothStoneBricks() StoneBricksType {
 	return StoneBricksType{stoneBricks(4)}
 }
 
-// Uint8 returns the sandstone as a uint8.
+// Uint8 returns the stone bricks as a uint8.
 func (s stoneBricks) Uint8() uint8 {
 	return uint8(s)
-}
-
-// Hardness ...
-func (s stoneBricks) Hardness() float64 {
-	return 1.5
 }
 
 // Name ...
@@ -97,7 +92,5 @@ func (s stoneBricks) String() string {
 
 // StoneBricksTypes ...
 func StoneBricksTypes() []StoneBricksType {
-	return []StoneBricksType{
-		NormalStoneBricks(), MossyStoneBricks(), CrackedStoneBricks(), ChiseledStoneBricks(), SmoothStoneBricks(),
-	}
+	return []StoneBricksType{NormalStoneBricks(), MossyStoneBricks(), CrackedStoneBricks(), ChiseledStoneBricks(), SmoothStoneBricks()}
 }

@@ -2,6 +2,8 @@ package block
 
 import "github.com/df-mc/dragonfly/server/world"
 
+// StoneBricks are materials found in structures such as strongholds, igloo basements, jungle temples, ocean ruins
+// and ruined portals.
 type StoneBricks struct {
 	solid
 	bassDrum
@@ -12,7 +14,7 @@ type StoneBricks struct {
 
 // BreakInfo ...
 func (c StoneBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
 // EncodeItem ...
@@ -22,9 +24,7 @@ func (c StoneBricks) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c StoneBricks) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:stonebrick", map[string]interface{}{
-		"stone_brick_type": c.Type.String(),
-	}
+	return "minecraft:stonebrick", map[string]interface{}{"stone_brick_type": c.Type.String()}
 }
 
 // allStoneBricks returns a list of all stoneBricks block variants.
