@@ -29,11 +29,6 @@ func ChiseledStoneBricks() StoneBricksType {
 	return StoneBricksType{stoneBricks(3)}
 }
 
-// SmoothStoneBricks is the smooth variant of stone bricks.
-func SmoothStoneBricks() StoneBricksType {
-	return StoneBricksType{stoneBricks(4)}
-}
-
 // Uint8 returns the stone bricks as a uint8.
 func (s stoneBricks) Uint8() uint8 {
 	return uint8(s)
@@ -50,8 +45,6 @@ func (s stoneBricks) Name() string {
 		return "Cracked Stone Bricks"
 	case 3:
 		return "Chiseled Stone Bricks"
-	case 4:
-		return "Smooth Stone Bricks"
 	}
 	panic("unknown stone bricks type")
 }
@@ -67,8 +60,6 @@ func (s stoneBricks) FromString(str string) (interface{}, error) {
 		return CrackedStoneBricks(), nil
 	case "chiseled":
 		return ChiseledStoneBricks(), nil
-	case "smooth":
-		return SmoothStoneBricks(), nil
 	}
 	return nil, fmt.Errorf("unexpected stone bricks type '%v'", s)
 }
@@ -84,13 +75,11 @@ func (s stoneBricks) String() string {
 		return "cracked"
 	case 3:
 		return "chiseled"
-	case 4:
-		return "smooth"
 	}
 	panic("unknown stone bricks type")
 }
 
 // StoneBricksTypes ...
 func StoneBricksTypes() []StoneBricksType {
-	return []StoneBricksType{NormalStoneBricks(), MossyStoneBricks(), CrackedStoneBricks(), ChiseledStoneBricks(), SmoothStoneBricks()}
+	return []StoneBricksType{NormalStoneBricks(), MossyStoneBricks(), CrackedStoneBricks(), ChiseledStoneBricks()}
 }
