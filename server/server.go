@@ -93,6 +93,7 @@ func New(c *Config, log internal.Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
+	log.Infof("Loading server...")
 	if c == nil {
 		conf := DefaultConfig()
 		c = &conf
@@ -227,11 +228,8 @@ func (server *Server) Players() []*player.Player {
 func (server *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 	server.playerMutex.RLock()
 	defer server.playerMutex.RUnlock()
-
-	if p, ok := server.p[uuid]; ok {
-		return p, true
-	}
-	return nil, false
+	p, ok := server.p[uuid]
+	return p, ok
 }
 
 // PlayerByName looks for a player on the server with the name passed. If found, the player is returned and the bool
@@ -530,7 +528,7 @@ func (server *Server) createWorld(d world.Dimension, layers []world.Block) *worl
 	if v, ok := log.(interface {
 		WithField(key string, field interface{}) *logrus.Entry
 	}); ok {
-		log = v.WithField("world", strings.ToLower(fmt.Sprint(d)))
+		log = v.WithField("dimension", strings.ToLower(fmt.Sprint(d)))
 	}
 	log.Debugf("Loading world...")
 
