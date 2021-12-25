@@ -150,6 +150,7 @@ func init() {
 	registerAll(allLadders())
 	registerAll(allSandstoneStairs())
 	registerAll(allSeaPickles())
+	registerAll(allWood())
 }
 
 func init() {
@@ -296,6 +297,8 @@ func init() {
 		world.RegisterItem(WoodTrapdoor{Wood: w})
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
+		world.RegisterItem(Wood{Wood: w})
+		world.RegisterItem(Wood{Wood: w, Stripped: true})
 	}
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
