@@ -140,6 +140,7 @@ func init() {
 	registerAll(allTallGrass())
 	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
+	registerAll(allStoneBricks())
 	registerAll(allDoubleFlowers())
 	registerAll(allFlowers())
 	registerAll(allPrismarine())
@@ -263,6 +264,9 @@ func init() {
 		world.RegisterItem(c.(world.Item))
 	}
 	for _, s := range allSandstones() {
+		world.RegisterItem(s.(world.Item))
+	}
+	for _, s := range allStoneBricks() {
 		world.RegisterItem(s.(world.Item))
 	}
 	for _, c := range item.Colours() {
