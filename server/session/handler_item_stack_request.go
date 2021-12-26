@@ -607,9 +607,9 @@ func (h *ItemStackRequestHandler) hasRequiredInventoryInputs(inputs []recipe.Inp
 func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputItem, s *Session) bool {
 	offset := s.craftingOffset()
 
-	var satisfiedInputs int
+	var inputsIndex int
 	for i := byte(0); i < s.craftingSize(); i++ {
-		if satisfiedInputs == len(inputs) {
+		if inputsIndex == len(inputs) {
 			break
 		}
 
@@ -618,18 +618,18 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputIte
 		if err != nil {
 			return false
 		}
-		input := inputs[satisfiedInputs]
+		input := inputs[inputsIndex]
 		if !oldSt.Empty() {
 			// Items that apply to all types, so we just compare with the name and count.
 			if input.Variants {
 				name, _ := oldSt.Item().EncodeItem()
 				otherName, _ := input.Item().EncodeItem()
 				if name == otherName && oldSt.Count() >= input.Count() {
-					satisfiedInputs++
+					inputsIndex++
 				}
 			} else {
 				if oldSt.Comparable(input.Stack) {
-					satisfiedInputs++
+					inputsIndex++
 				}
 			}
 			continue
@@ -637,11 +637,11 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputIte
 
 		// We should still up the satisfied inputs count if both stacks are empty.
 		if input.Empty() {
-			satisfiedInputs++
+			inputsIndex++
 		}
 	}
 
-	return satisfiedInputs == len(inputs)
+	return true
 }
 
 // removeInventoryInputs removes the inputs in the player inventory.
