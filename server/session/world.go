@@ -507,6 +507,24 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.ItemFrameAdd:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundItemFrameAddItem,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.ItemFrameRemove:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundItemFrameRemoveItem,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.ItemFrameRotate:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.EventSoundItemFrameRotateItem,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:

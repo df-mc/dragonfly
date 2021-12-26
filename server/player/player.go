@@ -1642,43 +1642,48 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	}
 
 	b := p.World().Block(pos)
-	if i, ok := b.(world.Item); ok {
+
+	var pickedItem item.Stack
+	if pi, ok := b.(block.Pickable); ok {
+		pickedItem = pi.Pick()
+	} else if i, ok := b.(world.Item); ok {
 		it, _ := world.ItemByName(i.EncodeItem())
-		copiedItem := item.NewStack(it, 1)
+		pickedItem = item.NewStack(it, 1)
+	} else {
+		return
+	}
 
-		slot, found := p.Inventory().First(copiedItem)
+	slot, found := p.Inventory().First(pickedItem)
+	if !found && !p.GameMode().CreativeInventory() {
+		return
+	}
 
-		if !found && !p.GameMode().CreativeInventory() {
-			return
-		}
+	ctx := event.C()
+	p.handler().HandleBlockPick(ctx, pos, b)
 
-		ctx := event.C()
-		p.handler().HandleBlockPick(ctx, pos, b)
+	ctx.Continue(func() {
+		_, offhand := p.HeldItems()
 
-		ctx.Continue(func() {
-			_, offhand := p.HeldItems()
-
-			if found {
-				if slot < 9 {
-					_ = p.session().SetHeldSlot(slot)
-					return
-				}
-				_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+		if found {
+			if slot < 9 {
+				_ = p.session().SetHeldSlot(slot)
 				return
 			}
-			firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+			_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+			return
+		}
+		firstEmpty, emptyFound := p.Inventory().FirstEmpty()
 
-			if !emptyFound {
-				p.SetHeldItems(copiedItem, offhand)
-			} else if firstEmpty < 8 {
-				_ = p.session().SetHeldSlot(firstEmpty)
-				_ = p.Inventory().SetItem(firstEmpty, copiedItem)
-			} else {
-				_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
-				p.SetHeldItems(copiedItem, offhand)
-			}
-		})
-	}
+		if !emptyFound {
+			p.SetHeldItems(pickedItem, offhand)
+		} else if firstEmpty < 8 {
+			_ = p.session().SetHeldSlot(firstEmpty)
+			_ = p.Inventory().SetItem(firstEmpty, pickedItem)
+		} else {
+			_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+			p.SetHeldItems(pickedItem, offhand)
+		}
+	})
 }
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
