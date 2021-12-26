@@ -27,7 +27,6 @@ type World struct {
 	portalMu sync.Mutex
 	npd, epd *World
 
-	mu   sync.Mutex
 	set  *Settings
 	prov Provider
 

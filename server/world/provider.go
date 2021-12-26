@@ -42,7 +42,7 @@ type Provider interface {
 type NoIOProvider struct{}
 
 // Settings ...
-func (NoIOProvider) Settings(*Settings) { return }
+func (NoIOProvider) Settings(*Settings) {}
 
 // SaveSettings ...
 func (NoIOProvider) SaveSettings(*Settings) {}
