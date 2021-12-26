@@ -15,6 +15,7 @@ const (
 	hashBeetrootSeeds
 	hashBlueIce
 	hashBoneBlock
+	hashBookshelf
 	hashBricks
 	hashCake
 	hashCalcite
@@ -181,6 +182,10 @@ func (BlueIce) Hash() uint64 {
 
 func (b BoneBlock) Hash() uint64 {
 	return hashBoneBlock | uint64(b.Axis)<<8
+}
+
+func (b Bookshelf) Hash() uint64 {
+	return hashBookshelf
 }
 
 func (Bricks) Hash() uint64 {
