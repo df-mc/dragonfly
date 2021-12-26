@@ -134,6 +134,11 @@ func (i ItemFrame) EncodeNBT() map[string]interface{} {
 	return m
 }
 
+// Pick returns the item that is picked when the block is picked.
+func (i ItemFrame) Pick() item.Stack {
+	return item.NewStack(i.Item.Item(), 1)
+}
+
 // CanDisplace ...
 func (ItemFrame) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)
