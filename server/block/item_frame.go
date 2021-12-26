@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -74,7 +75,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	if !used {
 		return false
 	}
-	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {
+	if (w.Block(pos.Side(face.Opposite())).Model() == model.Empty{}) {
 		return false
 	}
 	i.Facing = face.Opposite()
@@ -152,7 +153,7 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // NeighbourUpdateTick ...
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !w.Block(pos.Side(i.Facing)).Model().FaceSolid(pos.Side(i.Facing), i.Facing.Opposite(), w) {
+	if (w.Block(pos.Side(i.Facing)).Model() == model.Empty{}) {
 		w.BreakBlock(pos)
 	}
 }
