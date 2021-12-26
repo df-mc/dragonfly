@@ -76,6 +76,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 	if (w.Block(pos.Side(face.Opposite())).Model() == model.Empty{}) {
+		// TODO: Allow exceptions for pressure plates.
 		return false
 	}
 	i.Facing = face.Opposite()
@@ -154,6 +155,7 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // NeighbourUpdateTick ...
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if (w.Block(pos.Side(i.Facing)).Model() == model.Empty{}) {
+		// TODO: Allow exceptions for pressure plates.
 		w.BreakBlock(pos)
 	}
 }
