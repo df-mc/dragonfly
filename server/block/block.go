@@ -19,6 +19,12 @@ type Activatable interface {
 	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
 }
 
+// Pickable represents a block that may give a different item then the block itself when picked.
+type Pickable interface {
+	// Pick returns the item that is picked when the block is picked.
+	Pick() item.Stack
+}
+
 // Punchable represents a block that may be punched by a viewer of the world. When punched, the block
 // will execute some specific logic.
 type Punchable interface {
