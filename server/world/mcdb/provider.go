@@ -95,6 +95,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.RainLevel = 1.0
 	p.d.LightningLevel = 1.0
 	p.d.ServerChunkTickRange = 6
+	p.d.NetherScale = 8
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
