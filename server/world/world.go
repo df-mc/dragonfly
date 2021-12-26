@@ -21,9 +21,16 @@ import (
 // A nil *World is safe to use but not functional.
 type World struct {
 	log internal.Logger
+	d   Dimension
+	ra  cube.Range
+	// advance is a bool that specifies if this World should advance the current tick, time and weather saved in the
+	// Settings struct held by the World.
+	advance bool
 
-	mu   sync.Mutex
-	set  Settings
+	portalMu sync.Mutex
+	npd, epd *World
+
+	set  *Settings
 	prov Provider
 
 	rdonly atomic.Bool
@@ -74,8 +81,15 @@ type World struct {
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log internal.Logger) *World {
+// The Settings passed specify the initial settings of the World created. These Settings are changed as soon as
+// Provider is called, at which point they will be replaced with the Settings as created by the Provider passed. If nil
+// is passed as Settings, default settings are used.
+func New(log internal.Logger, d Dimension, s *Settings) *World {
+	if s == nil {
+		s = defaultSettings()
+	}
 	w := &World{
+		advance:         s.ref.Inc() == 1,
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
 		entities:        map[Entity]ChunkPos{},
@@ -85,8 +99,10 @@ func New(log internal.Logger) *World {
 		handler:         NopHandler{},
 		randomTickSpeed: *atomic.NewUint32(3),
 		log:             log,
-		set:             defaultSettings(),
+		set:             s,
 		closing:         make(chan struct{}),
+		d:               d,
+		ra:              d.Range(),
 	}
 
 	w.initChunkCache()
@@ -99,16 +115,27 @@ func New(log internal.Logger) *World {
 // in the pause screen in-game.
 // If a provider is set, the name will be updated according to the name that it provides.
 func (w *World) Name() string {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.set.Name
+}
+
+// Dimension returns the Dimension assigned to the World in world.New. The sky colour and behaviour of a variety of
+// world features differ based on the Dimension assigned to a World.
+func (w *World) Dimension() Dimension {
+	return w.d
+}
+
+// Range returns the range in blocks of the World (min and max). It is equivalent to calling World.Dimension().Range().
+func (w *World) Range() cube.Range {
+	return w.ra
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos cube.Pos) Block {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return air()
 	}
@@ -136,7 +163,7 @@ func (w *World) Block(pos cube.Pos) Block {
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return air(), nil
 	}
@@ -153,48 +180,30 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 	return b, nil
 }
 
-// runtimeID gets the block runtime ID at a specific position in the world.
-//lint:ignore U1000 Function is used using compiler directives.
-//noinspection GoUnusedFunction
-func runtimeID(w *World, pos cube.Pos) uint32 {
-	if w == nil || pos.OutOfBounds() {
-		// Fast way out.
-		return airRID
-	}
-	c, err := w.chunk(ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
-	if err != nil {
-		return airRID
-	}
-	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	c.Unlock()
-
-	return rid
-}
-
 // HighestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
 // passed in the world.
-func (w *World) HighestLightBlocker(x, z int) int16 {
+func (w *World) HighestLightBlocker(x, z int) int {
 	if w == nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	v := c.HighestLightBlocker(uint8(x), uint8(z))
 	c.Unlock()
-	return v
+	return int(v)
 }
 
 // HighestBlock looks up the highest non-air block in the world at a specific x and z in the world. The y
 // value of the highest block is returned, or 0 if no blocks were present in the column.
 func (w *World) HighestBlock(x, z int) int {
 	if w == nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	if err != nil {
-		return cube.MinY
+		return w.ra[0]
 	}
 	v := c.HighestBlock(uint8(x), uint8(z))
 	c.Unlock()
@@ -208,14 +217,14 @@ func (w *World) highestObstructingBlock(x, z int) int {
 		return 0
 	}
 	yHigh := w.HighestBlock(x, z)
-	for y := yHigh; y >= cube.MinY; y-- {
+	for y := yHigh; y >= w.ra[0]; y-- {
 		pos := cube.Pos{x, y, z}
 		m := w.Block(pos).Model()
 		if m.FaceSolid(pos, cube.FaceUp, w) || m.FaceSolid(pos, cube.FaceDown, w) {
 			return y
 		}
 	}
-	return cube.MinY
+	return w.ra[0]
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -225,7 +234,7 @@ func (w *World) highestObstructingBlock(x, z int) int {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return
 	}
@@ -352,7 +361,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
 			for i, sub := range subs {
-				baseY := (i + (cube.MinY >> 4)) << 4
+				baseY := (i + (w.ra[0] >> 4)) << 4
 				if baseY>>4 < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
@@ -361,10 +370,10 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 
 				for localY := 0; localY < 16; localY++ {
 					yOffset := baseY + localY
-					if yOffset > cube.MaxY || yOffset >= maxY {
+					if yOffset > w.ra[1] || yOffset >= maxY {
 						// We've hit the height limit for blocks.
 						break
-					} else if yOffset < cube.MinY || yOffset < pos[1] {
+					} else if yOffset < w.ra[0] || yOffset < pos[1] {
 						// We've got a block below the minimum, but other blocks might still reach above
 						// it, so don't break but continue.
 						continue
@@ -425,7 +434,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
 func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return nil, false
 	}
@@ -466,7 +475,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 // there already is a liquid at that position, in which case it will be overwritten.
 // If nil is passed for the liquid, any liquid currently present will be removed.
 func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return
 	}
@@ -560,7 +569,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer u
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
 // liquid if so.
 func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return nil, false
 	}
@@ -584,12 +593,12 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < cube.MinY {
+	if w == nil || pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > cube.MaxY {
-		// Above the rest of the world, so full sky light.
+	if pos[1] > w.ra[1] {
+		// Above the rest of the world, so full skylight.
 		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
@@ -606,11 +615,11 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < cube.MinY {
+	if w == nil || pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > cube.MaxY {
+	if pos[1] > w.ra[1] {
 		// Above the rest of the world, so full sky light.
 		return 15
 	}
@@ -630,8 +639,8 @@ func (w *World) Time() int {
 	if w == nil {
 		return 0
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return int(w.set.Time)
 }
 
@@ -641,9 +650,9 @@ func (w *World) SetTime(new int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	w.set.Time = int64(new)
-	w.mu.Unlock()
+	w.set.Unlock()
 	for _, viewer := range w.allViewers() {
 		viewer.ViewTime(new)
 	}
@@ -668,8 +677,8 @@ func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.TimeCycle = v
 }
 
@@ -678,8 +687,8 @@ func (w *World) StopWeatherCycle() {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.WeatherCycle = false
 }
 
@@ -688,20 +697,20 @@ func (w *World) StartWeatherCycle() {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.WeatherCycle = true
 }
 
 // RainingAt returns a bool that indicates whether it is raining at a position in the world.
 // TODO: Take into account biomes when deciding if it is raining at a position when we implement biomes.
 func (w *World) RainingAt(pos cube.Pos) bool {
-	if w == nil {
+	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	a := w.set.Raining
-	w.mu.Unlock()
+	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
@@ -709,12 +718,12 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 // raining and thundering at the same time and if the position passed is exposed to rain.
 // TODO: Take into account biomes when deciding if it is thundering at a position when we implement biomes.
 func (w *World) ThunderingAt(pos cube.Pos) bool {
-	if w == nil {
+	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	a := w.set.Thundering && w.set.Raining
-	w.mu.Unlock()
+	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
@@ -906,10 +915,10 @@ func (w *World) Spawn() cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	s := w.set.Spawn
-	w.mu.Unlock()
-	if s[1] > cube.MaxY {
+	w.set.Unlock()
+	if s[1] > w.ra[1] {
 		s[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
 	return s
@@ -921,9 +930,9 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	w.set.Spawn = pos
-	w.mu.Unlock()
+	w.set.Unlock()
 	for _, viewer := range w.allViewers() {
 		viewer.ViewWorldSpawn(pos)
 	}
@@ -936,8 +945,8 @@ func (w *World) DefaultGameMode() GameMode {
 	if w == nil {
 		return GameModeSurvival
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.set.DefaultGameMode
 }
 
@@ -947,15 +956,15 @@ func (w *World) SetTickRange(v int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.TickRange = int32(v)
 }
 
 // tickRange returns the tick range around each Viewer.
 func (w *World) tickRange() int {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return int(w.set.TickRange)
 }
 
@@ -965,8 +974,8 @@ func (w *World) SetDefaultGameMode(mode GameMode) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.DefaultGameMode = mode
 }
 
@@ -976,8 +985,8 @@ func (w *World) Difficulty() Difficulty {
 	if w == nil {
 		return DifficultyNormal{}
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.set.Difficulty
 }
 
@@ -986,8 +995,8 @@ func (w *World) SetDifficulty(d Difficulty) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.Difficulty = d
 }
 
@@ -1004,7 +1013,7 @@ func (w *World) SetRandomTickSpeed(v int) {
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
 func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		return
 	}
 	w.updateMu.Lock()
@@ -1012,9 +1021,9 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 		w.updateMu.Unlock()
 		return
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	t := w.set.CurrentTick
-	w.mu.Unlock()
+	w.set.Unlock()
 
 	w.blockUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
 	w.updateMu.Unlock()
@@ -1022,7 +1031,7 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
 func (w *World) doBlockUpdatesAround(pos cube.Pos) {
-	if w == nil || pos.OutOfBounds() {
+	if w == nil || pos.OutOfBounds(w.ra) {
 		return
 	}
 
@@ -1032,7 +1041,7 @@ func (w *World) doBlockUpdatesAround(pos cube.Pos) {
 	w.updateNeighbour(pos, changed)
 	pos.Neighbours(func(pos cube.Pos) {
 		w.updateNeighbour(pos, changed)
-	})
+	}, w.ra)
 	w.updateMu.Unlock()
 }
 
@@ -1056,10 +1065,10 @@ func (w *World) Provider(p Provider) {
 		p = NoIOProvider{}
 	}
 
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 
-	w.set = p.Settings()
+	p.Settings(w.set)
 	w.prov = p
 
 	w.initChunkCache()
@@ -1124,6 +1133,23 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	return
 }
 
+// SetPortalDestinations sets the destination worlds for any nether and end portals in the World respectively. In order
+// for either portals to work, SetPortalDestinations must first be called.
+// Nil may be passed as destination to prevent the respective portal from transporting entities in it.
+func (w *World) SetPortalDestinations(nether, end *World) {
+	w.portalMu.Lock()
+	defer w.portalMu.Unlock()
+	w.npd, w.epd = nether, end
+}
+
+// PortalDestinations returns the destination worlds for nether and end portals respectively. Upon entering portals in
+// this World, entities are moved to the respective destination worlds.
+func (w *World) PortalDestinations() (nether, end *World) {
+	w.portalMu.Lock()
+	defer w.portalMu.Unlock()
+	return w.npd, w.epd
+}
+
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
 	if w == nil {
@@ -1150,6 +1176,8 @@ func (w *World) Close() error {
 
 	if !w.rdonly.Load() {
 		w.log.Debugf("Updating level.dat values...")
+
+		w.set.ref.Dec()
 		w.provider().SaveSettings(w.set)
 	}
 
@@ -1187,41 +1215,52 @@ func (w *World) tick() {
 		return
 	}
 
-	w.mu.Lock()
-	tick := w.set.CurrentTick
-	w.set.CurrentTick++
+	w.set.Lock()
+	if w.advance {
+		w.set.CurrentTick++
+		if w.set.TimeCycle {
+			w.set.Time++
+		}
+		if w.set.WeatherCycle {
+			w.set.RainTime--
+			w.set.ThunderTime--
 
-	if w.set.TimeCycle {
-		w.set.Time++
-	}
-	t := int(w.set.Time)
-
-	if w.set.WeatherCycle {
-		w.set.RainTime--
-		if w.set.RainTime <= 0 {
-			// Wiki: The rain counter counts down to zero, and each time it reaches zero, the rain is toggled on or off.
-			// When the rain is turned on, the counter is reset to a value between 12,000-23,999 ticks (0.5-1 game days)
-			// and when the rain is turned off it is reset to a value of 12,000-179,999 ticks (0.5-7.5 game days).
-			if w.set.Raining {
-				w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
-			} else {
-				w.setRaining(true, time.Second*time.Duration(w.r.Intn(600)+600))
+			if w.set.RainTime <= 0 {
+				// Wiki: The rain counter counts down to zero, and each time it reaches zero, the rain is toggled on or off.
+				// When the rain is turned on, the counter is reset to a value between 12,000-23,999 ticks (0.5-1 game days)
+				// and when the rain is turned off it is reset to a value of 12,000-179,999 ticks (0.5-7.5 game days).
+				if w.set.Raining {
+					w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+				} else {
+					w.setRaining(true, time.Second*time.Duration(w.r.Intn(600)+600))
+				}
+			}
+			if w.set.ThunderTime <= 0 {
+				// Wiki: the thunder counter toggles thunder on/off when it reaches zero, but clear weather overrides the
+				// "on" state. When thunder is turned on, the thunder counter is reset to 3,600-15,999 ticks (3-13 minutes),
+				// and when thunder is turned off the counter rests to 12,000-179,999 ticks (0.5-7.5 days).
+				if w.set.Thundering {
+					w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+				} else {
+					w.setThunder(true, time.Second*time.Duration(w.r.Intn(620)+180))
+				}
 			}
 		}
-		w.set.ThunderTime--
-		if w.set.ThunderTime <= 0 {
-			// Wiki: the thunder counter toggles thunder on/off when it reaches zero, but clear weather overrides the
-			// "on" state. When thunder is turned on, the thunder counter is reset to 3,600-15,999 ticks (3-13 minutes),
-			// and when thunder is turned off the counter rests to 12,000-179,999 ticks (0.5-7.5 days).
-			if w.set.Thundering {
-				w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
-			} else {
-				w.setThunder(true, time.Second*time.Duration(w.r.Intn(620)+180))
+	}
+
+	rain, thunder, tick, t := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
+	w.set.Unlock()
+
+	if tick%20 == 0 {
+		for _, viewer := range viewers {
+			if w.d.TimeCycle() {
+				viewer.ViewTime(t)
+			}
+			if w.d.WeatherCycle() {
+				viewer.ViewWeather(rain, thunder)
 			}
 		}
 	}
-	thunder := w.set.Thundering && w.set.Raining
-	w.mu.Unlock()
 
 	if thunder {
 		w.chunkMu.Lock()
@@ -1237,12 +1276,6 @@ func (w *World) tick() {
 
 		for _, pos := range positions {
 			w.strikeLightning(pos)
-		}
-	}
-
-	if tick%20 == 0 {
-		for _, viewer := range viewers {
-			viewer.ViewTime(t)
 		}
 	}
 
@@ -1432,7 +1465,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 				}
 
 				if randomTickBlocks[rid] {
-					subY := (i + (cube.MinY >> 4)) << 4
+					subY := (i + (w.ra[0] >> 4)) << 4
 					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY + int(y), cz + int(z)}})
 					generateNew = true
 					continue
@@ -1569,14 +1602,14 @@ func (w *World) tickEntities(tick int64) {
 
 // StartRaining makes it rain in the current world where the time.Duration passed will determine how long it will rain.
 func (w *World) StartRaining(dur time.Duration) {
-	w.mu.Lock()
+	w.set.Lock()
 	w.setRaining(true, dur)
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // StopRaining makes it stop raining in the current world.
 func (w *World) StopRaining() {
-	w.mu.Lock()
+	w.set.Lock()
 	if w.set.Raining {
 		w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
 		if w.set.Thundering {
@@ -1584,7 +1617,7 @@ func (w *World) StopRaining() {
 			w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
 		}
 	}
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // setRaining toggles raining depending on the raining argument.
@@ -1592,27 +1625,24 @@ func (w *World) StopRaining() {
 func (w *World) setRaining(raining bool, x time.Duration) {
 	w.set.Raining = raining
 	w.set.RainTime = int64(x.Seconds() * 20)
-	for _, v := range w.allViewers() {
-		v.ViewWeather(raining, w.set.Raining && w.set.Thundering)
-	}
 }
 
 // StartThundering makes it thunder in the current world where the time.Duration passed will determine how long it will
 // thunder. StartThundering will also make it rain.
 func (w *World) StartThundering(dur time.Duration) {
-	w.mu.Lock()
+	w.set.Lock()
 	w.setThunder(true, dur)
 	w.setRaining(true, dur)
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // StopThundering makes it stop thundering in the current world.
 func (w *World) StopThundering() {
-	w.mu.Lock()
+	w.set.Lock()
 	if w.set.Thundering && w.set.Raining {
 		w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
 	}
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // setThunder toggles thundering depending on the thundering argument.
@@ -1620,11 +1650,6 @@ func (w *World) StopThundering() {
 func (w *World) setThunder(thundering bool, x time.Duration) {
 	w.set.Thundering = thundering
 	w.set.ThunderTime = int64(x.Seconds() * 20)
-	for _, v := range w.allViewers() {
-		// Thunderstorms only happen if it is already raining. Clear weather overrides thunder, so only make it thunder
-		// if it's both raining and thundering.
-		v.ViewWeather(w.set.Raining, w.set.Raining && thundering)
-	}
 }
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
@@ -1646,9 +1671,9 @@ func (w *World) addWorldViewer(viewer Viewer) {
 	w.viewers[viewer] = struct{}{}
 	w.viewersMu.Unlock()
 	viewer.ViewTime(w.Time())
-	w.mu.Lock()
+	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
-	w.mu.Unlock()
+	w.set.Unlock()
 	viewer.ViewWeather(raining, thundering)
 	viewer.ViewWorldSpawn(w.Spawn())
 }
@@ -1729,8 +1754,8 @@ func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
 // provider returns the provider of the world. It should always be used, rather than direct field access, in
 // order to provide synchronisation safety.
 func (w *World) provider() Provider {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.prov
 }
 
@@ -1818,7 +1843,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New(airRID)
+		c = chunk.New(airRID, w.d.Range())
 		data := newChunkData(c)
 		w.chunks[pos] = data
 		data.Lock()

@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
@@ -78,7 +77,7 @@ func (s *Snowball) Tick(current int64) {
 	s.ticksLived++
 	m.Send()
 
-	if m.pos[1] < cube.MinY && current%10 == 0 {
+	if m.pos[1] < float64(s.World().Range()[0]) && current%10 == 0 {
 		s.closeNextTick = true
 		return
 	}

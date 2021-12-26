@@ -2,10 +2,16 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"go.uber.org/atomic"
+	"sync"
 )
 
-// Settings holds the settings of a World. These are typically saved to a level.dat file.
+// Settings holds the settings of a World. These are typically saved to a level.dat file. It is safe to pass the same
+// Settings to multiple worlds created using New, in which case the Settings are synchronised between the worlds.
 type Settings struct {
+	sync.Mutex
+	ref atomic.Int32
+
 	// Name is the display name of the World.
 	Name string
 	// Spawn is the spawn position of the World. New players that join the world will be spawned here.
@@ -38,8 +44,8 @@ type Settings struct {
 }
 
 // defaultSettings returns the default Settings for a new World.
-func defaultSettings() Settings {
-	return Settings{
+func defaultSettings() *Settings {
+	return &Settings{
 		Name:            "World",
 		DefaultGameMode: GameModeSurvival,
 		Difficulty:      DifficultyNormal{},

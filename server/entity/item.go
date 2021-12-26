@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -80,7 +79,7 @@ func (it *Item) Tick(current int64) {
 
 	m.Send()
 
-	if m.pos[1] < cube.MinY && current%10 == 0 {
+	if m.pos[1] < float64(it.World().Range()[0]) && current%10 == 0 {
 		_ = it.Close()
 		return
 	}

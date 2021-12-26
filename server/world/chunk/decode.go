@@ -3,6 +3,7 @@ package chunk
 import (
 	"bytes"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
@@ -12,21 +13,21 @@ var StateToRuntimeID func(name string, properties map[string]interface{}) (runti
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 //noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int) (*Chunk, error) {
+func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
 	var (
-		c   = New(air)
+		c   = New(air, r)
 		buf = bytes.NewBuffer(data)
 		err error
 	)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, air, &index, NetworkEncoding)
+		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, err
 		}
 	}
 	var last *PalettedStorage
-	for i := 0; i < subChunkCount; i++ {
+	for i := 0; i < len(c.sub); i++ {
 		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
 		if err != nil {
 			return nil, err
@@ -51,13 +52,13 @@ func NetworkDecode(air uint32, data []byte, count int) (*Chunk, error) {
 
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
 // invalid, an error is returned.
-func DiskDecode(data SerialisedData) (*Chunk, error) {
+func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 	air, ok := StateToRuntimeID("minecraft:air", nil)
 	if !ok {
 		panic("cannot find air runtime ID")
 	}
 
-	c := New(air)
+	c := New(air, r)
 
 	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
 	if err != nil {
@@ -69,7 +70,7 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 			continue
 		}
 		index := uint8(i)
-		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c.air, &index, DiskEncoding); err != nil {
+		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c, &index, DiskEncoding); err != nil {
 			return nil, err
 		}
 	}
@@ -78,12 +79,12 @@ func DiskDecode(data SerialisedData) (*Chunk, error) {
 
 // decodeSubChunk decodes a SubChunk from a bytes.Buffer. The Encoding passed defines how the block storages of the
 // SubChunk are decoded.
-func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*SubChunk, error) {
+func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubChunk, error) {
 	ver, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
 	}
-	sub := NewSubChunk(air)
+	sub := NewSubChunk(c.air)
 	switch ver {
 	default:
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
@@ -105,7 +106,9 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 			if err != nil {
 				return nil, fmt.Errorf("error reading subchunk index: %w", err)
 			}
-			*index = uint8(int8(uIndex) - minSubChunkY)
+			// The index as written here isn't the actual index of the subchunk within the chunk. Rather, it is the Y
+			// value of the subchunk. This means that we need to translate it to an index.
+			*index = uint8(int8(uIndex) - int8(c.r[0]>>4))
 		}
 		sub.storages = make([]*PalettedStorage, storageCount)
 
@@ -123,7 +126,7 @@ func decodeSubChunk(buf *bytes.Buffer, air uint32, index *byte, e Encoding) (*Su
 func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 	var last *PalettedStorage
 	if buf.Len() != 0 {
-		for i := 0; i < subChunkCount; i++ {
+		for i := 0; i < len(c.sub); i++ {
 			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
 			if err != nil {
 				return err

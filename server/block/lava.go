@@ -98,7 +98,7 @@ func (Lava) LightEmissionLevel() uint8 {
 // NeighbourUpdateTick ...
 func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Harden(pos, w, nil) {
-		w.ScheduleBlockUpdate(pos, time.Second*3/2)
+		w.ScheduleBlockUpdate(pos, w.Dimension().LavaSpreadDuration())
 	}
 }
 
@@ -163,7 +163,7 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 				}
 				b = Cobblestone{}
 			}
-		})
+		}, w.Range())
 		if b != nil {
 			ctx := event.C()
 			w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)

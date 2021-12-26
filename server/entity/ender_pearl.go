@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
@@ -86,7 +85,7 @@ func (e *EnderPearl) Tick(current int64) {
 	e.ticksLived++
 	m.Send()
 
-	if m.pos[1] < cube.MinY && current%10 == 0 {
+	if m.pos[1] < float64(e.World().Range()[0]) && current%10 == 0 {
 		e.closeNextTick = true
 		return
 	}

@@ -91,7 +91,7 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 					}
 				}
 			}
-		})
+		}, wo.Range())
 		if count >= 2 {
 			if !canFlowInto(w, wo, pos.Side(cube.FaceDown), true) {
 				// Only form a new source block if there either is no water below this block, or if the water
@@ -105,6 +105,11 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 
 // NeighbourUpdateTick ...
 func (Water) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
+	if wo.Dimension().WaterEvaporates() {
+		// Particles are spawned client-side.
+		wo.SetLiquid(pos, nil)
+		return
+	}
 	wo.ScheduleBlockUpdate(pos, time.Second/4)
 }
 

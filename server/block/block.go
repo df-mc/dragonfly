@@ -122,7 +122,7 @@ func abs(x int) int {
 
 // replaceableWith checks if the block at the position passed is replaceable with the block passed.
 func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.Range()) {
 		return false
 	}
 	b := w.Block(pos)
