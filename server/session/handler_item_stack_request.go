@@ -704,18 +704,13 @@ func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.InputItem, s 
 	offset := s.craftingOffset()
 
 	var index int
-	for i := byte(0); i < s.craftingSize(); i++ {
+	for slot := offset; slot < offset+s.craftingSize(); slot++ {
 		if index == len(inputs) {
 			break
 		}
 
-		slot := i + offset
-		oldSt, err := s.ui.Item(int(slot))
-		if err != nil {
-			return fmt.Errorf("expected item doesn't exist: " + err.Error())
-		}
 		input := inputs[index]
-		if !oldSt.Empty() {
+		if oldSt, _ := s.ui.Item(int(slot)); !oldSt.Empty() {
 			st := oldSt.Grow(-input.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				ContainerID:    containerCraftingGrid,
@@ -723,14 +718,10 @@ func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.InputItem, s 
 				StackNetworkID: item_id(st),
 			}, st, s)
 			index++
-			continue
-		}
-
-		// We should still up the index if the expected input is empty.
-		if input.Empty() {
+		} else if input.Empty() {
+			// We should still up the index if the expected input is empty.
 			index++
 		}
 	}
-
 	return nil
 }
