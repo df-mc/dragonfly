@@ -27,8 +27,6 @@ type ItemFrame struct {
 	DropChance float64
 	// Glowing makes the frame the glowing variant.
 	Glowing bool
-	// Large makes the frame show up large. This typically only occurs with maps.
-	Large bool
 }
 
 // Activate ...
@@ -65,7 +63,7 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 			w.AddEntity(it)
 		}
 	}
-	i.Item, i.Rotations, i.Large = item.Stack{}, 0, false
+	i.Item, i.Rotations = item.Stack{}, 0
 	w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRemove{})
 	w.SetBlock(pos, i)
 }
@@ -107,7 +105,7 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}
 	}
 	return name, map[string]interface{}{
 		"facing_direction":     int32(i.Facing.Opposite()),
-		"item_frame_map_bit":   boolByte(i.Large),
+		"item_frame_map_bit":   uint8(0), // TODO: When maps are added, set this to true if the item is a map.
 		"item_frame_photo_bit": uint8(0), // Only implemented in Education Edition.
 	}
 }
@@ -157,10 +155,8 @@ func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 // allItemFrames ...
 func allItemFrames() (frames []world.Block) {
 	for _, f := range cube.Faces() {
-		frames = append(frames, ItemFrame{Facing: f, Large: true, Glowing: true})
-		frames = append(frames, ItemFrame{Facing: f, Large: false, Glowing: false})
-		frames = append(frames, ItemFrame{Facing: f, Large: true, Glowing: false})
-		frames = append(frames, ItemFrame{Facing: f, Large: false, Glowing: true})
+		frames = append(frames, ItemFrame{Facing: f, Glowing: true})
+		frames = append(frames, ItemFrame{Facing: f, Glowing: false})
 	}
 	return
 }
