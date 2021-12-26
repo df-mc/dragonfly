@@ -401,6 +401,7 @@ func (s *Session) registerHandlers() {
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+		packet.IDItemFrameDropItem:     nil,
 	}
 }
 
