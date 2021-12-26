@@ -88,6 +88,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.DoWeatherCycle = true
 	p.d.RainLevel = 1.0
 	p.d.LightningLevel = 1.0
+	p.d.ServerChunkTickRange = 6
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
@@ -105,6 +106,7 @@ func (p *Provider) Settings() world.Settings {
 		CurrentTick:     p.d.CurrentTick,
 		DefaultGameMode: p.LoadDefaultGameMode(),
 		Difficulty:      p.LoadDifficulty(),
+		TickRange:       p.d.ServerChunkTickRange,
 	}
 }
 
@@ -124,6 +126,7 @@ func (p *Provider) SaveSettings(s world.Settings) {
 		p.d.LightningLevel = 1
 	}
 	p.d.CurrentTick = s.CurrentTick
+	p.d.ServerChunkTickRange = s.TickRange
 	p.SaveDefaultGameMode(s.DefaultGameMode)
 	p.SaveDifficulty(s.Difficulty)
 }

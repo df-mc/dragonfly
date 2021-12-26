@@ -100,7 +100,7 @@ func New(c *Config, log internal.Logger) *Server {
 		c:              *c,
 		log:            log,
 		players:        make(chan *player.Player),
-		world:          world.New(log, c.World.SimulationDistance),
+		world:          world.New(log),
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewString(c.Server.Name),
 		playerProvider: player.NopProvider{},

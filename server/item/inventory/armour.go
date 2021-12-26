@@ -48,6 +48,15 @@ func canAddArmour(s item.Stack, slot int) bool {
 	return false
 }
 
+// Set sets all individual pieces of armour in one go. It is equivalent to calling SetHelmet, SetChestplate, SetLeggings
+// and SetBoots sequentially.
+func (a *Armour) Set(helmet, chestplate, leggings, boots item.Stack) {
+	a.SetHelmet(helmet)
+	a.SetChestplate(chestplate)
+	a.SetLeggings(leggings)
+	a.SetBoots(boots)
+}
+
 // SetHelmet sets the item stack passed as the helmet in the inventory.
 func (a *Armour) SetHelmet(helmet item.Stack) {
 	_ = a.inv.SetItem(0, helmet)

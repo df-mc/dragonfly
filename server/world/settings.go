@@ -32,9 +32,19 @@ type Settings struct {
 	// Difficulty is the difficulty of the World. Behaviour of hunger, regeneration and monsters differs based on the
 	// difficulty of the world.
 	Difficulty Difficulty
+	// TickRange is the radius in chunks around a Viewer that has its blocks and entities ticked when the world is
+	// ticked. If set to 0, blocks and entities will never be ticked.
+	TickRange int32
 }
 
 // defaultSettings returns the default Settings for a new World.
 func defaultSettings() Settings {
-	return Settings{Name: "World", DefaultGameMode: survival{}, Difficulty: DifficultyNormal{}, TimeCycle: true, WeatherCycle: true}
+	return Settings{
+		Name:            "World",
+		DefaultGameMode: GameModeSurvival,
+		Difficulty:      DifficultyNormal{},
+		TimeCycle:       true,
+		WeatherCycle:    true,
+		TickRange:       6,
+	}
 }
