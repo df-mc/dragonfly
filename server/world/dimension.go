@@ -6,12 +6,19 @@ import (
 )
 
 var (
+	// Overworld is the Dimension implementation of a normal overworld. It has a blue sky under normal circumstances and
+	// has a sun, clouds, stars and a moon. Overworld has a building range of [-64, 320].
 	Overworld overworld
-	Nether    nether
-	End       end
+	// Nether is a Dimension implementation with a lower base light level and a darker sky without sun/moon. It has a
+	// building range of [0, 256].
+	Nether nether
+	// End is a Dimension implementation with a dark sky. It has a building range of [0, 256].
+	End end
 )
 
 type (
+	// Dimension is a dimension of a World. It influences a variety of properties of a World such as the building range,
+	// the sky colour and the behaviour of liquid blocks.
 	Dimension interface {
 		Range() cube.Range
 		EncodeDimension() int
