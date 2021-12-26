@@ -608,17 +608,17 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputIte
 	offset := s.craftingOffset()
 
 	var inputsIndex int
-	for i := byte(0); i < s.craftingSize(); i++ {
+	for slot := offset; slot < offset+s.craftingSize(); slot++ {
 		if inputsIndex == len(inputs) {
 			break
 		}
 
-		slot := i + offset
+		input := inputs[inputsIndex]
 		oldSt, err := s.ui.Item(int(slot))
 		if err != nil {
 			return false
 		}
-		input := inputs[inputsIndex]
+
 		if !oldSt.Empty() {
 			// Items that apply to all types, so we just compare with the name and count.
 			if input.Variants {
@@ -632,16 +632,12 @@ func (h *ItemStackRequestHandler) hasRequiredGridInputs(inputs []recipe.InputIte
 					inputsIndex++
 				}
 			}
-			continue
-		}
-
-		// We should still up the satisfied inputs count if both stacks are empty.
-		if input.Empty() {
+		} else if input.Empty() {
+			// We should still up the inputs index if both stacks are empty.
 			inputsIndex++
 		}
 	}
-
-	return true
+	return inputsIndex == len(inputs)
 }
 
 // removeInventoryInputs removes the inputs in the player inventory.
@@ -695,7 +691,6 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.InputIte
 
 		updateStack(containerCraftingGrid, slot, oldSt)
 	}
-
 	return nil
 }
 
@@ -703,13 +698,13 @@ func (h *ItemStackRequestHandler) removeInventoryInputs(inputs []recipe.InputIte
 func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.InputItem, s *Session) error {
 	offset := s.craftingOffset()
 
-	var index int
+	var inputsIndex int
 	for slot := offset; slot < offset+s.craftingSize(); slot++ {
-		if index == len(inputs) {
+		if inputsIndex == len(inputs) {
 			break
 		}
 
-		input := inputs[index]
+		input := inputs[inputsIndex]
 		if oldSt, _ := s.ui.Item(int(slot)); !oldSt.Empty() {
 			st := oldSt.Grow(-input.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
@@ -717,10 +712,10 @@ func (h *ItemStackRequestHandler) removeGridInputs(inputs []recipe.InputItem, s 
 				Slot:           slot,
 				StackNetworkID: item_id(st),
 			}, st, s)
-			index++
+			inputsIndex++
 		} else if input.Empty() {
-			// We should still up the index if the expected input is empty.
-			index++
+			// We should still up the inputs index if the expected input is empty.
+			inputsIndex++
 		}
 	}
 	return nil
