@@ -23,6 +23,9 @@ type World struct {
 	log internal.Logger
 	d   Dimension
 	ra  cube.Range
+	// advance is a bool that specifies if this World should advance the current tick, time and weather saved in the
+	// Settings struct held by the World.
+	advance bool
 
 	portalMu sync.Mutex
 	npd, epd *World
@@ -86,6 +89,7 @@ func New(log internal.Logger, d Dimension, s *Settings) *World {
 		s = defaultSettings()
 	}
 	w := &World{
+		advance:         s.ref.Inc() == 1,
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
 		entities:        map[Entity]ChunkPos{},
@@ -1173,6 +1177,7 @@ func (w *World) Close() error {
 	if !w.rdonly.Load() {
 		w.log.Debugf("Updating level.dat values...")
 
+		w.set.ref.Dec()
 		w.provider().SaveSettings(w.set)
 	}
 
@@ -1211,40 +1216,51 @@ func (w *World) tick() {
 	}
 
 	w.set.Lock()
-	tick := w.set.CurrentTick
-	w.set.CurrentTick++
+	if w.advance {
+		w.set.CurrentTick++
+		if w.set.TimeCycle {
+			w.set.Time++
+		}
+		if w.set.WeatherCycle {
+			w.set.RainTime--
+			w.set.ThunderTime--
 
-	if w.set.TimeCycle {
-		w.set.Time++
-	}
-	t := int(w.set.Time)
-
-	if w.set.WeatherCycle {
-		w.set.RainTime--
-		if w.set.RainTime <= 0 {
-			// Wiki: The rain counter counts down to zero, and each time it reaches zero, the rain is toggled on or off.
-			// When the rain is turned on, the counter is reset to a value between 12,000-23,999 ticks (0.5-1 game days)
-			// and when the rain is turned off it is reset to a value of 12,000-179,999 ticks (0.5-7.5 game days).
-			if w.set.Raining {
-				w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
-			} else {
-				w.setRaining(true, time.Second*time.Duration(w.r.Intn(600)+600))
+			if w.set.RainTime <= 0 {
+				// Wiki: The rain counter counts down to zero, and each time it reaches zero, the rain is toggled on or off.
+				// When the rain is turned on, the counter is reset to a value between 12,000-23,999 ticks (0.5-1 game days)
+				// and when the rain is turned off it is reset to a value of 12,000-179,999 ticks (0.5-7.5 game days).
+				if w.set.Raining {
+					w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+				} else {
+					w.setRaining(true, time.Second*time.Duration(w.r.Intn(600)+600))
+				}
+			}
+			if w.set.ThunderTime <= 0 {
+				// Wiki: the thunder counter toggles thunder on/off when it reaches zero, but clear weather overrides the
+				// "on" state. When thunder is turned on, the thunder counter is reset to 3,600-15,999 ticks (3-13 minutes),
+				// and when thunder is turned off the counter rests to 12,000-179,999 ticks (0.5-7.5 days).
+				if w.set.Thundering {
+					w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
+				} else {
+					w.setThunder(true, time.Second*time.Duration(w.r.Intn(620)+180))
+				}
 			}
 		}
-		w.set.ThunderTime--
-		if w.set.ThunderTime <= 0 {
-			// Wiki: the thunder counter toggles thunder on/off when it reaches zero, but clear weather overrides the
-			// "on" state. When thunder is turned on, the thunder counter is reset to 3,600-15,999 ticks (3-13 minutes),
-			// and when thunder is turned off the counter rests to 12,000-179,999 ticks (0.5-7.5 days).
-			if w.set.Thundering {
-				w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
-			} else {
-				w.setThunder(true, time.Second*time.Duration(w.r.Intn(620)+180))
-			}
-		}
 	}
-	thunder := w.set.Thundering && w.set.Raining
+
+	rain, thunder, tick, t := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
 	w.set.Unlock()
+
+	if tick%20 == 0 {
+		for _, viewer := range viewers {
+			if w.d.TimeCycle() {
+				viewer.ViewTime(t)
+			}
+			if w.d.WeatherCycle() {
+				viewer.ViewWeather(rain, thunder)
+			}
+		}
+	}
 
 	if thunder {
 		w.chunkMu.Lock()
@@ -1260,12 +1276,6 @@ func (w *World) tick() {
 
 		for _, pos := range positions {
 			w.strikeLightning(pos)
-		}
-	}
-
-	if tick%20 == 0 {
-		for _, viewer := range viewers {
-			viewer.ViewTime(t)
 		}
 	}
 
@@ -1615,9 +1625,6 @@ func (w *World) StopRaining() {
 func (w *World) setRaining(raining bool, x time.Duration) {
 	w.set.Raining = raining
 	w.set.RainTime = int64(x.Seconds() * 20)
-	for _, v := range w.allViewers() {
-		v.ViewWeather(raining, w.set.Raining && w.set.Thundering)
-	}
 }
 
 // StartThundering makes it thunder in the current world where the time.Duration passed will determine how long it will
@@ -1643,11 +1650,6 @@ func (w *World) StopThundering() {
 func (w *World) setThunder(thundering bool, x time.Duration) {
 	w.set.Thundering = thundering
 	w.set.ThunderTime = int64(x.Seconds() * 20)
-	for _, v := range w.allViewers() {
-		// Thunderstorms only happen if it is already raining. Clear weather overrides thunder, so only make it thunder
-		// if it's both raining and thundering.
-		v.ViewWeather(w.set.Raining, w.set.Raining && thundering)
-	}
 }
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.

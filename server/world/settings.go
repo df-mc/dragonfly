@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"go.uber.org/atomic"
 	"sync"
 )
 
@@ -9,6 +10,8 @@ import (
 // Settings to multiple worlds created using New, in which case the Settings are synchronised between the worlds.
 type Settings struct {
 	sync.Mutex
+	ref atomic.Int32
+
 	// Name is the display name of the World.
 	Name string
 	// Spawn is the spawn position of the World. New players that join the world will be spawned here.
