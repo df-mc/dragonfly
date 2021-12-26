@@ -23,8 +23,8 @@ type ItemFrame struct {
 	// Rotations is the number of rotations for the item in the frame. Each rotation is 45 degrees, with the exception
 	// being maps having 90 degree rotations.
 	Rotations int
-	// Drops is the chance of the item dropping when the frame is broken. In vanilla, this is always 1.0.
-	Drops float64
+	// DropChance is the chance of the item dropping when the frame is broken. In vanilla, this is always 1.0.
+	DropChance float64
 	// Glowing makes the frame the glowing variant.
 	Glowing bool
 	// Large makes the frame show up large. This typically only occurs with maps.
@@ -59,7 +59,7 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 	if g, ok := u.(interface {
 		GameMode() world.GameMode
 	}); ok {
-		if rand.Float64() <= i.Drops && !g.GameMode().CreativeInventory() {
+		if rand.Float64() <= i.DropChance && !g.GameMode().CreativeInventory() {
 			it := entity.NewItem(i.Item, pos.Vec3Centre())
 			it.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 			w.AddEntity(it)
@@ -80,7 +80,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 	i.Facing = face.Opposite()
-	i.Drops = 1.0
+	i.DropChance = 1.0
 
 	place(w, pos, i, user, ctx)
 	return placed(ctx)
@@ -114,7 +114,7 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}
 
 // DecodeNBT ...
 func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
-	i.Drops = float64(nbtconv.MapFloat32(data, "ItemDropChance"))
+	i.DropChance = float64(nbtconv.MapFloat32(data, "ItemDropChance"))
 	i.Rotations = int(nbtconv.MapByte(data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
 	return i
@@ -123,7 +123,7 @@ func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT ...
 func (i ItemFrame) EncodeNBT() map[string]interface{} {
 	m := map[string]interface{}{
-		"ItemDropChance": float32(i.Drops),
+		"ItemDropChance": float32(i.DropChance),
 		"ItemRotation":   uint8(i.Rotations),
 		"id":             "ItemFrame",
 	}
