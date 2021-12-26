@@ -28,7 +28,7 @@ type World struct {
 	npd, epd *World
 
 	mu   sync.Mutex
-	set  Settings
+	set  *Settings
 	prov Provider
 
 	rdonly atomic.Bool
@@ -79,7 +79,13 @@ type World struct {
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NoIOProvider)
 // By default, the name of the world will be 'World'.
-func New(log internal.Logger, d Dimension) *World {
+// The Settings passed specify the initial settings of the World created. These Settings are changed as soon as
+// Provider is called, at which point they will be replaced with the Settings as created by the Provider passed. If nil
+// is passed as Settings, default settings are used.
+func New(log internal.Logger, d Dimension, s *Settings) *World {
+	if s == nil {
+		s = defaultSettings()
+	}
 	w := &World{
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
@@ -90,7 +96,7 @@ func New(log internal.Logger, d Dimension) *World {
 		handler:         NopHandler{},
 		randomTickSpeed: *atomic.NewUint32(3),
 		log:             log,
-		set:             defaultSettings(),
+		set:             s,
 		closing:         make(chan struct{}),
 		d:               d,
 		ra:              d.Range(),
@@ -106,8 +112,8 @@ func New(log internal.Logger, d Dimension) *World {
 // in the pause screen in-game.
 // If a provider is set, the name will be updated according to the name that it provides.
 func (w *World) Name() string {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.set.Name
 }
 
@@ -630,8 +636,8 @@ func (w *World) Time() int {
 	if w == nil {
 		return 0
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return int(w.set.Time)
 }
 
@@ -641,9 +647,9 @@ func (w *World) SetTime(new int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	w.set.Time = int64(new)
-	w.mu.Unlock()
+	w.set.Unlock()
 	for _, viewer := range w.allViewers() {
 		viewer.ViewTime(new)
 	}
@@ -668,8 +674,8 @@ func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.TimeCycle = v
 }
 
@@ -678,8 +684,8 @@ func (w *World) StopWeatherCycle() {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.WeatherCycle = false
 }
 
@@ -688,8 +694,8 @@ func (w *World) StartWeatherCycle() {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.WeatherCycle = true
 }
 
@@ -699,9 +705,9 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	a := w.set.Raining
-	w.mu.Unlock()
+	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
@@ -712,9 +718,9 @@ func (w *World) ThunderingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	a := w.set.Thundering && w.set.Raining
-	w.mu.Unlock()
+	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
@@ -906,9 +912,9 @@ func (w *World) Spawn() cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	s := w.set.Spawn
-	w.mu.Unlock()
+	w.set.Unlock()
 	if s[1] > w.ra[1] {
 		s[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
@@ -921,9 +927,9 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	w.set.Spawn = pos
-	w.mu.Unlock()
+	w.set.Unlock()
 	for _, viewer := range w.allViewers() {
 		viewer.ViewWorldSpawn(pos)
 	}
@@ -936,8 +942,8 @@ func (w *World) DefaultGameMode() GameMode {
 	if w == nil {
 		return GameModeSurvival
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.set.DefaultGameMode
 }
 
@@ -947,15 +953,15 @@ func (w *World) SetTickRange(v int) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.TickRange = int32(v)
 }
 
 // tickRange returns the tick range around each Viewer.
 func (w *World) tickRange() int {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return int(w.set.TickRange)
 }
 
@@ -965,8 +971,8 @@ func (w *World) SetDefaultGameMode(mode GameMode) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.DefaultGameMode = mode
 }
 
@@ -976,8 +982,8 @@ func (w *World) Difficulty() Difficulty {
 	if w == nil {
 		return DifficultyNormal{}
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.set.Difficulty
 }
 
@@ -986,8 +992,8 @@ func (w *World) SetDifficulty(d Difficulty) {
 	if w == nil {
 		return
 	}
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	w.set.Difficulty = d
 }
 
@@ -1012,9 +1018,9 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 		w.updateMu.Unlock()
 		return
 	}
-	w.mu.Lock()
+	w.set.Lock()
 	t := w.set.CurrentTick
-	w.mu.Unlock()
+	w.set.Unlock()
 
 	w.blockUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
 	w.updateMu.Unlock()
@@ -1056,10 +1062,10 @@ func (w *World) Provider(p Provider) {
 		p = NoIOProvider{}
 	}
 
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 
-	w.set = p.Settings()
+	p.Settings(w.set)
 	w.prov = p
 
 	w.initChunkCache()
@@ -1205,7 +1211,7 @@ func (w *World) tick() {
 		return
 	}
 
-	w.mu.Lock()
+	w.set.Lock()
 	tick := w.set.CurrentTick
 	w.set.CurrentTick++
 
@@ -1239,7 +1245,7 @@ func (w *World) tick() {
 		}
 	}
 	thunder := w.set.Thundering && w.set.Raining
-	w.mu.Unlock()
+	w.set.Unlock()
 
 	if thunder {
 		w.chunkMu.Lock()
@@ -1587,14 +1593,14 @@ func (w *World) tickEntities(tick int64) {
 
 // StartRaining makes it rain in the current world where the time.Duration passed will determine how long it will rain.
 func (w *World) StartRaining(dur time.Duration) {
-	w.mu.Lock()
+	w.set.Lock()
 	w.setRaining(true, dur)
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // StopRaining makes it stop raining in the current world.
 func (w *World) StopRaining() {
-	w.mu.Lock()
+	w.set.Lock()
 	if w.set.Raining {
 		w.setRaining(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
 		if w.set.Thundering {
@@ -1602,7 +1608,7 @@ func (w *World) StopRaining() {
 			w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
 		}
 	}
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // setRaining toggles raining depending on the raining argument.
@@ -1618,19 +1624,19 @@ func (w *World) setRaining(raining bool, x time.Duration) {
 // StartThundering makes it thunder in the current world where the time.Duration passed will determine how long it will
 // thunder. StartThundering will also make it rain.
 func (w *World) StartThundering(dur time.Duration) {
-	w.mu.Lock()
+	w.set.Lock()
 	w.setThunder(true, dur)
 	w.setRaining(true, dur)
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // StopThundering makes it stop thundering in the current world.
 func (w *World) StopThundering() {
-	w.mu.Lock()
+	w.set.Lock()
 	if w.set.Thundering && w.set.Raining {
 		w.setThunder(false, time.Second*(time.Duration(w.r.Intn(8400)+600)))
 	}
-	w.mu.Unlock()
+	w.set.Unlock()
 }
 
 // setThunder toggles thundering depending on the thundering argument.
@@ -1664,9 +1670,9 @@ func (w *World) addWorldViewer(viewer Viewer) {
 	w.viewers[viewer] = struct{}{}
 	w.viewersMu.Unlock()
 	viewer.ViewTime(w.Time())
-	w.mu.Lock()
+	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
-	w.mu.Unlock()
+	w.set.Unlock()
 	viewer.ViewWeather(raining, thundering)
 	viewer.ViewWorldSpawn(w.Spawn())
 }
@@ -1747,8 +1753,8 @@ func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
 // provider returns the provider of the world. It should always be used, rather than direct field access, in
 // order to provide synchronisation safety.
 func (w *World) provider() Provider {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.set.Lock()
+	defer w.set.Unlock()
 	return w.prov
 }
 

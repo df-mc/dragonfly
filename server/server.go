@@ -107,9 +107,10 @@ func New(c *Config, log internal.Logger) *Server {
 		playerProvider: player.NopProvider{},
 		a:              allower{},
 	}
-	s.world = s.createWorld(world.Overworld, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}})
-	s.nether = s.createWorld(world.Nether, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}})
-	s.end = s.createWorld(world.End, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}})
+	set := new(world.Settings)
+	s.world = s.createWorld(world.Overworld, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, set)
+	s.nether = s.createWorld(world.Nether, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, set)
+	s.end = s.createWorld(world.End, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, set)
 
 	s.world.SetPortalDestinations(s.nether, s.end)
 	s.nether.SetPortalDestinations(s.world, s.end)
@@ -523,16 +524,18 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.
 // The layers passed are used to create a generator.Flat that is used as generator for the world.
-func (server *Server) createWorld(d world.Dimension, layers []world.Block) *world.World {
+func (server *Server) createWorld(d world.Dimension, layers []world.Block, s *world.Settings) *world.World {
 	log := server.log
 	if v, ok := log.(interface {
 		WithField(key string, field interface{}) *logrus.Entry
 	}); ok {
+		// Add a dimension field to be able to distinguish between the different dimensions in the log. Dimensions
+		// implement fmt.Stringer so we can just fmt.Sprint them for a readable name.
 		log = v.WithField("dimension", strings.ToLower(fmt.Sprint(d)))
 	}
 	log.Debugf("Loading world...")
 
-	w := world.New(log, d)
+	w := world.New(log, d, s)
 
 	p, err := mcdb.New(server.c.World.Folder, d)
 	if err != nil {
@@ -547,7 +550,7 @@ func (server *Server) createWorld(d world.Dimension, layers []world.Block) *worl
 
 // createSkin creates a new skin using the skin data found in the client data in the login, and returns it.
 func (server *Server) createSkin(data login.ClientData) skin.Skin {
-	// gopher tunnel guarantees the following values are valid data and are of the correct size.
+	// Gophertunnel guarantees the following values are valid data and are of the correct size.
 	skinData, _ := base64.StdEncoding.DecodeString(data.SkinData)
 	capeData, _ := base64.StdEncoding.DecodeString(data.CapeData)
 	modelData, _ := base64.StdEncoding.DecodeString(data.SkinGeometry)
@@ -592,7 +595,6 @@ func (server *Server) registerTargetFunc() {
 		entities, players := src.World().Entities(), server.Players()
 		eTargets, pTargets := make([]cmd.Target, len(entities)), make([]cmd.Target, len(players))
 
-		entities = src.World().Entities()
 		for i, e := range entities {
 			eTargets[i] = e
 		}

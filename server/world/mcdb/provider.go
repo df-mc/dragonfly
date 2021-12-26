@@ -98,26 +98,24 @@ func (p *Provider) initDefaultLevelDat() {
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
-func (p *Provider) Settings() world.Settings {
-	return world.Settings{
-		Name:            p.d.LevelName,
-		Spawn:           cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)},
-		Time:            p.d.Time,
-		TimeCycle:       p.d.DoDayLightCycle,
-		WeatherCycle:    p.d.DoWeatherCycle,
-		RainTime:        int64(p.d.RainTime),
-		Raining:         p.d.RainLevel > 0,
-		ThunderTime:     int64(p.d.LightningTime),
-		Thundering:      p.d.LightningLevel > 0,
-		CurrentTick:     p.d.CurrentTick,
-		DefaultGameMode: p.loadDefaultGameMode(),
-		Difficulty:      p.loadDifficulty(),
-		TickRange:       p.d.ServerChunkTickRange,
-	}
+func (p *Provider) Settings(s *world.Settings) {
+	s.Name = p.d.LevelName
+	s.Spawn = cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)}
+	s.Time = p.d.Time
+	s.TimeCycle = p.d.DoDayLightCycle
+	s.WeatherCycle = p.d.DoWeatherCycle
+	s.RainTime = int64(p.d.RainTime)
+	s.Raining = p.d.RainLevel > 0
+	s.ThunderTime = int64(p.d.LightningTime)
+	s.Thundering = p.d.LightningLevel > 0
+	s.CurrentTick = p.d.CurrentTick
+	s.DefaultGameMode = p.loadDefaultGameMode()
+	s.Difficulty = p.loadDifficulty()
+	s.TickRange = p.d.ServerChunkTickRange
 }
 
 // SaveSettings saves the world.Settings passed to the level.dat.
-func (p *Provider) SaveSettings(s world.Settings) {
+func (p *Provider) SaveSettings(s *world.Settings) {
 	p.d.LevelName = s.Name
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
 	p.d.Time = s.Time
