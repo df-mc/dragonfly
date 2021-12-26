@@ -37,7 +37,7 @@ func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRotate{})
 	} else if held, other := u.HeldItems(); !held.Empty() {
 		i.Item = held.Grow(-held.Count() + 1)
-		// TODO: When maps are implemented, check the item is a map, and if so, force the large boolean to true.
+		// TODO: When maps are implemented, check the item is a map, and if so, display the large version of the frame.
 		u.SetHeldItems(held.Grow(-1), other)
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameAdd{})
 	} else {
