@@ -138,6 +138,9 @@ func (i ItemFrame) EncodeNBT() map[string]interface{} {
 
 // Pick returns the item that is picked when the block is picked.
 func (i ItemFrame) Pick() item.Stack {
+	if i.Item.Empty() {
+		return item.NewStack(ItemFrame{Glowing: i.Glowing}, 1)
+	}
 	return item.NewStack(i.Item.Item(), 1)
 }
 
