@@ -2092,10 +2092,8 @@ func (p *Player) Breathing() bool {
 		return true
 	}
 	for _, e := range p.Effects() {
-		if _, waterBreathing := e.Type().(effect.WaterBreathing); waterBreathing {
-			return true
-		}
-		if _, conduitPower := e.Type().(effect.ConduitPower); conduitPower {
+		switch e.Type().(type) {
+		case effect.WaterBreathing, effect.ConduitPower:
 			return true
 		}
 	}
