@@ -26,6 +26,7 @@ func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 		m[i], _ = world.BlockRuntimeID(b)
 	}
 
+	b := uint32(f.Biome.EncodeBiome())
 	min := int16(chunk.Range().Min())
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
@@ -33,7 +34,7 @@ func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 				if y < l {
 					chunk.SetBlock(x, min+y, z, 0, m[l-y-1])
 				}
-				chunk.SetBiome(x, min+y, z, uint32(f.Biome.EncodeBiome()))
+				chunk.SetBiome(x, min+y, z, b)
 			}
 		}
 	}
