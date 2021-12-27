@@ -175,7 +175,7 @@ func (w *World) Biome(pos cube.Pos) (biome.Biome, bool) {
 		w.log.Errorf("error getting biome: %v", err)
 		return nil, false
 	}
-	return biome.BiomeByID(int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))))
+	return biome.ByID(int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))))
 }
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk

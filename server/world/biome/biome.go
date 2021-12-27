@@ -26,8 +26,8 @@ func RegisterBiome(b Biome) {
 	biomes[id] = b
 }
 
-// BiomeByID looks up a biome by the ID and returns it if found.
-func BiomeByID(id int) (Biome, bool) {
+// ByID looks up a biome by the ID and returns it if found.
+func ByID(id int) (Biome, bool) {
 	e, ok := biomes[id]
 	return e, ok
 }
