@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
@@ -108,9 +109,9 @@ func New(c *Config, log internal.Logger) *Server {
 		a:              allower{},
 	}
 	set := new(world.Settings)
-	s.world = s.createWorld(world.Overworld, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, set)
-	s.nether = s.createWorld(world.Nether, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, set)
-	s.end = s.createWorld(world.End, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, set)
+	s.world = s.createWorld(world.Overworld, biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, set)
+	s.nether = s.createWorld(world.Nether, biome.NetherWastes{}, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, set)
+	s.end = s.createWorld(world.End, biome.End{}, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, set)
 
 	s.world.SetPortalDestinations(s.nether, s.end)
 	s.nether.SetPortalDestinations(s.world, s.end)
@@ -524,7 +525,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.
 // The layers passed are used to create a generator.Flat that is used as generator for the world.
-func (server *Server) createWorld(d world.Dimension, layers []world.Block, s *world.Settings) *world.World {
+func (server *Server) createWorld(d world.Dimension, biome biome.Biome, layers []world.Block, s *world.Settings) *world.World {
 	log := server.log
 	if v, ok := log.(interface {
 		WithField(key string, field interface{}) *logrus.Entry
@@ -542,7 +543,7 @@ func (server *Server) createWorld(d world.Dimension, layers []world.Block, s *wo
 		log.Fatalf("error loading world: %v", err)
 	}
 	w.Provider(p)
-	w.Generator(generator.Flat{Layers: layers})
+	w.Generator(generator.Flat{Biome: biome, Layers: layers})
 
 	log.Debugf(`Loaded world "%v".`, w.Name())
 	return w
