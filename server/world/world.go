@@ -983,7 +983,7 @@ func (w *World) SetDefaultGameMode(mode GameMode) {
 // will depend on this difficulty.
 func (w *World) Difficulty() Difficulty {
 	if w == nil {
-		return DifficultyNormal{}
+		return DifficultyNormal
 	}
 	w.set.Lock()
 	defer w.set.Unlock()

@@ -235,19 +235,19 @@ func (p *Provider) saveDefaultGameMode(mode world.GameMode) {
 func (p *Provider) loadDifficulty() world.Difficulty {
 	switch p.d.Difficulty {
 	default:
-		return world.DifficultyNormal{}
+		return world.DifficultyNormal
 	case 0:
-		return world.DifficultyPeaceful{}
+		return world.DifficultyPeaceful
 	case 1:
-		return world.DifficultyEasy{}
+		return world.DifficultyEasy
 	case 3:
-		return world.DifficultyHard{}
+		return world.DifficultyHard
 	}
 }
 
 // saveDifficulty saves the difficulty passed to the level.dat.
 func (p *Provider) saveDifficulty(d world.Difficulty) {
-	switch d.(type) {
+	switch d {
 	case world.DifficultyPeaceful:
 		p.d.Difficulty = 0
 	case world.DifficultyEasy:

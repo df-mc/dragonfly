@@ -48,7 +48,7 @@ func defaultSettings() *Settings {
 	return &Settings{
 		Name:            "World",
 		DefaultGameMode: GameModeSurvival,
-		Difficulty:      DifficultyNormal{},
+		Difficulty:      DifficultyNormal,
 		TimeCycle:       true,
 		WeatherCycle:    true,
 		TickRange:       6,
