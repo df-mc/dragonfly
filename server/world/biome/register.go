@@ -1,6 +1,6 @@
 package biome
 
-// init registers all biomes that can be used in a world.World.
+// init registers all biomes that can be used in a world.
 func init() {
 	RegisterBiome(Ocean{})
 	RegisterBiome(LegacyFrozenOcean{})
