@@ -2,7 +2,6 @@ package generator
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
@@ -11,7 +10,7 @@ import (
 // The Layers field may be used to specify the block layers placed.
 type Flat struct {
 	// Biome is the biome that the generator should use.
-	Biome biome.Biome
+	Biome world.Biome
 	// Layers is a list of block layers placed by the Flat generator. The layers are ordered in a way where the last
 	// element in the slice is placed as the bottom most block of the chunk.
 	Layers []world.Block

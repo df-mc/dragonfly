@@ -525,7 +525,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.
 // The layers passed are used to create a generator.Flat that is used as generator for the world.
-func (server *Server) createWorld(d world.Dimension, biome biome.Biome, layers []world.Block, s *world.Settings) *world.World {
+func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers []world.Block, s *world.Settings) *world.World {
 	log := server.log
 	if v, ok := log.(interface {
 		WithField(key string, field interface{}) *logrus.Entry

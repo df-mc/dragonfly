@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal"
-	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
@@ -164,7 +163,7 @@ func (w *World) Block(pos cube.Pos) Block {
 // Biome reads the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the biome returned. Chunks will be
 // loaded synchronously.
-func (w *World) Biome(pos cube.Pos) (biome.Biome, bool) {
+func (w *World) Biome(pos cube.Pos) (Biome, bool) {
 	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return nil, false
@@ -175,7 +174,7 @@ func (w *World) Biome(pos cube.Pos) (biome.Biome, bool) {
 		w.log.Errorf("error getting biome: %v", err)
 		return nil, false
 	}
-	return biome.ByID(int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))))
+	return BiomeByID(int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))))
 }
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
@@ -291,7 +290,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 
 // SetBiome sets the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
-func (w *World) SetBiome(pos cube.Pos, b biome.Biome) {
+func (w *World) SetBiome(pos cube.Pos, b Biome) {
 	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return

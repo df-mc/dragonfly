@@ -1,4 +1,4 @@
-package biome
+package world
 
 // Biome is a region in a world with distinct geographical features, flora, temperatures, humidity ratings,
 // and sky, water, grass and foliage colors.
@@ -26,8 +26,8 @@ func RegisterBiome(b Biome) {
 	biomes[id] = b
 }
 
-// ByID looks up a biome by the ID and returns it if found.
-func ByID(id int) (Biome, bool) {
+// BiomeByID looks up a biome by the ID and returns it if found.
+func BiomeByID(id int) (Biome, bool) {
 	e, ok := biomes[id]
 	return e, ok
 }
