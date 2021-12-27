@@ -45,7 +45,7 @@ func (n NoteBlock) EncodeNBT() map[string]interface{} {
 }
 
 // Punch ...
-func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
@@ -53,7 +53,7 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}

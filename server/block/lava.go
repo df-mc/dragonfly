@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -73,11 +72,6 @@ func (l Lava) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			}
 		}
 	}
-}
-
-// AABB returns no boxes.
-func (Lava) AABB(cube.Pos, *world.World) []physics.AABB {
-	return nil
 }
 
 // HasLiquidDrops ...

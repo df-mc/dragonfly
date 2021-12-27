@@ -56,7 +56,7 @@ func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User)
 }
 
 // Activate ...
-func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	d.teleport(pos, w)
 	return true
 }

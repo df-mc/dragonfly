@@ -14,7 +14,7 @@ type CocoaBean struct {
 }
 
 // AABB ...
-func (c CocoaBean) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+func (c CocoaBean) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).
 		Stretch(c.Facing.RotateRight().Face().Axis(), -(6-float64(c.Age))/16).
 		ExtendTowards(cube.FaceDown, -0.25).
@@ -24,6 +24,6 @@ func (c CocoaBean) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 }
 
 // FaceSolid ...
-func (c CocoaBean) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+func (c CocoaBean) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

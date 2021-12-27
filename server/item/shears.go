@@ -45,7 +45,7 @@ func (s Shears) HarvestLevel() int {
 }
 
 // BaseMiningEfficiency ...
-func (s Shears) BaseMiningEfficiency(b world.Block) float64 {
+func (s Shears) BaseMiningEfficiency(world.Block) float64 {
 	return 1.5
 }
 

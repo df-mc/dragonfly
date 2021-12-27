@@ -108,7 +108,7 @@ func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 }
 
 // UseOnBlock ...
-func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, b)
 	if !used {
 		return

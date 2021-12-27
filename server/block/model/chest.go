@@ -12,11 +12,11 @@ import (
 type Chest struct{}
 
 // AABB ...
-func (Chest) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+func (Chest) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
 // FaceSolid ...
-func (Chest) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+func (Chest) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }
