@@ -13,8 +13,8 @@ import (
 	"sync"
 )
 
-// Barrel is a fisherman's job site block, used to store items. It functions like a single chest although
-// it requires no air space above it to be opened.
+// Barrel is a fisherman's job site block, used to store items. It functions like a single chest, although
+// it requires no airspace above it to be opened.
 type Barrel struct {
 	solid
 	bass

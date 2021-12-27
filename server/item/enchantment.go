@@ -5,7 +5,7 @@ import (
 )
 
 // Enchantment represents an enchantment that can be applied to an item. It has methods to get the name,
-// get the current level, get the maximum level, get a new instance of the enchant with a certain level
+// get the current level, get the maximum level, get a new instance of the enchantment with a certain level
 // and to check if the enchantment is compatible with an item stack.
 type Enchantment interface {
 	// Name returns the name of the enchantment.

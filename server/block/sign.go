@@ -27,7 +27,7 @@ type Sign struct {
 	// BaseColour is the base colour of the text on the sign, changed when using a dye on the sign. The default colour
 	// is black.
 	BaseColour color.RGBA
-	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark and it
+	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark, and it
 	// will have an outline to improve visibility.
 	Glowing bool
 	// owner holds the UUID of the player that initially placed the sign.

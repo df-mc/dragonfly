@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// SkyLight holds a light implementation that can be used for propagating sky light through a sub chunk.
+// SkyLight holds a light implementation that can be used for propagating skylight through a sub chunk.
 var SkyLight skyLight
 
 // BlockLight holds a light implementation that can be used for propagating block light through a sub chunk.
@@ -124,7 +124,7 @@ func anyBlockLight(sub *SubChunk) bool {
 }
 
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
-// chunk. In addition, any sky light above those nodes will be set to 15.
+// chunk. In addition, any skylight above those nodes will be set to 15.
 func insertSkyLightNodes(queue *list.List, c *Chunk) {
 	m := calculateHeightmap(c)
 	highestY := int16(c.r[0])
@@ -176,7 +176,7 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 					queue.PushBack(lightNode{x: int8(x), z: int8(z), y: y + 1, level: 15})
 					continue
 				}
-				// Fill the rest of the column with sky light on full strength.
+				// Fill the rest of the column with skylight on full strength.
 				c.subChunk(y+1).SetSkyLight(x, uint8((y+1)&0xf), z, 15)
 			}
 		}
@@ -234,7 +234,7 @@ func insertLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk, 
 	}
 }
 
-// spreadPropagate propagates a sky light node in the queue past through the chunk passed and its neighbours,
+// spreadPropagate propagates a skylight node in the queue past through the chunk passed and its neighbours,
 // unlike fillPropagate, which only propagates within the chunk.
 func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, lt light) {
 	node := queue.Remove(queue.Front()).(lightNode)
@@ -262,7 +262,7 @@ func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, lt li
 	}
 }
 
-// fillPropagate propagates a sky light node in the node queue passed within the chunk itself. It does not
+// fillPropagate propagates a skylight node in the node queue passed within the chunk itself. It does not
 // spread the light beyond the chunk.
 func fillPropagate(queue *list.List, c *Chunk, lt light) {
 	node := queue.Remove(queue.Front()).(lightNode)
@@ -282,7 +282,7 @@ func fillPropagate(queue *list.List, c *Chunk, lt light) {
 	if node.level > 1 {
 		for _, neighbour := range node.neighbours(c.r) {
 			if neighbour.x < 0 || neighbour.x > 15 || neighbour.z < 0 || neighbour.z > 15 {
-				// In the fill stage, we don't propagate sky light out of the chunk.
+				// In the fill stage, we don't propagate skylight out of the chunk.
 				continue
 			}
 			sub := filterLevel(c.subChunk(neighbour.y), uint8(neighbour.x), uint8(neighbour.y&0xf), uint8(neighbour.z)) + 1

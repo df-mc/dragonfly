@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Regeneration is an effect that causes the entity that it is added to to slowly regenerate health. The level
+// Regeneration is an effect that causes the entity that it is added to slowly regenerate health. The level
 // of the effect influences the speed with which the entity regenerates.
 type Regeneration struct {
 	nopLasting

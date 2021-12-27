@@ -43,7 +43,7 @@ func MapByte(m map[string]interface{}, key string) byte {
 	return b
 }
 
-// MapFloat32 reads an float32 from a map at the key passed.
+// MapFloat32 reads a float32 from a map at the key passed.
 //noinspection GoCommentLeadingSpace
 func MapFloat32(m map[string]interface{}, key string) float32 {
 	b, _ := m[key].(float32)

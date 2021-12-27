@@ -95,7 +95,7 @@ func (storage *PalettedStorage) addNew(v uint32) int16 {
 func (storage *PalettedStorage) paletteIndex(x, y, z byte) uint16 {
 	if storage.bitsPerIndex == 0 {
 		// Unfortunately our default logic cannot deal with 0 bits per index, meaning we'll have to special case
-		// this. This comes with a little performance hit but it seems to be the only way to go. An alternative would
+		// this. This comes with a little performance hit, but it seems to be the only way to go. An alternative would
 		// be not to have 0 bits per block storages in memory, but that would cause a strongly increased memory usage
 		// by biomes.
 		return 0

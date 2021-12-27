@@ -72,10 +72,10 @@ type EntityLander interface {
 	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
 }
 
-// EntityInsider represents a block that reacts to an entity going inside of its 1x1x1 axis
+// EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
 // aligned bounding box.
 type EntityInsider interface {
-	// EntityInside is called when an entity goes inside of the block's 1x1x1 axis aligned bounding box.
+	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
 	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
 }
 
@@ -211,7 +211,7 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlammabilityInfo returns information about a blocks behavior involving fire.
+	// FlammabilityInfo returns information about a block's behavior involving fire.
 	FlammabilityInfo() FlammabilityInfo
 }
 

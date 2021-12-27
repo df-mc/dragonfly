@@ -56,7 +56,7 @@ func (s *Session) closeCurrentContainer() {
 	}
 }
 
-// SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
+// SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
 		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
@@ -224,7 +224,7 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
-// SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
+// SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
 	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
@@ -427,7 +427,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 	})
 }
 
-// HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
+// HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
@@ -548,7 +548,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		var b world.Block
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
-		// return air anyways.
+		// return air anyway.
 		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}

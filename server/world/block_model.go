@@ -7,7 +7,7 @@ import (
 )
 
 // BlockModel represents the model of a block. These models specify the ways a block can be collided with and
-// whether or not specific faces are solid wrt. being able to, for example, place torches onto those sides.
+// whether specific faces are solid wrt. being able to, for example, place torches onto those sides.
 type BlockModel interface {
 	// AABB returns the bounding boxes that a block with this model can be collided with.
 	AABB(pos cube.Pos, w *World) []physics.AABB

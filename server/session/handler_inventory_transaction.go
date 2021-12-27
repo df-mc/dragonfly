@@ -19,7 +19,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	case *protocol.NormalTransactionData:
 		h.resendInventories(s)
 		// Always resend inventories with normal transactions. Most of the time we do not use these
-		// transactions so we're best off making sure the client and server stay in sync.
+		// transactions, so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s); err != nil {
 			s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: failed verifying actions in Normal transaction: %v\n", s.conn.RemoteAddr(), s.c.Name(), err)
 			return nil

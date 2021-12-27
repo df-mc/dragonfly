@@ -13,7 +13,7 @@ type Shears struct{}
 // UseOnBlock ...
 func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if face == cube.FaceUp || face == cube.FaceDown {
-		// Pumpkins can only be carved when once of the horizontal faces is clicked.
+		// Pumpkins can only be carved when one of the horizontal faces is clicked.
 		return false
 	}
 	if c, ok := w.Block(pos).(carvable); ok {

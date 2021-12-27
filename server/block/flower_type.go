@@ -24,7 +24,7 @@ func BlueOrchid() FlowerType {
 	return FlowerType{flower(2)}
 }
 
-// Allium is a allium flower.
+// Allium is an allium flower.
 func Allium() FlowerType {
 	return FlowerType{flower(3)}
 }

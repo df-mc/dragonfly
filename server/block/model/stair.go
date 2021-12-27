@@ -56,10 +56,10 @@ func (s Stair) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 // FaceSolid ...
 func (s Stair) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
 	if !s.UpsideDown && face == cube.FaceDown {
-		// Non-upside down stairs have a closed side at the bottom.
+		// Non-upside-down stairs have a closed side at the bottom.
 		return true
 	} else if s.UpsideDown && face == cube.FaceUp {
-		// Upside down stairs always have a closed side at the top.
+		// Upside-down stairs always have a closed side at the top.
 		return true
 	}
 	t := s.cornerType(pos, w)

@@ -611,7 +611,7 @@ func (w *World) Light(pos cube.Pos) uint8 {
 	return l
 }
 
-// SkyLight returns the sky light level at the position passed. This light level is not influenced by blocks
+// SkyLight returns the skylight level at the position passed. This light level is not influenced by blocks
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
@@ -620,7 +620,7 @@ func (w *World) SkyLight(pos cube.Pos) uint8 {
 		return 0
 	}
 	if pos[1] > w.ra[1] {
-		// Above the rest of the world, so full sky light.
+		// Above the rest of the world, so full skylight.
 		return 15
 	}
 	c, err := w.chunk(chunkPosFromBlockPos(pos))
@@ -753,7 +753,7 @@ func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 
 var (
 	worldsMu sync.RWMutex
-	// entityWorlds holds a list of all entities added to a world. It may be used to lookup the world that an
+	// entityWorlds holds a list of all entities added to a world. It may be used to look up the world that an
 	// entity is currently in.
 	entityWorlds = map[Entity]*World{}
 )
@@ -1314,7 +1314,7 @@ func (w *World) strikeLightning(c ChunkPos) {
 
 	pos := cube.PosFromVec3(vec)
 	if len(w.Block(pos).Model().AABB(pos, w)) != 0 {
-		// If lightning is about to strike inside of a block that is not fully transparent. In this case, move the
+		// If lightning is about to strike inside a block that is not fully transparent. In this case, move the
 		// lightning up by one block so that it strikes above the block.
 		vec = vec.Add(mgl64.Vec3{0, 1})
 	}
@@ -1397,7 +1397,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 		pos := viewer.Position()
 		w.positionCache = append(w.positionCache, ChunkPos{
 			// Technically we could obtain the wrong chunk position here due to truncating, but this
-			// inaccuracy doesn't matter and it allows us to cut a corner.
+			// inaccuracy doesn't matter, and it allows us to cut a corner.
 			int32(pos[0]) >> 4,
 			int32(pos[2]) >> 4,
 		})
@@ -1887,12 +1887,12 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	return data, nil
 }
 
-// calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
+// calculateLight calculates the light in the chunk passed and spreads the light of the surrounding
 // neighbours if they have all chunks loaded around it as a result of the one passed.
 func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
-			// For all of the neighbours of this chunk, if they exist, check if all neighbours of that chunk
+			// For all the neighbours of this chunk, if they exist, check if all neighbours of that chunk
 			// now exist because of this one.
 			centrePos := ChunkPos{pos[0] + x, pos[1] + z}
 			neighbour, ok := w.chunks[centrePos]
@@ -1900,7 +1900,7 @@ func (w *World) calculateLight(c *chunk.Chunk, pos ChunkPos) {
 				continue
 			}
 			neighbour.Lock()
-			// We first attempt to spread the light of all neighbours into the ones around them.
+			// We first attempt to spread the light of all neighbours into the surrounding ones.
 			w.spreadLight(neighbour.Chunk, centrePos)
 			neighbour.Unlock()
 		}
@@ -1940,7 +1940,7 @@ func (w *World) spreadLight(c *chunk.Chunk, pos ChunkPos) {
 }
 
 // loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
-// have block NBT will then be stored into memory.
+// have NBT will then be stored into memory.
 func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interface{}) {
 	c.e = make(map[cube.Pos]Block, len(blockEntityData))
 	for _, data := range blockEntityData {

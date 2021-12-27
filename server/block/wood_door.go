@@ -19,7 +19,7 @@ type WoodDoor struct {
 	Wood WoodType
 	// Facing is the direction the door is facing.
 	Facing cube.Direction
-	// Open is whether or not the door is open.
+	// Open is whether the door is open.
 	Open bool
 	// Top is whether the block is the top or bottom half of a door
 	Top bool

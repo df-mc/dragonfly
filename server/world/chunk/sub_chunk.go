@@ -70,10 +70,10 @@ func (sub *SubChunk) BlockLight(x, y, z byte) uint8 {
 	return (sub.blockLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
-// SetSkyLight sets the sky light value at a specific position in the sub chunk.
+// SetSkyLight sets the skylight value at a specific position in the sub chunk.
 func (sub *SubChunk) SetSkyLight(x, y, z byte, level uint8) {
 	if ptr := &sub.skyLight[0]; ptr == fullLightPtr || ptr == noLightPtr {
-		// Copy the sky light as soon as it is changed to create a COW system.
+		// Copy the skylight as soon as it is changed to create a COW system.
 		sub.skyLight = append([]byte(nil), sub.skyLight...)
 	}
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
@@ -83,7 +83,7 @@ func (sub *SubChunk) SetSkyLight(x, y, z byte, level uint8) {
 	sub.skyLight[i] = (sub.skyLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
-// SkyLight returns the sky light value at a specific value at a specific position in the sub chunk.
+// SkyLight returns the skylight value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 

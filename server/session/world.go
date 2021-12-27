@@ -342,7 +342,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 func (s *Session) ViewEntityItems(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
 	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
-		// Don't view the items of the entity if the entity is the Controllable of the session.
+		// Don't view the items of the entity if the entity is the Controllable entity of the session.
 		return
 	}
 	c, ok := e.(item.Carrier)
@@ -369,7 +369,7 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 func (s *Session) ViewEntityArmour(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
 	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
-		// Don't view the items of the entity if the entity is the Controllable of the session.
+		// Don't view the items of the entity if the entity is the Controllable entity of the session.
 		return
 	}
 	armoured, ok := e.(interface {

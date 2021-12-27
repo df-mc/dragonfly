@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Coral is a non solid block that comes in 5 variants.
+// Coral is a non-solid block that comes in 5 variants.
 type Coral struct {
 	empty
 	transparent

@@ -157,7 +157,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the controllable of
+// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
 // the session in the world.
 // The function passed will be called when the session stops running.
 func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {

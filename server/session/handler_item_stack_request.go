@@ -226,7 +226,7 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 	return nil
 }
 
-// handleDrop handles the dropping of an item by moving it outside of the inventory while having the
+// handleDrop handles the dropping of an item by moving it outside the inventory while having the
 // inventory opened.
 func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction, s *Session) error {
 	if err := h.verifySlot(a.Source, s); err != nil {

@@ -21,7 +21,7 @@ type Viewer interface {
 	// of the viewer, either by its movement or the movement of the viewer using a world.Loader.
 	HideEntity(e Entity)
 	// ViewEntityMovement views the movement of an entity. The entity is moved with a delta position, yaw and
-	// pitch, which, when applied to values of the entity, will result in the final values.
+	// pitch, which, when applied to the respective values of the entity, will result in the final values.
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool)
 	// ViewEntityVelocity views the velocity of an entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.

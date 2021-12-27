@@ -157,7 +157,7 @@ func (p *Player) Name() string {
 
 // UUID returns the UUID of the player. This UUID will remain consistent with an XBOX Live account, and will,
 // unlike the name of the player, never change.
-// It is therefore recommended to use the UUID over the name of the player. Additionally, it is recommended to
+// It is therefore recommended using the UUID over the name of the player. Additionally, it is recommended to
 // use the UUID over the XUID because of its standard format.
 func (p *Player) UUID() uuid.UUID {
 	return p.uuid
@@ -792,8 +792,7 @@ func (p *Player) kill(src damage.Source) {
 
 	p.handler().HandleDeath(src)
 
-	// Wait for a little bit before removing the entity. The client displays a death animation while the
-	// player is dying.
+	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
 		if p.session() == session.Nop {
 			_ = p.Close()
@@ -997,7 +996,7 @@ func (p *Player) Immobile() bool {
 	return p.immobile.Load()
 }
 
-// FireProof checks if the Player is currently fire proof. True is returned if the player has a FireResistance effect or
+// FireProof checks if the Player is currently fireproof. True is returned if the player has a FireResistance effect or
 // if it is in creative mode.
 func (p *Player) FireProof() bool {
 	for _, e := range p.Effects() {
@@ -1227,7 +1226,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 	ctx.Continue(func() {
 		if activatable, ok := w.Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
-			// items, in which the block will activated as usual.
+			// items, in which case the block will be activated as usual.
 			if !p.Sneaking() || i.Empty() {
 				p.SwingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
@@ -1539,7 +1538,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 }
 
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
-// This returns true if there is an entity in the way that could prevent the block from being placed.
+// The function returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	w := p.World()
 	blockBoxes := b.Model().AABB(pos, w)
@@ -1550,7 +1549,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
-			// Placing blocks inside of item entities is fine.
+			// Placing blocks inside item entities is fine.
 			continue
 		}
 		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
@@ -1771,7 +1770,7 @@ func (p *Player) Velocity() mgl64.Vec3 {
 	return p.vel.Load().(mgl64.Vec3)
 }
 
-// SetVelocity updates the players velocity. If there is an attached session, this will just send
+// SetVelocity updates the player's velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 	if p.session() == session.Nop {

@@ -95,7 +95,7 @@ func writeDisplay(m map[string]interface{}, s item.Stack) {
 	}
 }
 
-// writeDamage writes the damage of an item.Stack (either an int16 for disk or int32 for network) to a map for NBT
+// writeDamage writes the damage to an item.Stack (either an int16 for disk or int32 for network) to a map for NBT
 // encoding.
 func writeDamage(m map[string]interface{}, s item.Stack, disk bool) {
 	if v, ok := m["Damage"]; !ok || v.(int16) == 0 {

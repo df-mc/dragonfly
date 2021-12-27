@@ -115,7 +115,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 	existing := w.Block(pos)
 	if existingLiquid, alsoLiquid := existing.(world.Liquid); alsoLiquid && existingLiquid.LiquidType() == b.LiquidType() {
 		if existingLiquid.LiquidDepth() >= newDepth || existingLiquid.LiquidFalling() {
-			// The existing liquid had a higher depth than the one we're propagating or it was falling
+			// The existing liquid had a higher depth than the one we're propagating, or it was falling
 			// (basically considered full depth), so no need to continue.
 			return true
 		}

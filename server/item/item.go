@@ -46,7 +46,7 @@ type Usable interface {
 	Use(w *world.World, user User, ctx *UseContext) bool
 }
 
-// Consumable represents an item that may consumed by a player. If an item implements this interface, a player
+// Consumable represents an item that may be consumed by a player. If an item implements this interface, a player
 // may use and hold the item to consume it.
 type Consumable interface {
 	// AlwaysConsumable specifies if the item is always consumable. Normal food can generally only be consumed
@@ -81,7 +81,7 @@ const DefaultConsumeDuration = (time.Second * 161) / 100
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {
-	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
+	// AttackDamage returns the custom attack damage to the weapon. The damage returned must not be negative.
 	AttackDamage() float64
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 // Hoe is a tool generally used to till dirt and grass blocks into farmland blocks for planting crops.
-// Additionally a Hoe can be used to break certain types of blocks such as Crimson and Hay Blocks.
+// Additionally, a Hoe can be used to break certain types of blocks such as Crimson and Hay Blocks.
 type Hoe struct {
 	Tier tool.Tier
 }
