@@ -1211,11 +1211,12 @@ func (w *World) startTicking() {
 // tick ticks the world and updates the time, blocks and entities that require updates.
 func (w *World) tick() {
 	viewers := w.allViewers()
-	if len(viewers) == 0 {
-		return
-	}
 
 	w.set.Lock()
+	if len(viewers) == 0 && w.set.CurrentTick != 0 {
+		w.set.Unlock()
+		return
+	}
 	if w.advance {
 		w.set.CurrentTick++
 		if w.set.TimeCycle {
