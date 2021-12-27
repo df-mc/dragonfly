@@ -124,7 +124,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		scale:     *atomic.NewFloat64(1),
 		cooldowns: make(map[itemHash]time.Time),
 	}
-	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
+	p.mc = &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
