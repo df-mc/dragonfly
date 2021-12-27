@@ -28,13 +28,6 @@ type Provider struct {
 // chunkVersion is the current version of chunks.
 const chunkVersion = 27
 
-var (
-	// lastOpenedWithVersion is the current last opened with version, required by the latest Minecraft data provider.
-	lastOpenedWithVersion = []int32{1, 18, 0, 2, 0}
-	// minimumCompatibleClientVersion is the minimum compatible client version, required by the latest Minecraft data provider.
-	minimumCompatibleClientVersion = []int32{1, 18, 0, 0, 0}
-)
-
 // New creates a new provider reading and writing files to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
 // error is returned.
@@ -77,7 +70,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.DoWeatherCycle = true
 	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.NetworkVersion = protocol.CurrentProtocol
-	p.d.LastOpenedWithVersion = lastOpenedWithVersion
+	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
 	p.d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
 	p.d.LevelName = "World"
 	p.d.GameType = 1
