@@ -13,9 +13,29 @@ func (ModifiedWoodedBadlandsPlateau) Rainfall() float64 {
 	return 0
 }
 
+// Ash ...
+func (ModifiedWoodedBadlandsPlateau) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (ModifiedWoodedBadlandsPlateau) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (ModifiedWoodedBadlandsPlateau) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (ModifiedWoodedBadlandsPlateau) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (ModifiedWoodedBadlandsPlateau) String() string {
-	return "Modified Wooded Badlands Plateau"
+	return "mesa_plateau_stone_mutated"
 }
 
 // EncodeBiome ...

@@ -13,9 +13,29 @@ func (JungleHills) Rainfall() float64 {
 	return 0.9
 }
 
+// Ash ...
+func (JungleHills) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (JungleHills) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (JungleHills) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (JungleHills) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (JungleHills) String() string {
-	return "Jungle Hills"
+	return "jungle_hills"
 }
 
 // EncodeBiome ...

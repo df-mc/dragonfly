@@ -13,9 +13,29 @@ func (Meadow) Rainfall() float64 {
 	return 0.8
 }
 
+// Ash ...
+func (Meadow) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (Meadow) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (Meadow) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (Meadow) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (Meadow) String() string {
-	return "Meadow"
+	return "meadow"
 }
 
 // EncodeBiome ...

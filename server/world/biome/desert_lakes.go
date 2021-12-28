@@ -13,9 +13,29 @@ func (DesertLakes) Rainfall() float64 {
 	return 0
 }
 
+// Ash ...
+func (DesertLakes) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (DesertLakes) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (DesertLakes) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (DesertLakes) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (DesertLakes) String() string {
-	return "Desert Lakes"
+	return "desert_mutated"
 }
 
 // EncodeBiome ...

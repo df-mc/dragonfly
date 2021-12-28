@@ -13,9 +13,29 @@ func (ErodedBadlands) Rainfall() float64 {
 	return 0
 }
 
+// Ash ...
+func (ErodedBadlands) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (ErodedBadlands) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (ErodedBadlands) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (ErodedBadlands) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (ErodedBadlands) String() string {
-	return "Eroded Badlands"
+	return "mesa_bryce"
 }
 
 // EncodeBiome ...

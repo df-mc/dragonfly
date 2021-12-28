@@ -13,9 +13,29 @@ func (BadlandsPlateau) Rainfall() float64 {
 	return 0
 }
 
+// Ash ...
+func (BadlandsPlateau) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (BadlandsPlateau) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (BadlandsPlateau) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (BadlandsPlateau) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (BadlandsPlateau) String() string {
-	return "Badlands Plateau"
+	return "mesa_plateau"
 }
 
 // EncodeBiome ...

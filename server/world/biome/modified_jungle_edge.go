@@ -13,9 +13,29 @@ func (ModifiedJungleEdge) Rainfall() float64 {
 	return 0.8
 }
 
+// Ash ...
+func (ModifiedJungleEdge) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (ModifiedJungleEdge) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (ModifiedJungleEdge) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (ModifiedJungleEdge) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (ModifiedJungleEdge) String() string {
-	return "Modified Jungle Edge"
+	return "jungle_edge_mutated"
 }
 
 // EncodeBiome ...

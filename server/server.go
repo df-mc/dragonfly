@@ -401,6 +401,7 @@ func (server *Server) startListening() error {
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
+		BiomeDefinitions:       server.biomeDefinitions(),
 		ResourcePacks:          server.resources,
 	}
 
@@ -621,6 +622,23 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 		})
 	}
 	return
+}
+
+// biomeDefinitions loads a list of all biome definitions of the server, ready to be sent in the BiomeDefinitions
+// packet.
+func (server *Server) biomeDefinitions() map[string]interface{} {
+	definitions := make(map[string]interface{})
+	for _, b := range world.Biomes() {
+		definitions[b.String()] = map[string]interface{}{
+			"temperature": float32(b.Temperature()),
+			"downfall":    float32(b.Rainfall()),
+			"ash":         float32(b.Ash()),
+			"white_ash":   float32(b.WhiteAsh()),
+			"blue_spores": float32(b.BlueSpores()),
+			"red_spores":  float32(b.RedSpores()),
+		}
+	}
+	return definitions
 }
 
 // loadResources loads resource packs from path of specifed directory.

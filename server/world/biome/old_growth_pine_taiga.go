@@ -13,9 +13,29 @@ func (OldGrowthPineTaiga) Rainfall() float64 {
 	return 0.8
 }
 
+// Ash ...
+func (OldGrowthPineTaiga) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (OldGrowthPineTaiga) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (OldGrowthPineTaiga) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (OldGrowthPineTaiga) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (OldGrowthPineTaiga) String() string {
-	return "Old Growth Pine Taiga"
+	return "mega_taiga"
 }
 
 // EncodeBiome ...

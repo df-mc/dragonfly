@@ -13,9 +13,29 @@ func (SoulSandValley) Rainfall() float64 {
 	return 0
 }
 
+// Ash ...
+func (SoulSandValley) Ash() float64 {
+	return 0.05
+}
+
+// WhiteAsh ...
+func (SoulSandValley) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (SoulSandValley) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (SoulSandValley) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (SoulSandValley) String() string {
-	return "Soul Sand Valley"
+	return "soulsand_valley"
 }
 
 // EncodeBiome ...

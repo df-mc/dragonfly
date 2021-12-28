@@ -13,9 +13,29 @@ func (Swamp) Rainfall() float64 {
 	return 0.5
 }
 
+// Ash ...
+func (Swamp) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (Swamp) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (Swamp) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (Swamp) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (Swamp) String() string {
-	return "Swamp"
+	return "swampland"
 }
 
 // EncodeBiome ...

@@ -13,9 +13,29 @@ func (FrozenPeaks) Rainfall() float64 {
 	return 0.9
 }
 
+// Ash ...
+func (FrozenPeaks) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (FrozenPeaks) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (FrozenPeaks) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (FrozenPeaks) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (FrozenPeaks) String() string {
-	return "Frozen Peaks"
+	return "frozen_peaks"
 }
 
 // EncodeBiome ...

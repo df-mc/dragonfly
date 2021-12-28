@@ -7,6 +7,14 @@ type Biome interface {
 	Temperature() float64
 	// Rainfall returns the rainfall of the biome.
 	Rainfall() float64
+	// Ash returns the ash of the biome.
+	Ash() float64
+	// WhiteAsh returns the white ash of the biome.
+	WhiteAsh() float64
+	// BlueSpores returns the blue spores of the biome.
+	BlueSpores() float64
+	// RedSpores returns the red spores of the biome.
+	RedSpores() float64
 	// String returns the biome name as a string.
 	String() string
 	// EncodeBiome encodes the biome into an int value that is used to identify the biome over the network.
@@ -30,4 +38,13 @@ func RegisterBiome(b Biome) {
 func BiomeByID(id int) (Biome, bool) {
 	e, ok := biomes[id]
 	return e, ok
+}
+
+// Biomes returns a slice of all registered biomes.
+func Biomes() []Biome {
+	bs := make([]Biome, 0, len(biomes))
+	for _, b := range biomes {
+		bs = append(bs, b)
+	}
+	return bs
 }

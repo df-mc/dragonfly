@@ -13,9 +13,29 @@ func (DeepColdOcean) Rainfall() float64 {
 	return 0.5
 }
 
+// Ash ...
+func (DeepColdOcean) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (DeepColdOcean) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (DeepColdOcean) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (DeepColdOcean) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (DeepColdOcean) String() string {
-	return "Deep Cold Ocean"
+	return "deep_cold_ocean"
 }
 
 // EncodeBiome ...

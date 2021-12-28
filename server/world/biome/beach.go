@@ -13,9 +13,29 @@ func (Beach) Rainfall() float64 {
 	return 0.4
 }
 
+// Ash ...
+func (Beach) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (Beach) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (Beach) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (Beach) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (Beach) String() string {
-	return "Beach"
+	return "beach"
 }
 
 // EncodeBiome ...

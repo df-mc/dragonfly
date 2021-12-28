@@ -13,9 +13,29 @@ func (GiantSpruceTaigaHills) Rainfall() float64 {
 	return 0.8
 }
 
+// Ash ...
+func (GiantSpruceTaigaHills) Ash() float64 {
+	return 0
+}
+
+// WhiteAsh ...
+func (GiantSpruceTaigaHills) WhiteAsh() float64 {
+	return 0
+}
+
+// BlueSpores ...
+func (GiantSpruceTaigaHills) BlueSpores() float64 {
+	return 0
+}
+
+// RedSpores ...
+func (GiantSpruceTaigaHills) RedSpores() float64 {
+	return 0
+}
+
 // String ...
 func (GiantSpruceTaigaHills) String() string {
-	return "Giant Spruce Taiga Hills"
+	return "redwood_taiga_hills_mutated"
 }
 
 // EncodeBiome ...
