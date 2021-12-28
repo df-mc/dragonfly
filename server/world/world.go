@@ -737,9 +737,11 @@ func (w *World) StartWeatherCycle() {
 }
 
 // RainingAt returns a bool that indicates whether it is raining at a position in the world.
-// TODO: Take into account biomes when deciding if it is raining at a position when we implement biomes.
 func (w *World) RainingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
+		return false
+	}
+	if b, ok := w.Biome(pos); ok && b.Rainfall() == 0 {
 		return false
 	}
 	w.set.Lock()
@@ -750,9 +752,11 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 
 // ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
 // raining and thundering at the same time and if the position passed is exposed to rain.
-// TODO: Take into account biomes when deciding if it is thundering at a position when we implement biomes.
 func (w *World) ThunderingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
+		return false
+	}
+	if b, ok := w.Biome(pos); ok && b.Rainfall() == 0 {
 		return false
 	}
 	w.set.Lock()
