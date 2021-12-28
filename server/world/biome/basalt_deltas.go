@@ -23,16 +23,6 @@ func (BasaltDeltas) WhiteAsh() float64 {
 	return 2
 }
 
-// BlueSpores ...
-func (BasaltDeltas) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (BasaltDeltas) RedSpores() float64 {
-	return 0
-}
-
 // String ...
 func (BasaltDeltas) String() string {
 	return "basalt_deltas"

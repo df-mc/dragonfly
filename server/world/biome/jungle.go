@@ -13,26 +13,6 @@ func (Jungle) Rainfall() float64 {
 	return 0.9
 }
 
-// Ash ...
-func (Jungle) Ash() float64 {
-	return 0
-}
-
-// WhiteAsh ...
-func (Jungle) WhiteAsh() float64 {
-	return 0
-}
-
-// BlueSpores ...
-func (Jungle) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (Jungle) RedSpores() float64 {
-	return 0
-}
-
 // String ...
 func (Jungle) String() string {
 	return "jungle"

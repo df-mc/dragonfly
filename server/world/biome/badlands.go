@@ -13,26 +13,6 @@ func (Badlands) Rainfall() float64 {
 	return 0
 }
 
-// Ash ...
-func (Badlands) Ash() float64 {
-	return 0
-}
-
-// WhiteAsh ...
-func (Badlands) WhiteAsh() float64 {
-	return 0
-}
-
-// BlueSpores ...
-func (Badlands) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (Badlands) RedSpores() float64 {
-	return 0
-}
-
 // String ...
 func (Badlands) String() string {
 	return "mesa"

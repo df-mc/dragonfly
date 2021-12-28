@@ -23,16 +23,6 @@ func (SoulSandValley) WhiteAsh() float64 {
 	return 0
 }
 
-// BlueSpores ...
-func (SoulSandValley) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (SoulSandValley) RedSpores() float64 {
-	return 0
-}
-
 // String ...
 func (SoulSandValley) String() string {
 	return "soulsand_valley"

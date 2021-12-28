@@ -13,26 +13,6 @@ func (ModifiedBadlandsPlateau) Rainfall() float64 {
 	return 0
 }
 
-// Ash ...
-func (ModifiedBadlandsPlateau) Ash() float64 {
-	return 0
-}
-
-// WhiteAsh ...
-func (ModifiedBadlandsPlateau) WhiteAsh() float64 {
-	return 0
-}
-
-// BlueSpores ...
-func (ModifiedBadlandsPlateau) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (ModifiedBadlandsPlateau) RedSpores() float64 {
-	return 0
-}
-
 // String ...
 func (ModifiedBadlandsPlateau) String() string {
 	return "mesa_plateau_mutated"

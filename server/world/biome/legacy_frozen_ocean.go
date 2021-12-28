@@ -13,26 +13,6 @@ func (LegacyFrozenOcean) Rainfall() float64 {
 	return 0.5
 }
 
-// Ash ...
-func (LegacyFrozenOcean) Ash() float64 {
-	return 0
-}
-
-// WhiteAsh ...
-func (LegacyFrozenOcean) WhiteAsh() float64 {
-	return 0
-}
-
-// BlueSpores ...
-func (LegacyFrozenOcean) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (LegacyFrozenOcean) RedSpores() float64 {
-	return 0
-}
-
 // String ...
 func (LegacyFrozenOcean) String() string {
 	return "legacy_frozen_ocean"

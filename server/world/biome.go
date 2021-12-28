@@ -7,14 +7,6 @@ type Biome interface {
 	Temperature() float64
 	// Rainfall returns the rainfall of the biome.
 	Rainfall() float64
-	// Ash returns the ash of the biome.
-	Ash() float64
-	// WhiteAsh returns the white ash of the biome.
-	WhiteAsh() float64
-	// BlueSpores returns the blue spores of the biome.
-	BlueSpores() float64
-	// RedSpores returns the red spores of the biome.
-	RedSpores() float64
 	// String returns the biome name as a string.
 	String() string
 	// EncodeBiome encodes the biome into an int value that is used to identify the biome over the network.

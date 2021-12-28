@@ -13,16 +13,6 @@ func (WarpedForest) Rainfall() float64 {
 	return 0
 }
 
-// Ash ...
-func (WarpedForest) Ash() float64 {
-	return 0
-}
-
-// WhiteAsh ...
-func (WarpedForest) WhiteAsh() float64 {
-	return 0
-}
-
 // BlueSpores ...
 func (WarpedForest) BlueSpores() float64 {
 	return 0.25

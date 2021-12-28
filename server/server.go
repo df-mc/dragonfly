@@ -624,19 +624,40 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	return
 }
 
+// ashyBiome represents a biome that has any form of hash.
+type ashyBiome interface {
+	// Ash returns the ash of the biome.
+	Ash() float64
+	// WhiteAsh returns the white ash of the biome.
+	WhiteAsh() float64
+}
+
+// sporingBiome represents a biome that has blue or red spores.
+type sporingBiome interface {
+	// BlueSpores returns the blue spores of the biome.
+	BlueSpores() float64
+	// RedSpores returns the red spores of the biome.
+	RedSpores() float64
+}
+
 // biomeDefinitions loads a list of all biome definitions of the server, ready to be sent in the BiomeDefinitions
 // packet.
 func (server *Server) biomeDefinitions() map[string]interface{} {
 	definitions := make(map[string]interface{})
 	for _, b := range world.Biomes() {
-		definitions[b.String()] = map[string]interface{}{
+		definition := map[string]interface{}{
 			"temperature": float32(b.Temperature()),
 			"downfall":    float32(b.Rainfall()),
-			"ash":         float32(b.Ash()),
-			"white_ash":   float32(b.WhiteAsh()),
-			"blue_spores": float32(b.BlueSpores()),
-			"red_spores":  float32(b.RedSpores()),
 		}
+		if a, ok := b.(ashyBiome); ok {
+			definition["ash"] = float32(a.Ash())
+			definition["white_ash"] = float32(a.WhiteAsh())
+		}
+		if s, ok := b.(sporingBiome); ok {
+			definition["blue_spores"] = float32(s.BlueSpores())
+			definition["red_spores"] = float32(s.RedSpores())
+		}
+		definitions[b.String()] = definition
 	}
 	return definitions
 }
