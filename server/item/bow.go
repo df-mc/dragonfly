@@ -77,6 +77,11 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 	releaser.World().AddEntity(e)
 }
 
+// Requirements returns the required items to release this item.
+func (Bow) Requirements() []Stack {
+	return []Stack{NewStack(Arrow{}, 1)}
+}
+
 // EncodeItem ...
 func (Bow) EncodeItem() (name string, meta int16) {
 	return "minecraft:bow", 0
