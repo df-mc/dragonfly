@@ -1206,8 +1206,8 @@ func (p *Player) ReleaseItem() {
 			}}
 
 			releasable.Release(p, p.useDuration(), ctx)
-			p.updateState()
 			p.handleUseContext(ctx)
+			p.updateState()
 		}
 	}
 }

@@ -15,14 +15,14 @@ type entityMetadata map[uint32]interface{}
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
 func parseEntityMetadata(e world.Entity) entityMetadata {
-	m := entityMetadata{}
-
 	bb := e.AABB()
-	m[dataKeyBoundingBoxWidth] = float32(bb.Width())
-	m[dataKeyBoundingBoxHeight] = float32(bb.Height())
-	m[dataKeyPotionColour] = int32(0)
-	m[dataKeyPotionAmbient] = byte(0)
-	m[dataKeyColour] = byte(0)
+	m := entityMetadata{
+		dataKeyBoundingBoxWidth:  float32(bb.Width()),
+		dataKeyBoundingBoxHeight: float32(bb.Height()),
+		dataKeyPotionColour:      int32(0),
+		dataKeyPotionAmbient:     byte(0),
+		dataKeyColour:            byte(0),
+	}
 
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
 	m.setFlag(dataKeyFlags, dataFlagCanClimb)
@@ -82,7 +82,6 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 			}
 		}
 	}
-
 	return m
 }
 
