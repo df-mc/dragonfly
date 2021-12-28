@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// SkyLight holds a light implementation that can be used for propagating sky light through a sub chunk.
+// SkyLight holds a light implementation that can be used for propagating skylight through a sub chunk.
 var SkyLight skyLight
 
 // BlockLight holds a light implementation that can be used for propagating block light through a sub chunk.
@@ -97,7 +97,7 @@ func insertBlockLightNodes(queue *list.List, c *Chunk) {
 		if !anyBlockLight(sub) {
 			continue
 		}
-		baseY := subY(int16(index))
+		baseY := c.subY(int16(index))
 		for y := uint8(0); y < 16; y++ {
 			actualY := int16(y) + baseY
 			for x := uint8(0); x < 16; x++ {
@@ -124,13 +124,13 @@ func anyBlockLight(sub *SubChunk) bool {
 }
 
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
-// chunk. In addition, any sky light above those nodes will be set to 15.
+// chunk. In addition, any skylight above those nodes will be set to 15.
 func insertSkyLightNodes(queue *list.List, c *Chunk) {
 	m := calculateHeightmap(c)
-	highestY := int16(cube.MinY)
+	highestY := int16(c.r[0])
 	for index := range c.sub {
 		if c.sub[index] != nil {
-			highestY = subY(int16(index)) + 15
+			highestY = c.subY(int16(index)) + 15
 		}
 	}
 	for x := uint8(0); x < 16; x++ {
@@ -164,7 +164,7 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 			// column can't spread below that anyway.
 			for y := current; y < highestY; y++ {
 				if y == current {
-					level := filterLevel(c.sub[subIndex(y)], x, uint8(y&0xf), z)
+					level := filterLevel(c.subChunk(y), x, uint8(y&0xf), z)
 					if level < 14 && level > 0 {
 						// If we hit a block like water or leaves, we need a node above this block regardless
 						// of the neighbours.
@@ -176,8 +176,8 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 					queue.PushBack(lightNode{x: int8(x), z: int8(z), y: y + 1, level: 15})
 					continue
 				}
-				// Fill the rest of the column with sky light on full strength.
-				c.sub[subIndex(y+1)].SetSkyLight(x, uint8((y+1)&0xf), z, 15)
+				// Fill the rest of the column with skylight on full strength.
+				c.subChunk(y+1).SetSkyLight(x, uint8((y+1)&0xf), z, 15)
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func insertSkyLightNodes(queue *list.List, c *Chunk) {
 // spread into the neighbouring chunks.
 func insertLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk, lt light) {
 	for index, sub := range c.sub {
-		baseY := subY(int16(index))
+		baseY := c.subY(int16(index))
 		for y := uint8(0); y < 16; y++ {
 			totalY := int16(y) + baseY
 			for x := uint8(0); x < 16; x++ {
@@ -234,14 +234,14 @@ func insertLightSpreadingNodes(queue *list.List, c *Chunk, neighbours []*Chunk, 
 	}
 }
 
-// spreadPropagate propagates a sky light node in the queue past through the chunk passed and its neighbours,
+// spreadPropagate propagates a skylight node in the queue past through the chunk passed and its neighbours,
 // unlike fillPropagate, which only propagates within the chunk.
 func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, lt light) {
 	node := queue.Remove(queue.Front()).(lightNode)
 
 	x, y, z := uint8(node.x&0xf), node.y, uint8(node.z&0xf)
 	yLocal := uint8(y & 0xf)
-	sub := chunkByNode(node, c, neighbourChunks).sub[subIndex(y)]
+	sub := chunkByNode(node, c, neighbourChunks).subChunk(y)
 
 	if !node.first {
 		filter := filterLevel(sub, x, yLocal, z) + 1
@@ -256,20 +256,20 @@ func spreadPropagate(queue *list.List, c *Chunk, neighbourChunks []*Chunk, lt li
 		}
 		lt.setLight(sub, x, yLocal, z, node.level)
 	}
-	for _, neighbour := range node.neighbours() {
+	for _, neighbour := range node.neighbours(c.r) {
 		neighbour.level = node.level
 		queue.PushBack(neighbour)
 	}
 }
 
-// fillPropagate propagates a sky light node in the node queue passed within the chunk itself. It does not
+// fillPropagate propagates a skylight node in the node queue passed within the chunk itself. It does not
 // spread the light beyond the chunk.
 func fillPropagate(queue *list.List, c *Chunk, lt light) {
 	node := queue.Remove(queue.Front()).(lightNode)
 
 	x, y, z := uint8(node.x), node.y, uint8(node.z)
 	yLocal := uint8(y & 0xf)
-	sub := c.sub[subIndex(y)]
+	sub := c.subChunk(y)
 
 	if lt.light(sub, x, yLocal, z) >= node.level {
 		// This neighbour already had either as high of a level as what we're updating it to, or
@@ -280,12 +280,12 @@ func fillPropagate(queue *list.List, c *Chunk, lt light) {
 
 	// If the level is 1 or lower, it won't be able to propagate any further.
 	if node.level > 1 {
-		for _, neighbour := range node.neighbours() {
+		for _, neighbour := range node.neighbours(c.r) {
 			if neighbour.x < 0 || neighbour.x > 15 || neighbour.z < 0 || neighbour.z > 15 {
-				// In the fill stage, we don't propagate sky light out of the chunk.
+				// In the fill stage, we don't propagate skylight out of the chunk.
 				continue
 			}
-			sub := filterLevel(c.sub[subIndex(neighbour.y)], uint8(neighbour.x), uint8(neighbour.y&0xf), uint8(neighbour.z)) + 1
+			sub := filterLevel(c.subChunk(neighbour.y), uint8(neighbour.x), uint8(neighbour.y&0xf), uint8(neighbour.z)) + 1
 			if sub >= node.level {
 				// No light left to propagate.
 				continue
@@ -313,17 +313,17 @@ type lightNode struct {
 }
 
 // neighbours returns all neighbouring nodes of the current one.
-func (n lightNode) neighbours() []lightNode {
+func (n lightNode) neighbours(r cube.Range) []lightNode {
 	neighbours := make([]lightNode, 6)
 	neighbours[0] = lightNode{x: n.x - 1, y: n.y, z: n.z}
 	neighbours[1] = lightNode{x: n.x + 1, y: n.y, z: n.z}
 	neighbours[2] = lightNode{x: n.x, y: n.y, z: n.z - 1}
 	neighbours[3] = lightNode{x: n.x, y: n.y, z: n.z + 1}
 
-	if n.y == cube.MaxY {
+	if n.y == int16(r[1]) {
 		neighbours[4] = lightNode{x: n.x, y: n.y - 1, z: n.z}
 		return neighbours[:5]
-	} else if n.y == cube.MinY {
+	} else if n.y == int16(r[0]) {
 		neighbours[4] = lightNode{x: n.x, y: n.y + 1, z: n.z}
 		return neighbours[:5]
 	}

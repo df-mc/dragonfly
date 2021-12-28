@@ -19,6 +19,12 @@ type Activatable interface {
 	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
 }
 
+// Pickable represents a block that may give a different item then the block itself when picked.
+type Pickable interface {
+	// Pick returns the item that is picked when the block is picked.
+	Pick() item.Stack
+}
+
 // Punchable represents a block that may be punched by a viewer of the world. When punched, the block
 // will execute some specific logic.
 type Punchable interface {
@@ -66,10 +72,10 @@ type EntityLander interface {
 	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
 }
 
-// EntityInsider represents a block that reacts to an entity going inside of its 1x1x1 axis
+// EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
 // aligned bounding box.
 type EntityInsider interface {
-	// EntityInside is called when an entity goes inside of the block's 1x1x1 axis aligned bounding box.
+	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
 	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
 }
 
@@ -116,7 +122,7 @@ func abs(x int) int {
 
 // replaceableWith checks if the block at the position passed is replaceable with the block passed.
 func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.Range()) {
 		return false
 	}
 	b := w.Block(pos)
@@ -205,7 +211,7 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlammabilityInfo returns information about a blocks behavior involving fire.
+	// FlammabilityInfo returns information about a block's behavior involving fire.
 	FlammabilityInfo() FlammabilityInfo
 }
 

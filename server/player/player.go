@@ -124,7 +124,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		scale:     *atomic.NewFloat64(1),
 		cooldowns: make(map[itemHash]time.Time),
 	}
-	p.mc = &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true}
+	p.mc = &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
@@ -157,7 +157,7 @@ func (p *Player) Name() string {
 
 // UUID returns the UUID of the player. This UUID will remain consistent with an XBOX Live account, and will,
 // unlike the name of the player, never change.
-// It is therefore recommended to use the UUID over the name of the player. Additionally, it is recommended to
+// It is therefore recommended using the UUID over the name of the player. Additionally, it is recommended to
 // use the UUID over the XUID because of its standard format.
 func (p *Player) UUID() uuid.UUID {
 	return p.uuid
@@ -559,14 +559,14 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 			for i, it := range p.armour.Slots() {
 				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
 					if rand.Float64() < float64(t.Level())*0.15 {
-						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 3))
+						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 3))
 						if t.Level() > 10 {
 							d += t.Level() - 10
 							continue
 						}
 						d += 1 + rand.Intn(4)
 					} else {
-						_ = p.armour.Inv().SetItem(i, p.damageItem(it, 1))
+						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 1))
 					}
 				}
 			}
@@ -603,7 +603,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 			if a, ok := it.Item().(armour.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
-					_ = p.armour.Inv().SetItem(i, p.damageItem(it, damageToArmour))
+					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
 				}
 			}
 		}
@@ -792,8 +792,7 @@ func (p *Player) kill(src damage.Source) {
 
 	p.handler().HandleDeath(src)
 
-	// Wait for a little bit before removing the entity. The client displays a death animation while the
-	// player is dying.
+	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
 		if p.session() == session.Nop {
 			_ = p.Close()
@@ -997,7 +996,7 @@ func (p *Player) Immobile() bool {
 	return p.immobile.Load()
 }
 
-// FireProof checks if the Player is currently fire proof. True is returned if the player has a FireResistance effect or
+// FireProof checks if the Player is currently fireproof. True is returned if the player has a FireResistance effect or
 // if it is in creative mode.
 func (p *Player) FireProof() bool {
 	for _, e := range p.Effects() {
@@ -1032,7 +1031,7 @@ func (p *Player) Inventory() *inventory.Inventory {
 
 // Armour returns the armour inventory of the player. This inventory yields 4 slots, for the helmet,
 // chestplate, leggings and boots respectively.
-func (p *Player) Armour() item.ArmourContainer {
+func (p *Player) Armour() *inventory.Armour {
 	return p.armour
 }
 
@@ -1161,15 +1160,14 @@ func (p *Player) UseItem() {
 			p.usingSince.Store(time.Now().UnixNano())
 			p.usingItem.Store(true)
 		case item.Usable:
-			ctx := &item.UseContext{Require: func(stack item.Stack) bool {
-				_, ok := p.Inventory().First(stack)
-				return ok
-			}}
+			ctx := p.useContext()
 			if usable.Use(w, p, ctx) {
 				// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 				// reason to swing the arm.
 				p.SwingArm()
-				p.handleUseContext(ctx)
+
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+				p.addNewItem(ctx)
 			}
 		case item.Consumable:
 			if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
@@ -1191,7 +1189,10 @@ func (p *Player) UseItem() {
 					return
 				}
 				p.SetHeldItems(p.subtractItem(i, 1), left)
-				p.addNewItem(&item.UseContext{NewItem: usable.Consume(w, p)})
+
+				ctx := p.useContext()
+				ctx.NewItem = usable.Consume(w, p)
+				p.addNewItem(ctx)
 				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 			}
 			p.usingSince.Store(time.Now().UnixNano())
@@ -1209,10 +1210,7 @@ func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
 		i, _ := p.HeldItems()
 		if releasable, ok := i.Item().(item.Releasable); ok {
-			ctx := &item.UseContext{Require: func(stack item.Stack) bool {
-				_, ok := p.Inventory().First(stack)
-				return ok
-			}}
+			ctx := p.useContext()
 
 			releasable.Release(p, p.useDuration(), ctx)
 			p.handleUseContext(ctx)
@@ -1261,7 +1259,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 	ctx.Continue(func() {
 		if activatable, ok := w.Block(pos).(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
-			// items, in which the block will activated as usual.
+			// items, in which case the block will be activated as usual.
 			if !p.Sneaking() || i.Empty() {
 				p.SwingArm()
 				// The block was activated: Blocks such as doors must always have precedence over the item being
@@ -1276,7 +1274,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		}
 		if usableOnBlock, ok := i.Item().(item.UsableOnBlock); ok {
 			// The item does something when used on a block.
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usableOnBlock.UseOnBlock(pos, face, clickPos, p.World(), p, ctx) {
 				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -1289,7 +1287,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				// The block clicked was either not replaceable, or not replaceable using the block passed.
 				replacedPos = pos.Side(face)
 			}
-			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds() {
+			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds(w.Range()) {
 				if p.placeBlock(replacedPos, b, false) && !p.GameMode().CreativeInventory() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
@@ -1322,7 +1320,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 
 	ctx.Continue(func() {
 		if usableOnEntity, ok := i.Item().(item.UsableOnEntity); ok {
-			ctx := &item.UseContext{}
+			ctx := p.useContext()
 			if usableOnEntity.UseOnEntity(e, e.World(), p, ctx) {
 				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
@@ -1548,7 +1546,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 		if !success {
 			pos.Neighbours(func(neighbour cube.Pos) {
 				w.SetBlock(neighbour, w.Block(neighbour))
-			})
+			}, w.Range())
 			w.SetBlock(pos, w.Block(pos))
 		}
 	}()
@@ -1573,7 +1571,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 }
 
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
-// This returns true if there is an entity in the way that could prevent the block from being placed.
+// The function returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	w := p.World()
 	blockBoxes := b.Model().AABB(pos, w)
@@ -1584,7 +1582,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
-			// Placing blocks inside of item entities is fine.
+			// Placing blocks inside item entities is fine.
 			continue
 		}
 		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
@@ -1676,43 +1674,48 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	}
 
 	b := p.World().Block(pos)
-	if i, ok := b.(world.Item); ok {
+
+	var pickedItem item.Stack
+	if pi, ok := b.(block.Pickable); ok {
+		pickedItem = pi.Pick()
+	} else if i, ok := b.(world.Item); ok {
 		it, _ := world.ItemByName(i.EncodeItem())
-		copiedItem := item.NewStack(it, 1)
+		pickedItem = item.NewStack(it, 1)
+	} else {
+		return
+	}
 
-		slot, found := p.Inventory().First(copiedItem)
+	slot, found := p.Inventory().First(pickedItem)
+	if !found && !p.GameMode().CreativeInventory() {
+		return
+	}
 
-		if !found && !p.GameMode().CreativeInventory() {
-			return
-		}
+	ctx := event.C()
+	p.handler().HandleBlockPick(ctx, pos, b)
 
-		ctx := event.C()
-		p.handler().HandleBlockPick(ctx, pos, b)
+	ctx.Continue(func() {
+		_, offhand := p.HeldItems()
 
-		ctx.Continue(func() {
-			_, offhand := p.HeldItems()
-
-			if found {
-				if slot < 9 {
-					_ = p.session().SetHeldSlot(slot)
-					return
-				}
-				_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+		if found {
+			if slot < 9 {
+				_ = p.session().SetHeldSlot(slot)
 				return
 			}
-			firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+			_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
+			return
+		}
+		firstEmpty, emptyFound := p.Inventory().FirstEmpty()
 
-			if !emptyFound {
-				p.SetHeldItems(copiedItem, offhand)
-			} else if firstEmpty < 8 {
-				_ = p.session().SetHeldSlot(firstEmpty)
-				_ = p.Inventory().SetItem(firstEmpty, copiedItem)
-			} else {
-				_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
-				p.SetHeldItems(copiedItem, offhand)
-			}
-		})
-	}
+		if !emptyFound {
+			p.SetHeldItems(pickedItem, offhand)
+		} else if firstEmpty < 8 {
+			_ = p.session().SetHeldSlot(firstEmpty)
+			_ = p.Inventory().SetItem(firstEmpty, pickedItem)
+		} else {
+			_ = p.Inventory().Swap(firstEmpty, int(p.heldSlot.Load()))
+			p.SetHeldItems(pickedItem, offhand)
+		}
+	})
 }
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
@@ -1800,7 +1803,7 @@ func (p *Player) Velocity() mgl64.Vec3 {
 	return p.vel.Load().(mgl64.Vec3)
 }
 
-// SetVelocity updates the players velocity. If there is an attached session, this will just send
+// SetVelocity updates the player's velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 	if p.session() == session.Nop {
@@ -1861,7 +1864,7 @@ func (p *Player) OpenBlockContainer(pos cube.Pos) {
 // HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
 // made visible again through a call to ShowEntity.
 func (p *Player) HideEntity(e world.Entity) {
-	if p.session() != session.Nop {
+	if p.session() != session.Nop && p != e {
 		p.session().StopShowingEntity(e)
 	}
 }
@@ -1903,7 +1906,7 @@ func (p *Player) Tick(current int64) {
 
 	p.tickFood()
 	p.effects.Tick(p)
-	if p.Position()[1] < cube.MinY && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < float64(p.World().Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
@@ -2121,10 +2124,8 @@ func (p *Player) Breathing() bool {
 		return true
 	}
 	for _, e := range p.Effects() {
-		if _, waterBreathing := e.Type().(effect.WaterBreathing); waterBreathing {
-			return true
-		}
-		if _, conduitPower := e.Type().(effect.ConduitPower); conduitPower {
+		switch e.Type().(type) {
+		case effect.WaterBreathing, effect.ConduitPower:
 			return true
 		}
 	}
@@ -2246,9 +2247,12 @@ func (p *Player) close() {
 	if p.Dead() {
 		p.Respawn()
 	}
-	p.handler().HandleQuit()
+	p.hMutex.Lock()
+	h := p.h
+	p.h = NopHandler{}
+	p.hMutex.Unlock()
+	h.HandleQuit()
 
-	p.Handle(NopHandler{})
 	chat.Global.Unsubscribe(p)
 
 	p.sMutex.Lock()
@@ -2277,7 +2281,6 @@ func (p *Player) close() {
 func (p *Player) load(data Data) {
 	p.yaw.Store(data.Yaw)
 	p.pitch.Store(data.Pitch)
-	p.pos.Store(data.Position)
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
@@ -2343,6 +2346,7 @@ func (p *Player) Data() Data {
 		Effects:      p.Effects(),
 		FireTicks:    p.fireTicks.Load(),
 		FallDistance: p.fallDistance.Load(),
+		Dimension:    p.World().Dimension().EncodeDimension(),
 	}
 }
 
@@ -2357,6 +2361,40 @@ func (p *Player) session() *session.Session {
 		return session.Nop
 	}
 	return s
+}
+
+// useContext returns an item.UseContext initialised for a Player.
+func (p *Player) useContext() *item.UseContext {
+	call := func(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+		var err error
+		ctx.Stop(func() {
+			err = fmt.Errorf("action was cancelled")
+		})
+		ctx.Continue(func() {
+			f(ctx, slot, it)
+			ctx.Stop(func() {
+				err = fmt.Errorf("action was cancelled")
+			})
+		})
+		return err
+	}
+	return &item.UseContext{
+		SwapHeldWithArmour: func(i int) {
+			src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
+			srcIt, _ := srcInv.Item(src)
+			dstIt, _ := dstInv.Item(dst)
+
+			ctx := event.C()
+			_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
+			_ = call(ctx, src, dstIt, srcInv.Handler().HandlePlace)
+			_ = call(ctx, dst, dstIt, dstInv.Handler().HandleTake)
+			if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
+				_ = srcInv.SetItem(src, dstIt)
+				_ = dstInv.SetItem(dst, srcIt)
+			}
+		},
+		// TODO: Require func
+	}
 }
 
 // handler returns the Handler of the player.

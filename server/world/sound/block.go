@@ -70,6 +70,15 @@ type Note struct {
 	Pitch int
 }
 
+// ItemFrameAdd is a sound played when an item is added to an item frame.
+type ItemFrameAdd struct{ sound }
+
+// ItemFrameRemove is a sound played when an item is removed from an item frame.
+type ItemFrameRemove struct{ sound }
+
+// ItemFrameRotate is a sound played when an item frame's item is rotated.
+type ItemFrameRotate struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

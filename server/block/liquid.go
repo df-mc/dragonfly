@@ -76,7 +76,7 @@ func spreadOutwards(b world.Liquid, pos cube.Pos, w *world.World, displacer worl
 				flowInto(b, pos, neighbour, w, false)
 			}
 		}
-	})
+	}, w.Range())
 }
 
 // sourceAround checks if there is a source in the blocks around the position passed.
@@ -98,7 +98,7 @@ func sourceAround(b world.Liquid, pos cube.Pos, w *world.World) (sourcePresent b
 		if neighbour[1] == pos[1]+1 || source(side) || side.LiquidDepth() > b.LiquidDepth() {
 			sourcePresent = true
 		}
-	})
+	}, w.Range())
 	return
 }
 
@@ -115,7 +115,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 	existing := w.Block(pos)
 	if existingLiquid, alsoLiquid := existing.(world.Liquid); alsoLiquid && existingLiquid.LiquidType() == b.LiquidType() {
 		if existingLiquid.LiquidDepth() >= newDepth || existingLiquid.LiquidFalling() {
-			// The existing liquid had a higher depth than the one we're propagating or it was falling
+			// The existing liquid had a higher depth than the one we're propagating, or it was falling
 			// (basically considered full depth), so no need to continue.
 			return true
 		}

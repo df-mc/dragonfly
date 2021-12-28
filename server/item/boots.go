@@ -13,14 +13,8 @@ type Boots struct {
 }
 
 // Use handles the auto-equipping of boots in the armour slot when using it.
-func (b Boots) Use(_ *world.World, user User, _ *UseContext) bool {
-	if armoured, ok := user.(Armoured); ok {
-		currentEquipped := armoured.Armour().Boots()
-
-		right, left := user.HeldItems()
-		armoured.Armour().SetBoots(right)
-		user.SetHeldItems(currentEquipped, left)
-	}
+func (b Boots) Use(_ *world.World, _ User, ctx *UseContext) bool {
+	ctx.SwapHeldWithArmour(3)
 	return false
 }
 

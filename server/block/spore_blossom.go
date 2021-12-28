@@ -26,7 +26,7 @@ func (s SporeBlossom) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // UseOnBlock ...
-func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, s)
 	if !used {
 		return

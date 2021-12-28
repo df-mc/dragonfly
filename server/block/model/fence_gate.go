@@ -14,7 +14,7 @@ type FenceGate struct {
 }
 
 // AABB ...
-func (f FenceGate) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+func (f FenceGate) AABB(cube.Pos, *world.World) []physics.AABB {
 	if f.Open {
 		return nil
 	}
@@ -22,6 +22,6 @@ func (f FenceGate) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 }
 
 // FaceSolid ...
-func (f FenceGate) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+func (f FenceGate) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

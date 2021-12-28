@@ -20,7 +20,7 @@ type WoodTrapdoor struct {
 	Wood WoodType
 	// Facing is the direction the trapdoor is facing.
 	Facing cube.Direction
-	// Open is whether or not the trapdoor is open.
+	// Open is whether the trapdoor is open.
 	Open bool
 	// Top is whether the trapdoor occupies the top or bottom part of a block.
 	Top bool

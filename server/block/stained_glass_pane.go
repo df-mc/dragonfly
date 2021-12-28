@@ -42,7 +42,7 @@ func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]inte
 	return "minecraft:stained_glass_pane", map[string]interface{}{"color": p.Colour.String()}
 }
 
-// allStainedGlassPane returns stained glass panes with all possible colours.
+// allStainedGlassPane returns stained-glass panes with all possible colours.
 func allStainedGlassPane() []world.Block {
 	b := make([]world.Block, 0, 16)
 	for _, c := range item.Colours() {

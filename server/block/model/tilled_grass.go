@@ -12,12 +12,12 @@ type TilledGrass struct {
 }
 
 // AABB ...
-func (TilledGrass) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+func (TilledGrass) AABB(cube.Pos, *world.World) []physics.AABB {
 	// TODO: Make the max Y value 0.9375 once https://bugs.mojang.com/browse/MCPE-12109 gets fixed.
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
 // FaceSolid ...
-func (TilledGrass) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+func (TilledGrass) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return true
 }

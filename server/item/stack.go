@@ -67,7 +67,7 @@ func (s Stack) Grow(n int) Stack {
 
 // Durability returns the current durability of the item stack. If the item is not one that implements the
 // Durable interface, BaseDurability will always return -1.
-// The closer the durability returned is to 0, the closer the item is to breaking.
+// The closer the durability returned is to 0, the closer the item is to being broken.
 func (s Stack) Durability() int {
 	if durable, ok := s.Item().(Durable); ok {
 		return durable.DurabilityInfo().MaxDurability - s.damage
@@ -112,7 +112,7 @@ func (s Stack) Damage(d int) Stack {
 
 // WithDurability returns a new item stack with the durability passed. If the item does not implement the
 // Durable interface, WithDurability returns the original stack.
-// The closer the durability d is to 0, the closer the item is to breaking. If a durability of 0 is passed,
+// The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,
 // a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
 // maximum durability, the stack returned will have the maximum durability.
 func (s Stack) WithDurability(d int) Stack {
@@ -149,7 +149,7 @@ func (s Stack) Item() world.Item {
 	return s.item
 }
 
-// AttackDamage returns the attack damage of the stack. By default, the value returned is 2.0. If the item
+// AttackDamage returns the attack damage to the stack. By default, the value returned is 2.0. If the item
 // held implements the item.Weapon interface, this damage may be different.
 func (s Stack) AttackDamage() float64 {
 	if weapon, ok := s.Item().(Weapon); ok {
@@ -341,7 +341,7 @@ func newID() int32 {
 }
 
 // id returns the unique ID of the stack passed.
-//lint:ignore U1000 Function is used using compiler directives.
+//lint:ignore U1000 Function is used through compiler directives.
 //noinspection GoUnusedFunction
 func id(s Stack) int32 {
 	if s.Empty() {

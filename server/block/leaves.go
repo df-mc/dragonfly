@@ -55,7 +55,7 @@ func findLog(pos cube.Pos, w *world.World, visited *[]cube.Pos, distance int) bo
 		if !logFound && findLog(neighbour, w, visited, distance+1) {
 			logFound = true
 		}
-	})
+	}, w.Range())
 	return logFound
 }
 

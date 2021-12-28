@@ -13,14 +13,8 @@ type Helmet struct {
 }
 
 // Use handles the using of a helmet to auto-equip it in an armour slot.
-func (h Helmet) Use(_ *world.World, user User, _ *UseContext) bool {
-	if armoured, ok := user.(Armoured); ok {
-		currentEquipped := armoured.Armour().Helmet()
-
-		right, left := user.HeldItems()
-		armoured.Armour().SetHelmet(right)
-		user.SetHeldItems(currentEquipped, left)
-	}
+func (h Helmet) Use(_ *world.World, _ User, ctx *UseContext) bool {
+	ctx.SwapHeldWithArmour(0)
 	return false
 }
 
