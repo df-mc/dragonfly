@@ -123,7 +123,7 @@ func (a *Arrow) Tick(current int64) {
 	a.collidedBlockPos, a.collidedBlock = cube.Pos{}, nil
 	m.Send()
 
-	if m.pos[1] < cube.MinY && current%10 == 0 {
+	if m.pos[1] < float64(a.World().Range()[0]) && current%10 == 0 {
 		a.closeNextTick = true
 		return
 	}

@@ -2393,7 +2393,10 @@ func (p *Player) useContext() *item.UseContext {
 				_ = dstInv.SetItem(dst, srcIt)
 			}
 		},
-		// TODO: Require func
+		Require: func(stack item.Stack) bool {
+			_, ok := p.Inventory().First(stack)
+			return ok
+		},
 	}
 }
 
