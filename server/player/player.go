@@ -729,6 +729,15 @@ func (p *Player) RemoveEffect(e effect.Type) {
 	p.updateState()
 }
 
+func (p *Player) HasEffect(e effect.Type) bool {
+	for _, playerEffect := range p.Effects() {
+		if playerEffect.Type() == e {
+			return true
+		}
+	}
+	return false
+}
+
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
 // expired when returned.
 func (p *Player) Effects() []effect.Effect {
