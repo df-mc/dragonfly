@@ -640,8 +640,8 @@ type sporingBiome interface {
 	RedSpores() float64
 }
 
-// biomeDefinitions loads a list of all biome definitions of the server, ready to be sent in the BiomeDefinitions
-// packet.
+// biomeDefinitions loads a list of all biome definitions of the server, ready to be set in the BiomeDefinitions
+// field of the server listener.
 func (server *Server) biomeDefinitions() map[string]interface{} {
 	definitions := make(map[string]interface{})
 	for _, b := range world.Biomes() {
