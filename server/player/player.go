@@ -729,6 +729,7 @@ func (p *Player) RemoveEffect(e effect.Type) {
 	p.updateState()
 }
 
+// HasEffect returns true if the player has the given effect.
 func (p *Player) HasEffect(e effect.Type) bool {
 	for _, playerEffect := range p.Effects() {
 		if playerEffect.Type() == e {
