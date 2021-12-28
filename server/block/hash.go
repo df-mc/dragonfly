@@ -21,6 +21,7 @@ const (
 	hashCalcite
 	hashCarpet
 	hashCarrot
+	hashChain
 	hashChest
 	hashChiseledQuartz
 	hashClay
@@ -184,7 +185,7 @@ func (b BoneBlock) Hash() uint64 {
 	return hashBoneBlock | uint64(b.Axis)<<8
 }
 
-func (b Bookshelf) Hash() uint64 {
+func (Bookshelf) Hash() uint64 {
 	return hashBookshelf
 }
 
@@ -206,6 +207,10 @@ func (c Carpet) Hash() uint64 {
 
 func (c Carrot) Hash() uint64 {
 	return hashCarrot | uint64(c.Growth)<<8
+}
+
+func (c Chain) Hash() uint64 {
+	return hashChain | uint64(c.Axis)<<8
 }
 
 func (c Chest) Hash() uint64 {
@@ -393,7 +398,7 @@ func (i IronOre) Hash() uint64 {
 }
 
 func (i ItemFrame) Hash() uint64 {
-	return hashItemFrame | uint64(i.Facing)<<7 | uint64(boolByte(i.Glowing))<<10
+	return hashItemFrame | uint64(i.Facing)<<8 | uint64(boolByte(i.Glowing))<<11
 }
 
 func (k Kelp) Hash() uint64 {
