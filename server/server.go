@@ -624,7 +624,7 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 	return
 }
 
-// ashyBiome represents a biome that has any form of hash.
+// ashyBiome represents a biome that has any form of ash.
 type ashyBiome interface {
 	// Ash returns the ash of the biome.
 	Ash() float64
