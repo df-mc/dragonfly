@@ -1321,7 +1321,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleAttackEntity(ctx, e, &force, &height)
+	p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical)
 	ctx.Continue(func() {
 		p.SwingArm()
 		living, ok := e.(entity.Living)
