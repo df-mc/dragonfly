@@ -1311,10 +1311,8 @@ func (p *Player) AttackEntity(e world.Entity) {
 	force, height := 0.45, 0.3608
 
 	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0
-	sf := effect.SlowFalling{}
-	bl := effect.Blindness{}
 	for _, eff := range p.Effects() {
-		if eff.Type() == sf || eff.Type() == bl {
+		if (eff.Type() == effect.SlowFalling{} || eff.Type() == effect.Blindness{}) {
 			critical = false
 			break
 		}
