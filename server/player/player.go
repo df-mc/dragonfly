@@ -729,14 +729,15 @@ func (p *Player) RemoveEffect(e effect.Type) {
 	p.updateState()
 }
 
-// HasEffect returns true if the player has the given effect.
-func (p *Player) HasEffect(e effect.Type) bool {
+// Effect returns the given effect and true if the Player has the effect
+// otherwise it will return nil and false.
+func (p *Player) Effect(e effect.Type) (effect.Type, bool) {
 	for _, playerEffect := range p.Effects() {
 		if playerEffect.Type() == e {
-			return true
+			return e, true
 		}
 	}
-	return false
+	return nil, false
 }
 
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
@@ -1343,6 +1344,14 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 		if s, ok := i.Enchantment(enchantment.Sharpness{}); ok {
 			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
+		}
+
+		if p.FallDistance() > 0 && !p.Sprinting() && !p.Flying() && !p.HasEffect(effect.Blindness{}) && damageDealt > 0 {
+			_, submerged := p.World().Liquid(cube.PosFromVec3(entity.EyePosition(p)))
+			if !submerged {
+				damageDealt += damageDealt / 2
+				e.World().AddParticle(e.Position(), particle.Critical{Scale: 1})
+			}
 		}
 
 		n, vulnerable := living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
