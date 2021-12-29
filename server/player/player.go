@@ -1346,14 +1346,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
 		}
 
-		if p.FallDistance() > 0 && !p.Sprinting() && !p.Flying() && !p.HasEffect(effect.Blindness{}) && damageDealt > 0 {
-			_, submerged := p.World().Liquid(cube.PosFromVec3(entity.EyePosition(p)))
-			if !submerged {
-				damageDealt += damageDealt / 2
-				e.World().AddParticle(e.Position(), particle.Critical{Scale: 1})
-			}
-		}
-
 		n, vulnerable := living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
 		if mgl64.FloatEqual(n, 0) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
