@@ -729,12 +729,12 @@ func (p *Player) RemoveEffect(e effect.Type) {
 	p.updateState()
 }
 
-// Effect returns the given effect and true if the Player has the effect
+// Effect returns the effect instance and true if the Player has the effect
 // otherwise it will return nil and false.
-func (p *Player) Effect(e effect.Type) (effect.Type, bool) {
+func (p *Player) Effect(e effect.Type) (*effect.Effect, bool) {
 	for _, playerEffect := range p.Effects() {
 		if playerEffect.Type() == e {
-			return e, true
+			return &playerEffect, true
 		}
 	}
 	return nil, false
