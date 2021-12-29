@@ -83,12 +83,13 @@ type Handler interface {
 	// may be called to cancel the attack, which will cancel damage dealt to the target and will stop the
 	// entity from being knocked back.
 	// The entity attacked may not be alive (implements entity.Living), in which case no damage will be dealt
-	// and the target won't be knocked back, nor will the critical hit particles be displayed.
+	// and the target won't be knocked back.
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	// The knock back force and height is also provided which can be modified.
 	// The attack can be a critical attack, which would increase damage by a factor of 1.5 and
-	// spawn critical hit particles around the target entity.
+	// spawn critical hit particles around the target entity. These particles will not be displayed
+	// if no damage is dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64, critical *bool)
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
