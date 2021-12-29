@@ -731,13 +731,13 @@ func (p *Player) RemoveEffect(e effect.Type) {
 
 // Effect returns the effect instance and true if the Player has the effect
 // otherwise it will return nil and false.
-func (p *Player) Effect(e effect.Type) (*effect.Effect, bool) {
+func (p *Player) Effect(e effect.Type) (effect.Effect, bool) {
 	for _, playerEffect := range p.Effects() {
 		if playerEffect.Type() == e {
-			return &playerEffect, true
+			return playerEffect, true
 		}
 	}
-	return nil, false
+	return effect.Effect{}, false
 }
 
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
