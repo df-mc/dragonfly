@@ -83,11 +83,12 @@ type Handler interface {
 	// may be called to cancel the attack, which will cancel damage dealt to the target and will stop the
 	// entity from being knocked back.
 	// The entity attacked may not be alive (implements entity.Living), in which case no damage will be dealt
-	// and the target won't be knocked back.
+	// and the target won't be knocked back, nor will the critical hit particles be displayed.
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	// The knock back force and height is also provided which can be modified.
-	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64)
+	// The attack can be a critical attack
+	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64, critical *bool)
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
@@ -182,7 +183,7 @@ func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 
 // HandleAttackEntity ...
-func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64) {}
+func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
 
 // HandlePunchAir ...
 func (NopHandler) HandlePunchAir(*event.Context) {}
