@@ -1310,8 +1310,16 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	force, height := 0.45, 0.3608
 
-	// todo: check if player has slow falling or blindness when we can
-	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0
+	critical := true
+	for _, eff := range p.Effects() {
+		sf := effect.SlowFalling{}
+		bl := effect.Blindness{}
+		if eff.Type() == sf || eff.Type() == bl {
+			critical = false
+			break
+		}
+	}
+	critical = critical && !p.Flying() && !p.OnGround() && p.FallDistance() > 0
 
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical)
