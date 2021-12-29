@@ -1311,12 +1311,8 @@ func (p *Player) AttackEntity(e world.Entity) {
 	force, height := 0.45, 0.3608
 
 	critical := false
-	insideBlock := p.World().Block(cube.PosFromVec3(p.Position()))
-	_, isLadder := insideBlock.(block.Ladder)
-	_, isWater := insideBlock.(block.Water)
-	// todo: check if the player is on in a vine when vines are added
 	// todo: check if player has slow falling or blindness when we can
-	if !p.Flying() && !p.OnGround() && p.FallDistance() > 0 && !isWater && !isLadder {
+	if !p.Flying() && !p.OnGround() && p.FallDistance() > 0 {
 		critical = true
 	}
 
