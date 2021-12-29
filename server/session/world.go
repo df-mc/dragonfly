@@ -626,12 +626,10 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			EventType:       packet.ActorEventHurt,
 		})
 	case action.CriticalHit:
-		s.writePacket(
-			&packet.Animate{
-				ActionType:      packet.AnimateActionCriticalHit,
-				EntityRuntimeID: s.entityRuntimeID(e),
-			},
-		)
+		s.writePacket(&packet.Animate{
+			ActionType:      packet.AnimateActionCriticalHit,
+			EntityRuntimeID: s.entityRuntimeID(e),
+		})
 	case action.Death:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
