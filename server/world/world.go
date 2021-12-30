@@ -163,18 +163,23 @@ func (w *World) Block(pos cube.Pos) Block {
 // Biome reads the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the biome returned. Chunks will be
 // loaded synchronously.
-func (w *World) Biome(pos cube.Pos) (Biome, bool) {
+func (w *World) Biome(pos cube.Pos) Biome {
 	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
-		return nil, false
+		return nil
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	c, err := w.chunk(chunkPos)
 	if err != nil {
-		w.log.Errorf("error getting biome: %v", err)
-		return nil, false
+		w.log.Errorf("error reading biome: %v", err)
+		return nil
 	}
-	return BiomeByID(int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))))
+	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
+	b, ok := BiomeByID(id)
+	if !ok {
+		w.log.Errorf("could not find biome by ID %v", id)
+	}
+	return b
 }
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
