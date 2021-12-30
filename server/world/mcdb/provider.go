@@ -75,11 +75,13 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.DoDayLightCycle = true
 	p.d.DoWeatherCycle = true
 	p.d.BaseGameVersion = protocol.CurrentVersion
+	p.d.NetworkVersion = protocol.CurrentProtocol
+	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
+	p.d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
 	p.d.LevelName = "World"
 	p.d.GameType = 1
 	p.d.StorageVersion = 8
 	p.d.Generator = 1
-	p.d.NetworkVersion = protocol.CurrentProtocol
 	p.d.Abilities.WalkSpeed = 0.1
 	p.d.PVP = true
 	p.d.WorldStartCount = 1

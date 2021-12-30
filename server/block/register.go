@@ -153,6 +153,7 @@ func init() {
 	registerAll(allSandstoneStairs())
 	registerAll(allSeaPickles())
 	registerAll(allWood())
+	registerAll(allChains())
 }
 
 func init() {
@@ -258,6 +259,7 @@ func init() {
 	world.RegisterItem(SeaPickle{})
 	world.RegisterItem(Snow{})
 	world.RegisterItem(Bookshelf{})
+	world.RegisterItem(Chain{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
