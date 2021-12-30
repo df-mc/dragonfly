@@ -39,7 +39,7 @@ func neighboursLavaFlammable(pos cube.Pos, w *world.World) bool {
 
 // EntityInside ...
 func (l Lava) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if fallEntity, ok := e.(FallDistanceEntity); ok {
+	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
 	if flammable, ok := e.(entity.Flammable); ok {
