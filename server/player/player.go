@@ -729,6 +729,12 @@ func (p *Player) RemoveEffect(e effect.Type) {
 	p.updateState()
 }
 
+// Effect returns the effect instance and true if the Player has the effect otherwise it will return an empty effect
+// instance and false.
+func (p *Player) Effect(e effect.Type) (effect.Effect, bool) {
+	return p.effects.Effect(e)
+}
+
 // Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
 // expired when returned.
 func (p *Player) Effects() []effect.Effect {
