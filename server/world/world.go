@@ -741,12 +741,27 @@ func (w *World) StartWeatherCycle() {
 	w.set.WeatherCycle = true
 }
 
-// RainingAt returns a bool that indicates whether it is raining at a position in the world.
+// SnowingAt returns a bool that indicates whether it is snowing at a position in the world.
+func (w *World) SnowingAt(pos cube.Pos) bool {
+	if w == nil || !w.Dimension().WeatherCycle() {
+		return false
+	}
+	if b := w.Biome(pos); b.Rainfall() == 0 || b.Temperature() > 0.15 {
+		return false
+	}
+	w.set.Lock()
+	a := w.set.Raining
+	w.set.Unlock()
+	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+}
+
+// RainingAt returns a bool that indicates whether it is raining at a position in the world. RainingAt returns false if
+// it is snowing at a position, rather than raining.
 func (w *World) RainingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b, ok := w.Biome(pos); ok && b.Rainfall() == 0 {
+	if b := w.Biome(pos); b.Rainfall() == 0 || b.Temperature() <= 0.15 {
 		return false
 	}
 	w.set.Lock()
@@ -758,14 +773,9 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 // ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
 // raining and thundering at the same time and if the position passed is exposed to rain.
 func (w *World) ThunderingAt(pos cube.Pos) bool {
-	if w == nil || !w.Dimension().WeatherCycle() {
-		return false
-	}
-	if b, ok := w.Biome(pos); ok && b.Rainfall() == 0 {
-		return false
-	}
+	raining := w.RainingAt(pos)
 	w.set.Lock()
-	a := w.set.Thundering && w.set.Raining
+	a := w.set.Thundering && raining
 	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
