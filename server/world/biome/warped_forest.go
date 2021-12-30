@@ -13,14 +13,9 @@ func (WarpedForest) Rainfall() float64 {
 	return 0
 }
 
-// BlueSpores ...
-func (WarpedForest) BlueSpores() float64 {
-	return 0.25
-}
-
-// RedSpores ...
-func (WarpedForest) RedSpores() float64 {
-	return 0
+// Spores ...
+func (WarpedForest) Spores() (blueSpores float64, redSpores float64) {
+	return 0.25, 0
 }
 
 // String ...

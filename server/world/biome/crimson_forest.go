@@ -13,14 +13,9 @@ func (CrimsonForest) Rainfall() float64 {
 	return 0
 }
 
-// BlueSpores ...
-func (CrimsonForest) BlueSpores() float64 {
-	return 0
-}
-
-// RedSpores ...
-func (CrimsonForest) RedSpores() float64 {
-	return 0.25
+// Spores ...
+func (CrimsonForest) Spores() (blueSpores float64, redSpores float64) {
+	return 0, 0.25
 }
 
 // String ...

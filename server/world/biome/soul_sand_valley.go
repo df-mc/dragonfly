@@ -14,13 +14,8 @@ func (SoulSandValley) Rainfall() float64 {
 }
 
 // Ash ...
-func (SoulSandValley) Ash() float64 {
-	return 0.05
-}
-
-// WhiteAsh ...
-func (SoulSandValley) WhiteAsh() float64 {
-	return 0
+func (SoulSandValley) Ash() (ash float64, whiteAsh float64) {
+	return 0.05, 0
 }
 
 // String ...

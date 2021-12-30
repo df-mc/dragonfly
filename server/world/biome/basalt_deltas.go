@@ -14,13 +14,8 @@ func (BasaltDeltas) Rainfall() float64 {
 }
 
 // Ash ...
-func (BasaltDeltas) Ash() float64 {
-	return 0
-}
-
-// WhiteAsh ...
-func (BasaltDeltas) WhiteAsh() float64 {
-	return 2
+func (BasaltDeltas) Ash() (ash float64, whiteAsh float64) {
+	return 0, 2
 }
 
 // String ...

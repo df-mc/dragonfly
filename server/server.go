@@ -626,21 +626,17 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 
 // ashyBiome represents a biome that has any form of ash.
 type ashyBiome interface {
-	// Ash returns the ash of the biome.
-	Ash() float64
-	// WhiteAsh returns the white ash of the biome.
-	WhiteAsh() float64
+	// Ash returns the ash and white ash of the biome.
+	Ash() (ash float64, whiteAsh float64)
 }
 
 // sporingBiome represents a biome that has blue or red spores.
 type sporingBiome interface {
-	// BlueSpores returns the blue spores of the biome.
-	BlueSpores() float64
-	// RedSpores returns the red spores of the biome.
-	RedSpores() float64
+	// Spores returns the blue and red spores of the biome.
+	Spores() (blueSpores float64, redSpores float64)
 }
 
-// biomeDefinitions loads a list of all biome definitions of the server, ready to be set in the BiomeDefinitions
+// biomeDefinitions loads a list of all biome definitions of the server, ready to be set in the biome definitions
 // field of the server listener.
 func (server *Server) biomeDefinitions() map[string]interface{} {
 	definitions := make(map[string]interface{})
@@ -650,12 +646,14 @@ func (server *Server) biomeDefinitions() map[string]interface{} {
 			"downfall":    float32(b.Rainfall()),
 		}
 		if a, ok := b.(ashyBiome); ok {
-			definition["ash"] = float32(a.Ash())
-			definition["white_ash"] = float32(a.WhiteAsh())
+			ash, whiteAsh := a.Ash()
+			definition["ash"] = float32(ash)
+			definition["white_ash"] = float32(whiteAsh)
 		}
 		if s, ok := b.(sporingBiome); ok {
-			definition["blue_spores"] = float32(s.BlueSpores())
-			definition["red_spores"] = float32(s.RedSpores())
+			blueSpores, redSpores := s.Spores()
+			definition["blue_spores"] = float32(blueSpores)
+			definition["red_spores"] = float32(redSpores)
 		}
 		definitions[b.String()] = definition
 	}
