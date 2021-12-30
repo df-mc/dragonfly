@@ -746,7 +746,7 @@ func (w *World) SnowingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b := w.Biome(pos); b.Rainfall() == 0 || b.Temperature() > 0.15 {
+	if b := w.Biome(pos); b.Rainfall() == 0 || w.Temperature(pos) > 0.15 {
 		return false
 	}
 	w.set.Lock()
@@ -761,13 +761,27 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b := w.Biome(pos); b.Rainfall() == 0 || b.Temperature() <= 0.15 {
+	if b := w.Biome(pos); b.Rainfall() == 0 || w.Temperature(pos) <= 0.15 {
 		return false
 	}
 	w.set.Lock()
 	a := w.set.Raining
 	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+}
+
+// Temperature returns the temperature in the World at a specific position. Higher altitudes and different biomes
+// influence the temperature returned.
+func (w *World) Temperature(pos cube.Pos) float64 {
+	const (
+		tempDrop = 1.0 / 600
+		seaLevel = 64
+	)
+	diff := pos[1] - seaLevel
+	if diff < 0 {
+		diff = 0
+	}
+	return w.Biome(pos).Temperature() - float64(diff)*tempDrop
 }
 
 // ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
