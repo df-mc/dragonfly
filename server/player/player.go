@@ -782,6 +782,9 @@ func (p *Player) kill(src damage.Source) {
 	p.addHealth(-p.MaxHealth())
 	p.StopSneaking()
 	p.StopSprinting()
+	p.inv.Clear()
+	p.armour.Clear()
+	p.offHand.Clear()
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
@@ -790,10 +793,6 @@ func (p *Player) kill(src damage.Source) {
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
-		p.inv.Clear()
-		p.armour.Clear()
-		p.offHand.Clear()
-
 		if p.session() == session.Nop {
 			_ = p.Close()
 			return
