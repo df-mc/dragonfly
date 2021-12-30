@@ -10,11 +10,15 @@ import (
 // Stair is a model for stair-like blocks. These have different solid sides depending on the direction the
 // stairs are facing, the surrounding blocks and whether it is upside down or not.
 type Stair struct {
-	Facing     cube.Direction
+	// Facing specifies the direction that the full side of the Stair faces.
+	Facing cube.Direction
+	// UpsideDown turns the Stair upside-down, meaning the full side of the Stair is turned to the top side of the
+	// block.
 	UpsideDown bool
 }
 
-// AABB ...
+// AABB returns a slice of physics.AABB depending on if the Stair is upside down and which direction it is facing.
+// Additionally, these AABBs depend on the Stair blocks surrounding this one, which can influence the model.
 func (s Stair) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	b := []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
 	if s.UpsideDown {
@@ -53,7 +57,7 @@ func (s Stair) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	return b
 }
 
-// FaceSolid ...
+// FaceSolid returns true for all faces of the Stair that are completely filled.
 func (s Stair) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
 	if !s.UpsideDown && face == cube.FaceDown {
 		// Non-upside-down stairs have a closed side at the bottom.

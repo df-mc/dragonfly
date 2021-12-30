@@ -46,12 +46,12 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		if _, ok := w.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
 			w.BreakBlock(pos)
 		}
-	} else {
-		if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
-			w.BreakBlock(pos)
-		} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
-			w.BreakBlock(pos)
-		}
+		return
+	}
+	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
+		w.BreakBlock(pos)
+	} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
+		w.BreakBlock(pos)
 	}
 }
 
