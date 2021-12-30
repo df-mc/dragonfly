@@ -401,8 +401,8 @@ func (server *Server) startListening() error {
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
-		BiomeDefinitions:       server.biomeDefinitions(),
 		ResourcePacks:          server.resources,
+		Biomes:                 server.biomes(),
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)
@@ -636,9 +636,9 @@ type sporingBiome interface {
 	Spores() (blueSpores float64, redSpores float64)
 }
 
-// biomeDefinitions loads a list of all biome definitions of the server, ready to be set in the biome definitions
-// field of the server listener.
-func (server *Server) biomeDefinitions() map[string]interface{} {
+// biomes builds a mapping of all biome definitions of the server, ready to be set in the biomes field of the
+// server listener.
+func (server *Server) biomes() map[string]interface{} {
 	definitions := make(map[string]interface{})
 	for _, b := range world.Biomes() {
 		definition := map[string]interface{}{
