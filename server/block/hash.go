@@ -197,7 +197,7 @@ func (c Cake) Hash() uint64 {
 	return hashCake | uint64(c.Bites)<<8
 }
 
-func (c Calcite) Hash() uint64 {
+func (Calcite) Hash() uint64 {
 	return hashCalcite
 }
 
@@ -221,7 +221,7 @@ func (ChiseledQuartz) Hash() uint64 {
 	return hashChiseledQuartz
 }
 
-func (c Clay) Hash() uint64 {
+func (Clay) Hash() uint64 {
 	return hashClay
 }
 
@@ -261,7 +261,7 @@ func (c CoralBlock) Hash() uint64 {
 	return hashCoralBlock | uint64(c.Type.Uint8())<<8 | uint64(boolByte(c.Dead))<<11
 }
 
-func (d DeadBush) Hash() uint64 {
+func (DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 
@@ -301,7 +301,7 @@ func (DriedKelpBlock) Hash() uint64 {
 	return hashDriedKelpBlock
 }
 
-func (d Dripstone) Hash() uint64 {
+func (Dripstone) Hash() uint64 {
 	return hashDripstone
 }
 
@@ -449,7 +449,7 @@ func (m MelonSeeds) Hash() uint64 {
 	return hashMelonSeeds | uint64(m.Growth)<<8 | uint64(m.Direction)<<16
 }
 
-func (m MossCarpet) Hash() uint64 {
+func (MossCarpet) Hash() uint64 {
 	return hashMossCarpet
 }
 
@@ -465,7 +465,7 @@ func (NetherQuartzOre) Hash() uint64 {
 	return hashNetherQuartzOre
 }
 
-func (n NetherSprouts) Hash() uint64 {
+func (NetherSprouts) Hash() uint64 {
 	return hashNetherSprouts
 }
 
@@ -481,7 +481,7 @@ func (Netherrack) Hash() uint64 {
 	return hashNetherrack
 }
 
-func (n NoteBlock) Hash() uint64 {
+func (NoteBlock) Hash() uint64 {
 	return hashNoteBlock
 }
 
@@ -585,7 +585,7 @@ func (s Sponge) Hash() uint64 {
 	return hashSponge | uint64(boolByte(s.Wet))<<8
 }
 
-func (s SporeBlossom) Hash() uint64 {
+func (SporeBlossom) Hash() uint64 {
 	return hashSporeBlossom
 }
 
@@ -621,7 +621,7 @@ func (t Torch) Hash() uint64 {
 	return hashTorch | uint64(t.Facing)<<8 | uint64(t.Type.Uint8())<<11
 }
 
-func (t Tuff) Hash() uint64 {
+func (Tuff) Hash() uint64 {
 	return hashTuff
 }
 
