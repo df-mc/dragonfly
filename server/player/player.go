@@ -1310,8 +1310,16 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	force, height := 0.45, 0.3608
 
+	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0
+	for _, eff := range p.Effects() {
+		if (eff.Type() == effect.SlowFalling{} || eff.Type() == effect.Blindness{}) {
+			critical = false
+			break
+		}
+	}
+
 	ctx := event.C()
-	p.handler().HandleAttackEntity(ctx, e, &force, &height)
+	p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical)
 	ctx.Continue(func() {
 		p.SwingArm()
 		living, ok := e.(entity.Living)
@@ -1335,11 +1343,20 @@ func (p *Player) AttackEntity(e world.Entity) {
 			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
 		}
 
+		if critical {
+			damageDealt *= 1.5
+		}
+
 		n, vulnerable := living.Hurt(damageDealt, damage.SourceEntityAttack{Attacker: p})
 		if mgl64.FloatEqual(n, 0) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{})
 		} else {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
+			if critical {
+				for _, v := range p.World().Viewers(living.Position()) {
+					v.ViewEntityAction(living, action.CriticalHit{})
+				}
+			}
 		}
 		if vulnerable {
 			p.Exhaust(0.1)
