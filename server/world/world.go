@@ -160,6 +160,23 @@ func (w *World) Block(pos cube.Pos) Block {
 	return b
 }
 
+// Biome reads the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
+// loaded, or generated if it could not be found in the world save, and the biome returned. Chunks will be
+// loaded synchronously.
+func (w *World) Biome(pos cube.Pos) (Biome, bool) {
+	if w == nil || pos.OutOfBounds(w.ra) {
+		// Fast way out.
+		return nil, false
+	}
+	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
+	c, err := w.chunk(chunkPos)
+	if err != nil {
+		w.log.Errorf("error getting biome: %v", err)
+		return nil, false
+	}
+	return BiomeByID(int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))))
+}
+
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
@@ -269,6 +286,23 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
+}
+
+// SetBiome sets the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
+// first loaded or generated if it could not be found in the world save.
+func (w *World) SetBiome(pos cube.Pos, b Biome) {
+	if w == nil || pos.OutOfBounds(w.ra) {
+		// Fast way out.
+		return
+	}
+
+	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	c, err := w.chunk(ChunkPos{x, z})
+	if err != nil {
+		return
+	}
+
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -703,9 +737,11 @@ func (w *World) StartWeatherCycle() {
 }
 
 // RainingAt returns a bool that indicates whether it is raining at a position in the world.
-// TODO: Take into account biomes when deciding if it is raining at a position when we implement biomes.
 func (w *World) RainingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
+		return false
+	}
+	if b, ok := w.Biome(pos); ok && b.Rainfall() == 0 {
 		return false
 	}
 	w.set.Lock()
@@ -716,9 +752,11 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 
 // ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
 // raining and thundering at the same time and if the position passed is exposed to rain.
-// TODO: Take into account biomes when deciding if it is thundering at a position when we implement biomes.
 func (w *World) ThunderingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
+		return false
+	}
+	if b, ok := w.Biome(pos); ok && b.Rainfall() == 0 {
 		return false
 	}
 	w.set.Lock()

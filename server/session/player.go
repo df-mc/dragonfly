@@ -243,9 +243,9 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
 	}
 	if !mode.AllowsInteraction() {
-		flags |= packet.AdventureFlagNoPVP
+		flags |= packet.AdventureSettingsFlagsNoPvM
 	} else {
-		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
+		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
