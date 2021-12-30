@@ -79,9 +79,9 @@ func (m *EffectManager) Remove(e effect.Type, entity Living) {
 // instance and false.
 func (m *EffectManager) Effect(e effect.Type) (effect.Effect, bool) {
 	m.mu.Lock()
-        existing, ok := m.effects[reflect.TypeOf(e)]
-        m.mu.Unlock()
-        return existing, ok
+	existing, ok := m.effects[reflect.TypeOf(e)]
+	m.mu.Unlock()
+	return existing, ok
 }
 
 // Effects returns a list of all effects currently present in the effect manager. This will never include
