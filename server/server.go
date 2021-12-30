@@ -647,13 +647,11 @@ func (server *Server) biomeDefinitions() map[string]interface{} {
 		}
 		if a, ok := b.(ashyBiome); ok {
 			ash, whiteAsh := a.Ash()
-			definition["ash"] = float32(ash)
-			definition["white_ash"] = float32(whiteAsh)
+			definition["ash"], definition["white_ash"] = float32(ash), float32(whiteAsh)
 		}
 		if s, ok := b.(sporingBiome); ok {
 			blueSpores, redSpores := s.Spores()
-			definition["blue_spores"] = float32(blueSpores)
-			definition["red_spores"] = float32(redSpores)
+			definition["blue_spores"], definition["red_spores"] = float32(blueSpores), float32(redSpores)
 		}
 		definitions[b.String()] = definition
 	}
