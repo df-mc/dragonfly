@@ -496,12 +496,9 @@ func (p *Player) fall(fallDistance float64) {
 	}
 
 	fallDamage := fallDistance - 3
-	for _, e := range p.Effects() {
-		if _, ok := e.Type().(effect.JumpBoost); ok {
-			fallDamage -= float64(e.Level())
-		}
+	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
+		fallDamage -= float64(boost.Level())
 	}
-
 	if fallDamage < 0.5 {
 		return
 	}
@@ -519,10 +516,8 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
-	for _, e := range p.Effects() {
-		if _, ok := e.Type().(effect.FireResistance); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
-			return 0, false
-		}
+	if _, ok := p.Effect(effect.FireResistance{}); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+		return 0, false
 	}
 	var (
 		ctx        = event.C()
@@ -611,10 +606,8 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		// has, with a maximum of 4*20=80%
 		dmg -= dmg * 0.04 * defencePoints
 	}
-	for _, e := range p.Effects() {
-		if resistance, ok := e.Type().(effect.Resistance); ok {
-			dmg *= resistance.Multiplier(src, e.Level())
-		}
+	if res, ok := p.Effect(effect.Resistance{}); ok {
+		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
 
 	if entityAttack, ok := src.(damage.SourceEntityAttack); ok {
@@ -729,8 +722,8 @@ func (p *Player) RemoveEffect(e effect.Type) {
 	p.updateState()
 }
 
-// Effect returns the effect instance and true if the Player has the effect otherwise it will return an empty effect
-// instance and false.
+// Effect returns the effect instance and true if the Player has the effect. If not found, it will return an empty
+// effect instance and false.
 func (p *Player) Effect(e effect.Type) (effect.Effect, bool) {
 	return p.effects.Effect(e)
 }
@@ -966,10 +959,8 @@ func (p *Player) SetVisible() {
 	if !p.GameMode().Visible() {
 		return
 	}
-	for _, eff := range p.Effects() {
-		if _, ok := eff.Type().(effect.Invisibility); ok {
-			return
-		}
+	if _, ok := p.Effect(effect.Invisibility{}); ok {
+		return
 	}
 	if !p.invisible.CAS(true, false) {
 		return
@@ -1006,10 +997,8 @@ func (p *Player) Immobile() bool {
 // FireProof checks if the Player is currently fireproof. True is returned if the player has a FireResistance effect or
 // if it is in creative mode.
 func (p *Player) FireProof() bool {
-	for _, e := range p.Effects() {
-		if _, ok := e.Type().(effect.FireResistance); ok {
-			return true
-		}
+	if _, ok := p.Effect(effect.FireResistance{}); ok {
+		return true
 	}
 	return !p.GameMode().AllowsTakingDamage()
 }
@@ -1317,13 +1306,9 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	force, height := 0.45, 0.3608
 
-	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0
-	for _, eff := range p.Effects() {
-		if (eff.Type() == effect.SlowFalling{} || eff.Type() == effect.Blindness{}) {
-			critical = false
-			break
-		}
-	}
+	_, slowFalling := p.Effect(effect.SlowFalling{})
+	_, blind := p.Effect(effect.Blindness{})
+	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0 && !slowFalling && !blind
 
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical)
@@ -1338,14 +1323,12 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 
 		damageDealt := i.AttackDamage()
-		for _, e := range p.Effects() {
-			if strength, ok := e.Type().(effect.Strength); ok {
-				damageDealt += damageDealt * strength.Multiplier(e.Level())
-			} else if weakness, ok := e.Type().(effect.Weakness); ok {
-				damageDealt += damageDealt * weakness.Multiplier(e.Level())
-			}
+		if strength, ok := p.Effect(effect.Strength{}); ok {
+			damageDealt += damageDealt * effect.Strength{}.Multiplier(strength.Level())
 		}
-
+		if weakness, ok := p.Effect(effect.Weakness{}); ok {
+			damageDealt -= damageDealt * effect.Weakness{}.Multiplier(weakness.Level())
+		}
 		if s, ok := i.Enchantment(enchantment.Sharpness{}); ok {
 			damageDealt += (enchantment.Sharpness{}).Addend(s.Level())
 		}
@@ -2111,17 +2094,10 @@ func (p *Player) updateState() {
 // have the water breathing or conduit power effect, this returns false.
 // If the player is in creative or spectator mode, Breathing always returns true.
 func (p *Player) Breathing() bool {
-	if !p.GameMode().AllowsTakingDamage() {
-		return true
-	}
-	for _, e := range p.Effects() {
-		switch e.Type().(type) {
-		case effect.WaterBreathing, effect.ConduitPower:
-			return true
-		}
-	}
+	_, breathing := p.Effect(effect.WaterBreathing{})
+	_, conduitPower := p.Effect(effect.ConduitPower{})
 	_, submerged := p.World().Liquid(cube.PosFromVec3(entity.EyePosition(p)))
-	return !submerged
+	return !p.GameMode().AllowsTakingDamage() || !submerged || breathing || conduitPower
 }
 
 // SwingArm makes the player swing its arm.
