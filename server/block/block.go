@@ -78,11 +78,6 @@ type Frictional interface {
 	Friction() float64
 }
 
-// Match returns true if the block is the same as the other block.
-func Match(first, second world.Block) bool {
-	return world.BlockRuntimeID(first) == world.BlockRuntimeID(second)
-}
-
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 	userPos := user.Position()
 	pos := cube.PosFromVec3(userPos)

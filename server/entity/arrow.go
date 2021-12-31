@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -116,7 +115,7 @@ func (a *Arrow) Tick(current int64) {
 	}
 
 	w := a.World()
-	if block.Match(w.Block(a.collidedBlockPos), a.collidedBlock) {
+	if world.BlockRuntimeID(w.Block(a.collidedBlockPos)) == world.BlockRuntimeID(a.collidedBlock) {
 		if a.collisionTicks > 5 {
 			a.checkNearby()
 		}
