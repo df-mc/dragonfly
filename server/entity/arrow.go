@@ -4,10 +4,12 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/damage"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -28,6 +30,8 @@ type Arrow struct {
 	collidedBlockPos cube.Pos
 	collidedBlock    world.Block
 
+	tip potion.Potion
+
 	closeNextTick, critical bool
 
 	owner                        world.Entity
@@ -37,8 +41,8 @@ type Arrow struct {
 }
 
 // NewArrow ...
-func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, shotByPlayer, shotInCreative bool, baseDamage float64) *Arrow {
-	s := &Arrow{
+func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, shotByPlayer, shotInCreative bool, baseDamage float64, tip potion.Potion) *Arrow {
+	a := &Arrow{
 		yaw:   yaw,
 		pitch: pitch,
 		c: &ProjectileComputer{&MovementComputer{
@@ -51,10 +55,10 @@ func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, 
 		shotInCreative: shotInCreative,
 		critical:       critical,
 		owner:          owner,
+		tip:            tip,
 	}
-	s.transform = newTransform(s, pos)
-
-	return s
+	a.transform = newTransform(a, pos)
+	return a
 }
 
 // Name ...
@@ -83,6 +87,13 @@ func (a *Arrow) SetCritical(critical bool) {
 	for _, v := range a.World().Viewers(a.Position()) {
 		v.ViewEntityState(a)
 	}
+}
+
+// Effects ...
+func (a *Arrow) Effects() []effect.Effect {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.tip.Effects()
 }
 
 // AABB ...
@@ -144,6 +155,9 @@ func (a *Arrow) Tick(current int64) {
 				if !living.AttackImmune() {
 					living.Hurt(a.damage(), damage.SourceProjectile{Owner: a.owner})
 					living.KnockBack(a.Position(), 0.45, 0.3608)
+					for _, eff := range a.tip.Effects() {
+						living.AddEffect(eff)
+					}
 				}
 			}
 			a.closeNextTick = true
@@ -159,8 +173,8 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 
 // New creates an arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the arrow,
 // only returns it.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64) world.Entity {
-	arrow := NewArrow(pos, yaw, pitch, nil, critical, shotByPlayer, shotInCreative, baseDamage)
+func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64, tip potion.Potion) world.Entity {
+	arrow := NewArrow(pos, yaw, pitch, nil, critical, shotByPlayer, shotInCreative, baseDamage, tip)
 	arrow.vel = vel
 	return arrow
 }
@@ -190,6 +204,7 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		nbtconv.MapByte(data, "player") == 1,
 		nbtconv.MapByte(data, "isCreative") == 1,
 		float64(nbtconv.MapFloat32(data, "Damage")),
+		potion.From(nbtconv.MapInt32(data, "Tip")),
 	).(*Arrow)
 }
 
@@ -202,6 +217,7 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Pitch":      pitch,
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":     a.baseDamage,
+		"Tip":        int32(a.tip.Uint8()),
 		"player":     boolByte(a.shotByPlayer),
 		"isCreative": boolByte(a.shotInCreative),
 	}
@@ -227,7 +243,7 @@ func (a *Arrow) checkNearby() {
 				}
 				if !isCreative && !a.shotInCreative {
 					// A collector was within range to pick up the entity.
-					_ = collector.Collect(item.NewStack(item.Arrow{}, 1))
+					_ = collector.Collect(item.NewStack(item.Arrow{Tip: a.tip}, 1))
 				}
 				a.closeNextTick = true
 				return

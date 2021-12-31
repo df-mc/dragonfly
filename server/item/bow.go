@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -30,18 +31,6 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 		return
 	}
 
-	creative := releaser.GameMode().CreativeInventory()
-	if !creative {
-		if arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
-			name, _ := stack.Item().EncodeItem()
-			return name == "minecraft:arrow"
-		}); ok {
-			ctx.DamageItem(1)
-			ctx.Consume(arrow)
-		}
-		return
-	}
-
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
 		return
@@ -51,6 +40,23 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 	force := math.Min((t*t+t*2)/3, 1)
 	if force < 0.1 {
 		return
+	}
+
+	var tip potion.Potion
+	creative := releaser.GameMode().CreativeInventory()
+	if !creative {
+		if arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
+			name, _ := stack.Item().EncodeItem()
+			return name == "minecraft:arrow"
+		}); ok {
+			arr := arrow.Item().(Arrow)
+			tip = arr.Tip
+
+			ctx.DamageItem(1)
+			ctx.Consume(arrow.Grow(-arrow.Count() + 1))
+		} else {
+			return
+		}
 	}
 
 	rYaw, rPitch := releaser.Rotation()
@@ -65,12 +71,12 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 	}
 
 	p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64) world.Entity
+		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64, tip potion.Potion) world.Entity
 	})
 	if !ok {
 		return
 	}
-	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, true, creative, 2)
+	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, true, creative, 2, tip)
 	if o, ok := e.(owned); ok {
 		o.Own(releaser)
 	}
