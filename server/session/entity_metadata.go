@@ -72,7 +72,9 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		}
 	}
 	if t, ok := e.(tipped); ok {
-		m[dataKeyCustomDisplay] = t.Tip().Uint8() + 1
+		if tip := t.Tip().Uint8(); tip > 4 {
+			m[dataKeyCustomDisplay] = tip + 1
+		}
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
