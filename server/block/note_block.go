@@ -27,7 +27,9 @@ func (n NoteBlock) playNote(pos cube.Pos, w *world.World) {
 
 // updateInstrument ...
 func (n NoteBlock) instrument(pos cube.Pos, w *world.World) instrument.Instrument {
-	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(InstrumentBlock); ok {
+	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(interface {
+		Instrument() instrument.Instrument
+	}); ok {
 		return instrumentBlock.Instrument()
 	}
 	return instrument.Piano()

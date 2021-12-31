@@ -72,10 +72,18 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 // EntityLand ...
 func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity) {
 	if living, ok := e.(entity.Living); ok {
-		if fall, ok := living.(FallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
+		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
 			w.PlaceBlock(pos, Dirt{})
 		}
 	}
+}
+
+// fallDistanceEntity is an entity that has a fall distance.
+type fallDistanceEntity interface {
+	// ResetFallDistance resets the entities fall distance.
+	ResetFallDistance()
+	// FallDistance returns the entities fall distance.
+	FallDistance() float64
 }
 
 // BreakInfo ...

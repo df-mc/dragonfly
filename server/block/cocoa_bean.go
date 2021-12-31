@@ -38,11 +38,11 @@ func (c CocoaBean) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	var woodType WoodType
-	oppositePos := pos.Side(c.Facing.Face())
-	if log, ok := w.Block(oppositePos).(Log); ok {
-		woodType = log.Wood
-	} else if wood, ok := w.Block(oppositePos).(Wood); ok {
-		woodType = wood.Wood
+	switch b := w.Block(pos.Side(c.Facing.Face())).(type) {
+	case Log:
+		woodType = b.Wood
+	case Wood:
+		woodType = b.Wood
 	}
 	if woodType != JungleWood() {
 		w.BreakBlockWithoutParticles(pos)

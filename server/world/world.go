@@ -160,6 +160,29 @@ func (w *World) Block(pos cube.Pos) Block {
 	return b
 }
 
+// Biome reads the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
+// loaded, or generated if it could not be found in the world save, and the biome returned. Chunks will be
+// loaded synchronously.
+func (w *World) Biome(pos cube.Pos) Biome {
+	if w == nil || pos.OutOfBounds(w.ra) {
+		// Fast way out.
+		return nil
+	}
+	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
+	c, err := w.chunk(chunkPos)
+	if err != nil {
+		w.log.Errorf("error reading biome: %v", err)
+		return nil
+	}
+	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
+	c.Unlock()
+	b, ok := BiomeByID(id)
+	if !ok {
+		w.log.Errorf("could not find biome by ID %v", id)
+	}
+	return b
+}
+
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
@@ -269,6 +292,23 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
+}
+
+// SetBiome sets the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
+// first loaded or generated if it could not be found in the world save.
+func (w *World) SetBiome(pos cube.Pos, b Biome) {
+	if w == nil || pos.OutOfBounds(w.ra) {
+		// Fast way out.
+		return
+	}
+
+	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	c, err := w.chunk(ChunkPos{x, z})
+	if err != nil {
+		return
+	}
+
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -702,10 +742,12 @@ func (w *World) StartWeatherCycle() {
 	w.set.WeatherCycle = true
 }
 
-// RainingAt returns a bool that indicates whether it is raining at a position in the world.
-// TODO: Take into account biomes when deciding if it is raining at a position when we implement biomes.
-func (w *World) RainingAt(pos cube.Pos) bool {
+// SnowingAt returns a bool that indicates whether it is snowing at a position in the world.
+func (w *World) SnowingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
+		return false
+	}
+	if b := w.Biome(pos); b.Rainfall() == 0 || w.Temperature(pos) > 0.15 {
 		return false
 	}
 	w.set.Lock()
@@ -714,15 +756,41 @@ func (w *World) RainingAt(pos cube.Pos) bool {
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
-// ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
-// raining and thundering at the same time and if the position passed is exposed to rain.
-// TODO: Take into account biomes when deciding if it is thundering at a position when we implement biomes.
-func (w *World) ThunderingAt(pos cube.Pos) bool {
+// RainingAt returns a bool that indicates whether it is raining at a position in the world. RainingAt returns false if
+// it is snowing at a position, rather than raining.
+func (w *World) RainingAt(pos cube.Pos) bool {
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
+	if b := w.Biome(pos); b.Rainfall() == 0 || w.Temperature(pos) <= 0.15 {
+		return false
+	}
 	w.set.Lock()
-	a := w.set.Thundering && w.set.Raining
+	a := w.set.Raining
+	w.set.Unlock()
+	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+}
+
+// Temperature returns the temperature in the World at a specific position. Higher altitudes and different biomes
+// influence the temperature returned.
+func (w *World) Temperature(pos cube.Pos) float64 {
+	const (
+		tempDrop = 1.0 / 600
+		seaLevel = 64
+	)
+	diff := pos[1] - seaLevel
+	if diff < 0 {
+		diff = 0
+	}
+	return w.Biome(pos).Temperature() - float64(diff)*tempDrop
+}
+
+// ThunderingAt returns a bool indicating whether it is currently thundering or not. True is returned only if it is both
+// raining and thundering at the same time and if the position passed is exposed to rain.
+func (w *World) ThunderingAt(pos cube.Pos) bool {
+	raining := w.RainingAt(pos)
+	w.set.Lock()
+	a := w.set.Thundering && raining
 	w.set.Unlock()
 	return a && w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }

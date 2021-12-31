@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -59,13 +58,6 @@ type Replaceable interface {
 	ReplaceableBy(b world.Block) bool
 }
 
-// BeaconSource represents a block which is capable of contributing to powering a beacon pyramid.
-type BeaconSource interface {
-	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
-	// beacon pyramid.
-	PowersBeacon() bool
-}
-
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
@@ -84,15 +76,6 @@ type EntityInsider interface {
 type Frictional interface {
 	// Friction returns the block's friction value.
 	Friction() float64
-}
-
-// beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
-type beaconAffected interface {
-	// AddEffect adds a specific effect to the entity that implements this interface.
-	AddEffect(e effect.Effect)
-
-	// BeaconAffected returns whether this entity can be powered by a beacon.
-	BeaconAffected() bool
 }
 
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
@@ -234,20 +217,6 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 	}
 }
 
-// FallDistanceEntity is an entity that has a fall distance.
-type FallDistanceEntity interface {
-	// ResetFallDistance resets the entities fall distance.
-	ResetFallDistance()
-	// FallDistance returns the entities fall distance.
-	FallDistance() float64
-}
-
-// InstrumentBlock represents a block that creates a note block sound other than the piano.
-type InstrumentBlock interface {
-	// Instrument returns the instrument used.
-	Instrument() instrument.Instrument
-}
-
 // bass is a struct that may be embedded for blocks that create a bass sound.
 type bass struct{}
 
@@ -278,22 +247,4 @@ type bassDrum struct{}
 // Instrument ...
 func (bassDrum) Instrument() instrument.Instrument {
 	return instrument.BassDrum()
-}
-
-// effectHolder represents an entity that can obtain effects.
-type effectHolder interface {
-	// AddEffect ...
-	AddEffect(effect.Effect)
-}
-
-// supportsVegetation checks if the vegetation can exist on the block.
-func supportsVegetation(vegetation, block world.Block) bool {
-	soil, ok := block.(Soil)
-	return ok && soil.SoilFor(vegetation)
-}
-
-// Soil represents a block that can support vegetation.
-type Soil interface {
-	// SoilFor returns whether the vegetation can exist on the block.
-	SoilFor(world.Block) bool
 }

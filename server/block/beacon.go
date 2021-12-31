@@ -28,6 +28,13 @@ type Beacon struct {
 	level int
 }
 
+// BeaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type BeaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
 // BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
@@ -198,6 +205,14 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 			}
 		}
 	}
+}
+
+// beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
+type beaconAffected interface {
+	// AddEffect adds a specific effect to the entity that implements this interface.
+	AddEffect(e effect.Effect)
+	// BeaconAffected returns whether this entity can be powered by a beacon.
+	BeaconAffected() bool
 }
 
 // EncodeItem ...

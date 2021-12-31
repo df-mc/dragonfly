@@ -23,7 +23,9 @@ type Flower struct {
 // EntityInside ...
 func (f Flower) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if f.Type == WitherRose() {
-		if living, ok := e.(effectHolder); ok {
+		if living, ok := e.(interface {
+			AddEffect(effect.Effect)
+		}); ok {
 			living.AddEffect(effect.New(effect.Wither{}, 1, 2*time.Second))
 		}
 	}

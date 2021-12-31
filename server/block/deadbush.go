@@ -50,7 +50,7 @@ func (d DeadBush) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // HasLiquidDrops ...
 func (d DeadBush) HasLiquidDrops() bool {
-	return false
+	return true
 }
 
 // FlammabilityInfo ...
@@ -64,7 +64,10 @@ func (d DeadBush) BreakInfo() BreakInfo {
 		if t.ToolType() == tool.TypeShears {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
-		return []item.Stack{item.NewStack(item.Stick{}, rand.Intn(3))}
+		if amount := rand.Intn(3); amount != 0 {
+			return []item.Stack{item.NewStack(item.Stick{}, amount)}
+		}
+		return nil
 	})
 }
 

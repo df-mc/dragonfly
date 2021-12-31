@@ -75,7 +75,7 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
-		return []item.Stack{}
+		return nil
 	})
 }
 

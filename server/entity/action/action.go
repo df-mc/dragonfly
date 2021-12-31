@@ -15,6 +15,9 @@ type SwingArm struct{ action }
 // duration.
 type Hurt struct{ action }
 
+// CriticalHit makes an entity display critical hit particles. This will show stars around the entity.
+type CriticalHit struct{ action }
+
 // Death makes an entity display the death animation. After this animation, the entity disappears from viewers
 // watching it.
 type Death struct{ action }

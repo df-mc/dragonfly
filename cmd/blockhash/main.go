@@ -166,6 +166,10 @@ func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 				bitSize += v
 			}
 		}
+		if bitSize == baseBits {
+			// No need to have a receiver name if we don't use any of the fields of the block.
+			recvName = ""
+		}
 
 		if recvName != "" {
 			recvName += " "

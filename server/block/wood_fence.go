@@ -51,7 +51,7 @@ func (w WoodFence) EncodeBlock() (name string, properties map[string]interface{}
 
 // Model ...
 func (w WoodFence) Model() world.BlockModel {
-	return model.Fence{Wooden: true}
+	return model.Fence{Wood: true}
 }
 
 // EncodeItem ...
