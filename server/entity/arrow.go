@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -89,11 +88,11 @@ func (a *Arrow) SetCritical(critical bool) {
 	}
 }
 
-// Effects ...
-func (a *Arrow) Effects() []effect.Effect {
+// Tip ...
+func (a *Arrow) Tip() potion.Potion {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.tip.Effects()
+	return a.tip
 }
 
 // AABB ...

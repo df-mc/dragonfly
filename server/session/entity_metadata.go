@@ -71,6 +71,9 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 			m.setFlag(dataKeyFlags, dataFlagEnchanted)
 		}
 	}
+	if t, ok := e.(tipped); ok {
+		m[dataKeyCustomDisplay] = t.Tip().Uint8() + 1
+	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
 		if (colour != color.RGBA{}) {
@@ -107,6 +110,7 @@ const (
 	dataKeyAir
 	dataKeyPotionColour
 	dataKeyPotionAmbient
+	dataKeyCustomDisplay     = 18
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
 	dataKeyBoundingBoxWidth  = 53
@@ -175,6 +179,10 @@ type onFire interface {
 
 type effectBearer interface {
 	Effects() []effect.Effect
+}
+
+type tipped interface {
+	Tip() potion.Potion
 }
 
 type using interface {
