@@ -1154,6 +1154,7 @@ func (p *Player) UseItem() {
 
 			p.usingSince.Store(time.Now().UnixNano())
 			p.usingItem.Store(true)
+			p.updateState()
 		case item.Usable:
 			ctx := p.useContext()
 			if usable.Use(w, p, ctx) {
