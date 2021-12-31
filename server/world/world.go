@@ -175,6 +175,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 		return nil
 	}
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
+	c.Unlock()
 	b, ok := BiomeByID(id)
 	if !ok {
 		w.log.Errorf("could not find biome by ID %v", id)
