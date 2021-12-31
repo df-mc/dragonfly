@@ -612,7 +612,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 	case action.ArrowShake:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
-			EventType:       packet.ActorEventArrowShake,
+			EventType:       packet.ActorEventShake,
 			EventData:       int32(act.Duration.Milliseconds() / 50),
 		})
 	case action.SwingArm:
