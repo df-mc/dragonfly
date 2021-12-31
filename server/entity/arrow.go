@@ -115,7 +115,10 @@ func (a *Arrow) Tick(current int64) {
 	}
 
 	w := a.World()
-	if world.BlockRuntimeID(w.Block(a.collidedBlockPos)) == world.BlockRuntimeID(a.collidedBlock) {
+
+	now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
+	last, _ := world.BlockRuntimeID(a.collidedBlock)
+	if now == last {
 		if a.collisionTicks > 5 {
 			a.checkNearby()
 		}
