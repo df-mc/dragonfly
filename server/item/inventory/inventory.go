@@ -100,8 +100,14 @@ func (inv *Inventory) Items() []item.Stack {
 
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
+	return inv.FirstFunc(item.Comparable)
+}
+
+// FirstFunc finds the first slot with an item.Stack that results in the comparable function passed returning true. The
+// function returns false if no such item was found.
+func (inv *Inventory) FirstFunc(comparable func(stack item.Stack) bool) (int, bool) {
 	for slot, it := range inv.Slots() {
-		if !it.Empty() && it.Comparable(item) {
+		if !it.Empty() && comparable(it) {
 			return slot, true
 		}
 	}
