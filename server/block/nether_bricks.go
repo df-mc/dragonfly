@@ -26,7 +26,7 @@ func (n NetherBricks) EncodeBlock() (name string, properties map[string]interfac
 	return "minecraft:" + n.Type.String(), nil
 }
 
-// allNetherBricks returns a list of all nether bricks Variants.
+// allNetherBricks returns a list of all nether bricks variants.
 func allNetherBricks() (netherBricks []world.Block) {
 	for _, t := range NetherBricksTypes() {
 		netherBricks = append(netherBricks, NetherBricks{Type: t})

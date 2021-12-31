@@ -29,7 +29,7 @@ func ChiseledNetherBricks() NetherBricksType {
 	return NetherBricksType{netherBricks(3)}
 }
 
-// Uint8 returns the nether bricks as a unit8
+// Uint8 returns the nether bricks as a unit8.
 func (n netherBricks) Uint8() uint8 {
 	return uint8(n)
 }
@@ -79,7 +79,7 @@ func (n netherBricks) String() string {
 	panic("unknown nether brick type")
 }
 
-// NetherBricksTypes returns all nether bricks type.
+// NetherBricksTypes returns all nether bricks types.
 func NetherBricksTypes() []NetherBricksType {
 	return []NetherBricksType{NormalNetherBricks(), RedNetherBricks(), CrackedNetherBricks(), ChiseledNetherBricks()}
 }
