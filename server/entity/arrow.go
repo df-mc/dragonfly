@@ -116,7 +116,7 @@ func (a *Arrow) Tick(current int64) {
 
 	w := a.World()
 
-	if a.collidedBlock == nil {
+	if a.collidedBlock != nil {
 		now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
 		last, _ := world.BlockRuntimeID(a.collidedBlock)
 		if now == last {
