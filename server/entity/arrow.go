@@ -116,14 +116,16 @@ func (a *Arrow) Tick(current int64) {
 
 	w := a.World()
 
-	now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
-	last, _ := world.BlockRuntimeID(a.collidedBlock)
-	if now == last {
-		if a.collisionTicks > 5 {
-			a.checkNearby()
+	if a.collidedBlock == nil {
+		now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
+		last, _ := world.BlockRuntimeID(a.collidedBlock)
+		if now == last {
+			if a.collisionTicks > 5 {
+				a.checkNearby()
+			}
+			a.collisionTicks++
+			return
 		}
-		a.collisionTicks++
-		return
 	}
 
 	a.mu.Lock()
