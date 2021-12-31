@@ -30,14 +30,16 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 		return
 	}
 
-	arrow := NewStack(Arrow{}, 1)
-	inCreative := releaser.GameMode().CreativeInventory()
-	if !inCreative {
-		if !ctx.Require(arrow) {
-			return
+	creative := releaser.GameMode().CreativeInventory()
+	if !creative {
+		if arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
+			name, _ := stack.Item().EncodeItem()
+			return name == "minecraft:arrow"
+		}); ok {
+			ctx.DamageItem(1)
+			ctx.Consume(arrow)
 		}
-		ctx.DamageItem(1)
-		ctx.Consume(arrow)
+		return
 	}
 
 	ticks := duration.Milliseconds() / 50
@@ -68,7 +70,7 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 	if !ok {
 		return
 	}
-	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, true, inCreative, 2)
+	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, true, creative, 2)
 	if o, ok := e.(owned); ok {
 		o.Own(releaser)
 	}

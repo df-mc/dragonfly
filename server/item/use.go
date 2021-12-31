@@ -18,9 +18,10 @@ type UseContext struct {
 	// NewItemSurvivalOnly will add any new items only in survival mode.
 	NewItemSurvivalOnly bool
 
-	// Require checks if the required item passed is given in the context. It returns true if it is, and false
-	// otherwise.
-	Require func(Stack) bool
+	// FirstFunc returns the first item in the context holder's inventory if found. The second return value describes
+	// whether the item was found. The comparable function is used to compare the item to the given item.
+	FirstFunc func(comparable func(Stack) bool) (Stack, bool)
+
 	// SwapHeldWithArmour holds a function that swaps the item currently held by a User with armour slot i.
 	SwapHeldWithArmour func(i int)
 }

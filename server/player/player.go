@@ -1143,18 +1143,11 @@ func (p *Player) UseItem() {
 
 		switch usable := it.(type) {
 		case item.Releasable:
-			if !p.GameMode().CreativeInventory() {
-				inv := p.Inventory()
-				for _, requirement := range usable.Requirements() {
-					if _, ok := inv.First(requirement); !ok {
-						return
-					}
-				}
+			if p.canRelease() {
+				p.usingSince.Store(time.Now().UnixNano())
+				p.usingItem.Store(true)
+				p.updateState()
 			}
-
-			p.usingSince.Store(time.Now().UnixNano())
-			p.usingItem.Store(true)
-			p.updateState()
 		case item.Usable:
 			ctx := p.useContext()
 			if usable.Use(w, p, ctx) {
@@ -1206,13 +1199,35 @@ func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
 		i, _ := p.HeldItems()
 		if releasable, ok := i.Item().(item.Releasable); ok {
-			ctx := p.useContext()
+			if p.canRelease() {
+				ctx := p.useContext()
 
-			releasable.Release(p, p.useDuration(), ctx)
-			p.handleUseContext(ctx)
-			p.updateState()
+				releasable.Release(p, p.useDuration(), ctx)
+				p.handleUseContext(ctx)
+				p.updateState()
+			}
 		}
 	}
+}
+
+// canRelease returns whether the player can release the item currently held in the main hand.
+func (p *Player) canRelease() bool {
+	held, _ := p.HeldItems()
+	if releasable, ok := held.Item().(item.Releasable); ok {
+		if !p.GameMode().CreativeInventory() {
+			inv := p.Inventory()
+			for _, requirement := range releasable.Requirements() {
+				if _, ok = inv.FirstFunc(func(stack item.Stack) bool {
+					name, _ := stack.Item().EncodeItem()
+					otherName, _ := requirement.Item().EncodeItem()
+					return name == otherName
+				}); !ok {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
 
 // handleUseContext handles the item.UseContext after the item has been used.
@@ -2393,9 +2408,14 @@ func (p *Player) useContext() *item.UseContext {
 				_ = dstInv.SetItem(dst, srcIt)
 			}
 		},
-		Require: func(stack item.Stack) bool {
-			_, ok := p.Inventory().First(stack)
-			return ok
+		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
+			inv := p.Inventory()
+			s, ok := inv.FirstFunc(comparable)
+			if !ok {
+				return item.Stack{}, false
+			}
+			it, _ := inv.Item(s)
+			return it, ok
 		},
 	}
 }
