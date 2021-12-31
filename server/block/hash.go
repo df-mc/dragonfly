@@ -83,6 +83,7 @@ const (
 	hashMelonSeeds
 	hashMossCarpet
 	hashNetherBrickFence
+	hashNetherBricks
 	hashNetherGoldOre
 	hashNetherQuartzOre
 	hashNetherSprouts
@@ -455,6 +456,10 @@ func (MossCarpet) Hash() uint64 {
 
 func (NetherBrickFence) Hash() uint64 {
 	return hashNetherBrickFence
+}
+
+func (n NetherBricks) Hash() uint64 {
+	return hashNetherBricks | uint64(n.Type.Uint8())<<8
 }
 
 func (NetherGoldOre) Hash() uint64 {
