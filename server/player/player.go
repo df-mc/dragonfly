@@ -783,11 +783,12 @@ func (p *Player) kill(src damage.Source) {
 	p.StopSneaking()
 	p.StopSprinting()
 
+	w := p.World()
 	pos := p.Position()
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
 		itemEntity := entity.NewItem(it, pos)
 		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		p.World().AddEntity(itemEntity)
+		w.AddEntity(itemEntity)
 	}
 	p.inv.Clear()
 	p.armour.Clear()
@@ -810,7 +811,7 @@ func (p *Player) kill(src damage.Source) {
 			// We have an actual client connected to this player: We change its position server side so that in
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
-			p.pos.Store(p.World().Spawn().Vec3())
+			p.pos.Store(w.Spawn().Vec3())
 		}
 	})
 }
