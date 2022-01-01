@@ -782,9 +782,17 @@ func (p *Player) kill(src damage.Source) {
 	p.addHealth(-p.MaxHealth())
 	p.StopSneaking()
 	p.StopSprinting()
+
+	pos := p.Position()
+	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
+		itemEntity := entity.NewItem(it, pos)
+		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+		p.World().AddEntity(itemEntity)
+	}
 	p.inv.Clear()
 	p.armour.Clear()
 	p.offHand.Clear()
+
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
