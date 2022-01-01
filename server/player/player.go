@@ -257,6 +257,12 @@ func (p *Player) SendTip(a ...interface{}) {
 	p.session().SendTip(format(a))
 }
 
+// SendJukeboxPopup sends a formatted jukebox popup to the player. This popup is shown above the hotbar of the player.
+// The popup is close to the position of an action bar message and the text has no background.
+func (p *Player) SendJukeboxPopup(a ...interface{}) {
+	p.session().SendJukeboxPopup(format(a))
+}
+
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)
