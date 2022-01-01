@@ -197,8 +197,6 @@ func (a *Arrow) Own(owner world.Entity) {
 	a.owner = owner
 }
 
-// TODO: Ensure the correct NBT key for the arrow tip is "Tip".
-
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
 func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 	return a.New(
