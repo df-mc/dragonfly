@@ -1511,23 +1511,13 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					// SubChunk is empty, so skip it right away.
 					continue
 				}
-				layers := sub.Layers()
-				if len(layers) == 0 {
-					// No layers present, so skip it right away.
-					continue
-				}
-				layer := layers[0]
-				if p := layer.Palette(); p.Len() == 1 && p.Value(0) == airRID {
-					// Empty layer present, so skip it right away.
-					continue
-				}
 				if generateNew {
 					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.At(x, y, z)
+				rid := sub.Layers()[0].At(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
