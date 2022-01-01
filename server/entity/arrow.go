@@ -208,7 +208,7 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		nbtconv.MapByte(data, "player") == 1,
 		nbtconv.MapByte(data, "isCreative") == 1,
 		float64(nbtconv.MapFloat32(data, "Damage")),
-		potion.From(nbtconv.MapInt32(data, "auxValue")),
+		potion.From(nbtconv.MapInt32(data, "auxValue")-1),
 	).(*Arrow)
 }
 
@@ -221,7 +221,7 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Pitch":      pitch,
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":     a.baseDamage,
-		"auxValue":   int32(a.tip.Uint8()),
+		"auxValue":   int32(a.tip.Uint8() + 1),
 		"player":     boolByte(a.shotByPlayer),
 		"isCreative": boolByte(a.shotInCreative),
 	}
