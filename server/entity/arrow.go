@@ -70,6 +70,13 @@ func (a *Arrow) EncodeEntity() string {
 	return "minecraft:arrow"
 }
 
+// CollisionPos ...
+func (a *Arrow) CollisionPos() cube.Pos {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.collidedBlockPos
+}
+
 // Critical ...
 func (a *Arrow) Critical() bool {
 	a.mu.Lock()
@@ -199,7 +206,7 @@ func (a *Arrow) Own(owner world.Entity) {
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
 func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
-	return a.New(
+	arr := a.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
 		float64(nbtconv.MapFloat32(data, "Pitch")),
@@ -210,20 +217,24 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		float64(nbtconv.MapFloat32(data, "Damage")),
 		potion.From(nbtconv.MapInt32(data, "auxValue")-1),
 	).(*Arrow)
+	arr.collidedBlockPos = nbtconv.MapPos(data, "StuckToBlockPos")
+	arr.collidedBlock = a.World().Block(arr.collidedBlockPos)
+	return arr
 }
 
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
 func (a *Arrow) EncodeNBT() map[string]interface{} {
 	yaw, pitch := a.Rotation()
 	return map[string]interface{}{
-		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":        yaw,
-		"Pitch":      pitch,
-		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":     a.baseDamage,
-		"auxValue":   int32(a.tip.Uint8() + 1),
-		"player":     boolByte(a.shotByPlayer),
-		"isCreative": boolByte(a.shotInCreative),
+		"Pos":             nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":             yaw,
+		"Pitch":           pitch,
+		"Motion":          nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"StuckToBlockPos": nbtconv.PosToInt32Slice(a.CollisionPos()),
+		"Damage":          a.baseDamage,
+		"auxValue":        int32(a.tip.Uint8() + 1),
+		"player":          boolByte(a.shotByPlayer),
+		"isCreative":      boolByte(a.shotInCreative),
 	}
 }
 
