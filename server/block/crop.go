@@ -6,6 +6,8 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 )
 
 // Crop is an interface for all crops that are grown on farmland. A crop has a random chance to grow during random ticks.
@@ -32,7 +34,9 @@ func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		w.BreakBlockWithoutParticles(pos)
 		if breakable, ok := b.(Breakable); ok {
 			for _, drop := range breakable.BreakInfo().Drops(tool.None{}, []item.Enchantment{}) {
-				w.AddEntity(entity.NewItem(drop, pos.Vec3Centre()))
+				itemEntity := entity.NewItem(drop, pos.Vec3Centre())
+				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+				w.AddEntity(itemEntity)
 			}
 		}
 	}

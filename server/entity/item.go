@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
 	"time"
 )
 
@@ -38,7 +37,6 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 		Drag:              0.02,
 	}}
 	it.transform = newTransform(it, pos)
-	it.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 	return it
 }
 

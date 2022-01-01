@@ -59,7 +59,9 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 		GameMode() world.GameMode
 	}); ok {
 		if rand.Float64() <= i.DropChance && !g.GameMode().CreativeInventory() {
-			w.AddEntity(entity.NewItem(i.Item, pos.Vec3Centre()))
+			it := entity.NewItem(i.Item, pos.Vec3Centre())
+			it.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+			w.AddEntity(it)
 		}
 	}
 	i.Item, i.Rotations = item.Stack{}, 0

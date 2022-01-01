@@ -786,7 +786,9 @@ func (p *Player) kill(src damage.Source) {
 	w := p.World()
 	pos := p.Position()
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
-		w.AddEntity(entity.NewItem(it, pos))
+		itemEntity := entity.NewItem(it, pos)
+		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+		w.AddEntity(itemEntity)
 	}
 	p.inv.Clear()
 	p.armour.Clear()
@@ -1601,7 +1603,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		w.BreakBlock(pos)
 
 		for _, drop := range drops {
-			w.AddEntity(entity.NewItem(drop, pos.Vec3Centre()))
+			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
+			itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+			w.AddEntity(itemEntity)
 		}
 
 		p.Exhaust(0.005)

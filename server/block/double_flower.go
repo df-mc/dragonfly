@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 )
 
 // DoubleFlower is a two block high flower consisting of an upper and lower part.
@@ -26,7 +27,9 @@ func (d DoubleFlower) FlammabilityInfo() FlammabilityInfo {
 
 // BoneMeal ...
 func (d DoubleFlower) BoneMeal(pos cube.Pos, w *world.World) bool {
-	w.AddEntity(entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre()))
+	itemEntity := entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre())
+	itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+	w.AddEntity(itemEntity)
 	return true
 }
 
