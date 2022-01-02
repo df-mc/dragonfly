@@ -147,7 +147,6 @@ func (w *World) Block(pos cube.Pos) Block {
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
-	b, _ := BlockByRuntimeID(rid)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
@@ -157,6 +156,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	}
 	c.Unlock()
 
+	b, _ := BlockByRuntimeID(rid)
 	return b
 }
 
@@ -191,15 +191,15 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		return air(), nil
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	b, _ := BlockByRuntimeID(rid)
 
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
-		b, ok := c.e[pos]
-		if ok {
+		if b, ok := c.e[pos]; ok {
 			return b, nil
 		}
 	}
+
+	b, _ := BlockByRuntimeID(rid)
 	return b, nil
 }
 
@@ -262,16 +262,15 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
+	rid, ok := BlockRuntimeID(b)
+	if !ok {
+		w.log.Errorf("runtime ID of block %+v not found", b)
 		return
 	}
 
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		c.Unlock()
-		w.log.Errorf("runtime ID of block %+v not found", b)
+	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	c, err := w.chunk(ChunkPos{x, z})
+	if err != nil {
 		return
 	}
 	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
@@ -1511,23 +1510,13 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					// SubChunk is empty, so skip it right away.
 					continue
 				}
-				layers := sub.Layers()
-				if len(layers) == 0 {
-					// No layers present, so skip it right away.
-					continue
-				}
-				layer := layers[0]
-				if p := layer.Palette(); p.Len() == 1 && p.Value(0) == airRID {
-					// Empty layer present, so skip it right away.
-					continue
-				}
 				if generateNew {
 					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.At(x, y, z)
+				rid := sub.Layers()[0].At(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
