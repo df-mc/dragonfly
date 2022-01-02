@@ -259,11 +259,11 @@ func (a *Arrow) checkNearby() {
 					return
 				}
 
-				for _, viewer := range w.Viewers(a.Position()) {
-					viewer.ViewEntityAction(a, action.PickedUp{Collector: collector})
-				}
 				if !isCreative && !a.shotInCreative {
 					// A collector was within range to pick up the entity.
+					for _, viewer := range w.Viewers(a.Position()) {
+						viewer.ViewEntityAction(a, action.PickedUp{Collector: collector})
+					}
 					_ = collector.Collect(item.NewStack(item.Arrow{Tip: a.tip}, 1))
 				}
 				a.closeNextTick = true
