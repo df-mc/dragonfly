@@ -90,9 +90,10 @@ func (a *Arrow) Critical() bool {
 func (a *Arrow) SetCritical(critical bool) {
 	a.mu.Lock()
 	a.critical = critical
+	pos := a.pos
 	a.mu.Unlock()
 
-	for _, v := range a.World().Viewers(a.Position()) {
+	for _, v := range a.World().Viewers(pos) {
 		v.ViewEntityState(a)
 	}
 }
@@ -148,27 +149,27 @@ func (a *Arrow) Tick(current int64) {
 	a.collidedBlockPos, a.collidedBlock = cube.Pos{}, nil
 	m.Send()
 
-	if m.pos[1] < float64(a.World().Range()[0]) && current%10 == 0 {
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
 		a.closeNextTick = true
 		return
 	}
 
 	if result != nil {
 		a.SetCritical(false)
-		w.PlaySound(a.Position(), sound.ArrowHit{})
+		w.PlaySound(m.pos, sound.ArrowHit{})
 
 		if blockResult, ok := result.(trace.BlockResult); ok {
 			a.collidedBlockPos = blockResult.BlockPosition()
 			a.collidedBlock = w.Block(a.collidedBlockPos)
 
-			for _, v := range a.World().Viewers(a.Position()) {
+			for _, v := range w.Viewers(m.pos) {
 				v.ViewEntityAction(a, action.ArrowShake{Duration: time.Millisecond * 350})
 			}
 		} else if entityResult, ok := result.(trace.EntityResult); ok {
 			if living, ok := entityResult.Entity().(Living); ok {
 				if !living.AttackImmune() {
 					living.Hurt(a.damage(), damage.SourceProjectile{Owner: a.owner})
-					living.KnockBack(a.Position(), 0.45, 0.3608)
+					living.KnockBack(m.pos, 0.45, 0.3608)
 					for _, eff := range a.tip.Effects() {
 						living.AddEffect(eff)
 					}
