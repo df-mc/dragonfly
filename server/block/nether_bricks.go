@@ -8,7 +8,7 @@ type NetherBricks struct {
 	solid
 	bassDrum
 
-	// NetherBricksType is the type of nether bricks of the block
+	// NetherBricksType is the type of nether bricks of the block.
 	Type NetherBricksType
 }
 
