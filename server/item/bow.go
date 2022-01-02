@@ -44,17 +44,19 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 
 	var tip potion.Potion
 	creative := releaser.GameMode().CreativeInventory()
-	if !creative {
-		if arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
-			name, _ := stack.Item().EncodeItem()
-			return name == "minecraft:arrow"
-		}); ok {
-			arr := arrow.Item().(Arrow)
-			tip = arr.Tip
+	if arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
+		name, _ := stack.Item().EncodeItem()
+		return name == "minecraft:arrow"
+	}); ok {
+		arr := arrow.Item().(Arrow)
+		tip = arr.Tip
 
+		if !creative {
 			ctx.DamageItem(1)
 			ctx.Consume(arrow.Grow(-arrow.Count() + 1))
-		} else {
+		}
+	} else {
+		if !creative {
 			return
 		}
 	}
