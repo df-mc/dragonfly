@@ -123,5 +123,5 @@ func (SourceLava) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceProjectile) ReducedByArmour() bool {
-	return false
+	return true
 }
