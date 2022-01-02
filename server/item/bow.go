@@ -73,12 +73,12 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 	}
 
 	p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64, tip potion.Potion) world.Entity
+		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity
 	})
 	if !ok {
 		return
 	}
-	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, true, creative, 2, tip)
+	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, false, !creative, tip)
 	if o, ok := e.(owned); ok {
 		o.Own(releaser)
 	}

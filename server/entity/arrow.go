@@ -17,8 +17,8 @@ import (
 	"time"
 )
 
-// Arrow is used as ammunition for bows, crossbows, and dispensers. Arrows can be modified to
-// imbue status effects on players and mobs.
+// Arrow is used as ammunition for bows, crossbows, and dispensers. Arrows can be modified to imbue status effects
+// on players and mobs.
 type Arrow struct {
 	transform
 	yaw, pitch float64
@@ -33,14 +33,14 @@ type Arrow struct {
 
 	closeNextTick, critical bool
 
-	owner                        world.Entity
-	shotByPlayer, shotInCreative bool
+	owner                               world.Entity
+	disallowPickup, obtainArrowOnPickup bool
 
 	c *ProjectileComputer
 }
 
 // NewArrow ...
-func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, shotByPlayer, shotInCreative bool, baseDamage float64, tip potion.Potion) *Arrow {
+func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) *Arrow {
 	a := &Arrow{
 		yaw:   yaw,
 		pitch: pitch,
@@ -49,12 +49,12 @@ func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, 
 			Drag:              0.01,
 			DragBeforeGravity: true,
 		}},
-		baseDamage:     baseDamage,
-		shotByPlayer:   shotByPlayer,
-		shotInCreative: shotInCreative,
-		critical:       critical,
-		owner:          owner,
-		tip:            tip,
+		baseDamage:          2.0,
+		disallowPickup:      disallowPickup,
+		obtainArrowOnPickup: obtainArrowOnPickup,
+		critical:            critical,
+		owner:               owner,
+		tip:                 tip,
 	}
 	a.transform = newTransform(a, pos)
 	return a
@@ -96,6 +96,48 @@ func (a *Arrow) SetCritical(critical bool) {
 	for _, v := range a.World().Viewers(pos) {
 		v.ViewEntityState(a)
 	}
+}
+
+// BaseDamage returns the base damage the arrow will deal, before accounting for velocity.
+func (a *Arrow) BaseDamage() float64 {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.baseDamage
+}
+
+// SetBaseDamage sets the base damage the arrow will deal, before accounting for velocity.
+func (a *Arrow) SetBaseDamage(baseDamage float64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.baseDamage = baseDamage
+}
+
+// ShouldDisallowPickup returns true if the arrow should not be picked up by players.
+func (a *Arrow) ShouldDisallowPickup() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.disallowPickup
+}
+
+// DisallowPickup sets whether the arrow should or should not be picked up by players.
+func (a *Arrow) DisallowPickup(disallowPickup bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.disallowPickup = disallowPickup
+}
+
+// ShouldObtainArrowOnPickup returns true if the arrow should be obtained when picked up by players.
+func (a *Arrow) ShouldObtainArrowOnPickup() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.obtainArrowOnPickup
+}
+
+// ObtainArrowOnPickup sets whether the arrow should or should not be obtained when picked up by players.
+func (a *Arrow) ObtainArrowOnPickup(obtainArrowOnPickup bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.obtainArrowOnPickup = obtainArrowOnPickup
 }
 
 // Tip returns the potion effect at the tip of the arrow, applied on impact to an entity. This also causes the arrow
@@ -188,8 +230,8 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 
 // New creates an arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the arrow,
 // only returns it.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, shotByPlayer, shotInCreative bool, baseDamage float64, tip potion.Potion) world.Entity {
-	arrow := NewArrow(pos, yaw, pitch, nil, critical, shotByPlayer, shotInCreative, baseDamage, tip)
+func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity {
+	arrow := NewArrow(pos, yaw, pitch, nil, critical, disallowPickup, obtainArrowOnPickup, tip)
 	arrow.vel = vel
 	return arrow
 }
@@ -218,9 +260,9 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		false, // Vanilla doesn't save this value, so we don't either.
 		nbtconv.MapByte(data, "player") == 1,
 		nbtconv.MapByte(data, "isCreative") == 1,
-		float64(nbtconv.MapFloat32(data, "Damage")),
 		potion.From(nbtconv.MapInt32(data, "auxValue")-1),
 	).(*Arrow)
+	arr.baseDamage = float64(nbtconv.MapFloat32(data, "Damage"))
 	arr.collidedBlockPos = nbtconv.MapPos(data, "StuckToBlockPos")
 	arr.collidedBlock = a.World().Block(arr.collidedBlockPos)
 	return arr
@@ -234,10 +276,10 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Yaw":        yaw,
 		"Pitch":      pitch,
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":     a.baseDamage,
+		"Damage":     a.BaseDamage(),
 		"auxValue":   int32(a.tip.Uint8() + 1),
-		"player":     boolByte(a.shotByPlayer),
-		"isCreative": boolByte(a.shotInCreative),
+		"player":     boolByte(!a.ShouldDisallowPickup()),
+		"isCreative": boolByte(!a.ShouldObtainArrowOnPickup()),
 	}
 	if collisionPos, ok := a.CollisionPos(); ok {
 		nbt["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
@@ -255,12 +297,11 @@ func (a *Arrow) checkNearby() {
 	for _, e := range a.World().EntitiesWithin(a.AABB().Translate(a.Position()).Grow(2), ignore) {
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
-				isCreative := collector.GameMode() == world.GameModeCreative
-				if !a.shotByPlayer {
+				if a.ShouldDisallowPickup() {
 					return
 				}
 
-				if !isCreative && !a.shotInCreative {
+				if a.ShouldObtainArrowOnPickup() {
 					// A collector was within range to pick up the entity.
 					for _, viewer := range w.Viewers(a.Position()) {
 						viewer.ViewEntityAction(a, action.PickedUp{Collector: collector})
@@ -276,7 +317,7 @@ func (a *Arrow) checkNearby() {
 
 // damage returns the full damage the arrow should deal, accounting for the velocity.
 func (a *Arrow) damage() float64 {
-	base := math.Ceil(a.Velocity().Len() * a.baseDamage)
+	base := math.Ceil(a.Velocity().Len() * a.BaseDamage())
 	if a.critical {
 		return base + float64(rand.Intn(int(base/2+1)))
 	}
