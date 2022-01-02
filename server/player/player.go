@@ -1206,7 +1206,7 @@ func (p *Player) UseItem() {
 }
 
 // ReleaseItem makes the Player release the item it is currently using. This is only applicable for items that
-// implement the item.Consumable interface.
+// implement the item.Releasable interface.
 // If the Player is not currently using any item, ReleaseItem returns immediately.
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
