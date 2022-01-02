@@ -248,28 +248,16 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, yaw, pitch 
 		return
 	}
 
-	switch e.(type) {
-	case Controllable:
-		s.writePacket(&packet.MovePlayer{
-			EntityRuntimeID: id,
-			Position:        vec64To32(pos.Add(entityOffset(e))),
-			Pitch:           float32(pitch),
-			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-			OnGround:        onGround,
-		})
-	default:
-		flags := byte(0)
-		if onGround {
-			flags |= packet.MoveFlagOnGround
-		}
-		s.writePacket(&packet.MoveActorAbsolute{
-			EntityRuntimeID: id,
-			Position:        vec64To32(pos.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw}),
-			Flags:           flags,
-		})
+	flags := byte(0)
+	if onGround {
+		flags |= packet.MoveFlagOnGround
 	}
+	s.writePacket(&packet.MoveActorAbsolute{
+		EntityRuntimeID: id,
+		Position:        vec64To32(pos.Add(entityOffset(e))),
+		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw}),
+		Flags:           flags,
+	})
 }
 
 // ViewEntityVelocity ...
