@@ -147,7 +147,6 @@ func (w *World) Block(pos cube.Pos) Block {
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
-	b, _ := BlockByRuntimeID(rid)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
@@ -157,6 +156,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	}
 	c.Unlock()
 
+	b, _ := BlockByRuntimeID(rid)
 	return b
 }
 
@@ -191,15 +191,15 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		return air(), nil
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	b, _ := BlockByRuntimeID(rid)
 
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
-		b, ok := c.e[pos]
-		if ok {
+		if b, ok := c.e[pos]; ok {
 			return b, nil
 		}
 	}
+
+	b, _ := BlockByRuntimeID(rid)
 	return b, nil
 }
 
@@ -262,16 +262,15 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
+	rid, ok := BlockRuntimeID(b)
+	if !ok {
+		w.log.Errorf("runtime ID of block %+v not found", b)
 		return
 	}
 
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		c.Unlock()
-		w.log.Errorf("runtime ID of block %+v not found", b)
+	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	c, err := w.chunk(ChunkPos{x, z})
+	if err != nil {
 		return
 	}
 	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
