@@ -70,21 +70,23 @@ func (a *Arrow) EncodeEntity() string {
 	return "minecraft:arrow"
 }
 
-// CollisionPos ...
-func (a *Arrow) CollisionPos() cube.Pos {
+// CollisionPos returns the position of the block the arrow collided with. If the arrow has not collided with any
+// blocks, it returns false for it's second parameter.
+func (a *Arrow) CollisionPos() (cube.Pos, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.collidedBlockPos
+	return a.collidedBlockPos, a.collidedBlock != nil
 }
 
-// Critical ...
+// Critical returns the critical state of the arrow, which can result in more damage and extra particles while in air.
 func (a *Arrow) Critical() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.critical
 }
 
-// SetCritical ...
+// SetCritical sets the critical state of the arrow to true, which can result in more damage and extra particles while
+// in air.
 func (a *Arrow) SetCritical(critical bool) {
 	a.mu.Lock()
 	a.critical = critical
@@ -95,7 +97,8 @@ func (a *Arrow) SetCritical(critical bool) {
 	}
 }
 
-// Tip ...
+// Tip returns the potion effect at the tip of the arrow, applied on impact to an entity. This also causes the arrow
+// to show effect particles until it is removed.
 func (a *Arrow) Tip() potion.Potion {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -225,17 +228,20 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
 func (a *Arrow) EncodeNBT() map[string]interface{} {
 	yaw, pitch := a.Rotation()
-	return map[string]interface{}{
-		"Pos":             nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":             yaw,
-		"Pitch":           pitch,
-		"Motion":          nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"StuckToBlockPos": nbtconv.PosToInt32Slice(a.CollisionPos()),
-		"Damage":          a.baseDamage,
-		"auxValue":        int32(a.tip.Uint8() + 1),
-		"player":          boolByte(a.shotByPlayer),
-		"isCreative":      boolByte(a.shotInCreative),
+	nbt := map[string]interface{}{
+		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":        yaw,
+		"Pitch":      pitch,
+		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"Damage":     a.baseDamage,
+		"auxValue":   int32(a.tip.Uint8() + 1),
+		"player":     boolByte(a.shotByPlayer),
+		"isCreative": boolByte(a.shotInCreative),
 	}
+	if collisionPos, ok := a.CollisionPos(); ok {
+		nbt["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
+	}
+	return nbt
 }
 
 // checkNearby checks for nearby arrow collectors.
