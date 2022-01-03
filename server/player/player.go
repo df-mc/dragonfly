@@ -582,7 +582,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, action.Hurt{})
 		}
-		p.immunity.Store(time.Now().Add(time.Second / 2))
+		p.SetAttackImmunity(time.Second / 2)
 		if p.Dead() {
 			p.kill(source)
 		}
@@ -676,6 +676,16 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
 func (p *Player) AttackImmune() bool {
 	return p.immunity.Load().(time.Time).After(time.Now())
+}
+
+// AttackImmunity returns the duration the player is immune to entity attacks.
+func (p *Player) AttackImmunity() time.Duration {
+	return time.Until(p.immunity.Load().(time.Time))
+}
+
+// SetAttackImmunity sets the duration the player is immune to entity attacks.
+func (p *Player) SetAttackImmunity(d time.Duration) {
+	p.immunity.Store(time.Now().Add(d))
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
@@ -1138,9 +1148,6 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
-	if !p.canReach(p.Position()) {
-		return
-	}
 	i, left := p.HeldItems()
 	ctx := event.C()
 	p.handler().HandleItemUse(ctx)
@@ -1861,6 +1868,9 @@ func (p *Player) Rotation() (float64, float64) {
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
 func (p *Player) Collect(s item.Stack) (n int) {
+	if p.Dead() {
+		return
+	}
 	ctx := event.C()
 	p.handler().HandleItemPickup(ctx, s)
 	ctx.Continue(func() {
