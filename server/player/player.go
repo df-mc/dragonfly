@@ -680,7 +680,7 @@ func (p *Player) AttackImmune() bool {
 
 // AttackImmunity returns the duration the player is immune to entity attacks.
 func (p *Player) AttackImmunity() time.Duration {
-	return p.immunity.Load().(time.Time).Sub(time.Now())
+	return time.Until(p.immunity.Load().(time.Time))
 }
 
 // SetAttackImmunity sets the duration the player is immune to entity attacks.
