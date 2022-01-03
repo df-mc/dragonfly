@@ -15,7 +15,10 @@ func main() {
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
 
-	chat.Global.Subscribe(chat.StdoutSubscriber{})
+	chat.Global.Subscribe(chat.LogrusSubscriber{
+		Logger:   log,
+		LogLevel: logrus.InfoLevel,
+	})
 
 	config, err := readConfig()
 	if err != nil {

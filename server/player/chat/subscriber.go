@@ -3,6 +3,7 @@ package chat
 import (
 	"fmt"
 	"github.com/sandertv/gophertunnel/minecraft/text"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -29,4 +30,18 @@ func (c StdoutSubscriber) Message(a ...interface{}) {
 		return
 	}
 	fmt.Print(t)
+}
+
+type LogrusSubscriber struct{
+	Logger   *logrus.Logger
+	LogLevel logrus.Level
+}
+
+func (c LogrusSubscriber) Message(a ...interface{}) {
+	s := make([]string, len(a))
+	for i, b := range a {
+		s[i] = fmt.Sprint(b)
+	}
+	t := text.ANSI(strings.Join(s, " "))
+	c.Logger.Log(c.LogLevel, t)
 }
