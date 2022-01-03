@@ -158,6 +158,7 @@ func init() {
 	registerAll(allWood())
 	registerAll(allChains())
 	registerAll(allHayBales())
+	registerAll(allPurpurs())
 }
 
 func init() {

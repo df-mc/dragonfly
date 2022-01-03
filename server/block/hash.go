@@ -101,6 +101,7 @@ const (
 	hashPrismarine
 	hashPumpkin
 	hashPumpkinSeeds
+	hashPurpur
 	hashQuartz
 	hashQuartzBricks
 	hashQuartzPillar
@@ -530,6 +531,10 @@ func (p Pumpkin) Hash() uint64 {
 
 func (p PumpkinSeeds) Hash() uint64 {
 	return hashPumpkinSeeds | uint64(p.Growth)<<8 | uint64(p.Direction)<<16
+}
+
+func (p Purpur) Hash() uint64 {
+	return hashPurpur | uint64(p.Type.Uint8())<<8 | uint64(p.Axis)<<10
 }
 
 func (q Quartz) Hash() uint64 {
