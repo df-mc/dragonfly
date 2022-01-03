@@ -155,6 +155,7 @@ func init() {
 	registerAll(allSeaPickles())
 	registerAll(allWood())
 	registerAll(allChains())
+	registerAll(allHayBales())
 }
 
 func init() {

@@ -63,6 +63,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashHayBale
 	hashHoneycombBlock
 	hashInvisibleBedrock
 	hashIronBars
@@ -376,6 +377,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (h HayBale) Hash() uint64 {
+	return hashHayBale | uint64(h.Axis)<<8 | uint64(h.Deprecated)<<10
 }
 
 func (HoneycombBlock) Hash() uint64 {
