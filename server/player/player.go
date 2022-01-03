@@ -839,7 +839,6 @@ func (p *Player) Respawn() {
 		return
 	}
 	pos := p.World().Spawn().Vec3Middle()
-	p.handler().HandleRespawn(&pos)
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
@@ -848,8 +847,10 @@ func (p *Player) Respawn() {
 	p.World().AddEntity(p)
 	p.SetVisible()
 
-	p.Teleport(pos)
 	p.session().SendRespawn()
+
+	p.handler().HandleRespawn(&pos)
+	p.Teleport(pos)
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
