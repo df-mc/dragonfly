@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -101,8 +102,8 @@ type Conn interface {
 	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
 	// packet.
 	WritePacket(pk packet.Packet) error
-	// StartGame starts the game for the Conn with a timeout.
-	StartGame(data minecraft.GameData) error
+	// StartGameContext starts the game for the Conn with a context to cancel it.
+	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
@@ -156,7 +157,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the controllable of
+// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
 // the session in the world.
 // The function passed will be called when the session stops running.
 func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
@@ -174,7 +175,6 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	w.AddEntity(s.c)
 	s.c.SetGameMode(gm)
-	s.SendAvailableCommands()
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
 		s.SendEffect(e)
@@ -189,7 +189,7 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
-	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
+	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
 
@@ -200,14 +200,17 @@ func (s *Session) Close() error {
 
 	_ = s.conn.Close()
 	_ = s.chunkLoader.Close()
-	_ = s.c.Close()
 
 	if j := s.quitMessage.Load(); j != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
 
-	if s.c.World() != nil {
+	if s.onStop != nil {
+		s.onStop(s.c)
+		s.onStop = nil
+
 		s.c.World().RemoveEntity(s.c)
+		_ = s.c.Close()
 	}
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
@@ -218,10 +221,6 @@ func (s *Session) Close() error {
 	s.entities = map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
 
-	if s.onStop != nil {
-		s.onStop(s.c)
-		s.onStop = nil
-	}
 	return nil
 }
 
@@ -262,6 +261,7 @@ func (s *Session) handlePackets() {
 		_ = s.Close()
 	}()
 	go s.sendChunks(c)
+	go s.sendCommands(c)
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
@@ -276,7 +276,7 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// sendChunks continuously sends chunks to the player, until a value is sent to the closeChan passed.
+// sendChunks continuously sends chunks to the player, until a value is sent to the stop channel passed.
 func (s *Session) sendChunks(stop <-chan struct{}) {
 	const maxChunkTransactions = 8
 	t := time.NewTicker(time.Second / 20)
@@ -306,6 +306,37 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 	}
 }
 
+// sendCommands continuously checks if commands need to be resent and resends them when needed. sendCommands returns
+// when the channel passed has a value sent to it.
+func (s *Session) sendCommands(stop <-chan struct{}) {
+	tc := time.NewTicker(time.Second * 5)
+	te := time.NewTicker(time.Second)
+	defer func() {
+		tc.Stop()
+		te.Stop()
+	}()
+	var (
+		r                 = s.sendAvailableCommands()
+		enums, enumValues = s.enums()
+		ok                bool
+	)
+	for {
+		select {
+		case <-tc.C:
+			r, ok = s.resendCommands(r)
+			if ok {
+				enums, enumValues = s.enums()
+			}
+		case <-te.C:
+			// Enum resending happens relatively often and frequent updates are more important than with full command
+			// changes. Those are generally only related to permission changes, which doesn't happen often.
+			s.resendEnums(enums, enumValues)
+		case <-stop:
+			return
+		}
+	}
+}
+
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch() {
 	if s.conn.ClientCacheEnabled() {
@@ -320,6 +351,10 @@ func (s *Session) handleWorldSwitch() {
 		s.openChunkTransactions = nil
 	}
 
+	if s.c.World().Dimension() != s.chunkLoader.World().Dimension() {
+		s.writePacket(&packet.ChangeDimension{Dimension: int32(s.c.World().Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	}
 	s.chunkLoader.ChangeWorld(s.c.World())
 }
 
@@ -369,6 +404,7 @@ func (s *Session) registerHandlers() {
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+		packet.IDItemFrameDropItem:     nil,
 	}
 }
 

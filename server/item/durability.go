@@ -7,7 +7,7 @@ type Durable interface {
 	DurabilityInfo() DurabilityInfo
 }
 
-// DurabilityInfo is the info of a durable item. It include fields that must be set in order to define
+// DurabilityInfo is the info of a durable item. It includes fields that must be set in order to define
 // durability related behaviour.
 type DurabilityInfo struct {
 	// MaxDurability is the maximum durability that this item may have. This field must be positive for the

@@ -30,6 +30,7 @@ func fromJson(d jsonData) player.Data {
 		FireTicks:       d.FireTicks,
 		FallDistance:    d.FallDistance,
 		Inventory:       dataToInv(d.Inventory),
+		Dimension:       d.Dimension,
 	}
 }
 
@@ -56,6 +57,7 @@ func toJson(d player.Data) jsonData {
 		FireTicks:       d.FireTicks,
 		FallDistance:    d.FallDistance,
 		Inventory:       invToData(d.Inventory),
+		Dimension:       d.Dimension,
 	}
 }
 
@@ -76,6 +78,7 @@ type jsonData struct {
 	Effects                          []jsonEffect
 	FireTicks                        int64
 	FallDistance                     float64
+	Dimension                        int
 }
 
 type jsonInventoryData struct {

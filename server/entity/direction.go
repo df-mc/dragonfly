@@ -38,7 +38,7 @@ func DirectionVector(e world.Entity) mgl64.Vec3 {
 		-m * math.Sin(yawRad),
 		-math.Sin(pitchRad),
 		m * math.Cos(yawRad),
-	}.Normalize()
+	}
 }
 
 // Eyed represents an entity that has eyes.

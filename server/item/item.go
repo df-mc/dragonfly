@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"time"
 )
 
@@ -45,7 +46,7 @@ type Usable interface {
 	Use(w *world.World, user User, ctx *UseContext) bool
 }
 
-// Consumable represents an item that may consumed by a player. If an item implements this interface, a player
+// Consumable represents an item that may be consumed by a player. If an item implements this interface, a player
 // may use and hold the item to consume it.
 type Consumable interface {
 	// AlwaysConsumable specifies if the item is always consumable. Normal food can generally only be consumed
@@ -77,34 +78,17 @@ type Consumer interface {
 // time to be consumed.
 const DefaultConsumeDuration = (time.Second * 161) / 100
 
-// UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
-// after the action is complete.
-type UseContext struct {
-	// Damage is the amount of damage that should be dealt to the item as a result of using it.
-	Damage int
-	// CountSub is how much of the count should be subtracted after using the item.
-	CountSub int
-	// IgnoreAABB specifies if placing the item should ignore the AABB of the player placing this. This is the case for
-	// items such as cocoa beans.
-	IgnoreAABB bool
-	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
-	// hand, it'll be added there.
-	NewItem Stack
-	// NewItemSurvivalOnly will add any new items only in survival mode.
-	NewItemSurvivalOnly bool
-}
-
-// DamageItem damages the item used by d points.
-func (ctx *UseContext) DamageItem(d int) { ctx.Damage += d }
-
-// SubtractFromCount subtracts d from the count of the item stack used.
-func (ctx *UseContext) SubtractFromCount(d int) { ctx.CountSub += d }
-
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {
-	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
+	// AttackDamage returns the custom attack damage to the weapon. The damage returned must not be negative.
 	AttackDamage() float64
+}
+
+// Cooldown represents an item that has a cooldown.
+type Cooldown interface {
+	// Cooldown is the duration of the cooldown.
+	Cooldown() time.Duration
 }
 
 // nameable represents a block that may be named. These are often containers such as chests, which have a
@@ -131,12 +115,6 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// projectile represents an entity that can be launched as a projectile.
-type projectile interface {
-	world.Entity
-	New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
-}
-
 // owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
 type owned interface {
 	world.Entity
@@ -161,4 +139,28 @@ func (defaultFood) AlwaysConsumable() bool {
 // ConsumeDuration ...
 func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
+}
+
+// directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
+// returned is always 1.
+func directionVector(e world.Entity) mgl64.Vec3 {
+	yaw, pitch := e.Rotation()
+	yawRad, pitchRad := mgl64.DegToRad(yaw), mgl64.DegToRad(pitch)
+	m := math.Cos(pitchRad)
+
+	return mgl64.Vec3{
+		-m * math.Sin(yawRad),
+		-math.Sin(pitchRad),
+		m * math.Cos(yawRad),
+	}.Normalize()
+}
+
+// eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the
+// actual position if it doesn't.
+func eyePosition(e world.Entity) mgl64.Vec3 {
+	pos := e.Position()
+	if eyed, ok := e.(interface{ EyeHeight() float64 }); ok {
+		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
+	}
+	return pos
 }

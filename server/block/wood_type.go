@@ -18,7 +18,7 @@ func SpruceWood() WoodType {
 	return WoodType{wood(1)}
 }
 
-// BirchWood returns birch wood material.
+// BirchWood returns birchwood material.
 func BirchWood() WoodType {
 	return WoodType{wood(2)}
 }

@@ -49,7 +49,7 @@ func (s Shovel) MaxCount() int {
 	return 1
 }
 
-// AttackDamage returns the attack damage of the shovel.
+// AttackDamage returns the attack damage to the shovel.
 func (s Shovel) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage
 }

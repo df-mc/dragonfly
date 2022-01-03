@@ -41,7 +41,7 @@ func (a AdventureSettingsHandler) Handle(p packet.Packet, s *Session) error {
 		s.log.Debugf("failed processing packet from %v (%v): AdventureSettings: mine or build permission enabled while not being able to edit the world\n", s.conn.RemoteAddr(), s.c.Name())
 		return nil
 	}
-	if (pk.ActionPermissions&packet.ActionPermissionDoorsAndSwitched != 0 || pk.ActionPermissions&packet.ActionPermissionOpenContainers != 0 || pk.ActionPermissions&packet.ActionPermissionAttackPlayers != 0 || pk.ActionPermissions&packet.ActionPermissionAttackMobs != 0) && !mode.AllowsInteraction() {
+	if (pk.ActionPermissions&packet.ActionPermissionDoorsAndSwitches != 0 || pk.ActionPermissions&packet.ActionPermissionOpenContainers != 0 || pk.ActionPermissions&packet.ActionPermissionAttackPlayers != 0 || pk.ActionPermissions&packet.ActionPermissionAttackMobs != 0) && !mode.AllowsInteraction() {
 		s.log.Debugf("failed processing packet from %v (%v): AdventureSettings: doors and switches, open containers, attack players, or attack mobs permissions enabled without being able to interact with the world\n", s.conn.RemoteAddr(), s.c.Name())
 		return nil
 	}

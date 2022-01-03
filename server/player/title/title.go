@@ -73,8 +73,7 @@ func (title Title) WithDuration(d time.Duration) Title {
 	return title
 }
 
-// WithFadeInDuration sets the duration that the title takes to fade in on the screen. The duration will be
-// rounded to ticks.
+// WithFadeInDuration sets the duration that the title takes to fade in on the screen.
 // The new Title with the fade-in duration is returned.
 func (title Title) WithFadeInDuration(d time.Duration) Title {
 	title.fadeInDuration = d
@@ -87,8 +86,7 @@ func (title Title) FadeInDuration() time.Duration {
 	return title.fadeInDuration
 }
 
-// WithFadeOutDuration sets the duration that the title takes to fade out of the screen. The duration will be
-// rounded to ticks.
+// WithFadeOutDuration sets the duration that the title takes to fade out of the screen.
 // The new Title with the fade-out duration is returned.
 func (title Title) WithFadeOutDuration(d time.Duration) Title {
 	title.fadeOutDuration = d

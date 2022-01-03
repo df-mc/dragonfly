@@ -75,7 +75,7 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
-		return []item.Stack{}
+		return nil
 	})
 }
 
@@ -86,7 +86,7 @@ func (d DoubleTallGrass) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (d DoubleTallGrass) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:double_plant", map[string]interface{}{"double_flower_type": d.Type.String(), "upper_block_bit": d.UpperPart}
+	return "minecraft:double_plant", map[string]interface{}{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
 }
 
 // allDoubleTallGrass ...

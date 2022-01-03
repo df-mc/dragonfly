@@ -14,7 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -57,7 +56,7 @@ func (s *Session) closeCurrentContainer() {
 	}
 }
 
-// SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
+// SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
 		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
@@ -106,7 +105,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.offHand, true
 	case containerArmour:
 		// Armour inventory.
-		return s.armour.Inv(), true
+		return s.armour.Inventory(), true
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
@@ -192,14 +191,6 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	})
 }
 
-// SendVelocity sends the velocity of the player to the client.
-func (s *Session) SendVelocity(velocity mgl64.Vec3) {
-	s.writePacket(&packet.SetActorMotion{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Velocity:        vec64To32(velocity),
-	})
-}
-
 // SendForm sends a form to the client of the connection. The Submit method of the form is called when the
 // client submits the form.
 func (s *Session) SendForm(f form.Form) {
@@ -233,7 +224,7 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
-// SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
+// SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
 	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
@@ -252,9 +243,9 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
 	}
 	if !mode.AllowsInteraction() {
-		flags |= packet.AdventureFlagNoPVP
+		flags |= packet.AdventureSettingsFlagsNoPvM
 	} else {
-		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
+		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
@@ -436,7 +427,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 	})
 }
 
-// HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
+// HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
@@ -557,7 +548,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		var b world.Block
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
-		// return air anyways.
+		// return air anyway.
 		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}

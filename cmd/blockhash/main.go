@@ -166,6 +166,10 @@ func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 				bitSize += v
 			}
 		}
+		if bitSize == baseBits {
+			// No need to have a receiver name if we don't use any of the fields of the block.
+			recvName = ""
+		}
 
 		if recvName != "" {
 			recvName += " "
@@ -203,7 +207,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 		return "uint64(" + s + ".Uint8())", 4
 	case "WoodType", "CoralType":
 		return "uint64(" + s + ".Uint8())", 3
-	case "SandstoneType", "PrismarineType":
+	case "SandstoneType", "PrismarineType", "StoneBricksType":
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "GrassType":
 		return "uint64(" + s + ".Uint8())", 1

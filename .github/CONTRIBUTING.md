@@ -48,7 +48,7 @@ opening a pull request:
   it is not always possible to provide full functionality for a feature in a single pull request,
   you should attempt to do so to the extent that you can. Specific smaller features part of the
   pull request that cannot be implemented yet should be marked with a `// TODO: ...` comment so
-  that we can implement these once the required functionality is present.
+  that we can implement these when the required functionality is present.
 * When you open a PR, we assume you have tested your code and made sure it is working as intended.
   As a general recommendation, you should enable the Minecraft Content Log in the Profile settings
   so that it becomes obvious when invalid data is sent to the client.

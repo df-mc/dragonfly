@@ -9,12 +9,15 @@ import (
 
 // CocoaBean is a model used by cocoa bean blocks.
 type CocoaBean struct {
+	// Facing is the face that the cocoa bean faces. It is the opposite of the face that the CocoaBean is attached to.
 	Facing cube.Direction
-	Age    int
+	// Age is the age of the CocoaBean. The age influences the size of the CocoaBean. The maximum age value of a cocoa
+	// bean is 3.
+	Age int
 }
 
-// AABB ...
-func (c CocoaBean) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+// AABB returns a single physics.AABB whose size depends on the age of the CocoaBean.
+func (c CocoaBean) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).
 		Stretch(c.Facing.RotateRight().Face().Axis(), -(6-float64(c.Age))/16).
 		ExtendTowards(cube.FaceDown, -0.25).
@@ -23,7 +26,7 @@ func (c CocoaBean) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 		ExtendTowards(c.Facing.Opposite().Face(), -((11 - float64(c.Age)*2) / 16))}
 }
 
-// FaceSolid ...
-func (c CocoaBean) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+// FaceSolid always returns false.
+func (c CocoaBean) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

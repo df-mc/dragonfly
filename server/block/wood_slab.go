@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
@@ -91,17 +90,6 @@ func (s WoodSlab) LightDiffusionLevel() uint8 {
 		return 15
 	}
 	return 0
-}
-
-// AABB ...
-func (s WoodSlab) AABB(cube.Pos, *world.World) []physics.AABB {
-	if s.Double {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-	}
-	if s.Top {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})}
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
 }
 
 // EncodeItem ...

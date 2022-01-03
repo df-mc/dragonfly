@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Runnable represents a Command that may be ran by a Command source. The Command must be a struct type and
+// Runnable represents a Command that may be run by a Command source. The Command must be a struct type and
 // its fields represent the parameters of the Command. When the Run method is called, these fields are set
 // and may be used for behaviour in the Command.
 // A Runnable may have exported fields only of the following types:
@@ -18,7 +18,7 @@ import (
 // must be of the type string.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
-// to specify a name different than the field name for the parameter.
+// to specify a name different from the field name for the parameter.
 type Runnable interface {
 	// Run runs the Command, using the arguments passed to the Command. The source is passed to the method,
 	// which is the source of the execution of the Command, and the output is passed, to which messages may be
@@ -46,7 +46,7 @@ type Command struct {
 
 // New returns a new Command using the name and description passed. The Runnable passed must be a
 // (pointer to a) struct, with its fields representing the parameters of the command.
-// When the command is ran, the Run method of the Runnable will be called, after all fields have their values
+// When the command is run, the Run method of the Runnable will be called, after all fields have their values
 // from the parsed command set.
 // If r is not a struct or a pointer to a struct, New panics.
 func New(name, description string, aliases []string, r ...Runnable) Command {
@@ -195,6 +195,18 @@ func (cmd Command) Params(src Source) [][]ParamInfo {
 	return params
 }
 
+// Runnables returns a map of all Runnable implementations of the Command that a Source can execute.
+func (cmd Command) Runnables(src Source) map[int]Runnable {
+	m := make(map[int]Runnable, len(cmd.v))
+	for i, runnable := range cmd.v {
+		v := runnable.Interface().(Runnable)
+		if allower, ok := v.(Allower); !ok || allower.Allow(src) {
+			m[i] = v
+		}
+	}
+	return m
+}
+
 // String returns the usage of the command. The usage will be roughly equal to the one showed by the client
 // in-game.
 func (cmd Command) String() string {
@@ -202,7 +214,7 @@ func (cmd Command) String() string {
 }
 
 // executeRunnable executes a Runnable v, by parsing the args passed using the source and output obtained. If
-// parsing was not successful or the Runnable could not be ran by this source, an error is returned, and the
+// parsing was not successful or the Runnable could not be run by this source, an error is returned, and the
 // leftover command line.
 func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
@@ -225,7 +237,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 	parser := parser{}
 	arguments := &Line{args: argFrags, src: source}
 
-	// We iterate over all of the fields of the struct: Each of the fields will have an argument parsed to
+	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
 	signature := v.Elem()
 	for i := 0; i < signature.NumField(); i++ {

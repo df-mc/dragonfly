@@ -204,7 +204,7 @@ type Button struct {
 	// Text holds the text displayed on the button. It may use Minecraft formatting codes and may have
 	// newlines.
 	Text string
-	// Image holds a path to an image for the button. The Image may either be an URL pointing to an image,
+	// Image holds a path to an image for the button. The Image may either be a URL pointing to an image,
 	// such as 'https://someimagewebsite.com/someimage.png', or a path pointing to a local asset, such as
 	// 'textures/blocks/grass_carried'.
 	Image string

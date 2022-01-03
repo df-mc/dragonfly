@@ -66,8 +66,8 @@ func (f Face) Opposite() Face {
 	}
 }
 
-// Axis returns the axis the face is facing. FaceEast and west correspond to the x axis, north and south to the z
-// axis and up and down to the y axis.
+// Axis returns the axis the face is facing. FaceEast and west correspond to the x-axis, north and south to the z
+// axis and up and down to the y-axis.
 func (f Face) Axis() Axis {
 	switch f {
 	default:

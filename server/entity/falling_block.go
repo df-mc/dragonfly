@@ -61,6 +61,10 @@ func (f *FallingBlock) Tick(_ int64) {
 	pos := cube.PosFromVec3(m.pos)
 	w := f.World()
 
+	if pos[1] < f.World().Range()[0] {
+		_ = f.Close()
+	}
+
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {
 		b := f.World().Block(pos)
 		if r, ok := b.(replaceable); ok && r.ReplaceableBy(f.block) {

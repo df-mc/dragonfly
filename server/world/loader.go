@@ -171,7 +171,7 @@ func (l *Loader) populateLoadQueue() {
 			distance := math.Sqrt(float64(x*x) + float64(z*z))
 			chunkDistance := int32(math.Round(distance))
 			if chunkDistance > r {
-				// The chunk was outside of the chunk radius.
+				// The chunk was outside the chunk radius.
 				continue
 			}
 			pos := ChunkPos{x + chunkX, z + chunkZ}
