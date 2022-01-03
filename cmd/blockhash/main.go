@@ -207,7 +207,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 		return "uint64(" + s + ".Uint8())", 4
 	case "WoodType", "CoralType":
 		return "uint64(" + s + ".Uint8())", 3
-	case "SandstoneType", "PrismarineType", "StoneBricksType":
+	case "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType":
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "GrassType":
 		return "uint64(" + s + ".Uint8())", 1

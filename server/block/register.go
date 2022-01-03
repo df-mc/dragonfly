@@ -140,6 +140,7 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allQuartz())
 	registerAll(allNetherWart())
+	registerAll(allNetherBricks())
 	registerAll(allTallGrass())
 	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
