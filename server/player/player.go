@@ -1230,19 +1230,38 @@ func (p *Player) UsingItem() bool {
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
 // returns immediately.
+// UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	if !p.canReach(pos.Vec3Centre()) {
+	i, left := p.HeldItems()
+	w := p.World()
+	b := w.Block(pos)
+
+	success := false
+	defer func() {
+		if !success {
+			// Resend both the block clicked and the one on the face of that block clicked if using the item was not
+			// successful.
+			w.SetBlock(pos, b)
+			w.SetBlock(pos.Side(face), w.Block(pos.Side(face)))
+			if liq, ok := w.Liquid(pos); ok {
+				w.SetLiquid(pos, liq)
+			}
+			if liq, ok := w.Liquid(pos.Side(face)); ok {
+				w.SetLiquid(pos.Side(face), liq)
+			}
+		}
+	}()
+	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
+		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
+		// to use the item immediately.
 		return
 	}
-	i, left := p.HeldItems()
-
-	w := p.World()
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
-
 	ctx.Continue(func() {
-		if activatable, ok := w.Block(pos).(block.Activatable); ok {
+		success = true
+		if activatable, ok := b.(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which case the block will be activated as usual.
 			if !p.Sneaking() || i.Empty() {
@@ -1265,28 +1284,18 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
-		} else if b, ok := i.Item().(world.Block); ok && p.GameMode().AllowsEditing() {
+		} else if ib, ok := i.Item().(world.Block); ok && p.GameMode().AllowsEditing() {
 			// The item IS a block, meaning it is being placed.
 			replacedPos := pos
-			if replaceable, ok := w.Block(pos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(b) {
+			if replaceable, ok := b.(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) {
 				// The block clicked was either not replaceable, or not replaceable using the block passed.
 				replacedPos = pos.Side(face)
 			}
-			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds(w.Range()) {
-				if p.placeBlock(replacedPos, b, false) && !p.GameMode().CreativeInventory() {
+			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(ib) && !replacedPos.OutOfBounds(w.Range()) {
+				if p.placeBlock(replacedPos, ib, false) && !p.GameMode().CreativeInventory() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
-		}
-	})
-	ctx.Stop(func() {
-		w.SetBlock(pos, w.Block(pos))
-		w.SetBlock(pos.Side(face), w.Block(pos.Side(face)))
-		if liq, ok := w.Liquid(pos); ok {
-			w.SetLiquid(pos, liq)
-		}
-		if liq, ok := w.Liquid(pos.Side(face)); ok {
-			w.SetLiquid(pos.Side(face), liq)
 		}
 	})
 }
@@ -1549,10 +1558,8 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		return false
 	}
-	if !ignoreAABB {
-		if p.obstructedPos(pos, b) {
-			return false
-		}
+	if !ignoreAABB && p.obstructedPos(pos, b) {
+		return false
 	}
 
 	ctx := event.C()
