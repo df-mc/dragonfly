@@ -95,6 +95,8 @@ func init() {
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(Bookshelf{})
+	world.RegisterBlock(NetherWartBlock{})
+	world.RegisterBlock(NetherWartBlock{Warped: true})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())

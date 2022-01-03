@@ -89,6 +89,7 @@ const (
 	hashNetherQuartzOre
 	hashNetherSprouts
 	hashNetherWart
+	hashNetherWartBlock
 	hashNetheriteBlock
 	hashNetherrack
 	hashNoteBlock
@@ -481,6 +482,10 @@ func (NetherSprouts) Hash() uint64 {
 
 func (n NetherWart) Hash() uint64 {
 	return hashNetherWart | uint64(n.Age)<<8
+}
+
+func (n NetherWartBlock) Hash() uint64 {
+	return hashNetherWartBlock | uint64(boolByte(n.Warped))<<8
 }
 
 func (NetheriteBlock) Hash() uint64 {
