@@ -1809,6 +1809,9 @@ func (p *Player) Rotation() (float64, float64) {
 
 // Collect makes the player collect the item stack passed, adding it to the inventory.
 func (p *Player) Collect(s item.Stack) (n int) {
+	if p.Dead() {
+		return
+	}
 	ctx := event.C()
 	p.handler().HandleItemPickup(ctx, s)
 	ctx.Continue(func() {
