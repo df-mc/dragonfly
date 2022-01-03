@@ -2,6 +2,7 @@ package block
 
 import "fmt"
 
+// PurpurType represents a type of purpur.
 type PurpurType struct {
 	purpur
 }
