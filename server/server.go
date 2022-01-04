@@ -40,6 +40,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
+	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 )
@@ -290,7 +291,7 @@ func (server *Server) Close() error {
 	server.log.Debugf("Disconnecting players...")
 	server.playerMutex.RLock()
 	for _, p := range server.p {
-		p.Disconnect(server.c.Server.ShutdownMessage)
+		p.Disconnect(text.Colourf("<yellow>%v</yellow>", server.c.Server.ShutdownMessage))
 	}
 	server.playerMutex.RUnlock()
 	server.pwg.Wait()
