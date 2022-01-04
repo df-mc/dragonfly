@@ -14,7 +14,7 @@ func NormalPurpur() PurpurType {
 	return PurpurType{purpur(0)}
 }
 
-// ChiseledPurpur is the chiseled variant of purpur. It is only accessible through commands.
+// ChiseledPurpur is the chiseled variant of purpur. It cannot be accessed through the creative inventory.
 func ChiseledPurpur() PurpurType {
 	return PurpurType{purpur(1)}
 }
@@ -24,7 +24,7 @@ func PillarPurpur() PurpurType {
 	return PurpurType{purpur(2)}
 }
 
-// SmoothPurpur is the smooth variant of purpur. It is only accessible through commands.
+// SmoothPurpur is the smooth variant of purpur. It cannot be accessed through the creative inventory.
 func SmoothPurpur() PurpurType {
 	return PurpurType{purpur(3)}
 }
