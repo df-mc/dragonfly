@@ -54,7 +54,6 @@ func (d DragonEgg) LightEmissionLevel() uint8 {
 // Punch ...
 func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
 	if gm, ok := u.(interface{ GameMode() world.GameMode }); ok && gm.GameMode().CreativeInventory() {
-		u.World().BreakBlock(pos)
 		return
 	}
 	d.teleport(pos, w)
