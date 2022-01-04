@@ -12,8 +12,8 @@ type Purpur struct {
 	solid
 	bassDrum
 
-	// Type is the type of purpur of the block.
-	Type PurpurType
+	// Pillar specifies if the block is the pillar variant or not.
+	Pillar bool
 
 	// Axis is the axis which the purpur pillar block faces.
 	Axis cube.Axis
@@ -25,7 +25,7 @@ func (p Purpur) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	if !used {
 		return
 	}
-	if p.Type == PillarPurpur() {
+	if p.Pillar {
 		p.Axis = face.Axis()
 	}
 
@@ -40,24 +40,25 @@ func (p Purpur) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (p Purpur) EncodeItem() (name string, meta int16) {
-	return "minecraft:purpur_block", int16(p.Type.Uint8())
+	if p.Pillar {
+		return "minecraft:purpur_block", 1
+	}
+	return "minecraft:purpur_block", 0
 }
 
 // EncodeBlock ...
 func (p Purpur) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:purpur_block", map[string]interface{}{"chisel_type": p.Type.String(), "pillar_axis": p.Axis.String()}
+	if p.Pillar {
+		return "minecraft:purpur_block", map[string]interface{}{"chisel_type": "lines", "pillar_axis": p.Axis.String()}
+	}
+	return "minecraft:purpur_block", map[string]interface{}{"chisel_type": "default", "pillar_axis": "y"}
 }
 
 // allPurpurs ...
 func allPurpurs() (purpur []world.Block) {
-	for _, p := range PurpurTypes() {
-		if p == PillarPurpur() {
-			for _, axis := range cube.Axes() {
-				purpur = append(purpur, Purpur{Type: p, Axis: axis})
-			}
-			continue
-		}
-		purpur = append(purpur, Purpur{Type: p})
+	purpur = append(purpur, Purpur{})
+	for _, axis := range cube.Axes() {
+		purpur = append(purpur, Purpur{Pillar: true, Axis: axis})
 	}
 	return
 }

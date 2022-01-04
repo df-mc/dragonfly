@@ -534,7 +534,7 @@ func (p PumpkinSeeds) Hash() uint64 {
 }
 
 func (p Purpur) Hash() uint64 {
-	return hashPurpur | uint64(p.Type.Uint8())<<8 | uint64(p.Axis)<<10
+	return hashPurpur | uint64(boolByte(p.Pillar))<<8 | uint64(p.Axis)<<9
 }
 
 func (q Quartz) Hash() uint64 {
