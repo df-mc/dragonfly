@@ -198,7 +198,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 	switch name {
 	case "bool":
 		return "uint64(boolByte(" + s + "))", 1
-	case "int32", "int":
+	case "int":
 		return "uint64(" + s + ")", 8
 	case "Attachment":
 		return "uint64(" + s + ".Uint8())", 5

@@ -382,7 +382,7 @@ func (Gravel) Hash() uint64 {
 }
 
 func (h HayBale) Hash() uint64 {
-	return hashHayBale | uint64(h.Axis)<<8 | uint64(h.Deprecated)<<10
+	return hashHayBale | uint64(h.Axis)<<8
 }
 
 func (HoneycombBlock) Hash() uint64 {
