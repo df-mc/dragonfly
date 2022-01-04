@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
-	"math/rand"
 )
 
 // DragonEgg is a decorative block or a "trophy item", and the rarest item in the game.
@@ -51,7 +52,10 @@ func (d DragonEgg) LightEmissionLevel() uint8 {
 }
 
 // Punch ...
-func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+	if gm, ok := u.(interface{ GameMode() world.GameMode }); ok && gm.GameMode().CreativeInventory() {
+		return
+	}
 	d.teleport(pos, w)
 }
 
