@@ -1581,8 +1581,8 @@ func (w *World) tickEntities(tick int64) {
 	}
 	var entitiesToMove []entityToMove
 
-	w.entityMu.Lock()
 	w.chunkMu.Lock()
+	w.entityMu.Lock()
 	for e, lastPos := range w.entities {
 		chunkPos := chunkPosFromVec3(e.Position())
 
@@ -1627,8 +1627,8 @@ func (w *World) tickEntities(tick int64) {
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
-	w.chunkMu.Unlock()
 	w.entityMu.Unlock()
+	w.chunkMu.Unlock()
 
 	for _, move := range entitiesToMove {
 		move.after.Lock()
@@ -1913,8 +1913,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	data := newChunkData(c)
 	w.chunks[pos] = data
-	data.Lock()
-	w.chunkMu.Unlock()
 
 	ent, err := w.provider().LoadEntities(pos)
 	if err != nil {
@@ -1942,6 +1940,9 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
 	}
 	w.loadIntoBlocks(data, blockEntities)
+
+	data.Lock()
+	w.chunkMu.Unlock()
 	return data, nil
 }
 
