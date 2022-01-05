@@ -304,13 +304,14 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	x, z, biome := int32(pos[0]>>4), int32(pos[2]>>4), uint32(b.EncodeBiome())
 	c, err := w.chunk(ChunkPos{x, z})
 	if err != nil {
 		return
 	}
 
-	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), biome)
+	c.Unlock()
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -836,9 +837,9 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
-	if e.World() != nil {
-		e.World().RemoveEntity(e)
-	}
+	// Remove the Entity from any previous World it might be in.
+	e.World().RemoveEntity(e)
+
 	worldsMu.Lock()
 	entityWorlds[e] = w
 	worldsMu.Unlock()
