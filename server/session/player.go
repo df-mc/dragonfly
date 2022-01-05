@@ -227,7 +227,7 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
+	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
 		if s.c.Flying() {
@@ -250,21 +250,17 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
 	}
-	// Creative or spectator players:
+	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-		// Cannot interact with the world, so this is a spectator.
-		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
-			id = packet.GameTypeCreativeSpectator
-		}
 	}
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,
 		ActionPermissions: perms,
 	})
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
 // SendHealth sends the health and max health to the player.
