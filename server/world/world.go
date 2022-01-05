@@ -128,6 +128,9 @@ func (w *World) Dimension() Dimension {
 
 // Range returns the range in blocks of the World (min and max). It is equivalent to calling World.Dimension().Range().
 func (w *World) Range() cube.Range {
+	if w == nil {
+		return cube.Range{}
+	}
 	return w.ra
 }
 
@@ -1653,7 +1656,7 @@ func (w *World) tickEntities(tick int64) {
 		}
 		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
 		// active.
-		ticker.Tick(tick)
+		ticker.Tick(w, tick)
 	}
 	w.entitiesToTick = w.entitiesToTick[:0]
 }

@@ -1747,6 +1747,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	if p.Dead() || p.immobile.Load() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
 		return
 	}
+	w := p.World()
 
 	pos := p.Position()
 	yaw, pitch := p.Rotation()
@@ -1764,8 +1765,8 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.yaw.Store(resYaw)
 		p.pitch.Store(resPitch)
 
-		p.checkBlockCollisions()
-		p.onGround.Store(p.checkOnGround())
+		p.checkBlockCollisions(w)
+		p.onGround.Store(p.checkOnGround(w))
 
 		p.updateFallState(deltaPos[1])
 
@@ -1895,11 +1896,10 @@ func (p *Player) Latency() time.Duration {
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick(current int64) {
+func (p *Player) Tick(w *world.World, current int64) {
 	if p.Dead() {
 		return
 	}
-	w := p.World()
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -1907,18 +1907,18 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	p.checkBlockCollisions()
-	p.onGround.Store(p.checkOnGround())
+	p.checkBlockCollisions(w)
+	p.onGround.Store(p.checkOnGround(w))
 
-	p.tickFood()
+	p.tickFood(w)
 	p.effects.Tick(p)
-	if p.Position()[1] < float64(p.World().Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
 	if p.OnFireDuration() > 0 {
 		p.fireTicks.Sub(1)
-		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || p.World().RainingAt(cube.PosFromVec3(p.Position())) {
+		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || w.RainingAt(cube.PosFromVec3(p.Position())) {
 			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
@@ -1955,12 +1955,12 @@ func (p *Player) Tick(current int64) {
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
-func (p *Player) tickFood() {
+func (p *Player) tickFood(w *world.World) {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || p.World().Difficulty().FoodRegenerates()) {
+	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
 		p.hunger.foodTick = 0
 		p.regenerate()
-		if p.World().Difficulty().FoodRegenerates() {
+		if w.Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
 	} else if p.hunger.foodTick == 80 {
@@ -1968,7 +1968,7 @@ func (p *Player) tickFood() {
 		if p.hunger.canRegenerate() {
 			p.regenerate()
 		} else if p.hunger.starving() {
-			p.starve()
+			p.starve(w)
 		}
 	}
 }
@@ -1986,16 +1986,14 @@ func (p *Player) regenerate() {
 // ever be dealt. In easy mode, damage will only be dealt if the player has more than 10 health. In normal
 // mode, damage will only be dealt if the player has more than 2 health and in hard mode, damage will always
 // be dealt.
-func (p *Player) starve() {
-	if p.Health() > p.World().Difficulty().StarvationHealthLimit() {
+func (p *Player) starve(w *world.World) {
+	if p.Health() > w.Difficulty().StarvationHealthLimit() {
 		p.Hurt(1, damage.SourceStarvation{})
 	}
 }
 
 // checkCollisions checks the player's block collisions.
-func (p *Player) checkBlockCollisions() {
-	w := p.World()
-
+func (p *Player) checkBlockCollisions(w *world.World) {
 	aabb := p.AABB().Translate(p.Position())
 	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
 
@@ -2022,8 +2020,7 @@ func (p *Player) checkBlockCollisions() {
 }
 
 // checkOnGround checks if the player is currently considered to be on the ground.
-func (p *Player) checkOnGround() bool {
-	w := p.World()
+func (p *Player) checkOnGround(w *world.World) bool {
 	aabb := p.AABB().Translate(p.Position())
 
 	b := aabb.Grow(1)
