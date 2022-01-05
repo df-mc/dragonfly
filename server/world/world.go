@@ -1651,9 +1651,6 @@ func (w *World) tickEntities(tick int64) {
 		}
 	}
 	for _, ticker := range w.entitiesToTick {
-		if _, ok := OfEntity(ticker.(Entity)); !ok {
-			continue
-		}
 		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
 		// active.
 		ticker.Tick(w, tick)
