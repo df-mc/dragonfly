@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/action"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -436,6 +437,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesTeleport,
 			Position:  vec64To32(pos),
+		})
+	case particle.Flame:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 56,
+			Position:  vec64To32(pos),
+			EventData: nbtconv.Int32FromRGBA(pa.Colour),
 		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
