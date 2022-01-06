@@ -145,4 +145,7 @@ func init() {
 	}
 	world.RegisterItem(TropicalFish{})
 	world.RegisterItem(AmethystShard{})
+
+	// Make sure to register creative items last: These depend on what items have been registered already.
+	registerCreativeItems()
 }
