@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
-	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/action"
@@ -730,33 +729,33 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 }
 
 // ViewBlockAction ...
-func (s *Session) ViewBlockAction(pos cube.Pos, a blockAction.Action) {
+func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
-	case blockAction.Open:
+	case block.OpenAction:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,
 			EventData: 1,
 		})
-	case blockAction.Close:
+	case block.CloseAction:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,
 		})
-	case blockAction.StartCrack:
+	case block.StartCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventStartBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
 		})
-	case blockAction.StopCrack:
+	case block.StopCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventStopBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: 0,
 		})
-	case blockAction.ContinueCrack:
+	case block.ContinueCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventUpdateBlockCracking,
 			Position:  vec64To32(pos.Vec3()),

@@ -1,7 +1,6 @@
 package world
 
 import (
-	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -55,7 +54,7 @@ type Viewer interface {
 	ViewBlockUpdate(pos cube.Pos, b Block, layer int)
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
-	ViewBlockAction(pos cube.Pos, a blockAction.Action)
+	ViewBlockAction(pos cube.Pos, a BlockAction)
 	// ViewEmote views an emote being performed by another entity.
 	ViewEmote(player Entity, emote uuid.UUID)
 	// ViewSkin views the current skin of a player.
@@ -89,7 +88,7 @@ func (NopViewer) ViewEntityState(Entity)                                        
 func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                             {}
 func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                   {}
 func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                          {}
-func (NopViewer) ViewBlockAction(cube.Pos, blockAction.Action)                  {}
+func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                         {}
 func (NopViewer) ViewEmote(Entity, uuid.UUID)                                   {}
 func (NopViewer) ViewSkin(Entity)                                               {}
 func (NopViewer) ViewWorldSpawn(cube.Pos)                                       {}

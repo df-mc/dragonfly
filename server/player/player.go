@@ -3,7 +3,6 @@ package player
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -1441,7 +1440,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 
 		breakTime := p.breakTime(pos)
 		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
+			viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	})
@@ -1498,7 +1497,7 @@ func (p *Player) AbortBreaking() {
 	p.breakParticleCounter.Store(0)
 	pos := p.breakingPos.Load().(cube.Pos)
 	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
+		viewer.ViewBlockAction(pos, block.StopCrackAction{})
 	}
 }
 
@@ -1525,7 +1524,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
 		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
+			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	}
