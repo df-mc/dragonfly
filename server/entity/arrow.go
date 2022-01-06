@@ -105,39 +105,18 @@ func (a *Arrow) BaseDamage() float64 {
 	return a.baseDamage
 }
 
-// SetBaseDamage sets the base damage the arrow will deal, before accounting for velocity.
-func (a *Arrow) SetBaseDamage(baseDamage float64) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.baseDamage = baseDamage
-}
-
-// ShouldDisallowPickup returns true if the arrow should not be picked up by players.
-func (a *Arrow) ShouldDisallowPickup() bool {
+// DisallowPickup returns true if the arrow should not be picked up by players.
+func (a *Arrow) DisallowPickup() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.disallowPickup
 }
 
-// DisallowPickup sets whether the arrow should or should not be picked up by players.
-func (a *Arrow) DisallowPickup(disallowPickup bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.disallowPickup = disallowPickup
-}
-
-// ShouldObtainArrowOnPickup returns true if the arrow should be obtained when picked up by players.
-func (a *Arrow) ShouldObtainArrowOnPickup() bool {
+// ObtainArrowOnPickup returns true if the arrow should be obtained when picked up by players.
+func (a *Arrow) ObtainArrowOnPickup() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.obtainArrowOnPickup
-}
-
-// ObtainArrowOnPickup sets whether the arrow should or should not be obtained when picked up by players.
-func (a *Arrow) ObtainArrowOnPickup(obtainArrowOnPickup bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.obtainArrowOnPickup = obtainArrowOnPickup
 }
 
 // Tip returns the potion effect at the tip of the arrow, applied on impact to an entity. This also causes the arrow
@@ -278,8 +257,8 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":     a.BaseDamage(),
 		"auxValue":   int32(a.tip.Uint8() + 1),
-		"player":     boolByte(!a.ShouldDisallowPickup()),
-		"isCreative": boolByte(!a.ShouldObtainArrowOnPickup()),
+		"player":     boolByte(!a.DisallowPickup()),
+		"isCreative": boolByte(!a.ObtainArrowOnPickup()),
 	}
 	if collisionPos, ok := a.CollisionPos(); ok {
 		nbt["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
@@ -297,11 +276,11 @@ func (a *Arrow) checkNearby() {
 	for _, e := range a.World().EntitiesWithin(a.AABB().Translate(a.Position()).Grow(2), ignore) {
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
-				if a.ShouldDisallowPickup() {
+				if a.DisallowPickup() {
 					return
 				}
 
-				if a.ShouldObtainArrowOnPickup() {
+				if a.ObtainArrowOnPickup() {
 					// A collector was within range to pick up the entity.
 					for _, viewer := range w.Viewers(a.Position()) {
 						viewer.ViewEntityAction(a, action.PickedUp{Collector: collector})
