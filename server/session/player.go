@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -555,8 +556,8 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 
 // creativeItems returns all creative inventory items as protocol item stacks.
 func creativeItems() []protocol.CreativeItem {
-	it := make([]protocol.CreativeItem, 0, len(item.CreativeItems()))
-	for index, i := range item.CreativeItems() {
+	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
+	for index, i := range creative.Items() {
 		v := stackFromItem(i)
 		delete(v.NBTData, "Damage")
 		it = append(it, protocol.CreativeItem{

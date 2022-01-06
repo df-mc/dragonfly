@@ -6,25 +6,25 @@ type Type struct {
 }
 
 // TypeNone is the type of items that are not tools.
-var TypeNone = Type{-1}
+var TypeNone = Type{t(-1)}
 
 // TypePickaxe is the type for pickaxes.
-var TypePickaxe = Type{0}
+var TypePickaxe = Type{t(0)}
 
 // TypeAxe is the type for axes.
-var TypeAxe = Type{1}
+var TypeAxe = Type{t(1)}
 
 // TypeHoe is the type for hoes.
-var TypeHoe = Type{2}
+var TypeHoe = Type{t(2)}
 
 // TypeShovel is the type for shovels.
-var TypeShovel = Type{3}
+var TypeShovel = Type{t(3)}
 
 // TypeShears is the type for shears.
-var TypeShears = Type{4}
+var TypeShears = Type{t(4)}
 
 // TypeSword is the type for swords.
-var TypeSword = Type{5}
+var TypeSword = Type{t(5)}
 
 // t represents the type of a Tool.
 type t int
