@@ -2,7 +2,6 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/entity/physics/trace"
@@ -24,16 +23,15 @@ type Arrow struct {
 	yaw, pitch float64
 	baseDamage float64
 
-	ticksLived, collisionTicks int
+	age, ageCollided int
+	close, critical  bool
 
 	collidedBlockPos cube.Pos
 	collidedBlock    world.Block
 
-	tip potion.Potion
+	owner world.Entity
+	tip   potion.Potion
 
-	closeNextTick, critical bool
-
-	owner                               world.Entity
 	disallowPickup, obtainArrowOnPickup bool
 
 	c *ProjectileComputer
@@ -139,7 +137,7 @@ func (a *Arrow) Rotation() (float64, float64) {
 
 // Tick ...
 func (a *Arrow) Tick(current int64) {
-	if a.closeNextTick {
+	if a.close {
 		_ = a.Close()
 		return
 	}
@@ -150,10 +148,10 @@ func (a *Arrow) Tick(current int64) {
 		now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
 		last, _ := world.BlockRuntimeID(a.collidedBlock)
 		if now == last {
-			if a.collisionTicks > 5 {
+			if a.ageCollided > 5 {
 				a.checkNearby()
 			}
-			a.collisionTicks++
+			a.ageCollided++
 			return
 		}
 	}
@@ -163,13 +161,13 @@ func (a *Arrow) Tick(current int64) {
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.mu.Unlock()
 
-	a.ticksLived++
-	a.collisionTicks = 0
+	a.age++
+	a.ageCollided = 0
 	a.collidedBlockPos, a.collidedBlock = cube.Pos{}, nil
 	m.Send()
 
-	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
-		a.closeNextTick = true
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 || a.age > 1200 {
+		a.close = true
 		return
 	}
 
@@ -182,7 +180,7 @@ func (a *Arrow) Tick(current int64) {
 			a.collidedBlock = w.Block(a.collidedBlockPos)
 
 			for _, v := range w.Viewers(m.pos) {
-				v.ViewEntityAction(a, action.ArrowShake{Duration: time.Millisecond * 350})
+				v.ViewEntityAction(a, ArrowShakeAction{Duration: time.Millisecond * 350})
 			}
 		} else if entityResult, ok := result.(trace.EntityResult); ok {
 			if living, ok := entityResult.Entity().(Living); ok {
@@ -194,7 +192,7 @@ func (a *Arrow) Tick(current int64) {
 					}
 				}
 			}
-			a.closeNextTick = true
+			a.close = true
 		}
 	}
 }
@@ -202,7 +200,7 @@ func (a *Arrow) Tick(current int64) {
 // ignores returns whether the arrow should ignore collision with the entity passed.
 func (a *Arrow) ignores(entity world.Entity) bool {
 	_, ok := entity.(Living)
-	return !ok || entity == a || (a.ticksLived < 5 && entity == a.owner)
+	return !ok || entity == a || (a.age < 5 && entity == a.owner)
 }
 
 // New creates an arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the arrow,
@@ -281,11 +279,11 @@ func (a *Arrow) checkNearby() {
 				if a.obtainArrowOnPickup {
 					// A collector was within range to pick up the entity.
 					for _, viewer := range w.Viewers(a.Position()) {
-						viewer.ViewEntityAction(a, action.PickedUp{Collector: collector})
+						viewer.ViewEntityAction(a, PickedUpAction{Collector: collector})
 					}
 					_ = collector.Collect(item.NewStack(item.Arrow{Tip: a.tip}, 1))
 				}
-				a.closeNextTick = true
+				a.close = true
 				return
 			}
 		}
