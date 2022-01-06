@@ -40,7 +40,12 @@ type Arrow struct {
 }
 
 // NewArrow ...
-func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) *Arrow {
+func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool) *Arrow {
+	return NewTippedArrow(pos, yaw, pitch, owner, critical, disallowPickup, obtainArrowOnPickup, potion.Potion{})
+}
+
+// NewTippedArrow ...
+func NewTippedArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) *Arrow {
 	a := &Arrow{
 		yaw:   yaw,
 		pitch: pitch,
@@ -203,7 +208,7 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 // New creates an arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the arrow,
 // only returns it.
 func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity {
-	arrow := NewArrow(pos, yaw, pitch, nil, critical, disallowPickup, obtainArrowOnPickup, tip)
+	arrow := NewTippedArrow(pos, yaw, pitch, nil, critical, disallowPickup, obtainArrowOnPickup, tip)
 	arrow.vel = vel
 	return arrow
 }
