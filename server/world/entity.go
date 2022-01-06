@@ -76,3 +76,9 @@ func Entities() []SaveableEntity {
 	}
 	return es
 }
+
+// EntityAction represents an action that may be performed by an entity. Typically, these actions are sent to
+// viewers in a world so that they can see these actions.
+type EntityAction interface {
+	EntityAction()
+}

@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -153,7 +152,7 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 		return
 	}
 	for _, viewer := range w.Viewers(pos) {
-		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
+		viewer.ViewEntityAction(it, PickedUpAction{Collector: collector})
 	}
 
 	if n == it.i.Count() {

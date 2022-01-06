@@ -21,10 +21,10 @@ type Living interface {
 	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
 	// immune for half a second after being attacked.
 	AttackImmune() bool
-	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
+	// HurtAction hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the entity currently has, the entity is killed.
-	// Hurt returns the final amount of damage dealt to the Living entity and returns whether the Living entity
+	// HurtAction returns the final amount of damage dealt to the Living entity and returns whether the Living entity
 	// was vulnerable to the damage at all.
 	Hurt(damage float64, source damage.Source) (n float64, vulnerable bool)
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the

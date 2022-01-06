@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -597,9 +596,9 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 }
 
 // ViewEntityAction ...
-func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
+func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	switch act := a.(type) {
-	case action.SwingArm:
+	case entity.SwingArmAction:
 		if _, ok := e.(Controllable); ok {
 			if s.entityRuntimeID(e) == selfEntityRuntimeID && s.swingingArm.Load() {
 				return
@@ -614,27 +613,27 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventStartAttacking,
 		})
-	case action.Hurt:
+	case entity.HurtAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventHurt,
 		})
-	case action.CriticalHit:
+	case entity.CriticalHitAction:
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
 		})
-	case action.Death:
+	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventDeath,
 		})
-	case action.PickedUp:
+	case entity.PickedUpAction:
 		s.writePacket(&packet.TakeItemActor{
 			ItemEntityRuntimeID:  s.entityRuntimeID(e),
-			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector.(world.Entity)),
+			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector),
 		})
-	case action.Eat:
+	case entity.EatAction:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
 

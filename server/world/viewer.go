@@ -2,7 +2,6 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -40,7 +39,7 @@ type Viewer interface {
 	ViewEntityArmour(e Entity)
 	// ViewEntityAction views an action performed by an entity. Available actions may be found in the `action`
 	// package, and include things such as swinging an arm.
-	ViewEntityAction(e Entity, a action.Action)
+	ViewEntityAction(e Entity, a EntityAction)
 	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
 	// physical appearance, for example when sprinting.
 	ViewEntityState(e Entity)
@@ -83,7 +82,7 @@ func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk, map[cube.Pos]Block)          
 func (NopViewer) ViewTime(int)                                                  {}
 func (NopViewer) ViewEntityItems(Entity)                                        {}
 func (NopViewer) ViewEntityArmour(Entity)                                       {}
-func (NopViewer) ViewEntityAction(Entity, action.Action)                        {}
+func (NopViewer) ViewEntityAction(Entity, EntityAction)                         {}
 func (NopViewer) ViewEntityState(Entity)                                        {}
 func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                             {}
 func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                   {}

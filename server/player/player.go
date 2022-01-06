@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/healing"
@@ -579,7 +578,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.viewers() {
-			viewer.ViewEntityAction(p, action.Hurt{})
+			viewer.ViewEntityAction(p, entity.HurtAction{})
 		}
 		p.SetAttackImmunity(time.Second / 2)
 		if p.Dead() {
@@ -791,7 +790,7 @@ func (p *Player) Dead() bool {
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src damage.Source) {
 	for _, viewer := range p.viewers() {
-		viewer.ViewEntityAction(p, action.Death{})
+		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
 	p.addHealth(-p.MaxHealth())
@@ -1374,7 +1373,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
 			if critical {
 				for _, v := range p.World().Viewers(living.Position()) {
-					v.ViewEntityAction(living, action.CriticalHit{})
+					v.ViewEntityAction(living, entity.CriticalHitAction{})
 				}
 			}
 		}
@@ -1930,7 +1929,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
 			for _, v := range p.viewers() {
-				v.ViewEntityAction(p, action.Eat{})
+				v.ViewEntityAction(p, entity.EatAction{})
 			}
 		}
 	}
@@ -2134,7 +2133,7 @@ func (p *Player) SwingArm() {
 		return
 	}
 	for _, v := range p.viewers() {
-		v.ViewEntityAction(p, action.SwingArm{})
+		v.ViewEntityAction(p, entity.SwingArmAction{})
 	}
 }
 
