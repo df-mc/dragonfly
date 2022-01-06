@@ -11,22 +11,22 @@ type sandstone uint8
 
 // NormalSandstone is the normal variant of sandstone.
 func NormalSandstone() SandstoneType {
-	return SandstoneType{sandstone(0)}
+	return SandstoneType{0}
 }
 
 // CutSandstone is the cut variant of sandstone.
 func CutSandstone() SandstoneType {
-	return SandstoneType{sandstone(1)}
+	return SandstoneType{1}
 }
 
 // ChiseledSandstone is the chiseled variant of sandstone.
 func ChiseledSandstone() SandstoneType {
-	return SandstoneType{sandstone(2)}
+	return SandstoneType{2}
 }
 
 // SmoothSandstone is the smooth variant of sandstone.
 func SmoothSandstone() SandstoneType {
-	return SandstoneType{sandstone(3)}
+	return SandstoneType{3}
 }
 
 // Uint8 returns the sandstone as a uint8.
