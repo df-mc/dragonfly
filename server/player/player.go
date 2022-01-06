@@ -3,11 +3,9 @@ package player
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/healing"
@@ -580,7 +578,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.viewers() {
-			viewer.ViewEntityAction(p, action.Hurt{})
+			viewer.ViewEntityAction(p, entity.HurtAction{})
 		}
 		p.SetAttackImmunity(time.Second / 2)
 		if p.Dead() {
@@ -792,7 +790,7 @@ func (p *Player) Dead() bool {
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src damage.Source) {
 	for _, viewer := range p.viewers() {
-		viewer.ViewEntityAction(p, action.Death{})
+		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
 	p.addHealth(-p.MaxHealth())
@@ -839,7 +837,6 @@ func (p *Player) Respawn() {
 		return
 	}
 	pos := p.World().Spawn().Vec3Middle()
-	p.handler().HandleRespawn(&pos)
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
@@ -848,8 +845,10 @@ func (p *Player) Respawn() {
 	p.World().AddEntity(p)
 	p.SetVisible()
 
-	p.Teleport(pos)
 	p.session().SendRespawn()
+
+	p.handler().HandleRespawn(&pos)
+	p.Teleport(pos)
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1278,19 +1277,38 @@ func (p *Player) UsingItem() bool {
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
 // returns immediately.
+// UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	if !p.canReach(pos.Vec3Centre()) {
+	i, left := p.HeldItems()
+	w := p.World()
+	b := w.Block(pos)
+
+	success := false
+	defer func() {
+		if !success {
+			// Resend both the block clicked and the one on the face of that block clicked if using the item was not
+			// successful.
+			w.SetBlock(pos, b)
+			w.SetBlock(pos.Side(face), w.Block(pos.Side(face)))
+			if liq, ok := w.Liquid(pos); ok {
+				w.SetLiquid(pos, liq)
+			}
+			if liq, ok := w.Liquid(pos.Side(face)); ok {
+				w.SetLiquid(pos.Side(face), liq)
+			}
+		}
+	}()
+	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
+		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
+		// to use the item immediately.
 		return
 	}
-	i, left := p.HeldItems()
-
-	w := p.World()
 
 	ctx := event.C()
 	p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos)
-
 	ctx.Continue(func() {
-		if activatable, ok := w.Block(pos).(block.Activatable); ok {
+		success = true
+		if activatable, ok := b.(block.Activatable); ok {
 			// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 			// items, in which case the block will be activated as usual.
 			if !p.Sneaking() || i.Empty() {
@@ -1313,28 +1331,18 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 				p.addNewItem(ctx)
 			}
-		} else if b, ok := i.Item().(world.Block); ok && p.GameMode().AllowsEditing() {
+		} else if ib, ok := i.Item().(world.Block); ok && p.GameMode().AllowsEditing() {
 			// The item IS a block, meaning it is being placed.
 			replacedPos := pos
-			if replaceable, ok := w.Block(pos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(b) {
+			if replaceable, ok := b.(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) {
 				// The block clicked was either not replaceable, or not replaceable using the block passed.
 				replacedPos = pos.Side(face)
 			}
-			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(b) && !replacedPos.OutOfBounds(w.Range()) {
-				if p.placeBlock(replacedPos, b, false) && !p.GameMode().CreativeInventory() {
+			if replaceable, ok := w.Block(replacedPos).(block.Replaceable); ok && replaceable.ReplaceableBy(ib) && !replacedPos.OutOfBounds(w.Range()) {
+				if p.placeBlock(replacedPos, ib, false) && !p.GameMode().CreativeInventory() {
 					p.SetHeldItems(p.subtractItem(i, 1), left)
 				}
 			}
-		}
-	})
-	ctx.Stop(func() {
-		w.SetBlock(pos, w.Block(pos))
-		w.SetBlock(pos.Side(face), w.Block(pos.Side(face)))
-		if liq, ok := w.Liquid(pos); ok {
-			w.SetLiquid(pos, liq)
-		}
-		if liq, ok := w.Liquid(pos.Side(face)); ok {
-			w.SetLiquid(pos.Side(face), liq)
 		}
 	})
 }
@@ -1414,7 +1422,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 			p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: true})
 			if critical {
 				for _, v := range p.World().Viewers(living.Position()) {
-					v.ViewEntityAction(living, action.CriticalHit{})
+					v.ViewEntityAction(living, entity.CriticalHitAction{})
 				}
 			}
 		}
@@ -1480,7 +1488,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 
 		breakTime := p.breakTime(pos)
 		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, blockAction.StartCrack{BreakTime: breakTime})
+			viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	})
@@ -1537,7 +1545,7 @@ func (p *Player) AbortBreaking() {
 	p.breakParticleCounter.Store(0)
 	pos := p.breakingPos.Load().(cube.Pos)
 	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(pos, blockAction.StopCrack{})
+		viewer.ViewBlockAction(pos, block.StopCrackAction{})
 	}
 }
 
@@ -1564,7 +1572,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	breakTime := p.breakTime(pos)
 	if breakTime != p.lastBreakDuration {
 		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, blockAction.ContinueCrack{BreakTime: breakTime})
+			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	}
@@ -1597,10 +1605,8 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		return false
 	}
-	if !ignoreAABB {
-		if p.obstructedPos(pos, b) {
-			return false
-		}
+	if !ignoreAABB && p.obstructedPos(pos, b) {
+		return false
 	}
 
 	ctx := event.C()
@@ -1788,6 +1794,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	if p.Dead() || p.immobile.Load() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
 		return
 	}
+	w := p.World()
 
 	pos := p.Position()
 	yaw, pitch := p.Rotation()
@@ -1805,8 +1812,8 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.yaw.Store(resYaw)
 		p.pitch.Store(resPitch)
 
-		p.checkBlockCollisions()
-		p.onGround.Store(p.checkOnGround())
+		p.checkBlockCollisions(w)
+		p.onGround.Store(p.checkOnGround(w))
 
 		p.updateFallState(deltaPos[1])
 
@@ -1936,11 +1943,10 @@ func (p *Player) Latency() time.Duration {
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick(current int64) {
+func (p *Player) Tick(w *world.World, current int64) {
 	if p.Dead() {
 		return
 	}
-	w := p.World()
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -1948,18 +1954,18 @@ func (p *Player) Tick(current int64) {
 		}
 	}
 
-	p.checkBlockCollisions()
-	p.onGround.Store(p.checkOnGround())
+	p.checkBlockCollisions(w)
+	p.onGround.Store(p.checkOnGround(w))
 
-	p.tickFood()
+	p.tickFood(w)
 	p.effects.Tick(p)
-	if p.Position()[1] < float64(p.World().Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
 
 	if p.OnFireDuration() > 0 {
 		p.fireTicks.Sub(1)
-		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || p.World().RainingAt(cube.PosFromVec3(p.Position())) {
+		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || w.RainingAt(cube.PosFromVec3(p.Position())) {
 			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
@@ -1972,7 +1978,7 @@ func (p *Player) Tick(current int64) {
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
 			for _, v := range p.viewers() {
-				v.ViewEntityAction(p, action.Eat{})
+				v.ViewEntityAction(p, entity.EatAction{})
 			}
 		}
 	}
@@ -1996,12 +2002,12 @@ func (p *Player) Tick(current int64) {
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
-func (p *Player) tickFood() {
+func (p *Player) tickFood(w *world.World) {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || p.World().Difficulty().FoodRegenerates()) {
+	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
 		p.hunger.foodTick = 0
 		p.regenerate()
-		if p.World().Difficulty().FoodRegenerates() {
+		if w.Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
 	} else if p.hunger.foodTick == 80 {
@@ -2009,7 +2015,7 @@ func (p *Player) tickFood() {
 		if p.hunger.canRegenerate() {
 			p.regenerate()
 		} else if p.hunger.starving() {
-			p.starve()
+			p.starve(w)
 		}
 	}
 }
@@ -2027,16 +2033,14 @@ func (p *Player) regenerate() {
 // ever be dealt. In easy mode, damage will only be dealt if the player has more than 10 health. In normal
 // mode, damage will only be dealt if the player has more than 2 health and in hard mode, damage will always
 // be dealt.
-func (p *Player) starve() {
-	if p.Health() > p.World().Difficulty().StarvationHealthLimit() {
+func (p *Player) starve(w *world.World) {
+	if p.Health() > w.Difficulty().StarvationHealthLimit() {
 		p.Hurt(1, damage.SourceStarvation{})
 	}
 }
 
 // checkCollisions checks the player's block collisions.
-func (p *Player) checkBlockCollisions() {
-	w := p.World()
-
+func (p *Player) checkBlockCollisions(w *world.World) {
 	aabb := p.AABB().Translate(p.Position())
 	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
 
@@ -2063,8 +2067,7 @@ func (p *Player) checkBlockCollisions() {
 }
 
 // checkOnGround checks if the player is currently considered to be on the ground.
-func (p *Player) checkOnGround() bool {
-	w := p.World()
+func (p *Player) checkOnGround(w *world.World) bool {
 	aabb := p.AABB().Translate(p.Position())
 
 	b := aabb.Grow(1)
@@ -2179,7 +2182,7 @@ func (p *Player) SwingArm() {
 		return
 	}
 	for _, v := range p.viewers() {
-		v.ViewEntityAction(p, action.SwingArm{})
+		v.ViewEntityAction(p, entity.SwingArmAction{})
 	}
 }
 

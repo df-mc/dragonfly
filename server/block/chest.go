@@ -2,7 +2,6 @@ package block
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -78,7 +77,7 @@ func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // open opens the chest, displaying the animation and playing a sound.
 func (c Chest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
-		v.ViewBlockAction(pos, action.Open{})
+		v.ViewBlockAction(pos, OpenAction{})
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
 }
@@ -86,7 +85,7 @@ func (c Chest) open(w *world.World, pos cube.Pos) {
 // close closes the chest, displaying the animation and playing a sound.
 func (c Chest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
-		v.ViewBlockAction(pos, action.Close{})
+		v.ViewBlockAction(pos, CloseAction{})
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }

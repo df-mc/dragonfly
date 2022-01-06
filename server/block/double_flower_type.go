@@ -11,22 +11,22 @@ type doubleFlower uint8
 
 // Sunflower is a sunflower plant.
 func Sunflower() DoubleFlowerType {
-	return DoubleFlowerType{doubleFlower(0)}
+	return DoubleFlowerType{0}
 }
 
 // Lilac is a lilac plant.
 func Lilac() DoubleFlowerType {
-	return DoubleFlowerType{doubleFlower(1)}
+	return DoubleFlowerType{1}
 }
 
 // RoseBush is a rose bush plant.
 func RoseBush() DoubleFlowerType {
-	return DoubleFlowerType{doubleFlower(4)}
+	return DoubleFlowerType{4}
 }
 
 // Peony is a peony plant.
 func Peony() DoubleFlowerType {
-	return DoubleFlowerType{doubleFlower(5)}
+	return DoubleFlowerType{5}
 }
 
 // Uint8 returns the double plant as a uint8.

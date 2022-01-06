@@ -11,12 +11,12 @@ type fire uint8
 
 // NormalFire is the default variant of fires
 func NormalFire() FireType {
-	return FireType{fire(0)}
+	return FireType{0}
 }
 
 // SoulFire is a turquoise variant of normal fire
 func SoulFire() FireType {
-	return FireType{fire(1)}
+	return FireType{1}
 }
 
 // Uint8 returns the fire as a uint8.

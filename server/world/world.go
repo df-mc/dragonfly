@@ -128,6 +128,9 @@ func (w *World) Dimension() Dimension {
 
 // Range returns the range in blocks of the World (min and max). It is equivalent to calling World.Dimension().Range().
 func (w *World) Range() cube.Range {
+	if w == nil {
+		return cube.Range{}
+	}
 	return w.ra
 }
 
@@ -301,13 +304,14 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	x, z, biome := int32(pos[0]>>4), int32(pos[2]>>4), uint32(b.EncodeBiome())
 	c, err := w.chunk(ChunkPos{x, z})
 	if err != nil {
 		return
 	}
 
-	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), biome)
+	c.Unlock()
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -833,9 +837,9 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
-	if e.World() != nil {
-		e.World().RemoveEntity(e)
-	}
+	// Remove the Entity from any previous World it might be in.
+	e.World().RemoveEntity(e)
+
 	worldsMu.Lock()
 	entityWorlds[e] = w
 	worldsMu.Unlock()
@@ -1577,8 +1581,8 @@ func (w *World) tickEntities(tick int64) {
 	}
 	var entitiesToMove []entityToMove
 
-	w.entityMu.Lock()
 	w.chunkMu.Lock()
+	w.entityMu.Lock()
 	for e, lastPos := range w.entities {
 		chunkPos := chunkPosFromVec3(e.Position())
 
@@ -1623,8 +1627,8 @@ func (w *World) tickEntities(tick int64) {
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
-	w.chunkMu.Unlock()
 	w.entityMu.Unlock()
+	w.chunkMu.Unlock()
 
 	for _, move := range entitiesToMove {
 		move.after.Lock()
@@ -1648,12 +1652,9 @@ func (w *World) tickEntities(tick int64) {
 		}
 	}
 	for _, ticker := range w.entitiesToTick {
-		if _, ok := OfEntity(ticker.(Entity)); !ok {
-			continue
-		}
 		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
 		// active.
-		ticker.Tick(tick)
+		ticker.Tick(w, tick)
 	}
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
@@ -1912,8 +1913,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	data := newChunkData(c)
 	w.chunks[pos] = data
-	data.Lock()
-	w.chunkMu.Unlock()
 
 	ent, err := w.provider().LoadEntities(pos)
 	if err != nil {
@@ -1941,6 +1940,9 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
 	}
 	w.loadIntoBlocks(data, blockEntities)
+
+	data.Lock()
+	w.chunkMu.Unlock()
 	return data, nil
 }
 

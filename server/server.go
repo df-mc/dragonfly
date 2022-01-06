@@ -544,7 +544,7 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 		log.Fatalf("error loading world: %v", err)
 	}
 	w.Provider(p)
-	w.Generator(generator.Flat{Biome: biome, Layers: layers})
+	w.Generator(generator.NewFlat(biome, layers))
 
 	log.Debugf(`Loaded world "%v".`, w.Name())
 	return w

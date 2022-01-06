@@ -11,22 +11,22 @@ type stoneBricks uint8
 
 // NormalStoneBricks is the normal variant of stone bricks.
 func NormalStoneBricks() StoneBricksType {
-	return StoneBricksType{stoneBricks(0)}
+	return StoneBricksType{0}
 }
 
 // MossyStoneBricks is the mossy variant of stone bricks.
 func MossyStoneBricks() StoneBricksType {
-	return StoneBricksType{stoneBricks(1)}
+	return StoneBricksType{1}
 }
 
 // CrackedStoneBricks is the cracked variant of stone bricks.
 func CrackedStoneBricks() StoneBricksType {
-	return StoneBricksType{stoneBricks(2)}
+	return StoneBricksType{2}
 }
 
 // ChiseledStoneBricks is the chiseled variant of stone bricks.
 func ChiseledStoneBricks() StoneBricksType {
-	return StoneBricksType{stoneBricks(3)}
+	return StoneBricksType{3}
 }
 
 // Uint8 returns the stone bricks as a uint8.

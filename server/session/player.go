@@ -158,15 +158,6 @@ func (s *Session) SendSpeed(speed float64) {
 	})
 }
 
-// SendCameraShake sends a shake amount for the players camera
-func (s *Session) SendCameraShake(Intensity, Duration float32, Type CameraShakeType) {
-	s.writePacket(&packet.CameraShake{
-		Duration:  Duration,
-		Intensity: Intensity,
-		Type:      uint8(Type),
-	})
-}
-
 // SendFood ...
 func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	s.writePacket(&packet.UpdateAttributes{
@@ -250,21 +241,17 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
 	}
-	// Creative or spectator players:
+	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-		// Cannot interact with the world, so this is a spectator.
-		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
-			id = packet.GameTypeCreativeSpectator
-		}
 	}
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,
 		ActionPermissions: perms,
 	})
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
 // SendHealth sends the health and max health to the player.
@@ -626,14 +613,6 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	}
 	return
 }
-
-// CameraShakeType is the type of camera shake that the player receives
-type CameraShakeType uint8
-
-const (
-	CameraShakePositional = iota
-	CameraShakeRotational
-)
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
