@@ -155,13 +155,11 @@ func (a *Arrow) Rotation() (float64, float64) {
 }
 
 // Tick ...
-func (a *Arrow) Tick(current int64) {
+func (a *Arrow) Tick(w *world.World, current int64) {
 	if a.close {
 		_ = a.Close()
 		return
 	}
-
-	w := a.World()
 
 	a.mu.Lock()
 	if a.collidedBlock != nil {
