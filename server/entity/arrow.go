@@ -166,11 +166,11 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
 		last, _ := world.BlockRuntimeID(a.collidedBlock)
 		if now == last {
+			a.mu.Unlock()
 			if a.ageCollided > 5 && !a.disallowPickup {
 				a.checkNearby()
 			}
 			a.ageCollided++
-			a.mu.Unlock()
 			return
 		}
 	}
@@ -192,16 +192,16 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		a.setCritical(false)
 		w.PlaySound(m.pos, sound.ArrowHit{})
 
-		if blockResult, ok := result.(trace.BlockResult); ok {
+		if res, ok := result.(trace.BlockResult); ok {
 			a.mu.Lock()
-			a.collidedBlockPos, a.collidedBlock = blockResult.BlockPosition(), w.Block(a.collidedBlockPos)
+			a.collidedBlockPos, a.collidedBlock = res.BlockPosition(), w.Block(res.BlockPosition())
 			a.mu.Unlock()
 
 			for _, v := range w.Viewers(m.pos) {
 				v.ViewEntityAction(a, ArrowShakeAction{Duration: time.Millisecond * 350})
 			}
-		} else if entityResult, ok := result.(trace.EntityResult); ok {
-			if living, ok := entityResult.Entity().(Living); ok && !living.AttackImmune() {
+		} else if res, ok := result.(trace.EntityResult); ok {
+			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
 				living.Hurt(a.damage(), damage.SourceProjectile{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {
