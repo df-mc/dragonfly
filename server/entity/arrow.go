@@ -166,11 +166,11 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
 		last, _ := world.BlockRuntimeID(a.collidedBlock)
 		if now == last {
-			a.mu.Unlock()
 			if a.ageCollided > 5 && !a.disallowPickup {
 				a.checkNearby()
 			}
 			a.ageCollided++
+			a.mu.Unlock()
 			return
 		}
 	}
@@ -279,16 +279,16 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 // picked up.
 func (a *Arrow) checkNearby() {
 	w := a.World()
-	grown := a.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.Position())
+	grown := a.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
 	ignore := func(e world.Entity) bool {
 		return e == a
 	}
-	for _, e := range a.World().EntitiesWithin(a.AABB().Translate(a.Position()).Grow(2), ignore) {
+	for _, e := range w.EntitiesWithin(a.AABB().Translate(a.pos).Grow(2), ignore) {
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				if a.obtainArrowOnPickup {
 					// A collector was within range to pick up the entity.
-					for _, viewer := range w.Viewers(a.Position()) {
+					for _, viewer := range w.Viewers(a.pos) {
 						viewer.ViewEntityAction(a, PickedUpAction{Collector: collector})
 					}
 					_ = collector.Collect(item.NewStack(item.Arrow{Tip: a.tip}, 1))
