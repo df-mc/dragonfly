@@ -167,7 +167,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		last, _ := world.BlockRuntimeID(a.collidedBlock)
 		if now == last {
 			if a.ageCollided > 5 && !a.disallowPickup {
-				a.checkNearby()
+				a.checkNearby(w)
 			}
 			a.ageCollided++
 			a.mu.Unlock()
@@ -277,8 +277,7 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
 // picked up.
-func (a *Arrow) checkNearby() {
-	w := a.World()
+func (a *Arrow) checkNearby(w *world.World) {
 	grown := a.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
 	ignore := func(e world.Entity) bool {
 		return e == a
