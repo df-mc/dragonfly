@@ -27,10 +27,6 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 
 // Release ...
 func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
-	if !releaser.GameMode().Visible() {
-		return
-	}
-
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
 		return
@@ -72,19 +68,14 @@ func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext)
 		return
 	}
 
-	p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity
-	})
-	if !ok {
-		return
+	if p, ok := proj.(interface {
+		New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity
+	}); ok {
+		releaser.PlaySound(sound.BowShoot{})
+		player := releaser.EncodeEntity() == "minecraft:player"
+		a := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, releaser, force >= 1, !player, !creative, tip)
+		releaser.World().AddEntity(a)
 	}
-	e := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, force >= 1, false, !creative, tip)
-	if o, ok := e.(owned); ok {
-		o.Own(releaser)
-	}
-
-	releaser.PlaySound(sound.BowShoot{})
-	releaser.World().AddEntity(e)
 }
 
 // Requirements returns the required items to release this item.

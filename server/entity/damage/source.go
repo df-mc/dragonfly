@@ -53,8 +53,9 @@ type SourceLightning struct{}
 
 // SourceProjectile is used for damage caused by a projectile.
 type SourceProjectile struct {
-	// Owner is the entity that was responsible for the projectile.
-	Owner world.Entity
+	// Projectile and Owner are the world.Entity that dealt the damage and the one that fired the projectile
+	// respectively.
+	Projectile, Owner world.Entity
 }
 
 type SourceThorns struct{}

@@ -1220,7 +1220,7 @@ func (p *Player) ReleaseItem() {
 	if p.usingItem.CAS(true, false) {
 		i, _ := p.HeldItems()
 		if releasable, ok := i.Item().(item.Releasable); ok {
-			if p.canRelease() {
+			if p.canRelease() && p.GameMode().AllowsInteraction() {
 				ctx := p.useContext()
 
 				releasable.Release(p, p.useDuration(), ctx)
