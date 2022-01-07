@@ -26,8 +26,8 @@ type Arrow struct {
 	age, ageCollided int
 	close, critical  bool
 
-	collidedBlockPos cube.Pos
-	collidedBlock    world.Block
+	collisionPos cube.Pos
+	collided     bool
 
 	owner world.Entity
 	tip   potion.Potion
@@ -78,7 +78,7 @@ func (a *Arrow) EncodeEntity() string {
 func (a *Arrow) CollisionPos() (cube.Pos, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.collidedBlockPos, a.collidedBlock != nil
+	return a.collisionPos, a.collided
 }
 
 // Critical returns the critical state of the arrow, which can result in more damage and extra particles while in air.
@@ -161,22 +161,27 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		return
 	}
 
-	a.mu.Lock()
-	if a.collidedBlock != nil {
-		now, _ := world.BlockRuntimeID(w.Block(a.collidedBlockPos))
-		last, _ := world.BlockRuntimeID(a.collidedBlock)
-		if now == last {
-			if a.ageCollided > 5 && !a.disallowPickup {
-				a.checkNearby()
+	if collisionPos, collided := a.CollisionPos(); collided {
+		aabbs := w.Block(collisionPos).Model().AABB(collisionPos, w)
+		for _, aabb := range aabbs {
+			for _, e := range w.EntitiesWithin(aabb.Grow(0.05).Translate(a.Position()), nil) {
+				if e == a {
+					a.mu.Lock()
+					if a.ageCollided > 5 && !a.disallowPickup {
+						a.checkNearby(w)
+					}
+					a.ageCollided++
+					a.mu.Unlock()
+					return
+				}
 			}
-			a.ageCollided++
-			a.mu.Unlock()
-			return
 		}
 	}
+
+	a.mu.Lock()
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
-	a.collidedBlockPos, a.collidedBlock = cube.Pos{}, nil
+	a.collisionPos, a.collided = cube.Pos{}, false
 	a.mu.Unlock()
 
 	a.age++
@@ -194,7 +199,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 
 		if res, ok := result.(trace.BlockResult); ok {
 			a.mu.Lock()
-			a.collidedBlockPos, a.collidedBlock = res.BlockPosition(), w.Block(res.BlockPosition())
+			a.collisionPos, a.collided = res.BlockPosition(), true
 			a.mu.Unlock()
 
 			for _, v := range w.Viewers(m.pos) {
@@ -251,8 +256,10 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 		potion.From(nbtconv.MapInt32(data, "auxValue")-1),
 	).(*Arrow)
 	arr.baseDamage = float64(nbtconv.MapFloat32(data, "Damage"))
-	arr.collidedBlockPos = nbtconv.MapPos(data, "StuckToBlockPos")
-	arr.collidedBlock = a.World().Block(arr.collidedBlockPos)
+	if _, ok := data["StuckToBlockPos"]; ok {
+		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
+		arr.collided = true
+	}
 	return arr
 }
 
@@ -277,8 +284,7 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
 // picked up.
-func (a *Arrow) checkNearby() {
-	w := a.World()
+func (a *Arrow) checkNearby(w *world.World) {
 	grown := a.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
 	ignore := func(e world.Entity) bool {
 		return e == a
