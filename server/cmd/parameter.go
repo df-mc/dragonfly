@@ -26,6 +26,8 @@ type Parameter interface {
 type Enum interface {
 	// Type returns the type of the enum. This type shows up client-side in the command usage, in the spot
 	// where parameter types otherwise are.
+	// Type names returned are used as an identifier for this enum type. Different Enum implementations must
+	// return a different string in the Type method.
 	Type() string
 	// Options should return a list of options that show up on the client side. The command will ensure that
 	// the argument passed to the enum parameter will be equal to one of these options. The provided Source
