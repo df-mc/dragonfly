@@ -162,18 +162,17 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 	}
 
 	if collisionPos, collided := a.CollisionPos(); collided {
+		aabb := a.AABB()
 		aabbs := w.Block(collisionPos).Model().AABB(collisionPos, w)
-		for _, aabb := range aabbs {
-			for _, e := range w.EntitiesWithin(aabb.Grow(0.05).Translate(a.Position()), nil) {
-				if e == a {
-					a.mu.Lock()
-					if a.ageCollided > 5 && !a.disallowPickup {
-						a.checkNearby(w)
-					}
-					a.ageCollided++
-					a.mu.Unlock()
-					return
+		for _, bb := range aabbs {
+			if aabb.Translate(a.Position()).IntersectsWith(bb) {
+				a.mu.Lock()
+				if a.ageCollided > 5 && !a.disallowPickup {
+					a.checkNearby(w)
 				}
+				a.ageCollided++
+				a.mu.Unlock()
+				return
 			}
 		}
 	}
