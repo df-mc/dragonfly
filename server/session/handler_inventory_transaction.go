@@ -19,7 +19,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	case *protocol.NormalTransactionData:
 		h.resendInventories(s)
 		// Always resend inventories with normal transactions. Most of the time we do not use these
-		// transactions so we're best off making sure the client and server stay in sync.
+		// transactions, so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s); err != nil {
 			s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: failed verifying actions in Normal transaction: %v\n", s.conn.RemoteAddr(), s.c.Name(), err)
 			return nil
@@ -46,7 +46,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
 			return nil
 		}
-		return h.handleReleaseItemTransaction(data, s)
+		return h.handleReleaseItemTransaction(s)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -56,7 +56,7 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
-	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
+	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 }
 
 // handleNormalTransaction ...
@@ -146,7 +146,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 }
 
 // handleReleaseItemTransaction ...
-func (h *InventoryTransactionHandler) handleReleaseItemTransaction(data *protocol.ReleaseItemTransactionData, s *Session) error {
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(s *Session) error {
 	s.c.ReleaseItem()
 	return nil
 }

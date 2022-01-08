@@ -51,7 +51,7 @@ type SourceFall struct{}
 // SourceLightning is used for damage caused by being struck by lightning.
 type SourceLightning struct{}
 
-// SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
+// SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage to this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
 

@@ -67,7 +67,7 @@ func (s WoodStairs) EncodeBlock() (name string, properties map[string]interface{
 	return "minecraft:" + s.Wood.String() + "_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 }
 
-// toStairDirection converts a facing to a stairs direction for Minecraft.
+// toStairDirection converts a facing to a stair's direction for Minecraft.
 func toStairsDirection(v cube.Direction) int32 {
 	return int32(3 - v)
 }

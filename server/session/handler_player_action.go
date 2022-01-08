@@ -24,8 +24,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		return ErrSelfRuntimeID
 	}
 	switch action {
-	case protocol.PlayerActionRespawn:
-		// Don't do anything for this action.
+	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
+		// Don't do anything for these actions.
 	case protocol.PlayerActionJump:
 		if s.c.Sprinting() {
 			s.c.Exhaust(0.2)

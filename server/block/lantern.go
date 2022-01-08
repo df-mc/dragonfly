@@ -27,7 +27,7 @@ func (l Lantern) Model() world.BlockModel {
 func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if l.Hanging {
 		up := pos.Side(cube.FaceUp)
-		if !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
+		if _, ok := w.Block(up).(Chain); !ok && !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
 			w.BreakBlockWithoutParticles(pos)
 		}
 	} else {
@@ -51,7 +51,7 @@ func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	}
 	if face == cube.FaceDown {
 		upPos := pos.Side(cube.FaceUp)
-		if !w.Block(upPos).Model().FaceSolid(upPos, cube.FaceDown, w) {
+		if _, ok := w.Block(upPos).(Chain); !ok && !w.Block(upPos).Model().FaceSolid(upPos, cube.FaceDown, w) {
 			face = cube.FaceUp
 		}
 	}

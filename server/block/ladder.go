@@ -53,8 +53,8 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 }
 
 // EntityInside ...
-func (l Ladder) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
-	if fallEntity, ok := e.(FallDistanceEntity); ok {
+func (l Ladder) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
 }

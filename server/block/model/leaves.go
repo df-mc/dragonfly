@@ -11,12 +11,12 @@ import (
 // are solid.
 type Leaves struct{}
 
-// AABB ...
+// AABB returns a physics.AABB that spans a full block.
 func (Leaves) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
-// FaceSolid ...
+// FaceSolid always returns false.
 func (Leaves) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }

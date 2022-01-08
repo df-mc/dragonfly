@@ -6,11 +6,6 @@ import (
 	"math"
 )
 
-const (
-	MaxY = 255
-	MinY = 0
-)
-
 // Pos holds the position of a block. The position is represented of an array with an x, y and z value,
 // where the y value is positive.
 type Pos [3]int
@@ -35,10 +30,10 @@ func (p Pos) Z() int {
 	return p[2]
 }
 
-// OutOfBounds checks if the Y value is either bigger than 255 or smaller than 0.
-func (p Pos) OutOfBounds() bool {
+// OutOfBounds checks if the Y value is either bigger than r[1] or smaller than r[0].
+func (p Pos) OutOfBounds(r Range) bool {
 	y := p[1]
-	return y > MaxY || y < MinY
+	return y > r[1] || y < r[0]
 }
 
 // Add adds two block positions together and returns a new one with the combined values.
@@ -108,8 +103,8 @@ func (p Pos) Face(other Pos) Face {
 
 // Neighbours calls the function passed for each of the block position's neighbours. If the Y value is out of
 // bounds, the function will not be called for that position.
-func (p Pos) Neighbours(f func(neighbour Pos)) {
-	if p.OutOfBounds() {
+func (p Pos) Neighbours(f func(neighbour Pos), r Range) {
+	if p.OutOfBounds(r) {
 		return
 	}
 	p[0]++
@@ -118,11 +113,11 @@ func (p Pos) Neighbours(f func(neighbour Pos)) {
 	f(p)
 	p[0]++
 	p[1]++
-	if p[1] <= MaxY {
+	if p[1] <= r[1] {
 		f(p)
 	}
 	p[1] -= 2
-	if p[1] >= MinY {
+	if p[1] >= r[0] {
 		f(p)
 	}
 	p[1]++

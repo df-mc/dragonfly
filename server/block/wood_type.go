@@ -10,42 +10,42 @@ type WoodType struct {
 
 // OakWood returns oak wood material.
 func OakWood() WoodType {
-	return WoodType{wood(0)}
+	return WoodType{0}
 }
 
 // SpruceWood returns spruce wood material.
 func SpruceWood() WoodType {
-	return WoodType{wood(1)}
+	return WoodType{1}
 }
 
-// BirchWood returns birch wood material.
+// BirchWood returns birchwood material.
 func BirchWood() WoodType {
-	return WoodType{wood(2)}
+	return WoodType{2}
 }
 
 // JungleWood returns jungle wood material.
 func JungleWood() WoodType {
-	return WoodType{wood(3)}
+	return WoodType{3}
 }
 
 // AcaciaWood returns acacia wood material.
 func AcaciaWood() WoodType {
-	return WoodType{wood(4)}
+	return WoodType{4}
 }
 
 // DarkOakWood returns dark oak wood material.
 func DarkOakWood() WoodType {
-	return WoodType{wood(5)}
+	return WoodType{5}
 }
 
 // CrimsonWood returns crimson wood material.
 func CrimsonWood() WoodType {
-	return WoodType{wood(6)}
+	return WoodType{6}
 }
 
 // WarpedWood returns warped wood material.
 func WarpedWood() WoodType {
-	return WoodType{wood(7)}
+	return WoodType{7}
 }
 
 // WoodTypes returns a list of all wood types

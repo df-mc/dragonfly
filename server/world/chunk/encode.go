@@ -8,7 +8,7 @@ import (
 const (
 	// SubChunkVersion is the current version of the written sub chunks, specifying the format they are
 	// written on disk and over network.
-	SubChunkVersion = 8
+	SubChunkVersion = 9
 	// CurrentBlockVersion is the current version of blocks (states) of the game. This version is composed
 	// of 4 bytes indicating a version, interpreted as a big endian int. The current version represents
 	// 1.16.0.14 {1, 16, 0, 14}.
@@ -18,8 +18,6 @@ const (
 var (
 	// RuntimeIDToState must hold a function to convert a runtime ID to a name and its state properties.
 	RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]interface{}, found bool)
-	// emptyHeightMap holds an empty height map. It is written as 256 int16s, or 512 bytes.
-	emptyHeightMap = make([]byte, 512)
 	// pool is used to pool byte buffers used for encoding chunks.
 	pool = sync.Pool{
 		New: func() interface{} {
@@ -34,10 +32,9 @@ type (
 	SerialisedData struct {
 		// sub holds the data of the serialised sub chunks in a chunk. Sub chunks that are empty or that otherwise
 		// don't exist are represented as an empty slice (or technically, nil).
-		SubChunks [16][]byte
-		// Data2D is the 2D data of the chunk, which is composed of the biome IDs (256 bytes) and optionally the
-		// height map of the chunk.
-		Data2D []byte
+		SubChunks [][]byte
+		// Biomes is the biome data of the chunk, which is composed of a biome storage for each subchunk.
+		Biomes []byte
 		// BlockNBT is an encoded NBT array of all blocks that carry additional NBT, such as chests, with all
 		// their contents.
 		BlockNBT []byte
@@ -61,39 +58,40 @@ func Encode(c *Chunk, e Encoding) SerialisedData {
 	}()
 
 	d := encodeSubChunks(buf, c, e)
-	d.Data2D = e.data2D(c)
+	for i := range c.biomes {
+		encodePalettedStorage(buf, c.biomes[i], e, BiomePaletteEncoding)
+	}
+	d.Biomes = append([]byte(nil), buf.Bytes()...)
+
 	return d
 }
 
 // encodeSubChunks encodes the sub chunks of the Chunk passed into the bytes.Buffer buf. It uses the encoding passed to
 // encode the block storages and returns the resulting SerialisedData.
 func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData) {
-	for y, sub := range c.sub {
-		if sub == nil || len(sub.storages) == 0 {
-			// The sub chunk at this Y value is empty, so don't write it.
-			continue
-		}
-		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages))})
+	d.SubChunks = make([][]byte, len(c.sub))
+	for i, sub := range c.sub {
+		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), uint8(i + (c.r[0] >> 4))})
 		for _, storage := range sub.storages {
-			encodeBlockStorage(buf, storage, e)
+			encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
 		}
-		d.SubChunks[y] = make([]byte, buf.Len())
-		_, _ = buf.Read(d.SubChunks[y])
+		d.SubChunks[i] = make([]byte, buf.Len())
+		_, _ = buf.Read(d.SubChunks[i])
 	}
 	return
 }
 
-// encodeBlockStorage encodes a BlockStorage into a bytes.Buffer. The Encoding passed is used to write the Palette of
-// the BlockStorage.
-func encodeBlockStorage(buf *bytes.Buffer, storage *BlockStorage, e Encoding) {
-	b := make([]byte, len(storage.blocks)*4+1)
-	b[0] = byte(storage.bitsPerBlock<<1) | e.network()
+// encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
+// of the PalettedStorage.
+func encodePalettedStorage(buf *bytes.Buffer, storage *PalettedStorage, e Encoding, pe paletteEncoding) {
+	b := make([]byte, len(storage.indices)*4+1)
+	b[0] = byte(storage.bitsPerIndex<<1) | e.network()
 
-	for i, v := range storage.blocks {
+	for i, v := range storage.indices {
 		// Explicitly don't use the binary package to greatly improve performance of writing the uint32s.
 		b[i*4+1], b[i*4+2], b[i*4+3], b[i*4+4] = byte(v), byte(v>>8), byte(v>>16), byte(v>>24)
 	}
 	_, _ = buf.Write(b)
 
-	e.encodePalette(buf, storage.palette)
+	e.encodePalette(buf, storage.palette, pe)
 }

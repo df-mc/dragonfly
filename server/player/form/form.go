@@ -74,8 +74,8 @@ func (f Custom) Elements() []Element {
 
 // SubmitJSON submits a JSON data slice to the form. The form will check all values in the JSON array passed,
 // making sure their values are valid for the form's elements.
-// If the values are valid and can be parsed properly, the Submit() method of the form's Submittable is called
-// and the fields of the Submittable will be filled out.
+// If the values are valid and can be parsed properly, the Submittable.Submit() method of the form's Submittable is
+// called and the fields of the Submittable will be filled out.
 func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
 		if closer, ok := f.submittable.(Closer); ok {
@@ -116,7 +116,7 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	return nil
 }
 
-// parseValue parses a value into the Element passed and returns it as a reflect.Value. If the value is not
+// parseValue parses a value into the Element passed and returns it as a reflection Value. If the value is not
 // valid for the element, an error is returned.
 func (f Custom) parseValue(elem Element, s interface{}) (reflect.Value, error) {
 	var ok bool
@@ -182,7 +182,9 @@ func (f Custom) parseValue(elem Element, s interface{}) (reflect.Value, error) {
 func (f Custom) verify() {
 	el := reflect.TypeOf((*Element)(nil)).Elem()
 
-	v := reflect.ValueOf(f.submittable)
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
+
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {

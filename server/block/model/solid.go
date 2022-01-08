@@ -11,12 +11,12 @@ import (
 // 1x1x1 collision box.
 type Solid struct{}
 
-// AABB ...
+// AABB returns a physics.AABB spanning a full block.
 func (Solid) AABB(cube.Pos, *world.World) []physics.AABB {
 	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
-// FaceSolid ...
+// FaceSolid always returns true.
 func (Solid) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return true
 }

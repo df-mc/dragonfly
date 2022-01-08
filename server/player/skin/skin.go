@@ -59,8 +59,8 @@ func (s Skin) ColorModel() color.Model {
 	return color.RGBAModel
 }
 
-// At returns the colour at a given position in the skin. The concrete value of the colour returned is an
-// color.RGBA value.
+// At returns the colour at a given position in the skin. The concrete value of the colour returned is a color.RGBA
+// value.
 // If the x or y values exceed the bounds of the skin, At will panic.
 func (s Skin) At(x, y int) color.Color {
 	if x < 0 || y < 0 || x >= s.w || y >= s.h {

@@ -11,7 +11,8 @@ import (
 // on solid faces next to it.
 type Thin struct{}
 
-// AABB ...
+// AABB returns a slice of physics.AABB that depends on the blocks surrounding the Thin block. Thin blocks can connect
+// to any other Thin block, wall or solid faces of other blocks.
 func (t Thin) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	const offset = 0.4375
 
@@ -30,7 +31,7 @@ func (t Thin) AABB(pos cube.Pos, w *world.World) []physics.AABB {
 	return append(boxes, mainBox)
 }
 
-// FaceSolid ...
+// FaceSolid returns true if the face passed is cube.FaceDown.
 func (t Thin) FaceSolid(_ cube.Pos, face cube.Face, _ *world.World) bool {
 	return face == cube.FaceDown
 }

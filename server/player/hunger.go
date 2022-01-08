@@ -124,7 +124,7 @@ func (m *hungerManager) desaturate() {
 	}
 }
 
-// canQuicklyRegenerate checks if the player can quickly regenerate. This returns true if Food() returns 20
+// canQuicklyRegenerate checks if the player can quickly regenerate. The function returns true if Food() returns 20
 // and the player still has saturation left.
 // The rate of regeneration is 1/0.5 seconds.
 func (m *hungerManager) canQuicklyRegenerate() bool {
@@ -135,7 +135,7 @@ func (m *hungerManager) canQuicklyRegenerate() bool {
 }
 
 // canRegenerate checks if the player with the amount of food levels in the hunger manager can regenerate.
-// This returns true if Food() returns either 18-20.
+// The function returns true if Food() returns either 18-20.
 // The rate of regeneration is 1/4 seconds.
 func (m *hungerManager) canRegenerate() bool {
 	return m.Food() >= 18

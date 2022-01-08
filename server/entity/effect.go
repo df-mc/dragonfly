@@ -75,6 +75,15 @@ func (m *EffectManager) Remove(e effect.Type, entity Living) {
 	}
 }
 
+// Effect returns the effect instance and true if the entity has the effect. If not found, it will return an empty
+// effect instance and false.
+func (m *EffectManager) Effect(e effect.Type) (effect.Effect, bool) {
+	m.mu.Lock()
+	existing, ok := m.effects[reflect.TypeOf(e)]
+	m.mu.Unlock()
+	return existing, ok
+}
+
 // Effects returns a list of all effects currently present in the effect manager. This will never include
 // effects that have expired.
 func (m *EffectManager) Effects() []effect.Effect {

@@ -12,7 +12,7 @@ type Sword struct {
 	Tier tool.Tier
 }
 
-// AttackDamage returns the attack damage of the sword.
+// AttackDamage returns the attack damage to the sword.
 func (s Sword) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage + 3
 }

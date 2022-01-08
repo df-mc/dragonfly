@@ -80,8 +80,8 @@ func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
 }
 
 // Tick ...
-func (li *Lightning) Tick(_ int64) {
-	pos, w := li.Position(), li.World()
+func (li *Lightning) Tick(w *world.World, _ int64) {
+	pos := li.Position()
 	f := fire().(interface {
 		Start(w *world.World, pos cube.Pos)
 	})

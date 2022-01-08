@@ -1,6 +1,6 @@
 package tool
 
-// Type represents the type of a tool. This decides the type of blocks that the tool is used for.
+// Type represents the type of tool. This decides the type of blocks that the tool is used for.
 type Type struct {
 	t
 }
@@ -26,5 +26,5 @@ var TypeShears = Type{t(4)}
 // TypeSword is the type for swords.
 var TypeSword = Type{t(5)}
 
-// t represents the type of a tool.
+// t represents the type of a Tool.
 type t int

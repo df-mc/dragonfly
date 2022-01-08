@@ -19,7 +19,7 @@ type WoodDoor struct {
 	Wood WoodType
 	// Facing is the direction the door is facing.
 	Facing cube.Direction
-	// Open is whether or not the door is open.
+	// Open is whether the door is open.
 	Open bool
 	// Top is whether the block is the top or bottom half of a door
 	Top bool
@@ -46,12 +46,12 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		if _, ok := w.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
 			w.BreakBlock(pos)
 		}
-	} else {
-		if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
-			w.BreakBlock(pos)
-		} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
-			w.BreakBlock(pos)
-		}
+		return
+	}
+	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
+		w.BreakBlock(pos)
+	} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
+		w.BreakBlock(pos)
 	}
 }
 
@@ -94,7 +94,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	d.Open = !d.Open
 	w.PlaceBlock(pos, d)
 

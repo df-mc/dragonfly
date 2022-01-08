@@ -5,7 +5,15 @@ import (
 	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"image/color"
 )
+
+// Flame is a particle shown around torches. It can have any colour specified with the Colour field.
+type Flame struct {
+	particle
+	// Colour is the colour of the Flame particle.
+	Colour color.RGBA
+}
 
 // BlockBreak is a particle sent when a block is broken. It represents a bunch of particles that are textured
 // like the block that the particle holds.

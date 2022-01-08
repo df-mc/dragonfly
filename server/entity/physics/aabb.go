@@ -149,26 +149,26 @@ func (aabb AABB) Vec3Within(vec mgl64.Vec3) bool {
 
 // Vec3WithinYZ checks if the AABB has a Vec3 within its Y and Z bounds, returning true if it does.
 func (aabb AABB) Vec3WithinYZ(vec mgl64.Vec3) bool {
-	if vec[2] <= aabb.min[2] || vec[2] >= aabb.max[2] {
+	if vec[2] < aabb.min[2] || vec[2] > aabb.max[2] {
 		return false
 	}
-	return vec[1] > aabb.min[1] && vec[1] < aabb.max[1]
+	return vec[1] >= aabb.min[1] && vec[1] <= aabb.max[1]
 }
 
 // Vec3WithinXZ checks if the AABB has a Vec3 within its X and Z bounds, returning true if it does.
 func (aabb AABB) Vec3WithinXZ(vec mgl64.Vec3) bool {
-	if vec[0] <= aabb.min[0] || vec[0] >= aabb.max[0] {
+	if vec[0] < aabb.min[0] || vec[0] > aabb.max[0] {
 		return false
 	}
-	return vec[2] > aabb.min[2] && vec[2] < aabb.max[2]
+	return vec[2] >= aabb.min[2] && vec[2] <= aabb.max[2]
 }
 
 // Vec3WithinXY checks if the AABB has a Vec3 within its X and Y bounds, returning true if it does.
 func (aabb AABB) Vec3WithinXY(vec mgl64.Vec3) bool {
-	if vec[0] <= aabb.min[0] || vec[0] >= aabb.max[0] {
+	if vec[0] < aabb.min[0] || vec[0] > aabb.max[0] {
 		return false
 	}
-	return vec[1] > aabb.min[1] && vec[1] < aabb.max[1]
+	return vec[1] >= aabb.min[1] && vec[1] <= aabb.max[1]
 }
 
 // CalculateXOffset calculates the offset on the X axis between two bounding boxes, returning a delta always

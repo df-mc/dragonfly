@@ -1,9 +1,7 @@
 package world
 
 import (
-	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -21,7 +19,7 @@ type Viewer interface {
 	// of the viewer, either by its movement or the movement of the viewer using a world.Loader.
 	HideEntity(e Entity)
 	// ViewEntityMovement views the movement of an entity. The entity is moved with a delta position, yaw and
-	// pitch, which, when applied to values of the entity, will result in the final values.
+	// pitch, which, when applied to the respective values of the entity, will result in the final values.
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool)
 	// ViewEntityVelocity views the velocity of an entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.
@@ -41,7 +39,7 @@ type Viewer interface {
 	ViewEntityArmour(e Entity)
 	// ViewEntityAction views an action performed by an entity. Available actions may be found in the `action`
 	// package, and include things such as swinging an arm.
-	ViewEntityAction(e Entity, a action.Action)
+	ViewEntityAction(e Entity, a EntityAction)
 	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
 	// physical appearance, for example when sprinting.
 	ViewEntityState(e Entity)
@@ -55,7 +53,7 @@ type Viewer interface {
 	ViewBlockUpdate(pos cube.Pos, b Block, layer int)
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
-	ViewBlockAction(pos cube.Pos, a blockAction.Action)
+	ViewBlockAction(pos cube.Pos, a BlockAction)
 	// ViewEmote views an emote being performed by another entity.
 	ViewEmote(player Entity, emote uuid.UUID)
 	// ViewSkin views the current skin of a player.
@@ -65,3 +63,32 @@ type Viewer interface {
 	// ViewWeather views the weather of the world, including rain and thunder.
 	ViewWeather(raining, thunder bool)
 }
+
+// NopViewer is a Viewer implementation that does not implement any behaviour. It may be embedded by other structs to
+// prevent having to implement all of Viewer's methods.
+type NopViewer struct{}
+
+var _ Viewer = NopViewer{}
+
+// Position returns an empty mgl64.Vec3. We can do this because this position is only used for checking if a chunk
+// should have random block ticking, which is generally not desirable with a NopViewer anyway.
+func (NopViewer) Position() mgl64.Vec3                                          { return mgl64.Vec3{} }
+func (NopViewer) ViewEntity(Entity)                                             {}
+func (NopViewer) HideEntity(Entity)                                             {}
+func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
+func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                         {}
+func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                         {}
+func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk, map[cube.Pos]Block)          {}
+func (NopViewer) ViewTime(int)                                                  {}
+func (NopViewer) ViewEntityItems(Entity)                                        {}
+func (NopViewer) ViewEntityArmour(Entity)                                       {}
+func (NopViewer) ViewEntityAction(Entity, EntityAction)                         {}
+func (NopViewer) ViewEntityState(Entity)                                        {}
+func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                             {}
+func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                   {}
+func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                          {}
+func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                         {}
+func (NopViewer) ViewEmote(Entity, uuid.UUID)                                   {}
+func (NopViewer) ViewSkin(Entity)                                               {}
+func (NopViewer) ViewWorldSpawn(cube.Pos)                                       {}
+func (NopViewer) ViewWeather(bool, bool)                                        {}
