@@ -165,7 +165,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		aabb := a.AABB()
 		aabbs := w.Block(collisionPos).Model().AABB(collisionPos, w)
 		for _, bb := range aabbs {
-			if aabb.Translate(a.Position()).IntersectsWith(bb) {
+			if aabb.Translate(a.Position()).IntersectsWith(bb.Grow(0.05)) {
 				a.mu.Lock()
 				if a.ageCollided > 5 && !a.disallowPickup {
 					a.checkNearby(w)
