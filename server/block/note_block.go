@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -26,13 +25,13 @@ func (n NoteBlock) playNote(pos cube.Pos, w *world.World) {
 }
 
 // updateInstrument ...
-func (n NoteBlock) instrument(pos cube.Pos, w *world.World) instrument.Instrument {
+func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(interface {
-		Instrument() instrument.Instrument
+		Instrument() sound.Instrument
 	}); ok {
 		return instrumentBlock.Instrument()
 	}
-	return instrument.Piano()
+	return sound.Piano()
 }
 
 // DecodeNBT ...

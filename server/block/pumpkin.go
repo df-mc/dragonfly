@@ -2,9 +2,9 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -19,11 +19,11 @@ type Pumpkin struct {
 }
 
 // Instrument ...
-func (p Pumpkin) Instrument() instrument.Instrument {
+func (p Pumpkin) Instrument() sound.Instrument {
 	if !p.Carved {
-		return instrument.Didgeridoo()
+		return sound.Didgeridoo()
 	}
-	return instrument.Piano()
+	return sound.Piano()
 }
 
 // UseOnBlock ...

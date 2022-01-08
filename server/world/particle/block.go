@@ -2,8 +2,8 @@ package particle
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
 )
@@ -46,7 +46,7 @@ type Note struct {
 	particle
 
 	// Instrument is the instrument of the note block.
-	Instrument instrument.Instrument
+	Instrument sound.Instrument
 	// Pitch is the pitch of the note.
 	Pitch int
 }
