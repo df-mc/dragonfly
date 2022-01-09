@@ -23,7 +23,7 @@ func (sub *SubChunk) Empty() bool {
 // Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer
 // is created, as well as all layers between the current highest layer and the new highest layer.
 func (sub *SubChunk) Layer(layer uint8) *PalettedStorage {
-	for i := uint8(len(sub.storages)); i <= layer; i++ {
+	for uint8(len(sub.storages)) <= layer {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
 		sub.storages = append(sub.storages, emptyStorage(sub.air))

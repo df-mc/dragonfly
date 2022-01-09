@@ -12,27 +12,27 @@ type CoralType struct {
 
 // TubeCoral returns the tube coral variant
 func TubeCoral() CoralType {
-	return CoralType{coral(0)}
+	return CoralType{0}
 }
 
 // BrainCoral returns the brain coral variant
 func BrainCoral() CoralType {
-	return CoralType{coral(1)}
+	return CoralType{1}
 }
 
 // BubbleCoral returns the bubble coral variant
 func BubbleCoral() CoralType {
-	return CoralType{coral(2)}
+	return CoralType{2}
 }
 
 // FireCoral returns the fire coral variant
 func FireCoral() CoralType {
-	return CoralType{coral(3)}
+	return CoralType{3}
 }
 
 // HornCoral returns the horn coral variant
 func HornCoral() CoralType {
-	return CoralType{coral(4)}
+	return CoralType{4}
 }
 
 // CoralTypes returns all coral types.

@@ -78,7 +78,7 @@ func (s *SplashPotion) Type() potion.Potion {
 }
 
 // Tick ...
-func (s *SplashPotion) Tick(current int64) {
+func (s *SplashPotion) Tick(w *world.World, current int64) {
 	if s.close {
 		_ = s.Close()
 		return
@@ -91,7 +91,6 @@ func (s *SplashPotion) Tick(current int64) {
 	s.age++
 	m.Send()
 
-	w := s.World()
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
 		s.close = true
 		return

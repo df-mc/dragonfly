@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -221,30 +220,30 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 type bass struct{}
 
 // Instrument ...
-func (bass) Instrument() instrument.Instrument {
-	return instrument.Bass()
+func (bass) Instrument() sound.Instrument {
+	return sound.Bass()
 }
 
 // snare is a struct that may be embedded for blocks that create a snare drum sound.
 type snare struct{}
 
 // Instrument ...
-func (snare) Instrument() instrument.Instrument {
-	return instrument.Snare()
+func (snare) Instrument() sound.Instrument {
+	return sound.Snare()
 }
 
 // clicksAndSticks is a struct that may be embedded for blocks that create a clicks and sticks sound.
 type clicksAndSticks struct{}
 
 // Instrument ...
-func (clicksAndSticks) Instrument() instrument.Instrument {
-	return instrument.ClicksAndSticks()
+func (clicksAndSticks) Instrument() sound.Instrument {
+	return sound.ClicksAndSticks()
 }
 
 // bassDrum is a struct that may be embedded for blocks that create a bass drum sound.
 type bassDrum struct{}
 
 // Instrument ...
-func (bassDrum) Instrument() instrument.Instrument {
-	return instrument.BassDrum()
+func (bassDrum) Instrument() sound.Instrument {
+	return sound.BassDrum()
 }

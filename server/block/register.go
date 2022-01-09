@@ -4,7 +4,6 @@ import (
 	_ "github.com/df-mc/dragonfly/server/internal/block_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 //go:generate go run ../../cmd/blockhash -o hash.go .
@@ -337,6 +336,9 @@ func init() {
 	}
 	for _, p := range PrismarineTypes() {
 		world.RegisterItem(Prismarine{Type: p})
+	}
+	for _, t := range NetherBricksTypes() {
+		world.RegisterItem(NetherBricks{Type: t})
 	}
 }
 

@@ -74,10 +74,12 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 		if t.Kind() == reflect.Ptr {
 			original = original.Elem()
 		}
-		if err := verifySignature(original); err != nil {
+
+		cp := reflect.New(original.Type()).Elem()
+		if err := verifySignature(cp); err != nil {
 			panic(err.Error())
 		}
-		runnableValues[i], usages[i] = original, parseUsage(name, original)
+		runnableValues[i], usages[i] = original, parseUsage(name, cp)
 	}
 
 	return Command{name: name, description: description, aliases: aliases, v: runnableValues, usage: strings.Join(usages, "\n")}

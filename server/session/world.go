@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
-	blockAction "github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/action"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -437,6 +436,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticlesTeleport,
 			Position:  vec64To32(pos),
 		})
+	case particle.Flame:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 56,
+			Position:  vec64To32(pos),
+			EventData: nbtconv.Int32FromRGBA(pa.Colour),
+		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesEvaporateWater,
@@ -564,6 +569,10 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			break
 		}
 		pk.SoundType = packet.SoundEventBucketEmptyLava
+	case sound.BowShoot:
+		pk.SoundType = packet.SoundEventBow
+	case sound.ArrowHit:
+		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:
 		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
 	}
@@ -591,9 +600,9 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 }
 
 // ViewEntityAction ...
-func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
+func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	switch act := a.(type) {
-	case action.SwingArm:
+	case entity.SwingArmAction:
 		if _, ok := e.(Controllable); ok {
 			if s.entityRuntimeID(e) == selfEntityRuntimeID && s.swingingArm.Load() {
 				return
@@ -608,27 +617,33 @@ func (s *Session) ViewEntityAction(e world.Entity, a action.Action) {
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventStartAttacking,
 		})
-	case action.Hurt:
+	case entity.HurtAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventHurt,
 		})
-	case action.CriticalHit:
+	case entity.CriticalHitAction:
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
 		})
-	case action.Death:
+	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventDeath,
 		})
-	case action.PickedUp:
+	case entity.PickedUpAction:
 		s.writePacket(&packet.TakeItemActor{
 			ItemEntityRuntimeID:  s.entityRuntimeID(e),
-			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector.(world.Entity)),
+			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector),
 		})
-	case action.Eat:
+	case entity.ArrowShakeAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventShake,
+			EventData:       int32(act.Duration.Milliseconds() / 50),
+		})
+	case entity.EatAction:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
 
@@ -723,33 +738,33 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 }
 
 // ViewBlockAction ...
-func (s *Session) ViewBlockAction(pos cube.Pos, a blockAction.Action) {
+func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
-	case blockAction.Open:
+	case block.OpenAction:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,
 			EventData: 1,
 		})
-	case blockAction.Close:
+	case block.CloseAction:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,
 			EventType: packet.BlockEventChangeChestState,
 		})
-	case blockAction.StartCrack:
+	case block.StartCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventStartBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
 		})
-	case blockAction.StopCrack:
+	case block.StopCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventStopBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: 0,
 		})
-	case blockAction.ContinueCrack:
+	case block.ContinueCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventUpdateBlockCracking,
 			Position:  vec64To32(pos.Vec3()),

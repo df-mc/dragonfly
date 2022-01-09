@@ -11,22 +11,22 @@ type netherBricks uint8
 
 // NormalNetherBricks is the normal variant of the nether bricks.
 func NormalNetherBricks() NetherBricksType {
-	return NetherBricksType{netherBricks(0)}
+	return NetherBricksType{0}
 }
 
 // RedNetherBricks is the red variant of the nether bricks.
 func RedNetherBricks() NetherBricksType {
-	return NetherBricksType{netherBricks(1)}
+	return NetherBricksType{1}
 }
 
 // CrackedNetherBricks is the cracked variant of the nether bricks.
 func CrackedNetherBricks() NetherBricksType {
-	return NetherBricksType{netherBricks(2)}
+	return NetherBricksType{2}
 }
 
 // ChiseledNetherBricks is the chiseled variant of the nether bricks.
 func ChiseledNetherBricks() NetherBricksType {
-	return NetherBricksType{netherBricks(3)}
+	return NetherBricksType{3}
 }
 
 // Uint8 returns the nether bricks as a unit8.

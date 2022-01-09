@@ -1,4 +1,4 @@
-package instrument
+package sound
 
 // Instrument represents a note block instrument.
 type Instrument struct {

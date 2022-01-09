@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.

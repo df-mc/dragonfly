@@ -1,8 +1,8 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"math/rand"
 )
 
@@ -12,8 +12,8 @@ type Glowstone struct {
 }
 
 // Instrument ...
-func (g Glowstone) Instrument() instrument.Instrument {
-	return instrument.Pling()
+func (g Glowstone) Instrument() sound.Instrument {
+	return sound.Pling()
 }
 
 // BreakInfo ...

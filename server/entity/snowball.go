@@ -63,7 +63,7 @@ func (s *Snowball) Rotation() (float64, float64) {
 }
 
 // Tick ...
-func (s *Snowball) Tick(current int64) {
+func (s *Snowball) Tick(w *world.World, current int64) {
 	if s.close {
 		_ = s.Close()
 		return
@@ -76,13 +76,12 @@ func (s *Snowball) Tick(current int64) {
 	s.age++
 	m.Send()
 
-	if m.pos[1] < float64(s.World().Range()[0]) && current%10 == 0 {
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
 		s.close = true
 		return
 	}
 
 	if result != nil {
-		w := s.World()
 		for i := 0; i < 6; i++ {
 			w.AddParticle(result.Position(), particle.SnowballPoof{})
 		}

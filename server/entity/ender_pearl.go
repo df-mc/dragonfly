@@ -71,7 +71,7 @@ type teleporter interface {
 }
 
 // Tick ...
-func (e *EnderPearl) Tick(current int64) {
+func (e *EnderPearl) Tick(w *world.World, current int64) {
 	if e.close {
 		_ = e.Close()
 		return
@@ -84,7 +84,6 @@ func (e *EnderPearl) Tick(current int64) {
 	e.age++
 	m.Send()
 
-	w := e.World()
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
 		e.close = true
 		return

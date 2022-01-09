@@ -30,9 +30,6 @@ func init() {
 
 	world.RegisterItem(Snowball{})
 	world.RegisterItem(EnderPearl{})
-	for _, pot := range potion.All() {
-		world.RegisterItem(SplashPotion{Type: pot})
-	}
 
 	world.RegisterItem(Diamond{})
 	world.RegisterItem(GlowstoneDust{})
@@ -61,8 +58,15 @@ func init() {
 
 	world.RegisterItem(Leather{})
 
+	world.RegisterItem(Bow{})
+	world.RegisterItem(Arrow{})
+
 	world.RegisterItem(GlassBottle{})
-	for _, p := range potion.All() {
+	for i, p := range potion.All() {
+		if i > 4 {
+			world.RegisterItem(Arrow{Tip: p})
+		}
+		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}
 

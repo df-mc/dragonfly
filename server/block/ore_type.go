@@ -9,12 +9,12 @@ type OreType struct {
 
 // StoneOre returns the stone ore variant.
 func StoneOre() OreType {
-	return OreType{ore(0)}
+	return OreType{0}
 }
 
 // DeepslateOre returns the deepslate ore variant.
 func DeepslateOre() OreType {
-	return OreType{ore(1)}
+	return OreType{1}
 }
 
 // OreTypes returns a list of all ore types

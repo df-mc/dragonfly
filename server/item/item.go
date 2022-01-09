@@ -98,6 +98,23 @@ type nameable interface {
 	WithName(a ...interface{}) world.Item
 }
 
+// Releaser represents an entity that can release items, such as bows.
+type Releaser interface {
+	User
+	// GameMode returns the gamemode of the releaser.
+	GameMode() world.GameMode
+	// PlaySound plays a world.Sound that only this Releaser can hear.
+	PlaySound(sound world.Sound)
+}
+
+// Releasable represents an item that can be released.
+type Releasable interface {
+	// Release is called when an item is released.
+	Release(releaser Releaser, duration time.Duration, ctx *UseContext)
+	// Requirements returns the required items to release this item.
+	Requirements() []Stack
+}
+
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
