@@ -264,6 +264,11 @@ func init() {
 	world.RegisterItem(Snow{})
 	world.RegisterItem(Bookshelf{})
 	world.RegisterItem(Chain{})
+	world.RegisterItem(HayBale{})
+	world.RegisterItem(NetherWartBlock{})
+	world.RegisterItem(NetherWartBlock{Warped: true})
+	world.RegisterItem(Purpur{})
+	world.RegisterItem(Purpur{Pillar: true})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
