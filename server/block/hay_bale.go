@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -14,6 +15,11 @@ type HayBale struct {
 
 	// Axis is the axis which the hay bale block faces.
 	Axis cube.Axis
+}
+
+// Instrument ...
+func (HayBale) Instrument() sound.Instrument {
+	return sound.Banjo()
 }
 
 // UseOnBlock ...
