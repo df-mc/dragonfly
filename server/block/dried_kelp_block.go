@@ -7,7 +7,7 @@ type DriedKelpBlock struct {
 
 // FlammabilityInfo ...
 func (DriedKelpBlock) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(60, 30, true)
+	return newFlammabilityInfo(30, 60, true)
 }
 
 // BreakInfo ...
