@@ -1,8 +1,8 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // EmeraldBlock is a precious mineral block crafted using 9 emeralds.
@@ -11,8 +11,8 @@ type EmeraldBlock struct {
 }
 
 // Instrument ...
-func (e EmeraldBlock) Instrument() instrument.Instrument {
-	return instrument.Bit()
+func (e EmeraldBlock) Instrument() sound.Instrument {
+	return sound.Bit()
 }
 
 // BreakInfo ...
