@@ -419,7 +419,7 @@ func (p *Player) NameTag() string {
 	return p.nameTag.Load()
 }
 
-// SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the players'
+// SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's.
 // name tag.
 func (p *Player) SetScoreTag(a ...interface{}) {
 	p.scoreTag.Store(format(a))
