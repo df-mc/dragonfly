@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
@@ -10,6 +11,7 @@ import (
 // FromItem returns all the components of the given custom item. If the item has no components, the second return
 // value is false.
 func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
+	category := it.Category()
 	identifier, _ := it.EncodeItem()
 	name := strings.Split(identifier, ":")[1]
 
@@ -17,7 +19,8 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		"minecraft:icon": map[string]interface{}{
 			"texture": name,
 		},
-		"creative_category": int32(it.Category().Uint8()),
+		"creative_category": int32(category.Uint8()),
+		"creative_group":    "itemGroup." + category.String() + ".name",
 		"max_stack_size":    int32(64),
 	}
 	components := map[string]interface{}{
@@ -86,8 +89,9 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 	}
 
 	// If an item has no new components or properties then it should not be considered a component-based item.
-	if len(components) == 2 && len(itemProperties) == 3 && itemProperties["max_stack_size"] == int32(64) {
+	if len(components) == 2 && len(itemProperties) == 4 && itemProperties["max_stack_size"] == int32(64) {
 		return nil, false
 	}
+	fmt.Println("enabled components")
 	return map[string]interface{}{"components": components}, true
 }

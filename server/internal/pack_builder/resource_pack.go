@@ -8,7 +8,7 @@ import (
 )
 
 // formatVersion is the format version used for the resource pack. The client does not accept all versions as
-// a format version so it must be pre-defined.
+// a format version, so it must be pre-defined.
 const formatVersion = "1.12.0"
 
 // BuildResourcePack builds a resource pack based on custom features that have been registered to the server.

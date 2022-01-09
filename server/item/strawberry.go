@@ -47,5 +47,5 @@ func (Strawberry) Texture() image.Image {
 
 // Category ...
 func (Strawberry) Category() category.Category {
-	return category.Construction()
+	return category.Nature()
 }
