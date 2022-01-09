@@ -216,21 +216,25 @@ func (s Stack) Value(key string) (val interface{}, ok bool) {
 	return val, ok
 }
 
-// WithEnchantment returns the current stack with the passed enchantment. If the enchantment is not compatible
-// with the item stack, it will not be applied and will return the original stack.
-func (s Stack) WithEnchantment(ench Enchantment) Stack {
-	if !ench.CompatibleWith(s) {
-		return s
-	}
+// WithEnchantments returns the current stack with the passed enchantments. If an enchantment is not compatible
+// with the item stack, it will not be applied.
+func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
-	s.enchantments[reflect.TypeOf(ench)] = ench
+	for _, enchant := range enchants {
+		if !enchant.CompatibleWith(s) {
+			continue
+		}
+		s.enchantments[reflect.TypeOf(enchant)] = enchant
+	}
 	return s
 }
 
-// WithoutEnchantment returns the current stack but with the passed enchantment removed.
-func (s Stack) WithoutEnchantment(enchant Enchantment) Stack {
+// WithoutEnchantments returns the current stack but with the passed enchantments removed.
+func (s Stack) WithoutEnchantments(enchants ...Enchantment) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
-	delete(s.enchantments, reflect.TypeOf(enchant))
+	for _, enchant := range enchants {
+		delete(s.enchantments, reflect.TypeOf(enchant))
+	}
 	return s
 }
 
