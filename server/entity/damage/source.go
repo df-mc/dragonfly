@@ -45,11 +45,18 @@ type SourceFireTick struct{}
 // SourceLava is used for damage caused by being in lava.
 type SourceLava struct{}
 
-// SourceFall is a source that is used if the player fell.
+// SourceFall is used for damage caused by falling.
 type SourceFall struct{}
 
 // SourceLightning is used for damage caused by being struck by lightning.
 type SourceLightning struct{}
+
+// SourceProjectile is used for damage caused by a projectile.
+type SourceProjectile struct {
+	// Projectile and Owner are the world.Entity that dealt the damage and the one that fired the projectile
+	// respectively.
+	Projectile, Owner world.Entity
+}
 
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage to this source,
 // but otherwise no enchantments have an additional effect.
@@ -112,5 +119,10 @@ func (SourceFireTick) ReducedByArmour() bool {
 
 // ReducedByArmour ...
 func (SourceLava) ReducedByArmour() bool {
+	return true
+}
+
+// ReducedByArmour ...
+func (SourceProjectile) ReducedByArmour() bool {
 	return true
 }
