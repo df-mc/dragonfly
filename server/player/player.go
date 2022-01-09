@@ -1217,35 +1217,35 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	if p.usingItem.CAS(true, false) {
-		i, _ := p.HeldItems()
-		if releasable, ok := i.Item().(item.Releasable); ok {
-			if p.canRelease() && p.GameMode().AllowsInteraction() {
-				ctx := p.useContext()
-
-				releasable.Release(p, p.useDuration(), ctx)
-				p.handleUseContext(ctx)
-				p.updateState()
-			}
-		}
+	if !p.usingItem.CAS(true, false) || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+		return
 	}
+	ctx := p.useContext()
+	i, _ := p.HeldItems()
+	i.Item().(item.Releasable).Release(p, p.useDuration(), ctx)
+
+	p.handleUseContext(ctx)
+	p.updateState()
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
 func (p *Player) canRelease() bool {
 	held, _ := p.HeldItems()
-	if releasable, ok := held.Item().(item.Releasable); ok {
-		if !p.GameMode().CreativeInventory() {
-			inv := p.Inventory()
-			for _, requirement := range releasable.Requirements() {
-				if _, ok = inv.FirstFunc(func(stack item.Stack) bool {
-					name, _ := stack.Item().EncodeItem()
-					otherName, _ := requirement.Item().EncodeItem()
-					return name == otherName
-				}); !ok {
-					return false
-				}
-			}
+	releasable, ok := held.Item().(item.Releasable)
+	if !ok {
+		return false
+	}
+	if p.GameMode().CreativeInventory() {
+		return true
+	}
+	for _, req := range releasable.Requirements() {
+		_, found := p.Inventory().FirstFunc(func(stack item.Stack) bool {
+			name, _ := stack.Item().EncodeItem()
+			otherName, _ := req.Item().EncodeItem()
+			return name == otherName
+		})
+		if !found {
+			return false
 		}
 	}
 	return true
