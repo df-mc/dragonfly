@@ -421,8 +421,8 @@ func (p *Player) NameTag() string {
 
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the players'
 // name tag.
-func (p *Player) SetScoreTag(scoreTag string) {
-	p.scoreTag.Store(scoreTag)
+func (p *Player) SetScoreTag(a ...interface{}) {
+	p.scoreTag.Store(format(a))
 	p.updateState()
 }
 
