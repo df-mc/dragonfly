@@ -26,7 +26,7 @@ func GrassTypes() []GrassType {
 
 type grass uint8
 
-// Uint8 converts the grass to an integer that uniquely identifies it's type.
+// Uint8 converts the grass to an integer that uniquely identifies its type.
 func (g grass) Uint8() uint8 {
 	return uint8(g)
 }

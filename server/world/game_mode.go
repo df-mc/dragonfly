@@ -22,22 +22,21 @@ type GameMode interface {
 	Visible() bool
 }
 
-// GameModeSurvival is the survival game mode: Players with this game mode have limited supplies and can break blocks
-// after taking some time.
-var GameModeSurvival survival
-
-// GameModeCreative represents the creative game mode: Players with this game mode have infinite blocks and
-// items and can break blocks instantly. Players with creative mode can also fly.
-var GameModeCreative creative
-
-// GameModeAdventure represents the adventure game mode: Players with this game mode cannot edit the world
-// (placing or breaking blocks).
-var GameModeAdventure adventure
-
-// GameModeSpectator represents the spectator game mode: Players with this game mode cannot interact with the
-// world and cannot be seen by other players. spectator players can fly, like creative mode, and can
-// move through blocks.
-var GameModeSpectator spectator
+var (
+	// GameModeSurvival is the survival game mode: Players with this game mode have limited supplies and can break blocks
+	// after taking some time.
+	GameModeSurvival survival
+	// GameModeCreative represents the creative game mode: Players with this game mode have infinite blocks and
+	// items and can break blocks instantly. Players with creative mode can also fly.
+	GameModeCreative creative
+	// GameModeAdventure represents the adventure game mode: Players with this game mode cannot edit the world
+	// (placing or breaking blocks).
+	GameModeAdventure adventure
+	// GameModeSpectator represents the spectator game mode: Players with this game mode cannot interact with the
+	// world and cannot be seen by other players. spectator players can fly, like creative mode, and can
+	// move through blocks.
+	GameModeSpectator spectator
+)
 
 // survival is the survival game mode: Players with this game mode have limited supplies and can break blocks after
 // taking some time.

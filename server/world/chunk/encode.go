@@ -32,7 +32,7 @@ type (
 	SerialisedData struct {
 		// sub holds the data of the serialised sub chunks in a chunk. Sub chunks that are empty or that otherwise
 		// don't exist are represented as an empty slice (or technically, nil).
-		SubChunks [subChunkCount][]byte
+		SubChunks [][]byte
 		// Biomes is the biome data of the chunk, which is composed of a biome storage for each subchunk.
 		Biomes []byte
 		// BlockNBT is an encoded NBT array of all blocks that carry additional NBT, such as chests, with all
@@ -69,8 +69,9 @@ func Encode(c *Chunk, e Encoding) SerialisedData {
 // encodeSubChunks encodes the sub chunks of the Chunk passed into the bytes.Buffer buf. It uses the encoding passed to
 // encode the block storages and returns the resulting SerialisedData.
 func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData) {
+	d.SubChunks = make([][]byte, len(c.sub))
 	for i, sub := range c.sub {
-		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), uint8(i + minSubChunkY)})
+		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), uint8(i + (c.r[0] >> 4))})
 		for _, storage := range sub.storages {
 			encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
 		}

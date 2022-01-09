@@ -4,7 +4,7 @@ import "time"
 
 // Flammable is an interface for entities that can be set on fire.
 type Flammable interface {
-	// FireProof is whether the entity is currently fire proof.
+	// FireProof is whether the entity is currently fireproof.
 	FireProof() bool
 	// OnFireDuration returns duration of fire in ticks.
 	OnFireDuration() time.Duration

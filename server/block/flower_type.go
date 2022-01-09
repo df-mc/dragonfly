@@ -11,67 +11,67 @@ type flower uint8
 
 // Dandelion is a dandelion flower.
 func Dandelion() FlowerType {
-	return FlowerType{flower(0)}
+	return FlowerType{0}
 }
 
 // Poppy is a poppy flower.
 func Poppy() FlowerType {
-	return FlowerType{flower(1)}
+	return FlowerType{1}
 }
 
 // BlueOrchid is a blue orchid flower.
 func BlueOrchid() FlowerType {
-	return FlowerType{flower(2)}
+	return FlowerType{2}
 }
 
-// Allium is a allium flower.
+// Allium is an allium flower.
 func Allium() FlowerType {
-	return FlowerType{flower(3)}
+	return FlowerType{3}
 }
 
 // AzureBluet is an azure bluet flower.
 func AzureBluet() FlowerType {
-	return FlowerType{flower(4)}
+	return FlowerType{4}
 }
 
 // RedTulip is a red tulip flower.
 func RedTulip() FlowerType {
-	return FlowerType{flower(5)}
+	return FlowerType{5}
 }
 
 // OrangeTulip is an orange tulip flower.
 func OrangeTulip() FlowerType {
-	return FlowerType{flower(6)}
+	return FlowerType{6}
 }
 
 // WhiteTulip is a white tulip flower.
 func WhiteTulip() FlowerType {
-	return FlowerType{flower(7)}
+	return FlowerType{7}
 }
 
 // PinkTulip is a pink tulip flower.
 func PinkTulip() FlowerType {
-	return FlowerType{flower(8)}
+	return FlowerType{8}
 }
 
 // OxeyeDaisy is an oxeye daisy flower.
 func OxeyeDaisy() FlowerType {
-	return FlowerType{flower(9)}
+	return FlowerType{9}
 }
 
 // Cornflower is a cornflower flower.
 func Cornflower() FlowerType {
-	return FlowerType{flower(10)}
+	return FlowerType{10}
 }
 
 // LilyOfTheValley is a lily of the valley flower.
 func LilyOfTheValley() FlowerType {
-	return FlowerType{flower(11)}
+	return FlowerType{11}
 }
 
 // WitherRose is a wither rose flower.
 func WitherRose() FlowerType {
-	return FlowerType{flower(12)}
+	return FlowerType{12}
 }
 
 // Uint8 returns the flower as a uint8.

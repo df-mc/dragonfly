@@ -9,10 +9,10 @@ import (
 // writing of the world data so that the World may use it.
 type Provider interface {
 	io.Closer
-	// Settings returns the settings for a World.
-	Settings() Settings
+	// Settings loads the settings for a World and writes them to s.
+	Settings(s *Settings)
 	// SaveSettings saves the settings of a World.
-	SaveSettings(Settings)
+	SaveSettings(*Settings)
 
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
@@ -42,10 +42,10 @@ type Provider interface {
 type NoIOProvider struct{}
 
 // Settings ...
-func (NoIOProvider) Settings() Settings { return defaultSettings() }
+func (NoIOProvider) Settings(*Settings) {}
 
 // SaveSettings ...
-func (NoIOProvider) SaveSettings(Settings) {}
+func (NoIOProvider) SaveSettings(*Settings) {}
 
 // LoadEntities ...
 func (NoIOProvider) LoadEntities(ChunkPos) ([]SaveableEntity, error) {

@@ -2,9 +2,9 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -17,8 +17,8 @@ type BoneBlock struct {
 }
 
 // Instrument ...
-func (b BoneBlock) Instrument() instrument.Instrument {
-	return instrument.Xylophone()
+func (b BoneBlock) Instrument() sound.Instrument {
+	return sound.Xylophone()
 }
 
 // UseOnBlock handles the rotational placing of bone blocks.

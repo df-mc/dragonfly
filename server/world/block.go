@@ -47,7 +47,7 @@ type Liquid interface {
 }
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
-// runtime IDs. It is used to lookup a block's runtime ID quickly.
+// runtime IDs. It is used to look up a block's runtime ID quickly.
 var hashes = intintmap.New(7000, 0.999)
 
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
@@ -168,7 +168,7 @@ type NeighbourUpdateTicker interface {
 	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *World)
 }
 
-// NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically
+// NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically,
 // this is done to store additional data.
 type NBTer interface {
 	// DecodeNBT returns the (new) item, block or entity, depending on which of those the NBTer was, with the NBT data
@@ -185,7 +185,7 @@ type LiquidDisplacer interface {
 	CanDisplace(b Liquid) bool
 	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
 	// closed. When this returns true (for example, when the side is below the position and the block is a
-	// slab), liquid inside of the displacer won't flow from pos into side.
+	// slab), liquid inside the displacer won't flow from pos into side.
 	SideClosed(pos, side cube.Pos, w *World) bool
 }
 
@@ -213,4 +213,10 @@ func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
 		return r.ReplaceableBy(with)
 	}
 	return false
+}
+
+// BlockAction represents an action that may be performed by a block. Typically, these actions are sent to
+// viewers in a world so that they can see these actions.
+type BlockAction interface {
+	BlockAction()
 }

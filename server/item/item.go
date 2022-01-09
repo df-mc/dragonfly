@@ -46,7 +46,7 @@ type Usable interface {
 	Use(w *world.World, user User, ctx *UseContext) bool
 }
 
-// Consumable represents an item that may consumed by a player. If an item implements this interface, a player
+// Consumable represents an item that may be consumed by a player. If an item implements this interface, a player
 // may use and hold the item to consume it.
 type Consumable interface {
 	// AlwaysConsumable specifies if the item is always consumable. Normal food can generally only be consumed
@@ -81,7 +81,7 @@ const DefaultConsumeDuration = (time.Second * 161) / 100
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {
-	// AttackDamage returns the custom attack damage of the weapon. The damage returned must not be negative.
+	// AttackDamage returns the custom attack damage to the weapon. The damage returned must not be negative.
 	AttackDamage() float64
 }
 
@@ -96,6 +96,23 @@ type Cooldown interface {
 type nameable interface {
 	// WithName returns the block itself, except with a custom name applied to it.
 	WithName(a ...interface{}) world.Item
+}
+
+// Releaser represents an entity that can release items, such as bows.
+type Releaser interface {
+	User
+	// GameMode returns the gamemode of the releaser.
+	GameMode() world.GameMode
+	// PlaySound plays a world.Sound that only this Releaser can hear.
+	PlaySound(sound world.Sound)
+}
+
+// Releasable represents an item that can be released.
+type Releasable interface {
+	// Release is called when an item is released.
+	Release(releaser Releaser, duration time.Duration, ctx *UseContext)
+	// Requirements returns the required items to release this item.
+	Requirements() []Stack
 }
 
 // User represents an entity that is able to use an item in the world, typically entities such as players,

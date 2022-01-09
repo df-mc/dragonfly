@@ -1,33 +1,48 @@
 package generator
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
 // Flat is the flat generator of World. It generates flat worlds (like those in vanilla) with no other
-// decoration.
-// The Layers field may be used to specify the block layers placed.
+// decoration. It may be constructed by calling NewFlat.
 type Flat struct {
-	// Layers is a list of block layers placed by the Flat generator. The layers are ordered in a way where the last
-	// element in the slice is placed as the bottom most block of the chunk.
-	Layers []world.Block
+	// biome is the encoded biome that the generator should use.
+	biome uint32
+	// layers is a list of block runtime ID layers placed by the Flat generator. The layers are ordered in a way where
+	// the last element in the slice is placed as the bottom-most block of the chunk.
+	layers []uint32
+	// n is the amount of layers in the slice above.
+	n int16
+}
+
+// NewFlat creates a new Flat generator. Chunks generated are completely filled with the world.Biome passed. layers is a
+// list of block layers placed by the Flat generator. The layers are ordered in a way where the last element in the
+// slice is placed as the bottom-most block of the chunk.
+func NewFlat(biome world.Biome, layers []world.Block) Flat {
+	f := Flat{
+		biome:  uint32(biome.EncodeBiome()),
+		layers: make([]uint32, len(layers)),
+		n:      int16(len(layers)),
+	}
+	for i, b := range layers {
+		f.layers[i], _ = world.BlockRuntimeID(b)
+	}
+	return f
 }
 
 // GenerateChunk ...
 func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
-	// Get a list of block runtime IDs.
-	l := int16(len(f.Layers))
-	m := make([]uint32, l)
-	for i, b := range f.Layers {
-		m[i], _ = world.BlockRuntimeID(b)
-	}
+	min, max := int16(chunk.Range().Min()), int16(chunk.Range().Max())
 
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			for y := int16(0); y < l; y++ {
-				chunk.SetBlock(x, cube.MinY+y, z, 0, m[l-y-1])
+			for y := int16(0); y < max; y++ {
+				if y < f.n {
+					chunk.SetBlock(x, min+y, z, 0, f.layers[f.n-y-1])
+				}
+				chunk.SetBiome(x, min+y, z, f.biome)
 			}
 		}
 	}

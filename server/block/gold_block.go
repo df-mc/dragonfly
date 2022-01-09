@@ -1,8 +1,8 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // GoldBlock is a precious metal block crafted from 9 gold ingots.
@@ -11,8 +11,8 @@ type GoldBlock struct {
 }
 
 // Instrument ...
-func (g GoldBlock) Instrument() instrument.Instrument {
-	return instrument.Bell()
+func (g GoldBlock) Instrument() sound.Instrument {
+	return sound.Bell()
 }
 
 // BreakInfo ...

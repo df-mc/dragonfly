@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.
@@ -156,7 +155,7 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 					if flammable, ok := w.Block(neighbour).(Flammable); ok {
 						encouragement = max(encouragement, flammable.FlammabilityInfo().Encouragement)
 					}
-				})
+				}, w.Range())
 				if encouragement <= 0 {
 					continue
 				}

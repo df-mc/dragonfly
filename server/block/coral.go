@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Coral is a non solid block that comes in 5 variants.
+// Coral is a non-solid block that comes in 5 variants.
 type Coral struct {
 	empty
 	transparent
@@ -22,7 +22,7 @@ type Coral struct {
 }
 
 // UseOnBlock ...
-func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
@@ -54,12 +54,12 @@ func (c Coral) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (c Coral) SideClosed(pos, side cube.Pos, w *world.World) bool {
+func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // NeighbourUpdateTick ...
-func (c Coral) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
 		w.BreakBlock(pos)
 		return
@@ -83,7 +83,7 @@ func (c Coral) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 				adjacentWater = true
 			}
 		}
-	})
+	}, w.Range())
 	if !adjacentWater {
 		c.Dead = true
 		w.PlaceBlock(pos, c)

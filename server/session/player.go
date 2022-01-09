@@ -57,7 +57,7 @@ func (s *Session) closeCurrentContainer() {
 	}
 }
 
-// SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
+// SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
 func (s *Session) SendRespawn() {
 	s.writePacket(&packet.Respawn{
 		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
@@ -174,15 +174,6 @@ func (s *Session) SendSpeed(speed float64) {
 	})
 }
 
-// SendCameraShake sends a shake amount for the players camera
-func (s *Session) SendCameraShake(Intensity, Duration float32, Type CameraShakeType) {
-	s.writePacket(&packet.CameraShake{
-		Duration:  Duration,
-		Intensity: Intensity,
-		Type:      uint8(Type),
-	})
-}
-
 // SendFood ...
 func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	s.writePacket(&packet.UpdateAttributes{
@@ -240,10 +231,10 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
-// SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
+// SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
+	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
 		if s.c.Flying() {
@@ -259,28 +250,24 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
 	}
 	if !mode.AllowsInteraction() {
-		flags |= packet.AdventureFlagNoPVP
+		flags |= packet.AdventureSettingsFlagsNoPvM
 	} else {
-		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
+		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
 	if !mode.Visible() {
 		flags |= packet.AdventureFlagMuted
 	}
-	// Creative or spectator players:
+	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-		// Cannot interact with the world, so this is a spectator.
-		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
-			id = packet.GameTypeCreativeSpectator
-		}
 	}
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,
 		ActionPermissions: perms,
 	})
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
 // SendHealth sends the health and max health to the player.
@@ -443,7 +430,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 	})
 }
 
-// HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
+// HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
@@ -564,7 +551,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		var b world.Block
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
-		// return air anyways.
+		// return air anyway.
 		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}
@@ -707,14 +694,6 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	}
 	return
 }
-
-// CameraShakeType is the type of camera shake that the player receives
-type CameraShakeType uint8
-
-const (
-	CameraShakePositional = iota
-	CameraShakeRotational
-)
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
