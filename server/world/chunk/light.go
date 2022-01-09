@@ -74,10 +74,10 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 			baseX, baseZ := a.baseX+(cx<<4), a.baseZ+(cz<<4)
 
 			m := calculateHeightmap(c)
-			highestY := cube.MinY
+			highestY := c.Range().Min()
 			for index := range c.sub {
 				if c.sub[index] != nil {
-					highestY = int(subY(int16(index)) + 15)
+					highestY = int(c.subY(int16(index)) + 15)
 				}
 			}
 			for x := uint8(0); x < 16; x++ {

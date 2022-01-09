@@ -9,13 +9,14 @@ type Area struct {
 	baseX, baseZ int
 	c            []*Chunk
 	w            int
+	r            cube.Range
 }
 
 func NewArea(c []*Chunk, w int, baseX, baseY int) *Area {
 	if len(c) != w*w {
 		panic("chunk count must be equal to w*w")
 	}
-	return &Area{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4}
+	return &Area{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
 }
 
 func (a *Area) Light(pos cube.Pos, l light) uint8 {
@@ -30,7 +31,7 @@ func (a *Area) Neighbours(n lightNode) []lightNode {
 	nodes := make([]lightNode, 0, 6)
 	for _, f := range cube.Faces() {
 		nn := lightNode{pos: n.pos.Side(f), lt: n.lt}
-		if nn.pos[1] <= cube.MaxY && nn.pos[1] >= cube.MinY && nn.pos[0] >= a.baseX && nn.pos[2] >= a.baseZ && nn.pos[0] < a.baseX+a.w*16 && nn.pos[2] < a.baseZ+a.w*16 {
+		if nn.pos[1] <= a.r.Max() && nn.pos[1] >= a.r.Min() && nn.pos[0] >= a.baseX && nn.pos[2] >= a.baseZ && nn.pos[0] < a.baseX+a.w*16 && nn.pos[2] < a.baseZ+a.w*16 {
 			nodes = append(nodes, nn)
 		}
 	}
@@ -41,7 +42,7 @@ func (a *Area) horizontalNeighbours(pos cube.Pos) []cube.Pos {
 	positions := make([]cube.Pos, 0, 4)
 	for _, f := range cube.HorizontalFaces() {
 		p := pos.Side(f)
-		if p[1] <= cube.MaxY && p[1] >= cube.MinY && p[0] >= a.baseX && p[2] >= a.baseZ && p[0] < a.baseX+a.w*16 && p[2] < a.baseZ+a.w*16 {
+		if p[1] <= a.r.Max() && p[1] >= a.r.Min() && p[0] >= a.baseX && p[2] >= a.baseZ && p[0] < a.baseX+a.w*16 && p[2] < a.baseZ+a.w*16 {
 			positions = append(positions, p)
 		}
 	}
@@ -55,7 +56,7 @@ func (a *Area) IterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Po
 
 			for index, sub := range c.sub {
 				if filter(sub) {
-					baseY := int(subY(int16(index)))
+					baseY := int(c.subY(int16(index)))
 					a.iterSubChunk(func(x, y, z int) {
 						f(cube.Pos{x + baseX, y + baseY, z + baseZ})
 					})
@@ -126,7 +127,7 @@ func (a *Area) initialiseLightSlices() {
 }
 
 func (a *Area) sub(pos cube.Pos) *SubChunk {
-	return a.chunk(pos).sub[subIndex(int16(pos[1]))]
+	return a.chunk(pos).subChunk(int16(pos[1]))
 }
 
 func (a *Area) chunk(pos cube.Pos) *Chunk {
