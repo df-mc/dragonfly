@@ -6,23 +6,23 @@ type Category struct {
 }
 
 // Construction ...
-func Construction() Category {
-	return Category{2}
+func Construction() Category { // Doesn't work?
+	return Category{1}
 }
 
 // Nature ...
 func Nature() Category {
-	return Category{3}
+	return Category{2}
 }
 
 // Equipment ...
 func Equipment() Category {
-	return Category{4}
+	return Category{3}
 }
 
 // Items ...
 func Items() Category {
-	return Category{5}
+	return Category{4}
 }
 
 type category uint8
@@ -35,13 +35,13 @@ func (c category) Uint8() uint8 {
 // String ...
 func (c category) String() string {
 	switch c {
-	case 2:
+	case 1:
 		return "construction"
-	case 3:
+	case 2:
 		return "nature"
-	case 4:
+	case 3:
 		return "equipment"
-	case 5:
+	case 4:
 		return "items"
 	}
 	panic("should never happen")

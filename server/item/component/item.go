@@ -17,8 +17,7 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		"minecraft:icon": map[string]interface{}{
 			"texture": name,
 		},
-		//"creative_category": int32(it.Category().Uint8()),
-		"creative_category": int32(3),
+		"creative_category": int32(it.Category().Uint8()),
 		"max_stack_size":    int32(64),
 	}
 	components := map[string]interface{}{

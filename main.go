@@ -40,7 +40,9 @@ func main() {
 		if err != nil {
 			return
 		}
-		p.Inventory().AddItem(item.NewStack(item.Strawberry{}, 1))
+		inv := p.Inventory()
+		inv.Clear()
+		inv.AddItem(item.NewStack(item.Strawberry{}, 1))
 	}
 }
 
