@@ -333,6 +333,9 @@ func init() {
 	for _, p := range PrismarineTypes() {
 		world.RegisterItem(Prismarine{Type: p})
 	}
+	for _, t := range NetherBricksTypes() {
+		world.RegisterItem(NetherBricks{Type: t})
+	}
 }
 
 func registerAll(blocks []world.Block) {
