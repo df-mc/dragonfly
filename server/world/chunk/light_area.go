@@ -105,20 +105,25 @@ var (
 	noLightPtr   = &noLight[0]
 )
 
+// initialiseLightSlices initialises all light slices in the sub chunks of all chunks either with full light if there is
+// no sub chunk with any blocks above it, or with empty light if there is. The sub chunks with empty light are then
+// ready to be properly calculated.
 func (a *Area) initialiseLightSlices() {
 	for _, c := range a.c {
 		index := len(c.sub) - 1
 		for index >= 0 {
-			if sub := c.sub[index]; sub.Empty() {
-				sub.skyLight = fullLight
-				sub.blockLight = noLight
-				index--
-				continue
+			sub := c.sub[index]
+			if !sub.Empty() {
+				// We've hit the topmost empty SubChunk.
+				break
 			}
-			// We've hit the topmost empty SubChunk.
-			break
+			sub.skyLight = fullLight
+			sub.blockLight = noLight
+			index--
 		}
 		for index >= 0 {
+			// Fill up the rest of the sub chunks with empty light. We will do light calculation for these sub chunks
+			// later on.
 			c.sub[index].skyLight = noLight
 			c.sub[index].blockLight = noLight
 			index--
