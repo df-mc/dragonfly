@@ -8,9 +8,29 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/internal"
+	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
+	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/player/playerdb"
+	"github.com/df-mc/dragonfly/server/player/skin"
+	"github.com/df-mc/dragonfly/server/session"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
+	"github.com/df-mc/dragonfly/server/world/generator"
+	"github.com/df-mc/dragonfly/server/world/mcdb"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"github.com/sandertv/gophertunnel/minecraft/resource"
+	"github.com/sandertv/gophertunnel/minecraft/text"
+	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -21,28 +41,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	_ "unsafe" // Imported for compiler directives.
-
-	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/internal"
-	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
-	"github.com/df-mc/dragonfly/server/player"
-	"github.com/df-mc/dragonfly/server/player/playerdb"
-	"github.com/df-mc/dragonfly/server/player/skin"
-	"github.com/df-mc/dragonfly/server/session"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/generator"
-	"github.com/df-mc/dragonfly/server/world/mcdb"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
-	"github.com/sandertv/gophertunnel/minecraft"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
-	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"github.com/sandertv/gophertunnel/minecraft/text"
-	"github.com/sirupsen/logrus"
-	"go.uber.org/atomic"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -544,7 +542,7 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 		log.Fatalf("error loading world: %v", err)
 	}
 	w.Provider(p)
-	w.Generator(generator.Flat{Biome: biome, Layers: layers})
+	w.Generator(generator.NewFlat(biome, layers))
 
 	log.Debugf(`Loaded world "%v".`, w.Name())
 	return w

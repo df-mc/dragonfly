@@ -10,7 +10,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
-	_ "unsafe" // For compiler directives.
 )
 
 // Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump

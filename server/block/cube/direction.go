@@ -14,7 +14,7 @@ const (
 	East
 )
 
-// Opposite returns the opposite direction.
+// Opposite returns Direction opposite to the current one.
 func (d Direction) Opposite() Direction {
 	switch d {
 	case North:
@@ -29,7 +29,7 @@ func (d Direction) Opposite() Direction {
 	panic("invalid direction")
 }
 
-// Face converts the direction to a block face.
+// Face converts the direction to a Face and returns it.
 func (d Direction) Face() Face {
 	return Face(d + 2)
 }

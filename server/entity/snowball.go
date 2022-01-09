@@ -15,9 +15,8 @@ type Snowball struct {
 	transform
 	yaw, pitch float64
 
-	ticksLived int
-
-	closeNextTick bool
+	age   int
+	close bool
 
 	owner world.Entity
 
@@ -64,8 +63,8 @@ func (s *Snowball) Rotation() (float64, float64) {
 }
 
 // Tick ...
-func (s *Snowball) Tick(current int64) {
-	if s.closeNextTick {
+func (s *Snowball) Tick(w *world.World, current int64) {
+	if s.close {
 		_ = s.Close()
 		return
 	}
@@ -74,16 +73,15 @@ func (s *Snowball) Tick(current int64) {
 	s.pos, s.vel, s.yaw, s.pitch = m.pos, m.vel, m.yaw, m.pitch
 	s.mu.Unlock()
 
-	s.ticksLived++
+	s.age++
 	m.Send()
 
-	if m.pos[1] < float64(s.World().Range()[0]) && current%10 == 0 {
-		s.closeNextTick = true
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
+		s.close = true
 		return
 	}
 
 	if result != nil {
-		w := s.World()
 		for i := 0; i < 6; i++ {
 			w.AddParticle(result.Position(), particle.SnowballPoof{})
 		}
@@ -96,14 +94,14 @@ func (s *Snowball) Tick(current int64) {
 			}
 		}
 
-		s.closeNextTick = true
+		s.close = true
 	}
 }
 
 // ignores returns whether the snowball should ignore collision with the entity passed.
 func (s *Snowball) ignores(entity world.Entity) bool {
 	_, ok := entity.(Living)
-	return !ok || entity == s || (s.ticksLived < 5 && entity == s.owner)
+	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
 // New creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,

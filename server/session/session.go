@@ -209,8 +209,8 @@ func (s *Session) Close() error {
 		s.onStop(s.c)
 		s.onStop = nil
 
-		s.c.World().RemoveEntity(s.c)
 		_ = s.c.Close()
+		s.c.World().RemoveEntity(s.c)
 	}
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.

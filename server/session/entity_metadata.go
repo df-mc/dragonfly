@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
@@ -69,7 +70,7 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
 		if (colour != color.RGBA{}) {
-			m[dataKeyPotionColour] = (int32(colour.A) << 24) | (int32(colour.R) << 16) | (int32(colour.G) << 8) | int32(colour.B)
+			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
 			if am {
 				m[dataKeyPotionAmbient] = byte(1)
 			} else {

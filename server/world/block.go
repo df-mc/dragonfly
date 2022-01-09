@@ -214,3 +214,9 @@ func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
 	}
 	return false
 }
+
+// BlockAction represents an action that may be performed by a block. Typically, these actions are sent to
+// viewers in a world so that they can see these actions.
+type BlockAction interface {
+	BlockAction()
+}

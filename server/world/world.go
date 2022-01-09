@@ -128,6 +128,9 @@ func (w *World) Dimension() Dimension {
 
 // Range returns the range in blocks of the World (min and max). It is equivalent to calling World.Dimension().Range().
 func (w *World) Range() cube.Range {
+	if w == nil {
+		return cube.Range{}
+	}
 	return w.ra
 }
 
@@ -147,7 +150,6 @@ func (w *World) Block(pos cube.Pos) Block {
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
-	b, _ := BlockByRuntimeID(rid)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
@@ -157,6 +159,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	}
 	c.Unlock()
 
+	b, _ := BlockByRuntimeID(rid)
 	return b
 }
 
@@ -191,15 +194,15 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		return air(), nil
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	b, _ := BlockByRuntimeID(rid)
 
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
-		b, ok := c.e[pos]
-		if ok {
+		if b, ok := c.e[pos]; ok {
 			return b, nil
 		}
 	}
+
+	b, _ := BlockByRuntimeID(rid)
 	return b, nil
 }
 
@@ -262,16 +265,15 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
+	rid, ok := BlockRuntimeID(b)
+	if !ok {
+		w.log.Errorf("runtime ID of block %+v not found", b)
 		return
 	}
 
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		c.Unlock()
-		w.log.Errorf("runtime ID of block %+v not found", b)
+	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	c, err := w.chunk(ChunkPos{x, z})
+	if err != nil {
 		return
 	}
 	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
@@ -302,13 +304,14 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
+	x, z, biome := int32(pos[0]>>4), int32(pos[2]>>4), uint32(b.EncodeBiome())
 	c, err := w.chunk(ChunkPos{x, z})
 	if err != nil {
 		return
 	}
 
-	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), biome)
+	c.Unlock()
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -834,9 +837,9 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
-	if e.World() != nil {
-		e.World().RemoveEntity(e)
-	}
+	// Remove the Entity from any previous World it might be in.
+	e.World().RemoveEntity(e)
+
 	worldsMu.Lock()
 	entityWorlds[e] = w
 	worldsMu.Unlock()
@@ -1511,23 +1514,13 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 					// SubChunk is empty, so skip it right away.
 					continue
 				}
-				layers := sub.Layers()
-				if len(layers) == 0 {
-					// No layers present, so skip it right away.
-					continue
-				}
-				layer := layers[0]
-				if p := layer.Palette(); p.Len() == 1 && p.Value(0) == airRID {
-					// Empty layer present, so skip it right away.
-					continue
-				}
 				if generateNew {
 					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := layer.At(x, y, z)
+				rid := sub.Layers()[0].At(x, y, z)
 				if rid == airRID {
 					// The block was air, take the fast route out.
 					continue
@@ -1588,8 +1581,8 @@ func (w *World) tickEntities(tick int64) {
 	}
 	var entitiesToMove []entityToMove
 
-	w.entityMu.Lock()
 	w.chunkMu.Lock()
+	w.entityMu.Lock()
 	for e, lastPos := range w.entities {
 		chunkPos := chunkPosFromVec3(e.Position())
 
@@ -1634,8 +1627,8 @@ func (w *World) tickEntities(tick int64) {
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
-	w.chunkMu.Unlock()
 	w.entityMu.Unlock()
+	w.chunkMu.Unlock()
 
 	for _, move := range entitiesToMove {
 		move.after.Lock()
@@ -1659,12 +1652,9 @@ func (w *World) tickEntities(tick int64) {
 		}
 	}
 	for _, ticker := range w.entitiesToTick {
-		if _, ok := OfEntity(ticker.(Entity)); !ok {
-			continue
-		}
 		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
 		// active.
-		ticker.Tick(tick)
+		ticker.Tick(w, tick)
 	}
 	w.entitiesToTick = w.entitiesToTick[:0]
 }
@@ -1923,8 +1913,6 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	}
 	data := newChunkData(c)
 	w.chunks[pos] = data
-	data.Lock()
-	w.chunkMu.Unlock()
 
 	ent, err := w.provider().LoadEntities(pos)
 	if err != nil {
@@ -1952,6 +1940,9 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
 	}
 	w.loadIntoBlocks(data, blockEntities)
+
+	data.Lock()
+	w.chunkMu.Unlock()
 	return data, nil
 }
 

@@ -20,9 +20,8 @@ type SplashPotion struct {
 	transform
 	yaw, pitch float64
 
-	ticksLived int
-
-	closeNextTick bool
+	age   int
+	close bool
 
 	owner world.Entity
 
@@ -79,8 +78,8 @@ func (s *SplashPotion) Type() potion.Potion {
 }
 
 // Tick ...
-func (s *SplashPotion) Tick(current int64) {
-	if s.closeNextTick {
+func (s *SplashPotion) Tick(w *world.World, current int64) {
+	if s.close {
 		_ = s.Close()
 		return
 	}
@@ -89,70 +88,67 @@ func (s *SplashPotion) Tick(current int64) {
 	s.pos, s.vel, s.yaw, s.pitch = m.pos, m.vel, m.yaw, m.pitch
 	s.mu.Unlock()
 
-	s.ticksLived++
+	s.age++
 	m.Send()
 
-	if m.pos[1] < float64(s.World().Range()[0]) && current%10 == 0 {
-		s.closeNextTick = true
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
+		s.close = true
 		return
 	}
 
 	if result != nil {
-		w := s.World()
 		aabb := s.AABB().Translate(m.pos)
 
-		effects := s.t.Effects()
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
-
-		if len(effects) > 0 {
+		if effects := s.t.Effects(); len(effects) > 0 {
 			colour, _ = effect.ResultingColour(effects)
 
 			ignore := func(entity world.Entity) bool {
-				_, canSplash := entity.(Living)
-				return !canSplash || entity == s
+				_, living := entity.(Living)
+				return !living || entity == s
 			}
 
-			for _, otherEntity := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
-				splashEntity := otherEntity.(Living)
-				if !splashEntity.AABB().Translate(splashEntity.Position()).IntersectsWith(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
+			for _, e := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
+				pos := e.Position()
+				if !e.AABB().Translate(pos).IntersectsWith(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 					continue
 				}
 
-				dist := world.Distance(splashEntity.Position(), m.pos)
+				dist := world.Distance(pos, m.pos)
 				if dist > 4 {
 					continue
 				}
 
-				distFactor := 1 - dist/4
-				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == otherEntity {
-					distFactor = 1
+				f := 1 - dist/4
+				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == e {
+					f = 1
 				}
 
+				splashed := e.(Living)
 				for _, eff := range effects {
-					if potentEff, ok := eff.Type().(effect.PotentType); ok {
-						splashEntity.AddEffect(effect.NewInstant(potentEff.WithPotency(distFactor), eff.Level()))
+					if p, ok := eff.Type().(effect.PotentType); ok {
+						splashed.AddEffect(effect.NewInstant(p.WithPotency(f), eff.Level()))
 						continue
 					}
 
-					dur := time.Duration(float64(eff.Duration()) * 0.75 * distFactor)
+					dur := time.Duration(float64(eff.Duration()) * 0.75 * f)
 					if dur < time.Second {
 						continue
 					}
-					splashEntity.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
+					splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
 				}
 			}
 		} else if s.t.Equals(potion.Water()) {
-			switch blockResult := result.(type) {
+			switch result := result.(type) {
 			case trace.BlockResult:
-				blockPos := blockResult.BlockPosition().Side(blockResult.Face())
-				if w.Block(blockPos) == fire() {
-					w.SetBlock(blockPos, air())
+				pos := result.BlockPosition().Side(result.Face())
+				if w.Block(pos) == fire() {
+					w.SetBlock(pos, air())
 				}
 
 				for _, f := range cube.HorizontalFaces() {
-					horizontalPos := blockPos.Side(f)
-					if w.Block(horizontalPos) == fire() {
-						w.SetBlock(horizontalPos, air())
+					if h := pos.Side(f); w.Block(h) == fire() {
+						w.SetBlock(h, air())
 					}
 				}
 			case trace.EntityResult:
@@ -163,14 +159,14 @@ func (s *SplashPotion) Tick(current int64) {
 		w.AddParticle(m.pos, particle.Splash{Colour: colour})
 		w.PlaySound(m.pos, sound.GlassBreak{})
 
-		s.closeNextTick = true
+		s.close = true
 	}
 }
 
 // ignores returns whether the SplashPotion should ignore collision with the entity passed.
 func (s *SplashPotion) ignores(entity world.Entity) bool {
 	_, ok := entity.(Living)
-	return !ok || entity == s || (s.ticksLived < 5 && entity == s.owner)
+	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
 // New creates a SplashPotion with the position, velocity, yaw, and pitch provided. It doesn't spawn the SplashPotion,

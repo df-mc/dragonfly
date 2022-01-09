@@ -1,7 +1,6 @@
 package sound
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -65,7 +64,7 @@ type FireExtinguish struct{ sound }
 type Note struct {
 	sound
 	// Instrument is the instrument of the note block.
-	Instrument instrument.Instrument
+	Instrument Instrument
 	// Pitch is the pitch of the note.
 	Pitch int
 }

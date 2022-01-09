@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/action"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -71,7 +70,7 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 }
 
 // Tick ticks the entity, performing movement.
-func (it *Item) Tick(current int64) {
+func (it *Item) Tick(w *world.World, current int64) {
 	it.mu.Lock()
 	m := it.c.TickMovement(it, it.pos, it.vel, 0, 0)
 	it.pos, it.vel = m.pos, m.vel
@@ -79,7 +78,7 @@ func (it *Item) Tick(current int64) {
 
 	m.Send()
 
-	if m.pos[1] < float64(it.World().Range()[0]) && current%10 == 0 {
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
 		_ = it.Close()
 		return
 	}
@@ -89,7 +88,7 @@ func (it *Item) Tick(current int64) {
 	}
 
 	if it.pickupDelay == 0 {
-		it.checkNearby(m.pos)
+		it.checkNearby(w, m.pos)
 	} else if it.pickupDelay != math.MaxInt16 {
 		it.pickupDelay--
 	}
@@ -98,9 +97,9 @@ func (it *Item) Tick(current int64) {
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
-func (it *Item) checkNearby(pos mgl64.Vec3) {
+func (it *Item) checkNearby(w *world.World, pos mgl64.Vec3) {
 	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range it.World().EntitiesWithin(it.AABB().Translate(pos).Grow(2), nil) {
+	for _, e := range w.EntitiesWithin(it.AABB().Translate(pos).Grow(2), nil) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
@@ -108,11 +107,11 @@ func (it *Item) checkNearby(pos mgl64.Vec3) {
 		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				// A collector was within range to pick up the entity.
-				it.collect(collector, pos)
+				it.collect(w, collector, pos)
 				return
 			} else if other, ok := e.(*Item); ok {
 				// Another item entity was in range to merge with.
-				if it.merge(other, pos) {
+				if it.merge(w, other, pos) {
 					return
 				}
 			}
@@ -121,7 +120,7 @@ func (it *Item) checkNearby(pos mgl64.Vec3) {
 }
 
 // merge merges the item entity with another item entity.
-func (it *Item) merge(other *Item, pos mgl64.Vec3) bool {
+func (it *Item) merge(w *world.World, other *Item, pos mgl64.Vec3) bool {
 	if other.i.Count() == other.i.MaxCount() || it.i.Count() == it.i.MaxCount() {
 		// Either stack is already filled up to the maximum, meaning we can't change anything any way.
 		return false
@@ -134,12 +133,12 @@ func (it *Item) merge(other *Item, pos mgl64.Vec3) bool {
 
 	newA := NewItem(a, other.Position())
 	newA.SetVelocity(other.Velocity())
-	it.World().AddEntity(newA)
+	w.AddEntity(newA)
 
 	if !b.Empty() {
 		newB := NewItem(b, pos)
 		newB.SetVelocity(it.vel)
-		it.World().AddEntity(newB)
+		w.AddEntity(newB)
 	}
 	_ = it.Close()
 	_ = other.Close()
@@ -147,13 +146,13 @@ func (it *Item) merge(other *Item, pos mgl64.Vec3) bool {
 }
 
 // collect makes a collector collect the item (or at least part of it).
-func (it *Item) collect(collector Collector, pos mgl64.Vec3) {
+func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	n := collector.Collect(it.i)
 	if n == 0 {
 		return
 	}
-	for _, viewer := range it.World().Viewers(pos) {
-		viewer.ViewEntityAction(it, action.PickedUp{Collector: collector})
+	for _, viewer := range w.Viewers(pos) {
+		viewer.ViewEntityAction(it, PickedUpAction{Collector: collector})
 	}
 
 	if n == it.i.Count() {
@@ -162,7 +161,7 @@ func (it *Item) collect(collector Collector, pos mgl64.Vec3) {
 		return
 	}
 	// Create a new item entity and shrink it by the amount of items that the collector collected.
-	it.World().AddEntity(NewItem(it.i.Grow(-n), pos))
+	w.AddEntity(NewItem(it.i.Grow(-n), pos))
 
 	_ = it.Close()
 }

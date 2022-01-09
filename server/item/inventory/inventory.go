@@ -100,8 +100,14 @@ func (inv *Inventory) Items() []item.Stack {
 
 // First returns the first slot with an item if found. Second return value describes whether the item was found.
 func (inv *Inventory) First(item item.Stack) (int, bool) {
+	return inv.FirstFunc(item.Comparable)
+}
+
+// FirstFunc finds the first slot with an item.Stack that results in the comparable function passed returning true. The
+// function returns false if no such item was found.
+func (inv *Inventory) FirstFunc(comparable func(stack item.Stack) bool) (int, bool) {
 	for slot, it := range inv.Slots() {
-		if !it.Empty() && it.Comparable(item) {
+		if !it.Empty() && comparable(it) {
 			return slot, true
 		}
 	}
@@ -190,33 +196,57 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 
 // RemoveItem attempts to remove an item from the inventory. It will visit all slots in the inventory and
 // empties them until it.Count() items have been removed from the inventory.
-// If less than it.Count() items could be found in the inventory, an error is returned.
+// If less than it.Count() items were removed from the inventory, an error is returned.
 func (inv *Inventory) RemoveItem(it item.Stack) error {
-	toRemove := it.Count()
+	return inv.RemoveItemFunc(it.Count(), it.Comparable)
+}
 
+// RemoveItemFunc removes up to n items from the Inventory. It will visit all slots in the inventory and empties them
+// until n items have been removed from the inventory, assuming the comparable function returns true for the slots
+// visited. No items will be deducted from slots if the comparable function returns false.
+// If less than n items were removed, an error is returned.
+func (inv *Inventory) RemoveItemFunc(n int, comparable func(stack item.Stack) bool) error {
 	inv.mu.Lock()
+	defer inv.mu.Unlock()
+
 	for slot, slotIt := range inv.slots {
-		if slotIt.Empty() || !slotIt.Comparable(it) {
+		if slotIt.Empty() || !comparable(slotIt) {
 			continue
 		}
-		f := inv.setItem(slot, slotIt.Grow(-toRemove))
+		f := inv.setItem(slot, slotIt.Grow(-n))
 		//noinspection GoDeferInLoop
 		defer f()
 
-		toRemove -= slotIt.Count()
-
-		if toRemove <= 0 {
-			// No more items left to remove: We can exit the loop.
-			inv.mu.Unlock()
-			return nil
+		if n -= slotIt.Count(); n <= 0 {
+			break
 		}
 	}
-	if toRemove <= 0 {
-		inv.mu.Unlock()
-		return nil
+	if n > 0 {
+		return fmt.Errorf("could not remove all items from the inventory")
 	}
-	inv.mu.Unlock()
-	return fmt.Errorf("could not remove all items from the inventory")
+	return nil
+}
+
+// ContainsItem checks if the Inventory contains an item.Stack. It will visit all slots in the Inventory until it finds
+// at enough items. If enough were found, true is returned.
+func (inv *Inventory) ContainsItem(it item.Stack) bool {
+	return inv.ContainsItemFunc(it.Count(), it.Comparable)
+}
+
+// ContainsItemFunc checks if the Inventory contains at least n items. It will visit all slots in the Inventory until it
+// finds n items on which the comparable function returns true. ContainsItemFunc returns true if this is the case.
+func (inv *Inventory) ContainsItemFunc(n int, comparable func(stack item.Stack) bool) bool {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+
+	for _, slotIt := range inv.slots {
+		if !slotIt.Empty() && comparable(slotIt) {
+			if n -= slotIt.Count(); n <= 0 {
+				break
+			}
+		}
+	}
+	return n <= 0
 }
 
 // Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
