@@ -426,7 +426,7 @@ func (p *Player) SetScoreTag(a ...interface{}) {
 	p.updateState()
 }
 
-// ScoreTag returns the current score tag of the Player. It can be changed using SetScoreTag and by default has no value.
+// ScoreTag returns the current score tag of the player. It can be changed using SetScoreTag and by default is empty.
 func (p *Player) ScoreTag() string {
 	return p.scoreTag.Load()
 }
