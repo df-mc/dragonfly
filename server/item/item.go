@@ -46,6 +46,13 @@ type Usable interface {
 	Use(w *world.World, user User, ctx *UseContext) bool
 }
 
+// Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
+// non-vanilla items.
+type Throwable interface {
+	// SwingAnimation returns if the client should cause the player's arm to swing when the item is thrown.
+	SwingAnimation() bool
+}
+
 // Consumable represents an item that may be consumed by a player. If an item implements this interface, a player
 // may use and hold the item to consume it.
 type Consumable interface {
@@ -77,6 +84,19 @@ type Consumer interface {
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
 // time to be consumed.
 const DefaultConsumeDuration = (time.Second * 161) / 100
+
+// Drinkable represents a custom item that can be drunk. It is used to make the client show the correct drinking
+// animation when a player is using an item. This will only have an effect on non-vanilla items.
+type Drinkable interface {
+	// Drinkable returns if the item can be drunk or not.
+	Drinkable() bool
+}
+
+// Edible represents a custom item that can be eaten. This will only have an effect on non-vanilla items.
+type Edible interface {
+	// Edible returns if the item can be eaten or not.
+	Edible() bool
+}
 
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.

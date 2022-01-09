@@ -36,9 +36,11 @@ func main() {
 	}
 
 	for {
-		if _, err := srv.Accept(); err != nil {
+		p, err := srv.Accept()
+		if err != nil {
 			return
 		}
+		p.Inventory().AddItem(item.NewStack(item.Strawberry{}, 1))
 	}
 }
 

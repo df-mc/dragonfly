@@ -24,7 +24,7 @@ func buildItems(dir string) (count int, lang []string) {
 	}
 
 	textureData := make(map[string]interface{})
-	for _, item := range world_allCustomItems() {
+	for _, item := range world.CustomItems() {
 		identifier, _ := item.EncodeItem()
 		lang = append(lang, fmt.Sprintf("item.%s.name=%s", identifier, item.Name()))
 
@@ -93,7 +93,3 @@ func buildItemAtlas(dir string, atlas map[string]interface{}) {
 		panic(err)
 	}
 }
-
-//go:linkname world_allCustomItems github.com/df-mc/dragonfly/server/world.allCustomItems
-//noinspection ALL
-func world_allCustomItems() []world.CustomItem

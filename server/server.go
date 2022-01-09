@@ -8,10 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/pack_builder"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
+	"github.com/df-mc/dragonfly/server/item/component"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -58,6 +60,7 @@ type Server struct {
 	world, nether, end *world.World
 	players            chan *player.Player
 	resources          []*resource.Pack
+	itemComponents     map[string]map[string]interface{}
 
 	startTime time.Time
 
@@ -396,13 +399,12 @@ func (server *Server) running() bool {
 func (server *Server) startListening() error {
 	server.startTime = time.Now()
 
-	var packs []*resource.Pack
+	server.makeItemComponents()
 	if server.c.Resources.AutoBuildPack {
 		if pack := pack_builder.BuildResourcePack(); pack != nil {
-			packs = append(packs, pack)
+			server.resources = append(server.resources, pack)
 		}
 	}
-	// TODO: Support loading user-provided resource packs.
 
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         server.c.Players.MaxCount,
@@ -421,6 +423,18 @@ func (server *Server) startListening() error {
 
 	server.log.Infof("Server running on %v.\n", l.Addr())
 	return nil
+}
+
+// makeItemComponents initializes the server's item components map using the registered custom items. It allows item
+// components to be created only once at startup
+func (server *Server) makeItemComponents() {
+	server.itemComponents = make(map[string]map[string]interface{})
+	for _, it := range world.CustomItems() {
+		name, _ := it.EncodeItem()
+		if data, ok := component.FromItem(it); ok {
+			server.itemComponents[name] = data
+		}
+	}
 }
 
 // wait awaits the closing of all Listeners added to the Server through a call to Listen and closed the players channel
@@ -450,6 +464,19 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
+		return
+	}
+
+	itemComponentEntries := make([]protocol.ItemComponentEntry, len(server.itemComponents))
+	for name, component := range server.itemComponents {
+		itemComponentEntries = append(itemComponentEntries, protocol.ItemComponentEntry{
+			Name: name,
+			Data: component,
+		})
+	}
+	if err := conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries}); err != nil {
+		_ = l.Disconnect(conn, "Internal server error.")
+		server.log.Debugf("connection %v failed sending item components: %v\n", conn.RemoteAddr(), err)
 		return
 	}
 	if p, ok := server.Player(id); ok {
@@ -623,10 +650,15 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 // itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
-	for name, rid := range itemRuntimeIDs {
+	for _, it := range world.Items() {
+		name, _ := it.EncodeItem()
+		rid, _, _ := world.ItemRuntimeID(it)
+
+		_, componentBased := server.itemComponents[name]
 		entries = append(entries, protocol.ItemEntry{
-			Name:      name,
-			RuntimeID: int16(rid),
+			Name:           name,
+			RuntimeID:      int16(rid),
+			ComponentBased: componentBased,
 		})
 	}
 	return

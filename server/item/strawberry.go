@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/item/category"
+	"github.com/df-mc/dragonfly/server/world"
 	"image"
 	"image/png"
 	"os"
@@ -9,7 +10,16 @@ import (
 
 // Strawberry is a custom item used only to test the custom item functionality. This will not remain as a
 // dragonfly feature in the future.
-type Strawberry struct{}
+type Strawberry struct{ defaultFood }
+
+func (s Strawberry) Edible() bool {
+	return true
+}
+
+func (s Strawberry) Consume(w *world.World, c Consumer) Stack {
+	c.Saturate(10, 10)
+	return Stack{}
+}
 
 // EncodeItem ...
 func (Strawberry) EncodeItem() (name string, meta int16) {
@@ -23,7 +33,7 @@ func (Strawberry) Name() string {
 
 // Texture ...
 func (Strawberry) Texture() image.Image {
-	texture, err := os.OpenFile("./resources/strawberry.png", os.O_RDONLY, os.ModePerm)
+	texture, err := os.OpenFile("./test_resources/strawberry.png", os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
