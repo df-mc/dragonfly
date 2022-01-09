@@ -14,7 +14,7 @@ const formatVersion = "1.12.0"
 // BuildResourcePack builds a resource pack based on custom features that have been registered to the server.
 // It creates a UUID based on the hash of the directory so the client will only be prompted to download it
 // once it is changed.
-func BuildResourcePack() *resource.Pack {
+func BuildResourcePack() (*resource.Pack, bool) {
 	dir, err := ioutil.TempDir("", "dragonfly_resource_pack-")
 	if err != nil {
 		panic(err)
@@ -38,7 +38,7 @@ func BuildResourcePack() *resource.Pack {
 		copy(header[:], hash)
 		copy(module[:], hash[16:])
 		buildManifest(dir, header, module)
-		return resource.MustCompile(dir)
+		return resource.MustCompile(dir), true
 	}
-	return nil
+	return nil, false
 }

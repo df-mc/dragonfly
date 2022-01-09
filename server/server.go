@@ -401,7 +401,7 @@ func (server *Server) startListening() error {
 
 	server.makeItemComponents()
 	if server.c.Resources.AutoBuildPack {
-		if pack := pack_builder.BuildResourcePack(); pack != nil {
+		if pack, ok := pack_builder.BuildResourcePack(); ok {
 			server.resources = append(server.resources, pack)
 		}
 	}
