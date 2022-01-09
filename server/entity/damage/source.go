@@ -58,8 +58,6 @@ type SourceProjectile struct {
 	Projectile, Owner world.Entity
 }
 
-type SourceThorns struct{}
-
 // SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage to this source,
 // but otherwise no enchantments have an additional effect.
 type SourceCustom struct{}
@@ -87,10 +85,6 @@ func (SourceStarvation) ReducedByArmour() bool {
 // ReducedByArmour ...
 func (SourceInstantDamageEffect) ReducedByArmour() bool {
 	return false
-}
-
-func (s SourceThorns) ReducedByArmour() bool {
-	return true
 }
 
 // ReducedByArmour ...

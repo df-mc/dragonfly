@@ -26,7 +26,7 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 }
 
 // Release ...
-func (b Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
+func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
 		return
