@@ -1631,10 +1631,12 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 
 	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
 	for _, e := range around {
-		_, isItem := e.(*entity.Item)
-		_, isArrow := e.(*entity.Arrow)
-		if isItem || isArrow {
-			// Placing blocks inside item or arrow entities is fine.
+		if _, ok := e.(*entity.Item); ok {
+			// Placing blocks inside item entities is fine.
+			continue
+		}
+		if _, ok := e.(*entity.Arrow); ok {
+			// Placing blocks inside arrow entities is fine.
 			continue
 		}
 		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {

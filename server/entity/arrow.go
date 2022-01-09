@@ -161,12 +161,12 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		return
 	}
 
-	if pos, ok := a.CollisionPos(); ok {
-		aabbs := w.Block(pos).Model().AABB(pos, w)
-		aabb := a.AABB().Translate(a.Position())
+	a.mu.Lock()
+	if a.collided {
+		aabbs := w.Block(a.collisionPos).Model().AABB(a.collisionPos, w)
+		aabb := a.AABB().Translate(a.pos)
 		for _, bb := range aabbs {
-			if aabb.IntersectsWith(bb.Translate(pos.Vec3()).Grow(0.05)) {
-				a.mu.Lock()
+			if aabb.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
 				if a.ageCollided > 5 && !a.disallowPickup {
 					a.checkNearby(w)
 				}
@@ -177,7 +177,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		}
 	}
 
-	a.mu.Lock()
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.collisionPos, a.collided = cube.Pos{}, false
