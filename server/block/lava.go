@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -40,7 +39,7 @@ func neighboursLavaFlammable(pos cube.Pos, w *world.World) bool {
 
 // EntityInside ...
 func (l Lava) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if fallEntity, ok := e.(FallDistanceEntity); ok {
+	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
 	if flammable, ok := e.(entity.Flammable); ok {
@@ -75,11 +74,6 @@ func (l Lava) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	}
 }
 
-// AABB returns no boxes.
-func (Lava) AABB(cube.Pos, *world.World) []physics.AABB {
-	return nil
-}
-
 // HasLiquidDrops ...
 func (Lava) HasLiquidDrops() bool {
 	return false
@@ -98,7 +92,7 @@ func (Lava) LightEmissionLevel() uint8 {
 // NeighbourUpdateTick ...
 func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Harden(pos, w, nil) {
-		w.ScheduleBlockUpdate(pos, time.Second*3/2)
+		w.ScheduleBlockUpdate(pos, w.Dimension().LavaSpreadDuration())
 	}
 }
 
@@ -163,7 +157,7 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 				}
 				b = Cobblestone{}
 			}
-		})
+		}, w.Range())
 		if b != nil {
 			ctx := event.C()
 			w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)

@@ -11,17 +11,17 @@ type prismarine uint8
 
 // NormalPrismarine is the normal variant of prismarine.
 func NormalPrismarine() PrismarineType {
-	return PrismarineType{prismarine(0)}
+	return PrismarineType{0}
 }
 
 // DarkPrismarine is the dark variant of prismarine.
 func DarkPrismarine() PrismarineType {
-	return PrismarineType{prismarine(1)}
+	return PrismarineType{1}
 }
 
 // BrickPrismarine is the brick variant of prismarine.
 func BrickPrismarine() PrismarineType {
-	return PrismarineType{prismarine(2)}
+	return PrismarineType{2}
 }
 
 // Uint8 returns the prismarine as a uint8.

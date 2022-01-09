@@ -33,7 +33,7 @@ func (g TallGrass) BreakInfo() BreakInfo {
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
-		return []item.Stack{}
+		return nil
 	})
 }
 
@@ -96,4 +96,16 @@ func allTallGrass() (grasses []world.Block) {
 		grasses = append(grasses, TallGrass{Type: g})
 	}
 	return
+}
+
+// supportsVegetation checks if the vegetation can exist on the block.
+func supportsVegetation(vegetation, block world.Block) bool {
+	soil, ok := block.(Soil)
+	return ok && soil.SoilFor(vegetation)
+}
+
+// Soil represents a block that can support vegetation.
+type Soil interface {
+	// SoilFor returns whether the vegetation can exist on the block.
+	SoilFor(world.Block) bool
 }

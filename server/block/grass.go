@@ -69,7 +69,7 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		if dirt, ok := b.(Dirt); !ok || dirt.Coarse {
 			continue
 		}
-		// Don't spread grass to places where dirt is exposed to hardly any light.
+		// Don't spread grass to locations where dirt is exposed to hardly any light.
 		if w.Light(spreadPos.Add(cube.Pos{0, 1})) < 4 {
 			continue
 		}

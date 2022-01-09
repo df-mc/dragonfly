@@ -1,8 +1,8 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // IronBlock is a precious metal block made from 9 iron ingots.
@@ -11,8 +11,8 @@ type IronBlock struct {
 }
 
 // Instrument ...
-func (i IronBlock) Instrument() instrument.Instrument {
-	return instrument.IronXylophone()
+func (i IronBlock) Instrument() sound.Instrument {
+	return sound.IronXylophone()
 }
 
 // BreakInfo ...

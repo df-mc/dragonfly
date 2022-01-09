@@ -29,7 +29,7 @@ func (p Potion) ConsumeDuration() time.Duration {
 
 // Consume ...
 func (p Potion) Consume(_ *world.World, c Consumer) Stack {
-	for _, effect := range p.Type.Effects {
+	for _, effect := range p.Type.Effects() {
 		c.AddEffect(effect)
 	}
 	return NewStack(GlassBottle{}, 1)

@@ -40,7 +40,7 @@ func (o *Output) ErrorCount() int {
 	return len(o.errors)
 }
 
-// Messages returns a list of all messages added to the command output. The amount of messages set depends
+// Messages returns a list of all messages added to the command output. The amount of messages present depends
 // on the command called.
 func (o *Output) Messages() []string {
 	return o.messages

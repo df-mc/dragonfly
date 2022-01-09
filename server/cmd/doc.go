@@ -13,7 +13,7 @@
 // must be of the type string.
 // Fields in the Runnable struct may have the `optional:""` struct tag to mark them as an optional parameter,
 // the `suffix:"$suffix"` struct tag to add a suffix to the parameter in the usage, and the `name:"name"` tag
-// to specify a name different than the field name for the parameter.
+// to specify a name different from the field name for the parameter.
 //
 // Commands may be registered using the cmd.Register() method. By itself, this method will not ensure that the
 // client will be able to use the command: The user of the cmd package must handle commands itself and run the

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -158,7 +157,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the controllable of
+// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
 // the session in the world.
 // The function passed will be called when the session stops running.
 func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
@@ -190,7 +189,7 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
-	s.sendInv(s.armour.Inv(), protocol.WindowIDArmour)
+	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 }
 
@@ -201,13 +200,16 @@ func (s *Session) Close() error {
 
 	_ = s.conn.Close()
 	_ = s.chunkLoader.Close()
-	_ = s.c.Close()
 
 	if j := s.quitMessage.Load(); j != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
 
-	if s.c.World() != nil {
+	if s.onStop != nil {
+		s.onStop(s.c)
+		s.onStop = nil
+
+		_ = s.c.Close()
 		s.c.World().RemoveEntity(s.c)
 	}
 
@@ -219,10 +221,6 @@ func (s *Session) Close() error {
 	s.entities = map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
 
-	if s.onStop != nil {
-		s.onStop(s.c)
-		s.onStop = nil
-	}
 	return nil
 }
 
@@ -318,10 +316,9 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 		te.Stop()
 	}()
 	var (
-		r          map[string]map[int]cmd.Runnable
-		enumValues map[string][]string
-		enums      map[string]cmd.Enum
-		ok         bool
+		r                 = s.sendAvailableCommands()
+		enums, enumValues = s.enums()
+		ok                bool
 	)
 	for {
 		select {
@@ -354,6 +351,10 @@ func (s *Session) handleWorldSwitch() {
 		s.openChunkTransactions = nil
 	}
 
+	if s.c.World().Dimension() != s.chunkLoader.World().Dimension() {
+		s.writePacket(&packet.ChangeDimension{Dimension: int32(s.c.World().Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	}
 	s.chunkLoader.ChangeWorld(s.c.World())
 }
 
@@ -403,6 +404,7 @@ func (s *Session) registerHandlers() {
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+		packet.IDItemFrameDropItem:     nil,
 	}
 }
 

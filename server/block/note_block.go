@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -26,11 +25,13 @@ func (n NoteBlock) playNote(pos cube.Pos, w *world.World) {
 }
 
 // updateInstrument ...
-func (n NoteBlock) instrument(pos cube.Pos, w *world.World) instrument.Instrument {
-	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(InstrumentBlock); ok {
+func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
+	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(interface {
+		Instrument() sound.Instrument
+	}); ok {
 		return instrumentBlock.Instrument()
 	}
-	return instrument.Piano()
+	return sound.Piano()
 }
 
 // DecodeNBT ...
@@ -45,7 +46,7 @@ func (n NoteBlock) EncodeNBT() map[string]interface{} {
 }
 
 // Punch ...
-func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
@@ -53,7 +54,7 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}

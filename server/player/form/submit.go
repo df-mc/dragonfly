@@ -17,7 +17,7 @@ type Submittable interface {
 // form.Button.
 type MenuSubmittable interface {
 	// Submit is called when the Submitter submits the menu form sent to it. The method is called with the
-	// button that was pressed. It may be compared to buttons in the MenuSubmittable struct to check which
+	// button that was pressed. It may be compared with buttons in the MenuSubmittable struct to check which
 	// button was pressed.
 	Submit(submitter Submitter, pressed Button)
 }

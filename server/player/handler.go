@@ -55,8 +55,9 @@ type Handler interface {
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
-	// the block being broken.
-	HandleBlockBreak(ctx *event.Context, pos cube.Pos)
+	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
+	// to change what items will actually be dropped.
+	HandleBlockBreak(ctx *event.Context, pos cube.Pos, drops *[]item.Stack)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *event.Context, pos cube.Pos, b world.Block)
@@ -86,7 +87,10 @@ type Handler interface {
 	// The entity attacked may also be immune when this method is called, in which case no damage and knock-
 	// back will be dealt.
 	// The knock back force and height is also provided which can be modified.
-	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64)
+	// The attack can be a critical attack, which would increase damage by a factor of 1.5 and
+	// spawn critical hit particles around the target entity. These particles will not be displayed
+	// if no damage is dealt.
+	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64, critical *bool)
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
@@ -154,7 +158,7 @@ func (NopHandler) HandleSkinChange(*event.Context, skin.Skin) {}
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
 
 // HandleBlockBreak ...
-func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos) {}
+func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack) {}
 
 // HandleBlockPlace ...
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
@@ -181,7 +185,7 @@ func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
 
 // HandleAttackEntity ...
-func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64) {}
+func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
 
 // HandlePunchAir ...
 func (NopHandler) HandlePunchAir(*event.Context) {}

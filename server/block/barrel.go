@@ -13,8 +13,8 @@ import (
 	"sync"
 )
 
-// Barrel is a fisherman's job site block, used to store items. It functions like a single chest although
-// it requires no air space above it to be opened.
+// Barrel is a fisherman's job site block, used to store items. It functions like a single chest, although
+// it requires no airspace above it to be opened.
 type Barrel struct {
 	solid
 	bass
@@ -108,7 +108,7 @@ func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 }
 
 // UseOnBlock ...
-func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, b)
 	if !used {
 		return

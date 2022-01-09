@@ -1,9 +1,5 @@
 package cube
 
-import (
-	"fmt"
-)
-
 const (
 	// FaceDown represents the bottom face of a block.
 	FaceDown Face = iota
@@ -28,25 +24,6 @@ func (f Face) Direction() Direction {
 	return Direction(f - 2)
 }
 
-// FromString returns a Face by a string.
-func (f Face) FromString(s string) (interface{}, error) {
-	switch s {
-	case "down":
-		return FaceDown, nil
-	case "up":
-		return FaceUp, nil
-	case "north":
-		return FaceNorth, nil
-	case "south":
-		return FaceSouth, nil
-	case "west":
-		return FaceWest, nil
-	case "east":
-		return FaceEast, nil
-	}
-	return nil, fmt.Errorf("unexpected facing '%v', expecting one of 'down', 'up', 'north', 'south', 'west' or 'east'", s)
-}
-
 // Opposite returns the opposite face. FaceDown will return up, north will return south and west will return east,
 // and vice versa.
 func (f Face) Opposite() Face {
@@ -66,8 +43,8 @@ func (f Face) Opposite() Face {
 	}
 }
 
-// Axis returns the axis the face is facing. FaceEast and west correspond to the x axis, north and south to the z
-// axis and up and down to the y axis.
+// Axis returns the axis the face is facing. FaceEast and west correspond to the x-axis, north and south to the z
+// axis and up and down to the y-axis.
 func (f Face) Axis() Axis {
 	switch f {
 	default:

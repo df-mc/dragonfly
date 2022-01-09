@@ -12,7 +12,7 @@ import (
 type Entity interface {
 	io.Closer
 
-	// Name returns a human readable name for the entity. This is not unique for an entity, but generally
+	// Name returns a human-readable name for the entity. This is not unique for an entity, but generally
 	// unique for an entity type.
 	Name() string
 	// EncodeEntity converts the entity to its encoded representation: It returns the type of the Minecraft
@@ -36,8 +36,8 @@ type Entity interface {
 // TickerEntity represents an entity that has a Tick method which should be called every time the entity is
 // ticked every 20th of a second.
 type TickerEntity interface {
-	// Tick ticks the entity with the current tick passed.
-	Tick(current int64)
+	// Tick ticks the entity with the current World and tick passed.
+	Tick(w *World, current int64)
 }
 
 // SaveableEntity is an Entity that can be saved and loaded with the World it was added to. These entities can be
@@ -75,4 +75,10 @@ func Entities() []SaveableEntity {
 		es = append(es, e)
 	}
 	return es
+}
+
+// EntityAction represents an action that may be performed by an entity. Typically, these actions are sent to
+// viewers in a world so that they can see these actions.
+type EntityAction interface {
+	EntityAction()
 }

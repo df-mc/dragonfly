@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Controllable represents an entity that may be controlled by a Session. Generally, a Controllable is
+// Controllable represents an entity that may be controlled by a Session. Generally, Controllable is
 // implemented in the form of a Player.
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {

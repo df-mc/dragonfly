@@ -9,13 +9,13 @@ import (
 )
 
 // Hoe is a tool generally used to till dirt and grass blocks into farmland blocks for planting crops.
-// Additionally a Hoe can be used to break certain types of blocks such as Crimson and Hay Blocks.
+// Additionally, a Hoe can be used to break certain types of blocks such as Crimson and Hay Blocks.
 type Hoe struct {
 	Tier tool.Tier
 }
 
 // UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
-func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
+func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if b, ok := w.Block(pos).(tillable); ok {
 		if res, ok := b.Till(); ok {
 			if face == cube.FaceDown {
@@ -55,6 +55,12 @@ func (h Hoe) AttackDamage() float64 {
 // ToolType ...
 func (h Hoe) ToolType() tool.Type {
 	return tool.TypeHoe
+}
+
+// HarvestLevel returns the level that this hoe is able to harvest. If a block has a harvest level above
+// this one, this hoe won't be able to harvest it.
+func (h Hoe) HarvestLevel() int {
+	return h.Tier.HarvestLevel
 }
 
 // BaseMiningEfficiency ...

@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -15,7 +16,7 @@ type NetherSprouts struct {
 }
 
 // NeighbourUpdateTick ...
-func (n NetherSprouts) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(n, w.Block(pos.Side(cube.FaceDown))) {
 		w.BreakBlock(pos) //TODO: Nylium & mycelium
 	}
@@ -37,7 +38,7 @@ func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 
 // HasLiquidDrops ...
 func (n NetherSprouts) HasLiquidDrops() bool {
-	return true
+	return false
 }
 
 // FlammabilityInfo ...
@@ -47,7 +48,9 @@ func (n NetherSprouts) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (n NetherSprouts) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(n))
+	return newBreakInfo(0, func(t tool.Tool) bool {
+		return t.ToolType() == tool.TypeShears
+	}, nothingEffective, oneOf(n))
 }
 
 // EncodeItem ...

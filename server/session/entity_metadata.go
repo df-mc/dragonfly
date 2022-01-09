@@ -2,6 +2,8 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -14,14 +16,14 @@ type entityMetadata map[uint32]interface{}
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
 func parseEntityMetadata(e world.Entity) entityMetadata {
-	m := entityMetadata{}
-
 	bb := e.AABB()
-	m[dataKeyBoundingBoxWidth] = float32(bb.Width())
-	m[dataKeyBoundingBoxHeight] = float32(bb.Height())
-	m[dataKeyPotionColour] = int32(0)
-	m[dataKeyPotionAmbient] = byte(0)
-	m[dataKeyColour] = byte(0)
+	m := entityMetadata{
+		dataKeyBoundingBoxWidth:  float32(bb.Width()),
+		dataKeyBoundingBoxHeight: float32(bb.Height()),
+		dataKeyPotionColour:      int32(0),
+		dataKeyPotionAmbient:     byte(0),
+		dataKeyColour:            byte(0),
+	}
 
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
 	m.setFlag(dataKeyFlags, dataFlagCanClimb)
@@ -49,6 +51,9 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	if u, ok := e.(using); ok && u.UsingItem() {
 		m.setFlag(dataKeyFlags, dataFlagUsingItem)
 	}
+	if c, ok := e.(arrow); ok && c.Critical() {
+		m.setFlag(dataKeyFlags, dataFlagCritical)
+	}
 	if s, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(s.Scale())
 	}
@@ -58,10 +63,22 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
 		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
 	}
+	if s, ok := e.(splash); ok {
+		pot := s.Type()
+		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
+		if len(pot.Effects()) > 0 {
+			m.setFlag(dataKeyFlags, dataFlagEnchanted)
+		}
+	}
+	if t, ok := e.(tipped); ok {
+		if tip := t.Tip().Uint8(); tip > 4 {
+			m[dataKeyCustomDisplay] = tip + 1
+		}
+	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
 		if (colour != color.RGBA{}) {
-			m[dataKeyPotionColour] = (int32(colour.A) << 24) | (int32(colour.R) << 16) | (int32(colour.G) << 8) | int32(colour.B)
+			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
 			if am {
 				m[dataKeyPotionAmbient] = byte(1)
 			} else {
@@ -69,7 +86,6 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 			}
 		}
 	}
-
 	return m
 }
 
@@ -95,6 +111,8 @@ const (
 	dataKeyAir
 	dataKeyPotionColour
 	dataKeyPotionAmbient
+	dataKeyCustomDisplay     = 18
+	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
@@ -109,12 +127,14 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagCritical          = 13
 	dataFlagCanShowNameTag    = 14
 	dataFlagAlwaysShowNameTag = 15
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
 	dataFlagAffectedByGravity = 48
+	dataFlagEnchanted         = 51
 	dataFlagSwimming          = 56
 )
 
@@ -150,6 +170,10 @@ type named interface {
 	NameTag() string
 }
 
+type splash interface {
+	Type() potion.Potion
+}
+
 type onFire interface {
 	OnFireDuration() time.Duration
 }
@@ -158,6 +182,14 @@ type effectBearer interface {
 	Effects() []effect.Effect
 }
 
+type tipped interface {
+	Tip() potion.Potion
+}
+
 type using interface {
 	UsingItem() bool
+}
+
+type arrow interface {
+	Critical() bool
 }

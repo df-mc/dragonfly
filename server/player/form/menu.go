@@ -104,7 +104,8 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
 func (m Menu) verify() {
-	v := reflect.ValueOf(m.submittable)
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
 			continue

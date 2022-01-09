@@ -39,7 +39,7 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 }
 
 // UseOnBlock ...
-func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, f)
 	if !used {
 		return false
@@ -69,7 +69,7 @@ func (f WoodFenceGate) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (f WoodFenceGate) SideClosed(pos, side cube.Pos, w *world.World) bool {
+func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
