@@ -115,6 +115,25 @@ func (aabb AABB) Translate(vec mgl64.Vec3) AABB {
 	return NewAABB(aabb.min.Add(vec), aabb.max.Add(vec))
 }
 
+// TranslateTowards moves the entire AABB by x within a given direction.
+func (aabb AABB) TranslateTowards(f cube.Face, x float64) AABB {
+	switch f {
+	case cube.FaceDown:
+		return aabb.Translate(mgl64.Vec3{0, -x, 0})
+	case cube.FaceUp:
+		return aabb.Translate(mgl64.Vec3{0, x, 0})
+	case cube.FaceNorth:
+		return aabb.Translate(mgl64.Vec3{0, 0, -x})
+	case cube.FaceSouth:
+		return aabb.Translate(mgl64.Vec3{0, 0, x})
+	case cube.FaceWest:
+		return aabb.Translate(mgl64.Vec3{-x, 0, 0})
+	case cube.FaceEast:
+		return aabb.Translate(mgl64.Vec3{x, 0, 0})
+	}
+	return aabb
+}
+
 // IntersectsWith checks if the AABB intersects with another AABB, returning true if this is the case.
 func (aabb AABB) IntersectsWith(other AABB) bool {
 	if other.max[0]-aabb.min[0] > 1e-5 && aabb.max[0]-other.min[0] > 1e-5 {

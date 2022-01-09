@@ -154,6 +154,7 @@ func init() {
 	registerAll(allSeaPickles())
 	registerAll(allWood())
 	registerAll(allChains())
+	registerAll(allSkulls())
 }
 
 func init() {
@@ -332,6 +333,9 @@ func init() {
 	}
 	for _, p := range PrismarineTypes() {
 		world.RegisterItem(Prismarine{Type: p})
+	}
+	for _, s := range SkullTypes() {
+		world.RegisterItem(Skull{Type: s})
 	}
 }
 
