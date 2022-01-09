@@ -1,5 +1,7 @@
 package chunk
 
+import "math"
+
 // heightmap represents the heightmap of a chunk. It holds the y value of all the highest blocks in the chunk
 // that diffuse or obstruct light.
 type heightmap []int16
@@ -9,9 +11,9 @@ func calculateHeightmap(c *Chunk) heightmap {
 	h := make(heightmap, 256)
 
 	highestY := int16(c.r[0])
-	for index := int16(0); index <= int16(len(c.sub)-1); index++ {
+	for index := range c.sub {
 		if !c.sub[index].Empty() {
-			highestY = c.subY(index) + 15
+			highestY = c.subY(int16(index)) + 15
 		}
 	}
 	if highestY == int16(c.r[0]) {
@@ -45,7 +47,7 @@ func (h heightmap) set(x, z uint8, val int16) {
 // highestNeighbour returns the heightmap value of the highest directly neighbouring column of the x and z values
 // passed.
 func (h heightmap) highestNeighbour(x, z uint8) int16 {
-	highest := h.at(x, z)
+	highest := int16(math.MinInt16)
 	if x != 15 {
 		if val := h.at(x+1, z); val > highest {
 			highest = val

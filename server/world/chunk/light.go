@@ -74,7 +74,7 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 			baseX, baseZ := a.baseX+(cx<<4), a.baseZ+(cz<<4)
 
 			m := calculateHeightmap(c)
-			highestY := c.Range().Min()
+			highestY := c.r[0]
 			for index := range c.sub {
 				if c.sub[index] != nil {
 					highestY = int(c.subY(int16(index)) + 15)
@@ -132,15 +132,18 @@ func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
 // of the node to the queue for as long as it is able to spread.
 func propagate(queue *list.List, a *Area) {
 	n := queue.Remove(queue.Front()).(lightNode)
+	if a.Light(n.pos, n.lt) > n.level {
+		return
+	}
 	a.SetLight(n.pos, n.lt, n.level)
 
-	// If the level is 1 or lower, it won't be able to propagate any further.
-	if n.level > 1 {
-		for _, neighbour := range a.Neighbours(n) {
-			if filter := a.Highest(neighbour.pos, FilteringBlocks) + 1; filter < n.level && a.Light(neighbour.pos, n.lt) < n.level {
-				neighbour.level = n.level - filter
-				queue.PushBack(neighbour)
-			}
+	for _, neighbour := range a.Neighbours(n) {
+		filter := a.Highest(neighbour.pos, FilteringBlocks) + 1
+		next := n.level - filter
+
+		if n.level > filter && a.Light(neighbour.pos, n.lt) < next {
+			neighbour.level = next
+			queue.PushBack(neighbour)
 		}
 	}
 }

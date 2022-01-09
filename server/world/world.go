@@ -1965,7 +1965,7 @@ func (w *World) calculateLight(centre ChunkPos) {
 // spreadLight spreads the light from the chunk passed at the position passed to all neighbours if each of
 // them is loaded.
 func (w *World) spreadLight(pos ChunkPos) {
-	chunks := make([]*chunk.Chunk, 0, 8)
+	chunks := make([]*chunk.Chunk, 0, 9)
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
 			neighbour, ok := w.chunks[ChunkPos{pos[0] + x, pos[1] + z}]
@@ -1981,7 +1981,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 	}
 	// All chunks of the current one are present, so we can spread the light from this chunk
 	// to all chunks.
-	chunk.SpreadLight(chunk.NewArea(chunks, 1, int(pos[0])-1, int(pos[1])-1))
+	chunk.SpreadLight(chunk.NewArea(chunks, 3, int(pos[0])-1, int(pos[1])-1))
 	for _, neighbour := range chunks {
 		neighbour.Unlock()
 	}
