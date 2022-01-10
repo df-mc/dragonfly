@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/pack_builder"
