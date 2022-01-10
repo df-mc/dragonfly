@@ -253,28 +253,22 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 	server.playerProvider = provider
 }
 
-// SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
-// The formatting of the name passed follows the rules of fmt.Sprintf.
-func (server *Server) SetNamef(format string, a ...interface{}) {
-	server.name.Store(fmt.Sprintf(format, a...))
-}
-
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...interface{}) {
-	server.name.Store(fmt.Sprint(a...))
+	server.name.Store(format(a))
 }
 
 // JoinMessage changes the join message for all players on the server. Leave this empty to disable it.
 // %v is the placeholder for the username of the player
-func (server *Server) JoinMessage(message string) {
-	server.joinMessage.Store(message)
+func (server *Server) JoinMessage(a ...interface{}) {
+	server.joinMessage.Store(format(a))
 }
 
 // QuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
 // %v is the placeholder for the username of the player
-func (server *Server) QuitMessage(message string) {
-	server.quitMessage.Store(message)
+func (server *Server) QuitMessage(a ...interface{}) {
+	server.quitMessage.Store(format(a))
 }
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
@@ -674,6 +668,12 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 
 		server.resources = append(server.resources, r)
 	}
+}
+
+// format is a utility function to format a list of values to have spaces between them, but no newline at the
+// end, which is typically used for sending messages, popups and tips.
+func format(a []interface{}) string {
+	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }
 
 var (
