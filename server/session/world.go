@@ -569,6 +569,10 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			break
 		}
 		pk.SoundType = packet.SoundEventBucketEmptyLava
+	case sound.BowShoot:
+		pk.SoundType = packet.SoundEventBow
+	case sound.ArrowHit:
+		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:
 		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
 	}
@@ -632,6 +636,12 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 		s.writePacket(&packet.TakeItemActor{
 			ItemEntityRuntimeID:  s.entityRuntimeID(e),
 			TakerEntityRuntimeID: s.entityRuntimeID(act.Collector),
+		})
+	case entity.ArrowShakeAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventShake,
+			EventData:       int32(act.Duration.Milliseconds() / 50),
 		})
 	case entity.EatAction:
 		if user, ok := e.(item.User); ok {

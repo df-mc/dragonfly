@@ -199,4 +199,6 @@ type Collector interface {
 	// may be picked up.
 	// The count of items collected from the stack n is returned.
 	Collect(stack item.Stack) (n int)
+	// GameMode returns the gamemode of the collector.
+	GameMode() world.GameMode
 }

@@ -1163,6 +1163,12 @@ func (p *Player) UseItem() {
 		}
 
 		switch usable := it.(type) {
+		case item.Releasable:
+			if p.canRelease() {
+				p.usingSince.Store(time.Now().UnixNano())
+				p.usingItem.Store(true)
+				p.updateState()
+			}
 		case item.Usable:
 			ctx := p.useContext()
 			if usable.Use(w, p, ctx) {
@@ -1187,7 +1193,7 @@ func (p *Player) UseItem() {
 
 				// Due to the network overhead and latency, the duration might sometimes be a little off. We
 				// slightly increase the duration to combat this.
-				duration := time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
+				duration := p.useDuration()
 				if duration < usable.ConsumeDuration() {
 					// The required duration for consuming this item was not met, so we don't consume it.
 					return
@@ -1206,16 +1212,59 @@ func (p *Player) UseItem() {
 }
 
 // ReleaseItem makes the Player release the item it is currently using. This is only applicable for items that
-// implement the item.Consumable interface.
+// implement the item.Releasable interface.
 // If the Player is not currently using any item, ReleaseItem returns immediately.
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	if p.usingItem.CAS(true, false) {
-		p.updateState()
-
-		// TODO: Release items such as bows.
+	if !p.usingItem.CAS(true, false) || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+		return
 	}
+	ctx := p.useContext()
+	i, _ := p.HeldItems()
+	i.Item().(item.Releasable).Release(p, p.useDuration(), ctx)
+
+	p.handleUseContext(ctx)
+	p.updateState()
+}
+
+// canRelease returns whether the player can release the item currently held in the main hand.
+func (p *Player) canRelease() bool {
+	held, _ := p.HeldItems()
+	releasable, ok := held.Item().(item.Releasable)
+	if !ok {
+		return false
+	}
+	if p.GameMode().CreativeInventory() {
+		return true
+	}
+	for _, req := range releasable.Requirements() {
+		_, found := p.Inventory().FirstFunc(func(stack item.Stack) bool {
+			name, _ := stack.Item().EncodeItem()
+			otherName, _ := req.Item().EncodeItem()
+			return name == otherName
+		})
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// handleUseContext handles the item.UseContext after the item has been used.
+func (p *Player) handleUseContext(ctx *item.UseContext) {
+	i, left := p.HeldItems()
+
+	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+	p.addNewItem(ctx)
+	for _, it := range ctx.ConsumedItems {
+		_ = p.Inventory().RemoveItem(it)
+	}
+}
+
+// useDuration returns the duration the player has been using the item in the main hand.
+func (p *Player) useDuration() time.Duration {
+	return time.Duration(time.Now().UnixNano()-p.usingSince.Load()) + time.Second/20
 }
 
 // UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an
@@ -1584,6 +1633,10 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside item entities is fine.
+			continue
+		}
+		if _, ok := e.(*entity.Arrow); ok {
+			// Placing blocks inside arrow entities is fine.
 			continue
 		}
 		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
@@ -2372,20 +2425,31 @@ func (p *Player) useContext() *item.UseContext {
 		})
 		return err
 	}
-	return &item.UseContext{SwapHeldWithArmour: func(i int) {
-		src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
-		srcIt, _ := srcInv.Item(src)
-		dstIt, _ := dstInv.Item(dst)
+	return &item.UseContext{
+		SwapHeldWithArmour: func(i int) {
+			src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
+			srcIt, _ := srcInv.Item(src)
+			dstIt, _ := dstInv.Item(dst)
 
-		ctx := event.C()
-		_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
-		_ = call(ctx, src, dstIt, srcInv.Handler().HandlePlace)
-		_ = call(ctx, dst, dstIt, dstInv.Handler().HandleTake)
-		if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
-			_ = srcInv.SetItem(src, dstIt)
-			_ = dstInv.SetItem(dst, srcIt)
-		}
-	}}
+			ctx := event.C()
+			_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
+			_ = call(ctx, src, dstIt, srcInv.Handler().HandlePlace)
+			_ = call(ctx, dst, dstIt, dstInv.Handler().HandleTake)
+			if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
+				_ = srcInv.SetItem(src, dstIt)
+				_ = dstInv.SetItem(dst, srcIt)
+			}
+		},
+		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
+			inv := p.Inventory()
+			s, ok := inv.FirstFunc(comparable)
+			if !ok {
+				return item.Stack{}, false
+			}
+			it, _ := inv.Item(s)
+			return it, ok
+		},
+	}
 }
 
 // handler returns the Handler of the player.
