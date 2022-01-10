@@ -2,39 +2,44 @@ package category
 
 // Category is used to categorize groups of creative items client-side.
 type Category struct {
-	category
+	group    string
+	category uint8
 }
 
 // Construction ...
-func Construction() Category { // Doesn't work?
-	return Category{1}
+func Construction() Category {
+	return Category{category: 1}
 }
 
 // Nature ...
 func Nature() Category {
-	return Category{2}
+	return Category{category: 2}
 }
 
 // Equipment ...
 func Equipment() Category {
-	return Category{3}
+	return Category{category: 3}
 }
 
 // Items ...
 func Items() Category {
-	return Category{4}
+	return Category{category: 4}
 }
-
-type category uint8
 
 // Uint8 ...
-func (c category) Uint8() uint8 {
-	return uint8(c)
+func (c Category) Uint8() uint8 {
+	return c.category
 }
 
-// String ...
-func (c category) String() string {
-	switch c {
+// WithGroup ...
+func (c Category) WithGroup(group string) Category {
+	c.group = group
+	return c
+}
+
+// Name ...
+func (c Category) Name() string {
+	switch c.category {
 	case 1:
 		return "construction"
 	case 2:
@@ -45,4 +50,12 @@ func (c category) String() string {
 		return "items"
 	}
 	panic("should never happen")
+}
+
+// String ...
+func (c Category) String() string {
+	if len(c.group) > 0 {
+		return "itemGroup.name." + c.group
+	}
+	return "itemGroup." + c.Name() + ".name"
 }

@@ -12,10 +12,12 @@ import (
 // dragonfly feature in the future.
 type Strawberry struct{ defaultFood }
 
+// Edible ...
 func (s Strawberry) Edible() bool {
 	return true
 }
 
+// Consume ...
 func (s Strawberry) Consume(w *world.World, c Consumer) Stack {
 	c.Saturate(10, 10)
 	return Stack{}

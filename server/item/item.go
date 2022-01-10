@@ -49,8 +49,14 @@ type Usable interface {
 // Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
 // non-vanilla items.
 type Throwable interface {
-	// SwingAnimation returns if the client should cause the player's arm to swing when the item is thrown.
+	// SwingAnimation returns true if the client should cause the player's arm to swing when the item is thrown.
 	SwingAnimation() bool
+}
+
+// OffHand represents an item that can be held in the off hand.
+type OffHand interface {
+	// OffHand returns true if the item can be held in the off hand.
+	OffHand() bool
 }
 
 // Consumable represents an item that may be consumed by a player. If an item implements this interface, a player

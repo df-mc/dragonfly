@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
@@ -19,8 +18,8 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		"minecraft:icon": map[string]interface{}{
 			"texture": name,
 		},
+		"creative_group":    category.String(),
 		"creative_category": int32(category.Uint8()),
-		"creative_group":    "itemGroup." + category.String() + ".name",
 		"max_stack_size":    int32(64),
 	}
 	components := map[string]interface{}{
@@ -49,9 +48,7 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		case armour.Boots:
 			slot = 5
 		}
-		components["minecraft:wearable"] = map[string]interface{}{
-			"slot": slot,
-		}
+		components["minecraft:wearable"] = map[string]interface{}{"slot": slot}
 	}
 	if x, ok := it.(item.Consumable); ok {
 		itemProperties["use_duration"] = int32(x.ConsumeDuration().Seconds() * 20)
@@ -79,6 +76,9 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 	if x, ok := it.(item.MaxCounter); ok {
 		itemProperties["max_stack_size"] = int32(x.MaxCount())
 	}
+	if x, ok := it.(item.OffHand); ok {
+		itemProperties["allow_off_hand"] = x.OffHand()
+	}
 	if x, ok := it.(item.Throwable); ok {
 		// The data in minecraft:projectile is only used by vanilla server-side, but we must send at least an empty map
 		// so the client will play the throwing animation.
@@ -92,6 +92,5 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 	if len(components) == 2 && len(itemProperties) == 4 && itemProperties["max_stack_size"] == int32(64) {
 		return nil, false
 	}
-	fmt.Println("enabled components")
 	return map[string]interface{}{"components": components}, true
 }
