@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -25,10 +22,6 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Following lines are for testing custom item implementation.
-	world.RegisterItem(item.Strawberry{})
-	creative.RegisterItem(item.NewStack(item.Strawberry{}, 1))
-
 	srv := server.New(&config, log)
 	srv.CloseOnProgramEnd()
 	if err := srv.Start(); err != nil {
@@ -36,13 +29,10 @@ func main() {
 	}
 
 	for {
-		p, err := srv.Accept()
+		_, err := srv.Accept()
 		if err != nil {
 			return
 		}
-		inv := p.Inventory()
-		inv.Clear()
-		inv.AddItem(item.NewStack(item.Strawberry{}, 1))
 	}
 }
 
