@@ -61,12 +61,18 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&e); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
-	if e.ID > 0 {
+	if e.ID > 0 && len(e.State) == 0 {
 		// For some reason, whenever Mojang converts a world prior to 1.13 to the latest format, they include these
 		// extra "oldid" and "val" fields, which are the legacy ID and meta. The only problem with this is that they
 		// also clear the regular states field, which means we can't simply ignore them, but rather convert them to the
 		// new format ourselves, so we can fill in the gaps. Immaculate, Mojang.
-		e = legacyMappings[legacyBlockEntry{ID: e.ID, Meta: e.Meta}]
+		conversion, ok := legacyMappings[legacyBlockEntry{ID: e.ID, Meta: e.Meta}]
+		if !ok {
+			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", e.ID, e.Meta)
+		}
+
+		// The name already exists, so we only need to update the states field.
+		e.State = conversion.State
 	}
 	v, ok := StateToRuntimeID(e.Name, e.State)
 	if !ok {
