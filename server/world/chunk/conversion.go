@@ -8,8 +8,8 @@ import (
 
 // legacyBlockEntry represents a block entry used in versions prior to 1.13.
 type legacyBlockEntry struct {
-	ID   int32 `nbt:"oldid"`
-	Meta int16 `nbt:"val"`
+	ID   int32 `nbt:"oldid,omitempty"`
+	Meta int16 `nbt:"val,omitempty"`
 }
 
 var (

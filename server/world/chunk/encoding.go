@@ -58,8 +58,7 @@ func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 }
 func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	var e struct {
-		ID   int32 `nbt:"oldid,omitempty"`
-		Meta int16 `nbt:"val,omitempty"`
+		legacyBlockEntry
 		blockEntry
 	}
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&e); err != nil {
@@ -70,7 +69,7 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 		// extra "oldid" and "val" fields, which are the legacy ID and meta. The only problem with this is that they
 		// also clear the regular states field, which means we can't simply ignore them, but rather convert them to the
 		// new format ourselves, so we can fill in the gaps. Immaculate, Mojang.
-		e.blockEntry = legacyMappings[legacyBlockEntry{ID: e.ID, Meta: e.Meta}]
+		e.blockEntry = legacyMappings[e.legacyBlockEntry]
 	}
 	v, ok := StateToRuntimeID(e.Name, e.State)
 	if !ok {
