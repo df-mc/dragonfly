@@ -3,6 +3,7 @@ package chunk
 import (
 	"bytes"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"math"
 )
 
 type Area struct {
@@ -12,9 +13,10 @@ type Area struct {
 	r            cube.Range
 }
 
-func NewArea(c []*Chunk, w int, baseX, baseY int) *Area {
+func NewArea(c []*Chunk, baseX, baseY int) *Area {
+	w := int(math.Sqrt(float64(len(c))))
 	if len(c) != w*w {
-		panic("chunk count must be equal to w*w")
+		panic("area must have a square chunk area")
 	}
 	return &Area{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
 }
@@ -36,17 +38,6 @@ func (a *Area) Neighbours(n lightNode) []lightNode {
 		}
 	}
 	return nodes
-}
-
-func (a *Area) horizontalNeighbours(pos cube.Pos) []cube.Pos {
-	positions := make([]cube.Pos, 0, 4)
-	for _, f := range cube.HorizontalFaces() {
-		p := pos.Side(f)
-		if p[1] <= a.r.Max() && p[1] >= a.r.Min() && p[0] >= a.baseX && p[2] >= a.baseZ && p[0] < a.baseX+a.w*16 && p[2] < a.baseZ+a.w*16 {
-			positions = append(positions, p)
-		}
-	}
-	return positions
 }
 
 func (a *Area) IterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Pos)) {

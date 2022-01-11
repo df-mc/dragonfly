@@ -1880,7 +1880,7 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 			w.log.Errorf("%v\n", err)
 			return nil, err
 		}
-		chunk.FillLight(chunk.NewArea([]*chunk.Chunk{c.Chunk}, 1, int(pos[0]), int(pos[1])))
+		chunk.FillLight(chunk.NewArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])))
 		c.Unlock()
 		w.chunkMu.Lock()
 
@@ -1981,7 +1981,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 	}
 	// All chunks of the current one are present, so we can spread the light from this chunk
 	// to all chunks.
-	chunk.SpreadLight(chunk.NewArea(chunks, 3, int(pos[0])-1, int(pos[1])-1))
+	chunk.SpreadLight(chunk.NewArea(chunks, int(pos[0])-1, int(pos[1])-1))
 	for _, neighbour := range chunks {
 		neighbour.Unlock()
 	}
