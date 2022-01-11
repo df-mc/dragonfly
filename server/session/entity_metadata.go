@@ -63,6 +63,9 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
 		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
 	}
+	if s, ok := e.(scoreTag); ok {
+		m[dataKeyScoreTag] = s.ScoreTag()
+	}
 	if s, ok := e.(splash); ok {
 		pot := s.Type()
 		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
@@ -117,6 +120,7 @@ const (
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
 	dataKeyAlwaysShowNameTag = 81
+	dataKeyScoreTag          = 84
 )
 
 //noinspection GoUnusedConst
@@ -168,6 +172,10 @@ type scaled interface {
 
 type named interface {
 	NameTag() string
+}
+
+type scoreTag interface {
+	ScoreTag() string
 }
 
 type splash interface {

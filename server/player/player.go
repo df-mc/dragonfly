@@ -47,6 +47,7 @@ type Player struct {
 	locale                              language.Tag
 	pos, vel                            atomic.Value
 	nameTag                             atomic.String
+	scoreTag                            atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 
 	gameModeMu sync.RWMutex
@@ -416,6 +417,18 @@ func (p *Player) SetNameTag(name string) {
 // NameTag returns the current name tag of the Player as shown in-game. It can be changed using SetNameTag.
 func (p *Player) NameTag() string {
 	return p.nameTag.Load()
+}
+
+// SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's
+// name tag.
+func (p *Player) SetScoreTag(a ...interface{}) {
+	p.scoreTag.Store(format(a))
+	p.updateState()
+}
+
+// ScoreTag returns the current score tag of the player. It can be changed using SetScoreTag and by default is empty.
+func (p *Player) ScoreTag() string {
+	return p.scoreTag.Load()
 }
 
 // SetSpeed sets the speed of the player. The value passed is the blocks/tick speed that the player will then
@@ -1633,6 +1646,10 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside item entities is fine.
+			continue
+		}
+		if _, ok := e.(*entity.Arrow); ok {
+			// Placing blocks inside arrow entities is fine.
 			continue
 		}
 		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
