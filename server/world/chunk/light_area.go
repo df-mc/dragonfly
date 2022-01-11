@@ -78,6 +78,15 @@ func (a *Area) IterEdges(f func(a, b cube.Pos)) {
 	}
 }
 
+func (a *Area) IterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
+	m, highestY := calculateHeightmap(a)
+	for x := uint8(0); x < 16; x++ {
+		for z := uint8(0); z < 16; z++ {
+			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.at(x, z)), int(m.highestNeighbour(x, z)), highestY)
+		}
+	}
+}
+
 // iterSubChunk iterates over the coordinates of a SubChunk (0-15 on all axes) and calls the function f for each of
 // those coordinates.
 func (a *Area) iterSubChunk(f func(x, y, z int)) {

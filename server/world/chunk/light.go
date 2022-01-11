@@ -56,39 +56,27 @@ func anyLightBlocks(sub *SubChunk) bool {
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
 // chunk. In addition, any skylight above those nodes will be set to 15.
 func insertSkyLightNodes(queue *list.List, a *Area) {
-	for cx := 0; cx < a.w; cx++ {
-		for cz := 0; cz < a.w; cz++ {
-			baseX, baseZ := a.baseX+(cx<<4), a.baseZ+(cz<<4)
-
-			m, highestY := calculateHeightmap(a)
-			for x := uint8(0); x < 16; x++ {
-				for z := uint8(0); z < 16; z++ {
-					current := int(m.at(x, z))
-					highestNeighbour := int(m.highestNeighbour(x, z))
-
-					// If we hit a block like water or leaves (something that diffuses but does not block light), we
-					// need a node above this block regardless of the neighbours.
-					pos := cube.Pos{baseX + int(x), current, baseZ + int(z)}
-					if level := a.Highest(pos, FilteringBlocks); level < 14 && level > 0 {
-						queue.PushBack(node(pos.Add(cube.Pos{0, 1}), 15, SkyLight))
-						continue
-					}
-					for y := current; y < highestY; y++ {
-						// We can do a bit of an optimisation here: We don't need to insert nodes if the neighbours are
-						// lower than the current one, on the same index level, or one level higher, because light in
-						// this column can't spread below that anyway.
-						pos[1] = y + 1
-						if y < highestNeighbour-1 {
-							queue.PushBack(node(pos, 15, SkyLight))
-							continue
-						}
-						// Fill the rest of the column with full skylight.
-						a.SetLight(pos, SkyLight, 15)
-					}
-				}
-			}
+	a.IterHeightmap(func(x, z int, height, highestNeighbour, highestY int) {
+		// If we hit a block like water or leaves (something that diffuses but does not block light), we
+		// need a node above this block regardless of the neighbours.
+		pos := cube.Pos{x, height, z}
+		if level := a.Highest(pos, FilteringBlocks); level != 15 && level != 0 {
+			queue.PushBack(node(pos.Add(cube.Pos{0, 1}), 15, SkyLight))
+			return
 		}
-	}
+		for y := height; y < highestY; y++ {
+			// We can do a bit of an optimisation here: We don't need to insert nodes if the neighbours are
+			// lower than the current one, on the same index level, or one level higher, because light in
+			// this column can't spread below that anyway.
+			pos[1]++
+			if pos[1] < highestNeighbour {
+				queue.PushBack(node(pos, 15, SkyLight))
+				continue
+			}
+			// Fill the rest with full skylight.
+			a.SetLight(pos, SkyLight, 15)
+		}
+	})
 }
 
 // insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
