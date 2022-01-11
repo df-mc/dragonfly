@@ -58,8 +58,8 @@ func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 }
 func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	var e struct {
-		ID   int32 `nbt:"oldid"`
-		Meta int16 `nbt:"val"`
+		ID   int32 `nbt:"oldid,omitempty"`
+		Meta int16 `nbt:"val,omitempty"`
 		blockEntry
 	}
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&e); err != nil {
