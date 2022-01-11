@@ -55,12 +55,13 @@ func (a *Area) IterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Po
 			baseX, baseZ, c := a.baseX+(cx<<4), a.baseZ+(cz<<4), a.c[a.chunkIndex(cx, cz)]
 
 			for index, sub := range c.sub {
-				if filter(sub) {
-					baseY := int(c.subY(int16(index)))
-					a.iterSubChunk(func(x, y, z int) {
-						f(cube.Pos{x + baseX, y + baseY, z + baseZ})
-					})
+				if !filter(sub) {
+					continue
 				}
+				baseY := int(c.subY(int16(index)))
+				a.iterSubChunk(func(x, y, z int) {
+					f(cube.Pos{x + baseX, y + baseY, z + baseZ})
+				})
 			}
 		}
 	}
@@ -102,20 +103,18 @@ func (a *Area) Highest(pos cube.Pos, m []uint8) uint8 {
 	x, y, z, sub := uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), a.sub(pos)
 	storages, l := sub.storages, len(sub.storages)
 
-	var level uint8
-	if l > 0 {
-		if id := storages[0].At(x, y, z); id != sub.air {
-			level = m[id]
+	switch l {
+	case 0:
+		return 0
+	case 1:
+		return m[storages[0].At(x, y, z)]
+	default:
+		level := m[storages[0].At(x, y, z)]
+		if v := m[storages[1].At(x, y, z)]; v > level {
+			return v
 		}
-		if l > 1 {
-			if id := storages[1].At(x, y, z); id != sub.air {
-				if v := m[id]; v > level {
-					level = v
-				}
-			}
-		}
+		return level
 	}
-	return level
 }
 
 var (

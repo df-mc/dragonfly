@@ -1,37 +1,37 @@
 package chunk
 
-import "math"
+import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"math"
+)
 
 // heightmap represents the heightmap of a chunk. It holds the y value of all the highest blocks in the chunk
 // that diffuse or obstruct light.
 type heightmap []int16
 
 // calculateHeightmap calculates the heightmap of the chunk passed and returns it.
-func calculateHeightmap(c *Chunk) heightmap {
+func calculateHeightmap(a *Area) (heightmap, int) {
 	h := make(heightmap, 256)
+	highestY, c := a.r[0], a.c[0]
 
-	highestY := int16(c.r[0])
 	for index := range c.sub {
-		if !c.sub[index].Empty() {
-			highestY = c.subY(int16(index)) + 15
+		if c.sub[index].Empty() {
+			continue
 		}
+		highestY = int(c.subY(int16(index))) + 15
 	}
-	if highestY == int16(c.r[0]) {
-		// No non-nil sub chunks present at all.
-		return h
-	}
-
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			for y := highestY; y >= int16(c.r[0]); y-- {
-				if filterLevel(c.subChunk(y), x, uint8(y)&0xf, z) > 0 {
-					h.set(x, z, y)
-					break
+			for y := highestY; y >= c.r[0]; y-- {
+				if a.Highest(cube.Pos{int(x) + a.baseX, y, int(z) + a.baseZ}, FilteringBlocks) == 0 {
+					continue
 				}
+				h.set(x, z, int16(y))
+				break
 			}
 		}
 	}
-	return h
+	return h, highestY
 }
 
 // at returns the heightmap value at a specific column in the chunk.

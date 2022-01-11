@@ -58,16 +58,9 @@ func anyLightBlocks(sub *SubChunk) bool {
 func insertSkyLightNodes(queue *list.List, a *Area) {
 	for cx := 0; cx < a.w; cx++ {
 		for cz := 0; cz < a.w; cz++ {
-			c := a.c[a.chunkIndex(cx, cz)]
 			baseX, baseZ := a.baseX+(cx<<4), a.baseZ+(cz<<4)
 
-			m := calculateHeightmap(c)
-			highestY := c.r[0]
-			for index := range c.sub {
-				if c.sub[index] != nil {
-					highestY = int(c.subY(int16(index)) + 15)
-				}
-			}
+			m, highestY := calculateHeightmap(a)
 			for x := uint8(0); x < 16; x++ {
 				for z := uint8(0); z < 16; z++ {
 					current := int(m.at(x, z))
@@ -139,46 +132,4 @@ type lightNode struct {
 // node creates a new lightNode using the position, level and light type passed.
 func node(pos cube.Pos, level uint8, lt light) lightNode {
 	return lightNode{pos: pos, level: level, lt: lt}
-}
-
-// filterLevel checks for the block with the Highest filter level in the sub chunk at a specific position,
-// returning 15 if there is a block, but if it is not present in the FilteringBlocks map.
-func filterLevel(sub *SubChunk, x, y, z uint8) uint8 {
-	storages := sub.storages
-	// We offer several fast ways out to get a little more performance out of this.
-	switch len(storages) {
-	case 0:
-		return 0
-	case 1:
-		id := storages[0].At(x, y, z)
-		if id == sub.air {
-			return 0
-		}
-		return FilteringBlocks[id]
-	case 2:
-		var highest uint8
-
-		id := storages[0].At(x, y, z)
-		if id != sub.air {
-			highest = FilteringBlocks[id]
-		}
-
-		id = storages[1].At(x, y, z)
-		if id != sub.air {
-			if v := FilteringBlocks[id]; v > highest {
-				highest = v
-			}
-		}
-		return highest
-	}
-	var highest uint8
-	for i := range storages {
-		id := storages[i].At(x, y, z)
-		if id != sub.air {
-			if l := FilteringBlocks[id]; l > highest {
-				highest = l
-			}
-		}
-	}
-	return highest
 }
