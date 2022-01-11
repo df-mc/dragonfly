@@ -66,6 +66,26 @@ func (a *Area) IterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Po
 	}
 }
 
+func (a *Area) IterEdges(f func(a, b cube.Pos)) {
+	width := a.w * 16
+	for cx := 1; cx < a.w; cx++ {
+		x := a.baseX + (cx << 4)
+		for z := a.baseZ; z < a.baseZ+width; z++ {
+			for y := 0; y < a.r[1]; y++ {
+				f(cube.Pos{x, y, z}, cube.Pos{x - 1, y, z})
+			}
+		}
+	}
+	for cz := 1; cz < a.w; cz++ {
+		z := a.baseZ + (cz << 4)
+		for x := a.baseX; x < a.baseX+width; x++ {
+			for y := 0; y < a.r[1]; y++ {
+				f(cube.Pos{x, y, z}, cube.Pos{x, y, z - 1})
+			}
+		}
+	}
+}
+
 // iterSubChunk iterates over the coordinates of a SubChunk (0-15 on all axes) and calls the function f for each of
 // those coordinates.
 func (a *Area) iterSubChunk(f func(x, y, z int)) {

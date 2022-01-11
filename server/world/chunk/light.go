@@ -53,18 +53,6 @@ func anyLightBlocks(sub *SubChunk) bool {
 	return false
 }
 
-// anyLight returns a function that can be used to check if a SubChunk has any light of the type passed.
-func anyLight(lt light) func(sub *SubChunk) bool {
-	if lt == SkyLight {
-		return func(sub *SubChunk) bool {
-			return &sub.skyLight[0] == noLightPtr
-		}
-	}
-	return func(sub *SubChunk) bool {
-		return &sub.blockLight[0] == noLightPtr
-	}
-}
-
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
 // chunk. In addition, any skylight above those nodes will be set to 15.
 func insertSkyLightNodes(queue *list.List, a *Area) {
@@ -113,17 +101,12 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 // insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
 func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
-	a.IterSubChunks(anyLight(lt), func(pos cube.Pos) {
-		if lx, lz := uint8(pos[0]&0xf), uint8(pos[2]&0xf); lx != 0 && lx != 15 && lz != 0 && lz != 15 {
-			return
-		}
-		if l := a.Light(pos, lt); l > 1 {
-			for _, n := range a.horizontalNeighbours(pos) {
-				if (n[0]>>4 != pos[0]>>4 || n[2]>>4 != pos[2]>>4) && a.Light(n, lt) < l {
-					queue.PushBack(node(pos, l, lt))
-					break
-				}
-			}
+	a.IterEdges(func(pa, pb cube.Pos) {
+		la, lb := a.Light(pa, lt), a.Light(pb, lt)
+		if res := la - a.Highest(pb, FilteringBlocks); res > lb {
+			queue.PushBack(node(pb, res, lt))
+		} else if res = lb - a.Highest(pa, FilteringBlocks); res > la {
+			queue.PushBack(node(pa, res, lt))
 		}
 	})
 }
@@ -132,17 +115,15 @@ func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
 // of the node to the queue for as long as it is able to spread.
 func propagate(queue *list.List, a *Area) {
 	n := queue.Remove(queue.Front()).(lightNode)
-	if a.Light(n.pos, n.lt) > n.level {
+	if a.Light(n.pos, n.lt) >= n.level {
 		return
 	}
 	a.SetLight(n.pos, n.lt, n.level)
 
 	for _, neighbour := range a.Neighbours(n) {
 		filter := a.Highest(neighbour.pos, FilteringBlocks) + 1
-		next := n.level - filter
-
-		if n.level > filter && a.Light(neighbour.pos, n.lt) < next {
-			neighbour.level = next
+		if n.level > filter && a.Light(neighbour.pos, n.lt) < n.level-filter {
+			neighbour.level = n.level - filter
 			queue.PushBack(neighbour)
 		}
 	}
