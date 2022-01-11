@@ -6,6 +6,7 @@ import (
 	"math"
 )
 
+// Area represents a square area of N*N chunks. It is used for light calculation specifically.
 type Area struct {
 	baseX, baseZ int
 	c            []*Chunk
@@ -13,6 +14,8 @@ type Area struct {
 	r            cube.Range
 }
 
+// NewArea creates an Area with the corner of the Area at baseX and baseY. The length of the Chunk slice must be a
+// square of a number, so 1, 4, 9 etc.
 func NewArea(c []*Chunk, baseX, baseY int) *Area {
 	w := int(math.Sqrt(float64(len(c))))
 	if len(c) != w*w {
@@ -21,15 +24,19 @@ func NewArea(c []*Chunk, baseX, baseY int) *Area {
 	return &Area{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
 }
 
-func (a *Area) Light(pos cube.Pos, l light) uint8 {
+// light returns the light at a cube.Pos with the light type l.
+func (a *Area) light(pos cube.Pos, l light) uint8 {
 	return l.light(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf))
 }
 
-func (a *Area) SetLight(pos cube.Pos, l light, v uint8) {
+// light sets the light at a cube.Pos with the light type l.
+func (a *Area) setLight(pos cube.Pos, l light, v uint8) {
 	l.setLight(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), v)
 }
 
-func (a *Area) Neighbours(n lightNode) []lightNode {
+// neighbours returns all neighbour lightNode of the one passed. If one of these nodes would otherwise fall outside the
+// Area, it is not returned.
+func (a *Area) neighbours(n lightNode) []lightNode {
 	nodes := make([]lightNode, 0, 6)
 	for _, f := range cube.Faces() {
 		nn := lightNode{pos: n.pos.Side(f), lt: n.lt}
@@ -40,7 +47,9 @@ func (a *Area) Neighbours(n lightNode) []lightNode {
 	return nodes
 }
 
-func (a *Area) IterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Pos)) {
+// iterSubChunks iterates over all blocks of the Area on a per-SubChunk basis. A filter function may be passed to
+// specify if a SubChunk should be iterated over. If it returns false, it will not be iterated over.
+func (a *Area) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Pos)) {
 	for cx := 0; cx < a.w; cx++ {
 		for cz := 0; cz < a.w; cz++ {
 			baseX, baseZ, c := a.baseX+(cx<<4), a.baseZ+(cz<<4), a.c[a.chunkIndex(cx, cz)]
@@ -58,7 +67,9 @@ func (a *Area) IterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Po
 	}
 }
 
-func (a *Area) IterEdges(f func(a, b cube.Pos)) {
+// iterEdges iterates over all chunk edges within the Area and calls the function f with the cube.Pos at either side
+// of the edge.
+func (a *Area) iterEdges(f func(a, b cube.Pos)) {
 	width := a.w * 16
 	for cx := 1; cx < a.w; cx++ {
 		x := a.baseX + (cx << 4)
@@ -78,7 +89,9 @@ func (a *Area) IterEdges(f func(a, b cube.Pos)) {
 	}
 }
 
-func (a *Area) IterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
+// iterHeightmap iterates over the heightmap of the Area and calls the function f with the heightmap value, the
+// heightmap value of the highest neighbour and the Y value of the highest non-empty SubChunk.
+func (a *Area) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
 	m, highestY := calculateHeightmap(a)
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
@@ -99,7 +112,9 @@ func (a *Area) iterSubChunk(f func(x, y, z int)) {
 	}
 }
 
-func (a *Area) Highest(pos cube.Pos, m []uint8) uint8 {
+// highest looks up through the blocks at first and second layer at the cube.Pos passed and runs their runtime IDs
+// through the slice m passed, finding the highest value in this slice between those runtime IDs and returning it.
+func (a *Area) highest(pos cube.Pos, m []uint8) uint8 {
 	x, y, z, sub := uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), a.sub(pos)
 	storages, l := sub.storages, len(sub.storages)
 
@@ -150,15 +165,18 @@ func (a *Area) initialiseLightSlices() {
 	}
 }
 
+// sub returns the SubChunk corresponding to a cube.Pos.
 func (a *Area) sub(pos cube.Pos) *SubChunk {
 	return a.chunk(pos).subChunk(int16(pos[1]))
 }
 
+// chunk returns the Chunk corresponding to a cube.Pos.
 func (a *Area) chunk(pos cube.Pos) *Chunk {
 	x, z := pos[0]-a.baseX, pos[2]-a.baseZ
 	return a.c[a.chunkIndex(x, z)]
 }
 
+// chunkIndex finds the index in the c slices of an Area for a Chunk at a specific x and z.
 func (a *Area) chunkIndex(x, z int) int {
 	return (x >> 4) | ((z >> 4) * a.w)
 }

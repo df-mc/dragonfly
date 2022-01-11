@@ -34,8 +34,8 @@ func SpreadLight(a *Area) {
 // insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
 // If one is found, a node is added for it to the node queue.
 func insertBlockLightNodes(queue *list.List, a *Area) {
-	a.IterSubChunks(anyLightBlocks, func(pos cube.Pos) {
-		if level := a.Highest(pos, LightBlocks); level > 0 {
+	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
+		if level := a.highest(pos, LightBlocks); level > 0 {
 			queue.PushBack(node(pos, level, BlockLight))
 		}
 	})
@@ -56,11 +56,11 @@ func anyLightBlocks(sub *SubChunk) bool {
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
 // chunk. In addition, any skylight above those nodes will be set to 15.
 func insertSkyLightNodes(queue *list.List, a *Area) {
-	a.IterHeightmap(func(x, z int, height, highestNeighbour, highestY int) {
+	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY int) {
 		// If we hit a block like water or leaves (something that diffuses but does not block light), we
 		// need a node above this block regardless of the neighbours.
 		pos := cube.Pos{x, height, z}
-		if level := a.Highest(pos, FilteringBlocks); level != 15 && level != 0 {
+		if level := a.highest(pos, FilteringBlocks); level != 15 && level != 0 {
 			queue.PushBack(node(pos.Add(cube.Pos{0, 1}), 15, SkyLight))
 			return
 		}
@@ -74,7 +74,7 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 				continue
 			}
 			// Fill the rest with full skylight.
-			a.SetLight(pos, SkyLight, 15)
+			a.setLight(pos, SkyLight, 15)
 		}
 	})
 }
@@ -82,11 +82,11 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 // insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
 func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
-	a.IterEdges(func(pa, pb cube.Pos) {
-		la, lb := a.Light(pa, lt), a.Light(pb, lt)
-		if res := la - a.Highest(pb, FilteringBlocks); res > lb {
+	a.iterEdges(func(pa, pb cube.Pos) {
+		la, lb := a.light(pa, lt), a.light(pb, lt)
+		if res := la - a.highest(pb, FilteringBlocks); res > lb {
 			queue.PushBack(node(pb, res, lt))
-		} else if res = lb - a.Highest(pa, FilteringBlocks); res > la {
+		} else if res = lb - a.highest(pa, FilteringBlocks); res > la {
 			queue.PushBack(node(pa, res, lt))
 		}
 	})
@@ -96,14 +96,14 @@ func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
 // of the node to the queue for as long as it is able to spread.
 func propagate(queue *list.List, a *Area) {
 	n := queue.Remove(queue.Front()).(lightNode)
-	if a.Light(n.pos, n.lt) >= n.level {
+	if a.light(n.pos, n.lt) >= n.level {
 		return
 	}
-	a.SetLight(n.pos, n.lt, n.level)
+	a.setLight(n.pos, n.lt, n.level)
 
-	for _, neighbour := range a.Neighbours(n) {
-		filter := a.Highest(neighbour.pos, FilteringBlocks) + 1
-		if n.level > filter && a.Light(neighbour.pos, n.lt) < n.level-filter {
+	for _, neighbour := range a.neighbours(n) {
+		filter := a.highest(neighbour.pos, FilteringBlocks) + 1
+		if n.level > filter && a.light(neighbour.pos, n.lt) < n.level-filter {
 			neighbour.level = n.level - filter
 			queue.PushBack(neighbour)
 		}

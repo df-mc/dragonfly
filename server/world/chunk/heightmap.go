@@ -23,7 +23,7 @@ func calculateHeightmap(a *Area) (heightmap, int) {
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			for y := highestY; y >= c.r[0]; y-- {
-				if a.Highest(cube.Pos{int(x) + a.baseX, y, int(z) + a.baseZ}, FilteringBlocks) == 0 {
+				if a.highest(cube.Pos{int(x) + a.baseX, y, int(z) + a.baseZ}, FilteringBlocks) == 0 {
 					continue
 				}
 				h.set(x, z, int16(y))
