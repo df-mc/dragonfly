@@ -473,11 +473,7 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 			Data: component,
 		})
 	}
-	if err := conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries}); err != nil {
-		_ = l.Disconnect(conn, "Internal server error.")
-		server.log.Debugf("connection %v failed sending item components: %v\n", conn.RemoteAddr(), err)
-		return
-	}
+	_ = conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries})
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
