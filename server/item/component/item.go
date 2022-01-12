@@ -53,13 +53,13 @@ func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
 	if x, ok := it.(item.Consumable); ok {
 		itemProperties["use_duration"] = int32(x.ConsumeDuration().Seconds() * 20)
 
-		if y, ok := it.(item.Edible); ok && y.Edible() {
+		if y, ok := it.(item.Drinkable); ok && y.Drinkable() {
+			itemProperties["use_animation"] = int32(2)
+		} else {
 			itemProperties["use_animation"] = int32(1)
 			// The data in minecraft:food is only used by vanilla server-side, but we must send at least an empty map so
 			// the client will play the eating animation.
 			components["minecraft:food"] = map[string]interface{}{}
-		} else if y, ok := it.(item.Drinkable); ok && y.Drinkable() {
-			itemProperties["use_animation"] = int32(2)
 		}
 	}
 	if x, ok := it.(item.Cooldown); ok {

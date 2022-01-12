@@ -98,12 +98,6 @@ type Drinkable interface {
 	Drinkable() bool
 }
 
-// Edible represents a custom item that can be eaten. This will only have an effect on non-vanilla items.
-type Edible interface {
-	// Edible returns if the item can be eaten or not.
-	Edible() bool
-}
-
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {
