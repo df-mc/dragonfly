@@ -467,10 +467,10 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 	}
 
 	itemComponentEntries := make([]protocol.ItemComponentEntry, len(server.itemComponents))
-	for name, component := range server.itemComponents {
+	for name, entry := range server.itemComponents {
 		itemComponentEntries = append(itemComponentEntries, protocol.ItemComponentEntry{
 			Name: name,
-			Data: component,
+			Data: entry,
 		})
 	}
 	_ = conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries})
