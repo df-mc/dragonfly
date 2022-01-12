@@ -69,9 +69,9 @@ var (
 	itemRuntimeIDsToNames = map[int32]string{}
 	// itemNamesToRuntimeIDs holds a map to translate item string IDs to runtime IDs.
 	itemNamesToRuntimeIDs = map[string]int32{}
-	// nextItemRuntimeID is the next runtime ID for a custom item when registered. It needs to be unique so it
+	// nextItemRuntimeID is the next runtime ID for a custom item when registered. It needs to be unique, so it
 	// starts at a high number and increments each time a custom item is registered.
-	nextItemRuntimeID int32 = 1000
+	nextItemRuntimeID int32
 )
 
 // init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
@@ -85,6 +85,7 @@ func init() {
 		itemNamesToRuntimeIDs[name] = rid
 		itemRuntimeIDsToNames[rid] = name
 	}
+	nextItemRuntimeID = int32(len(itemNamesToRuntimeIDs))
 }
 
 // ItemByName attempts to return an item by a name and a metadata value.
