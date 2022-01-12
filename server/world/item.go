@@ -39,9 +39,9 @@ func RegisterItem(item Item) {
 		panic(fmt.Sprintf("item registered with name %v and meta %v already exists", name, meta))
 	}
 	if c, ok := item.(CustomItem); ok {
-		itemRuntimeIDsToNames[nextItemRuntimeID] = name
-		itemNamesToRuntimeIDs[name] = nextItemRuntimeID
-		nextItemRuntimeID++
+		nextRID := int32(len(itemNamesToRuntimeIDs))
+		itemRuntimeIDsToNames[nextRID] = name
+		itemNamesToRuntimeIDs[name] = nextRID
 
 		customItems = append(customItems, c)
 	}
@@ -69,9 +69,6 @@ var (
 	itemRuntimeIDsToNames = map[int32]string{}
 	// itemNamesToRuntimeIDs holds a map to translate item string IDs to runtime IDs.
 	itemNamesToRuntimeIDs = map[string]int32{}
-	// nextItemRuntimeID is the next runtime ID for a custom item when registered. It needs to be unique, so it
-	// starts at a high number and increments each time a custom item is registered.
-	nextItemRuntimeID int32
 )
 
 // init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
@@ -85,7 +82,6 @@ func init() {
 		itemNamesToRuntimeIDs[name] = rid
 		itemRuntimeIDsToNames[rid] = name
 	}
-	nextItemRuntimeID = int32(len(itemNamesToRuntimeIDs))
 }
 
 // ItemByName attempts to return an item by a name and a metadata value.
