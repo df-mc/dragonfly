@@ -74,7 +74,7 @@ func (a *Area) iterEdges(f func(a, b cube.Pos)) {
 	for cx := 1; cx < a.w; cx++ {
 		x := a.baseX + (cx << 4)
 		for z := a.baseZ; z < a.baseZ+width; z++ {
-			for y := 0; y < a.r[1]; y++ {
+			for y := a.r[0]; y < a.r[1]; y++ {
 				f(cube.Pos{x, y, z}, cube.Pos{x - 1, y, z})
 			}
 		}
@@ -82,7 +82,7 @@ func (a *Area) iterEdges(f func(a, b cube.Pos)) {
 	for cz := 1; cz < a.w; cz++ {
 		z := a.baseZ + (cz << 4)
 		for x := a.baseX; x < a.baseX+width; x++ {
-			for y := 0; y < a.r[1]; y++ {
+			for y := a.r[0]; y < a.r[1]; y++ {
 				f(cube.Pos{x, y, z}, cube.Pos{x, y, z - 1})
 			}
 		}
@@ -178,5 +178,8 @@ func (a *Area) chunk(pos cube.Pos) *Chunk {
 
 // chunkIndex finds the index in the c slices of an Area for a Chunk at a specific x and z.
 func (a *Area) chunkIndex(x, z int) int {
+	// (-1 -1), (0 -1), (1 -1)
+	// (-1 0),  (0 0),  (1 0)
+	// (-1 1),  (0 1),  (1 1)
 	return (x >> 4) | ((z >> 4) * a.w)
 }

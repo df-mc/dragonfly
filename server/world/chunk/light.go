@@ -84,10 +84,10 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
 	a.iterEdges(func(pa, pb cube.Pos) {
 		la, lb := a.light(pa, lt), a.light(pb, lt)
-		if res := la - a.highest(pb, FilteringBlocks); res > lb {
-			queue.PushBack(node(pb, res, lt))
-		} else if res = lb - a.highest(pa, FilteringBlocks); res > la {
-			queue.PushBack(node(pa, res, lt))
+		if filter := a.highest(pb, FilteringBlocks) + 1; la > filter && la-filter > lb {
+			queue.PushBack(node(pb, la-filter, lt))
+		} else if filter = a.highest(pa, FilteringBlocks) + 1; lb > filter && lb-filter > la {
+			queue.PushBack(node(pa, lb-filter, lt))
 		}
 	})
 }

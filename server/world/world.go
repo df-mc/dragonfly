@@ -1966,8 +1966,8 @@ func (w *World) calculateLight(centre ChunkPos) {
 // them is loaded.
 func (w *World) spreadLight(pos ChunkPos) {
 	chunks := make([]*chunk.Chunk, 0, 9)
-	for x := int32(-1); x <= 1; x++ {
-		for z := int32(-1); z <= 1; z++ {
+	for z := int32(-1); z <= 1; z++ {
+		for x := int32(-1); x <= 1; x++ {
 			neighbour, ok := w.chunks[ChunkPos{pos[0] + x, pos[1] + z}]
 			if !ok {
 				// Not all surrounding chunks existed: Stop spreading light as we can't do it completely yet.
