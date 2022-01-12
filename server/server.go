@@ -10,9 +10,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/item_internal"
 	"github.com/df-mc/dragonfly/server/internal/pack_builder"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
-	"github.com/df-mc/dragonfly/server/item/component"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -430,7 +430,7 @@ func (server *Server) makeItemComponents() {
 	server.itemComponents = make(map[string]map[string]interface{})
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
-		if data, ok := component.FromItem(it); ok {
+		if data, ok := item_internal.ComponentsFromItem(it); ok {
 			server.itemComponents[name] = data
 		}
 	}

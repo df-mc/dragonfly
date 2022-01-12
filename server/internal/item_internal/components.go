@@ -1,4 +1,4 @@
-package component
+package item_internal
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// FromItem returns all the components of the given custom item. If the item has no components, the second return
-// value is false.
-func FromItem(it world.CustomItem) (map[string]interface{}, bool) {
+// ComponentsFromItem returns all the components of the given custom item. If the item has no components, a nil map and
+// false are returned.
+func ComponentsFromItem(it world.CustomItem) (map[string]interface{}, bool) {
 	category := it.Category()
 	identifier, _ := it.EncodeItem()
 	name := strings.Split(identifier, ":")[1]
