@@ -19,6 +19,16 @@ var (
 	legacyMappings = make(map[legacyBlockEntry]blockEntry)
 )
 
+// upgradeLegacyEntry upgrades a legacy block entry to a new one.
+func upgradeLegacyEntry(id int32, meta int16) (blockEntry, bool) {
+	entry, ok := legacyMappings[legacyBlockEntry{ID: id, Meta: meta}]
+	if !ok {
+		// Also try cases where the meta should be disregarded.
+		entry, ok = legacyMappings[legacyBlockEntry{ID: id}]
+	}
+	return entry, ok
+}
+
 // init creates conversions for each legacy entry.
 func init() {
 	dec := nbt.NewDecoder(bytes.NewBuffer(legacyMappingsData))
