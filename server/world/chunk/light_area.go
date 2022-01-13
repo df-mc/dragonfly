@@ -173,13 +173,10 @@ func (a *Area) sub(pos cube.Pos) *SubChunk {
 // chunk returns the Chunk corresponding to a cube.Pos.
 func (a *Area) chunk(pos cube.Pos) *Chunk {
 	x, z := pos[0]-a.baseX, pos[2]-a.baseZ
-	return a.c[a.chunkIndex(x, z)]
+	return a.c[a.chunkIndex(x>>4, z>>4)]
 }
 
-// chunkIndex finds the index in the c slices of an Area for a Chunk at a specific x and z.
+// chunkIndex finds the index in the chunk slice of an Area for a Chunk at a specific x and z.
 func (a *Area) chunkIndex(x, z int) int {
-	// (-1 -1), (0 -1), (1 -1)
-	// (-1 0),  (0 0),  (1 0)
-	// (-1 1),  (0 1),  (1 1)
-	return (x >> 4) | ((z >> 4) * a.w)
+	return x + (z * a.w)
 }
