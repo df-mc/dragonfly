@@ -62,14 +62,13 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 		pos := cube.Pos{x, height, z}
 		if level := a.highest(pos, FilteringBlocks); level != 15 && level != 0 {
 			queue.PushBack(node(pos.Add(cube.Pos{0, 1}), 15, SkyLight))
-			return
-		}
-		for y := height; y < highestY; y++ {
-			// We can do a bit of an optimisation here: We don't need to insert nodes if the neighbours are
-			// lower than the current one, on the same index level, or one level higher, because light in
-			// this column can't spread below that anyway.
 			pos[1]++
-			if pos[1] < highestNeighbour {
+		}
+		for y := pos[1]; y < highestY; y++ {
+			// We can do a bit of an optimisation here: We don't need to insert nodes if the neighbours are
+			// lower than the current one, on the same Y level, or one level higher, because light in
+			// this column can't spread below that anyway.
+			if pos[1]++; pos[1] < highestNeighbour {
 				queue.PushBack(node(pos, 15, SkyLight))
 				continue
 			}
