@@ -115,7 +115,7 @@ func paletteSizeFor(n int) paletteSize {
 // uint32s returns the amount of uint32s needed to represent a storage with this palette size.
 func (p paletteSize) uint32s() (n int) {
 	uint32Count := 0
-	if p != 0 {
+	if p != 0 && p <= 32 {
 		// indicesPerUint32 is the amount of indices that may be stored in a single uint32.
 		indicesPerUint32 := 32 / int(p)
 		// uint32Count is the amount of uint32s required to store all indices: 4096 indices need to be stored in
