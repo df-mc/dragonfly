@@ -261,12 +261,6 @@ func (server *Server) LoadResourcePack(pack *resource.Pack) {
 	server.resources = append(server.resources, pack)
 }
 
-// SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
-// The formatting of the name passed follows the rules of fmt.Sprintf.
-func (server *Server) SetNamef(format string, a ...interface{}) {
-	server.name.Store(fmt.Sprintf(format, a...))
-}
-
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...interface{}) {
