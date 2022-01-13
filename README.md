@@ -33,7 +33,7 @@ go run main.go
 
 
 ## Developer info
-[![Go Reference](https://pkg.go.dev/badge/github.com/df-mc/dragonfly.svg)](https://pkg.go.dev/github.com/df-mc/dragonfly)
+[![Go Reference](https://pkg.go.dev/badge/github.com/df-mc/dragonfly/server.svg)](https://pkg.go.dev/github.com/df-mc/dragonfly/server)
 
 Dragonfly features a well-documented codebase with an easy-to-use API. Documentation may be found
 [here](https://pkg.go.dev/github.com/df-mc/dragonfly/server) and in the subpackages found by clicking *Directories*.
