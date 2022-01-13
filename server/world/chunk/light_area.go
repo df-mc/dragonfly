@@ -2,41 +2,68 @@ package chunk
 
 import (
 	"bytes"
+	"container/list"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"math"
 )
 
-// Area represents a square area of N*N chunks. It is used for light calculation specifically.
-type Area struct {
+// lightArea represents a square area of N*N chunks. It is used for light calculation specifically.
+type lightArea struct {
 	baseX, baseZ int
 	c            []*Chunk
 	w            int
 	r            cube.Range
 }
 
-// NewArea creates an Area with the corner of the Area at baseX and baseY. The length of the Chunk slice must be a
-// square of a number, so 1, 4, 9 etc.
-func NewArea(c []*Chunk, baseX, baseY int) *Area {
+// LightArea creates a lightArea with the lower corner of the lightArea at baseX and baseY. The length of the Chunk
+// slice must be a square of a number, so 1, 4, 9 etc.
+func LightArea(c []*Chunk, baseX, baseY int) *lightArea {
 	w := int(math.Sqrt(float64(len(c))))
 	if len(c) != w*w {
 		panic("area must have a square chunk area")
 	}
-	return &Area{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
+	return &lightArea{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
+}
+
+// Fill executes the light 'filling' stage, where the lightArea is filled with light coming only from the
+// individual chunks within the lightArea itself, without light crossing chunk borders.
+func (a *lightArea) Fill() {
+	a.initialiseLightSlices()
+	queue := list.New()
+	a.insertBlockLightNodes(queue)
+	a.insertSkyLightNodes(queue)
+
+	for queue.Len() != 0 {
+		a.propagate(queue)
+	}
+}
+
+// Spread executes the light 'spreading' stage, where the lightArea has light spread from every Chunk into the
+// neighbouring chunks. The neighbouring chunks must have passed the light 'filling' stage before this
+// function is called for an lightArea that includes them.
+func (a *lightArea) Spread() {
+	queue := list.New()
+	a.insertLightSpreadingNodes(queue, BlockLight)
+	a.insertLightSpreadingNodes(queue, SkyLight)
+
+	for queue.Len() != 0 {
+		a.propagate(queue)
+	}
 }
 
 // light returns the light at a cube.Pos with the light type l.
-func (a *Area) light(pos cube.Pos, l light) uint8 {
+func (a *lightArea) light(pos cube.Pos, l light) uint8 {
 	return l.light(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf))
 }
 
 // light sets the light at a cube.Pos with the light type l.
-func (a *Area) setLight(pos cube.Pos, l light, v uint8) {
+func (a *lightArea) setLight(pos cube.Pos, l light, v uint8) {
 	l.setLight(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), v)
 }
 
 // neighbours returns all neighbour lightNode of the one passed. If one of these nodes would otherwise fall outside the
-// Area, it is not returned.
-func (a *Area) neighbours(n lightNode) []lightNode {
+// lightArea, it is not returned.
+func (a *lightArea) neighbours(n lightNode) []lightNode {
 	nodes := make([]lightNode, 0, 6)
 	for _, f := range cube.Faces() {
 		nn := lightNode{pos: n.pos.Side(f), lt: n.lt}
@@ -47,9 +74,9 @@ func (a *Area) neighbours(n lightNode) []lightNode {
 	return nodes
 }
 
-// iterSubChunks iterates over all blocks of the Area on a per-SubChunk basis. A filter function may be passed to
+// iterSubChunks iterates over all blocks of the lightArea on a per-SubChunk basis. A filter function may be passed to
 // specify if a SubChunk should be iterated over. If it returns false, it will not be iterated over.
-func (a *Area) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Pos)) {
+func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Pos)) {
 	for cx := 0; cx < a.w; cx++ {
 		for cz := 0; cz < a.w; cz++ {
 			baseX, baseZ, c := a.baseX+(cx<<4), a.baseZ+(cz<<4), a.c[a.chunkIndex(cx, cz)]
@@ -67,9 +94,9 @@ func (a *Area) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Po
 	}
 }
 
-// iterEdges iterates over all chunk edges within the Area and calls the function f with the cube.Pos at either side
-// of the edge.
-func (a *Area) iterEdges(f func(a, b cube.Pos)) {
+// iterEdges iterates over all chunk edges within the lightArea and calls the function f with the cube.Pos at either
+// side of the edge.
+func (a *lightArea) iterEdges(f func(a, b cube.Pos)) {
 	width := a.w * 16
 	for cx := 1; cx < a.w; cx++ {
 		x := a.baseX + (cx << 4)
@@ -89,10 +116,10 @@ func (a *Area) iterEdges(f func(a, b cube.Pos)) {
 	}
 }
 
-// iterHeightmap iterates over the heightmap of the Area and calls the function f with the heightmap value, the
+// iterHeightmap iterates over the heightmap of the lightArea and calls the function f with the heightmap value, the
 // heightmap value of the highest neighbour and the Y value of the highest non-empty SubChunk.
-func (a *Area) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
-	m, highestY := calculateHeightmap(a)
+func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
+	m, highestY := a.calculateHeightmap()
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.at(x, z)), int(m.highestNeighbour(x, z)), highestY)
@@ -102,7 +129,7 @@ func (a *Area) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY
 
 // iterSubChunk iterates over the coordinates of a SubChunk (0-15 on all axes) and calls the function f for each of
 // those coordinates.
-func (a *Area) iterSubChunk(f func(x, y, z int)) {
+func (a *lightArea) iterSubChunk(f func(x, y, z int)) {
 	for y := 0; y < 16; y++ {
 		for x := 0; x < 16; x++ {
 			for z := 0; z < 16; z++ {
@@ -114,7 +141,7 @@ func (a *Area) iterSubChunk(f func(x, y, z int)) {
 
 // highest looks up through the blocks at first and second layer at the cube.Pos passed and runs their runtime IDs
 // through the slice m passed, finding the highest value in this slice between those runtime IDs and returning it.
-func (a *Area) highest(pos cube.Pos, m []uint8) uint8 {
+func (a *lightArea) highest(pos cube.Pos, m []uint8) uint8 {
 	x, y, z, sub := uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), a.sub(pos)
 	storages, l := sub.storages, len(sub.storages)
 
@@ -142,7 +169,7 @@ var (
 // initialiseLightSlices initialises all light slices in the sub chunks of all chunks either with full light if there is
 // no sub chunk with any blocks above it, or with empty light if there is. The sub chunks with empty light are then
 // ready to be properly calculated.
-func (a *Area) initialiseLightSlices() {
+func (a *lightArea) initialiseLightSlices() {
 	for _, c := range a.c {
 		index := len(c.sub) - 1
 		for index >= 0 {
@@ -166,17 +193,17 @@ func (a *Area) initialiseLightSlices() {
 }
 
 // sub returns the SubChunk corresponding to a cube.Pos.
-func (a *Area) sub(pos cube.Pos) *SubChunk {
+func (a *lightArea) sub(pos cube.Pos) *SubChunk {
 	return a.chunk(pos).subChunk(int16(pos[1]))
 }
 
 // chunk returns the Chunk corresponding to a cube.Pos.
-func (a *Area) chunk(pos cube.Pos) *Chunk {
+func (a *lightArea) chunk(pos cube.Pos) *Chunk {
 	x, z := pos[0]-a.baseX, pos[2]-a.baseZ
 	return a.c[a.chunkIndex(x>>4, z>>4)]
 }
 
-// chunkIndex finds the index in the chunk slice of an Area for a Chunk at a specific x and z.
-func (a *Area) chunkIndex(x, z int) int {
+// chunkIndex finds the index in the chunk slice of an lightArea for a Chunk at a specific x and z.
+func (a *lightArea) chunkIndex(x, z int) int {
 	return x + (z * a.w)
 }

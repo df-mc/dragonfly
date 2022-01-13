@@ -9,8 +9,8 @@ import (
 // that diffuse or obstruct light.
 type heightmap []int16
 
-// calculateHeightmap calculates the heightmap of the chunk passed and returns it.
-func calculateHeightmap(a *Area) (heightmap, int) {
+// calculateHeightmap calculates the heightmap of the Chunk within a lightArea and returns it.
+func (a *lightArea) calculateHeightmap() (heightmap, int) {
 	h := make(heightmap, 256)
 	highestY, c := a.r[0], a.c[0]
 

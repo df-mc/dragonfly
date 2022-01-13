@@ -5,35 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// FillLight executes the light 'filling' stage, where the chunk is filled with light coming only from the
-// chunk itself, without light crossing chunk borders.
-func FillLight(a *Area) {
-	a.initialiseLightSlices()
-	queue := list.New()
-	insertBlockLightNodes(queue, a)
-	insertSkyLightNodes(queue, a)
-
-	for queue.Len() != 0 {
-		propagate(queue, a)
-	}
-}
-
-// SpreadLight executes the light 'spreading' stage, where the chunk has its light spread into the
-// neighbouring chunks. The neighbouring chunks must have passed the light 'filling' stage before this
-// function is called for a chunk.
-func SpreadLight(a *Area) {
-	queue := list.New()
-	insertLightSpreadingNodes(queue, a, BlockLight)
-	insertLightSpreadingNodes(queue, a, SkyLight)
-
-	for queue.Len() != 0 {
-		propagate(queue, a)
-	}
-}
-
 // insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
 // If one is found, a node is added for it to the node queue.
-func insertBlockLightNodes(queue *list.List, a *Area) {
+func (a *lightArea) insertBlockLightNodes(queue *list.List) {
 	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
 		if level := a.highest(pos, LightBlocks); level > 0 {
 			queue.PushBack(node(pos, level, BlockLight))
@@ -55,7 +29,7 @@ func anyLightBlocks(sub *SubChunk) bool {
 
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
 // chunk. In addition, any skylight above those nodes will be set to 15.
-func insertSkyLightNodes(queue *list.List, a *Area) {
+func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY int) {
 		// If we hit a block like water or leaves (something that diffuses but does not block light), we
 		// need a node above this block regardless of the neighbours.
@@ -80,7 +54,7 @@ func insertSkyLightNodes(queue *list.List, a *Area) {
 
 // insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
-func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
+func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
 	a.iterEdges(func(pa, pb cube.Pos) {
 		la, lb := a.light(pa, lt), a.light(pb, lt)
 		if filter := a.highest(pb, FilteringBlocks) + 1; la > filter && la-filter > lb {
@@ -91,9 +65,9 @@ func insertLightSpreadingNodes(queue *list.List, a *Area, lt light) {
 	})
 }
 
-// propagate spreads the next light node in the node queue passed through the Area a. propagate adds the neighbours
+// propagate spreads the next light node in the node queue passed through the lightArea a. propagate adds the neighbours
 // of the node to the queue for as long as it is able to spread.
-func propagate(queue *list.List, a *Area) {
+func (a *lightArea) propagate(queue *list.List) {
 	n := queue.Remove(queue.Front()).(lightNode)
 	if a.light(n.pos, n.lt) >= n.level {
 		return
