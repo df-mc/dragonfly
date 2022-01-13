@@ -120,7 +120,9 @@ func New(c *Config, log internal.Logger) *Server {
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
 
-	s.loadResources(c.Resources.Folder, log)
+	if c.Resources.LoadPacks {
+		s.loadResources(c.Resources.Folder, log)
+	}
 	s.checkNetIsolation()
 
 	if c.Players.SaveData {
@@ -251,6 +253,12 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 		provider = player.NopProvider{}
 	}
 	server.playerProvider = provider
+}
+
+// LoadResourcePack loads a resource pack to the server. The pack will eventually be sent to clients who join the
+// server when started.
+func (server *Server) LoadResourcePack(pack *resource.Pack) {
+	server.resources = append(server.resources, pack)
 }
 
 // SetNamef sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
@@ -659,20 +667,20 @@ func (server *Server) biomes() map[string]interface{} {
 // loadResources loads resource packs from path of specifed directory.
 func (server *Server) loadResources(p string, log internal.Logger) {
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		_ = os.Mkdir(p, 0777)
+		_ = os.Mkdir(p, os.ModePerm)
 	}
 	resources, err := os.ReadDir(p)
 	if err != nil {
 		panic(err)
 	}
 	for _, entry := range resources {
-		r, err := resource.Compile(filepath.Join(p, entry.Name()))
+		pack, err := resource.Compile(filepath.Join(p, entry.Name()))
 		if err != nil {
 			log.Infof("Failed to load resource: %v", entry.Name())
 			continue
 		}
 
-		server.resources = append(server.resources, r)
+		server.LoadResourcePack(pack)
 	}
 }
 

@@ -44,5 +44,8 @@
   Folder = "players"
 
 [Resources]
+  # LoadPacks is true if packs should be loaded by the folder specified below. If this is false, then packs won't be
+  # attempted to be loaded from the folder, however you will still be able to add your own pack through the code.
+  LoadPacks = true
   # Folder configures the directory used by the server to load resource packs.
   Folder = "resources"

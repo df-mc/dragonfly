@@ -48,6 +48,9 @@ type Config struct {
 	}
 
 	Resources struct {
+		// LoadPacks is true if packs should be loaded by the folder specified below. If this is false, then packs won't be
+		// attempted to be loaded from the folder, however you will still be able to add your own pack through the code.
+		LoadPacks bool
 		// Folder controls the location where resource packs will be loaded from.
 		Folder string
 	}
@@ -67,6 +70,7 @@ func DefaultConfig() Config {
 	c.Players.MaximumChunkRadius = 32
 	c.Players.SaveData = true
 	c.Players.Folder = "players"
+	c.Resources.LoadPacks = true
 	c.Resources.Folder = "resources"
 	return c
 }
