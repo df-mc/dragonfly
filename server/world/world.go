@@ -1608,7 +1608,7 @@ func (w *World) tickEntities(tick int64) {
 
 			old := w.chunks[lastPos]
 			old.Lock()
-			chunkEntities := make([]Entity, 0, len(old.entities)-1)
+			chunkEntities := make([]Entity, 0, len(old.entities))
 			for _, entity := range old.entities {
 				if entity == e {
 					continue
