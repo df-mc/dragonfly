@@ -72,9 +72,14 @@ func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
 // nodesNeeded checks if any light nodes of a specific light type are needed between two neighbouring SubChunks when
 // spreading light between them.
 func (a *lightArea) nodesNeeded(lt light) func(sa, sb *SubChunk) bool {
+	if lt == SkyLight {
+		return func(sa, sb *SubChunk) bool {
+			return &sa.skyLight[0] == &sb.skyLight[0]
+		}
+	}
 	return func(sa, sb *SubChunk) bool {
 		// Don't add nodes if both sub chunks are either both fully filled with light or have no light at all.
-		return (lt == SkyLight && &sa.skyLight[0] != &sb.skyLight[0]) || (lt == BlockLight && &sa.blockLight[0] != &sb.blockLight[0])
+		return &sa.blockLight[0] != &sb.blockLight[0]
 	}
 }
 
