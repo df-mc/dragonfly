@@ -96,21 +96,37 @@ func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cu
 
 // iterEdges iterates over all chunk edges within the lightArea and calls the function f with the cube.Pos at either
 // side of the edge.
-func (a *lightArea) iterEdges(f func(a, b cube.Pos)) {
-	width := a.w * 16
-	for cx := 1; cx < a.w; cx++ {
-		x := a.baseX + (cx << 4)
-		for z := a.baseZ; z < a.baseZ+width; z++ {
-			for y := a.r[0]; y < a.r[1]; y++ {
-				f(cube.Pos{x, y, z}, cube.Pos{x - 1, y, z})
-			}
-		}
-	}
-	for cz := 1; cz < a.w; cz++ {
-		z := a.baseZ + (cz << 4)
-		for x := a.baseX; x < a.baseX+width; x++ {
-			for y := a.r[0]; y < a.r[1]; y++ {
-				f(cube.Pos{x, y, z}, cube.Pos{x, y, z - 1})
+func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube.Pos)) {
+	minY, maxY := a.r[0]>>4, a.r[1]>>4
+	// First iterate over chunk X, Y and Z, so we can filter out a complete 16x16 sheet of blocks if the
+	// filter function returns false.
+	for cu := 1; cu < a.w; cu++ {
+		u := cu << 4
+		for cv := 0; cv < a.w; cv++ {
+			v := cv << 4
+			for cy := minY; cy < maxY; cy++ {
+				baseY := cy << 4
+
+				xa, za := cube.Pos{a.baseX + u, baseY, a.baseZ + v}, cube.Pos{a.baseX + v, baseY, a.baseZ + u}
+				xb, zb := xa.Add(cube.Pos{-1, 0, 0}), za.Add(cube.Pos{0, 0, -1})
+
+				addX, addZ := filter(a.sub(xa), a.sub(xb)), filter(a.sub(za), a.sub(zb))
+				if !addX && !addZ {
+					continue
+				}
+				// The order of these loops allows us to take care of block spreading over both the X and Z axis by
+				// just swapping around the axes.
+				for addV := 0; addV < 16; addV++ {
+					for y := 0; y < 16; y++ {
+						// Finally, iterate over the 16x16 sheet and actually do the per-block checks.
+						if addX {
+							f(xa.Add(cube.Pos{0, y, addV}), xb.Add(cube.Pos{0, y, addV}))
+						}
+						if addZ {
+							f(za.Add(cube.Pos{addV, y}), zb.Add(cube.Pos{addV, y}))
+						}
+					}
+				}
 			}
 		}
 	}

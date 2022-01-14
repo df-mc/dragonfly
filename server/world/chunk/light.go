@@ -55,14 +55,27 @@ func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 // insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
 func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
-	a.iterEdges(func(pa, pb cube.Pos) {
+	a.iterEdges(a.nodesNeeded(lt), func(pa, pb cube.Pos) {
 		la, lb := a.light(pa, lt), a.light(pb, lt)
+		if la == lb || la-1 == lb || lb-1 == la {
+			// No chance for this to spread. Don't check for the highest filtering blocks on the side.
+			return
+		}
 		if filter := a.highest(pb, FilteringBlocks) + 1; la > filter && la-filter > lb {
 			queue.PushBack(node(pb, la-filter, lt))
 		} else if filter = a.highest(pa, FilteringBlocks) + 1; lb > filter && lb-filter > la {
 			queue.PushBack(node(pa, lb-filter, lt))
 		}
 	})
+}
+
+// nodesNeeded checks if any light nodes of a specific light type are needed between two neighbouring SubChunks when
+// spreading light between them.
+func (a *lightArea) nodesNeeded(lt light) func(sa, sb *SubChunk) bool {
+	return func(sa, sb *SubChunk) bool {
+		// Don't add nodes if both sub chunks are either both fully filled with light or have no light at all.
+		return (lt == SkyLight && &sa.skyLight[0] != &sb.skyLight[0]) || (lt == BlockLight && &sa.blockLight[0] != &sb.blockLight[0])
+	}
 }
 
 // propagate spreads the next light node in the node queue passed through the lightArea a. propagate adds the neighbours
