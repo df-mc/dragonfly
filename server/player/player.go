@@ -2285,8 +2285,8 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 // is either survival or creative mode.
 func (p *Player) canReach(pos mgl64.Vec3) bool {
 	const (
-		creativeRange = 13.0
-		survivalRange = 7.0
+		creativeRange = 14.0
+		survivalRange = 8.0
 	)
 	if !p.GameMode().AllowsInteraction() {
 		return false
