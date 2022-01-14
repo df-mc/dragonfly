@@ -1,10 +1,9 @@
 package item
 
 import (
-	"time"
-
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // GoldenApple is a special food item that bestows beneficial effects.
