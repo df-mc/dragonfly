@@ -74,7 +74,7 @@ func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
 func (a *lightArea) nodesNeeded(lt light) func(sa, sb *SubChunk) bool {
 	if lt == SkyLight {
 		return func(sa, sb *SubChunk) bool {
-			return &sa.skyLight[0] == &sb.skyLight[0]
+			return &sa.skyLight[0] != &sb.skyLight[0]
 		}
 	}
 	return func(sa, sb *SubChunk) bool {
