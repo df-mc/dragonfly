@@ -78,6 +78,8 @@ type Player struct {
 
 	cooldownMu sync.Mutex
 	cooldowns  map[itemHash]time.Time
+	// lastTickedWorld holds the world that the player was in, in the last tick.
+	lastTickedWorld *world.World
 
 	speed    atomic.Float64
 	health   *entity.HealthManager
@@ -1964,6 +1966,10 @@ func (p *Player) Tick(w *world.World, current int64) {
 	if p.Dead() {
 		return
 	}
+	if p.lastTickedWorld != w {
+		p.handler().HandleChangeWorld(p.lastTickedWorld, w)
+	}
+	p.lastTickedWorld = w
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
