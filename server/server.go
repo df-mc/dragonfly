@@ -255,9 +255,9 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 	server.playerProvider = provider
 }
 
-// LoadResourcePack loads a resource pack to the server. The pack will eventually be sent to clients who join the
+// AddResourcePack loads a resource pack to the server. The pack will eventually be sent to clients who join the
 // server when started.
-func (server *Server) LoadResourcePack(pack *resource.Pack) {
+func (server *Server) AddResourcePack(pack *resource.Pack) {
 	server.resources = append(server.resources, pack)
 }
 
@@ -661,7 +661,7 @@ func (server *Server) biomes() map[string]interface{} {
 // loadResources loads resource packs from path of specifed directory.
 func (server *Server) loadResources(p string, log internal.Logger) {
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		_ = os.Mkdir(p, os.ModePerm)
+		_ = os.Mkdir(p, 0777)
 	}
 	resources, err := os.ReadDir(p)
 	if err != nil {
@@ -674,7 +674,7 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 			continue
 		}
 
-		server.LoadResourcePack(pack)
+		server.AddResourcePack(pack)
 	}
 }
 
