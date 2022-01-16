@@ -169,13 +169,13 @@ func (w *World) Block(pos cube.Pos) Block {
 func (w *World) Biome(pos cube.Pos) Biome {
 	if w == nil || pos.OutOfBounds(w.ra) {
 		// Fast way out.
-		return nil
+		return ocean()
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	c, err := w.chunk(chunkPos)
 	if err != nil {
 		w.log.Errorf("error reading biome: %v", err)
-		return nil
+		return ocean()
 	}
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
 	c.Unlock()
