@@ -16,7 +16,7 @@ type IronOre struct {
 // BreakInfo ...
 func (i IronOre) BreakInfo() BreakInfo {
 	return newBreakInfo(i.Type.Hardness(), func(t item.Tool) bool {
-		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.TierStone.HarvestLevel
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, silkTouchOneOf(item.RawIron{}, i))
 }
 

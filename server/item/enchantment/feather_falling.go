@@ -2,7 +2,6 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // FeatherFalling is an enchantment to boots that reduces fall damage. It does not affect falling speed.
@@ -32,6 +31,6 @@ func (e FeatherFalling) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e FeatherFalling) CompatibleWith(s item.Stack) bool {
-	b, ok := s.Item().(armour.Boots)
+	b, ok := s.Item().(item.BootsType)
 	return ok && b.Boots()
 }

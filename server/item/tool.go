@@ -18,18 +18,18 @@ var (
 	// TypeSword is the ToolType for swords.
 	TypeSword = ToolType{5}
 
-	// TierWood is the ToolTier of wood tools. This is the lowest possible tier.
-	TierWood = ToolTier{HarvestLevel: 1, Durability: 59, BaseMiningEfficiency: 2, BaseAttackDamage: 1, Name: "wooden"}
-	// TierGold is the ToolTier of gold tools.
-	TierGold = ToolTier{HarvestLevel: 1, Durability: 32, BaseMiningEfficiency: 12, BaseAttackDamage: 1, Name: "golden"}
-	// TierStone is the ToolTier of stone tools.
-	TierStone = ToolTier{HarvestLevel: 2, Durability: 131, BaseMiningEfficiency: 4, BaseAttackDamage: 2, Name: "stone"}
-	// TierIron is the ToolTier of iron tools.
-	TierIron = ToolTier{HarvestLevel: 3, Durability: 250, BaseMiningEfficiency: 6, BaseAttackDamage: 3, Name: "iron"}
-	// TierDiamond is the ToolTier of diamond tools.
-	TierDiamond = ToolTier{HarvestLevel: 4, Durability: 1561, BaseMiningEfficiency: 8, BaseAttackDamage: 4, Name: "diamond"}
-	// TierNetherite is the ToolTier of netherite tools. This is the highest possible tier.
-	TierNetherite = ToolTier{HarvestLevel: 4, Durability: 2031, BaseMiningEfficiency: 9, BaseAttackDamage: 5, Name: "netherite"}
+	// ToolTierWood is the ToolTier of wood tools. This is the lowest possible tier.
+	ToolTierWood = ToolTier{HarvestLevel: 1, Durability: 59, BaseMiningEfficiency: 2, BaseAttackDamage: 1, Name: "wooden"}
+	// ToolTierGold is the ToolTier of gold tools.
+	ToolTierGold = ToolTier{HarvestLevel: 1, Durability: 32, BaseMiningEfficiency: 12, BaseAttackDamage: 1, Name: "golden"}
+	// ToolTierStone is the ToolTier of stone tools.
+	ToolTierStone = ToolTier{HarvestLevel: 2, Durability: 131, BaseMiningEfficiency: 4, BaseAttackDamage: 2, Name: "stone"}
+	// ToolTierIron is the ToolTier of iron tools.
+	ToolTierIron = ToolTier{HarvestLevel: 3, Durability: 250, BaseMiningEfficiency: 6, BaseAttackDamage: 3, Name: "iron"}
+	// ToolTierDiamond is the ToolTier of diamond tools.
+	ToolTierDiamond = ToolTier{HarvestLevel: 4, Durability: 1561, BaseMiningEfficiency: 8, BaseAttackDamage: 4, Name: "diamond"}
+	// ToolTierNetherite is the ToolTier of netherite tools. This is the highest possible tier.
+	ToolTierNetherite = ToolTier{HarvestLevel: 4, Durability: 2031, BaseMiningEfficiency: 9, BaseAttackDamage: 5, Name: "netherite"}
 )
 
 type (
@@ -73,7 +73,7 @@ type (
 
 // ToolTiers returns a ToolTier slice containing all available tiers.
 func ToolTiers() []ToolTier {
-	return []ToolTier{TierWood, TierGold, TierStone, TierIron, TierDiamond, TierNetherite}
+	return []ToolTier{ToolTierWood, ToolTierGold, ToolTierStone, ToolTierIron, ToolTierDiamond, ToolTierNetherite}
 }
 
 // ToolType ...

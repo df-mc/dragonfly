@@ -18,7 +18,7 @@ func (i IronBlock) Instrument() sound.Instrument {
 // BreakInfo ...
 func (i IronBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
-		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.TierStone.HarvestLevel
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, oneOf(i))
 }
 

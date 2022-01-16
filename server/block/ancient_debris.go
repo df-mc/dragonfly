@@ -12,7 +12,7 @@ type AncientDebris struct {
 // BreakInfo ...
 func (a AncientDebris) BreakInfo() BreakInfo {
 	return newBreakInfo(30, func(t item.Tool) bool {
-		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.TierDiamond.HarvestLevel
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
 	}, pickaxeEffective, oneOf(a))
 }
 

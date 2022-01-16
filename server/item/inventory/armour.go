@@ -3,7 +3,6 @@ package inventory
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -29,19 +28,19 @@ func canAddArmour(s item.Stack, slot int) bool {
 	}
 	switch slot {
 	case 0:
-		if h, ok := s.Item().(armour.Helmet); ok {
+		if h, ok := s.Item().(item.HelmetType); ok {
 			return h.Helmet()
 		}
 	case 1:
-		if c, ok := s.Item().(armour.Chestplate); ok {
+		if c, ok := s.Item().(item.ChestplateType); ok {
 			return c.Chestplate()
 		}
 	case 2:
-		if l, ok := s.Item().(armour.Leggings); ok {
+		if l, ok := s.Item().(item.LeggingsType); ok {
 			return l.Leggings()
 		}
 	case 3:
-		if b, ok := s.Item().(armour.Boots); ok {
+		if b, ok := s.Item().(item.BootsType); ok {
 			return b.Boots()
 		}
 	}

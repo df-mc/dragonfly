@@ -18,7 +18,7 @@ func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
 // BreakInfo ...
 func (c CoalBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
-		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.TierWood.HarvestLevel
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierWood.HarvestLevel
 	}, pickaxeEffective, oneOf(c))
 }
 

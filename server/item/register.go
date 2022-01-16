@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -15,7 +14,7 @@ func init() {
 		world.RegisterItem(Sword{Tier: t})
 		world.RegisterItem(Hoe{Tier: t})
 	}
-	for _, t := range armour.Tiers() {
+	for _, t := range ArmourTiers() {
 		world.RegisterItem(Helmet{Tier: t})
 		world.RegisterItem(Chestplate{Tier: t})
 		world.RegisterItem(Leggings{Tier: t})

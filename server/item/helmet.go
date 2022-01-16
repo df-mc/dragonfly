@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,7 +8,7 @@ import (
 // different defence points and armour toughness.
 type Helmet struct {
 	// Tier is the tier of the armour.
-	Tier armour.Tier
+	Tier ArmourTier
 }
 
 // Use handles the using of a helmet to auto-equip it in an armour slot.
@@ -26,11 +25,11 @@ func (h Helmet) MaxCount() int {
 // DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
 	switch h.Tier {
-	case armour.TierLeather:
+	case ArmourTierLeather:
 		return 1
-	case armour.TierGold, armour.TierChain, armour.TierIron:
+	case ArmourTierGold, ArmourTierChain, ArmourTierIron:
 		return 2
-	case armour.TierDiamond, armour.TierNetherite:
+	case ArmourTierDiamond, ArmourTierNetherite:
 		return 3
 	}
 	panic("invalid helmet tier")

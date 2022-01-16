@@ -12,7 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
@@ -611,7 +610,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 			damageToArmour++
 		}
 		for i, it := range p.armour.Slots() {
-			if a, ok := it.Item().(armour.Armour); ok {
+			if a, ok := it.Item().(item.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
 					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
@@ -675,7 +674,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 
 	resistance := 0.0
 	for _, i := range p.armour.Items() {
-		if a, ok := i.Item().(armour.Armour); ok {
+		if a, ok := i.Item().(item.Armour); ok {
 			resistance += a.KnockBackResistance()
 		}
 	}

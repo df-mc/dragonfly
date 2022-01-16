@@ -3,7 +3,6 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // BlastProtection is an armour enchantment that decreases explosion damage.
@@ -28,7 +27,7 @@ func (e BlastProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e BlastProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(armour.Armour)
+	_, ok := s.Item().(item.Armour)
 
 	_, fireProt := s.Enchantment(FireProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
@@ -59,7 +58,7 @@ func (e FireProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e FireProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(armour.Armour)
+	_, ok := s.Item().(item.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, projectileProt := s.Enchantment(ProjectileProtection{})
@@ -90,7 +89,7 @@ func (e ProjectileProtection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e ProjectileProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(armour.Armour)
+	_, ok := s.Item().(item.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, fireProt := s.Enchantment(FireProtection{})
@@ -131,7 +130,7 @@ func (e Protection) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Protection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(armour.Armour)
+	_, ok := s.Item().(item.Armour)
 
 	_, blastProt := s.Enchantment(BlastProtection{})
 	_, fireProt := s.Enchantment(FireProtection{})

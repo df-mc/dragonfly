@@ -18,7 +18,7 @@ func (g GoldBlock) Instrument() sound.Instrument {
 // BreakInfo ...
 func (g GoldBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
-		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.TierIron.HarvestLevel
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
 	}, pickaxeEffective, oneOf(g))
 }
 
