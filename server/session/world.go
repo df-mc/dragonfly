@@ -518,6 +518,10 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.UseSpyGlass:
+		pk.SoundType = packet.SoundEventUseSpyglass
+	case sound.StopUsingSpyGlass:
+		pk.SoundType = packet.SoundEventStopUsingSpyglass
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
