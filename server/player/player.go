@@ -2325,10 +2325,6 @@ func (p *Player) close() {
 	_ = p.offHand.Close()
 	_ = p.armour.Close()
 
-	if p.World() == nil {
-		return
-	}
-
 	if s == nil {
 		p.World().RemoveEntity(p)
 	} else {

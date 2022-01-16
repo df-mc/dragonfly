@@ -196,6 +196,12 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) Close() error {
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if s.c.Dead() {
+		s.c.Respawn()
+	}
+
 	s.closeCurrentContainer()
 
 	_ = s.conn.Close()
