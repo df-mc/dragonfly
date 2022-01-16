@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -88,7 +87,7 @@ func (c CocoaBean) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if c.Age == 2 {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}

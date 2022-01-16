@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -48,8 +47,8 @@ func (n NetherSprouts) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (n NetherSprouts) BreakInfo() BreakInfo {
-	return newBreakInfo(0, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypeShears
+	return newBreakInfo(0, func(t item.Tool) bool {
+		return t.ToolType() == item.TypeShears
 	}, nothingEffective, oneOf(n))
 }
 

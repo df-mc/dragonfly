@@ -15,7 +15,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -1708,9 +1707,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 // drops returns the drops that the player can get from the block passed using the item held.
 func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
-	t, ok := held.Item().(tool.Tool)
+	t, ok := held.Item().(item.Tool)
 	if !ok {
-		t = tool.None{}
+		t = item.ToolNone{}
 	}
 	var drops []item.Stack
 	if container, ok := b.(block.Container); ok {

@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -11,7 +10,7 @@ import (
 // Hoe is a tool generally used to till dirt and grass blocks into farmland blocks for planting crops.
 // Additionally, a Hoe can be used to break certain types of blocks such as Crimson and Hay Blocks.
 type Hoe struct {
-	Tier tool.Tier
+	Tier ToolTier
 }
 
 // UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
@@ -53,8 +52,8 @@ func (h Hoe) AttackDamage() float64 {
 }
 
 // ToolType ...
-func (h Hoe) ToolType() tool.Type {
-	return tool.TypeHoe
+func (h Hoe) ToolType() ToolType {
+	return TypeHoe
 }
 
 // HarvestLevel returns the level that this hoe is able to harvest. If a block has a harvest level above

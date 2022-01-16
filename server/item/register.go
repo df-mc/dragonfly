@@ -3,13 +3,12 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/potion"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 //noinspection SpellCheckingInspection
 func init() {
-	for _, t := range tool.Tiers() {
+	for _, t := range ToolTiers() {
 		world.RegisterItem(Pickaxe{Tier: t})
 		world.RegisterItem(Axe{Tier: t})
 		world.RegisterItem(Shovel{Tier: t})

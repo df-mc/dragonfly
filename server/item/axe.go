@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,7 +11,7 @@ import (
 // blocks at a faster pace such as pumpkins.
 type Axe struct {
 	// Tier is the tier of the axe.
-	Tier tool.Tier
+	Tier ToolTier
 }
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
@@ -57,8 +56,8 @@ func (a Axe) AttackDamage() float64 {
 }
 
 // ToolType ...
-func (a Axe) ToolType() tool.Type {
-	return tool.TypeAxe
+func (a Axe) ToolType() ToolType {
+	return TypeAxe
 }
 
 // HarvestLevel ...

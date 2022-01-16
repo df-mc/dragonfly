@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -60,8 +59,8 @@ func (d DeadBush) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DeadBush) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == tool.TypeShears {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
 		if amount := rand.Intn(3); amount != 0 {

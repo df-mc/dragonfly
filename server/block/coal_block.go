@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // CoalBlock is a precious mineral block made from 9 coal.
@@ -17,8 +17,8 @@ func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (c CoalBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(5, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierWood.HarvestLevel
+	return newBreakInfo(5, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.TierWood.HarvestLevel
 	}, pickaxeEffective, oneOf(c))
 }
 
