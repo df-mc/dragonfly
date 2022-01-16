@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -86,10 +85,10 @@ func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
-	}, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == tool.TypeShears || hasSilkTouch(enchantments) {
+	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
+		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeHoe
+	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
 		var drops []item.Stack

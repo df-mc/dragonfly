@@ -2,7 +2,6 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // Thorns is an armor enchantment that causes attackers to be damaged when they deal damage to the wearer.
@@ -25,6 +24,6 @@ func (e Thorns) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Thorns) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(armour.Armour)
+	_, ok := s.Item().(item.Armour)
 	return ok
 }

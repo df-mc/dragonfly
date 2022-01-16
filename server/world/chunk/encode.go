@@ -44,6 +44,8 @@ type (
 		Name    string                 `nbt:"name"`
 		State   map[string]interface{} `nbt:"states"`
 		Version int32                  `nbt:"version"`
+		ID      int32                  `nbt:"oldid,omitempty"`
+		Meta    int16                  `nbt:"val,omitempty"`
 	}
 )
 

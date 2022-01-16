@@ -2,7 +2,6 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
 // Sharpness is an enchantment applied to a sword or axe that increases melee damage.
@@ -32,6 +31,6 @@ func (e Sharpness) WithLevel(level int) item.Enchantment {
 
 // CompatibleWith ...
 func (e Sharpness) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(tool.Tool)
-	return ok && (t.ToolType() == tool.TypeSword || t.ToolType() == tool.TypeAxe)
+	t, ok := s.Item().(item.Tool)
+	return ok && (t.ToolType() == item.TypeSword || t.ToolType() == item.TypeAxe)
 }

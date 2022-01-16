@@ -12,10 +12,8 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -78,6 +76,8 @@ type Player struct {
 
 	cooldownMu sync.Mutex
 	cooldowns  map[itemHash]time.Time
+	// lastTickedWorld holds the world that the player was in, in the last tick.
+	lastTickedWorld *world.World
 
 	speed    atomic.Float64
 	health   *entity.HealthManager
@@ -612,7 +612,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 			damageToArmour++
 		}
 		for i, it := range p.armour.Slots() {
-			if a, ok := it.Item().(armour.Armour); ok {
+			if a, ok := it.Item().(item.Armour); ok {
 				defencePoints += a.DefencePoints()
 				if _, ok := it.Item().(item.Durable); ok {
 					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
@@ -676,7 +676,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 
 	resistance := 0.0
 	for _, i := range p.armour.Items() {
-		if a, ok := i.Item().(armour.Armour); ok {
+		if a, ok := i.Item().(item.Armour); ok {
 			resistance += a.KnockBackResistance()
 		}
 	}
@@ -1708,9 +1708,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 // drops returns the drops that the player can get from the block passed using the item held.
 func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
-	t, ok := held.Item().(tool.Tool)
+	t, ok := held.Item().(item.Tool)
 	if !ok {
-		t = tool.None{}
+		t = item.ToolNone{}
 	}
 	var drops []item.Stack
 	if container, ok := b.(block.Container); ok {
@@ -1964,6 +1964,10 @@ func (p *Player) Tick(w *world.World, current int64) {
 	if p.Dead() {
 		return
 	}
+	if p.lastTickedWorld != w {
+		p.handler().HandleChangeWorld(p.lastTickedWorld, w)
+	}
+	p.lastTickedWorld = w
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -2285,8 +2289,8 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 // is either survival or creative mode.
 func (p *Player) canReach(pos mgl64.Vec3) bool {
 	const (
-		creativeRange = 13.0
-		survivalRange = 7.0
+		creativeRange = 14.0
+		survivalRange = 8.0
 	)
 	if !p.GameMode().AllowsInteraction() {
 		return false

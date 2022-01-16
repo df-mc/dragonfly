@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
@@ -17,8 +17,8 @@ func (i IronBlock) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (i IronBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(5, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
+	return newBreakInfo(5, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, oneOf(i))
 }
 

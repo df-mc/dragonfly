@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -35,8 +34,8 @@ type carvable interface {
 }
 
 // ToolType ...
-func (s Shears) ToolType() tool.Type {
-	return tool.TypeShears
+func (s Shears) ToolType() ToolType {
+	return TypeShears
 }
 
 // HarvestLevel ...

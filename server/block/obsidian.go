@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // Obsidian is a dark purple block known for its high blast resistance and strength, most commonly found when
@@ -39,7 +39,7 @@ func (o Obsidian) EncodeBlock() (string, map[string]interface{}) {
 
 // BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
-	return newBreakInfo(50, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+	return newBreakInfo(50, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
 	}, pickaxeEffective, oneOf(o))
 }

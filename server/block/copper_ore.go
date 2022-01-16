@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"math/rand"
 )
 
@@ -17,8 +16,8 @@ type CopperOre struct {
 
 // BreakInfo ...
 func (c CopperOre) BreakInfo() BreakInfo {
-	return newBreakInfo(c.Type.Hardness(), func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
+	return newBreakInfo(c.Type.Hardness(), func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.RawCopper{}, rand.Intn(4)+2), item.NewStack(c, 1)))
 }
 

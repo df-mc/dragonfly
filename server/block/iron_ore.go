@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
 // IronOre is a mineral block found underground.
@@ -16,8 +15,8 @@ type IronOre struct {
 
 // BreakInfo ...
 func (i IronOre) BreakInfo() BreakInfo {
-	return newBreakInfo(i.Type.Hardness(), func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
+	return newBreakInfo(i.Type.Hardness(), func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, silkTouchOneOf(item.RawIron{}, i))
 }
 

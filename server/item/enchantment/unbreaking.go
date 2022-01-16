@@ -2,7 +2,6 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 )
@@ -15,7 +14,7 @@ type Unbreaking struct{ enchantment }
 func (e Unbreaking) Reduce(it world.Item, level, amount int) int {
 	after := amount
 
-	_, ok := it.(armour.Armour)
+	_, ok := it.(item.Armour)
 	for i := 0; i < amount; i++ {
 		if (!ok || rand.Float64() >= 0.6) && rand.Intn(level+1) > 0 {
 			after--
