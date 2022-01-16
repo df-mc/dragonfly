@@ -22,8 +22,8 @@ type Handler interface {
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
-	// HandleChangeWorld handles when the player is added to a new world. oldWorld may be nil.
-	HandleChangeWorld(oldWorld *world.World, newWorld *world.World)
+	// HandleChangeWorld handles when the player is added to a new world. before may be nil.
+	HandleChangeWorld(before, after *world.World)
 	// HandleToggleSprint handles when the player starts or stops sprinting.
 	// After is true if the player is sprinting after toggling (changing their sprinting state).
 	HandleToggleSprint(ctx *event.Context, after bool)
