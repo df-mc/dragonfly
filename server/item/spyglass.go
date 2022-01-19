@@ -13,7 +13,7 @@ func (Spyglass) MaxCount() int {
 }
 
 // Release ...
-func (Spyglass) Release(_ Releaser, _ time.Duration, _ *UseContext) {}
+func (Spyglass) Release(Releaser, time.Duration, *UseContext) {}
 
 // Requirements ...
 func (Spyglass) Requirements() []Stack {
