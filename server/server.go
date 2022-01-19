@@ -120,9 +120,7 @@ func New(c *Config, log internal.Logger) *Server {
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
 
-	if c.Resources.LoadPacks {
-		s.loadResources(c.Resources.Folder, log)
-	}
+	s.loadResources(c.Resources.Folder, log)
 	s.checkNetIsolation()
 
 	if c.Players.SaveData {
