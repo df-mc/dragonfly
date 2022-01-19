@@ -356,7 +356,7 @@ func (server *Server) Listen(l Listener) {
 			a := server.a
 			server.aMu.Unlock()
 
-			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
+			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData()); !ok {
 				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
 				_ = c.Close()
 				continue
