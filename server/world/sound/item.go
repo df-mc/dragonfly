@@ -44,3 +44,9 @@ type ArrowHit struct{ sound }
 
 // EndermanTeleport is a sound played upon teleportation of an enderman, or teleportation of a player by an ender pearl or a chorus fruit.
 type EndermanTeleport struct{ sound }
+
+// UseSpyglass is a sound played when a player uses a spyglass.
+type UseSpyglass struct{ sound }
+
+// StopUsingSpyglass is a sound played when a player stops using a spyglass.
+type StopUsingSpyglass struct{ sound }
