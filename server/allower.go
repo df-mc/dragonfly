@@ -18,6 +18,4 @@ type Allower interface {
 type allower struct{}
 
 // Allow always returns true.
-func (allower) Allow(net.Addr, login.IdentityData) (string, bool) {
-	return "", true
-}
+func (allower) Allow(net.Addr, login.IdentityData) (string, bool) { return "", true }
