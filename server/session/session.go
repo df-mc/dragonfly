@@ -296,8 +296,8 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 		select {
 		case <-t.C:
 			s.blobMu.Lock()
-			if s.chunkLoader.World() != s.c.World() && s.c.World() != nil {
-				s.handleWorldSwitch()
+			if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
+				s.handleWorldSwitch(w)
 			}
 
 			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
@@ -349,7 +349,7 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 }
 
 // handleWorldSwitch handles the player of the Session switching worlds.
-func (s *Session) handleWorldSwitch() {
+func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
 		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
 		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
@@ -362,11 +362,11 @@ func (s *Session) handleWorldSwitch() {
 		s.openChunkTransactions = nil
 	}
 
-	if s.c.World().Dimension() != s.chunkLoader.World().Dimension() {
-		s.writePacket(&packet.ChangeDimension{Dimension: int32(s.c.World().Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	if w.Dimension() != s.chunkLoader.World().Dimension() {
+		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
 		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 	}
-	s.chunkLoader.ChangeWorld(s.c.World())
+	s.chunkLoader.ChangeWorld(w)
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
