@@ -20,6 +20,8 @@ type Handler interface {
 	// HandleMove handles the movement of a player. ctx.Cancel() may be called to cancel the movement event.
 	// The new position, yaw and pitch are passed.
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
+	// HandleJump handles the player jumping.
+	HandleJump()
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
 	// HandleChangeWorld handles when the player is added to a new world. before may be nil.
@@ -134,6 +136,9 @@ func (NopHandler) HandleItemDrop(*event.Context, *entity.Item) {}
 
 // HandleMove ...
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
+
+// HandleJump ...
+func (NopHandler) HandleJump() {}
 
 // HandleTeleport ...
 func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}

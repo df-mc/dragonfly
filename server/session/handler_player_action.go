@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -26,26 +25,6 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	switch action {
 	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
 		// Don't do anything for these actions.
-	case protocol.PlayerActionJump:
-		if s.c.Sprinting() {
-			s.c.Exhaust(0.2)
-		} else {
-			s.c.Exhaust(0.05)
-		}
-	case protocol.PlayerActionStartSprint:
-		s.c.StartSprinting()
-	case protocol.PlayerActionStopSprint:
-		s.c.StopSprinting()
-	case protocol.PlayerActionStartSneak:
-		s.c.StartSneaking()
-	case protocol.PlayerActionStopSneak:
-		s.c.StopSneaking()
-	case protocol.PlayerActionStartSwimming:
-		if _, ok := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c))); ok {
-			s.c.StartSwimming()
-		}
-	case protocol.PlayerActionStopSwimming:
-		s.c.StopSwimming()
 	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
