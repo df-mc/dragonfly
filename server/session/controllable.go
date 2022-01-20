@@ -44,6 +44,7 @@ type Controllable interface {
 	PunchAir()
 
 	Respawn()
+	Dead() bool
 
 	StartSneaking()
 	Sneaking() bool

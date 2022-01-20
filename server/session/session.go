@@ -167,7 +167,12 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.entities[selfEntityRuntimeID] = c
 
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
-	s.chunkLoader.Move(w.Spawn().Vec3Middle())
+	spawn := w.Spawn()
+	s.chunkLoader.Move(spawn.Vec3Middle())
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(spawn[0]), int32(spawn[1]), int32(spawn[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
 
 	s.sendAvailableEntities()
 
@@ -196,6 +201,12 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) Close() error {
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if s.c.Dead() {
+		s.c.Respawn()
+	}
+
 	s.closeCurrentContainer()
 
 	_ = s.conn.Close()
