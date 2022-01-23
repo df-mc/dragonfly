@@ -21,7 +21,8 @@ type Handler interface {
 	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
 	// HandleFireSpread handles when a fire block spreads from one block to another block. When this event handler gets
 	// called, both the position of the original fire will be passed, and the position where it will spread to after the
-	// event. The age of the fire may also be altered by changing the underlying value of the newFireAge pointer.
+	// event. The age of the fire may also be altered by changing the underlying value of the newFireAge pointer, which
+	// decides how long the fire will stay before burning out.
 	HandleFireSpread(ctx *event.Context, from, to cube.Pos, newFireAge *int)
 }
 
