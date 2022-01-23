@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
@@ -166,8 +167,12 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				if maxChance > 0 && r.Intn(randomBound) <= maxChance && !rainingAround(blockPos, w) {
 					age := min(15, f.Age+r.Intn(5)/4)
 
-					w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
-					w.ScheduleBlockUpdate(blockPos, time.Duration(30+r.Intn(10))*time.Second/20)
+					ctx := event.C()
+					w.Handler().HandleFireSpread(ctx, pos, blockPos, &age)
+					ctx.Continue(func() {
+						w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
+						w.ScheduleBlockUpdate(blockPos, time.Duration(30+r.Intn(10))*time.Second/20)
+					})
 				}
 			}
 		}
