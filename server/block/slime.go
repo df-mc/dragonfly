@@ -1,6 +1,6 @@
 package block
 
-// Slime is a full-sized block of snow.
+// A Slime block is a translucent block that entities can bounce on
 type Slime struct {
 	solid
 }
