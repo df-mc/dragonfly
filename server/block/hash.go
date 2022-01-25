@@ -136,6 +136,7 @@ const (
 	hashWoodStairs
 	hashWoodTrapdoor
 	hashWool
+	hashSlime
 )
 
 func (Air) Hash() uint64 {
@@ -576,6 +577,10 @@ func (s Sign) Hash() uint64 {
 
 func (Snow) Hash() uint64 {
 	return hashSnow
+}
+
+func (Slime) Hash() uint64 {
+	return hashSlime
 }
 
 func (SoulSand) Hash() uint64 {
