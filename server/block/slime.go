@@ -7,7 +7,7 @@ type Slime struct {
 
 // BreakInfo ...
 func (s Slime) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, shovelEffective, oneOf(s))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(s))
 }
 
 // EncodeItem ...
