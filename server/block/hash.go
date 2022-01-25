@@ -112,6 +112,7 @@ const (
 	hashSeaPickle
 	hashShroomlight
 	hashSign
+	hashSlime
 	hashSnow
 	hashSoulSand
 	hashSoulSoil
@@ -136,7 +137,6 @@ const (
 	hashWoodStairs
 	hashWoodTrapdoor
 	hashWool
-	hashSlime
 )
 
 func (Air) Hash() uint64 {
@@ -575,12 +575,12 @@ func (s Sign) Hash() uint64 {
 	return hashSign | uint64(s.Wood.Uint8())<<8 | uint64(s.Attach.Uint8())<<11
 }
 
-func (Snow) Hash() uint64 {
-	return hashSnow
-}
-
 func (Slime) Hash() uint64 {
 	return hashSlime
+}
+
+func (Snow) Hash() uint64 {
+	return hashSnow
 }
 
 func (SoulSand) Hash() uint64 {
