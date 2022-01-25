@@ -1,6 +1,6 @@
 package block
 
-// Slime block is a translucent block that entities can bounce on.
+// Slime is a translucent block that entities can bounce on.
 type Slime struct {
 	solid
 }
