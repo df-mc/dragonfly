@@ -837,6 +837,10 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
+
+	ctx := event.C()
+	w.Handler().HandleEntitySpawn(ctx, e)
+
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 
@@ -879,6 +883,10 @@ func (w *World) RemoveEntity(e Entity) {
 	if w == nil {
 		return
 	}
+
+	ctx := event.C()
+	w.Handler().HandleEntityDespawn(ctx, e)
+
 	w.entityMu.Lock()
 	chunkPos, found := w.entities[e]
 	if !found {
