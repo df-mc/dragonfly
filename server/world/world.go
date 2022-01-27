@@ -837,10 +837,6 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
-
-	ctx := event.C()
-	w.Handler().HandleEntitySpawn(ctx, e)
-
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 
@@ -871,6 +867,9 @@ func (w *World) AddEntity(e Entity) {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
+
+	ctx := event.C()
+	w.Handler().HandleEntitySpawn(ctx, e)
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -883,10 +882,6 @@ func (w *World) RemoveEntity(e Entity) {
 	if w == nil {
 		return
 	}
-
-	ctx := event.C()
-	w.Handler().HandleEntityDespawn(ctx, e)
-
 	w.entityMu.Lock()
 	chunkPos, found := w.entities[e]
 	if !found {
@@ -929,6 +924,9 @@ func (w *World) RemoveEntity(e Entity) {
 	for _, viewer := range viewers {
 		viewer.HideEntity(e)
 	}
+
+	ctx := event.C()
+	w.Handler().HandleEntityDespawn(ctx, e)
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
