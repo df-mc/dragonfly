@@ -19,6 +19,10 @@ type Handler interface {
 	// HandleSound handles a Sound being played in the World at a specific position. ctx.Cancel() may be called
 	// to stop the Sound from playing to viewers of the position.
 	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
+	// HandleEntitySpawn handles an entity being spawned into the world.
+	HandleEntitySpawn(ctx *event.Context, e Entity)
+	// HandleEntityDespawn handles an entity being despawned from the world.
+	HandleEntityDespawn(ctx *event.Context, e Entity)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
