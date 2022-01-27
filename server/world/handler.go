@@ -46,6 +46,4 @@ func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
 func (NopHandler) HandleEntitySpawn(*event.Context,Entity)  {}
 
 // HandleEntityDespawn ...
-func (NopHandler) HandleEntityDespawn()  {
-	
-}
+func (NopHandler) HandleEntityDespawn(*event.Context,Entity)  {}
