@@ -41,3 +41,11 @@ func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Blo
 
 // HandleSound ...
 func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
+
+// HandleEntitySpawn ...
+func (NopHandler) HandleEntitySpawn(*event.Context,Entity)  {}
+
+// HandleEntityDespawn ...
+func (NopHandler) HandleEntityDespawn()  {
+	
+}
