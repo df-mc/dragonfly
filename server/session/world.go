@@ -76,8 +76,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	}
 
 	s.writePacket(&packet.LevelChunk{
-		ChunkX:        pos[0],
-		ChunkZ:        pos[1],
+		Position:      protocol.ChunkPos{pos.X(), pos.Z()},
 		SubChunkCount: count,
 		CacheEnabled:  true,
 		BlobHashes:    hashes,
@@ -109,8 +108,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	}
 
 	s.writePacket(&packet.LevelChunk{
-		ChunkX:        pos[0],
-		ChunkZ:        pos[1],
+		Position:      protocol.ChunkPos{pos.X(), pos.Z()},
 		SubChunkCount: uint32(len(data.SubChunks)),
 		RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
 	})
