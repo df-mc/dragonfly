@@ -253,6 +253,12 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 	server.playerProvider = provider
 }
 
+// AddResourcePack loads a resource pack to the server. The pack will eventually be sent to clients who join the
+// server when started.
+func (server *Server) AddResourcePack(pack *resource.Pack) {
+	server.resources = append(server.resources, pack)
+}
+
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...interface{}) {
@@ -660,13 +666,13 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 		panic(err)
 	}
 	for _, entry := range resources {
-		r, err := resource.Compile(filepath.Join(p, entry.Name()))
+		pack, err := resource.Compile(filepath.Join(p, entry.Name()))
 		if err != nil {
 			log.Infof("Failed to load resource: %v", entry.Name())
 			continue
 		}
 
-		server.resources = append(server.resources, r)
+		server.AddResourcePack(pack)
 	}
 }
 

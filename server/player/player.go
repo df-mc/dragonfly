@@ -981,6 +981,28 @@ func (p *Player) StopFlying() {
 	p.session().SendGameMode(p.GameMode())
 }
 
+// Jump makes the player jump if they are on ground. It exhausts the player by 0.2 food points, an additional 0.6
+// is exhausted if the player is sprint jumping.
+func (p *Player) Jump() {
+	if p.Dead() {
+		return
+	}
+
+	p.handler().HandleJump()
+	if p.OnGround() {
+		jumpVel := 0.42
+		if e, ok := p.Effect(effect.JumpBoost{}); ok {
+			jumpVel = float64(e.Level()) / 10
+		}
+		p.vel.Store(mgl64.Vec3{0, jumpVel})
+	}
+	if p.Sprinting() {
+		p.Exhaust(0.8)
+	} else {
+		p.Exhaust(0.2)
+	}
+}
+
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
 	if !p.invisible.CAS(false, true) {
@@ -2018,6 +2040,8 @@ func (p *Player) Tick(w *world.World, current int64) {
 
 		p.vel.Store(m.Velocity())
 		p.Move(m.Position().Sub(p.Position()), 0, 0)
+	} else {
+		p.vel.Store(mgl64.Vec3{})
 	}
 }
 

@@ -117,6 +117,9 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
 	if flags&packet.InputFlagStopSwimming != 0 {
 		s.c.StopSwimming()
 	}
+	if flags&packet.InputFlagStartJumping != 0 {
+		s.c.Jump()
+	}
 }
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.
