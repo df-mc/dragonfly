@@ -806,6 +806,8 @@ func (p *Player) kill(src damage.Source) {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
+	p.handler().HandleDeath(src)
+
 	p.addHealth(-p.MaxHealth())
 	p.StopSneaking()
 	p.StopSprinting()
@@ -824,8 +826,6 @@ func (p *Player) kill(src damage.Source) {
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
-
-	p.handler().HandleDeath(src)
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
