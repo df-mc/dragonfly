@@ -806,9 +806,9 @@ func (p *Player) kill(src damage.Source) {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
-	p.handler().HandleDeath(src)
-
 	p.addHealth(-p.MaxHealth())
+	
+	p.handler().HandleDeath(src)
 	p.StopSneaking()
 	p.StopSprinting()
 
