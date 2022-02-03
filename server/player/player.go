@@ -807,7 +807,7 @@ func (p *Player) kill(src damage.Source) {
 	}
 
 	p.addHealth(-p.MaxHealth())
-	
+
 	p.handler().HandleDeath(src)
 	p.StopSneaking()
 	p.StopSprinting()
