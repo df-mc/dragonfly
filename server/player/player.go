@@ -278,7 +278,9 @@ func (p *Player) FallDistance() float64 {
 // of the title, which is shown in a font similar to that of a tip/popup.
 func (p *Player) SendTitle(t title.Title) {
 	p.session().SetTitleDurations(t.FadeInDuration(), t.Duration(), t.FadeOutDuration())
-	p.session().SendTitle(t.Text())
+	if t.Text() != "" {
+		p.session().SendTitle(t.Text())
+	}
 	if t.Subtitle() != "" {
 		p.session().SendSubtitle(t.Subtitle())
 	}
