@@ -85,8 +85,6 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	})
 }
 
-var emptyHeightmap = make([]byte, 512)
-
 // sendNetworkChunk sends a network encoded chunk to the client.
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	data := chunk.Encode(c, chunk.NetworkEncoding)
@@ -94,7 +92,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	for i := range data.SubChunks {
 		_, _ = s.chunkBuf.Write(data.SubChunks[i])
 	}
-	_, _ = s.chunkBuf.Write(append(emptyHeightmap, data.Biomes...))
+	_, _ = s.chunkBuf.Write(data.Biomes)
 
 	// Length of 1 byte for the border block count.
 	s.chunkBuf.WriteByte(0)
