@@ -27,6 +27,11 @@ type Viewer interface {
 	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
 	// target position.
 	ViewEntityTeleport(e Entity, position mgl64.Vec3)
+	// ViewEntityMount views one entity mounting another. It is called when any entity mounts another or
+	// changes its role (passenger or driver).
+	ViewEntityMount(r Entity, rd Entity, driver bool)
+	// ViewEntityDismount views one entity dismounting another. It is called when any entity is dismounted.
+	ViewEntityDismount(r Entity, rd Entity)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockNBT map[cube.Pos]Block)

@@ -112,6 +112,12 @@ type Handler interface {
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
 	HandleItemDrop(ctx *event.Context, e *entity.Item)
+	// HandleMount handles when a player mounts an entity. ctx.Cancel() may be called to cancel the player mounting
+	// an entity.
+	HandleMount(ctx *event.Context, r entity.Rideable)
+	// HandleDismount handles when a player mounts an entity. ctx.Cancel() may be called to force the player
+	// to re-mount the entity.
+	HandleDismount(ctx *event.Context)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -211,6 +217,12 @@ func (NopHandler) HandleFoodLoss(*event.Context, int, int) {}
 
 // HandleDeath ...
 func (NopHandler) HandleDeath(damage.Source) {}
+
+// HandleMount ...
+func (NopHandler) HandleMount(*event.Context, entity.Rideable) {}
+
+// HandleDismount ...
+func (NopHandler) HandleDismount(*event.Context) {}
 
 // HandleRespawn ...
 func (NopHandler) HandleRespawn(*mgl64.Vec3) {}

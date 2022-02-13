@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -108,6 +109,10 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	}
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
+		// Check if the entity is rideable, and if so ride the entity.
+		if r, ok := e.(entity.Rideable); ok {
+			s.c.MountEntity(r)
+		}
 		s.c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
 		s.c.AttackEntity(e)

@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -56,6 +57,13 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if s, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(s.Scale())
+	}
+
+	if r, ok := e.(entity.Rider); ok {
+		m[dataKeyRiderSeatPosition] = r.SeatPosition()
+		if rd, _ := r.RidingEntity(); rd != nil {
+			m.setFlag(dataKeyFlags, dataFlagRiding)
+		}
 	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
@@ -119,6 +127,7 @@ const (
 	dataKeyScale             = 38
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
+	dataKeyRiderSeatPosition = 56
 	dataKeyAlwaysShowNameTag = 81
 	dataKeyScoreTag          = 84
 )

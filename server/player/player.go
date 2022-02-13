@@ -24,6 +24,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"go.uber.org/atomic"
@@ -66,6 +67,10 @@ type Player struct {
 	inv, offHand *inventory.Inventory
 	armour       *inventory.Armour
 	heldSlot     *atomic.Uint32
+
+	seatPosition atomic.Value
+	ridingMu     sync.Mutex
+	riding       entity.Rideable
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -128,6 +133,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
 	p.breakingPos.Store(cube.Pos{})
+	p.seatPosition.Store(mgl32.Vec3{0, 0, 0})
 	return p
 }
 
@@ -831,6 +837,7 @@ func (p *Player) kill(src damage.Source) {
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
+		p.DismountEntity()
 		if p.session() == session.Nop {
 			_ = p.Close()
 			return
@@ -2246,6 +2253,109 @@ func (p *Player) PunchAir() {
 	})
 }
 
+// MountEntity mounts the player to an entity if the entity is rideable and if there is a seat available.
+func (p *Player) MountEntity(r entity.Rideable) {
+	ctx := event.C()
+	p.handler().HandleMount(ctx, r)
+	ctx.Continue(func() {
+		if p.seat(r) == -1 {
+			r.AddRider(p)
+			p.setRiding(r)
+			riders := r.Riders()
+			seat := len(riders)
+			positions := r.SeatPositions()
+			if len(positions) >= seat {
+				p.seatPosition.Store(positions[seat-1])
+				p.updateState()
+				for _, v := range p.viewers() {
+					v.ViewEntityMount(p, r, seat-1 == 0)
+				}
+			}
+			return
+		}
+		// Check and update seat position
+		p.checkSeats(r)
+	})
+}
+
+// DismountEntity dismounts the player from an entity.
+func (p *Player) DismountEntity() {
+	ctx := event.C()
+	e, seat := p.RidingEntity()
+	if e != nil {
+		p.handler().HandleDismount(ctx)
+		ctx.Stop(func() {
+			p.s.ViewEntityMount(p, e, seat-1 == 0)
+		})
+		ctx.Continue(func() {
+			e.RemoveRider(p)
+			p.setRiding(nil)
+			for _, v := range p.viewers() {
+				v.ViewEntityDismount(p, e)
+			}
+			for _, r := range e.Riders() {
+				r.MountEntity(e)
+			}
+		})
+	}
+}
+
+// checkSeats moves a player to the seat corresponding to their current index within the slice of riders.
+func (p *Player) checkSeats(e entity.Rideable) {
+	seat := p.seat(e)
+	if seat != -1 {
+		positions := e.SeatPositions()
+		if positions[seat] != p.seatPosition.Load() {
+			p.seatPosition.Store(positions[seat])
+			if seat == 0 {
+				for _, v := range p.viewers() {
+					v.ViewEntityMount(p, e, true)
+				}
+			}
+			p.updateState()
+		}
+	}
+}
+
+// SeatPosition returns the position of the player's seat.
+func (p *Player) SeatPosition() mgl32.Vec3 {
+	return p.seatPosition.Load().(mgl32.Vec3)
+}
+
+// seat returns the index of a player within the slice of riders.
+func (p *Player) seat(e entity.Rideable) int {
+	riders := e.Riders()
+	for i, r := range riders {
+		if r == p {
+			return i
+		}
+	}
+	return -1
+}
+
+// setRiding saves the entity the Rider is currently riding.
+func (p *Player) setRiding(e entity.Rideable) {
+	p.ridingMu.Lock()
+	p.riding = e
+	p.ridingMu.Unlock()
+}
+
+// RidingEntity returns the entity the player is currently riding and the player's seat index.
+func (p *Player) RidingEntity() (entity.Rideable, int) {
+	p.ridingMu.Lock()
+	defer p.ridingMu.Unlock()
+	if p.riding != nil {
+		riders := p.riding.Riders()
+		for i, r := range riders {
+			if r == p {
+				return p.riding, i
+			}
+		}
+		return p.riding, -1
+	}
+	return nil, -1
+}
+
 // EncodeEntity ...
 func (p *Player) EncodeEntity() string {
 	return "minecraft:player"
@@ -2337,6 +2447,8 @@ func (p *Player) close() {
 	if p.Dead() {
 		p.Respawn()
 	}
+	p.DismountEntity()
+
 	p.hMutex.Lock()
 	h := p.h
 	p.h = NopHandler{}

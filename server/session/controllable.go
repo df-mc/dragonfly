@@ -3,11 +3,13 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 )
@@ -59,6 +61,11 @@ type Controllable interface {
 	Flying() bool
 	StopFlying()
 	Jump()
+
+	SeatPosition() mgl32.Vec3
+	MountEntity(e entity.Rideable)
+	DismountEntity()
+	RidingEntity() (entity.Rideable, int)
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)
