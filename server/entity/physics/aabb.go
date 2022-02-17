@@ -186,8 +186,7 @@ func (aabb AABB) CalculateXOffset(nearby AABB, deltaX float64) float64 {
 		if difference < deltaX {
 			deltaX = difference
 		}
-	}
-	if deltaX < 0 && nearby.min[0] >= aabb.max[0] {
+	} else if deltaX < 0 && nearby.min[0] >= aabb.max[0] {
 		difference := aabb.max[0] - nearby.min[0]
 
 		if difference > deltaX {
@@ -212,8 +211,7 @@ func (aabb AABB) CalculateYOffset(nearby AABB, deltaY float64) float64 {
 		if difference < deltaY {
 			deltaY = difference
 		}
-	}
-	if deltaY < 0 && nearby.min[1] >= aabb.max[1] {
+	} else if deltaY < 0 && nearby.min[1] >= aabb.max[1] {
 		difference := aabb.max[1] - nearby.min[1]
 
 		if difference > deltaY {
@@ -238,8 +236,7 @@ func (aabb AABB) CalculateZOffset(nearby AABB, deltaZ float64) float64 {
 		if difference < deltaZ {
 			deltaZ = difference
 		}
-	}
-	if deltaZ < 0 && nearby.min[2] >= aabb.max[2] {
+	} else if deltaZ < 0 && nearby.min[2] >= aabb.max[2] {
 		difference := aabb.max[2] - nearby.min[2]
 
 		if difference > deltaZ {
