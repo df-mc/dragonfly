@@ -176,19 +176,19 @@ func (aabb AABB) Vec3WithinXY(vec mgl64.Vec3) bool {
 // is smaller than 0.
 func (aabb AABB) CalculateXOffset(nearby AABB, deltaX float64) float64 {
 	// Bail out if not within the same Y/Z plane.
-	if aabb.max[1] <= nearby.min[1] || aabb.min[1] >= nearby.max[1] {
+	if nearby.max[1] <= aabb.min[1] || nearby.min[1] >= aabb.max[1] {
 		return deltaX
-	} else if aabb.max[2] <= nearby.min[2] || aabb.min[2] >= nearby.max[2] {
+	} else if nearby.max[2] <= aabb.min[2] || nearby.min[2] >= aabb.max[2] {
 		return deltaX
 	}
-	if deltaX > 0 && aabb.max[0] <= nearby.min[0] {
-		difference := nearby.min[0] - aabb.max[0]
+	if deltaX > 0 && nearby.max[0] <= aabb.min[0] {
+		difference := aabb.min[0] - nearby.max[0]
 		if difference < deltaX {
 			deltaX = difference
 		}
 	}
-	if deltaX < 0 && aabb.min[0] >= nearby.max[0] {
-		difference := nearby.max[0] - aabb.min[0]
+	if deltaX < 0 && nearby.min[0] >= aabb.max[0] {
+		difference := aabb.max[0] - nearby.min[0]
 
 		if difference > deltaX {
 			deltaX = difference
@@ -202,19 +202,19 @@ func (aabb AABB) CalculateXOffset(nearby AABB, deltaX float64) float64 {
 // is smaller than 0.
 func (aabb AABB) CalculateYOffset(nearby AABB, deltaY float64) float64 {
 	// Bail out if not within the same X/Z plane.
-	if aabb.max[0] <= nearby.min[0] || aabb.min[0] >= nearby.max[0] {
+	if nearby.max[0] <= aabb.min[0] || nearby.min[0] >= aabb.max[0] {
 		return deltaY
-	} else if aabb.max[2] <= nearby.min[2] || aabb.min[2] >= nearby.max[2] {
+	} else if nearby.max[2] <= aabb.min[2] || nearby.min[2] >= aabb.max[2] {
 		return deltaY
 	}
-	if deltaY > 0 && aabb.max[1] <= nearby.min[1] {
-		difference := nearby.min[1] - aabb.max[1]
+	if deltaY > 0 && nearby.max[1] <= aabb.min[1] {
+		difference := aabb.min[1] - nearby.max[1]
 		if difference < deltaY {
 			deltaY = difference
 		}
 	}
-	if deltaY < 0 && aabb.min[1] >= nearby.max[1] {
-		difference := nearby.max[1] - aabb.min[1]
+	if deltaY < 0 && nearby.min[1] >= aabb.max[1] {
+		difference := aabb.max[1] - nearby.min[1]
 
 		if difference > deltaY {
 			deltaY = difference
@@ -228,19 +228,19 @@ func (aabb AABB) CalculateYOffset(nearby AABB, deltaY float64) float64 {
 // is smaller than 0.
 func (aabb AABB) CalculateZOffset(nearby AABB, deltaZ float64) float64 {
 	// Bail out if not within the same X/Y plane.
-	if aabb.max[0] <= nearby.min[0] || aabb.min[0] >= nearby.max[0] {
+	if nearby.max[0] <= aabb.min[0] || nearby.min[0] >= aabb.max[0] {
 		return deltaZ
-	} else if aabb.max[1] <= nearby.min[1] || aabb.min[1] >= nearby.max[1] {
+	} else if nearby.max[1] <= aabb.min[1] || nearby.min[1] >= aabb.max[1] {
 		return deltaZ
 	}
-	if deltaZ > 0 && aabb.max[2] <= nearby.min[2] {
-		difference := nearby.min[2] - aabb.max[2]
+	if deltaZ > 0 && nearby.max[2] <= aabb.min[2] {
+		difference := aabb.min[2] - nearby.max[2]
 		if difference < deltaZ {
 			deltaZ = difference
 		}
 	}
-	if deltaZ < 0 && aabb.min[2] >= nearby.max[2] {
-		difference := nearby.max[2] - aabb.min[2]
+	if deltaZ < 0 && nearby.min[2] >= aabb.max[2] {
+		difference := aabb.max[2] - nearby.min[2]
 
 		if difference > deltaZ {
 			deltaZ = difference
