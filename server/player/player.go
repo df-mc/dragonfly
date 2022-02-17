@@ -47,6 +47,7 @@ type Player struct {
 	nameTag                             atomic.String
 	scoreTag                            atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
+	once                                sync.Once
 
 	gameModeMu sync.RWMutex
 	gameMode   world.GameMode
@@ -2332,34 +2333,36 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close() {
-	// If the player is being disconnected while they are dead, we respawn the player
-	// so that the player logic works correctly the next time they join.
-	if p.Dead() {
-		p.Respawn()
-	}
-	p.hMutex.Lock()
-	h := p.h
-	p.h = NopHandler{}
-	p.hMutex.Unlock()
-	h.HandleQuit()
+	p.once.Do(func() {
+		// If the player is being disconnected while they are dead, we respawn the player
+		// so that the player logic works correctly the next time they join.
+		if p.Dead() {
+			p.Respawn()
+		}
+		p.hMutex.Lock()
+		h := p.h
+		p.h = NopHandler{}
+		p.hMutex.Unlock()
+		h.HandleQuit()
 
-	chat.Global.Unsubscribe(p)
+		chat.Global.Unsubscribe(p)
 
-	p.sMutex.Lock()
-	s := p.s
-	p.s = nil
-	p.sMutex.Unlock()
+		p.sMutex.Lock()
+		s := p.s
+		p.s = nil
+		p.sMutex.Unlock()
 
-	// Clear the inventories so that they no longer hold references to the connection.
-	_ = p.inv.Close()
-	_ = p.offHand.Close()
-	_ = p.armour.Close()
+		// Clear the inventories so that they no longer hold references to the connection.
+		_ = p.inv.Close()
+		_ = p.offHand.Close()
+		_ = p.armour.Close()
 
-	if s == nil {
-		p.World().RemoveEntity(p)
-	} else {
-		s.CloseConnection()
-	}
+		if s == nil {
+			p.World().RemoveEntity(p)
+		} else {
+			s.CloseConnection()
+		}
+	})
 }
 
 // load reads the player data from the provider. It uses the default values if the provider
