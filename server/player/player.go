@@ -1156,8 +1156,12 @@ func hashFromItem(item world.Item) itemHash {
 	}
 }
 
-// HasCooldown returns true if the item passed has an active cooldown.
+// HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
+// world.Item passed is nil, HasCooldown always returns false.
 func (p *Player) HasCooldown(item world.Item) bool {
+	if item == nil {
+		return false
+	}
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
@@ -1173,8 +1177,11 @@ func (p *Player) HasCooldown(item world.Item) bool {
 	return true
 }
 
-// SetCooldown sets a cooldown for an item.
+// SetCooldown sets a cooldown for an item. If the world.Item passed is nil, nothing happens.
 func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
+	if item == nil {
+		return
+	}
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
