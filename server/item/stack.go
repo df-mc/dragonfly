@@ -2,10 +2,11 @@ package item
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"strings"
 	"sync/atomic"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
@@ -254,6 +255,20 @@ func (s Stack) Enchantments() []Enchantment {
 	return e
 }
 
+// WithGlint retuns the current stack but with a glint
+func (s Stack) WithGlint() Stack {
+	s.enchantments = copyEnchantments(s.enchantments)
+	s.enchantments[reflect.TypeOf(glint{})] = glint{}
+	return s
+}
+
+// WithGlint retuns the current stack but without a glint
+func (s Stack) WithoutGlint() Stack {
+	s.enchantments = copyEnchantments(s.enchantments)
+	delete(s.enchantments, reflect.TypeOf(glint{}))
+	return s
+}
+
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
 // many items in it as possible to fit in the stack, according to a max count of either 64 or otherwise as
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of
@@ -376,4 +391,28 @@ func copyEnchantments(m map[reflect.Type]Enchantment) map[reflect.Type]Enchantme
 		cp[k] = v
 	}
 	return cp
+}
+
+type glint struct {}
+
+func (e glint) Level() int {
+	return 1
+}
+
+func (e glint) Name() string {
+	return ""
+}
+
+// MaxLevel ...
+func (e glint) MaxLevel() int {
+	return 1
+}
+
+func (e glint) WithLevel(level int) Enchantment {
+	return glint{}
+}
+
+// CompatibleWith ...
+func (e glint) CompatibleWith(s Stack) bool {
+	return true
 }
