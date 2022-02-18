@@ -262,7 +262,7 @@ func (s Stack) WithGlint() Stack {
 	return s
 }
 
-// WithGlint retuns the current stack but without a glint
+// WithoutGlint retuns the current stack but without a glint
 func (s Stack) WithoutGlint() Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
 	delete(s.enchantments, reflect.TypeOf(glint{}))
