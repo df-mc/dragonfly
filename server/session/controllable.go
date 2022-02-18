@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -20,6 +21,7 @@ type Controllable interface {
 	item.Carrier
 	form.Submitter
 	cmd.Source
+	chat.Subscriber
 	SetHeldItems(right, left item.Stack)
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)

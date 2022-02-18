@@ -142,7 +142,6 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	chat.Global.Subscribe(p)
 	if data != nil {
 		p.load(*data)
 	}
@@ -350,14 +349,6 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	ctx.Continue(func() {
 		command.Execute(strings.TrimPrefix(strings.TrimPrefix(commandLine, "/"+commandName), " "), p)
 	})
-}
-
-// Disconnect closes the player and removes it from the world.
-// Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
-// disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) Disconnect(msg ...interface{}) {
-	p.session().Disconnect(format(msg))
-	p.close()
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
@@ -2259,18 +2250,6 @@ func (p *Player) EncodeEntity() string {
 	return "minecraft:player"
 }
 
-// Close closes the player and removes it from the world.
-// Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
-// player with a custom message.
-func (p *Player) Close() error {
-	if p.World() == nil {
-		return nil
-	}
-	p.session().Disconnect("Connection closed.")
-	p.close()
-	return nil
-}
-
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
 // broke, a breaking sound is played.
 // If the player is not survival, the original stack is returned.
@@ -2337,39 +2316,48 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
+// Disconnect closes the player and removes it from the world.
+// Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
+// disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
+func (p *Player) Disconnect(msg ...interface{}) {
+	p.once.Do(func() {
+		p.close(format(msg))
+	})
+}
+
+// Close closes the player and removes it from the world.
+// Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
+// player with a custom message.
+func (p *Player) Close() error {
+	p.once.Do(func() {
+		p.close("Connection closed.")
+	})
+	return nil
+}
+
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
-func (p *Player) close() {
-	p.once.Do(func() {
-		// If the player is being disconnected while they are dead, we respawn the player
-		// so that the player logic works correctly the next time they join.
-		if p.Dead() {
-			p.Respawn()
-		}
-		p.hMutex.Lock()
-		h := p.h
-		p.h = NopHandler{}
-		p.hMutex.Unlock()
-		h.HandleQuit()
+func (p *Player) close(msg string) {
+	p.hMutex.Lock()
+	h := p.h
+	p.h = NopHandler{}
+	p.hMutex.Unlock()
 
-		chat.Global.Unsubscribe(p)
+	h.HandleQuit()
 
-		p.sMutex.Lock()
-		s := p.s
-		p.s = nil
-		p.sMutex.Unlock()
+	p.sMutex.Lock()
+	s := p.s
+	p.s = nil
+	p.sMutex.Unlock()
 
-		// Clear the inventories so that they no longer hold references to the connection.
-		_ = p.inv.Close()
-		_ = p.offHand.Close()
-		_ = p.armour.Close()
-
-		if s == nil {
-			p.World().RemoveEntity(p)
-		} else {
-			s.CloseConnection()
-		}
-	})
+	if s == nil {
+		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
+		// session will remove the player once ready.
+		p.World().RemoveEntity(p)
+		return
+	}
+	p.session().Disconnect(msg)
+	s.CloseConnection()
 }
 
 // load reads the player data from the provider. It uses the default values if the provider
