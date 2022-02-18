@@ -2338,6 +2338,12 @@ func (p *Player) Close() error {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if p.Dead() {
+		p.Respawn()
+	}
+
 	p.hMutex.Lock()
 	h := p.h
 	p.h = NopHandler{}

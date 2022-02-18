@@ -210,11 +210,6 @@ func (s *Session) Close() error {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close() {
-	// If the player is being disconnected while they are dead, we respawn the player
-	// so that the player logic works correctly the next time they join.
-	if s.c.Dead() {
-		s.c.Respawn()
-	}
 	_ = s.c.Close()
 
 	s.onStop(s.c)
