@@ -2338,23 +2338,22 @@ func (p *Player) Close() error {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
-	// If the player is being disconnected while they are dead, we respawn the player
-	// so that the player logic works correctly the next time they join.
-	if p.Dead() {
-		p.Respawn()
-	}
+	p.sMutex.Lock()
+	s := p.s
+	p.s = nil
+	p.sMutex.Unlock()
 
 	p.hMutex.Lock()
 	h := p.h
 	p.h = NopHandler{}
 	p.hMutex.Unlock()
 
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if p.Dead() && s != nil {
+		p.Respawn()
+	}
 	h.HandleQuit()
-
-	p.sMutex.Lock()
-	s := p.s
-	p.s = nil
-	p.sMutex.Unlock()
 
 	if s == nil {
 		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
