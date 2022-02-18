@@ -210,7 +210,12 @@ func (s *Session) Close() error {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close() {
-	_ = s.conn.Close()
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if s.c.Dead() {
+		s.c.Respawn()
+	}
+	_ = s.c.Close()
 
 	s.onStop(s.c)
 
@@ -219,22 +224,8 @@ func (s *Session) close() {
 	_ = s.offHand.Close()
 	_ = s.armour.Close()
 
-	// If the player is being disconnected while they are dead, we respawn the player
-	// so that the player logic works correctly the next time they join.
-	if s.c.Dead() {
-		s.c.Respawn()
-	}
-
 	s.closeCurrentContainer()
-
 	_ = s.chunkLoader.Close()
-
-	if j := s.quitMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
-	}
-	chat.Global.Unsubscribe(s.c)
-
-	_ = s.c.Close()
 	s.c.World().RemoveEntity(s.c)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
@@ -242,6 +233,11 @@ func (s *Session) close() {
 	s.entityMutex.Lock()
 	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
+
+	if j := s.quitMessage.Load(); j != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	}
+	chat.Global.Unsubscribe(s.c)
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
