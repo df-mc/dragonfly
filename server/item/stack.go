@@ -393,7 +393,7 @@ func copyEnchantments(m map[reflect.Type]Enchantment) map[reflect.Type]Enchantme
 	return cp
 }
 
-type glint struct {}
+type glint struct{}
 
 func (e glint) Level() int {
 	return 1
