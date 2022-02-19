@@ -13,15 +13,15 @@ type scanIteration struct {
 	first   bool
 }
 
-// multiAxisScan performs a scan first on the Z axis, and then on the X axis.
+// multiAxisScan performs a scan on the Z and X axis, returning the result that had the most positions, although
+// favouring the Z axis.
 func multiAxisScan(framePos cube.Pos, w *world.World, matchers []world.Block) (cube.Axis, []cube.Pos, int, int, bool, bool) {
-	axis := cube.Z
-	positions, width, height, completed := scan(axis, framePos, w, matchers)
-	if len(positions) == 0 {
-		axis = cube.X
-		positions, width, height, completed = scan(axis, framePos, w, matchers)
+	positions, width, height, completed := scan(cube.Z, framePos, w, matchers)
+	positionsTwo, widthTwo, heightTwo, completedTwo := scan(cube.X, framePos, w, matchers)
+	if len(positionsTwo) > len(positions) && !completed {
+		return cube.X, positionsTwo, widthTwo, heightTwo, completedTwo, len(positionsTwo) > 0
 	}
-	return axis, positions, width, height, completed, len(positions) > 0
+	return cube.Z, positions, width, height, completed, len(positions) > 0
 }
 
 // scan performs a scan on the given axis for any of the provided matchers using a position and a world.
@@ -38,10 +38,9 @@ func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Bl
 
 		// Parse the latest iteration.
 		iteration := e.Value.(scanIteration)
-		posFace := iteration.face
 		pos := iteration.lastPos
 		if !iteration.first {
-			pos = pos.Side(posFace)
+			pos = pos.Side(iteration.face)
 		}
 
 		b := w.Block(pos)
@@ -50,7 +49,7 @@ func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Bl
 			positionsMap[pos] = true
 
 			// If we are on the same X or Z axis as the portal, we can assume that our height is being changed.
-			if pos.X() == framePos.X() && pos.Z() == framePos.Z() && posFace < cube.FaceNorth {
+			if pos.X() == framePos.X() && pos.Z() == framePos.Z() && iteration.face < cube.FaceNorth {
 				height++
 			}
 
@@ -81,9 +80,7 @@ func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Bl
 
 	// Make sure we at least reach the minimum portal width and height.
 	area, expectedArea := len(positionsMap), width*height
-	if width < minimumNetherPortalWidth || height < minimumNetherPortalHeight || area != expectedArea {
-		return []cube.Pos{}, 0, 0, false
-	}
+	completed = width >= minimumNetherPortalWidth && height >= minimumNetherPortalHeight && area == expectedArea
 
 	// Get the actual positions from the map.
 	positions := make([]cube.Pos, 0, expectedArea)
