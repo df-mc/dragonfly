@@ -164,7 +164,7 @@ func oneOf(i ...world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
 // hasSilkTouch checks if an item has the silk touch enchantment.
 func hasSilkTouch(enchantments []item.Enchantment) bool {
 	for _, enchant := range enchantments {
-		if _, ok := enchant.(enchantment.SilkTouch); ok {
+		if _, ok := enchant.Type().(enchantment.SilkTouch); ok {
 			return true
 		}
 	}

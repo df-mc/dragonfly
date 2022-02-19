@@ -221,16 +221,16 @@ func (s Stack) Value(key string) (val interface{}, ok bool) {
 func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
-		if !enchant.CompatibleWith(s) {
+		if !enchant.t.CompatibleWith(s) {
 			continue
 		}
-		s.enchantments[reflect.TypeOf(enchant)] = enchant
+		s.enchantments[reflect.TypeOf(enchant.t)] = enchant
 	}
 	return s
 }
 
 // WithoutEnchantments returns the current stack but with the passed enchantments removed.
-func (s Stack) WithoutEnchantments(enchants ...Enchantment) Stack {
+func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
 		delete(s.enchantments, reflect.TypeOf(enchant))
@@ -238,9 +238,9 @@ func (s Stack) WithoutEnchantments(enchants ...Enchantment) Stack {
 	return s
 }
 
-// Enchantment attempts to return an enchantment set to the Stack using Stack.WithEnchantment(). If an enchantment
-// is found, the enchantment and the bool true is returned.
-func (s Stack) Enchantment(enchant Enchantment) (Enchantment, bool) {
+// Enchantment attempts to return an Enchantment set to the Stack using Stack.WithEnchantment(). If an Enchantment
+// is found by the EnchantmentType, the enchantment and the bool true is returned.
+func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
 	ench, ok := s.enchantments[reflect.TypeOf(enchant)]
 	return ench, ok
 }

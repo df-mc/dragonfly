@@ -5,7 +5,7 @@ import (
 )
 
 // Thorns is an armor enchantment that causes attackers to be damaged when they deal damage to the wearer.
-type Thorns struct{ enchantment }
+type Thorns struct{}
 
 // Name ...
 func (e Thorns) Name() string {
@@ -15,11 +15,6 @@ func (e Thorns) Name() string {
 // MaxLevel ...
 func (e Thorns) MaxLevel() int {
 	return 3
-}
-
-// WithLevel ...
-func (e Thorns) WithLevel(level int) item.Enchantment {
-	return Thorns{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...
