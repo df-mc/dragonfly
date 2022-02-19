@@ -265,13 +265,6 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		return
 	}
 
-	if b, ok := b.(interface {
-		Place(pos cube.Pos, w *World) bool
-	}); ok && !b.Place(pos, w) {
-		// Don't place the block.
-		return
-	}
-
 	rid, ok := BlockRuntimeID(b)
 	if !ok {
 		w.log.Errorf("runtime ID of block %+v not found", b)
@@ -364,6 +357,14 @@ func (w *World) PlaceBlock(pos cube.Pos, b Block) {
 	if w == nil {
 		return
 	}
+
+	if b, ok := b.(interface {
+		Place(pos cube.Pos, w *World) bool
+	}); ok && !b.Place(pos, w) {
+		// Don't place the block.
+		return
+	}
+
 	var liquid Liquid
 	if displacer, ok := b.(LiquidDisplacer); ok {
 		liq, ok := w.Liquid(pos)
