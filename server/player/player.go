@@ -91,8 +91,9 @@ type Player struct {
 	breakingPos       atomic.Value
 	lastBreakDuration time.Duration
 
-	portalTimeout          atomic.Bool
 	portalTime             atomic.Value
+	portalTimeout          atomic.Bool
+	portalTransfer         atomic.Bool
 	awaitingPortalTransfer atomic.Bool
 
 	breakParticleCounter atomic.Uint32
@@ -2053,7 +2054,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 					p.awaitingPortalTransfer.Store(true)
 				}
 			}
-		} else {
+		} else if !p.portalTransfer.Load() {
 			p.portalTimeout.Store(false)
 			p.awaitingPortalTransfer.Store(false)
 		}
@@ -2081,18 +2082,21 @@ func (p *Player) Travel(source, destination *world.World) {
 		pos = cube.Pos{pos.X() * 8, pos.Y() - targetDimension.Range().Min(), pos.Z() * 8}
 	}
 
+	p.portalTransfer.Store(true)
 	p.portalTimeout.Store(true)
 	p.awaitingPortalTransfer.Store(false)
 	go func() {
+		// Java edition spawns the player at the translated position if all else fails, so we do the same.
+		spawn := pos.Vec3Middle()
 		if netherPortal, ok := portal.FindOrCreateNetherPortal(destination, pos, 128); ok {
-			destination.AddEntity(p)
-			p.Teleport(netherPortal.Spawn().Vec3Middle())
-			return
+			spawn = netherPortal.Spawn().Vec3Middle()
 		}
 
-		// Java edition spawns the player at the translated position if all else fails, so we do the same.
+		// Add the entity to the destination dimension and stop the portal transfer status.
 		destination.AddEntity(p)
-		p.Teleport(pos.Vec3Middle())
+		p.Teleport(spawn)
+
+		p.portalTransfer.Store(false)
 	}()
 }
 
