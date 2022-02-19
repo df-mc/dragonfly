@@ -2071,14 +2071,14 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 }
 
-// Travel moves the player to the given Nether or Overworld world, and translates the player's current position
-// based on the source world.
+// Travel moves the player to the given Nether or Overworld world, and translates the player's current position based
+// on the source world.
 func (p *Player) Travel(source, destination *world.World) {
 	sourceDimension, targetDimension := source.Dimension(), destination.Dimension()
 	pos := cube.PosFromVec3(p.Position())
 	if sourceDimension == world.Overworld {
 		pos = cube.Pos{pos.X() / 8, pos.Y() + sourceDimension.Range().Min(), pos.Z() / 8}
-	} else {
+	} else if sourceDimension == world.Nether {
 		pos = cube.Pos{pos.X() * 8, pos.Y() - targetDimension.Range().Min(), pos.Z() * 8}
 	}
 
