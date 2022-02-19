@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/portal"
 	"math/rand"
 	"time"
 )
@@ -24,40 +25,98 @@ type Fire struct {
 	Age int
 }
 
-// flammableBlock returns true if a block is flammable.
-func flammableBlock(block world.Block) bool {
-	flammable, ok := block.(Flammable)
-	return ok && flammable.FlammabilityInfo().Encouragement > 0
-}
-
-// neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
-func neighboursFlammable(pos cube.Pos, w *world.World) bool {
-	for _, i := range cube.Faces() {
-		if flammableBlock(w.Block(pos.Side(i))) {
+// Place ...
+func (Fire) Place(pos cube.Pos, w *world.World) bool {
+	for _, f := range cube.Faces() {
+		if o, ok := w.Block(pos.Side(f)).(Obsidian); ok && !o.Crying {
+			if p, ok := portal.NetherPortalFromPos(w, pos); ok && p.Framed() && !p.Activated() {
+				p.Activate()
+				return false
+			}
 			return true
 		}
 	}
+	return true
+}
+
+// EntityInside ...
+func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+	if flammable, ok := e.(entity.Flammable); ok {
+		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+			l.Hurt(1, damage.SourceFire{})
+		}
+		if flammable.OnFireDuration() < time.Second*8 {
+			flammable.SetOnFire(8 * time.Second)
+		}
+	}
+}
+
+// ScheduledTick ...
+func (f Fire) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+	f.tick(pos, w, r)
+}
+
+// RandomTick ...
+func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+	f.tick(pos, w, r)
+}
+
+// NeighbourUpdateTick ...
+func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
+	below := w.Block(pos.Side(cube.FaceDown))
+	if diffuser, ok := below.(LightDiffuser); (ok && diffuser.LightDiffusionLevel() != 15) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
+		w.BreakBlockWithoutParticles(pos)
+		return
+	}
+	switch below.(type) {
+	case SoulSand, SoulSoil:
+		f.Type = SoulFire()
+		w.PlaceBlock(pos, f)
+	case Water:
+		if neighbour == pos {
+			w.BreakBlockWithoutParticles(pos)
+		}
+	default:
+		if f.Type == SoulFire() {
+			w.BreakBlockWithoutParticles(pos)
+			return
+		}
+	}
+}
+
+// HasLiquidDrops ...
+func (f Fire) HasLiquidDrops() bool {
 	return false
 }
 
-// max ...
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
+// LightEmissionLevel ...
+func (f Fire) LightEmissionLevel() uint8 {
+	return f.Type.LightLevel()
 }
 
-// infinitelyBurning returns true if fire can infinitely burn at the specified position.
-func infinitelyBurning(pos cube.Pos, w *world.World) bool {
-	switch block := w.Block(pos.Side(cube.FaceDown)).(type) {
-	//TODO: Magma Block
-	case Netherrack:
-		return true
-	case Bedrock:
-		return block.InfiniteBurning
+// EncodeBlock ...
+func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
+	switch f.Type {
+	case NormalFire():
+		return "minecraft:fire", map[string]interface{}{"age": int32(f.Age)}
+	case SoulFire():
+		return "minecraft:soul_fire", map[string]interface{}{"age": int32(f.Age)}
 	}
-	return false
+	panic("unknown fire type")
+}
+
+// Start starts a fire at a position in the world. The position passed must be either air or tall grass and conditions
+// for a fire to be present must be present.
+func (f Fire) Start(w *world.World, pos cube.Pos) {
+	b := w.Block(pos)
+	_, isAir := b.(Air)
+	_, isTallGrass := b.(TallGrass)
+	if isAir || isTallGrass {
+		below := w.Block(pos.Side(cube.FaceDown))
+		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
+			w.PlaceBlock(pos, Fire{})
+		}
+	}
 }
 
 // burn attempts to burn a block.
@@ -73,18 +132,6 @@ func (f Fire) burn(pos cube.Pos, w *world.World, r *rand.Rand, chanceBound int) 
 		}
 		//TODO: Light TNT
 	}
-}
-
-// rainingAround checks if it is raining either at the cube.Pos passed or at any of its horizontal neighbours.
-func rainingAround(pos cube.Pos, w *world.World) bool {
-	raining := w.RainingAt(pos)
-	for _, face := range cube.HorizontalFaces() {
-		if raining {
-			break
-		}
-		raining = w.RainingAt(pos.Side(face))
-	}
-	return raining
 }
 
 // tick ...
@@ -174,84 +221,52 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	}
 }
 
-// EntityInside ...
-func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if flammable, ok := e.(entity.Flammable); ok {
-		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
-			l.Hurt(1, damage.SourceFire{})
-		}
-		if flammable.OnFireDuration() < time.Second*8 {
-			flammable.SetOnFire(8 * time.Second)
-		}
-	}
+// flammableBlock returns true if a block is flammable.
+func flammableBlock(block world.Block) bool {
+	flammable, ok := block.(Flammable)
+	return ok && flammable.FlammabilityInfo().Encouragement > 0
 }
 
-// ScheduledTick ...
-func (f Fire) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	f.tick(pos, w, r)
-}
-
-// RandomTick ...
-func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	f.tick(pos, w, r)
-}
-
-// NeighbourUpdateTick ...
-func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
-	below := w.Block(pos.Side(cube.FaceDown))
-	if diffuser, ok := below.(LightDiffuser); (ok && diffuser.LightDiffusionLevel() != 15) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
-		w.BreakBlockWithoutParticles(pos)
-		return
-	}
-	switch below.(type) {
-	case SoulSand, SoulSoil:
-		f.Type = SoulFire()
-		w.PlaceBlock(pos, f)
-	case Water:
-		if neighbour == pos {
-			w.BreakBlockWithoutParticles(pos)
-		}
-	default:
-		if f.Type == SoulFire() {
-			w.BreakBlockWithoutParticles(pos)
-			return
+// neighboursFlammable returns true if one a block adjacent to the passed position is flammable.
+func neighboursFlammable(pos cube.Pos, w *world.World) bool {
+	for _, i := range cube.Faces() {
+		if flammableBlock(w.Block(pos.Side(i))) {
+			return true
 		}
 	}
-}
-
-// HasLiquidDrops ...
-func (f Fire) HasLiquidDrops() bool {
 	return false
 }
 
-// LightEmissionLevel ...
-func (f Fire) LightEmissionLevel() uint8 {
-	return f.Type.LightLevel()
-}
-
-// EncodeBlock ...
-func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
-	switch f.Type {
-	case NormalFire():
-		return "minecraft:fire", map[string]interface{}{"age": int32(f.Age)}
-	case SoulFire():
-		return "minecraft:soul_fire", map[string]interface{}{"age": int32(f.Age)}
+// max ...
+func max(a, b int) int {
+	if a > b {
+		return a
 	}
-	panic("unknown fire type")
+	return b
 }
 
-// Start starts a fire at a position in the world. The position passed must be either air or tall grass and conditions
-// for a fire to be present must be present.
-func (f Fire) Start(w *world.World, pos cube.Pos) {
-	b := w.Block(pos)
-	_, isAir := b.(Air)
-	_, isTallGrass := b.(TallGrass)
-	if isAir || isTallGrass {
-		below := w.Block(pos.Side(cube.FaceDown))
-		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
-			w.PlaceBlock(pos, Fire{})
+// infinitelyBurning returns true if fire can infinitely burn at the specified position.
+func infinitelyBurning(pos cube.Pos, w *world.World) bool {
+	switch block := w.Block(pos.Side(cube.FaceDown)).(type) {
+	//TODO: Magma Block
+	case Netherrack:
+		return true
+	case Bedrock:
+		return block.InfiniteBurning
+	}
+	return false
+}
+
+// rainingAround checks if it is raining either at the cube.Pos passed or at any of its horizontal neighbours.
+func rainingAround(pos cube.Pos, w *world.World) bool {
+	raining := w.RainingAt(pos)
+	for _, face := range cube.HorizontalFaces() {
+		if raining {
+			break
 		}
+		raining = w.RainingAt(pos.Side(face))
 	}
+	return raining
 }
 
 // allFire ...

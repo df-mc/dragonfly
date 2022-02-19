@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	_ "github.com/df-mc/dragonfly/server/internal/block_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -29,6 +30,8 @@ func init() {
 	world.RegisterBlock(Bedrock{InfiniteBurning: true})
 	world.RegisterBlock(Obsidian{})
 	world.RegisterBlock(Obsidian{Crying: true})
+	world.RegisterBlock(Portal{Axis: cube.X})
+	world.RegisterBlock(Portal{Axis: cube.Z})
 	world.RegisterBlock(DiamondBlock{})
 	world.RegisterBlock(Glass{})
 	world.RegisterBlock(Glowstone{})

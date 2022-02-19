@@ -23,6 +23,7 @@ import (
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -89,6 +90,10 @@ type Player struct {
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
 	lastBreakDuration time.Duration
+
+	portalTimeout          atomic.Bool
+	portalTime             atomic.Value
+	awaitingPortalTransfer atomic.Bool
 
 	breakParticleCounter atomic.Uint32
 
@@ -2036,6 +2041,23 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 	p.cooldownMu.Unlock()
 
+	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
+		if _, ok := w.Block(cube.PosFromVec3(p.Position())).(block.Portal); ok {
+			if !p.portalTimeout.Load() {
+				if p.GameMode().CreativeInventory() || (p.awaitingPortalTransfer.Load() && time.Since(p.portalTime.Load().(time.Time)) >= time.Second*4) {
+					d, _ := w.PortalDestinations()
+					go p.travel(w, d)
+				} else if !p.awaitingPortalTransfer.Load() {
+					p.portalTime.Store(time.Now())
+					p.awaitingPortalTransfer.Store(true)
+				}
+			}
+		} else {
+			p.portalTimeout.Store(false)
+			p.awaitingPortalTransfer.Store(false)
+		}
+	}
+
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
 		m.Send()
@@ -2045,6 +2067,30 @@ func (p *Player) Tick(w *world.World, current int64) {
 	} else {
 		p.vel.Store(mgl64.Vec3{})
 	}
+}
+
+// travel moves the player to the given Nether or Overworld world, and translates the player's current position
+// based on the source world.
+func (p *Player) travel(source, destination *world.World) {
+	sourceDimension, targetDimension := source.Dimension(), destination.Dimension()
+	pos := cube.PosFromVec3(p.Position())
+	if sourceDimension == world.Overworld {
+		pos = cube.Pos{pos.X() / 8, pos.Y() + sourceDimension.Range().Min(), pos.Z() / 8}
+	} else {
+		pos = cube.Pos{pos.X() * 8, pos.Y() - targetDimension.Range().Min(), pos.Z() * 8}
+	}
+
+	p.portalTimeout.Store(true)
+	p.awaitingPortalTransfer.Store(false)
+	if netherPortal, ok := portal.FindOrCreateNetherPortal(destination, pos, 128); ok {
+		destination.AddEntity(p)
+		p.Teleport(netherPortal.Spawn().Vec3Middle())
+		return
+	}
+
+	// Java edition spawns the player at the translated position if all else fails, so we do the same.
+	destination.AddEntity(p)
+	p.Teleport(pos.Vec3Middle())
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it

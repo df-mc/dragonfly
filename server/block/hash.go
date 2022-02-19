@@ -95,6 +95,7 @@ const (
 	hashPackedIce
 	hashPlanks
 	hashPodzol
+	hashPortal
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -504,6 +505,10 @@ func (p Planks) Hash() uint64 {
 
 func (Podzol) Hash() uint64 {
 	return hashPodzol
+}
+
+func (p Portal) Hash() uint64 {
+	return hashPortal | uint64(p.Axis)<<8
 }
 
 func (p Potato) Hash() uint64 {
