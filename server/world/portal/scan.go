@@ -80,7 +80,7 @@ func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Bl
 
 	// Make sure we at least reach the minimum portal width and height.
 	area, expectedArea := len(positionsMap), width*height
-	completed = width >= minimumNetherPortalWidth && height >= minimumNetherPortalHeight && area == expectedArea
+	completed = completed && width >= minimumNetherPortalWidth && height >= minimumNetherPortalHeight && area == expectedArea
 
 	// Get the actual positions from the map.
 	positions := make([]cube.Pos, 0, expectedArea)
