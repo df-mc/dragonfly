@@ -20,6 +20,11 @@ func (p Portal) EncodeBlock() (string, map[string]interface{}) {
 	return "minecraft:portal", map[string]interface{}{"portal_axis": p.Axis.String()}
 }
 
+// HasLiquidDrops ...
+func (p Portal) HasLiquidDrops() bool {
+	return false
+}
+
 // NeighbourUpdateTick ...
 func (p Portal) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if n, ok := portal.NetherPortalFromPos(w, pos); ok && (!n.Framed() || !n.Activated()) {
