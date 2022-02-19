@@ -22,7 +22,7 @@ func (p Portal) EncodeBlock() (string, map[string]interface{}) {
 
 // NeighbourUpdateTick ...
 func (p Portal) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if n, ok := portal.NetherPortalFromPos(w, pos); ok && !n.Framed() {
+	if n, ok := portal.NetherPortalFromPos(w, pos); ok && (!n.Framed() || !n.Activated()) {
 		n.Deactivate()
 	}
 }
