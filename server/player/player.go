@@ -2046,7 +2046,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 			if !p.portalTimeout.Load() {
 				if p.GameMode().CreativeInventory() || (p.awaitingPortalTransfer.Load() && time.Since(p.portalTime.Load().(time.Time)) >= time.Second*4) {
 					d, _ := w.PortalDestinations()
-					go p.travel(w, d)
+					p.Travel(w, d)
 				} else if !p.awaitingPortalTransfer.Load() {
 					p.portalTime.Store(time.Now())
 					p.awaitingPortalTransfer.Store(true)
@@ -2069,9 +2069,9 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 }
 
-// travel moves the player to the given Nether or Overworld world, and translates the player's current position
+// Travel moves the player to the given Nether or Overworld world, and translates the player's current position
 // based on the source world.
-func (p *Player) travel(source, destination *world.World) {
+func (p *Player) Travel(source, destination *world.World) {
 	sourceDimension, targetDimension := source.Dimension(), destination.Dimension()
 	pos := cube.PosFromVec3(p.Position())
 	if sourceDimension == world.Overworld {
@@ -2082,15 +2082,17 @@ func (p *Player) travel(source, destination *world.World) {
 
 	p.portalTimeout.Store(true)
 	p.awaitingPortalTransfer.Store(false)
-	if netherPortal, ok := portal.FindOrCreateNetherPortal(destination, pos, 128); ok {
-		destination.AddEntity(p)
-		p.Teleport(netherPortal.Spawn().Vec3Middle())
-		return
-	}
+	go func() {
+		if netherPortal, ok := portal.FindOrCreateNetherPortal(destination, pos, 128); ok {
+			destination.AddEntity(p)
+			p.Teleport(netherPortal.Spawn().Vec3Middle())
+			return
+		}
 
-	// Java edition spawns the player at the translated position if all else fails, so we do the same.
-	destination.AddEntity(p)
-	p.Teleport(pos.Vec3Middle())
+		// Java edition spawns the player at the translated position if all else fails, so we do the same.
+		destination.AddEntity(p)
+		p.Teleport(pos.Vec3Middle())
+	}()
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
