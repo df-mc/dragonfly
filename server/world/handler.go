@@ -20,9 +20,9 @@ type Handler interface {
 	// to stop the Sound from playing to viewers of the position.
 	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
 	// HandleEntitySpawn handles an entity being spawned into the world.
-	HandleEntitySpawn(e Entity)
+	HandleEntitySpawn(e *Entity)
 	// HandleEntityDespawn handles an entity being despawned from the world.
-	HandleEntityDespawn(e Entity)
+	HandleEntityDespawn(e *Entity)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -43,7 +43,7 @@ func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Blo
 func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
 
 // HandleEntitySpawn ...
-func (NopHandler) HandleEntitySpawn(Entity) {}
+func (NopHandler) HandleEntitySpawn(*Entity) {}
 
 // HandleEntityDespawn ...
-func (NopHandler) HandleEntityDespawn(Entity) {}
+func (NopHandler) HandleEntityDespawn(*Entity) {}
