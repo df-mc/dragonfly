@@ -13,12 +13,12 @@ type scanIteration struct {
 	first   bool
 }
 
-// multiAxisScan performs a scan on the Z and X axis, returning the result that had the most positions, although
+// multiAxisScan performs a scan on the Z and X axis, returning the result that was the most successful, although
 // favouring the Z axis.
 func multiAxisScan(framePos cube.Pos, w *world.World, matchers []world.Block) (cube.Axis, []cube.Pos, int, int, bool, bool) {
 	positions, width, height, completed := scan(cube.Z, framePos, w, matchers)
 	positionsTwo, widthTwo, heightTwo, completedTwo := scan(cube.X, framePos, w, matchers)
-	if len(positionsTwo) > len(positions) && !completed {
+	if !completed {
 		return cube.X, positionsTwo, widthTwo, heightTwo, completedTwo, len(positionsTwo) > 0
 	}
 	return cube.Z, positions, width, height, completed, len(positions) > 0
