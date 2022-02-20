@@ -3,6 +3,11 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"net"
+	"time"
+	_ "unsafe" // Imported for compiler directives.
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -18,10 +23,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"go.uber.org/atomic"
-	"math"
-	"net"
-	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
@@ -488,36 +489,6 @@ func (s *Session) SetHeldSlot(slot int) error {
 		InventorySlot:   byte(slot),
 		HotBarSlot:      byte(slot),
 	})
-	return nil
-}
-
-// UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
-// matches an expected item stack.
-func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
-	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
-	// different place in the inventory.
-	if slot > 8 {
-		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
-	}
-	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
-		// Old slot was the same as new slot, so don't do anything.
-		return nil
-	}
-	// The user swapped changed held slots so stop using item right away.
-	s.c.ReleaseItem()
-
-	clientSideItem := expected
-	actual, _ := s.inv.Item(slot)
-
-	// The item the client claims to have must be identical to the one we have registered server-side.
-	if !clientSideItem.Equal(actual) {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.log.Debugf("failed processing packet from %v (%v): failed changing held slot: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
-	}
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
-	}
 	return nil
 }
 

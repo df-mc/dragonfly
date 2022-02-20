@@ -2,6 +2,13 @@ package player
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
@@ -28,12 +35,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/atomic"
 	"golang.org/x/text/language"
-	"math"
-	"math/rand"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -365,6 +366,37 @@ func (p *Player) Transfer(address string) (err error) {
 		p.session().Transfer(addr.IP, addr.Port)
 	})
 	return
+}
+
+// SetHeldSlot updates the held slot of the player with the slot passed. It also verifies that the item within the spot
+// is the correct item.
+// This invokes the HandleHeldSlotChange handler.
+func (p *Player) SetHeldSlot(slot int, expected item.Stack) error {
+	if slot > 8 {
+		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+
+	if p.heldSlot.Swap(uint32(slot)) == uint32(slot) {
+		return nil
+	}
+
+	p.ReleaseItem()
+
+	clientSideItem := expected
+	actual, _ := p.inv.Item(slot)
+
+	if !clientSideItem.Equal(actual) {
+		return fmt.Errorf("client side item isn't equal to expected slot item")
+	}
+	
+	ctx := event.C()
+	p.handler().HandleHeldSlotChange(ctx, slot)
+
+	ctx.Continue(func() {
+		p.session().SetHeldSlot(slot)
+	})
+
+	return nil
 }
 
 // SendCommandOutput sends the output of a command to the player.

@@ -23,6 +23,7 @@ type Controllable interface {
 	cmd.Source
 	chat.Subscriber
 	SetHeldItems(right, left item.Stack)
+	SetHeldSlot(slot int, expected item.Stack) error
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	Speed() float64

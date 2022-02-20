@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -30,17 +31,17 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		h.resendInventories(s)
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+		if err := s.c.SetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
 			return err
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+		if err := s.c.SetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
 			return err
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+		if err := s.c.SetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
 			return err
 		}
 		return h.handleReleaseItemTransaction(s)

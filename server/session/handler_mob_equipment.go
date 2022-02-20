@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -21,7 +22,7 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 		// This window ID is expected, but we don't handle it.
 		return nil
 	case protocol.WindowIDInventory:
-		return s.UpdateHeldSlot(int(pk.InventorySlot), stackToItem(pk.NewItem.Stack))
+		return s.c.SetHeldSlot(int(pk.InventorySlot), stackToItem(pk.NewItem.Stack))
 	default:
 		return fmt.Errorf("only main inventory should be involved in slot chnage, got window ID %v", pk.WindowID)
 	}
