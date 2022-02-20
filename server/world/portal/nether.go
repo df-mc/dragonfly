@@ -23,6 +23,8 @@ const (
 	minimumNetherPortalWidth, maximumNetherPortalWidth = 2, 21
 	// minimumNetherPortalHeight, maximumNetherPortalHeight controls the minimum and maximum height of a portal.
 	minimumNetherPortalHeight, maximumNetherPortalHeight = 3, 21
+	// minimumArea is the minimum area of a portal.
+	minimumArea = minimumNetherPortalWidth * minimumNetherPortalHeight
 )
 
 // NetherPortalFromPos returns Nether portal information from a given position in the frame.

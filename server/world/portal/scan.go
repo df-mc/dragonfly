@@ -18,7 +18,7 @@ type scanIteration struct {
 func multiAxisScan(framePos cube.Pos, w *world.World, matchers []world.Block) (cube.Axis, []cube.Pos, int, int, bool, bool) {
 	positions, width, height, completed := scan(cube.Z, framePos, w, matchers)
 	positionsTwo, widthTwo, heightTwo, completedTwo := scan(cube.X, framePos, w, matchers)
-	if len(positionsTwo) > len(positions) && !completed {
+	if len(positions) < minimumArea && len(positionsTwo) >= minimumArea {
 		return cube.X, positionsTwo, widthTwo, heightTwo, completedTwo, len(positionsTwo) > 0
 	}
 	return cube.Z, positions, width, height, completed, len(positions) > 0
