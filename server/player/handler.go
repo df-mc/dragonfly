@@ -109,11 +109,8 @@ type Handler interface {
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *event.Context, i item.Stack)
-	
-	// HandleHeldSlotChange handles the player changing the slot they are currently holding.
-	// 
+	// HandleHeldSlotChange handles the player changing the slot they are currently holding. 
 	HandleHeldSlotChange(ctx *event.Context, slot int)
-
 	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
@@ -141,7 +138,7 @@ var _ Handler = (*NopHandler)(nil)
 func (NopHandler) HandleItemDrop(*event.Context, *entity.Item) {}
 
 // HandleHeldSlotChange ...
-func (NopHandler) HandleHeldSlotChange(event *event.Context, slot int) {}
+func (NopHandler) HandleHeldSlotChange(*event.Context, int) {}
 
 // HandleMove ...
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
