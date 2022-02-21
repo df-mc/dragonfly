@@ -49,9 +49,17 @@ func (s *Session) SendJukeboxPopup(message string) {
 }
 
 // SendScoreboard ...
-func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
-	current := s.currentScoreboard.Load().(*scoreboard.Scoreboard)
-	if current.Name() != sb.Name() {
+func (s *Session) SendScoreboard(score *scoreboard.Scoreboard) {
+	if s == Nop {
+		return
+	}
+	// Copy the scoreboard so that the same reference isn't held.
+	cp := *score
+	sb := &cp
+
+	currentName, currentLines := s.currentScoreboard.Load(), s.currentLines.Load().([]string)
+
+	if currentName != sb.Name() {
 		s.RemoveScoreboard()
 		s.writePacket(&packet.SetDisplayObjective{
 			DisplaySlot:   "sidebar",
@@ -59,29 +67,24 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 			DisplayName:   sb.Name(),
 			CriteriaName:  "dummy",
 		})
-		s.currentScoreboard.Store(sb)
-	}
-
-	pk := &packet.SetScore{ActionType: packet.ScoreboardActionRemove}
-	for i := len(current.Lines()) - 1; i < len(sb.Lines())-1; i++ {
-		// Add a removal entry for each of the lines that the current scoreboard has but the new scoreboard doesn't.
-		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
-			EntryID:       int64(i),
-			ObjectiveName: current.Name(),
-			Score:         int32(i),
-		})
-	}
-	if len(pk.Entries) > 0 {
-		s.writePacket(pk)
-	}
-
-	pk = &packet.SetScore{ActionType: packet.ScoreboardActionModify}
-	for k, line := range sb.Lines() {
-		if k < len(current.Lines()) && line == current.Lines()[k] {
-			// Line was the same as the old line, don't resend it.
-			continue
+		s.currentScoreboard.Store(sb.Name())
+		s.currentLines.Store(append([]string(nil), sb.Lines()...))
+	} else {
+		// Remove all current lines from the scoreboard. We can't replace them without removing them.
+		pk := &packet.SetScore{ActionType: packet.ScoreboardActionRemove}
+		for i := range currentLines {
+			pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
+				EntryID:       int64(i),
+				ObjectiveName: currentName,
+				Score:         int32(i),
+			})
 		}
-		// Add an entry for each of the lines that were new or already existed in the current scoreboard.
+		if len(pk.Entries) > 0 {
+			s.writePacket(pk)
+		}
+	}
+	pk := &packet.SetScore{ActionType: packet.ScoreboardActionModify}
+	for k, line := range sb.Lines() {
 		if len(line) == 0 {
 			line = "§" + colours[k]
 		}
@@ -113,7 +116,7 @@ var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", 
 
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
-	s.writePacket(&packet.RemoveObjective{ObjectiveName: s.currentScoreboard.Load().(*scoreboard.Scoreboard).Name()})
+	s.writePacket(&packet.RemoveObjective{ObjectiveName: s.currentScoreboard.Load()})
 }
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.
