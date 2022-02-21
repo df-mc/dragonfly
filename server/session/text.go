@@ -77,7 +77,7 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 
 	pk = &packet.SetScore{ActionType: packet.ScoreboardActionModify}
 	for k, line := range sb.Lines() {
-		if line == current.Lines()[k] {
+		if k < len(current.Lines()) && line == current.Lines()[k] {
 			// Line was the same as the old line, don't resend it.
 			continue
 		}
