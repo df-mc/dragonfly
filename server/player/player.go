@@ -2361,7 +2361,7 @@ func (p *Player) close(msg string) {
 		p.World().RemoveEntity(p)
 		return
 	}
-	p.session().Disconnect(msg)
+	s.Disconnect(msg)
 	s.CloseConnection()
 }
 
