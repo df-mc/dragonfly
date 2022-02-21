@@ -49,14 +49,10 @@ func (s *Session) SendJukeboxPopup(message string) {
 }
 
 // SendScoreboard ...
-func (s *Session) SendScoreboard(score *scoreboard.Scoreboard) {
+func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	if s == Nop {
 		return
 	}
-	// Copy the scoreboard so that the same reference isn't held.
-	cp := *score
-	sb := &cp
-
 	currentName, currentLines := s.currentScoreboard.Load(), s.currentLines.Load().([]string)
 
 	if currentName != sb.Name() {

@@ -46,10 +46,14 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 	return len(lines), nil
 }
 
-// Set changes a specific line in the scoreboard.
-func (board *Scoreboard) Set(index int, s string) (err error) {
-	if index < 0 || len(board.lines) <= index {
+// Set changes a specific line in the scoreboard and adds empty lines until this index is reached. An error is returned
+// if the index passed is negative or 15+.
+func (board *Scoreboard) Set(index int, s string) error {
+	if index < 0 || index >= 15 {
 		return fmt.Errorf("index out of range %v", index)
+	}
+	if diff := index - len(board.lines) - 1; diff > 0 {
+		board.lines = append(board.lines, make([]string, diff)...)
 	}
 	// Remove new lines from the string
 	board.lines[index] = strings.TrimSuffix(strings.TrimSuffix(s, "\n"), "\n")
@@ -58,7 +62,7 @@ func (board *Scoreboard) Set(index int, s string) (err error) {
 }
 
 // Remove removes a specific line from the scoreboard.
-func (board *Scoreboard) Remove(index int) (err error) {
+func (board *Scoreboard) Remove(index int) error {
 	if index < 0 || len(board.lines) <= index {
 		return fmt.Errorf("index out of range %v", index)
 	}
