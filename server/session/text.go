@@ -2,7 +2,6 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
-	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"strings"
@@ -51,39 +50,57 @@ func (s *Session) SendJukeboxPopup(message string) {
 
 // SendScoreboard ...
 func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
-	if s.scoreboardObj.Load() != "" {
+	current := s.currentScoreboard.Load().(*scoreboard.Scoreboard)
+	if current.Name() != sb.Name() {
 		s.RemoveScoreboard()
+		s.writePacket(&packet.SetDisplayObjective{
+			DisplaySlot:   "sidebar",
+			ObjectiveName: sb.Name(),
+			DisplayName:   sb.Name(),
+			CriteriaName:  "dummy",
+		})
+		s.currentScoreboard.Store(sb)
 	}
-	obj := uuid.New().String()
-	s.scoreboardObj.Store(obj)
 
-	s.writePacket(&packet.SetDisplayObjective{
-		DisplaySlot:   "sidebar",
-		ObjectiveName: obj,
-		DisplayName:   sb.Name(),
-		CriteriaName:  "dummy",
-	})
-	pk := &packet.SetScore{
-		ActionType: packet.ScoreboardActionModify,
+	pk := &packet.SetScore{ActionType: packet.ScoreboardActionRemove}
+	for i := len(current.Lines()) - 1; i < len(sb.Lines())-1; i++ {
+		// Add a removal entry for each of the lines that the current scoreboard has but the new scoreboard doesn't.
+		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
+			EntryID:       int64(i),
+			ObjectiveName: current.Name(),
+			Score:         int32(i),
+		})
 	}
+	if len(pk.Entries) > 0 {
+		s.writePacket(pk)
+	}
+
+	pk = &packet.SetScore{ActionType: packet.ScoreboardActionModify}
 	for k, line := range sb.Lines() {
+		if line == current.Lines()[k] {
+			// Line was the same as the old line, don't resend it.
+			continue
+		}
+		// Add an entry for each of the lines that were new or already existed in the current scoreboard.
 		if len(line) == 0 {
 			line = "§" + colours[k]
 		}
 		pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
 			EntryID:       int64(k),
-			ObjectiveName: s.scoreboardObj.Load(),
+			ObjectiveName: sb.Name(),
 			Score:         int32(k),
 			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
 			DisplayName:   padScoreboardString(sb, line),
 		})
 	}
-	s.writePacket(pk)
+	if len(pk.Entries) > 0 {
+		s.writePacket(pk)
+	}
 }
 
-// pad pads the string passed for as much as needed to achieve the same length as the name of the scoreboard.
-// If the string passed is already of the same length as the name of the scoreboard or longer, the string will
-// receive one space of padding.
+// padScoreboardString pads the string passed for as much as needed to achieve the same length as the name of the
+// scoreboard. If the string passed is already of the same length as the name of the scoreboard or longer, the string
+// will receive one space of padding.
 func padScoreboardString(sb *scoreboard.Scoreboard, s string) string {
 	if len(sb.Name())-len(s)-2 <= 0 {
 		return " " + s + " "
@@ -96,9 +113,7 @@ var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", 
 
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
-	s.writePacket(&packet.RemoveObjective{
-		ObjectiveName: s.scoreboardObj.Load(),
-	})
+	s.writePacket(&packet.RemoveObjective{ObjectiveName: s.currentScoreboard.Load().(*scoreboard.Scoreboard).Name()})
 }
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.

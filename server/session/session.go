@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -39,7 +40,7 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	scoreboardObj atomic.String
+	currentScoreboard atomic.Value
 
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
@@ -153,6 +154,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(cube.Pos{})
+	s.currentScoreboard.Store(scoreboard.New(""))
 
 	s.registerHandlers()
 	return s
