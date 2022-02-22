@@ -531,9 +531,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		return 0, false
 	}
 	var (
-		ctx        = event.C()
-		vulnerable = false
-		n          = 0.0
+		ctx         = event.C()
+		vulnerable  = false
+		totalDamage = 0.0
 	)
 	p.handler().HandleHurt(ctx, &dmg, source)
 
@@ -542,47 +542,32 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		if dmg < 0 {
 			return
 		}
-		if source.ReducedByArmour() {
-			p.Exhaust(0.1)
-		}
-		finalDamage := p.FinalDamageFrom(dmg, source)
-		n = finalDamage
+		totalDamage = p.FinalDamageFrom(dmg, source)
+		damageLeft := totalDamage
 
 		a := p.absorption()
 		if a > 0 && (effect.Absorption{}).Absorbs(source) {
-			if finalDamage > a {
-				finalDamage -= a
+			if damageLeft > a {
+				damageLeft -= a
 				p.SetAbsorption(0)
 				p.effects.Remove(effect.Absorption{}, p)
 			} else {
-				p.SetAbsorption(a - finalDamage)
-				finalDamage = 0
+				p.SetAbsorption(a - damageLeft)
+				damageLeft = 0
 			}
 		}
+		p.addHealth(-damageLeft)
 
-		if src, ok := source.(damage.SourceEntityAttack); ok {
-			var d int
-			for i, it := range p.armour.Slots() {
-				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
-					if rand.Float64() < float64(t.Level())*0.15 {
-						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 3))
-						if t.Level() > 10 {
-							d += t.Level() - 10
-							continue
-						}
-						d += 1 + rand.Intn(4)
-					} else {
-						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 1))
-					}
+		if source.ReducedByArmour() {
+			p.Exhaust(0.1)
+
+			damageToArmour := int(math.Min(math.Floor(dmg/4), 1))
+			for slot, it := range p.armour.Slots() {
+				if _, ok := it.Item().(item.Durable); ok {
+					_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
 				}
 			}
-
-			if l, ok := src.Attacker.(entity.Living); ok && d > 0 {
-				l.Hurt(float64(d), damage.SourceCustom{})
-			}
 		}
-
-		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, entity.HurtAction{})
@@ -592,7 +577,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 			p.kill(source)
 		}
 	})
-	return n, vulnerable
+	return totalDamage, vulnerable
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -601,16 +586,10 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 // The damage returned will be at the least 0.
 func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
-		defencePoints, damageToArmour := 0.0, int(dmg/4)
-		if damageToArmour == 0 {
-			damageToArmour++
-		}
-		for i, it := range p.armour.Slots() {
+		defencePoints := 0.0
+		for _, it := range p.armour.Slots() {
 			if a, ok := it.Item().(item.Armour); ok {
 				defencePoints += a.DefencePoints()
-				if _, ok := it.Item().(item.Durable); ok {
-					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
-				}
 			}
 		}
 		// Armour in Bedrock edition reduces the damage taken by 4% for every armour point that the player
@@ -620,22 +599,11 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-
-	if entityAttack, ok := src.(damage.SourceEntityAttack); ok {
-		if carrier, ok := entityAttack.Attacker.(item.Carrier); ok {
-			held, _ := carrier.HeldItems()
-			if e, ok := held.Enchantment(enchantment.Sharpness{}); ok {
-				dmg += (enchantment.Sharpness{}).Addend(e.Level())
-			}
-		}
-	}
-
 	for _, it := range p.armour.Items() {
 		if p, ok := it.Enchantment(enchantment.Protection{}); ok {
 			dmg -= (enchantment.Protection{}).Subtrahend(p.Level())
 		}
 	}
-
 	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
 		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
 	}
@@ -2264,8 +2232,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 		if e, ok := s.Enchantment(enchantment.Unbreaking{}); ok {
 			d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
 		}
-		s = s.Damage(d)
-		if s.Empty() {
+		if s = s.Damage(d); s.Empty() {
 			p.World().PlaySound(p.Position(), sound.ItemBreak{})
 		}
 	})
