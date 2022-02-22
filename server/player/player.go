@@ -561,7 +561,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		if source.ReducedByArmour() {
 			p.Exhaust(0.1)
 
-			damageToArmour := int(math.Min(math.Floor(dmg/4), 1))
+			damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
 			for slot, it := range p.armour.Slots() {
 				if _, ok := it.Item().(item.Durable); ok {
 					_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
