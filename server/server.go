@@ -50,7 +50,6 @@ type Server struct {
 	name    atomic.String
 
 	joinMessage, quitMessage atomic.String
-	useClientCache           bool
 	playerProvider           player.Provider
 
 	c                  Config
