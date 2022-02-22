@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 )
 
 // MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
@@ -125,8 +124,17 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	// Entities only ever have a single bounding box.
+	w := e.World()
 	entityAABB := e.AABB().Translate(pos)
-	blocks := blockAABBsAround(e, entityAABB.Extend(vel))
+	positions := w.BlocksAround(entityAABB.Extend(vel))
+
+	var blocks []physics.AABB
+	for _, blockPos := range positions {
+		boxes := w.Block(blockPos).Model().AABB(blockPos, w)
+		for _, box := range boxes {
+			blocks = append(blocks, box.Translate(blockPos.Vec3()))
+		}
+	}
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
 		// First we move the entity AABB on the Y axis.
@@ -168,29 +176,4 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 		vel[2] = 0
 	}
 	return mgl64.Vec3{deltaX, deltaY, deltaZ}, vel
-}
-
-// blockAABBsAround returns all blocks around the entity passed, using the AABB passed to make a prediction of
-// what blocks need to have their AABB returned.
-func blockAABBsAround(e world.Entity, aabb physics.AABB) []physics.AABB {
-	w := e.World()
-	grown := aabb.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
-	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
-	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
-
-	// A prediction of one AABB per block, plus an additional 2, in case
-	blockAABBs := make([]physics.AABB, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
-	for y := minY; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			for z := minZ; z <= maxZ; z++ {
-				pos := cube.Pos{x, y, z}
-				boxes := w.Block(pos).Model().AABB(pos, w)
-				for _, box := range boxes {
-					blockAABBs = append(blockAABBs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
-				}
-			}
-		}
-	}
-	return blockAABBs
 }

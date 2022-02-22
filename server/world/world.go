@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
+	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -184,6 +185,24 @@ func (w *World) Biome(pos cube.Pos) Biome {
 		w.log.Errorf("could not find biome by ID %v", id)
 	}
 	return b
+}
+
+// BlocksAround returns all block positions around the AABB passed.
+func (w *World) BlocksAround(aabb physics.AABB) []cube.Pos {
+	grown := aabb.Grow(0.25)
+	min, max := grown.Min(), grown.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	blockAABBs := make([]cube.Pos, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ))
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				blockAABBs = append(blockAABBs, cube.Pos{x, y, z})
+			}
+		}
+	}
+	return blockAABBs
 }
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk

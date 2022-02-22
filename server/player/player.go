@@ -2007,6 +2007,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 
 	p.checkBlockCollisions(w)
+	p.checkPortalCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
 
 	p.tickFood(w)
@@ -2043,23 +2044,6 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 	p.cooldownMu.Unlock()
 
-	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
-		if _, ok := w.Block(cube.PosFromVec3(p.Position())).(block.Portal); ok {
-			if !p.portalTimeout.Load() {
-				if p.GameMode().CreativeInventory() || (p.awaitingPortalTransfer.Load() && time.Since(p.portalTime.Load().(time.Time)) >= time.Second*4) {
-					d, _ := w.PortalDestinations()
-					p.Travel(w, d)
-				} else if !p.awaitingPortalTransfer.Load() {
-					p.portalTime.Store(time.Now())
-					p.awaitingPortalTransfer.Store(true)
-				}
-			}
-		} else if !p.portalTransfer.Load() {
-			p.portalTimeout.Store(false)
-			p.awaitingPortalTransfer.Store(false)
-		}
-	}
-
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
 		m.Send()
@@ -2068,6 +2052,39 @@ func (p *Player) Tick(w *world.World, current int64) {
 		p.Move(m.Position().Sub(p.Position()), 0, 0)
 	} else {
 		p.vel.Store(mgl64.Vec3{})
+	}
+}
+
+// checkPortalCollisions checks if the player is colliding with a nether portal block. If so, it teleports the player
+// to the other dimension.
+func (p *Player) checkPortalCollisions(w *world.World) {
+	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
+		// Get all blocks that could touch the player and check if any of them intersect with a portal block.
+		for _, pos := range w.BlocksAround(p.AABB().Translate(p.Position())) {
+			b := w.Block(pos)
+			if _, ok := b.(block.Portal); ok {
+				for _, aabb := range b.Model().AABB(pos, w) {
+					if aabb.Translate(pos.Vec3()).IntersectsWith(p.AABB().Translate(p.Position())) {
+						if !p.portalTimeout.Load() {
+							if p.GameMode().CreativeInventory() || (p.awaitingPortalTransfer.Load() && time.Since(p.portalTime.Load().(time.Time)) >= time.Second*4) {
+								d, _ := w.PortalDestinations()
+								p.Travel(w, d)
+							} else if !p.awaitingPortalTransfer.Load() {
+								p.portalTime.Store(time.Now())
+								p.awaitingPortalTransfer.Store(true)
+							}
+						}
+						return
+					}
+				}
+			}
+		}
+
+		// No portals found, check if we aren't transferring and if so, reset.
+		if !p.portalTransfer.Load() {
+			p.portalTimeout.Store(false)
+			p.awaitingPortalTransfer.Store(false)
+		}
 	}
 }
 
