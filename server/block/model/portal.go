@@ -15,7 +15,7 @@ type Portal struct {
 
 // AABB ...
 func (p Portal) AABB(cube.Pos, *world.World) []physics.AABB {
-	min, max := mgl64.Vec3{0, 0, .375}, mgl64.Vec3{1, 1, 0.25}
+	min, max := mgl64.Vec3{0, 0, 0.375}, mgl64.Vec3{1, 1, 0.25}
 	if p.Axis == cube.Z {
 		min[0], min[2], max[0], max[2] = 0.375, 0, 0.25, 1
 	}
