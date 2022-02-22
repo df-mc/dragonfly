@@ -30,15 +30,11 @@ const (
 // NetherPortalFromPos returns Nether portal information from a given position in the frame.
 func NetherPortalFromPos(w *world.World, pos cube.Pos) (Nether, bool) {
 	if w.Dimension() == world.End {
-		// Don't waste our time - we can't make a portal in the end.
+		// Don't waste our time; we can't make a portal in the end.
 		return Nether{}, false
 	}
 
-	axis, positions, width, height, completed, ok := multiAxisScan(pos, w, []world.Block{
-		portal(cube.X),
-		portal(cube.Z),
-		air(),
-	})
+	axis, positions, width, height, completed, ok := multiAxisScan(pos, w, []world.Block{air()})
 	if !ok {
 		axis, positions, width, height, completed, ok = multiAxisScan(pos, w, []world.Block{
 			portal(cube.X),
