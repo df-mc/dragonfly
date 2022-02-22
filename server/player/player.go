@@ -2080,7 +2080,7 @@ func (p *Player) checkPortalCollisions(w *world.World) {
 			}
 		}
 
-		// No portals found, check if we aren't transferring and if so, reset.
+		// No portals found. Check if we aren't transferring and if so, reset.
 		if !p.portalTransfer.Load() {
 			p.portalTimeout.Store(false)
 			p.awaitingPortalTransfer.Store(false)
