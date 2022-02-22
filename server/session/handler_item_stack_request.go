@@ -421,10 +421,11 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	_ = inventory.SetItem(sl, i)
 
 	respSlot := protocol.StackResponseSlotInfo{
-		Slot:           slot.Slot,
-		HotbarSlot:     slot.Slot,
-		Count:          byte(i.Count()),
-		StackNetworkID: item_id(i),
+		Slot:                 slot.Slot,
+		HotbarSlot:           slot.Slot,
+		Count:                byte(i.Count()),
+		StackNetworkID:       item_id(i),
+		DurabilityCorrection: int32(i.MaxDurability() - i.Durability()),
 	}
 
 	if h.changes[slot.ContainerID] == nil {
