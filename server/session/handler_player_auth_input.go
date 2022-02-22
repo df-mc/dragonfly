@@ -88,16 +88,25 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 			return err
 		}
 	}
-	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
-		// God knows what this is for.
-		s.log.Debugf("PlayerAuthInput: unexpected item stack request: %#v\n", pk.ItemStackRequest)
-	}
 	if pk.InputData&packet.InputFlagPerformBlockActions != 0 {
 		if err := h.handleBlockActions(pk.BlockActions, s); err != nil {
 			return err
 		}
 	}
 	h.handleInputFlags(pk.InputData, s)
+
+	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
+		s.inTransaction.Store(true)
+		defer s.inTransaction.Store(false)
+
+		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
+		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
+		if err := sh.handleRequest(pk.ItemStackRequest, s); err != nil {
+			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
+			// revert do its work.
+			s.log.Debugf("failed processing packet from %v (%v): PlayerAuthInput: error resolving item stack request: %v", s.conn.RemoteAddr(), s.c.Name(), err)
+		}
+	}
 	return nil
 }
 
