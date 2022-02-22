@@ -23,6 +23,10 @@ type Config struct {
 		// QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
 		// %v is the placeholder for the username of the player
 		QuitMessage string
+		// UseClientCache specifies if the server should use client cache, used for caching chunks client-side.
+		// Some platforms, like the Nintendo Switch, have it disabled at all times, so this should only be used
+		// for disabling client cache on all devices.
+		UseClientCache bool
 	}
 	World struct {
 		// Name is the name of the world that the server holds. A world with this name will be loaded and
@@ -46,7 +50,6 @@ type Config struct {
 		// player provider if it is enabled.
 		Folder string
 	}
-
 	Resources struct {
 		// Folder controls the location where resource packs will be loaded from.
 		Folder string
@@ -62,6 +65,7 @@ func DefaultConfig() Config {
 	c.Server.AuthEnabled = true
 	c.Server.JoinMessage = "%v has joined the game"
 	c.Server.QuitMessage = "%v has left the game"
+	c.Server.UseClientCache = true
 	c.World.Name = "World"
 	c.World.Folder = "world"
 	c.Players.MaximumChunkRadius = 32

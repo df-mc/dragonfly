@@ -24,7 +24,7 @@ import (
 
 // ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	if !s.conn.ClientCacheEnabled() {
+	if !s.conn.ClientCacheEnabled() || !s.useClientCache {
 		s.sendNetworkChunk(pos, c, blockEntities)
 		return
 	}

@@ -50,6 +50,7 @@ type Server struct {
 	name    atomic.String
 
 	joinMessage, quitMessage atomic.String
+	useClientCache           bool
 	playerProvider           player.Provider
 
 	c                  Config
@@ -514,7 +515,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 	if data != nil {
 		w, gm, pos = server.dimension(data.Dimension), data.GameMode, data.Position
 	}
-	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
+	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage, server.c.Server.UseClientCache)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, pos, data)
 
 	s.Start(p, w, gm, server.handleSessionClose)

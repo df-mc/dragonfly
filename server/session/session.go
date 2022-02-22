@@ -76,6 +76,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.String
+	// useClientCache represents whether the server prefers to not use client cache.
+	useClientCache bool
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -127,7 +129,7 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
+func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String, useClientCache bool) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -151,6 +153,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
+		useClientCache:         useClientCache,
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(cube.Pos{})
@@ -363,7 +366,7 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch(w *world.World) {
-	if s.conn.ClientCacheEnabled() {
+	if s.conn.ClientCacheEnabled() && s.useClientCache {
 		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
 		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
 		for h, blob := range s.blobs {
