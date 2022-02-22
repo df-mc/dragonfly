@@ -1390,7 +1390,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	_, slowFalling := p.Effect(effect.SlowFalling{})
 	_, blind := p.Effect(effect.Blindness{})
-	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0 && !slowFalling && !blind
+	critical := !p.Sprinting() && !p.Flying() && !p.OnGround() && p.FallDistance() > 0 && !slowFalling && !blind
 
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical)
