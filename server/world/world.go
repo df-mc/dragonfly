@@ -887,6 +887,8 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	w.entityMu.Unlock()
 
+	w.Handler().HandleEntityDespawn(e)
+
 	worldsMu.Lock()
 	delete(entityWorlds, e)
 	worldsMu.Unlock()
@@ -917,8 +919,6 @@ func (w *World) RemoveEntity(e Entity) {
 	for _, viewer := range viewers {
 		viewer.HideEntity(e)
 	}
-
-	w.Handler().HandleEntityDespawn(e)
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all

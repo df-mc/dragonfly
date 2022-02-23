@@ -19,9 +19,9 @@ type Handler interface {
 	// HandleSound handles a Sound being played in the World at a specific position. ctx.Cancel() may be called
 	// to stop the Sound from playing to viewers of the position.
 	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
-	// HandleEntitySpawn handles an entity being spawned into the world.
+	// HandleEntitySpawn handles an entity being spawned into a World through a call to World.AddEntity.
 	HandleEntitySpawn(e Entity)
-	// HandleEntityDespawn handles an entity being despawned from the world.
+	// HandleEntityDespawn handles an entity being despawned from a World through a call to World.RemoveEntity.
 	HandleEntityDespawn(e Entity)
 }
 
