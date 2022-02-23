@@ -864,6 +864,8 @@ func (w *World) AddEntity(e Entity) {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
+
+	w.Handler().HandleEntitySpawn(e)
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -915,6 +917,8 @@ func (w *World) RemoveEntity(e Entity) {
 	for _, viewer := range viewers {
 		viewer.HideEntity(e)
 	}
+
+	w.Handler().HandleEntityDespawn(e)
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
