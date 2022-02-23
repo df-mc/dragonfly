@@ -50,10 +50,11 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	s.teleportMu.Lock()
 	if s.teleportPos != nil {
 		if newPos.Sub(*s.teleportPos).Len() > 0.5 {
-			s.teleportMu.Unlock()
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
+			s.log.Debugf("failed processing packet from %v (%v): %T: outdated movement, got %v but expected %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, *s.teleportPos)
+			s.teleportMu.Unlock()
 			s.ViewEntityTeleport(s.c, s.c.Position())
 			return nil
 		}
