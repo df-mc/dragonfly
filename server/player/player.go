@@ -2046,7 +2046,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.cooldownMu.Unlock()
 
 	if p.session() == session.Nop && !p.Immobile() {
-		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+		m := p.mc.TickMovement(w, p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
 		m.Send()
 
 		p.vel.Store(m.Velocity())
@@ -2055,7 +2055,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 		p.vel.Store(mgl64.Vec3{})
 	}
 
-	p.tc.TickTravelling(p)
+	p.tc.TickTravelling(w, p)
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it

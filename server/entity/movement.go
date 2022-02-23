@@ -62,8 +62,7 @@ func (m *Movement) Rotation() (yaw, pitch float64) {
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
 // The resulting Movement can be sent to viewers by calling Movement.Send.
-func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
-	w := e.World()
+func (c *MovementComputer) TickMovement(w *world.World, e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
