@@ -23,7 +23,6 @@ import (
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
-	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -85,16 +84,12 @@ type Player struct {
 	effects  *entity.EffectManager
 	immunity atomic.Value
 
+	tc *entity.TravelComputer
 	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value
 	lastBreakDuration time.Duration
-
-	portalTime             atomic.Value
-	portalTimeout          atomic.Bool
-	portalTransfer         atomic.Bool
-	awaitingPortalTransfer atomic.Bool
 
 	breakParticleCounter atomic.Uint32
 
@@ -107,30 +102,37 @@ type Player struct {
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
+		name:     name,
+		skin:     skin,
+		uuid:     uuid.New(),
+		gameMode: world.GameModeSurvival,
+
 		inv: inventory.New(36, func(slot int, item item.Stack) {
 			if slot == int(p.heldSlot.Load()) {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:          uuid.New(),
-		offHand:       inventory.New(1, p.broadcastItems),
-		armour:        inventory.NewArmour(p.broadcastArmour),
-		hunger:        newHungerManager(),
-		health:        entity.NewHealthManager(),
-		effects:       entity.NewEffectManager(),
-		gameMode:      world.GameModeSurvival,
-		h:             NopHandler{},
-		name:          name,
-		skin:          skin,
-		speed:         *atomic.NewFloat64(0.1),
-		nameTag:       *atomic.NewString(name),
-		heldSlot:      atomic.NewUint32(0),
-		locale:        language.BritishEnglish,
-		scale:         *atomic.NewFloat64(1),
-		cooldowns:     make(map[itemHash]time.Time),
-		portalTimeout: *atomic.NewBool(true),
+		offHand: inventory.New(1, p.broadcastItems),
+		armour:  inventory.NewArmour(p.broadcastArmour),
+
+		cooldowns: make(map[itemHash]time.Time),
+		heldSlot:  atomic.NewUint32(0),
+
+		hunger:  newHungerManager(),
+		health:  entity.NewHealthManager(),
+		effects: entity.NewEffectManager(),
+
+		speed: *atomic.NewFloat64(0.1),
+		scale: *atomic.NewFloat64(1),
+
+		nameTag: *atomic.NewString(name),
+		locale:  language.BritishEnglish,
+
+		tc: &entity.TravelComputer{Instantaneous: func(world.Entity) bool { return p.GameMode().CreativeInventory() }},
+		mc: &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+
+		h: NopHandler{},
 	}
-	p.mc = &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
 	p.immunity.Store(time.Now())
@@ -2007,7 +2009,6 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 
 	p.checkBlockCollisions(w)
-	p.checkPortalCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
 
 	p.tickFood(w)
@@ -2053,68 +2054,8 @@ func (p *Player) Tick(w *world.World, current int64) {
 	} else {
 		p.vel.Store(mgl64.Vec3{})
 	}
-}
 
-// checkPortalCollisions checks if the player is colliding with a nether portal block. If so, it teleports the player
-// to the other dimension.
-func (p *Player) checkPortalCollisions(w *world.World) {
-	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
-		// Get all blocks that could touch the player and check if any of them intersect with a portal block.
-		for _, pos := range w.BlocksAround(p.AABB().Translate(p.Position())) {
-			b := w.Block(pos)
-			if _, ok := b.(block.Portal); ok {
-				for _, aabb := range b.Model().AABB(pos, w) {
-					if aabb.Translate(pos.Vec3()).IntersectsWith(p.AABB().Translate(p.Position())) {
-						if !p.portalTimeout.Load() {
-							if p.GameMode().CreativeInventory() || (p.awaitingPortalTransfer.Load() && time.Since(p.portalTime.Load().(time.Time)) >= time.Second*4) {
-								d, _ := w.PortalDestinations()
-								p.Travel(w, d)
-							} else if !p.awaitingPortalTransfer.Load() {
-								p.portalTime.Store(time.Now())
-								p.awaitingPortalTransfer.Store(true)
-							}
-						}
-						return
-					}
-				}
-			}
-		}
-
-		// No portals found. Check if we aren't transferring and if so, reset.
-		if !p.portalTransfer.Load() {
-			p.portalTimeout.Store(false)
-			p.awaitingPortalTransfer.Store(false)
-		}
-	}
-}
-
-// Travel moves the player to the given Nether or Overworld world, and translates the player's current position based
-// on the source world.
-func (p *Player) Travel(source, destination *world.World) {
-	sourceDimension, targetDimension := source.Dimension(), destination.Dimension()
-	pos := cube.PosFromVec3(p.Position())
-	if sourceDimension == world.Overworld {
-		pos = cube.Pos{pos.X() / 8, pos.Y() + sourceDimension.Range().Min(), pos.Z() / 8}
-	} else if sourceDimension == world.Nether {
-		pos = cube.Pos{pos.X() * 8, pos.Y() - targetDimension.Range().Min(), pos.Z() * 8}
-	}
-
-	p.portalTransfer.Store(true)
-	p.portalTimeout.Store(true)
-	p.awaitingPortalTransfer.Store(false)
-	go func() {
-		// Java edition spawns the player at the translated position if all else fails, so we do the same.
-		spawn := pos.Vec3Middle()
-		if netherPortal, ok := portal.FindOrCreateNetherPortal(destination, pos, 128); ok {
-			spawn = netherPortal.Spawn().Vec3Middle()
-		}
-
-		// Add the entity to the destination dimension and stop the portal transfer status.
-		destination.AddEntity(p)
-		p.Teleport(spawn)
-
-		p.portalTransfer.Store(false)
-	}()
+	p.tc.TickTravelling(p)
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it

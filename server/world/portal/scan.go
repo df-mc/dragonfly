@@ -15,7 +15,7 @@ type scanIteration struct {
 
 // multiAxisScan performs a scan on the Z and X axis, returning the result that had the most positions, although
 // favouring the Z axis.
-func multiAxisScan(framePos cube.Pos, w *world.World, matchers []world.Block) (cube.Axis, []cube.Pos, int, int, bool, bool) {
+func multiAxisScan(framePos cube.Pos, w *world.World, matchers []string) (cube.Axis, []cube.Pos, int, int, bool, bool) {
 	positions, width, height, completed := scan(cube.Z, framePos, w, matchers)
 	positionsTwo, widthTwo, heightTwo, completedTwo := scan(cube.X, framePos, w, matchers)
 	if len(positions) < minimumArea && len(positionsTwo) >= minimumArea {
@@ -25,7 +25,7 @@ func multiAxisScan(framePos cube.Pos, w *world.World, matchers []world.Block) (c
 }
 
 // scan performs a scan on the given axis for any of the provided matchers using a position and a world.
-func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Block) ([]cube.Pos, int, int, bool) {
+func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []string) ([]cube.Pos, int, int, bool) {
 	var width, height int
 	positionsMap := make(map[cube.Pos]bool)
 
@@ -91,10 +91,10 @@ func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Bl
 }
 
 // satisfiesMatchers checks if the given block satisfies all matchers.
-func satisfiesMatchers(b world.Block, matchers []world.Block) bool {
+func satisfiesMatchers(b world.Block, matchers []string) bool {
 	name, _ := b.EncodeBlock()
 	for _, matcher := range matchers {
-		if otherName, _ := matcher.EncodeBlock(); name == otherName {
+		if name == matcher {
 			return true
 		}
 	}
@@ -108,15 +108,6 @@ func air() world.Block {
 		panic("could not find air block")
 	}
 	return a
-}
-
-// fire returns a fire block.
-func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
-	if !ok {
-		panic("could not find fire block")
-	}
-	return f
 }
 
 // portal returns a portal block.

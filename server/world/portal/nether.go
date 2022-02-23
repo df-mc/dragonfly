@@ -34,9 +34,12 @@ func NetherPortalFromPos(w *world.World, pos cube.Pos) (Nether, bool) {
 		return Nether{}, false
 	}
 
-	axis, positions, width, height, completed, ok := multiAxisScan(pos, w, []world.Block{air(), fire()})
+	axis, positions, width, height, completed, ok := multiAxisScan(pos, w, []string{
+		"minecraft:air",
+		"minecraft:fire",
+	})
 	if !ok {
-		axis, positions, width, height, completed, ok = multiAxisScan(pos, w, []world.Block{portal(cube.X)})
+		axis, positions, width, height, completed, ok = multiAxisScan(pos, w, []string{"minecraft:portal"})
 	}
 	return Nether{
 		w: width, h: height,
@@ -65,16 +68,15 @@ func FindNetherPortal(w *world.World, pos cube.Pos, radius int) (Nether, bool) {
 	}
 
 	closestPos, closestDist, ok := cube.Pos{}, math.MaxFloat64, false
-	topMatchers := []world.Block{portal(cube.X)}
-	bottomMatcher := []world.Block{obsidian()}
-
 	for x := pos.X() - radius/2; x < (pos.X() + radius/2); x++ {
 		for z := pos.Z() - radius/2; z < (pos.Z() + radius/2); z++ {
 			for y := w.Dimension().Range().Max(); y >= w.Dimension().Range().Min(); y-- {
 				selectedPos := cube.Pos{x, y, z}
-				if satisfiesMatchers(w.Block(selectedPos), topMatchers) {
+				name, _ := w.Block(selectedPos).EncodeBlock()
+				if name == "minecraft:portal" {
 					belowPos := selectedPos.Side(cube.FaceDown)
-					if satisfiesMatchers(w.Block(belowPos), bottomMatcher) {
+					name, _ = w.Block(belowPos).EncodeBlock()
+					if name == "minecraft:obsidian" {
 						dist := world.Distance(pos.Vec3(), selectedPos.Vec3())
 						if dist < closestDist {
 							closestDist, closestPos, ok = dist, selectedPos, true

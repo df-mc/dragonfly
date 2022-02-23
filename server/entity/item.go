@@ -18,6 +18,7 @@ type Item struct {
 	age, pickupDelay int
 	i                item.Stack
 
+	t *TravelComputer
 	c *MovementComputer
 }
 
@@ -30,11 +31,17 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
 
-	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
-		Gravity:           0.04,
-		DragBeforeGravity: true,
-		Drag:              0.02,
-	}}
+	it := &Item{
+		i:           i,
+		pickupDelay: 10,
+
+		t: &TravelComputer{Instantaneous: func(entity world.Entity) bool { return true }},
+		c: &MovementComputer{
+			Gravity:           0.04,
+			DragBeforeGravity: true,
+			Drag:              0.02,
+		},
+	}
 	it.transform = newTransform(it, pos)
 	return it
 }
@@ -76,6 +83,8 @@ func (it *Item) Tick(w *world.World, current int64) {
 	it.pos, it.vel = m.pos, m.vel
 	it.mu.Unlock()
 
+	it.t.TickTravelling(it)
+
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -91,6 +100,42 @@ func (it *Item) Tick(w *world.World, current int64) {
 		it.checkNearby(w, m.pos)
 	} else if it.pickupDelay != math.MaxInt16 {
 		it.pickupDelay--
+	}
+}
+
+// Teleport teleports the item to the given position.
+func (it *Item) Teleport(pos mgl64.Vec3) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+
+	for _, v := range it.World().Viewers(pos) {
+		v.ViewEntityTeleport(it, pos)
+	}
+	it.pos = pos
+}
+
+// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
+func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
+	i := nbtconv.MapItem(data, "Item")
+	if i.Empty() {
+		return nil
+	}
+	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
+	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	n.age = int(nbtconv.MapInt16(data, "Age"))
+	n.pickupDelay = int(nbtconv.MapInt64(data, "PickupDelay"))
+	return n
+}
+
+// EncodeNBT encodes the Item entity's properties as a map and returns it.
+func (it *Item) EncodeNBT() map[string]interface{} {
+	return map[string]interface{}{
+		"Age":         int16(it.age),
+		"PickupDelay": int64(it.pickupDelay),
+		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Health":      int16(5),
+		"Item":        nbtconv.WriteItem(it.Item(), true),
 	}
 }
 
@@ -164,31 +209,6 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	w.AddEntity(NewItem(it.i.Grow(-n), pos))
 
 	_ = it.Close()
-}
-
-// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
-func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
-	i := nbtconv.MapItem(data, "Item")
-	if i.Empty() {
-		return nil
-	}
-	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.age = int(nbtconv.MapInt16(data, "Age"))
-	n.pickupDelay = int(nbtconv.MapInt64(data, "PickupDelay"))
-	return n
-}
-
-// EncodeNBT encodes the Item entity's properties as a map and returns it.
-func (it *Item) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{
-		"Age":         int16(it.age),
-		"PickupDelay": int64(it.pickupDelay),
-		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
-		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
-		"Health":      int16(5),
-		"Item":        nbtconv.WriteItem(it.Item(), true),
-	}
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as
