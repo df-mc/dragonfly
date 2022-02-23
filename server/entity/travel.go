@@ -33,7 +33,7 @@ type Traveller interface {
 // to the other dimension after four seconds or instantly if instantaneous is true.
 func (t *TravelComputer) TickTravelling(e Traveller) {
 	w := e.World()
-	aabb := e.AABB().Translate(e.Position()).Grow(0.1)
+	aabb := e.AABB().Translate(e.Position()).Grow(0.15)
 	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
 		// Get all blocks that could touch the player and check if any of them intersect with a portal block.
 		for _, pos := range w.BlocksAround(aabb) {
@@ -61,7 +61,7 @@ func (t *TravelComputer) TickTravelling(e Traveller) {
 			}
 		}
 
-		// No portals found. Check if we aren't transferring and if so, reset.
+		// No portals found. Check if we aren't travelling and if so, reset.
 		t.mu.Lock()
 		defer t.mu.Unlock()
 		if !t.travelling {
@@ -92,7 +92,7 @@ func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *w
 			spawn = netherPortal.Spawn().Vec3Middle()
 		}
 
-		// Add the entity to the destination dimension and stop the portal transfer status.
+		// Add the entity to the destination dimension and stop the portal travel status.
 		destination.AddEntity(e)
 		e.Teleport(spawn)
 
