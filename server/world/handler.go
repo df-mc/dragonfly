@@ -19,6 +19,10 @@ type Handler interface {
 	// HandleSound handles a Sound being played in the World at a specific position. ctx.Cancel() may be called
 	// to stop the Sound from playing to viewers of the position.
 	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
+	// HandleEntitySpawn handles an entity being spawned into a World through a call to World.AddEntity.
+	HandleEntitySpawn(e Entity)
+	// HandleEntityDespawn handles an entity being despawned from a World through a call to World.RemoveEntity.
+	HandleEntityDespawn(e Entity)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -37,3 +41,9 @@ func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Blo
 
 // HandleSound ...
 func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
+
+// HandleEntitySpawn ...
+func (NopHandler) HandleEntitySpawn(Entity) {}
+
+// HandleEntityDespawn ...
+func (NopHandler) HandleEntityDespawn(Entity) {}

@@ -808,22 +808,30 @@ func (p *Player) kill(src damage.Source) {
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
 // again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	if !p.Dead() || p.World() == nil || p.session() == session.Nop {
+	w := p.World()
+	if !p.Dead() || w == nil || p.session() == session.Nop {
 		return
 	}
-	pos := p.World().Spawn().Vec3Middle()
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
 	p.Extinguish()
 
-	p.World().AddEntity(p)
-	p.SetVisible()
+	switch w.Dimension() {
+	case world.Nether:
+		w, _ = w.PortalDestinations()
+	case world.End:
+		_, w = w.PortalDestinations()
+	}
+	pos := w.Spawn().Vec3Middle()
 
-	p.session().SendRespawn()
+	p.handler().HandleRespawn(&pos, &w)
 
-	p.handler().HandleRespawn(&pos)
+	w.AddEntity(p)
 	p.Teleport(pos)
+	p.session().SendRespawn(pos)
+
+	p.SetVisible()
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making

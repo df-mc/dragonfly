@@ -14,6 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -57,9 +58,9 @@ func (s *Session) closeCurrentContainer() {
 }
 
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
-func (s *Session) SendRespawn() {
+func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Position:        vec64To32(pos.Add(entityOffset(s.c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
