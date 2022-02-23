@@ -32,14 +32,14 @@ type Traveller interface {
 // TickTravelling checks if the player is colliding with a nether portal block. If so, it teleports the player
 // to the other dimension after four seconds or instantly if instantaneous is true.
 func (t *TravelComputer) TickTravelling(w *world.World, e Traveller) {
-	aabb := e.AABB().Translate(e.Position()).Grow(0.15)
+	aabb := e.AABB().Translate(e.Position())
 	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
 		// Get all blocks that could touch the player and check if any of them intersect with a portal block.
 		for _, pos := range w.BlocksAround(aabb) {
 			b := w.Block(pos)
 			if name, _ := w.Block(pos).EncodeBlock(); name == "minecraft:portal" {
 				for _, a := range b.Model().AABB(pos, w) {
-					if a.Translate(pos.Vec3()).IntersectsWith(aabb) {
+					if a.Translate(pos.Vec3()).IntersectsWith(aabb.Grow(0.25)) {
 						t.mu.Lock()
 						timeOut, awaitingTravel, start := t.timedOut, t.awaitingTravel, t.start
 						t.mu.Unlock()
