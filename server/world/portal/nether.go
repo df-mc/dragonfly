@@ -34,12 +34,9 @@ func NetherPortalFromPos(w *world.World, pos cube.Pos) (Nether, bool) {
 		return Nether{}, false
 	}
 
-	axis, positions, width, height, completed, ok := multiAxisScan(pos, w, []world.Block{air()})
+	axis, positions, width, height, completed, ok := multiAxisScan(pos, w, []world.Block{air(), fire()})
 	if !ok {
-		axis, positions, width, height, completed, ok = multiAxisScan(pos, w, []world.Block{
-			portal(cube.X),
-			portal(cube.Z),
-		})
+		axis, positions, width, height, completed, ok = multiAxisScan(pos, w, []world.Block{portal(cube.X)})
 	}
 	return Nether{
 		w: width, h: height,
@@ -68,7 +65,7 @@ func FindNetherPortal(w *world.World, pos cube.Pos, radius int) (Nether, bool) {
 	}
 
 	closestPos, closestDist, ok := cube.Pos{}, math.MaxFloat64, false
-	topMatchers := []world.Block{portal(cube.X), portal(cube.Z)}
+	topMatchers := []world.Block{portal(cube.X)}
 	bottomMatcher := []world.Block{obsidian()}
 
 	for x := pos.X() - radius/2; x < (pos.X() + radius/2); x++ {

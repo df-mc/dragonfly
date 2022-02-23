@@ -92,8 +92,9 @@ func scan(axis cube.Axis, framePos cube.Pos, w *world.World, matchers []world.Bl
 
 // satisfiesMatchers checks if the given block satisfies all matchers.
 func satisfiesMatchers(b world.Block, matchers []world.Block) bool {
+	name, _ := b.EncodeBlock()
 	for _, matcher := range matchers {
-		if b == matcher {
+		if otherName, _ := matcher.EncodeBlock(); name == otherName {
 			return true
 		}
 	}
@@ -107,6 +108,15 @@ func air() world.Block {
 		panic("could not find air block")
 	}
 	return a
+}
+
+// fire returns a fire block.
+func fire() world.Block {
+	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	if !ok {
+		panic("could not find fire block")
+	}
+	return f
 }
 
 // portal returns a portal block.
