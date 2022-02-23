@@ -270,7 +270,7 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 func entityOffset(e world.Entity) mgl64.Vec3 {
 	switch e.(type) {
 	case Controllable:
-		return mgl64.Vec3{0, 1.62}
+		return mgl64.Vec3{0, 1.621}
 	case *entity.Item:
 		return mgl64.Vec3{0, 0.125}
 	case *entity.FallingBlock:
@@ -299,12 +299,17 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.teleportMu.Unlock()
 	}
 
+	flags := byte(packet.MoveFlagTeleport)
+	if g, ok := e.(interface{ OnGround() bool }); ok && g.OnGround() {
+		flags |= packet.MoveFlagOnGround
+	}
+
 	yaw, pitch := e.Rotation()
 	s.writePacket(&packet.MoveActorAbsolute{
 		EntityRuntimeID: id,
 		Position:        vec64To32(position.Add(entityOffset(e))),
 		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-		Flags:           packet.MoveFlagTeleport,
+		Flags:           flags,
 	})
 }
 
@@ -651,7 +656,6 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
 		EntityMetadata:  parseEntityMetadata(e),
-		Tick:            s.tick.Load(),
 	})
 }
 

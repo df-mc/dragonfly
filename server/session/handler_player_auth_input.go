@@ -53,9 +53,9 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
-			s.log.Debugf("failed processing packet from %v (%v): %T: outdated movement, got %v but expected %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, *s.teleportPos)
 			s.teleportMu.Unlock()
-			s.ViewEntityTeleport(s.c, s.c.Position())
+			s.log.Debugf("failed processing packet from %v (%v): %T: outdated movement, got %v but expected %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, pk.Position, *s.teleportPos)
+			s.ViewEntityTeleport(s.c, *s.teleportPos)
 			return nil
 		}
 		s.teleportPos = nil
@@ -138,14 +138,15 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.
 func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransactionData, s *Session) error {
+	s.swingingArm.Store(true)
+	defer s.swingingArm.Store(false)
+
 	held, _ := s.c.HeldItems()
 	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
 		s.log.Debugf("failed processing item interaction from %v (%v): PlayerAuthInput: actual held and client held item mismatch", s.conn.RemoteAddr(), s.c.Name())
 		return nil
 	}
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
-	s.swingingArm.Store(true)
-	defer s.swingingArm.Store(false)
 
 	// Seems like this is only used for breaking blocks at the moment.
 	switch data.ActionType {
