@@ -2331,12 +2331,14 @@ func (p *Player) close(msg string) {
 	p.h = NopHandler{}
 	p.hMutex.Unlock()
 
+	s.Disconnect(msg)
+	s.CloseConnection()
+
 	// If the player is being disconnected while they are dead, we respawn the player
 	// so that the player logic works correctly the next time they join.
 	if p.Dead() && s != nil {
 		p.Respawn()
 	}
-	h.HandleQuit()
 
 	if s == nil {
 		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
@@ -2344,8 +2346,7 @@ func (p *Player) close(msg string) {
 		p.World().RemoveEntity(p)
 		return
 	}
-	s.Disconnect(msg)
-	s.CloseConnection()
+	h.HandleQuit()
 }
 
 // load reads the player data from the provider. It uses the default values if the provider

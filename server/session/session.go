@@ -28,8 +28,8 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log  internal.Logger
-	once sync.Once
+	log            internal.Logger
+	once, connOnce sync.Once
 
 	c        Controllable
 	conn     Conn
@@ -76,6 +76,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.String
+
+	closeCommands, closeChunks chan struct{}
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -137,6 +139,8 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	s := &Session{
 		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
+		closeChunks:            make(chan struct{}),
+		closeCommands:          make(chan struct{}),
 		ui:                     inventory.New(51, nil),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
@@ -241,7 +245,11 @@ func (s *Session) close() {
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
 // eventually.
 func (s *Session) CloseConnection() {
-	_ = s.conn.Close()
+	s.connOnce.Do(func() {
+		_ = s.conn.Close()
+		s.closeCommands <- struct{}{}
+		s.closeChunks <- struct{}{}
+	})
 }
 
 // Addr returns the net.Addr of the client.
@@ -262,7 +270,9 @@ func (s *Session) ClientData() login.ClientData {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
-	chunks, commands := make(chan struct{}), make(chan struct{})
+	go s.sendChunks()
+	go s.sendCommands()
+
 	defer func() {
 		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
 		// server to freeze without printing the actual panic message.
@@ -271,21 +281,8 @@ func (s *Session) handlePackets() {
 		if err := recover(); err != nil {
 			panic(err)
 		}
-		chunks <- struct{}{}
-		commands <- struct{}{}
-
 		_ = s.Close()
 	}()
-
-	go s.sendChunks(chunks)
-	go s.sendCommands(commands)
-
-	s.readPackets()
-}
-
-// readPackets starts reading packets from the underlying Conn. readPackets returns when an error is returned in doing
-// so.
-func (s *Session) readPackets() {
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
@@ -301,7 +298,7 @@ func (s *Session) readPackets() {
 }
 
 // sendChunks continuously sends chunks to the player, until a value is sent to the stop channel passed.
-func (s *Session) sendChunks(stop <-chan struct{}) {
+func (s *Session) sendChunks() {
 	const maxChunkTransactions = 8
 	t := time.NewTicker(time.Second / 20)
 	defer t.Stop()
@@ -324,7 +321,7 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 				s.log.Debugf("error loading chunk: %v", err)
 				return
 			}
-		case <-stop:
+		case <-s.closeChunks:
 			return
 		}
 	}
@@ -332,7 +329,7 @@ func (s *Session) sendChunks(stop <-chan struct{}) {
 
 // sendCommands continuously checks if commands need to be resent and resends them when needed. sendCommands returns
 // when the channel passed has a value sent to it.
-func (s *Session) sendCommands(stop <-chan struct{}) {
+func (s *Session) sendCommands() {
 	tc := time.NewTicker(time.Second * 5)
 	te := time.NewTicker(time.Second)
 	defer func() {
@@ -355,7 +352,7 @@ func (s *Session) sendCommands(stop <-chan struct{}) {
 			// Enum resending happens relatively often and frequent updates are more important than with full command
 			// changes. Those are generally only related to permission changes, which doesn't happen often.
 			s.resendEnums(enums, enumValues)
-		case <-stop:
+		case <-s.closeCommands:
 			return
 		}
 	}
