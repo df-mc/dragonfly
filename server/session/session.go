@@ -28,7 +28,8 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log internal.Logger
+	log  internal.Logger
+	once sync.Once
 
 	c        Controllable
 	conn     Conn
@@ -38,7 +39,8 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	scoreboardObj atomic.String
+	currentScoreboard atomic.String
+	currentLines      atomic.Value
 
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
@@ -152,6 +154,8 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(cube.Pos{})
+	s.currentScoreboard.Store("")
+	s.currentLines.Store([]string{})
 
 	s.registerHandlers()
 	return s
@@ -178,15 +182,14 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	s.initPlayerList()
 
-	w.AddEntity(s.c)
+	w.AddEntity(c)
 	s.c.SetGameMode(gm)
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
 		s.SendEffect(e)
 	}
 
-	go s.handlePackets()
-
+	chat.Global.Subscribe(c)
 	if j := s.joinMessage.Load(); j != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
@@ -196,43 +199,43 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+
+	go s.handlePackets()
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
-// manages.
+// manages. Close ensures the method only runs code on the first call.
 func (s *Session) Close() error {
-	// If the player is being disconnected while they are dead, we respawn the player
-	// so that the player logic works correctly the next time they join.
-	if s.c.Dead() {
-		s.c.Respawn()
-	}
+	s.once.Do(s.close)
+	return nil
+}
+
+// close closes the session, which in turn closes the controllable and the connection that the session
+// manages.
+func (s *Session) close() {
+	_ = s.c.Close()
+
+	s.onStop(s.c)
+
+	// Clear the inventories so that they no longer hold references to the connection.
+	_ = s.inv.Close()
+	_ = s.offHand.Close()
+	_ = s.armour.Close()
 
 	s.closeCurrentContainer()
-
-	_ = s.conn.Close()
 	_ = s.chunkLoader.Close()
+	s.c.World().RemoveEntity(s.c)
+
+	// This should always be called last due to the timing of the removal of entity runtime IDs.
+	s.closePlayerList()
+	s.entityMutex.Lock()
+	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
+	s.entityMutex.Unlock()
 
 	if j := s.quitMessage.Load(); j != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
 	}
-
-	if s.onStop != nil {
-		s.onStop(s.c)
-		s.onStop = nil
-
-		_ = s.c.Close()
-		s.c.World().RemoveEntity(s.c)
-	}
-
-	// This should always be called last due to the timing of the removal of entity runtime IDs.
-	s.closePlayerList()
-
-	s.entityMutex.Lock()
-	s.entityRuntimeIDs = map[world.Entity]uint64{}
-	s.entities = map[uint64]world.Entity{}
-	s.entityMutex.Unlock()
-
-	return nil
+	chat.Global.Unsubscribe(s.c)
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
@@ -259,7 +262,7 @@ func (s *Session) ClientData() login.ClientData {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
-	c := make(chan struct{})
+	chunks, commands := make(chan struct{}), make(chan struct{})
 	defer func() {
 		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
 		// server to freeze without printing the actual panic message.
@@ -268,11 +271,21 @@ func (s *Session) handlePackets() {
 		if err := recover(); err != nil {
 			panic(err)
 		}
-		c <- struct{}{}
+		chunks <- struct{}{}
+		commands <- struct{}{}
+
 		_ = s.Close()
 	}()
-	go s.sendChunks(c)
-	go s.sendCommands(c)
+
+	go s.sendChunks(chunks)
+	go s.sendCommands(commands)
+
+	s.readPackets()
+}
+
+// readPackets starts reading packets from the underlying Conn. readPackets returns when an error is returned in doing
+// so.
+func (s *Session) readPackets() {
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {

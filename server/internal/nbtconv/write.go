@@ -69,7 +69,7 @@ func writeEnchantments(m map[string]interface{}, s item.Stack) {
 	if len(s.Enchantments()) != 0 {
 		var enchantments []map[string]interface{}
 		for _, e := range s.Enchantments() {
-			if eType, ok := item.EnchantmentID(e); ok {
+			if eType, ok := item.EnchantmentID(e.Type()); ok {
 				enchantments = append(enchantments, map[string]interface{}{
 					"id":  int16(eType),
 					"lvl": int16(e.Level()),

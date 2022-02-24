@@ -6,9 +6,7 @@ import (
 )
 
 // BlastProtection is an armour enchantment that decreases explosion damage.
-type BlastProtection struct {
-	enchantment
-}
+type BlastProtection struct{}
 
 // Name ...
 func (e BlastProtection) Name() string {
@@ -18,11 +16,6 @@ func (e BlastProtection) Name() string {
 // MaxLevel ...
 func (e BlastProtection) MaxLevel() int {
 	return 4
-}
-
-// WithLevel ...
-func (e BlastProtection) WithLevel(level int) item.Enchantment {
-	return BlastProtection{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...
@@ -37,9 +30,7 @@ func (e BlastProtection) CompatibleWith(s item.Stack) bool {
 }
 
 // FireProtection is an armour enchantment that decreases fire damage.
-type FireProtection struct {
-	enchantment
-}
+type FireProtection struct{}
 
 // Name ...
 func (e FireProtection) Name() string {
@@ -49,11 +40,6 @@ func (e FireProtection) Name() string {
 // MaxLevel ...
 func (e FireProtection) MaxLevel() int {
 	return 4
-}
-
-// WithLevel ...
-func (e FireProtection) WithLevel(level int) item.Enchantment {
-	return FireProtection{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...
@@ -68,9 +54,7 @@ func (e FireProtection) CompatibleWith(s item.Stack) bool {
 }
 
 // ProjectileProtection is an armour enchantment that reduces damage from projectiles.
-type ProjectileProtection struct {
-	enchantment
-}
+type ProjectileProtection struct{}
 
 // Name ...
 func (e ProjectileProtection) Name() string {
@@ -80,11 +64,6 @@ func (e ProjectileProtection) Name() string {
 // MaxLevel ...
 func (e ProjectileProtection) MaxLevel() int {
 	return 4
-}
-
-// WithLevel ...
-func (e ProjectileProtection) WithLevel(level int) item.Enchantment {
-	return ProjectileProtection{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...
@@ -99,9 +78,7 @@ func (e ProjectileProtection) CompatibleWith(s item.Stack) bool {
 }
 
 // Protection is an armour enchantment which increases the damage reduction.
-type Protection struct {
-	enchantment
-}
+type Protection struct{}
 
 // Affects ...
 func (e Protection) Affects(src damage.Source) bool {
@@ -121,11 +98,6 @@ func (e Protection) Name() string {
 // MaxLevel ...
 func (e Protection) MaxLevel() int {
 	return 4
-}
-
-// WithLevel ...
-func (e Protection) WithLevel(level int) item.Enchantment {
-	return Protection{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...

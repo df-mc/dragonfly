@@ -47,6 +47,7 @@ type Player struct {
 	nameTag                             atomic.String
 	scoreTag                            atomic.String
 	yaw, pitch, absorptionHealth, scale atomic.Float64
+	once                                sync.Once
 
 	gameModeMu sync.RWMutex
 	gameMode   world.GameMode
@@ -150,7 +151,6 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	chat.Global.Subscribe(p)
 	if data != nil {
 		p.load(*data)
 	}
@@ -360,14 +360,6 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	})
 }
 
-// Disconnect closes the player and removes it from the world.
-// Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
-// disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) Disconnect(msg ...interface{}) {
-	p.session().Disconnect(format(msg))
-	p.close()
-}
-
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
 // error is returned. If it is returned, the player is closed and transferred to the server.
 func (p *Player) Transfer(address string) (err error) {
@@ -548,9 +540,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		return 0, false
 	}
 	var (
-		ctx        = event.C()
-		vulnerable = false
-		n          = 0.0
+		ctx         = event.C()
+		vulnerable  = false
+		totalDamage = 0.0
 	)
 	p.handler().HandleHurt(ctx, &dmg, source)
 
@@ -559,47 +551,32 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		if dmg < 0 {
 			return
 		}
-		if source.ReducedByArmour() {
-			p.Exhaust(0.1)
-		}
-		finalDamage := p.FinalDamageFrom(dmg, source)
-		n = finalDamage
+		totalDamage = p.FinalDamageFrom(dmg, source)
+		damageLeft := totalDamage
 
 		a := p.absorption()
 		if a > 0 && (effect.Absorption{}).Absorbs(source) {
-			if finalDamage > a {
-				finalDamage -= a
+			if damageLeft > a {
+				damageLeft -= a
 				p.SetAbsorption(0)
 				p.effects.Remove(effect.Absorption{}, p)
 			} else {
-				p.SetAbsorption(a - finalDamage)
-				finalDamage = 0
+				p.SetAbsorption(a - damageLeft)
+				damageLeft = 0
 			}
 		}
+		p.addHealth(-damageLeft)
 
-		if src, ok := source.(damage.SourceEntityAttack); ok {
-			var d int
-			for i, it := range p.armour.Slots() {
-				if t, ok := it.Enchantment(enchantment.Thorns{}); ok {
-					if rand.Float64() < float64(t.Level())*0.15 {
-						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 3))
-						if t.Level() > 10 {
-							d += t.Level() - 10
-							continue
-						}
-						d += 1 + rand.Intn(4)
-					} else {
-						_ = p.armour.Inventory().SetItem(i, p.damageItem(it, 1))
-					}
+		if source.ReducedByArmour() {
+			p.Exhaust(0.1)
+
+			damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
+			for slot, it := range p.armour.Slots() {
+				if _, ok := it.Item().(item.Durable); ok {
+					_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
 				}
 			}
-
-			if l, ok := src.Attacker.(entity.Living); ok && d > 0 {
-				l.Hurt(float64(d), damage.SourceCustom{})
-			}
 		}
-
-		p.addHealth(-finalDamage)
 
 		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, entity.HurtAction{})
@@ -609,7 +586,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 			p.kill(source)
 		}
 	})
-	return n, vulnerable
+	return totalDamage, vulnerable
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -618,16 +595,10 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 // The damage returned will be at the least 0.
 func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
-		defencePoints, damageToArmour := 0.0, int(dmg/4)
-		if damageToArmour == 0 {
-			damageToArmour++
-		}
-		for i, it := range p.armour.Slots() {
+		defencePoints := 0.0
+		for _, it := range p.armour.Slots() {
 			if a, ok := it.Item().(item.Armour); ok {
 				defencePoints += a.DefencePoints()
-				if _, ok := it.Item().(item.Durable); ok {
-					_ = p.armour.Inventory().SetItem(i, p.damageItem(it, damageToArmour))
-				}
 			}
 		}
 		// Armour in Bedrock edition reduces the damage taken by 4% for every armour point that the player
@@ -637,22 +608,11 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-
-	if entityAttack, ok := src.(damage.SourceEntityAttack); ok {
-		if carrier, ok := entityAttack.Attacker.(item.Carrier); ok {
-			held, _ := carrier.HeldItems()
-			if e, ok := held.Enchantment(enchantment.Sharpness{}); ok {
-				dmg += (enchantment.Sharpness{}).Addend(e.Level())
-			}
-		}
-	}
-
 	for _, it := range p.armour.Items() {
 		if p, ok := it.Enchantment(enchantment.Protection{}); ok {
 			dmg -= (enchantment.Protection{}).Subtrahend(p.Level())
 		}
 	}
-
 	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
 		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
 	}
@@ -857,22 +817,30 @@ func (p *Player) kill(src damage.Source) {
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
 // again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	if !p.Dead() || p.World() == nil || p.session() == session.Nop {
+	w := p.World()
+	if !p.Dead() || w == nil || p.session() == session.Nop {
 		return
 	}
-	pos := p.World().Spawn().Vec3Middle()
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
 	p.Extinguish()
 
-	p.World().AddEntity(p)
-	p.SetVisible()
+	switch w.Dimension() {
+	case world.Nether:
+		w, _ = w.PortalDestinations()
+	case world.End:
+		_, w = w.PortalDestinations()
+	}
+	pos := w.Spawn().Vec3Middle()
 
-	p.session().SendRespawn()
+	p.handler().HandleRespawn(&pos, &w)
 
-	p.handler().HandleRespawn(&pos)
+	w.AddEntity(p)
 	p.Teleport(pos)
+	p.session().SendRespawn(pos)
+
+	p.SetVisible()
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1164,8 +1132,12 @@ func hashFromItem(item world.Item) itemHash {
 	}
 }
 
-// HasCooldown returns true if the item passed has an active cooldown.
+// HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
+// world.Item passed is nil, HasCooldown always returns false.
 func (p *Player) HasCooldown(item world.Item) bool {
+	if item == nil {
+		return false
+	}
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
@@ -1181,8 +1153,11 @@ func (p *Player) HasCooldown(item world.Item) bool {
 	return true
 }
 
-// SetCooldown sets a cooldown for an item.
+// SetCooldown sets a cooldown for an item. If the world.Item passed is nil, nothing happens.
 func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
+	if item == nil {
+		return
+	}
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
@@ -1432,7 +1407,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	_, slowFalling := p.Effect(effect.SlowFalling{})
 	_, blind := p.Effect(effect.Blindness{})
-	critical := !p.Flying() && !p.OnGround() && p.FallDistance() > 0 && !slowFalling && !blind
+	critical := !p.Sprinting() && !p.Flying() && p.FallDistance() > 0 && !slowFalling && !blind
 
 	ctx := event.C()
 	p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical)
@@ -2262,18 +2237,6 @@ func (p *Player) EncodeEntity() string {
 	return "minecraft:player"
 }
 
-// Close closes the player and removes it from the world.
-// Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
-// player with a custom message.
-func (p *Player) Close() error {
-	if p.World() == nil {
-		return nil
-	}
-	p.session().Disconnect("Connection closed.")
-	p.close()
-	return nil
-}
-
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
 // broke, a breaking sound is played.
 // If the player is not survival, the original stack is returned.
@@ -2288,8 +2251,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 		if e, ok := s.Enchantment(enchantment.Unbreaking{}); ok {
 			d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
 		}
-		s = s.Damage(d)
-		if s.Empty() {
+		if s = s.Damage(d); s.Empty() {
 			p.World().PlaySound(p.Position(), sound.ItemBreak{})
 		}
 	})
@@ -2340,37 +2302,53 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
 }
 
+// Disconnect closes the player and removes it from the world.
+// Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
+// disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
+func (p *Player) Disconnect(msg ...interface{}) {
+	p.once.Do(func() {
+		p.close(format(msg))
+	})
+}
+
+// Close closes the player and removes it from the world.
+// Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
+// player with a custom message.
+func (p *Player) Close() error {
+	p.once.Do(func() {
+		p.close("Connection closed.")
+	})
+	return nil
+}
+
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
-func (p *Player) close() {
-	// If the player is being disconnected while they are dead, we respawn the player
-	// so that the player logic works correctly the next time they join.
-	if p.Dead() {
-		p.Respawn()
-	}
-	p.hMutex.Lock()
-	h := p.h
-	p.h = NopHandler{}
-	p.hMutex.Unlock()
-	h.HandleQuit()
-
-	chat.Global.Unsubscribe(p)
-
+func (p *Player) close(msg string) {
 	p.sMutex.Lock()
 	s := p.s
 	p.s = nil
 	p.sMutex.Unlock()
 
-	// Clear the inventories so that they no longer hold references to the connection.
-	_ = p.inv.Close()
-	_ = p.offHand.Close()
-	_ = p.armour.Close()
+	p.hMutex.Lock()
+	h := p.h
+	p.h = NopHandler{}
+	p.hMutex.Unlock()
+
+	// If the player is being disconnected while they are dead, we respawn the player
+	// so that the player logic works correctly the next time they join.
+	if p.Dead() && s != nil {
+		p.Respawn()
+	}
+	h.HandleQuit()
 
 	if s == nil {
+		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
+		// session will remove the player once ready.
 		p.World().RemoveEntity(p)
-	} else {
-		s.CloseConnection()
+		return
 	}
+	s.Disconnect(msg)
+	s.CloseConnection()
 }
 
 // load reads the player data from the provider. It uses the default values if the provider

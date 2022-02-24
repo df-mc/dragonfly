@@ -891,6 +891,8 @@ func (w *World) AddEntity(e Entity) {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
+
+	w.Handler().HandleEntitySpawn(e)
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -911,6 +913,8 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 	w.entityMu.Unlock()
+
+	w.Handler().HandleEntityDespawn(e)
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
