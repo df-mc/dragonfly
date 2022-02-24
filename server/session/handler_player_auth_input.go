@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -60,17 +59,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	}
 	s.teleportMu.Unlock()
 
-	_, submergedBefore := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c)))
-
 	s.c.Move(deltaPos, deltaYaw, deltaPitch)
-
-	_, submergedAfter := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c)))
-
-	if submergedBefore != submergedAfter {
-		// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,
-		// so send the updated metadata.
-		s.ViewEntityState(s.c)
-	}
 
 	s.chunkLoader.Move(s.c.Position())
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{

@@ -1828,6 +1828,14 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.yaw.Store(resYaw)
 		p.pitch.Store(resPitch)
 
+		_, submergedBefore := w.Liquid(cube.PosFromVec3(pos.Add(mgl64.Vec3{0, p.EyeHeight()})))
+		_, submergedAfter := w.Liquid(cube.PosFromVec3(res.Add(mgl64.Vec3{0, p.EyeHeight()})))
+		if submergedBefore != submergedAfter {
+			// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,
+			// so send the updated metadata.
+			p.session().ViewEntityState(p)
+		}
+
 		p.checkBlockCollisions(w)
 		p.onGround.Store(p.checkOnGround(w))
 
