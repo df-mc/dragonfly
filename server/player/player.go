@@ -1797,10 +1797,8 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
-	if p.session() != session.Nop {
-		for _, v := range p.viewers() {
-			v.ViewEntityTeleport(p, pos)
-		}
+	for _, v := range p.viewers() {
+		v.ViewEntityTeleport(p, pos)
 	}
 	p.pos.Store(pos)
 }
@@ -1844,7 +1842,9 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 	})
 	ctx.Stop(func() {
-		p.teleport(pos)
+		if p.session() != session.Nop {
+			p.teleport(pos)
+		}
 	})
 }
 
