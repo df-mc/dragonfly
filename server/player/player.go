@@ -775,15 +775,7 @@ func (p *Player) kill(src damage.Source) {
 	p.StopSprinting()
 
 	w := p.World()
-	pos := p.Position()
-	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
-		itemEntity := entity.NewItem(it, pos)
-		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		w.AddEntity(itemEntity)
-	}
-	p.inv.Clear()
-	p.armour.Clear()
-	p.offHand.Clear()
+	p.dropItems()
 
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
@@ -803,6 +795,19 @@ func (p *Player) kill(src damage.Source) {
 			p.pos.Store(w.Spawn().Vec3())
 		}
 	})
+}
+
+// dropItems drops all items in any inventory of the Player on the ground in random directions.
+func (p *Player) dropItems() {
+	w, pos := p.World(), p.Position()
+	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
+		itemEntity := entity.NewItem(it, pos)
+		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+		w.AddEntity(itemEntity)
+	}
+	p.inv.Clear()
+	p.armour.Clear()
+	p.offHand.Clear()
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
@@ -2258,7 +2263,7 @@ func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
 
 // addNewItem adds the new item of the context passed to the inventory.
 func (p *Player) addNewItem(ctx *item.UseContext) {
-	if p.Dead() || (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Empty() {
+	if (ctx.NewItemSurvivalOnly && p.GameMode().CreativeInventory()) || ctx.NewItem.Empty() {
 		return
 	}
 	held, left := p.HeldItems()
@@ -2270,6 +2275,9 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 	if err != nil {
 		// Not all items could be added to the inventory, so drop the rest.
 		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
+	}
+	if p.Dead() {
+		p.dropItems()
 	}
 }
 
