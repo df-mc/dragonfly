@@ -270,7 +270,7 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 func entityOffset(e world.Entity) mgl64.Vec3 {
 	switch e.(type) {
 	case Controllable:
-		return mgl64.Vec3{0, 1.62}
+		return mgl64.Vec3{0, 1.621}
 	case *entity.Item:
 		return mgl64.Vec3{0, 0.125}
 	case *entity.FallingBlock:
@@ -291,26 +291,41 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		return
 	}
 
+	yaw, pitch := e.Rotation()
+	onGround := false
+	if g, ok := e.(interface{ OnGround() bool }); ok && g.OnGround() {
+		onGround = true
+	}
+
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
 
 		s.teleportMu.Lock()
 		s.teleportPos = &position
 		s.teleportMu.Unlock()
-	}
 
-	flags := byte(packet.MoveFlagTeleport)
-	if g, ok := e.(interface{ OnGround() bool }); ok && g.OnGround() {
-		flags |= packet.MoveFlagOnGround
-	}
+		s.writePacket(&packet.MovePlayer{
+			EntityRuntimeID: id,
+			Position:        vec64To32(position.Add(entityOffset(e))),
+			Pitch:           float32(pitch),
+			Yaw:             float32(yaw),
+			HeadYaw:         float32(yaw),
+			OnGround:        onGround,
+			Mode:            packet.MoveModeTeleport,
+		})
+	} else {
+		flags := byte(packet.MoveFlagTeleport)
+		if onGround {
+			flags |= packet.MoveFlagOnGround
+		}
 
-	yaw, pitch := e.Rotation()
-	s.writePacket(&packet.MoveActorAbsolute{
-		EntityRuntimeID: id,
-		Position:        vec64To32(position.Add(entityOffset(e).Add(mgl64.Vec3{0, 0.001}))),
-		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-		Flags:           flags,
-	})
+		s.writePacket(&packet.MoveActorAbsolute{
+			EntityRuntimeID: id,
+			Position:        vec64To32(position.Add(entityOffset(e))),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+			Flags:           flags,
+		})
+	}
 }
 
 // ViewEntityItems ...
