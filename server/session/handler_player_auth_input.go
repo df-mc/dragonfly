@@ -36,7 +36,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		}
 	}
 
-	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.621}) // Subtract the base offset of players from the pos.
+	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Subtract the base offset of players from the pos.
 
 	newPos := vec32To64(pk.Position)
 	yaw, pitch := s.c.Rotation()
@@ -53,7 +53,6 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
-			s.log.Debugf("failed processing packet from %v (%v): %T: outdated movement, got %v but expected %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, newPos, *s.teleportPos)
 			s.teleportMu.Unlock()
 			return nil
 		}
