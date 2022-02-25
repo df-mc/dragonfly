@@ -34,6 +34,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionAbortBreak:
 		s.c.AbortBreaking()
 	case protocol.PlayerActionPredictDestroyBlock, protocol.PlayerActionStopBreak:
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
 		s.c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:
 		s.swingingArm.Store(true)
