@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // StoneBricksType represents a type of stone bricks.
 type StoneBricksType struct {
 	stoneBricks
@@ -47,21 +45,6 @@ func (s stoneBricks) Name() string {
 		return "Chiseled Stone Bricks"
 	}
 	panic("unknown stone bricks type")
-}
-
-// FromString ...
-func (s stoneBricks) FromString(str string) (interface{}, error) {
-	switch str {
-	case "normal", "default":
-		return NormalStoneBricks(), nil
-	case "mossy":
-		return MossyStoneBricks(), nil
-	case "cracked":
-		return CrackedStoneBricks(), nil
-	case "chiseled":
-		return ChiseledStoneBricks(), nil
-	}
-	return nil, fmt.Errorf("unexpected stone bricks type '%v'", s)
 }
 
 // String ...
