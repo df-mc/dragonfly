@@ -545,8 +545,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		totalDamage = p.FinalDamageFrom(dmg, source)
 		damageLeft := totalDamage
 
-		a := p.absorption()
-		if a > 0 && (effect.Absorption{}).Absorbs(source) {
+		if a := p.absorption(); a > 0 {
 			if damageLeft > a {
 				damageLeft -= a
 				p.SetAbsorption(0)
