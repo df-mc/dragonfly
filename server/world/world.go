@@ -123,6 +123,9 @@ func (w *World) Name() string {
 // Dimension returns the Dimension assigned to the World in world.New. The sky colour and behaviour of a variety of
 // world features differ based on the Dimension assigned to a World.
 func (w *World) Dimension() Dimension {
+	if w == nil {
+		return nopDim{}
+	}
 	return w.d
 }
 

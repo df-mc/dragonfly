@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"math"
 	"time"
 )
 
@@ -30,6 +31,7 @@ type (
 	overworld struct{}
 	nether    struct{}
 	end       struct{}
+	nopDim    struct{}
 )
 
 func (overworld) Range() cube.Range                 { return cube.Range{-64, 320} }
@@ -55,3 +57,11 @@ func (end) LavaSpreadDuration() time.Duration { return time.Second * 3 / 2 }
 func (end) WeatherCycle() bool                { return false }
 func (end) TimeCycle() bool                   { return false }
 func (end) String() string                    { return "End" }
+
+func (nopDim) Range() cube.Range                 { return cube.Range{} }
+func (nopDim) EncodeDimension() int              { return -1 }
+func (nopDim) WaterEvaporates() bool             { return false }
+func (nopDim) LavaSpreadDuration() time.Duration { return math.MaxInt64 }
+func (nopDim) WeatherCycle() bool                { return false }
+func (nopDim) TimeCycle() bool                   { return false }
+func (nopDim) String() string                    { return "" }
