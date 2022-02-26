@@ -11,7 +11,7 @@ import (
 type Portal struct {
 	transparent
 
-	// Axis is the axis which the chain faces.
+	// Axis is the axis which the portal faces.
 	Axis cube.Axis
 }
 
