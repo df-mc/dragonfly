@@ -103,36 +103,29 @@ type Player struct {
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
-		name:     name,
-		skin:     skin,
-		uuid:     uuid.New(),
-		gameMode: world.GameModeSurvival,
-
 		inv: inventory.New(36, func(slot int, item item.Stack) {
 			if slot == int(p.heldSlot.Load()) {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		offHand: inventory.New(1, p.broadcastItems),
-		armour:  inventory.NewArmour(p.broadcastArmour),
-
-		cooldowns: make(map[itemHash]time.Time),
+		uuid:      uuid.New(),
+		offHand:   inventory.New(1, p.broadcastItems),
+		armour:    inventory.NewArmour(p.broadcastArmour),
+		hunger:    newHungerManager(),
+		health:    entity.NewHealthManager(),
+		effects:   entity.NewEffectManager(),
+		gameMode:  world.GameModeSurvival,
+		h:         NopHandler{},
+		name:      name,
+		skin:      skin,
+		speed:     *atomic.NewFloat64(0.1),
+		nameTag:   *atomic.NewString(name),
 		heldSlot:  atomic.NewUint32(0),
-
-		hunger:  newHungerManager(),
-		health:  entity.NewHealthManager(),
-		effects: entity.NewEffectManager(),
-
-		speed: *atomic.NewFloat64(0.1),
-		scale: *atomic.NewFloat64(1),
-
-		nameTag: *atomic.NewString(name),
-		locale:  language.BritishEnglish,
-
-		tc: &entity.TravelComputer{Instantaneous: func() bool { return p.GameMode().CreativeInventory() }},
-		mc: &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
-
-		h: NopHandler{},
+		locale:    language.BritishEnglish,
+		scale:     *atomic.NewFloat64(1),
+		cooldowns: make(map[itemHash]time.Time),
+		mc:        &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		tc:        &entity.TravelComputer{Instantaneous: func() bool { return p.GameMode().CreativeInventory() }},
 	}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
