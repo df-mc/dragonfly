@@ -124,7 +124,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		locale:    language.BritishEnglish,
 		scale:     *atomic.NewFloat64(1),
 		cooldowns: make(map[itemHash]time.Time),
-		mc:        &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		mc:        &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		tc:        &entity.TravelComputer{Instantaneous: func() bool { return p.GameMode().CreativeInventory() }},
 	}
 	p.pos.Store(pos)

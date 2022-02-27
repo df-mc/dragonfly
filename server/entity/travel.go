@@ -21,7 +21,7 @@ type TravelComputer struct {
 	timedOut       bool
 }
 
-// Traveller represents a world.Entity that can travel between worlds.
+// Traveller represents a world.Entity that can travel between dimensions.
 type Traveller interface {
 	// Teleport teleports the entity to the position given.
 	Teleport(pos mgl64.Vec3)
