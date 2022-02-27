@@ -12,7 +12,7 @@ import (
 // TravelComputer handles the interdimensional travelling of an entity.
 type TravelComputer struct {
 	// Instantaneous is a function that returns true if the entity given can travel instantly.
-	Instantaneous func(world.Entity) bool
+	Instantaneous func() bool
 
 	mu             sync.RWMutex
 	start          time.Time
@@ -45,7 +45,7 @@ func (t *TravelComputer) TickTravelling(w *world.World, e Traveller) {
 						t.mu.Unlock()
 
 						if !timeOut {
-							if t.Instantaneous(e) || (awaitingTravel && time.Since(start) >= time.Second*4) {
+							if t.Instantaneous() || (awaitingTravel && time.Since(start) >= time.Second*4) {
 								d, _ := w.PortalDestinations()
 								t.Travel(e, w, d)
 							} else if !awaitingTravel {

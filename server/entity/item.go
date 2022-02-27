@@ -35,7 +35,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 		i:           i,
 		pickupDelay: 10,
 
-		t: &TravelComputer{Instantaneous: func(entity world.Entity) bool { return true }},
+		t: &TravelComputer{Instantaneous: func() bool { return true }},
 		c: &MovementComputer{
 			Gravity:           0.04,
 			DragBeforeGravity: true,

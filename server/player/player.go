@@ -129,7 +129,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		nameTag: *atomic.NewString(name),
 		locale:  language.BritishEnglish,
 
-		tc: &entity.TravelComputer{Instantaneous: func(world.Entity) bool { return p.GameMode().CreativeInventory() }},
+		tc: &entity.TravelComputer{Instantaneous: func() bool { return p.GameMode().CreativeInventory() }},
 		mc: &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 
 		h: NopHandler{},
