@@ -20,14 +20,19 @@ func (p Portal) Model() world.BlockModel {
 	return model.Portal{Axis: p.Axis}
 }
 
-// EncodeBlock ...
-func (p Portal) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:portal", map[string]interface{}{"portal_axis": p.Axis.String()}
+// Portal ...
+func (Portal) Portal() world.Dimension {
+	return world.Nether
 }
 
 // HasLiquidDrops ...
 func (p Portal) HasLiquidDrops() bool {
 	return false
+}
+
+// EncodeBlock ...
+func (p Portal) EncodeBlock() (string, map[string]interface{}) {
+	return "minecraft:portal", map[string]interface{}{"portal_axis": p.Axis.String()}
 }
 
 // NeighbourUpdateTick ...

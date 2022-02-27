@@ -37,7 +37,10 @@ func (t *TravelComputer) TickTravelling(w *world.World, e Traveller) {
 		// Get all blocks that could touch the player and check if any of them intersect with a portal block.
 		for _, pos := range w.BlocksAround(aabb) {
 			b := w.Block(pos)
-			if name, _ := w.Block(pos).EncodeBlock(); name == "minecraft:portal" {
+			if p, ok := b.(interface {
+				// Portal returns the dimension the portal block takes you to.
+				Portal() world.Dimension
+			}); ok && p.Portal() == world.Nether {
 				for _, a := range b.Model().AABB(pos, w) {
 					if a.Translate(pos.Vec3()).IntersectsWith(aabb.Grow(0.25)) {
 						t.mu.Lock()
