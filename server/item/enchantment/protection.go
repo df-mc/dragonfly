@@ -85,9 +85,12 @@ func (e Protection) Affects(src damage.Source) bool {
 	return src == damage.SourceEntityAttack{} || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
 }
 
-// Subtrahend returns the amount of damage that should be subtracted with protection.
-func (e Protection) Subtrahend(level int) float64 {
-	return float64(level) / 20
+// Multiplier returns the damage multiplier of protection.
+func (e Protection) Multiplier(lvl int) float64 {
+	if lvl > 20 {
+		lvl = 20
+	}
+	return 1 - float64(lvl)/25
 }
 
 // Name ...
