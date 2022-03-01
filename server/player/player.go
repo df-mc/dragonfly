@@ -586,7 +586,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
 		defencePoints := 0.0
-		for _, it := range p.armour.Slots() {
+		for _, it := range p.armour.Items() {
 			if a, ok := it.Item().(item.Armour); ok {
 				defencePoints += a.DefencePoints()
 			}
@@ -598,11 +598,13 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
+	t := 0
 	for _, it := range p.armour.Items() {
-		if p, ok := it.Enchantment(enchantment.Protection{}); ok {
-			dmg -= (enchantment.Protection{}).Subtrahend(p.Level())
+		if p, ok := it.Enchantment(enchantment.Protection{}); ok && (enchantment.Protection{}).Affects(src) {
+			t += p.Level() + 1
 		}
 	}
+	dmg *= (enchantment.Protection{}).Multiplier(t)
 	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
 		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
 	}
