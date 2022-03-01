@@ -19,6 +19,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
+	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -537,7 +538,7 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 
 	w := world.New(log, d, s)
 
-	p, err := mcdb.New(server.c.World.Folder, d)
+	p, err := mcdb.New(server.c.World.Folder, d, opt.FlateCompression)
 	if err != nil {
 		log.Fatalf("error loading world: %v", err)
 	}

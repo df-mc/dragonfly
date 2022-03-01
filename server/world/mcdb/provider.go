@@ -32,7 +32,10 @@ const chunkVersion = 27
 // New creates a new provider reading and writing from/to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
 // error is returned.
-func New(dir string, d world.Dimension) (*Provider, error) {
+// A compression type may be passed which will be used for the compression of new blocks written to the database. This
+// will only influence the compression. Decompression of the database will happen based on IDs found in the compressed
+// blocks.
+func New(dir string, d world.Dimension, compression opt.Compression) (*Provider, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
 	p := &Provider{dir: dir, dim: d}
@@ -58,7 +61,7 @@ func New(dir string, d world.Dimension) (*Provider, error) {
 	if !ok {
 		var err error
 		if db, err = leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
-			Compression: opt.FlateCompression,
+			Compression: compression,
 			BlockSize:   16 * opt.KiB,
 		}); err != nil {
 			return nil, fmt.Errorf("error opening leveldb database: %w", err)
