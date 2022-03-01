@@ -1611,25 +1611,28 @@ func (w *World) tickEntities(tick int64) {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for viewers to view it.
 			w.entities[e] = chunkPos
-
-			old := w.chunks[lastPos]
-			old.Lock()
-			chunkEntities := make([]Entity, 0, len(old.entities))
-			for _, entity := range old.entities {
-				if entity == e {
-					continue
-				}
-				chunkEntities = append(chunkEntities, entity)
-			}
-			old.entities = chunkEntities
-
 			var viewers []Viewer
-			if len(old.v) > 0 {
-				viewers = make([]Viewer, len(old.v))
-				copy(viewers, old.v)
-			}
-			old.Unlock()
 
+			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
+			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
+			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
+			if old, ok := w.chunks[lastPos]; ok {
+				old.Lock()
+				chunkEntities := make([]Entity, 0, len(old.entities))
+				for _, entity := range old.entities {
+					if entity == e {
+						continue
+					}
+					chunkEntities = append(chunkEntities, entity)
+				}
+				old.entities = chunkEntities
+
+				if len(old.v) > 0 {
+					viewers = make([]Viewer, len(old.v))
+					copy(viewers, old.v)
+				}
+				old.Unlock()
+			}
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
