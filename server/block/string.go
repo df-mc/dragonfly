@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -10,6 +9,7 @@ import (
 
 // String is an item dropped by spiders and cobwebs. When placed, it turns into a tripwire.
 type String struct {
+	empty
 	transparent
 }
 
@@ -27,10 +27,6 @@ func (s String) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 // BreakInfo ...
 func (s String) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(String{}))
-}
-
-func (s String) Model() world.BlockModel {
-	return model.Empty{}
 }
 
 // EncodeItem ...
