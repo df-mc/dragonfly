@@ -65,14 +65,7 @@ func infinitelyBurning(pos cube.Pos, w *world.World) bool {
 func (f Fire) burn(from, to cube.Pos, w *world.World, r *rand.Rand, chanceBound int) {
 	if flammable, ok := w.Block(to).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		if r.Intn(f.Age+10) < 5 && !rainingAround(to, w) {
-			age := min(15, f.Age+r.Intn(5)/4)
-
-			ctx := event.C()
-			w.Handler().HandleFireSpread(ctx, from, to, &age)
-			ctx.Continue(func() {
-				w.PlaceBlock(to, Fire{Type: f.Type, Age: age})
-				w.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
-			})
+			f.spread(from, to, w, r)
 		} else {
 			w.BreakBlockWithoutParticles(to)
 		}
@@ -169,18 +162,28 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				maxChance := (encouragement + 40 + w.Difficulty().FireSpreadIncrease()) / (f.Age + 30)
 
 				if maxChance > 0 && r.Intn(randomBound) <= maxChance && !rainingAround(blockPos, w) {
-					age := min(15, f.Age+r.Intn(5)/4)
-
-					ctx := event.C()
-					w.Handler().HandleFireSpread(ctx, pos, blockPos, &age)
-					ctx.Continue(func() {
-						w.PlaceBlock(blockPos, Fire{Type: f.Type, Age: age})
-						w.ScheduleBlockUpdate(blockPos, time.Duration(30+r.Intn(10))*time.Second/20)
-					})
+					f.spread(pos, blockPos, w, r)
 				}
 			}
 		}
 	}
+}
+
+// spread attempts to spread fire from a cube.Pos to another. If the block burn or fire spreading events are cancelled,
+// this might end up not happening.
+func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
+	ctx := event.C()
+	if _, air := w.Block(to).(Air); !air {
+		w.Handler().HandleBlockBurn(ctx, to)
+	}
+	ctx.Continue(func() {
+		ctx = event.C()
+		w.Handler().HandleFireSpread(ctx, from, to)
+		ctx.Continue(func() {
+			w.PlaceBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)})
+			w.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
+		})
+	})
 }
 
 // EntityInside ...

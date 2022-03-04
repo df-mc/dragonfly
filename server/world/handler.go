@@ -23,35 +23,29 @@ type Handler interface {
 	// called, both the position of the original fire will be passed, and the position where it will spread to after the
 	// event. The age of the fire may also be altered by changing the underlying value of the newFireAge pointer, which
 	// decides how long the fire will stay before burning out.
-	HandleFireSpread(ctx *event.Context, from, to cube.Pos, newFireAge *int)
+	HandleFireSpread(ctx *event.Context, from, to cube.Pos)
+	// HandleBlockBurn handles a block at a cube.Pos being burnt by fire. This event may be called for blocks such as
+	// wood, that can be broken by fire. HandleBlockBurn is often succeeded by HandleFireSpread, when fire spreads to
+	// the position of the original block and the event.Context is not cancelled in HandleBlockBurn.
+	HandleBlockBurn(ctx *event.Context, pos cube.Pos)
 	// HandleEntitySpawn handles an entity being spawned into a World through a call to World.AddEntity.
 	HandleEntitySpawn(e Entity)
 	// HandleEntityDespawn handles an entity being despawned from a World through a call to World.RemoveEntity.
 	HandleEntityDespawn(e Entity)
 }
 
+// Compile time check to make sure NopHandler implements Handler.
+var _ Handler = (*NopHandler)(nil)
+
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
 // default Handler of worlds is set to NopHandler.
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
-// Compile time check to make sure NopHandler implements Handler.
-var _ Handler = (*NopHandler)(nil)
-
-// HandleLiquidFlow ...
 func (NopHandler) HandleLiquidFlow(*event.Context, cube.Pos, cube.Pos, Block, Block) {}
-
-// HandleLiquidHarden ...
-func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Block) {}
-
-// HandleSound ...
-func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
-
-// HandleFireSpread ...
-func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos, *int) {}
-
-// HandleEntitySpawn ...
-func (NopHandler) HandleEntitySpawn(Entity) {}
-
-// HandleEntityDespawn ...
-func (NopHandler) HandleEntityDespawn(Entity) {}
+func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Block)  {}
+func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3)                     {}
+func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos)               {}
+func (NopHandler) HandleBlockBurn(*event.Context, cube.Pos)                          {}
+func (NopHandler) HandleEntitySpawn(Entity)                                          {}
+func (NopHandler) HandleEntityDespawn(Entity)                                        {}
