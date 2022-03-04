@@ -239,9 +239,6 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	} else {
 		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
-	if !mode.Visible() {
-		flags |= packet.AdventureFlagMuted
-	}
 	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative

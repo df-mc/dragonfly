@@ -296,24 +296,24 @@ func (server *Server) Close() error {
 	server.pwg.Wait()
 
 	server.log.Debugf("Closing player provider...")
-	err := server.playerProvider.Close()
-	if err != nil {
+	if err := server.playerProvider.Close(); err != nil {
 		server.log.Errorf("Error while closing player provider: %v", err)
 	}
 
 	server.log.Debugf("Closing worlds...")
-	if err = server.world.Close(); err != nil {
+	if err := server.world.Close(); err != nil {
 		server.log.Errorf("Error closing overworld: %v", err)
 	}
-	if err = server.nether.Close(); err != nil {
+	if err := server.nether.Close(); err != nil {
 		server.log.Errorf("Error closing nether %v", err)
 	}
-	if err = server.end.Close(); err != nil {
+	if err := server.end.Close(); err != nil {
 		server.log.Errorf("Error closing end: %v", err)
 	}
 
 	server.log.Debugf("Closing listeners...")
 	server.listenMu.Lock()
+
 	defer server.listenMu.Unlock()
 	for _, l := range server.listeners {
 		if err := l.Close(); err != nil {
