@@ -292,11 +292,6 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	}
 
 	yaw, pitch := e.Rotation()
-	onGround := false
-	if g, ok := e.(interface{ OnGround() bool }); ok && g.OnGround() {
-		onGround = true
-	}
-
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
 
@@ -310,22 +305,16 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
-			OnGround:        onGround,
 			Mode:            packet.MoveModeTeleport,
 		})
-	} else {
-		flags := byte(packet.MoveFlagTeleport)
-		if onGround {
-			flags |= packet.MoveFlagOnGround
-		}
-
-		s.writePacket(&packet.MoveActorAbsolute{
-			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-			Flags:           flags,
-		})
+		return
 	}
+	s.writePacket(&packet.MoveActorAbsolute{
+		EntityRuntimeID: id,
+		Position:        vec64To32(position.Add(entityOffset(e))),
+		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+		Flags:           byte(packet.MoveFlagTeleport),
+	})
 }
 
 // ViewEntityItems ...
