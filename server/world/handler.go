@@ -19,6 +19,11 @@ type Handler interface {
 	// HandleSound handles a Sound being played in the World at a specific position. ctx.Cancel() may be called
 	// to stop the Sound from playing to viewers of the position.
 	HandleSound(ctx *event.Context, s Sound, pos mgl64.Vec3)
+	// HandleFireSpread handles when a fire block spreads from one block to another block. When this event handler gets
+	// called, both the position of the original fire will be passed, and the position where it will spread to after the
+	// event. The age of the fire may also be altered by changing the underlying value of the newFireAge pointer, which
+	// decides how long the fire will stay before burning out.
+	HandleFireSpread(ctx *event.Context, from, to cube.Pos, newFireAge *int)
 	// HandleEntitySpawn handles an entity being spawned into a World through a call to World.AddEntity.
 	HandleEntitySpawn(e Entity)
 	// HandleEntityDespawn handles an entity being despawned from a World through a call to World.RemoveEntity.
@@ -41,6 +46,9 @@ func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Blo
 
 // HandleSound ...
 func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
+
+// HandleFireSpread ...
+func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos, *int) {}
 
 // HandleEntitySpawn ...
 func (NopHandler) HandleEntitySpawn(Entity) {}
