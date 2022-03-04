@@ -123,6 +123,9 @@ func (w *World) Name() string {
 // Dimension returns the Dimension assigned to the World in world.New. The sky colour and behaviour of a variety of
 // world features differ based on the Dimension assigned to a World.
 func (w *World) Dimension() Dimension {
+	if w == nil {
+		return nopDim{}
+	}
 	return w.d
 }
 
@@ -856,17 +859,16 @@ func (w *World) AddEntity(e Entity) {
 	}
 	c.entities = append(c.entities, e)
 
-	var viewers []Viewer
-	if len(c.v) > 0 {
-		viewers = make([]Viewer, len(c.v))
-		copy(viewers, c.v)
-	}
+	viewers := make([]Viewer, len(c.v))
+	copy(viewers, c.v)
 	c.Unlock()
 
 	for _, viewer := range viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
+
+	w.Handler().HandleEntitySpawn(e)
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -888,6 +890,8 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	w.entityMu.Unlock()
 
+	w.Handler().HandleEntityDespawn(e)
+
 	worldsMu.Lock()
 	delete(entityWorlds, e)
 	worldsMu.Unlock()
@@ -907,11 +911,8 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	c.entities = n
 
-	var viewers []Viewer
-	if len(c.v) > 0 {
-		viewers = make([]Viewer, len(c.v))
-		copy(viewers, c.v)
-	}
+	viewers := make([]Viewer, len(c.v))
+	copy(viewers, c.v)
 	c.Unlock()
 
 	w.entityMu.Lock()
@@ -941,8 +942,15 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
+			var entities []Entity
 			c.Lock()
-			for _, entity := range c.entities {
+			if len(c.entities) > 0 {
+				entities = make([]Entity, len(c.entities))
+				copy(entities, c.entities)
+			}
+			c.Unlock()
+
+			for _, entity := range entities {
 				if ignored != nil && ignored(entity) {
 					continue
 				}
@@ -951,7 +959,6 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 					m = append(m, entity)
 				}
 			}
-			c.Unlock()
 		}
 	}
 	return m
@@ -1088,8 +1095,8 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 		return
 	}
 	w.updateMu.Lock()
+	defer w.updateMu.Unlock()
 	if _, exists := w.blockUpdates[pos]; exists {
-		w.updateMu.Unlock()
 		return
 	}
 	w.set.Lock()
@@ -1097,7 +1104,6 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	w.set.Unlock()
 
 	w.blockUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
-	w.updateMu.Unlock()
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
@@ -1605,25 +1611,28 @@ func (w *World) tickEntities(tick int64) {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for viewers to view it.
 			w.entities[e] = chunkPos
-
-			old := w.chunks[lastPos]
-			old.Lock()
-			chunkEntities := make([]Entity, 0, len(old.entities))
-			for _, entity := range old.entities {
-				if entity == e {
-					continue
-				}
-				chunkEntities = append(chunkEntities, entity)
-			}
-			old.entities = chunkEntities
-
 			var viewers []Viewer
-			if len(old.v) > 0 {
-				viewers = make([]Viewer, len(old.v))
-				copy(viewers, old.v)
-			}
-			old.Unlock()
 
+			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
+			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
+			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
+			if old, ok := w.chunks[lastPos]; ok {
+				old.Lock()
+				chunkEntities := make([]Entity, 0, len(old.entities))
+				for _, entity := range old.entities {
+					if entity == e {
+						continue
+					}
+					chunkEntities = append(chunkEntities, entity)
+				}
+				old.entities = chunkEntities
+
+				if len(old.v) > 0 {
+					viewers = make([]Viewer, len(old.v))
+					copy(viewers, old.v)
+				}
+				old.Unlock()
+			}
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
@@ -1714,11 +1723,9 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
 func (w *World) allViewers() (v []Viewer) {
 	w.viewersMu.Lock()
-	if len(w.viewers) > 0 {
-		v = make([]Viewer, 0, len(w.viewers))
-		for viewer := range w.viewers {
-			v = append(v, viewer)
-		}
+	v = make([]Viewer, 0, len(w.viewers))
+	for viewer := range w.viewers {
+		v = append(v, viewer)
 	}
 	w.viewersMu.Unlock()
 	return
@@ -1752,11 +1759,8 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	}
 	c.v = append(c.v, viewer)
 
-	var entities []Entity
-	if len(c.entities) > 0 {
-		entities = make([]Entity, len(c.entities))
-		copy(entities, c.entities)
-	}
+	entities := make([]Entity, len(c.entities))
+	copy(entities, c.entities)
 	c.Unlock()
 
 	for _, entity := range entities {
@@ -1784,15 +1788,12 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 	}
 	c.v = n
 
-	var entities []Entity
-	if len(c.entities) > 0 {
-		entities = make([]Entity, len(c.entities))
-		copy(entities, c.entities)
-	}
+	e := make([]Entity, len(c.entities))
+	copy(e, c.entities)
 	c.Unlock()
 
 	// After removing the viewer from the chunk, we also need to hide all entities from the viewer.
-	for _, entity := range entities {
+	for _, entity := range e {
 		viewer.HideEntity(entity)
 	}
 }

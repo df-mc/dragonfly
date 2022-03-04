@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // FlowerType represents a type of flower.
 type FlowerType struct {
 	flower
@@ -110,39 +108,6 @@ func (f flower) Name() string {
 		return "Wither Rose"
 	}
 	panic("unknown flower type")
-}
-
-// FromString ...
-func (f flower) FromString(s string) (interface{}, error) {
-	switch s {
-	case "dandelion":
-		return FlowerType{flower(0)}, nil
-	case "poppy":
-		return FlowerType{flower(1)}, nil
-	case "orchid":
-		return FlowerType{flower(2)}, nil
-	case "allium":
-		return FlowerType{flower(3)}, nil
-	case "houstonia":
-		return FlowerType{flower(4)}, nil
-	case "tulip_red":
-		return FlowerType{flower(5)}, nil
-	case "tulip_orange":
-		return FlowerType{flower(6)}, nil
-	case "tulip_white":
-		return FlowerType{flower(7)}, nil
-	case "tulip_pink":
-		return FlowerType{flower(8)}, nil
-	case "oxeye":
-		return FlowerType{flower(9)}, nil
-	case "cornflower":
-		return FlowerType{flower(10)}, nil
-	case "lily_of_the_valley":
-		return FlowerType{flower(11)}, nil
-	case "wither_rose":
-		return FlowerType{flower(12)}, nil
-	}
-	return nil, fmt.Errorf("unexpected flower type '%v', expecting one of 'dandelion', 'poppy', 'orchid', 'allium', 'houstonia', 'tulip_red', 'tulip_orange', 'tulip_white', 'tulip_pink', 'oxeye', 'cornflower', 'lily_of_the_valley', or 'wither_rose'", s)
 }
 
 // String ...

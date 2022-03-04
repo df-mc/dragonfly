@@ -19,6 +19,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
+	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -253,6 +254,12 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 	server.playerProvider = provider
 }
 
+// AddResourcePack loads a resource pack to the server. The pack will eventually be sent to clients who join the
+// server when started.
+func (server *Server) AddResourcePack(pack *resource.Pack) {
+	server.resources = append(server.resources, pack)
+}
+
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...interface{}) {
@@ -289,24 +296,24 @@ func (server *Server) Close() error {
 	server.pwg.Wait()
 
 	server.log.Debugf("Closing player provider...")
-	err := server.playerProvider.Close()
-	if err != nil {
+	if err := server.playerProvider.Close(); err != nil {
 		server.log.Errorf("Error while closing player provider: %v", err)
 	}
 
 	server.log.Debugf("Closing worlds...")
-	if err = server.world.Close(); err != nil {
+	if err := server.world.Close(); err != nil {
 		server.log.Errorf("Error closing overworld: %v", err)
 	}
-	if err = server.nether.Close(); err != nil {
+	if err := server.nether.Close(); err != nil {
 		server.log.Errorf("Error closing nether %v", err)
 	}
-	if err = server.end.Close(); err != nil {
+	if err := server.end.Close(); err != nil {
 		server.log.Errorf("Error closing end: %v", err)
 	}
 
 	server.log.Debugf("Closing listeners...")
 	server.listenMu.Lock()
+
 	defer server.listenMu.Unlock()
 	for _, l := range server.listeners {
 		if err := l.Close(); err != nil {
@@ -356,7 +363,7 @@ func (server *Server) Listen(l Listener) {
 			a := server.a
 			server.aMu.Unlock()
 
-			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData()); !ok {
+			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
 				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
 				_ = c.Close()
 				continue
@@ -531,7 +538,7 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 
 	w := world.New(log, d, s)
 
-	p, err := mcdb.New(server.c.World.Folder, d)
+	p, err := mcdb.New(server.c.World.Folder, d, opt.FlateCompression)
 	if err != nil {
 		log.Fatalf("error loading world: %v", err)
 	}
@@ -660,13 +667,13 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 		panic(err)
 	}
 	for _, entry := range resources {
-		r, err := resource.Compile(filepath.Join(p, entry.Name()))
+		pack, err := resource.Compile(filepath.Join(p, entry.Name()))
 		if err != nil {
 			log.Infof("Failed to load resource: %v", entry.Name())
 			continue
 		}
 
-		server.resources = append(server.resources, r)
+		server.AddResourcePack(pack)
 	}
 }
 

@@ -20,6 +20,8 @@ type Handler interface {
 	// HandleMove handles the movement of a player. ctx.Cancel() may be called to cancel the movement event.
 	// The new position, yaw and pitch are passed.
 	HandleMove(ctx *event.Context, newPos mgl64.Vec3, newYaw, newPitch float64)
+	// HandleJump handles the player jumping.
+	HandleJump()
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *event.Context, pos mgl64.Vec3)
 	// HandleChangeWorld handles when the player is added to a new world. before may be nil.
@@ -48,8 +50,10 @@ type Handler interface {
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(src damage.Source)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
-	// changed by assigning to *pos.
-	HandleRespawn(pos *mgl64.Vec3)
+	// changed by assigning to *pos. The world.World in which the Player is respawned may be modifying by assigning to
+	// *w. This world may be the world the Player died in, but it might also point to a different world (the overworld)
+	// if the Player died in the nether or end.
+	HandleRespawn(pos *mgl64.Vec3, w **world.World)
 	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
 	HandleSkinChange(ctx *event.Context, skin skin.Skin)
@@ -135,6 +139,9 @@ func (NopHandler) HandleItemDrop(*event.Context, *entity.Item) {}
 // HandleMove ...
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
 
+// HandleJump ...
+func (NopHandler) HandleJump() {}
+
 // HandleTeleport ...
 func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
 
@@ -208,7 +215,7 @@ func (NopHandler) HandleFoodLoss(*event.Context, int, int) {}
 func (NopHandler) HandleDeath(damage.Source) {}
 
 // HandleRespawn ...
-func (NopHandler) HandleRespawn(*mgl64.Vec3) {}
+func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World) {}
 
 // HandleQuit ...
 func (NopHandler) HandleQuit() {}

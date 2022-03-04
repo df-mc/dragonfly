@@ -24,6 +24,10 @@ type Handler interface {
 	// event. The age of the fire may also be altered by changing the underlying value of the newFireAge pointer, which
 	// decides how long the fire will stay before burning out.
 	HandleFireSpread(ctx *event.Context, from, to cube.Pos, newFireAge *int)
+	// HandleEntitySpawn handles an entity being spawned into a World through a call to World.AddEntity.
+	HandleEntitySpawn(e Entity)
+	// HandleEntityDespawn handles an entity being despawned from a World through a call to World.RemoveEntity.
+	HandleEntityDespawn(e Entity)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -45,3 +49,9 @@ func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3) {}
 
 // HandleFireSpread ...
 func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos, *int) {}
+
+// HandleEntitySpawn ...
+func (NopHandler) HandleEntitySpawn(Entity) {}
+
+// HandleEntityDespawn ...
+func (NopHandler) HandleEntityDespawn(Entity) {}

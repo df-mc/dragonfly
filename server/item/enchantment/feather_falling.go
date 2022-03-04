@@ -5,9 +5,7 @@ import (
 )
 
 // FeatherFalling is an enchantment to boots that reduces fall damage. It does not affect falling speed.
-type FeatherFalling struct {
-	enchantment
-}
+type FeatherFalling struct{}
 
 // Multiplier returns the damage multiplier of feather falling.
 func (e FeatherFalling) Multiplier(lvl int) float64 {
@@ -22,11 +20,6 @@ func (e FeatherFalling) Name() string {
 // MaxLevel ...
 func (e FeatherFalling) MaxLevel() int {
 	return 4
-}
-
-// WithLevel ...
-func (e FeatherFalling) WithLevel(level int) item.Enchantment {
-	return FeatherFalling{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...
