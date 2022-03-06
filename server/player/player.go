@@ -2077,13 +2077,13 @@ func (p *Player) starve(w *world.World) {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(w *world.World) {
-	aabb := p.AABB().Translate(p.Position())
-	min, max := aabb.Min(), aabb.Max()
+	aabb := p.AABB().Translate(p.Position()).Grow(-0.0001)
+	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
 
-	for x := min[0]; x < max[0]; x++ {
-		for y := min[1]; y < max[1]; y++ {
-			for z := min[2]; z < max[2]; z++ {
-				blockPos := cube.PosFromVec3(mgl64.Vec3{x, y, z})
+	for y := min[1]; y <= max[1]; y++ {
+		for x := min[0]; x <= max[0]; x++ {
+			for z := min[2]; z <= max[2]; z++ {
+				blockPos := cube.Pos{x, y, z}
 				b := w.Block(blockPos)
 				if collide, ok := b.(block.EntityInsider); ok {
 					collide.EntityInside(blockPos, w, p)
