@@ -1894,6 +1894,30 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	return c, nil
 }
 
+// setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
+// position.
+//lint:ignore U1000 This method is explicitly present to be used using compiler directives.
+func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
+	if w == nil {
+		return
+	}
+	if e == nil {
+		e = map[cube.Pos]Block{}
+	}
+	w.chunkMu.Lock()
+	defer w.chunkMu.Unlock()
+
+	data, ok := w.chunks[pos]
+	if ok {
+		data.Lock()
+		defer data.Unlock()
+	} else {
+		data = newChunkData(c)
+		w.chunks[pos] = data
+	}
+	data.e = e
+}
+
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
