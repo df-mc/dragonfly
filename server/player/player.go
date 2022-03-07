@@ -2346,14 +2346,13 @@ func (p *Player) close(msg string) {
 	p.h = NopHandler{}
 	p.hMutex.Unlock()
 
-	s.Disconnect(msg)
-	s.CloseConnection()
-
-	if s == nil {
+	if s != nil {
+		s.Disconnect(msg)
+		s.CloseConnection()
+	} else {
 		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
 		// session will remove the player once ready.
 		p.World().RemoveEntity(p)
-		return
 	}
 	h.HandleQuit()
 }
