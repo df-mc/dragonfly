@@ -1,12 +1,20 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Cobweb is a block that can slow down entity movement and negate fall damage.
 type Cobweb struct {
 	empty
+}
+
+func (Cobweb) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+	if fallEntity, ok := e.(fallDistanceEntity); ok {
+		fallEntity.ResetFallDistance()
+	}
 }
 
 // BreakInfo ...
