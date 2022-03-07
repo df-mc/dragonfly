@@ -889,7 +889,9 @@ func (p *Player) StartSneaking() {
 		if !p.sneaking.CAS(false, true) {
 			return
 		}
-		p.StopSprinting()
+		if !p.Flying() {
+			p.StopSprinting()
+		}
 		p.updateState()
 	})
 }
