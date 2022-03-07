@@ -11,12 +11,6 @@ type Cobweb struct {
 	empty
 }
 
-func (Cobweb) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if fallEntity, ok := e.(fallDistanceEntity); ok {
-		fallEntity.ResetFallDistance()
-	}
-}
-
 // BreakInfo ...
 func (c Cobweb) BreakInfo() BreakInfo {
 	return newBreakInfo(
@@ -32,6 +26,13 @@ func (c Cobweb) BreakInfo() BreakInfo {
 			return oneOf(String{})(t, e)
 		},
 	)
+}
+
+// EntityInside ...
+func (Cobweb) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+	if fallEntity, ok := e.(fallDistanceEntity); ok {
+		fallEntity.ResetFallDistance()
+	}
 }
 
 // EncodeItem ...
