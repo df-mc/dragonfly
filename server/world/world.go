@@ -469,7 +469,9 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
 			for _, viewer := range c.v {
-				viewer.ViewChunk(chunkPos, c.Chunk, c.e)
+				// The client will automatically request the relevant sub-chunks once we resend the skeleton chunks
+				// affected.
+				viewer.ViewSkeletonChunk(chunkPos, c.Chunk)
 			}
 			c.Unlock()
 		}

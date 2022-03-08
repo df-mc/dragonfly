@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -16,101 +15,125 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
 )
 
-// ViewChunk ...
-func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	if !s.conn.ClientCacheEnabled() {
-		s.sendNetworkChunk(pos, c, blockEntities)
-		return
+// ViewSubChunks ...
+func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]byte) {
+	w := s.c.World()
+	r := w.Range()
+
+	entries := make([]protocol.SubChunkEntry, len(offsets))
+	for _, offset := range offsets {
+		ch, ok := s.chunkLoader.Chunk(world.ChunkPos{
+			center.X() + int32(int8(offset[0])),
+			center.Z() + int32(int8(offset[2])),
+		})
+		if !ok {
+			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
+			continue
+		}
+
+		ind := int(center.Y()) + int(int8(offset[1])) - r[0]>>4
+		if ind < 0 || ind >= len(ch.Sub()) {
+			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
+			continue
+		}
+
+		sub := ch.Sub()[ind]
+		if sub.Empty() {
+			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultSuccessAllAir, Offset: offset})
+			continue
+		}
+
+		// God forgive me for this.
+		heightMapType, heightMap := byte(protocol.HeightMapDataHasData), make([]byte, 256)
+		higher, lower := true, true
+		for x := uint8(0); x < 16; x++ {
+			for z := uint8(0); z < 16; z++ {
+				y := ch.HighestBlock(x, z) + 1
+				otherInd := int(y>>4) - (r[0] >> 4)
+				mapInd := (uint16(x) << 4) | uint16(z)
+				if otherInd > ind {
+					heightMap[mapInd], lower = 16, false
+				} else if otherInd < ind {
+					heightMap[mapInd], higher = 255, false
+				} else {
+					heightMap[mapInd], lower, higher = byte((otherInd<<4)+r[0]), false, false
+				}
+			}
+		}
+		if higher {
+			heightMapType, heightMap = protocol.HeightMapDataTooHigh, nil
+		} else if lower {
+			heightMapType, heightMap = protocol.HeightMapDataTooLow, nil
+		}
+
+		entry := protocol.SubChunkEntry{
+			Result:        protocol.SubChunkResultSuccess,
+			RawPayload:    chunk.EncodeSubChunk(ch, chunk.NetworkEncoding, ind),
+			HeightMapType: heightMapType,
+			HeightMapData: heightMap,
+			Offset:        offset,
+		}
+		if s.conn.ClientCacheEnabled() {
+			hash := xxhash.Sum64(entry.RawPayload)
+			if !s.openTransaction(hash, entry.RawPayload) {
+				// Failed to open the transaction, so just stop here.
+				return
+			}
+			entry.BlobHash, entry.RawPayload = hash, []byte{}
+		}
+		entries = append(entries, entry)
 	}
-	s.sendBlobHashes(pos, c, blockEntities)
+	s.writePacket(&packet.SubChunk{
+		Dimension:       int32(w.Dimension().EncodeDimension()),
+		Position:        protocol.SubChunkPos(center),
+		CacheEnabled:    s.conn.ClientCacheEnabled(),
+		SubChunkEntries: entries,
+	})
 }
 
-// sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
-// data that the client doesn't yet have will be sent over the network.
-func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	var (
-		data   = chunk.Encode(c, chunk.NetworkEncoding)
-		count  = uint32(len(data.SubChunks))
-		blobs  = make([][]byte, count+1)
-		hashes = make([]uint64, len(blobs))
-		m      = make(map[uint64]struct{}, len(blobs))
-	)
-	for i := range data.SubChunks {
-		blobs[i] = data.SubChunks[i]
-	}
-	blobs[len(blobs)-1] = data.Biomes
-
-	for i, blob := range blobs {
-		h := xxhash.Sum64(blob)
-		hashes[i], m[h] = h, struct{}{}
+// ViewSkeletonChunk ...
+func (s *Session) ViewSkeletonChunk(pos world.ChunkPos, c *chunk.Chunk) {
+	biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
+	if !s.conn.ClientCacheEnabled() {
+		s.writePacket(&packet.LevelChunk{
+			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
+			Position:            protocol.ChunkPos(pos),
+			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
+			RawPayload:          biomes,
+		})
+		return
 	}
 
+	if hash := xxhash.Sum64(biomes); s.openTransaction(hash, biomes) {
+		s.writePacket(&packet.LevelChunk{
+			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
+			Position:            protocol.ChunkPos(pos),
+			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
+			BlobHashes:          []uint64{hash},
+			CacheEnabled:        true,
+		})
+	}
+}
+
+// openTransaction opens a chunk transaction for a given blob.
+func (s *Session) openTransaction(hash uint64, blob []byte) bool {
 	s.blobMu.Lock()
-	s.openChunkTransactions = append(s.openChunkTransactions, m)
+	defer s.blobMu.Unlock()
+
+	s.openChunkTransactions = append(s.openChunkTransactions, map[uint64]struct{}{hash: {}})
 	if l := len(s.blobs); l > 4096 {
 		s.blobMu.Unlock()
 		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), l)
 		_ = s.c.Close()
-		return
+		return false
 	}
-	for i := range hashes {
-		s.blobs[hashes[i]] = blobs[i]
-	}
-	s.blobMu.Unlock()
-
-	// Length of 1 byte for the border block count.
-	raw := bytes.NewBuffer(make([]byte, 1, 32))
-	enc := nbt.NewEncoderWithEncoding(raw, nbt.NetworkLittleEndian)
-	for bp, b := range blockEntities {
-		if n, ok := b.(world.NBTer); ok {
-			d := n.EncodeNBT()
-			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
-			_ = enc.Encode(d)
-		}
-	}
-
-	s.writePacket(&packet.LevelChunk{
-		Position:      protocol.ChunkPos{pos.X(), pos.Z()},
-		SubChunkCount: count,
-		CacheEnabled:  true,
-		BlobHashes:    hashes,
-		RawPayload:    raw.Bytes(),
-	})
-}
-
-// sendNetworkChunk sends a network encoded chunk to the client.
-func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	data := chunk.Encode(c, chunk.NetworkEncoding)
-
-	for i := range data.SubChunks {
-		_, _ = s.chunkBuf.Write(data.SubChunks[i])
-	}
-	_, _ = s.chunkBuf.Write(data.Biomes)
-
-	// Length of 1 byte for the border block count.
-	s.chunkBuf.WriteByte(0)
-
-	enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
-	for bp, b := range blockEntities {
-		if n, ok := b.(world.NBTer); ok {
-			d := n.EncodeNBT()
-			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
-			_ = enc.Encode(d)
-		}
-	}
-
-	s.writePacket(&packet.LevelChunk{
-		Position:      protocol.ChunkPos{pos.X(), pos.Z()},
-		SubChunkCount: uint32(len(data.SubChunks)),
-		RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
-	})
-	s.chunkBuf.Reset()
+	s.blobs[hash] = blob
+	return true
 }
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.

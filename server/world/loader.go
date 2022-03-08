@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"sync"
@@ -17,7 +18,7 @@ type Loader struct {
 	mu        sync.RWMutex
 	pos       ChunkPos
 	loadQueue []ChunkPos
-	loaded    map[ChunkPos]struct{}
+	loaded    map[ChunkPos]*chunk.Chunk
 
 	closed bool
 }
@@ -27,7 +28,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]struct{}), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunk.Chunk), viewer: v}
 	l.world(world)
 	return l
 }
@@ -100,10 +101,10 @@ func (l *Loader) Load(n int) error {
 			l.mu.Unlock()
 			return err
 		}
-		l.viewer.ViewChunk(pos, c.Chunk, c.e)
+		l.viewer.ViewSkeletonChunk(pos, c.Chunk)
 		l.w.addViewer(c, l.viewer)
 
-		l.loaded[pos] = struct{}{}
+		l.loaded[pos] = c.Chunk
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
@@ -111,6 +112,15 @@ func (l *Loader) Load(n int) error {
 	}
 	l.mu.Unlock()
 	return nil
+}
+
+// Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
+// be false.
+func (l *Loader) Chunk(pos ChunkPos) (*chunk.Chunk, bool) {
+	l.mu.RLock()
+	c, ok := l.loaded[pos]
+	l.mu.RUnlock()
+	return c, ok
 }
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
@@ -129,7 +139,7 @@ func (l *Loader) reset() {
 	for pos := range l.loaded {
 		l.w.removeViewer(pos, l.viewer)
 	}
-	l.loaded = map[ChunkPos]struct{}{}
+	l.loaded = map[ChunkPos]*chunk.Chunk{}
 	l.w.removeWorldViewer(l.viewer)
 }
 

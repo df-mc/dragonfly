@@ -53,34 +53,48 @@ type (
 // network or disk purposed, the most notable difference being that the network encoding generally uses varints and no
 // NBT.
 func Encode(c *Chunk, e Encoding) SerialisedData {
+	d := SerialisedData{SubChunks: make([][]byte, len(c.sub))}
+	for i := range c.sub {
+		d.SubChunks[i] = EncodeSubChunk(c, e, i)
+	}
+	d.Biomes = EncodeBiomes(c, e)
+	return d
+}
+
+// EncodeSubChunk encodes a sub-chunk from a chunk into bytes. An Encoding may be passed to encode either for network or
+// disk purposed, the most notable difference being that the network encoding generally uses varints and no NBT.
+func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	buf := pool.Get().(*bytes.Buffer)
 	defer func() {
 		buf.Reset()
 		pool.Put(buf)
 	}()
 
-	d := encodeSubChunks(buf, c, e)
-	for i := range c.biomes {
-		encodePalettedStorage(buf, c.biomes[i], e, BiomePaletteEncoding)
+	s := c.sub[ind]
+	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
+	for _, storage := range s.storages {
+		encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
 	}
-	d.Biomes = append([]byte(nil), buf.Bytes()...)
-
-	return d
+	sub := make([]byte, buf.Len())
+	_, _ = buf.Read(sub)
+	return sub
 }
 
-// encodeSubChunks encodes the sub chunks of the Chunk passed into the bytes.Buffer buf. It uses the encoding passed to
-// encode the block storages and returns the resulting SerialisedData.
-func encodeSubChunks(buf *bytes.Buffer, c *Chunk, e Encoding) (d SerialisedData) {
-	d.SubChunks = make([][]byte, len(c.sub))
-	for i, sub := range c.sub {
-		_, _ = buf.Write([]byte{SubChunkVersion, byte(len(sub.storages)), uint8(i + (c.r[0] >> 4))})
-		for _, storage := range sub.storages {
-			encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
-		}
-		d.SubChunks[i] = make([]byte, buf.Len())
-		_, _ = buf.Read(d.SubChunks[i])
+// EncodeBiomes encodes the biomes of a chunk into bytes. An Encoding may be passed to encode either for network or
+// disk purposed, the most notable difference being that the network encoding generally uses varints and no NBT.
+func EncodeBiomes(c *Chunk, e Encoding) []byte {
+	buf := pool.Get().(*bytes.Buffer)
+	defer func() {
+		buf.Reset()
+		pool.Put(buf)
+	}()
+
+	for _, b := range c.biomes {
+		encodePalettedStorage(buf, b, e, BiomePaletteEncoding)
 	}
-	return
+	biomes := make([]byte, buf.Len())
+	_, _ = buf.Read(biomes)
+	return biomes
 }
 
 // encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
