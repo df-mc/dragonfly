@@ -21,22 +21,22 @@ import (
 )
 
 // ViewSubChunks ...
-func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]byte) {
+func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 	w := s.c.World()
 	r := w.Range()
 
 	entries := make([]protocol.SubChunkEntry, len(offsets))
 	for _, offset := range offsets {
 		ch, ok := s.chunkLoader.Chunk(world.ChunkPos{
-			center.X() + int32(int8(offset[0])),
-			center.Z() + int32(int8(offset[2])),
+			center.X() + int32(offset[0]),
+			center.Z() + int32(offset[2]),
 		})
 		if !ok {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
 			continue
 		}
 
-		ind := int(center.Y()) + int(int8(offset[1])) - r[0]>>4
+		ind := int(center.Y()) + int(offset[1]) - r[0]>>4
 		if ind < 0 || ind >= len(ch.Sub()) {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
 			continue
@@ -54,7 +54,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]byte) {
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
 				y := ch.HighestBlock(x, z) + 1
-				otherInd := int(y>>4) - (r[0] >> 4)
+				otherInd := (int(y) - r[0]) >> 4
 				mapInd := (uint16(x) << 4) | uint16(z)
 				if otherInd > ind {
 					heightMap[mapInd], lower = 16, false

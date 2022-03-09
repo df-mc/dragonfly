@@ -151,6 +151,8 @@ github.com/sandertv/go-raknet v1.10.2 h1:aVwwSOhZQND6fo6aBJbJ4TSWIpfJWoxZMY//StA
 github.com/sandertv/go-raknet v1.10.2/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
 github.com/sandertv/gophertunnel v1.19.1 h1:qaiqOSFtBc5VjyMZD8RUdPJHSzGmaG4XplJB9q133II=
 github.com/sandertv/gophertunnel v1.19.1/go.mod h1:cu9ZDQVTXY1RJO/te3syrPvCeCAzKt9eB4jkSzXljTw=
+github.com/sandertv/gophertunnel v1.19.2 h1:SobH5W3zj2rsucH0arTpnhUbBzNsC51Ifzkog4l1QDc=
+github.com/sandertv/gophertunnel v1.19.2/go.mod h1:cu9ZDQVTXY1RJO/te3syrPvCeCAzKt9eB4jkSzXljTw=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
