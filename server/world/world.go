@@ -2127,6 +2127,27 @@ type chunkData struct {
 	entities []Entity
 }
 
+// BlockEntities returns the block entities of the chunk.
+func (c *chunkData) BlockEntities() map[cube.Pos]Block {
+	c.Lock()
+	defer c.Unlock()
+	return c.e
+}
+
+// Viewers returns the viewers of the chunk.
+func (c *chunkData) Viewers() []Viewer {
+	c.Lock()
+	defer c.Unlock()
+	return c.v
+}
+
+// Entities returns the entities of the chunk.
+func (c *chunkData) Entities() []Entity {
+	c.Lock()
+	defer c.Unlock()
+	return c.entities
+}
+
 // newChunkData returns a new chunkData wrapper around the chunk.Chunk passed.
 func newChunkData(c *chunk.Chunk) *chunkData {
 	return &chunkData{Chunk: c, e: map[cube.Pos]Block{}}

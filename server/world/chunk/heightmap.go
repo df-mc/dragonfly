@@ -18,7 +18,7 @@ func (a *lightArea) calculateHeightmap() (heightmap, int) {
 		if c.sub[index].Empty() {
 			continue
 		}
-		highestY = int(c.subY(int16(index))) + 15
+		highestY = int(c.SubY(int16(index))) + 15
 	}
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {

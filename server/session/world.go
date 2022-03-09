@@ -15,6 +15,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
@@ -25,7 +26,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 	w := s.c.World()
 	r := w.Range()
 
-	entries := make([]protocol.SubChunkEntry, len(offsets))
+	var entries []protocol.SubChunkEntry
 	for _, offset := range offsets {
 		ch, ok := s.chunkLoader.Chunk(world.ChunkPos{
 			center.X() + int32(offset[0]),
@@ -36,26 +37,28 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			continue
 		}
 
-		ind := int(center.Y()) + int(offset[1]) - r[0]>>4
-		if ind < 0 || ind >= len(ch.Sub()) {
+		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
+		if ind < 0 || ind >= int16(len(ch.Sub())) {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
 			continue
 		}
 
 		// God forgive me for this.
+		// TODO: Move this into *chunk.SubChunk so we don't have to generate this per request.
 		heightMapType, heightMap := byte(protocol.HeightMapDataHasData), make([]byte, 256)
 		higher, lower := true, true
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
 				y := ch.HighestLightBlocker(x, z) + 1
-				otherInd := (int(y) - r[0]) >> 4
-				mapInd := (uint16(x) << 4) | uint16(z)
+				i := (uint16(x) << 4) | uint16(z)
+
+				otherInd := ch.SubIndex(y)
 				if otherInd > ind {
-					heightMap[mapInd], lower = 16, false
+					heightMap[i], lower = 16, false
 				} else if otherInd < ind {
-					heightMap[mapInd], higher = 255, false
+					heightMap[i], higher = 255, false
 				} else {
-					heightMap[mapInd], lower, higher = byte(int(y)-((otherInd<<4)+r[0])), false, false
+					heightMap[i], lower, higher = byte(y-ch.SubY(otherInd)), false, false
 				}
 			}
 		}
@@ -76,13 +79,25 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			continue
 		}
 
+		_, _ = s.chunkBuf.Write(chunk.EncodeSubChunk(ch.Chunk, chunk.NetworkEncoding, int(ind)))
+		enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
+		for pos, b := range ch.BlockEntities() {
+			if n, ok := b.(world.NBTer); ok && ch.SubIndex(int16(pos.Y())) == ind {
+				d := n.EncodeNBT()
+				d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+				_ = enc.Encode(d)
+			}
+		}
+
 		entry := protocol.SubChunkEntry{
 			Result:        protocol.SubChunkResultSuccess,
-			RawPayload:    chunk.EncodeSubChunk(ch, chunk.NetworkEncoding, ind),
+			RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
 			HeightMapType: heightMapType,
 			HeightMapData: heightMap,
 			Offset:        offset,
 		}
+		s.chunkBuf.Reset()
+
 		if s.conn.ClientCacheEnabled() {
 			hash := xxhash.Sum64(entry.RawPayload)
 			if !s.openTransaction(hash, entry.RawPayload) {

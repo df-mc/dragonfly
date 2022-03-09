@@ -85,7 +85,7 @@ func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cu
 				if !filter(sub) {
 					continue
 				}
-				baseY := int(c.subY(int16(index)))
+				baseY := int(c.SubY(int16(index)))
 				a.iterSubChunk(func(x, y, z int) {
 					f(cube.Pos{x + baseX, y + baseY, z + baseZ})
 				})
@@ -210,7 +210,7 @@ func (a *lightArea) initialiseLightSlices() {
 
 // sub returns the SubChunk corresponding to a cube.Pos.
 func (a *lightArea) sub(pos cube.Pos) *SubChunk {
-	return a.chunk(pos).subChunk(int16(pos[1]))
+	return a.chunk(pos).SubChunk(int16(pos[1]))
 }
 
 // chunk returns the Chunk corresponding to a cube.Pos.
