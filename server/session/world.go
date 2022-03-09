@@ -53,15 +53,15 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		higher, lower := true, true
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				y := ch.HighestBlock(x, z) + 1
+				y := ch.HighestLightBlocker(x, z) + 1
 				otherInd := (int(y) - r[0]) >> 4
 				mapInd := (uint16(x) << 4) | uint16(z)
 				if otherInd > ind {
-					heightMap[mapInd], lower = 16, false
+					heightMap[mapInd], lower = 255, false
 				} else if otherInd < ind {
-					heightMap[mapInd], higher = 255, false
+					heightMap[mapInd], higher = 16, false
 				} else {
-					heightMap[mapInd], lower, higher = byte((otherInd<<4)+r[0]), false, false
+					heightMap[mapInd], lower, higher = byte(int(y)-((otherInd<<4)+r[0])), false, false
 				}
 			}
 		}

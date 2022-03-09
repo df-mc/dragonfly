@@ -28,7 +28,7 @@ type Viewer interface {
 	// target position.
 	ViewEntityTeleport(e Entity, position mgl64.Vec3)
 	// ViewSubChunks views the sub-chunks requested in the offsets passed.
-	ViewSubChunks(center SubChunkPos, offsets [][3]byte)
+	ViewSubChunks(center SubChunkPos, offsets [][3]int8)
 	// ViewSkeletonChunk views the skeleton chunk passed. It is called before the viewer requests sub-chunks.
 	ViewSkeletonChunk(pos ChunkPos, c *chunk.Chunk)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
@@ -79,7 +79,7 @@ func (NopViewer) HideEntity(Entity)                                             
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                         {}
 func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                         {}
-func (NopViewer) ViewSubChunks(SubChunkPos, [][3]byte)                          {}
+func (NopViewer) ViewSubChunks(SubChunkPos, [][3]int8)                          {}
 func (NopViewer) ViewSkeletonChunk(ChunkPos, *chunk.Chunk)                      {}
 func (NopViewer) ViewTime(int)                                                  {}
 func (NopViewer) ViewEntityItems(Entity)                                        {}
