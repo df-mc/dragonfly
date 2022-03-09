@@ -42,12 +42,6 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			continue
 		}
 
-		sub := ch.Sub()[ind]
-		if sub.Empty() {
-			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultSuccessAllAir, Offset: offset})
-			continue
-		}
-
 		// God forgive me for this.
 		heightMapType, heightMap := byte(protocol.HeightMapDataHasData), make([]byte, 256)
 		higher, lower := true, true
@@ -57,9 +51,9 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 				otherInd := (int(y) - r[0]) >> 4
 				mapInd := (uint16(x) << 4) | uint16(z)
 				if otherInd > ind {
-					heightMap[mapInd], lower = 255, false
+					heightMap[mapInd], lower = 16, false
 				} else if otherInd < ind {
-					heightMap[mapInd], higher = 16, false
+					heightMap[mapInd], higher = 255, false
 				} else {
 					heightMap[mapInd], lower, higher = byte(int(y)-((otherInd<<4)+r[0])), false, false
 				}
@@ -69,6 +63,17 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			heightMapType, heightMap = protocol.HeightMapDataTooHigh, nil
 		} else if lower {
 			heightMapType, heightMap = protocol.HeightMapDataTooLow, nil
+		}
+
+		sub := ch.Sub()[ind]
+		if sub.Empty() {
+			entries = append(entries, protocol.SubChunkEntry{
+				Result:        protocol.SubChunkResultSuccessAllAir,
+				HeightMapType: heightMapType,
+				HeightMapData: heightMap,
+				Offset:        offset,
+			})
+			continue
 		}
 
 		entry := protocol.SubChunkEntry{
