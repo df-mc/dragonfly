@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -79,8 +80,10 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			continue
 		}
 
-		_, _ = s.chunkBuf.Write(chunk.EncodeSubChunk(ch.Chunk, chunk.NetworkEncoding, int(ind)))
-		enc := nbt.NewEncoderWithEncoding(s.chunkBuf, nbt.NetworkLittleEndian)
+		serialisedSubChunk := chunk.EncodeSubChunk(ch.Chunk, chunk.NetworkEncoding, int(ind))
+
+		var blockEntityBuf bytes.Buffer
+		enc := nbt.NewEncoderWithEncoding(&blockEntityBuf, nbt.NetworkLittleEndian)
 		for pos, b := range ch.BlockEntities() {
 			if n, ok := b.(world.NBTer); ok && ch.SubIndex(int16(pos.Y())) == ind {
 				d := n.EncodeNBT()
@@ -91,20 +94,19 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 
 		entry := protocol.SubChunkEntry{
 			Result:        protocol.SubChunkResultSuccess,
-			RawPayload:    append([]byte(nil), s.chunkBuf.Bytes()...),
+			RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
 			HeightMapType: heightMapType,
 			HeightMapData: heightMap,
 			Offset:        offset,
 		}
-		s.chunkBuf.Reset()
-
 		if s.conn.ClientCacheEnabled() {
-			hash := xxhash.Sum64(entry.RawPayload)
-			if !s.openTransaction(hash, entry.RawPayload) {
+			hash := xxhash.Sum64(serialisedSubChunk)
+			if !s.openTransaction(hash, serialisedSubChunk) {
 				// Failed to open the transaction, so just stop here.
 				return
 			}
-			entry.BlobHash, entry.RawPayload = hash, []byte{}
+			entry.BlobHash = hash
+			entry.RawPayload = blockEntityBuf.Bytes()
 		}
 		entries = append(entries, entry)
 	}

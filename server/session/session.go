@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -42,7 +41,6 @@ type Session struct {
 	currentScoreboard atomic.String
 	currentLines      atomic.Value
 
-	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
@@ -137,7 +135,6 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 
 	s := &Session{
-		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(51, nil),
