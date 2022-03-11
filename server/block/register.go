@@ -94,6 +94,7 @@ func init() {
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(Bookshelf{})
+	world.RegisterBlock(SlimeBlock{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -259,6 +260,7 @@ func init() {
 	world.RegisterItem(SeaPickle{})
 	world.RegisterItem(Snow{})
 	world.RegisterItem(Bookshelf{})
+	world.RegisterItem(SlimeBlock{})
 	world.RegisterItem(Chain{})
 	world.RegisterItem(SandstoneStairs{})
 	world.RegisterItem(SandstoneStairs{Red: true})
