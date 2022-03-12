@@ -8,7 +8,7 @@ func init() {
 	item.RegisterEnchantment(2, FeatherFalling{})
 	item.RegisterEnchantment(3, BlastProtection{})
 	item.RegisterEnchantment(4, ProjectileProtection{})
-	item.RegisterEnchantment(5, Thorns{})
+	// TODO: (5) Thorns.
 	// TODO: (6) Respiration.
 	// TODO: (7) Depth Strider.
 	item.RegisterEnchantment(8, AquaAffinity{})

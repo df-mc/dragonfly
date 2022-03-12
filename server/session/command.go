@@ -10,6 +10,9 @@ import (
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
 // command, which might be the player or a websocket server.
 func (s *Session) SendCommandOutput(output *cmd.Output) {
+	if s == Nop {
+		return
+	}
 	messages := make([]protocol.CommandOutputMessage, 0, output.MessageCount()+output.ErrorCount())
 	for _, message := range output.Messages() {
 		messages = append(messages, protocol.CommandOutputMessage{

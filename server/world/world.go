@@ -123,6 +123,9 @@ func (w *World) Name() string {
 // Dimension returns the Dimension assigned to the World in world.New. The sky colour and behaviour of a variety of
 // world features differ based on the Dimension assigned to a World.
 func (w *World) Dimension() Dimension {
+	if w == nil {
+		return nopDim{}
+	}
 	return w.d
 }
 
@@ -864,6 +867,8 @@ func (w *World) AddEntity(e Entity) {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, viewer)
 	}
+
+	w.Handler().HandleEntitySpawn(e)
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -884,6 +889,8 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 	w.entityMu.Unlock()
+
+	w.Handler().HandleEntityDespawn(e)
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
@@ -1604,25 +1611,28 @@ func (w *World) tickEntities(tick int64) {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for viewers to view it.
 			w.entities[e] = chunkPos
-
-			old := w.chunks[lastPos]
-			old.Lock()
-			chunkEntities := make([]Entity, 0, len(old.entities))
-			for _, entity := range old.entities {
-				if entity == e {
-					continue
-				}
-				chunkEntities = append(chunkEntities, entity)
-			}
-			old.entities = chunkEntities
-
 			var viewers []Viewer
-			if len(old.v) > 0 {
-				viewers = make([]Viewer, len(old.v))
-				copy(viewers, old.v)
-			}
-			old.Unlock()
 
+			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
+			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
+			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
+			if old, ok := w.chunks[lastPos]; ok {
+				old.Lock()
+				chunkEntities := make([]Entity, 0, len(old.entities))
+				for _, entity := range old.entities {
+					if entity == e {
+						continue
+					}
+					chunkEntities = append(chunkEntities, entity)
+				}
+				old.entities = chunkEntities
+
+				if len(old.v) > 0 {
+					viewers = make([]Viewer, len(old.v))
+					copy(viewers, old.v)
+				}
+				old.Unlock()
+			}
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
 		}
 	}
@@ -1882,6 +1892,30 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 
 	c.Lock()
 	return c, nil
+}
+
+// setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
+// position.
+//lint:ignore U1000 This method is explicitly present to be used using compiler directives.
+func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
+	if w == nil {
+		return
+	}
+	if e == nil {
+		e = map[cube.Pos]Block{}
+	}
+	w.chunkMu.Lock()
+	defer w.chunkMu.Unlock()
+
+	data, ok := w.chunks[pos]
+	if ok {
+		data.Lock()
+		defer data.Unlock()
+	} else {
+		data = newChunkData(c)
+		w.chunks[pos] = data
+	}
+	data.e = e
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.

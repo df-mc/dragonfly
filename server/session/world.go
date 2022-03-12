@@ -291,18 +291,14 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		return
 	}
 
+	yaw, pitch := e.Rotation()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
 
 		s.teleportMu.Lock()
 		s.teleportPos = &position
 		s.teleportMu.Unlock()
-	}
 
-	yaw, pitch := e.Rotation()
-
-	switch e.(type) {
-	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
@@ -311,14 +307,14 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
 		})
-	default:
-		s.writePacket(&packet.MoveActorAbsolute{
-			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-			Flags:           packet.MoveFlagTeleport,
-		})
+		return
 	}
+	s.writePacket(&packet.MoveActorAbsolute{
+		EntityRuntimeID: id,
+		Position:        vec64To32(position.Add(entityOffset(e))),
+		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+		Flags:           byte(packet.MoveFlagTeleport),
+	})
 }
 
 // ViewEntityItems ...

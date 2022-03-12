@@ -67,8 +67,8 @@ func readEnchantments(m map[string]interface{}, s *item.Stack) {
 		}
 	}
 	for _, ench := range enchantments {
-		if e, ok := item.EnchantmentByID(int(MapInt16(ench, "id"))); ok {
-			*s = s.WithEnchantments(e.WithLevel(int(MapInt16(ench, "lvl"))))
+		if t, ok := item.EnchantmentByID(int(MapInt16(ench, "id"))); ok {
+			*s = s.WithEnchantments(item.NewEnchantment(t, int(MapInt16(ench, "lvl"))))
 		}
 	}
 }

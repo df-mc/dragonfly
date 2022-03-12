@@ -28,8 +28,8 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log  internal.Logger
-	once sync.Once
+	log            internal.Logger
+	once, connOnce sync.Once
 
 	c        Controllable
 	conn     Conn
@@ -39,7 +39,8 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	scoreboardObj atomic.String
+	currentScoreboard atomic.String
+	currentLines      atomic.Value
 
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
@@ -75,6 +76,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.String
+
+	closeBackground chan struct{}
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -136,6 +139,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	s := &Session{
 		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
+		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(51, nil),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
@@ -153,6 +157,8 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(cube.Pos{})
+	s.currentScoreboard.Store("")
+	s.currentLines.Store([]string{})
 
 	s.registerHandlers()
 	return s
@@ -238,7 +244,10 @@ func (s *Session) close() {
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
 // eventually.
 func (s *Session) CloseConnection() {
-	_ = s.conn.Close()
+	s.connOnce.Do(func() {
+		_ = s.conn.Close()
+		s.closeBackground <- struct{}{}
+	})
 }
 
 // Addr returns the net.Addr of the client.
@@ -259,7 +268,8 @@ func (s *Session) ClientData() login.ClientData {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
-	chunks, commands := make(chan struct{}), make(chan struct{})
+	go s.background()
+
 	defer func() {
 		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
 		// server to freeze without printing the actual panic message.
@@ -268,21 +278,8 @@ func (s *Session) handlePackets() {
 		if err := recover(); err != nil {
 			panic(err)
 		}
-		chunks <- struct{}{}
-		commands <- struct{}{}
-
 		_ = s.Close()
 	}()
-
-	go s.sendChunks(chunks)
-	go s.sendCommands(commands)
-
-	s.readPackets()
-}
-
-// readPackets starts reading packets from the underlying Conn. readPackets returns when an error is returned in doing
-// so.
-func (s *Session) readPackets() {
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
@@ -297,64 +294,60 @@ func (s *Session) readPackets() {
 	}
 }
 
-// sendChunks continuously sends chunks to the player, until a value is sent to the stop channel passed.
-func (s *Session) sendChunks(stop <-chan struct{}) {
-	const maxChunkTransactions = 8
-	t := time.NewTicker(time.Second / 20)
+// background performs background tasks of the Session. This includes chunk sending and automatic command updating.
+// background returns when the Session's connection is closed using CloseConnection.
+func (s *Session) background() {
+	var (
+		t                 = time.NewTicker(time.Second / 20)
+		r                 = s.sendAvailableCommands()
+		enums, enumValues = s.enums()
+		ok                bool
+		i                 int
+	)
 	defer t.Stop()
+
 	for {
 		select {
 		case <-t.C:
-			s.blobMu.Lock()
-			if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
-				s.handleWorldSwitch(w)
-			}
+			s.sendChunks()
 
-			toLoad := maxChunkTransactions - len(s.openChunkTransactions)
-			s.blobMu.Unlock()
-			if toLoad > 4 {
-				toLoad = 4
+			if i++; i%20 == 0 {
+				// Enum resending happens relatively often and frequent updates are more important than with full
+				// command changes. Those are generally only related to permission changes, which doesn't happen often.
+				s.resendEnums(enums, enumValues)
 			}
-			if err := s.chunkLoader.Load(toLoad); err != nil {
-				// The world was closed. This should generally never happen, and if it does, we can assume the
-				// world was closed.
-				s.log.Debugf("error loading chunk: %v", err)
-				return
+			if i%100 == 0 {
+				// Try to resend commands only every 5 seconds.
+				if r, ok = s.resendCommands(r); ok {
+					enums, enumValues = s.enums()
+				}
 			}
-		case <-stop:
+		case <-s.closeBackground:
 			return
 		}
 	}
 }
 
-// sendCommands continuously checks if commands need to be resent and resends them when needed. sendCommands returns
-// when the channel passed has a value sent to it.
-func (s *Session) sendCommands(stop <-chan struct{}) {
-	tc := time.NewTicker(time.Second * 5)
-	te := time.NewTicker(time.Second)
-	defer func() {
-		tc.Stop()
-		te.Stop()
-	}()
-	var (
-		r                 = s.sendAvailableCommands()
-		enums, enumValues = s.enums()
-		ok                bool
-	)
-	for {
-		select {
-		case <-tc.C:
-			r, ok = s.resendCommands(r)
-			if ok {
-				enums, enumValues = s.enums()
-			}
-		case <-te.C:
-			// Enum resending happens relatively often and frequent updates are more important than with full command
-			// changes. Those are generally only related to permission changes, which doesn't happen often.
-			s.resendEnums(enums, enumValues)
-		case <-stop:
-			return
-		}
+// sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
+// the chunk loader and the chunks that were previously loaded.
+func (s *Session) sendChunks() {
+	const maxChunkTransactions = 8
+
+	s.blobMu.Lock()
+	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
+		s.handleWorldSwitch(w)
+	}
+
+	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
+	s.blobMu.Unlock()
+	if toLoad > 4 {
+		toLoad = 4
+	}
+	if err := s.chunkLoader.Load(toLoad); err != nil {
+		// The world was closed. This should generally never happen, and if it does, we can assume the
+		// world was closed.
+		s.log.Debugf("error loading chunk: %v", err)
+		return
 	}
 }
 

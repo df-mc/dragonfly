@@ -5,7 +5,7 @@ import (
 )
 
 // SilkTouch is an enchantment that allows many blocks to drop themselves instead of their usual items when mined.
-type SilkTouch struct{ enchantment }
+type SilkTouch struct{}
 
 // Name ...
 func (e SilkTouch) Name() string {
@@ -15,11 +15,6 @@ func (e SilkTouch) Name() string {
 // MaxLevel ...
 func (e SilkTouch) MaxLevel() int {
 	return 1
-}
-
-// WithLevel ...
-func (e SilkTouch) WithLevel(level int) item.Enchantment {
-	return SilkTouch{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...

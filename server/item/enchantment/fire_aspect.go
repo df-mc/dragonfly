@@ -6,9 +6,7 @@ import (
 )
 
 // FireAspect is a sword enchantment that sets the target on fire.
-type FireAspect struct {
-	enchantment
-}
+type FireAspect struct{}
 
 // Duration returns how long the fire from fire aspect will last.
 func (e FireAspect) Duration(lvl int) time.Duration {
@@ -23,11 +21,6 @@ func (e FireAspect) Name() string {
 // MaxLevel ...
 func (e FireAspect) MaxLevel() int {
 	return 2
-}
-
-// WithLevel ...
-func (e FireAspect) WithLevel(level int) item.Enchantment {
-	return FireAspect{e.withLevel(level, e)}
 }
 
 // CompatibleWith ...

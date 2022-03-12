@@ -19,6 +19,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
+	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -295,24 +296,24 @@ func (server *Server) Close() error {
 	server.pwg.Wait()
 
 	server.log.Debugf("Closing player provider...")
-	err := server.playerProvider.Close()
-	if err != nil {
+	if err := server.playerProvider.Close(); err != nil {
 		server.log.Errorf("Error while closing player provider: %v", err)
 	}
 
 	server.log.Debugf("Closing worlds...")
-	if err = server.world.Close(); err != nil {
+	if err := server.world.Close(); err != nil {
 		server.log.Errorf("Error closing overworld: %v", err)
 	}
-	if err = server.nether.Close(); err != nil {
+	if err := server.nether.Close(); err != nil {
 		server.log.Errorf("Error closing nether %v", err)
 	}
-	if err = server.end.Close(); err != nil {
+	if err := server.end.Close(); err != nil {
 		server.log.Errorf("Error closing end: %v", err)
 	}
 
 	server.log.Debugf("Closing listeners...")
 	server.listenMu.Lock()
+
 	defer server.listenMu.Unlock()
 	for _, l := range server.listeners {
 		if err := l.Close(); err != nil {
@@ -537,7 +538,7 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 
 	w := world.New(log, d, s)
 
-	p, err := mcdb.New(server.c.World.Folder, d)
+	p, err := mcdb.New(server.c.World.Folder, d, opt.FlateCompression)
 	if err != nil {
 		log.Fatalf("error loading world: %v", err)
 	}

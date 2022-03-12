@@ -14,6 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -57,9 +58,9 @@ func (s *Session) closeCurrentContainer() {
 }
 
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
-func (s *Session) SendRespawn() {
+func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Position:        vec64To32(pos.Add(entityOffset(s.c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -227,6 +228,9 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if !mode.HasCollision() {
 		flags |= packet.AdventureFlagNoClip
+		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
+		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
+		s.ViewEntityTeleport(s.c, s.c.Position())
 	}
 	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
@@ -237,9 +241,6 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		flags |= packet.AdventureSettingsFlagsNoPvM
 	} else {
 		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
-	}
-	if !mode.Visible() {
-		flags |= packet.AdventureFlagMuted
 	}
 	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {

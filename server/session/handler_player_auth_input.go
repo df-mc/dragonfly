@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -28,7 +27,11 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	for _, v := range [...]float32{pk.Pitch, pk.Yaw, pk.HeadYaw, pk.Position[0], pk.Position[1], pk.Position[2]} {
 		f := float64(v)
 		if math.IsNaN(f) || math.IsInf(f, 1) || math.IsInf(f, 0) {
-			return fmt.Errorf("player auth input packet must never send nan/inf values")
+			// Sometimes, the PlayerAuthInput packet is in fact sent with NaN/INF after being teleported (to another
+			// world), see #425. For this reason, we don't actually return an error if this happens, because this will
+			// result in the player being kicked. Just log it and don't handle it.
+			s.log.Debugf("failed processing packet from %v (%v): %T: must not have nan/inf values, got %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, f)
+			return nil
 		}
 	}
 
@@ -46,28 +49,17 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	s.teleportMu.Lock()
 	if s.teleportPos != nil {
 		if newPos.Sub(*s.teleportPos).Len() > 0.5 {
-			s.teleportMu.Unlock()
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
-			s.ViewEntityTeleport(s.c, s.c.Position())
+			s.teleportMu.Unlock()
 			return nil
 		}
 		s.teleportPos = nil
 	}
 	s.teleportMu.Unlock()
 
-	_, submergedBefore := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c)))
-
 	s.c.Move(deltaPos, deltaYaw, deltaPitch)
-
-	_, submergedAfter := s.c.World().Liquid(cube.PosFromVec3(entity.EyePosition(s.c)))
-
-	if submergedBefore != submergedAfter {
-		// Player wasn't either breathing before and no longer isn't, or wasn't breathing before and now is,
-		// so send the updated metadata.
-		s.ViewEntityState(s.c)
-	}
 
 	s.chunkLoader.Move(s.c.Position())
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
@@ -84,16 +76,25 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 			return err
 		}
 	}
-	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
-		// God knows what this is for.
-		s.log.Debugf("PlayerAuthInput: unexpected item stack request: %#v\n", pk.ItemStackRequest)
-	}
 	if pk.InputData&packet.InputFlagPerformBlockActions != 0 {
 		if err := h.handleBlockActions(pk.BlockActions, s); err != nil {
 			return err
 		}
 	}
 	h.handleInputFlags(pk.InputData, s)
+
+	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
+		s.inTransaction.Store(true)
+		defer s.inTransaction.Store(false)
+
+		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
+		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
+		if err := sh.handleRequest(pk.ItemStackRequest, s); err != nil {
+			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
+			// revert do its work.
+			s.log.Debugf("failed processing packet from %v (%v): PlayerAuthInput: error resolving item stack request: %v", s.conn.RemoteAddr(), s.c.Name(), err)
+		}
+	}
 	return nil
 }
 
@@ -124,14 +125,15 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.
 func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransactionData, s *Session) error {
+	s.swingingArm.Store(true)
+	defer s.swingingArm.Store(false)
+
 	held, _ := s.c.HeldItems()
 	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
 		s.log.Debugf("failed processing item interaction from %v (%v): PlayerAuthInput: actual held and client held item mismatch", s.conn.RemoteAddr(), s.c.Name())
 		return nil
 	}
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
-	s.swingingArm.Store(true)
-	defer s.swingingArm.Store(false)
 
 	// Seems like this is only used for breaking blocks at the moment.
 	switch data.ActionType {

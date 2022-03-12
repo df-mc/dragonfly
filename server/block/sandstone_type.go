@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // SandstoneType represents a type of sandstone.
 type SandstoneType struct {
 	sandstone
@@ -56,21 +54,6 @@ func (s sandstone) Name() string {
 		return "Smooth Sandstone"
 	}
 	panic("unknown sandstone type")
-}
-
-// FromString ...
-func (s sandstone) FromString(str string) (interface{}, error) {
-	switch str {
-	case "normal", "default":
-		return NormalSandstone(), nil
-	case "cut":
-		return CutSandstone(), nil
-	case "chiseled", "hieroglyphs", "heiroglyphs":
-		return ChiseledSandstone(), nil
-	case "smooth":
-		return SmoothSandstone(), nil
-	}
-	return nil, fmt.Errorf("unexpected sandstone type '%v'", s)
 }
 
 // String ...
