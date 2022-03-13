@@ -140,8 +140,16 @@ func (s Stack) WithDurability(d int) Stack {
 	return s
 }
 
-// SetUnbreakable returns a new item stack set as unbreakable.
-func (s Stack) SetUnbreakable() Stack {
+// WithUnbreakability returns a new item stack set as unbreakable.
+func (s Stack) WithUnbreakability() Stack {
+	if _, ok := s.Item().(Durable); ok {
+		s.unbreakable = true
+	}
+	return s
+}
+
+// WithoutUnbreakability returns a new item stack without the unbreakability.
+func (s Stack) WithoutUnbreakability() Stack {
 	if _, ok := s.Item().(Durable); ok {
 		s.unbreakable = true
 	}
