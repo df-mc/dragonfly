@@ -19,7 +19,8 @@ type Stack struct {
 	customName string
 	lore       []string
 
-	damage int
+	damage      int
+	unbreakable bool
 
 	data map[string]interface{}
 
@@ -96,6 +97,10 @@ func (s Stack) Damage(d int) Stack {
 		// Not a durable item.
 		return s
 	}
+	if s.Unbreakable() {
+		// The item is set as unbreakable.
+		return s
+	}
 	info := durable.DurabilityInfo()
 	if s.Durability()-d <= 0 {
 		// A durability of 0, so the item is broken.
@@ -133,6 +138,19 @@ func (s Stack) WithDurability(d int) Stack {
 	}
 	s.damage = maxDurability - d
 	return s
+}
+
+// SetUnbreakable returns a new item stack set as unbreakable.
+func (s Stack) SetUnbreakable() Stack {
+	if _, ok := s.Item().(Durable); ok {
+		s.unbreakable = true
+	}
+	return s
+}
+
+// Unbreakable checks if the stack is set as unbreakable.
+func (s Stack) Unbreakable() bool {
+	return s.unbreakable
 }
 
 // Empty checks if the stack is empty (has a count of 0).
