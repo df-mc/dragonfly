@@ -260,12 +260,12 @@ func (s Stack) Enchantments() []Enchantment {
 // both stacks together don't exceed the max count.
 // If the two stacks are not comparable, AddStack will return both the original stack and the stack passed.
 func (s Stack) AddStack(s2 Stack) (a, b Stack) {
-	if !s.Comparable(s2) {
-		// The items are not comparable and thus cannot be stacked together.
-		return s, s2
-	}
 	if s.Count() >= s.MaxCount() {
 		// No more items could be added to the original stack.
+		return s, s2
+	}
+	if !s.Comparable(s2) {
+		// The items are not comparable and thus cannot be stacked together.
 		return s, s2
 	}
 	diff := s.MaxCount() - s.Count()

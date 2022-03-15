@@ -14,8 +14,8 @@ type Enchantment struct {
 // NewEnchantment creates and returns an Enchantment with a specific EnchantmentType and level. If the level passed
 // exceeds EnchantmentType.MaxLevel, NewEnchantment panics.
 func NewEnchantment(t EnchantmentType, lvl int) Enchantment {
-	if lvl > t.MaxLevel() {
-		panic("enchantment level must never exceed max level")
+	if lvl < 1 {
+		panic("enchantment level must never be below 1")
 	}
 	return Enchantment{t: t, lvl: lvl}
 }
