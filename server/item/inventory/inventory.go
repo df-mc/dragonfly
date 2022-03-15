@@ -153,9 +153,12 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 	}
 	first := it.Count()
 
+	emptySlots := make([]int, 0, 16)
+
 	inv.mu.Lock()
 	for slot, invIt := range inv.slots {
 		if invIt.Empty() {
+			emptySlots = append(emptySlots, slot)
 			// This slot was empty, and we should first try to add the item stack to existing stacks.
 			continue
 		}
