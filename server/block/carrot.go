@@ -87,8 +87,8 @@ func (c Carrot) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EncodeBlock ...
-func (c Carrot) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:carrots", map[string]interface{}{"growth": int32(c.Growth)}
+func (c Carrot) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:carrots", map[string]any{"growth": int32(c.Growth)}
 }
 
 // allCarrots ...

@@ -100,12 +100,12 @@ func (i ItemFrame) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}) {
+func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 	name = "minecraft:frame"
 	if i.Glowing {
 		name = "minecraft:glow_frame"
 	}
-	return name, map[string]interface{}{
+	return name, map[string]any{
 		"facing_direction":     int32(i.Facing.Opposite()),
 		"item_frame_map_bit":   uint8(0), // TODO: When maps are added, set this to true if the item is a map.
 		"item_frame_photo_bit": uint8(0), // Only implemented in Education Edition.
@@ -113,7 +113,7 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}
 }
 
 // DecodeNBT ...
-func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
+func (i ItemFrame) DecodeNBT(data map[string]any) any {
 	i.DropChance = float64(nbtconv.MapFloat32(data, "ItemDropChance"))
 	i.Rotations = int(nbtconv.MapByte(data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
@@ -121,8 +121,8 @@ func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT ...
-func (i ItemFrame) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (i ItemFrame) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"ItemDropChance": float32(i.DropChance),
 		"ItemRotation":   uint8(i.Rotations),
 		"id":             "ItemFrame",

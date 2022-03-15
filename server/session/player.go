@@ -614,7 +614,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
 	s.Cape.Pix = sk.CapeData
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err = json.Unmarshal(sk.SkinGeometry, &m); err != nil {
 		return skin.Skin{}, fmt.Errorf("SkinGeometry was not a valid JSON string: %v", err)
 	}

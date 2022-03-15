@@ -189,7 +189,7 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 }
 
 // EncodeBlock ...
-func (l Lava) EncodeBlock() (name string, properties map[string]interface{}) {
+func (l Lava) EncodeBlock() (name string, properties map[string]any) {
 	if l.Depth < 1 || l.Depth > 8 {
 		panic("invalid lava depth, must be between 1 and 8")
 	}
@@ -198,9 +198,9 @@ func (l Lava) EncodeBlock() (name string, properties map[string]interface{}) {
 		v += 8
 	}
 	if l.Still {
-		return "minecraft:lava", map[string]interface{}{"liquid_depth": int32(v)}
+		return "minecraft:lava", map[string]any{"liquid_depth": int32(v)}
 	}
-	return "minecraft:flowing_lava", map[string]interface{}{"liquid_depth": int32(v)}
+	return "minecraft:flowing_lava", map[string]any{"liquid_depth": int32(v)}
 }
 
 // allLava returns a list of all lava states.

@@ -15,7 +15,7 @@ import (
 type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
-	EncodeBlock() (string, map[string]interface{})
+	EncodeBlock() (string, map[string]any)
 	// Hash returns a unique identifier of the block including the block states. This function is used internally to
 	// convert a block to a single integer which can be used in map lookups. The hash produced therefore does not need
 	// to match anything in the game, but it must be unique among all registered blocks.
@@ -122,7 +122,7 @@ func BlockByRuntimeID(rid uint32) (Block, bool) {
 
 // BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
 // false.
-func BlockByName(name string, properties map[string]interface{}) (Block, bool) {
+func BlockByName(name string, properties map[string]any) (Block, bool) {
 	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
 		return nil, false
@@ -173,9 +173,9 @@ type NeighbourUpdateTicker interface {
 type NBTer interface {
 	// DecodeNBT returns the (new) item, block or entity, depending on which of those the NBTer was, with the NBT data
 	// decoded into it.
-	DecodeNBT(data map[string]interface{}) interface{}
+	DecodeNBT(data map[string]any) any
 	// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
-	EncodeNBT() map[string]interface{}
+	EncodeNBT() map[string]any
 }
 
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without

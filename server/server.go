@@ -262,19 +262,19 @@ func (server *Server) AddResourcePack(pack *resource.Pack) {
 
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
-func (server *Server) SetName(a ...interface{}) {
+func (server *Server) SetName(a ...any) {
 	server.name.Store(format(a))
 }
 
 // JoinMessage changes the join message for all players on the server. Leave this empty to disable it.
 // %v is the placeholder for the username of the player
-func (server *Server) JoinMessage(a ...interface{}) {
+func (server *Server) JoinMessage(a ...any) {
 	server.joinMessage.Store(format(a))
 }
 
 // QuitMessage changes the leave message for all players on the server. Leave this empty to disable it.
 // %v is the placeholder for the username of the player
-func (server *Server) QuitMessage(a ...interface{}) {
+func (server *Server) QuitMessage(a ...any) {
 	server.quitMessage.Store(format(a))
 }
 
@@ -528,7 +528,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers []world.Block, s *world.Settings) *world.World {
 	log := server.log
 	if v, ok := log.(interface {
-		WithField(key string, field interface{}) *logrus.Entry
+		WithField(key string, field any) *logrus.Entry
 	}); ok {
 		// Add a dimension field to be able to distinguish between the different dimensions in the log. Dimensions
 		// implement fmt.Stringer so we can just fmt.Sprint them for a readable name.
@@ -637,10 +637,10 @@ type sporingBiome interface {
 
 // biomes builds a mapping of all biome definitions of the server, ready to be set in the biomes field of the
 // server listener.
-func (server *Server) biomes() map[string]interface{} {
-	definitions := make(map[string]interface{})
+func (server *Server) biomes() map[string]any {
+	definitions := make(map[string]any)
 	for _, b := range world.Biomes() {
-		definition := map[string]interface{}{
+		definition := map[string]any{
 			"temperature": float32(b.Temperature()),
 			"downfall":    float32(b.Rainfall()),
 		}
@@ -679,7 +679,7 @@ func (server *Server) loadResources(p string, log internal.Logger) {
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }
 

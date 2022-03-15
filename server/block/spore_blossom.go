@@ -50,6 +50,6 @@ func (s SporeBlossom) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SporeBlossom) EncodeBlock() (string, map[string]interface{}) {
+func (s SporeBlossom) EncodeBlock() (string, map[string]any) {
 	return "minecraft:spore_blossom", nil
 }

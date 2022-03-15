@@ -241,7 +241,7 @@ func (a *Arrow) Owner() world.Entity {
 }
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
-func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
+func (a *Arrow) DecodeNBT(data map[string]any) any {
 	arr := a.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
@@ -262,9 +262,9 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
-func (a *Arrow) EncodeNBT() map[string]interface{} {
+func (a *Arrow) EncodeNBT() map[string]any {
 	yaw, pitch := a.Rotation()
-	nbt := map[string]interface{}{
+	nbt := map[string]any{
 		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
 		"Yaw":        yaw,
 		"Pitch":      pitch,

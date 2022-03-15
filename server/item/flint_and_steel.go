@@ -53,7 +53,7 @@ func air() world.Block {
 
 // fire returns a fire block.
 func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
 	if !ok {
 		panic("could not find fire block")
 	}

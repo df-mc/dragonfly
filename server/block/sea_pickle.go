@@ -154,8 +154,8 @@ func (SeaPickle) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SeaPickle) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:sea_pickle", map[string]interface{}{"cluster_count": int32(s.AdditionalCount), "dead_bit": s.Dead}
+func (s SeaPickle) EncodeBlock() (string, map[string]any) {
+	return "minecraft:sea_pickle", map[string]any{"cluster_count": int32(s.AdditionalCount), "dead_bit": s.Dead}
 }
 
 // allSeaPickles ...

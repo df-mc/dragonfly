@@ -97,8 +97,8 @@ func (m MelonSeeds) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (m MelonSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:melon_stem", map[string]interface{}{"facing_direction": int32(m.Direction), "growth": int32(m.Growth)}
+func (m MelonSeeds) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:melon_stem", map[string]any{"facing_direction": int32(m.Direction), "growth": int32(m.Growth)}
 }
 
 // allMelonStems ...

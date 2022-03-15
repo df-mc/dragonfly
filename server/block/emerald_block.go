@@ -33,6 +33,6 @@ func (EmeraldBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (EmeraldBlock) EncodeBlock() (string, map[string]interface{}) {
+func (EmeraldBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:emerald_block", nil
 }

@@ -43,14 +43,14 @@ func init() {
 		registerBlockState(s)
 	}
 
-	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]interface{}, found bool) {
+	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
 		if runtimeID >= uint32(len(blocks)) {
 			return "", nil, false
 		}
 		name, properties = blocks[runtimeID].EncodeBlock()
 		return name, properties, true
 	}
-	chunk.StateToRuntimeID = func(name string, properties map[string]interface{}) (runtimeID uint32, found bool) {
+	chunk.StateToRuntimeID = func(name string, properties map[string]any) (runtimeID uint32, found bool) {
 		rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 		return rid, ok
 	}
@@ -83,7 +83,7 @@ type unknownBlock struct {
 }
 
 // EncodeBlock ...
-func (b unknownBlock) EncodeBlock() (string, map[string]interface{}) {
+func (b unknownBlock) EncodeBlock() (string, map[string]any) {
 	return b.Name, b.Properties
 }
 
@@ -99,9 +99,9 @@ func (b unknownBlock) Hash() uint64 {
 
 // blockState holds a combination of a name and properties, together with a version.
 type blockState struct {
-	Name       string                 `nbt:"name"`
-	Properties map[string]interface{} `nbt:"states"`
-	Version    int32                  `nbt:"version"`
+	Name       string         `nbt:"name"`
+	Properties map[string]any `nbt:"states"`
+	Version    int32          `nbt:"version"`
 }
 
 // stateHash is a struct that may be used as a map key for block states. It contains the name of the block state
@@ -111,7 +111,7 @@ type stateHash struct {
 }
 
 // HashProperties produces a hash for the block properties held by the blockState.
-func hashProperties(properties map[string]interface{}) string {
+func hashProperties(properties map[string]any) string {
 	if properties == nil {
 		return ""
 	}

@@ -28,7 +28,7 @@ type Controllable interface {
 	Speed() float64
 	Facing() cube.Direction
 
-	Chat(msg ...interface{})
+	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
 	GameMode() world.GameMode
 	SetGameMode(mode world.GameMode)

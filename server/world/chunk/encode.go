@@ -17,10 +17,10 @@ const (
 
 var (
 	// RuntimeIDToState must hold a function to convert a runtime ID to a name and its state properties.
-	RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]interface{}, found bool)
+	RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]any, found bool)
 	// pool is used to pool byte buffers used for encoding chunks.
 	pool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return bytes.NewBuffer(make([]byte, 0, 1024))
 		},
 	}
@@ -41,11 +41,11 @@ type (
 	}
 	// blockEntry represents a block as found in a disk save of a world.
 	blockEntry struct {
-		Name    string                 `nbt:"name"`
-		State   map[string]interface{} `nbt:"states"`
-		Version int32                  `nbt:"version"`
-		ID      int32                  `nbt:"oldid,omitempty"`
-		Meta    int16                  `nbt:"val,omitempty"`
+		Name    string         `nbt:"name"`
+		State   map[string]any `nbt:"states"`
+		Version int32          `nbt:"version"`
+		ID      int32          `nbt:"oldid,omitempty"`
+		Meta    int16          `nbt:"val,omitempty"`
 	}
 )
 

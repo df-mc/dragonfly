@@ -48,8 +48,8 @@ func (Kelp) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (k Kelp) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:kelp", map[string]interface{}{"kelp_age": int32(k.Age)}
+func (k Kelp) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:kelp", map[string]any{"kelp_age": int32(k.Age)}
 }
 
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.

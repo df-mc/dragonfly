@@ -144,7 +144,7 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 }
 
 // EncodeBlock ...
-func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
+func (w Water) EncodeBlock() (name string, properties map[string]any) {
 	if w.Depth < 1 || w.Depth > 8 {
 		panic("invalid water depth, must be between 1 and 8")
 	}
@@ -153,9 +153,9 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 		v += 8
 	}
 	if w.Still {
-		return "minecraft:water", map[string]interface{}{"liquid_depth": int32(v)}
+		return "minecraft:water", map[string]any{"liquid_depth": int32(v)}
 	}
-	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
+	return "minecraft:flowing_water", map[string]any{"liquid_depth": int32(v)}
 }
 
 // allWater returns a list of all water states.

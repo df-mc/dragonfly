@@ -22,6 +22,6 @@ func (AncientDebris) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (AncientDebris) EncodeBlock() (string, map[string]interface{}) {
+func (AncientDebris) EncodeBlock() (string, map[string]any) {
 	return "minecraft:ancient_debris", nil
 }

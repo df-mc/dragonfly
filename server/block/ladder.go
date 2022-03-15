@@ -81,8 +81,8 @@ func (l Ladder) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l Ladder) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:ladder", map[string]interface{}{"facing_direction": int32(l.Facing + 2)}
+func (l Ladder) EncodeBlock() (string, map[string]any) {
+	return "minecraft:ladder", map[string]any{"facing_direction": int32(l.Facing + 2)}
 }
 
 // Model ...

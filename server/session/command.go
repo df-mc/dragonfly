@@ -85,7 +85,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 
 // valueToParamType finds the command argument type of the value passed and returns it, in addition to creating
 // an enum if applicable.
-func valueToParamType(i interface{}, source cmd.Source) (t uint32, enum protocol.CommandEnum) {
+func valueToParamType(i any, source cmd.Source) (t uint32, enum protocol.CommandEnum) {
 	switch i.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return protocol.CommandArgTypeInt, enum

@@ -114,17 +114,17 @@ func (s WoodSlab) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s WoodSlab) EncodeBlock() (name string, properties map[string]any) {
 	if s.Double {
 		if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
-			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]interface{}{"top_slot_bit": s.Top}
+			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]any{"top_slot_bit": s.Top}
 		}
-		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+		return "minecraft:double_wooden_slab", map[string]any{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 	}
 	if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
-		return "minecraft:" + s.Wood.String() + "_slab", map[string]interface{}{"top_slot_bit": s.Top}
+		return "minecraft:" + s.Wood.String() + "_slab", map[string]any{"top_slot_bit": s.Top}
 	}
-	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+	return "minecraft:wooden_slab", map[string]any{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 }
 
 // CanDisplace ...

@@ -232,13 +232,13 @@ func (p *Player) Handle(h Handler) {
 
 // Message sends a formatted message to the player. The message is formatted following the rules of
 // fmt.Sprintln, however the newline at the end is not written.
-func (p *Player) Message(a ...interface{}) {
+func (p *Player) Message(a ...any) {
 	p.session().SendMessage(format(a))
 }
 
 // Messagef sends a formatted message using a specific format to the player. The message is formatted
 // according to the fmt.Sprintf formatting rules.
-func (p *Player) Messagef(f string, a ...interface{}) {
+func (p *Player) Messagef(f string, a ...any) {
 	msg := fmt.Sprintf(f, a...)
 	p.session().SendMessage(msg)
 }
@@ -246,19 +246,19 @@ func (p *Player) Messagef(f string, a ...interface{}) {
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
 // overwrites/is overwritten by the name of the item equipped.
 // The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) SendPopup(a ...interface{}) {
+func (p *Player) SendPopup(a ...any) {
 	p.session().SendPopup(format(a))
 }
 
 // SendTip sends a tip to the player. The tip is shown in the middle of the screen of the player.
 // The tip is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) SendTip(a ...interface{}) {
+func (p *Player) SendTip(a ...any) {
 	p.session().SendTip(format(a))
 }
 
 // SendJukeboxPopup sends a formatted jukebox popup to the player. This popup is shown above the hotbar of the player.
 // The popup is close to the position of an action bar message and the text has no background.
-func (p *Player) SendJukeboxPopup(a ...interface{}) {
+func (p *Player) SendJukeboxPopup(a ...any) {
 	p.session().SendJukeboxPopup(format(a))
 }
 
@@ -317,7 +317,7 @@ func (p *Player) RemoveBossBar() {
 
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player and is formatted following the rules of fmt.Sprintln.
-func (p *Player) Chat(msg ...interface{}) {
+func (p *Player) Chat(msg ...any) {
 	message := format(msg)
 	ctx := event.C()
 	p.handler().HandleChat(ctx, &message)
@@ -415,7 +415,7 @@ func (p *Player) NameTag() string {
 
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's
 // name tag.
-func (p *Player) SetScoreTag(a ...interface{}) {
+func (p *Player) SetScoreTag(a ...any) {
 	p.scoreTag.Store(format(a))
 	p.updateState()
 }
@@ -2313,7 +2313,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // Disconnect closes the player and removes it from the world.
 // Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
 // disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) Disconnect(msg ...interface{}) {
+func (p *Player) Disconnect(msg ...any) {
 	p.once.Do(func() {
 		p.close(format(msg))
 	})
@@ -2529,6 +2529,6 @@ func (p *Player) viewers() []world.Viewer {
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }

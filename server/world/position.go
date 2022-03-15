@@ -9,7 +9,7 @@ import (
 // blockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
 // map is assumed to have an 'x', 'y' and 'z' key.
 //noinspection GoCommentLeadingSpace
-func blockPosFromNBT(data map[string]interface{}) cube.Pos {
+func blockPosFromNBT(data map[string]any) cube.Pos {
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
 	xInterface, _ := data["x"]
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.

@@ -58,6 +58,6 @@ func (n NetherSprouts) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NetherSprouts) EncodeBlock() (string, map[string]interface{}) {
+func (n NetherSprouts) EncodeBlock() (string, map[string]any) {
 	return "minecraft:nether_sprouts", nil
 }

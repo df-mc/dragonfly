@@ -28,6 +28,6 @@ func (d DiamondOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DiamondOre) EncodeBlock() (string, map[string]interface{}) {
+func (d DiamondOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + d.Type.Prefix() + "diamond_ore", nil
 }

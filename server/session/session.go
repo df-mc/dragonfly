@@ -474,7 +474,7 @@ func (s *Session) sendAvailableEntities() {
 		id := entity.EncodeEntity()
 		entityData = append(entityData, actorIdentifier{ID: id})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]interface{}{"idlist": entityData})
+	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": entityData})
 	if err != nil {
 		panic(fmt.Errorf("failed to serialize entity data: %v", err))
 	}

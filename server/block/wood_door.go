@@ -149,7 +149,7 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{}) {
+func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
 	direction := 3
 	switch d.Facing {
 	case cube.South:
@@ -162,9 +162,9 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]interface{})
 
 	switch d.Wood {
 	case OakWood():
-		return "minecraft:wooden_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:wooden_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	default:
-		return "minecraft:" + d.Wood.String() + "_door", map[string]interface{}{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
 }
 

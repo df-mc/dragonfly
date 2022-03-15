@@ -28,6 +28,6 @@ func (NetheriteBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (NetheriteBlock) EncodeBlock() (string, map[string]interface{}) {
+func (NetheriteBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:netherite_block", nil
 }

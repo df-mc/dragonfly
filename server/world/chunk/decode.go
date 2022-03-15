@@ -7,7 +7,7 @@ import (
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
-var StateToRuntimeID func(name string, properties map[string]interface{}) (runtimeID uint32, found bool)
+var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
 
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.

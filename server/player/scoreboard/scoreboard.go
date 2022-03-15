@@ -18,7 +18,7 @@ type Scoreboard struct {
 // scoreboard to add text to it. The name is formatted according to the rules of fmt.Sprintln.
 // Changing the scoreboard after sending it to a player will not update the scoreboard of the player
 // automatically: Player.SendScoreboard() must be called again to update it.
-func New(name ...interface{}) *Scoreboard {
+func New(name ...any) *Scoreboard {
 	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n")}
 }
 

@@ -27,6 +27,6 @@ func (c CopperOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c CopperOre) EncodeBlock() (string, map[string]interface{}) {
+func (c CopperOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + c.Type.Prefix() + "copper_ore", nil
 }

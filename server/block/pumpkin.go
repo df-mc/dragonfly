@@ -72,7 +72,7 @@ func (p Pumpkin) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p Pumpkin) EncodeBlock() (name string, properties map[string]interface{}) {
+func (p Pumpkin) EncodeBlock() (name string, properties map[string]any) {
 	direction := 2
 	switch p.Facing {
 	case cube.South:
@@ -84,9 +84,9 @@ func (p Pumpkin) EncodeBlock() (name string, properties map[string]interface{}) 
 	}
 
 	if p.Carved {
-		return "minecraft:carved_pumpkin", map[string]interface{}{"direction": int32(direction)}
+		return "minecraft:carved_pumpkin", map[string]any{"direction": int32(direction)}
 	}
-	return "minecraft:pumpkin", map[string]interface{}{"direction": int32(direction)}
+	return "minecraft:pumpkin", map[string]any{"direction": int32(direction)}
 }
 
 func allPumpkins() (pumpkins []world.Block) {

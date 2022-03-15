@@ -31,10 +31,10 @@ type Provider interface {
 	SaveEntities(position ChunkPos, entities []SaveableEntity) error
 	// LoadBlockNBT loads the block NBT, also known as block entities, at a specific chunk position. If the
 	// NBT cannot be read, LoadBlockNBT returns a non-nil error.
-	LoadBlockNBT(position ChunkPos) ([]map[string]interface{}, error)
+	LoadBlockNBT(position ChunkPos) ([]map[string]any, error)
 	// SaveBlockNBT saves block NBT, or block entities, to a specific chunk position. If the NBT cannot be
 	// stored, SaveBlockNBT returns a non-nil error.
-	SaveBlockNBT(position ChunkPos, data []map[string]interface{}) error
+	SaveBlockNBT(position ChunkPos, data []map[string]any) error
 }
 
 // NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
@@ -58,12 +58,12 @@ func (NoIOProvider) SaveEntities(ChunkPos, []SaveableEntity) error {
 }
 
 // LoadBlockNBT ...
-func (NoIOProvider) LoadBlockNBT(ChunkPos) ([]map[string]interface{}, error) {
+func (NoIOProvider) LoadBlockNBT(ChunkPos) ([]map[string]any, error) {
 	return nil, nil
 }
 
 // SaveBlockNBT ...
-func (NoIOProvider) SaveBlockNBT(ChunkPos, []map[string]interface{}) error {
+func (NoIOProvider) SaveBlockNBT(ChunkPos, []map[string]any) error {
 	return nil
 }
 

@@ -43,8 +43,8 @@ func (c Carpet) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:carpet", map[string]interface{}{"color": c.Colour.String()}
+func (c Carpet) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:carpet", map[string]any{"color": c.Colour.String()}
 }
 
 // HasLiquidDrops ...

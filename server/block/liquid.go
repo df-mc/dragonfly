@@ -306,7 +306,7 @@ func (node liquidNode) Path(src cube.Pos) liquidPath {
 
 // liquidQueuePool is use to re-use liquid node queues.
 var liquidQueuePool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &liquidQueue{
 			nodes:        make([]liquidNode, 0, 64),
 			shortestPath: math.MaxInt8,

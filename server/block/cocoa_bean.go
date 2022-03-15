@@ -101,7 +101,7 @@ func (c CocoaBean) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}) {
+func (c CocoaBean) EncodeBlock() (name string, properties map[string]any) {
 	direction := 2
 	switch c.Facing {
 	case cube.South:
@@ -112,7 +112,7 @@ func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}
 		direction = 3
 	}
 
-	return "minecraft:cocoa", map[string]interface{}{"age": int32(c.Age), "direction": int32(direction)}
+	return "minecraft:cocoa", map[string]any{"age": int32(c.Age), "direction": int32(direction)}
 }
 
 // Model ...

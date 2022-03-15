@@ -26,6 +26,6 @@ func (g GoldOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g GoldOre) EncodeBlock() (string, map[string]interface{}) {
+func (g GoldOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + g.Type.Prefix() + "gold_ore", nil
 }

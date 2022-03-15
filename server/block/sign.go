@@ -130,19 +130,19 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // EncodeBlock ...
-func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
 	if woodType == "oak_" {
 		woodType = ""
 	}
 	if s.Attach.hanging {
-		return "minecraft:" + woodType + "wall_sign", map[string]interface{}{"facing_direction": int32(s.Attach.facing + 2)}
+		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}
 	}
-	return "minecraft:" + woodType + "standing_sign", map[string]interface{}{"ground_sign_direction": int32(s.Attach.o)}
+	return "minecraft:" + woodType + "standing_sign", map[string]any{"ground_sign_direction": int32(s.Attach.o)}
 }
 
 // DecodeNBT ...
-func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
+func (s Sign) DecodeNBT(data map[string]any) any {
 	s.Text = nbtconv.MapString(data, "Text")
 	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.MapInt32(data, "SignTextColor"))
 	s.Glowing = nbtconv.MapByte(data, "IgnoreLighting") == 1 && nbtconv.MapByte(data, "TextIgnoreLegacyBugResolved") == 1
@@ -151,8 +151,8 @@ func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT ...
-func (s Sign) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (s Sign) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"id":             "Sign",
 		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
 		"IgnoreLighting": boolByte(s.Glowing),

@@ -76,6 +76,6 @@ func (DragonEgg) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DragonEgg) EncodeBlock() (string, map[string]interface{}) {
+func (DragonEgg) EncodeBlock() (string, map[string]any) {
 	return "minecraft:dragon_egg", nil
 }

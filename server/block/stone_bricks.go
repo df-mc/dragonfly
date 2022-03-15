@@ -23,8 +23,8 @@ func (c StoneBricks) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c StoneBricks) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:stonebrick", map[string]interface{}{"stone_brick_type": c.Type.String()}
+func (c StoneBricks) EncodeBlock() (string, map[string]any) {
+	return "minecraft:stonebrick", map[string]any{"stone_brick_type": c.Type.String()}
 }
 
 // allStoneBricks returns a list of all stoneBricks block variants.

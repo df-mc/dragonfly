@@ -24,8 +24,8 @@ func (l Light) LightEmissionLevel() uint8 {
 }
 
 // EncodeBlock ...
-func (l Light) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:light_block", map[string]interface{}{"block_light_level": int32(l.Level)}
+func (l Light) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:light_block", map[string]any{"block_light_level": int32(l.Level)}
 }
 
 // allLight returns all possible light blocks.

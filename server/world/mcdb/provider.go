@@ -276,7 +276,7 @@ func (p *Provider) LoadEntities(pos world.ChunkPos) ([]world.SaveableEntity, err
 	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 
 	for buf.Len() != 0 {
-		var m map[string]interface{}
+		var m map[string]any
 		if err := dec.Decode(&m); err != nil {
 			return nil, fmt.Errorf("error decoding block NBT: %w", err)
 		}
@@ -317,18 +317,18 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEnt
 }
 
 // LoadBlockNBT loads all block entities from the chunk position passed.
-func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]interface{}, error) {
+func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]any, error) {
 	data, err := p.db.Get(append(p.index(position), keyBlockEntities), nil)
 	if err != leveldb.ErrNotFound && err != nil {
 		return nil, err
 	}
-	var a []map[string]interface{}
+	var a []map[string]any
 
 	buf := bytes.NewBuffer(data)
 	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 
 	for buf.Len() != 0 {
-		var m map[string]interface{}
+		var m map[string]any
 		if err := dec.Decode(&m); err != nil {
 			return nil, fmt.Errorf("error decoding block NBT: %w", err)
 		}
@@ -338,7 +338,7 @@ func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]interface
 }
 
 // SaveBlockNBT saves all block NBT data to the chunk position passed.
-func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]interface{}) error {
+func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any) error {
 	if len(data) == 0 {
 		return p.db.Delete(append(p.index(position), keyBlockEntities), nil)
 	}

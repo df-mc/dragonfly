@@ -97,8 +97,8 @@ func (p PumpkinSeeds) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:pumpkin_stem", map[string]interface{}{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
+func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:pumpkin_stem", map[string]any{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
 }
 
 // allPumpkinStems

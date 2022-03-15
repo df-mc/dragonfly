@@ -1992,7 +1992,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 
 // loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
 // have NBT will then be stored into memory.
-func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interface{}) {
+func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 	c.e = make(map[cube.Pos]Block, len(blockEntityData))
 	for _, data := range blockEntityData {
 		pos := blockPosFromNBT(data)
@@ -2015,7 +2015,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interf
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
 	// We allocate a new map for all block entities.
-	m := make([]map[string]interface{}, 0, len(c.e))
+	m := make([]map[string]any, 0, len(c.e))
 	for pos, b := range c.e {
 		if n, ok := b.(NBTer); ok {
 			// Encode the block entities and add the 'x', 'y' and 'z' tags to it.

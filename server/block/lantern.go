@@ -95,12 +95,12 @@ func (l Lantern) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
+func (l Lantern) EncodeBlock() (name string, properties map[string]any) {
 	switch l.Type {
 	case NormalFire():
-		return "minecraft:lantern", map[string]interface{}{"hanging": l.Hanging}
+		return "minecraft:lantern", map[string]any{"hanging": l.Hanging}
 	case SoulFire():
-		return "minecraft:soul_lantern", map[string]interface{}{"hanging": l.Hanging}
+		return "minecraft:soul_lantern", map[string]any{"hanging": l.Hanging}
 	}
 	panic("invalid fire type")
 }
