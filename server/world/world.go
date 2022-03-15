@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
+	"golang.org/x/exp/slices"
 	"math/rand"
 	"sync"
 	"time"
@@ -883,12 +884,11 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	w.entityMu.Lock()
 	chunkPos, found := w.entities[e]
+	w.entityMu.Unlock()
 	if !found {
-		w.entityMu.Unlock()
 		// The entity currently isn't in this world.
 		return
 	}
-	w.entityMu.Unlock()
 
 	w.Handler().HandleEntityDespawn(e)
 
@@ -1402,9 +1402,7 @@ func (w *World) strikeLightning(c ChunkPos) {
 	}
 
 	e, _ := EntityByName("minecraft:lightning_bolt")
-	w.AddEntity(e.(interface {
-		New(mgl64.Vec3) Entity
-	}).New(vec))
+	w.AddEntity(e.(interface{ New(mgl64.Vec3) Entity }).New(vec))
 }
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
@@ -1618,18 +1616,11 @@ func (w *World) tickEntities(tick int64) {
 			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := w.chunks[lastPos]; ok {
 				old.Lock()
-				chunkEntities := make([]Entity, 0, len(old.entities))
-				for _, entity := range old.entities {
-					if entity == e {
-						continue
-					}
-					chunkEntities = append(chunkEntities, entity)
+				if i := slices.IndexFunc(old.entities, func(ent Entity) bool { return ent == e }); i != -1 {
+					old.entities = slices.Clone(slices.Delete(old.entities, i, i+1))
 				}
-				old.entities = chunkEntities
-
 				if len(old.v) > 0 {
-					viewers = make([]Viewer, len(old.v))
-					copy(viewers, old.v)
+					viewers = slices.Clone(old.v)
 				}
 				old.Unlock()
 			}
@@ -1646,14 +1637,14 @@ func (w *World) tickEntities(tick int64) {
 		move.after.Unlock()
 
 		for _, viewer := range move.viewersBefore {
-			if !w.hasViewer(viewer, viewersAfter) {
+			if slices.IndexFunc(viewersAfter, func(v Viewer) bool { return v == viewer }) == -1 {
 				// First we hide the entity from all viewers that were previously viewing it, but no
 				// longer are.
 				viewer.HideEntity(move.e)
 			}
 		}
 		for _, viewer := range viewersAfter {
-			if !w.hasViewer(viewer, move.viewersBefore) {
+			if slices.IndexFunc(move.viewersBefore, func(v Viewer) bool { return v == viewer }) == -1 {
 				// Then we show the entity to all viewers that are now viewing the entity in the new
 				// chunk.
 				showEntity(move.e, viewer)
@@ -1796,19 +1787,6 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 	for _, entity := range e {
 		viewer.HideEntity(entity)
 	}
-}
-
-// hasViewer checks if a chunk at a particular chunk position has the viewer passed. If so, true is returned.
-func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
-	if w == nil {
-		return false
-	}
-	for _, v := range viewers {
-		if v == viewer {
-			return true
-		}
-	}
-	return false
 }
 
 // provider returns the provider of the world. It should always be used, rather than direct field access, in
