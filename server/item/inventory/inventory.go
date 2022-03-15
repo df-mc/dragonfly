@@ -160,30 +160,28 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 			continue
 		}
 		a, b := invIt.AddStack(it)
+		if it.Count() == b.Count() {
+			// Count stayed the same, meaning this slot either wasn't equal to this stack or was max size.
+			continue
+		}
 		f := inv.setItem(slot, a)
 		//noinspection GoDeferInLoop
 		defer f()
 
-		it = b
-		if it.Empty() {
+		if it = b; it.Empty() {
 			inv.mu.Unlock()
 			// We were able to add the entire stack to existing stacks in the inventory.
 			return first, nil
 		}
 	}
-	for slot, invIt := range inv.slots {
-		if !invIt.Empty() {
-			// We can only use empty slots now: Items existing stacks have already been filled up.
-			continue
-		}
+	for _, slot := range emptySlots {
 		a, b := it.Grow(-math.MaxInt32).AddStack(it)
 
 		f := inv.setItem(slot, a)
 		//noinspection GoDeferInLoop
 		defer f()
 
-		it = b
-		if it.Empty() {
+		if it = b; it.Empty() {
 			inv.mu.Unlock()
 			// We were able to add the entire stack to empty slots.
 			return first, nil
