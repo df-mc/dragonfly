@@ -228,6 +228,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if !mode.HasCollision() {
 		flags |= packet.AdventureFlagNoClip
+		defer s.c.StartFlying()
 		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
 		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
 		s.ViewEntityTeleport(s.c, s.c.Position())
