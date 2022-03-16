@@ -289,11 +289,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		delete(c.e, pos)
 	}
 
-	var viewers []Viewer
-	if len(c.v) > 0 {
-		viewers = make([]Viewer, len(c.v))
-		copy(viewers, c.v)
-	}
+	viewers := slices.Clone(c.v)
 	c.Unlock()
 
 	for _, viewer := range viewers {
@@ -861,8 +857,7 @@ func (w *World) AddEntity(e Entity) {
 	}
 	c.entities = append(c.entities, e)
 
-	viewers := make([]Viewer, len(c.v))
-	copy(viewers, c.v)
+	viewers := slices.Clone(c.v)
 	c.Unlock()
 
 	for _, viewer := range viewers {
@@ -903,17 +898,8 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 	c.Lock()
-	n := make([]Entity, 0, len(c.entities))
-	for _, entity := range c.entities {
-		if entity != e {
-			n = append(n, entity)
-			continue
-		}
-	}
-	c.entities = n
-
-	viewers := make([]Viewer, len(c.v))
-	copy(viewers, c.v)
+	c.entities = sliceutil.DeleteVal(c.entities, e)
+	viewers := slices.Clone(c.v)
 	c.Unlock()
 
 	w.entityMu.Lock()
@@ -943,12 +929,8 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			var entities []Entity
 			c.Lock()
-			if len(c.entities) > 0 {
-				entities = make([]Entity, len(c.entities))
-				copy(entities, c.entities)
-			}
+			entities := slices.Clone(c.entities)
 			c.Unlock()
 
 			for _, entity := range entities {
@@ -971,11 +953,11 @@ func (w *World) Entities() []Entity {
 		return nil
 	}
 	w.entityMu.RLock()
+	defer w.entityMu.RUnlock()
 	m := make([]Entity, 0, len(w.entities))
 	for e := range w.entities {
 		m = append(m, e)
 	}
-	w.entityMu.RUnlock()
 	return m
 }
 
@@ -1203,12 +1185,8 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 		return nil
 	}
 	c.Lock()
-	if len(c.v) > 0 {
-		viewers = make([]Viewer, len(c.v))
-		copy(viewers, c.v)
-	}
-	c.Unlock()
-	return
+	defer c.Unlock()
+	return slices.Clone(c.v)
 }
 
 // SetPortalDestinations sets the destination worlds for any nether and end portals in the World respectively. In order
@@ -1617,12 +1595,8 @@ func (w *World) tickEntities(tick int64) {
 			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := w.chunks[lastPos]; ok {
 				old.Lock()
-				if i := sliceutil.Index(old.entities, e); i != -1 {
-					old.entities = slices.Clone(slices.Delete(old.entities, i, i+1))
-				}
-				if len(old.v) > 0 {
-					viewers = slices.Clone(old.v)
-				}
+				old.entities = sliceutil.DeleteVal(old.entities, e)
+				viewers = slices.Clone(old.v)
 				old.Unlock()
 			}
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
@@ -1713,14 +1687,14 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 }
 
 // allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() (v []Viewer) {
+func (w *World) allViewers() []Viewer {
 	w.viewersMu.Lock()
-	v = make([]Viewer, 0, len(w.viewers))
+	defer w.viewersMu.Unlock()
+	v := make([]Viewer, 0, len(w.viewers))
 	for viewer := range w.viewers {
 		v = append(v, viewer)
 	}
-	w.viewersMu.Unlock()
-	return
+	return v
 }
 
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
@@ -1751,8 +1725,7 @@ func (w *World) addViewer(c *chunkData, viewer Viewer) {
 	}
 	c.v = append(c.v, viewer)
 
-	entities := make([]Entity, len(c.entities))
-	copy(entities, c.entities)
+	entities := slices.Clone(c.entities)
 	c.Unlock()
 
 	for _, entity := range entities {
@@ -1771,17 +1744,8 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 		return
 	}
 	c.Lock()
-	n := make([]Viewer, 0, len(c.v))
-	for _, v := range c.v {
-		if v != viewer {
-			// Add all viewers but the one to remove to the new viewers slice.
-			n = append(n, v)
-		}
-	}
-	c.v = n
-
-	e := make([]Entity, len(c.entities))
-	copy(e, c.entities)
+	c.v = sliceutil.DeleteVal(c.v, viewer)
+	e := slices.Clone(c.entities)
 	c.Unlock()
 
 	// After removing the viewer from the chunk, we also need to hide all entities from the viewer.

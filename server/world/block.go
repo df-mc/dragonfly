@@ -93,11 +93,10 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 		return airRID, true
 	}
 	if h := b.Hash(); h != math.MaxUint64 {
-		rid, ok := hashes.Get(int64(h))
-		if !ok {
-			panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
+		if rid, ok := hashes.Get(int64(h)); ok {
+			return uint32(rid), ok
 		}
-		return uint32(rid), ok
+		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
 	}
 	return slowBlockRuntimeID(b)
 }
