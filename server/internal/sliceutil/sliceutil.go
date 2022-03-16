@@ -1,12 +1,12 @@
 package sliceutil
 
-// Convert converts a slice of type A to a slice of type B. Convert panics if A cannot be type asserted to type B.
-func Convert[A any, B any, S ~[]A](v S) []B {
-	b := make([]B, len(v))
-	for i, a := range v {
-		b[i] = (interface{})(a).(B)
+// Convert converts a slice of type B to a slice of type A. Convert panics if B cannot be type asserted to type A.
+func Convert[A, B any, S ~[]B](v S) []A {
+	a := make([]A, len(v))
+	for i, b := range v {
+		a[i] = (interface{})(b).(A)
 	}
-	return b
+	return a
 }
 
 // Index returns the index of the first occurrence of v in s,

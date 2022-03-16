@@ -594,7 +594,7 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 // the server's world.
 func (server *Server) registerTargetFunc() {
 	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
-		return sliceutil.Convert[world.Entity, cmd.Target](src.World().Entities()), sliceutil.Convert[*player.Player, cmd.Target](server.Players())
+		return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.Target](server.Players())
 	})
 }
 
