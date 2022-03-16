@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
@@ -545,7 +546,7 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 	w.Provider(p)
 	w.Generator(generator.NewFlat(biome, layers))
 
-	log.Debugf(`Loaded world "%v".`, w.Name())
+	log.Infof(`Loaded world "%v".`, w.Name())
 	return w
 }
 
@@ -592,17 +593,8 @@ func (server *Server) createSkin(data login.ClientData) skin.Skin {
 // registerTargetFunc registers a cmd.TargetFunc to be able to get all players connected and all entities in
 // the server's world.
 func (server *Server) registerTargetFunc() {
-	cmd.AddTargetFunc(func(src cmd.Source) ([]cmd.Target, []cmd.Target) {
-		entities, players := src.World().Entities(), server.Players()
-		eTargets, pTargets := make([]cmd.Target, len(entities)), make([]cmd.Target, len(players))
-
-		for i, e := range entities {
-			eTargets[i] = e
-		}
-		for i, p := range players {
-			pTargets[i] = p
-		}
-		return eTargets, pTargets
+	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
+		return sliceutil.Convert[world.Entity, cmd.Target](src.World().Entities()), sliceutil.Convert[*player.Player, cmd.Target](server.Players())
 	})
 }
 

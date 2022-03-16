@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"go.uber.org/atomic"
@@ -1616,7 +1617,7 @@ func (w *World) tickEntities(tick int64) {
 			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := w.chunks[lastPos]; ok {
 				old.Lock()
-				if i := slices.IndexFunc(old.entities, func(ent Entity) bool { return ent == e }); i != -1 {
+				if i := sliceutil.Index(old.entities, e); i != -1 {
 					old.entities = slices.Clone(slices.Delete(old.entities, i, i+1))
 				}
 				if len(old.v) > 0 {
@@ -1637,14 +1638,14 @@ func (w *World) tickEntities(tick int64) {
 		move.after.Unlock()
 
 		for _, viewer := range move.viewersBefore {
-			if slices.IndexFunc(viewersAfter, func(v Viewer) bool { return v == viewer }) == -1 {
+			if sliceutil.Index(viewersAfter, viewer) == -1 {
 				// First we hide the entity from all viewers that were previously viewing it, but no
 				// longer are.
 				viewer.HideEntity(move.e)
 			}
 		}
 		for _, viewer := range viewersAfter {
-			if slices.IndexFunc(move.viewersBefore, func(v Viewer) bool { return v == viewer }) == -1 {
+			if sliceutil.Index(move.viewersBefore, viewer) == -1 {
 				// Then we show the entity to all viewers that are now viewing the entity in the new
 				// chunk.
 				showEntity(move.e, viewer)
