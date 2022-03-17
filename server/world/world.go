@@ -144,19 +144,16 @@ func (w *World) Block(pos cube.Pos) Block {
 		// Fast way out.
 		return air()
 	}
-	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	c := w.chunk(chunkPos)
-	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
 
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
-			c.Unlock()
 			return nbtB
 		}
 	}
-	c.Unlock()
-
 	b, _ := BlockByRuntimeID(rid)
 	return b
 }
@@ -171,8 +168,9 @@ func (w *World) Biome(pos cube.Pos) Biome {
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	c := w.chunk(chunkPos)
+	defer c.Unlock()
+
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
-	c.Unlock()
 	b, ok := BiomeByID(id)
 	if !ok {
 		w.log.Errorf("could not find biome by ID %v", id)
@@ -188,14 +186,12 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
 		return air(), nil
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.e[pos]; ok {
 			return b, nil
 		}
 	}
-
 	b, _ := BlockByRuntimeID(rid)
 	return b, nil
 }
@@ -207,9 +203,8 @@ func (w *World) HighestLightBlocker(x, z int) int {
 		return w.ra[0]
 	}
 	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
-	v := c.HighestLightBlocker(uint8(x), uint8(z))
-	c.Unlock()
-	return int(v)
+	defer c.Unlock()
+	return int(c.HighestLightBlocker(uint8(x), uint8(z)))
 }
 
 // HighestBlock looks up the highest non-air block in the world at a specific x and z in the world. The y
@@ -219,9 +214,8 @@ func (w *World) HighestBlock(x, z int) int {
 		return w.ra[0]
 	}
 	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
-	v := c.HighestBlock(uint8(x), uint8(z))
-	c.Unlock()
-	return int(v)
+	defer c.Unlock()
+	return int(c.HighestBlock(uint8(x), uint8(z)))
 }
 
 // highestObstructingBlock returns the highest block in the world at a given x and z that has at least a solid top or
@@ -259,10 +253,9 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		return
 	}
 
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
-	c := w.chunk(ChunkPos{x, z})
-	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
+	c := w.chunk(chunkPosFromBlockPos(pos))
 
+	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
 	if nbtBlocks[rid] {
 		c.e[pos] = b
 	} else {
@@ -284,11 +277,9 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 		// Fast way out.
 		return
 	}
-
-	x, z, biome := int32(pos[0]>>4), int32(pos[2]>>4), uint32(b.EncodeBiome())
-	c := w.chunk(ChunkPos{x, z})
-	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), biome)
-	c.Unlock()
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -602,10 +593,8 @@ func (w *World) Light(pos cube.Pos) uint8 {
 		return 15
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
-	l := c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
-	c.Unlock()
-
-	return l
+	defer c.Unlock()
+	return c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
 // SkyLight returns the skylight level at the position passed. This light level is not influenced by blocks
@@ -621,10 +610,8 @@ func (w *World) SkyLight(pos cube.Pos) uint8 {
 		return 15
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
-	l := c.SkyLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
-	c.Unlock()
-
-	return l
+	defer c.Unlock()
+	return c.SkyLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
