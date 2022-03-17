@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -36,6 +37,11 @@ func (p ChunkPos) X() int32 {
 // Z returns the Z coordinate of the chunk position.
 func (p ChunkPos) Z() int32 {
 	return p[1]
+}
+
+// String implements fmt.Stringer and returns (x, z).
+func (p ChunkPos) String() string {
+	return fmt.Sprintf("(%v, %v)", p[0], p[1])
 }
 
 // chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are

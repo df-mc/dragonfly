@@ -145,11 +145,7 @@ func (w *World) Block(pos cube.Pos) Block {
 		return air()
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("error getting block: %v", err)
-		return air()
-	}
+	c := w.chunk(chunkPos)
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 
 	if nbtBlocks[rid] {
@@ -174,11 +170,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 		return ocean()
 	}
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("error reading biome: %v", err)
-		return ocean()
-	}
+	c := w.chunk(chunkPos)
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
 	c.Unlock()
 	b, ok := BiomeByID(id)
@@ -214,10 +206,7 @@ func (w *World) HighestLightBlocker(x, z int) int {
 	if w == nil {
 		return w.ra[0]
 	}
-	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
-	if err != nil {
-		return w.ra[0]
-	}
+	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	v := c.HighestLightBlocker(uint8(x), uint8(z))
 	c.Unlock()
 	return int(v)
@@ -229,10 +218,7 @@ func (w *World) HighestBlock(x, z int) int {
 	if w == nil {
 		return w.ra[0]
 	}
-	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
-	if err != nil {
-		return w.ra[0]
-	}
+	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	v := c.HighestBlock(uint8(x), uint8(z))
 	c.Unlock()
 	return int(v)
@@ -274,10 +260,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 	}
 
 	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
-		return
-	}
+	c := w.chunk(ChunkPos{x, z})
 	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
 
 	if nbtBlocks[rid] {
@@ -303,11 +286,7 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 	}
 
 	x, z, biome := int32(pos[0]>>4), int32(pos[2]>>4), uint32(b.EncodeBiome())
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
-		return
-	}
-
+	c := w.chunk(ChunkPos{x, z})
 	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), biome)
 	c.Unlock()
 }
@@ -386,11 +365,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
 			// block updates, but instead send a single chunk update once.
 			chunkPos := ChunkPos{int32(chunkX), int32(chunkZ)}
-			c, err := w.chunk(chunkPos)
-			if err != nil {
-				w.log.Errorf("error loading chunk for structure: %v", err)
-				continue
-			}
+			c := w.chunk(chunkPos)
 			f := func(x, y, z int) Block {
 				actualX, actualY, actualZ := pos[0]+x, pos[1]+y, pos[2]+z
 				if actualX>>4 == chunkX && actualZ>>4 == chunkZ {
@@ -479,36 +454,28 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 		// Fast way out.
 		return nil, false
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
-		return nil, false
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
 	id := c.Block(x, y, z, 0)
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
-		c.Unlock()
 		return nil, false
 	}
 	if liq, ok := b.(Liquid); ok {
-		c.Unlock()
 		return liq, true
 	}
-
 	id = c.Block(x, y, z, 1)
+
 	b, ok = BlockByRuntimeID(id)
-	c.Unlock()
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
 	}
-	if liq, ok := b.(Liquid); ok {
-		return liq, true
-	}
-	return nil, false
+	liq, ok := b.(Liquid)
+	return liq, ok
 }
 
 // SetLiquid sets the liquid at a specific position in the world. Unlike SetBlock, SetLiquid will not
@@ -521,11 +488,7 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 		return
 	}
 	chunkPos := chunkPosFromBlockPos(pos)
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("failed setting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
-		return
-	}
+	c := w.chunk(chunkPos)
 	if b == nil {
 		w.removeLiquids(c, pos)
 		c.Unlock()
@@ -614,11 +577,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 		// Fast way out.
 		return nil, false
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
-		return nil, false
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
 	id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
 	c.Unlock()
 	b, ok := BlockByRuntimeID(id)
@@ -642,10 +601,7 @@ func (w *World) Light(pos cube.Pos) uint8 {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		return 0
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
 	l := c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 	c.Unlock()
 
@@ -664,10 +620,7 @@ func (w *World) SkyLight(pos cube.Pos) uint8 {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		return 0
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
 	l := c.SkyLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 	c.Unlock()
 
@@ -847,13 +800,8 @@ func (w *World) AddEntity(e Entity) {
 	w.entities[e] = chunkPos
 	w.entityMu.Unlock()
 
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("error loading chunk to add entity: %v", err)
-		return
-	}
+	c := w.chunk(chunkPos)
 	c.entities = append(c.entities, e)
-
 	viewers := slices.Clone(c.v)
 	c.Unlock()
 
@@ -1782,13 +1730,13 @@ func showEntity(e Entity, viewer Viewer) {
 // An error is returned if the chunk could not be loaded successfully.
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
-func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
+func (w *World) chunk(pos ChunkPos) *chunkData {
 	w.chunkMu.Lock()
 	if pos == w.lastPos && w.lastChunk != nil {
 		c := w.lastChunk
 		w.chunkMu.Unlock()
 		c.Lock()
-		return c, nil
+		return c
 	}
 	c, ok := w.chunks[pos]
 	if !ok {
@@ -1796,8 +1744,8 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 		c, err = w.loadChunk(pos)
 		if err != nil {
 			w.chunkMu.Unlock()
-			w.log.Errorf("%v\n", err)
-			return nil, err
+			w.log.Errorf("load chunk: failed loading %v: %v\n", pos, err)
+			return c
 		}
 		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		c.Unlock()
@@ -1809,7 +1757,7 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	w.chunkMu.Unlock()
 
 	c.Lock()
-	return c, nil
+	return c
 }
 
 // setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
@@ -1840,18 +1788,17 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
 	if err != nil {
-		return nil, fmt.Errorf("error loading chunk %v: %w", pos, err)
+		return newChunkData(chunk.New(airRID, w.d.Range())), err
 	}
 
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New(airRID, w.d.Range())
-		data := newChunkData(c)
+		data := newChunkData(chunk.New(airRID, w.d.Range()))
 		w.chunks[pos] = data
 		data.Lock()
 		w.chunkMu.Unlock()
 
-		w.gen.Load().GenerateChunk(pos, c)
+		w.gen.Load().GenerateChunk(pos, data.Chunk)
 		return data, nil
 	}
 	data := newChunkData(c)

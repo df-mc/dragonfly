@@ -77,23 +77,19 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 // every chunk loaded, the function f is called.
 // The function f must not hold the chunk beyond the function scope.
 // An error is returned if one of the chunks could not be loaded.
-func (l *Loader) Load(n int) error {
+func (l *Loader) Load(n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	if n == 0 || l.closed || l.w == nil {
-		return nil
+		return
 	}
 	for i := 0; i < n; i++ {
 		if len(l.loadQueue) == 0 {
 			break
 		}
 		pos := l.loadQueue[0]
-		c, err := l.w.chunk(pos)
-		if err != nil {
-			l.mu.Unlock()
-			return err
-		}
+		c := l.w.chunk(pos)
 		l.viewer.ViewChunk(pos, c.Chunk, c.e)
 		l.w.addViewer(c, l)
 
@@ -103,7 +99,6 @@ func (l *Loader) Load(n int) error {
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
-	return nil
 }
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that

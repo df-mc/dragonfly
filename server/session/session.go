@@ -344,12 +344,7 @@ func (s *Session) sendChunks() {
 	if toLoad > 4 {
 		toLoad = 4
 	}
-	if err := s.chunkLoader.Load(toLoad); err != nil {
-		// The world was closed. This should generally never happen, and if it does, we can assume the
-		// world was closed.
-		s.log.Debugf("error loading chunk: %v", err)
-		return
-	}
+	s.chunkLoader.Load(toLoad)
 }
 
 // handleWorldSwitch handles the player of the Session switching worlds.
