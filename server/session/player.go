@@ -3,8 +3,8 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -18,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"go.uber.org/atomic"
 	"math"
 	"net"
 	"time"
@@ -51,7 +50,7 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
-	pos := s.openedPos.Load().(cube.Pos)
+	pos := s.openedPos.Load()
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}
@@ -110,21 +109,21 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, barrel := b.(block.Barrel); barrel {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, beacon := b.(block.Beacon); beacon {
 				return s.ui, true
 			}

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
@@ -32,7 +33,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
-	"go.uber.org/atomic"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -49,9 +49,9 @@ import (
 // trying to join the server.
 type Server struct {
 	started atomic.Bool
-	name    atomic.String
+	name    atomic.Value[string]
 
-	joinMessage, quitMessage atomic.String
+	joinMessage, quitMessage atomic.Value[string]
 	playerProvider           player.Provider
 
 	c                  Config
@@ -104,7 +104,7 @@ func New(c *Config, log internal.Logger) *Server {
 		log:            log,
 		players:        make(chan *player.Player),
 		p:              make(map[uuid.UUID]*player.Player),
-		name:           *atomic.NewString(c.Server.Name),
+		name:           *atomic.NewValue(c.Server.Name),
 		playerProvider: player.NopProvider{},
 		a:              allower{},
 	}

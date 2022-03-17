@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -18,7 +19,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
-	"go.uber.org/atomic"
 	"io"
 	"net"
 	"sync"
@@ -39,8 +39,8 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	currentScoreboard atomic.String
-	currentLines      atomic.Value
+	currentScoreboard atomic.Value[string]
+	currentLines      atomic.Value[[]string]
 
 	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
@@ -67,7 +67,8 @@ type Session struct {
 
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
-	openedWindow, openedPos        atomic.Value
+	openedWindow                   atomic.Value[*inventory.Inventory]
+	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
 
 	blobMu                sync.Mutex
@@ -75,7 +76,7 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage *atomic.String
+	joinMessage, quitMessage *atomic.Value[string]
 
 	closeBackground chan struct{}
 }
@@ -129,7 +130,7 @@ var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Start().
-func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
+func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius

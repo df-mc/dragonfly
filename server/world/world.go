@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
@@ -9,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
-	"go.uber.org/atomic"
 	"golang.org/x/exp/slices"
 	"math/rand"
 	"sync"
@@ -29,8 +29,7 @@ type World struct {
 	// Settings struct held by the World.
 	advance bool
 
-	portalMu sync.Mutex
-	npd, epd *World
+	npd, epd atomic.Value[*World]
 
 	set  *Settings
 	prov Provider
@@ -43,11 +42,8 @@ type World struct {
 	closing chan struct{}
 	running sync.WaitGroup
 
-	handlerMu sync.RWMutex
-	handler   Handler
-
-	genMu sync.RWMutex
-	gen   Generator
+	handler atomic.Value[Handler]
+	gen     atomic.Value[Generator]
 
 	chunkMu sync.Mutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
@@ -97,8 +93,8 @@ func New(log internal.Logger, d Dimension, s *Settings) *World {
 		entities:        map[Entity]ChunkPos{},
 		viewers:         map[Viewer]struct{}{},
 		prov:            NoIOProvider{},
-		gen:             NopGenerator{},
-		handler:         NopHandler{},
+		gen:             *atomic.NewValue[Generator](NopGenerator{}),
+		handler:         *atomic.NewValue[Handler](NopHandler{}),
 		randomTickSpeed: *atomic.NewUint32(3),
 		log:             log,
 		set:             s,
@@ -1149,13 +1145,10 @@ func (w *World) Generator(g Generator) {
 	if w == nil {
 		return
 	}
-	w.genMu.Lock()
-	defer w.genMu.Unlock()
-
 	if g == nil {
 		g = NopGenerator{}
 	}
-	w.gen = g
+	w.gen.Store(g)
 }
 
 // Handle changes the current Handler of the world. As a result, events called by the world will call
@@ -1165,13 +1158,10 @@ func (w *World) Handle(h Handler) {
 	if w == nil {
 		return
 	}
-	w.handlerMu.Lock()
-	defer w.handlerMu.Unlock()
-
 	if h == nil {
 		h = NopHandler{}
 	}
-	w.handler = h
+	w.handler.Store(h)
 }
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
@@ -1193,17 +1183,14 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 // for either portals to work, SetPortalDestinations must first be called.
 // Nil may be passed as destination to prevent the respective portal from transporting entities in it.
 func (w *World) SetPortalDestinations(nether, end *World) {
-	w.portalMu.Lock()
-	defer w.portalMu.Unlock()
-	w.npd, w.epd = nether, end
+	w.npd.Store(nether)
+	w.epd.Store(end)
 }
 
 // PortalDestinations returns the destination worlds for nether and end portals respectively. Upon entering portals in
 // this World, entities are moved to the respective destination worlds.
 func (w *World) PortalDestinations() (nether, end *World) {
-	w.portalMu.Lock()
-	defer w.portalMu.Unlock()
-	return w.npd, w.epd
+	return w.npd.Load(), w.epd.Load()
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -1768,19 +1755,7 @@ func (w *World) Handler() Handler {
 	if w == nil {
 		return NopHandler{}
 	}
-	w.handlerMu.RLock()
-	handler := w.handler
-	w.handlerMu.RUnlock()
-	return handler
-}
-
-// generator returns the generator of the world. It should always be used, rather than direct field access, in
-// order to provide synchronisation safety.
-func (w *World) generator() Generator {
-	w.genMu.RLock()
-	generator := w.gen
-	w.genMu.RUnlock()
-	return generator
+	return w.handler.Load()
 }
 
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the
@@ -1876,7 +1851,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 		data.Lock()
 		w.chunkMu.Unlock()
 
-		w.generator().GenerateChunk(pos, c)
+		w.gen.Load().GenerateChunk(pos, c)
 		return data, nil
 	}
 	data := newChunkData(c)

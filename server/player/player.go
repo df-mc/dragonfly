@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
@@ -26,7 +27,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"go.uber.org/atomic"
 	"golang.org/x/text/language"
 	"math"
 	"math/rand"
@@ -43,9 +43,9 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos, vel                            atomic.Value
-	nameTag                             atomic.String
-	scoreTag                            atomic.String
+	pos, vel                            atomic.Value[mgl64.Vec3]
+	nameTag                             atomic.Value[string]
+	scoreTag                            atomic.Value[string]
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 	once                                sync.Once
 
@@ -83,12 +83,12 @@ type Player struct {
 	speed    atomic.Float64
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
-	immunity atomic.Value
+	immunity atomic.Value[time.Time]
 
 	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
-	breakingPos       atomic.Value
+	breakingPos       atomic.Value[cube.Pos]
 	lastBreakDuration time.Duration
 
 	breakParticleCounter atomic.Uint32
@@ -118,17 +118,15 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		name:      name,
 		skin:      skin,
 		speed:     *atomic.NewFloat64(0.1),
-		nameTag:   *atomic.NewString(name),
+		nameTag:   *atomic.NewValue(name),
 		heldSlot:  atomic.NewUint32(0),
 		locale:    language.BritishEnglish,
 		scale:     *atomic.NewFloat64(1),
+		immunity:  *atomic.NewValue(time.Now()),
+		pos:       *atomic.NewValue(pos),
 		cooldowns: make(map[itemHash]time.Time),
+		mc:        &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
-	p.mc = &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true}
-	p.pos.Store(pos)
-	p.vel.Store(mgl64.Vec3{})
-	p.immunity.Store(time.Now())
-	p.breakingPos.Store(cube.Pos{})
 	return p
 }
 
@@ -649,12 +647,12 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
 func (p *Player) AttackImmune() bool {
-	return p.immunity.Load().(time.Time).After(time.Now())
+	return p.immunity.Load().After(time.Now())
 }
 
 // AttackImmunity returns the duration the player is immune to entity attacks.
 func (p *Player) AttackImmunity() time.Duration {
-	return time.Until(p.immunity.Load().(time.Time))
+	return time.Until(p.immunity.Load())
 }
 
 // SetAttackImmunity sets the duration the player is immune to entity attacks.
@@ -1545,7 +1543,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 // if the player isn't breaking anything.
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
-	pos := p.breakingPos.Load().(cube.Pos)
+	pos := p.breakingPos.Load()
 	if !p.breaking.Load() {
 		w := p.World()
 		w.SetBlock(pos, w.Block(pos))
@@ -1563,7 +1561,7 @@ func (p *Player) AbortBreaking() {
 		return
 	}
 	p.breakParticleCounter.Store(0)
-	pos := p.breakingPos.Load().(cube.Pos)
+	pos := p.breakingPos.Load()
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(pos, block.StopCrackAction{})
 	}
@@ -1576,7 +1574,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	if !p.breaking.Load() {
 		return
 	}
-	pos := p.breakingPos.Load().(cube.Pos)
+	pos := p.breakingPos.Load()
 
 	p.SwingArm()
 
@@ -1878,12 +1876,12 @@ func (p *Player) World() *world.World {
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl64.Vec3 {
-	return p.pos.Load().(mgl64.Vec3)
+	return p.pos.Load()
 }
 
 // Velocity returns the players current velocity. If there is an attached session, this will be empty.
 func (p *Player) Velocity() mgl64.Vec3 {
-	return p.vel.Load().(mgl64.Vec3)
+	return p.vel.Load()
 }
 
 // SetVelocity updates the player's velocity. If there is an attached session, this will just send

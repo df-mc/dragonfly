@@ -53,7 +53,7 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	if s == Nop {
 		return
 	}
-	currentName, currentLines := s.currentScoreboard.Load(), s.currentLines.Load().([]string)
+	currentName, currentLines := s.currentScoreboard.Load(), s.currentLines.Load()
 
 	if currentName != sb.Name() {
 		s.RemoveScoreboard()
