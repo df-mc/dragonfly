@@ -529,10 +529,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID, ok = world.BlockRuntimeID(b)
-		if !ok {
-			panic("should never happen")
-		}
+		blockRuntimeID = world.BlockRuntimeID(b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())

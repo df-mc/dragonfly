@@ -166,8 +166,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 		// Fast way out.
 		return ocean()
 	}
-	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	c := w.chunk(chunkPos)
+	c := w.chunk(chunkPosFromBlockPos(pos))
 	defer c.Unlock()
 
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
@@ -180,20 +179,20 @@ func (w *World) Biome(pos cube.Pos) Biome {
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
-func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
+func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
 	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
-		return air(), nil
+		return air()
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.e[pos]; ok {
-			return b, nil
+			return b
 		}
 	}
 	b, _ := BlockByRuntimeID(rid)
-	return b, nil
+	return b
 }
 
 // HighestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
@@ -246,15 +245,9 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		// Fast way out.
 		return
 	}
-
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		w.log.Errorf("runtime ID of block %+v not found", b)
-		return
-	}
-
 	c := w.chunk(chunkPosFromBlockPos(pos))
 
+	rid := BlockRuntimeID(b)
 	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
 	if nbtBlocks[rid] {
 		c.e[pos] = b
@@ -358,12 +351,11 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			chunkPos := ChunkPos{int32(chunkX), int32(chunkZ)}
 			c := w.chunk(chunkPos)
 			f := func(x, y, z int) Block {
-				actualX, actualY, actualZ := pos[0]+x, pos[1]+y, pos[2]+z
-				if actualX>>4 == chunkX && actualZ>>4 == chunkZ {
-					b, _ := w.blockInChunk(c, cube.Pos{actualX, actualY, actualZ})
-					return b
+				actual := cube.Pos{pos[0] + x, pos[1] + y, pos[2] + z}
+				if actual[0]>>4 == chunkX && actual[2]>>4 == chunkZ {
+					return w.blockInChunk(c, actual)
 				}
-				return w.Block(cube.Pos{actualX, actualY, actualZ})
+				return w.Block(actual)
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
@@ -397,11 +389,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 							}
 							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
 							if b != nil {
-								rid, ok := BlockRuntimeID(b)
-								if !ok {
-									w.log.Errorf("error setting block of structure: runtime ID of block state %+v not found", b)
-									continue
-								}
+								rid := BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								if nbtBlocks[rid] {
@@ -411,12 +399,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								}
 							}
 							if liq != nil {
-								rid, ok := BlockRuntimeID(liq)
-								if !ok {
-									w.log.Errorf("runtime ID of block state %+v not found", liq)
-									continue
-								}
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, rid)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, BlockRuntimeID(liq))
 							} else {
 								if len(sub.Layers()) < 2 {
 									continue
@@ -488,30 +471,19 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 	}
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	if !replaceable(w, c, pos, b) {
-		current, err := w.blockInChunk(c, pos)
-		if err != nil {
-			c.Unlock()
-			w.log.Errorf("failed setting liquid: error getting block at position %v: %v", chunkPosFromBlockPos(pos), err)
-			return
-		}
-		if displacer, ok := current.(LiquidDisplacer); !ok || !displacer.CanDisplace(b) {
+		if displacer, ok := w.blockInChunk(c, pos).(LiquidDisplacer); !ok || !displacer.CanDisplace(b) {
 			c.Unlock()
 			return
 		}
 	}
-	runtimeID, ok := BlockRuntimeID(b)
-	if !ok {
-		c.Unlock()
-		w.log.Errorf("failed setting liquid: runtime ID of block state %+v not found", b)
-		return
-	}
+	rid := BlockRuntimeID(b)
 	if w.removeLiquids(c, pos) {
-		c.SetBlock(x, y, z, 0, runtimeID)
+		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.v {
 			v.ViewBlockUpdate(pos, b, 0)
 		}
 	} else {
-		c.SetBlock(x, y, z, 1, runtimeID)
+		c.SetBlock(x, y, z, 1, rid)
 		for _, v := range c.v {
 			v.ViewBlockUpdate(pos, b, 1)
 		}

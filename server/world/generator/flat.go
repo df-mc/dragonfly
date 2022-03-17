@@ -27,7 +27,7 @@ func NewFlat(biome world.Biome, layers []world.Block) Flat {
 		n:      int16(len(layers)),
 	}
 	for i, b := range layers {
-		f.layers[i], _ = world.BlockRuntimeID(b)
+		f.layers[i] = world.BlockRuntimeID(b)
 	}
 	return f
 }

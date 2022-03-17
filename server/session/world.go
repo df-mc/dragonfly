@@ -192,9 +192,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 		})
 		return
 	case *entity.FallingBlock:
-		metadata = map[uint32]any{dataKeyVariant: int32(s.blockRuntimeID(v.Block()))}
+		metadata = map[uint32]any{dataKeyVariant: int32(world.BlockRuntimeID(v.Block()))}
 	case *entity.Text:
-		metadata = map[uint32]any{dataKeyVariant: int32(s.blockRuntimeID(block.Air{}))}
+		metadata = map[uint32]any{dataKeyVariant: int32(world.BlockRuntimeID(block.Air{}))}
 		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
 
@@ -415,13 +415,13 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesDestroyBlock,
 			Position:  vec64To32(pos),
-			EventData: int32(s.blockRuntimeID(pa.Block)),
+			EventData: int32(world.BlockRuntimeID(pa.Block)),
 		})
 	case particle.PunchBlock:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesCrackBlock,
 			Position:  vec64To32(pos),
-			EventData: int32(s.blockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
+			EventData: int32(world.BlockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
 	case particle.EndermanTeleportParticle:
 		s.writePacket(&packet.LevelEvent{
@@ -529,7 +529,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	case sound.Deny:
 		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
-		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.blockRuntimeID(so.Block))
+		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(world.BlockRuntimeID(so.Block))
 	case sound.ChestClose:
 		pk.SoundType = packet.SoundEventChestClosed
 	case sound.ChestOpen:
@@ -539,11 +539,11 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	case sound.BarrelOpen:
 		pk.SoundType = packet.SoundEventBarrelOpen
 	case sound.BlockBreaking:
-		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.blockRuntimeID(so.Block))
+		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(world.BlockRuntimeID(so.Block))
 	case sound.ItemBreak:
 		pk.SoundType = packet.SoundEventBreak
 	case sound.ItemUseOn:
-		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.blockRuntimeID(so.Block))
+		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(world.BlockRuntimeID(so.Block))
 	case sound.Fizz:
 		pk.SoundType = packet.SoundEventFizz
 	case sound.GlassBreak:
@@ -577,11 +577,10 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
-	runtimeID, _ := world.BlockRuntimeID(b)
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,
-		NewBlockRuntimeID: runtimeID,
+		NewBlockRuntimeID: world.BlockRuntimeID(b),
 		Flags:             packet.BlockUpdateNetwork,
 		Layer:             uint32(layer),
 	})
@@ -835,12 +834,6 @@ func (s *Session) closeWindow() {
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
-}
-
-// blockRuntimeID returns the runtime ID of the block passed.
-func (s *Session) blockRuntimeID(b world.Block) uint32 {
-	id, _ := world.BlockRuntimeID(b)
-	return id
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

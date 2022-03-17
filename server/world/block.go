@@ -87,14 +87,14 @@ func RegisterBlock(b Block) {
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
-// If the runtime ID is found, the bool returned is true. It is otherwise false.
-func BlockRuntimeID(b Block) (uint32, bool) {
+// If the runtime ID cannot be found because the BLock wasn't registered, BlockRuntimeID will panic.
+func BlockRuntimeID(b Block) uint32 {
 	if b == nil {
-		return airRID, true
+		return airRID
 	}
 	if h := b.Hash(); h != math.MaxUint64 {
 		if rid, ok := hashes.Get(int64(h)); ok {
-			return uint32(rid), ok
+			return uint32(rid)
 		}
 		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
 	}
@@ -103,11 +103,14 @@ func BlockRuntimeID(b Block) (uint32, bool) {
 
 // slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the
 // Block.EncodeBlock method and looking it up in the stateRuntimeIDs map.
-func slowBlockRuntimeID(b Block) (uint32, bool) {
+func slowBlockRuntimeID(b Block) uint32 {
 	name, properties := b.EncodeBlock()
 
 	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
-	return rid, ok
+	if !ok {
+		panic(fmt.Sprintf("cannot find block by (name + properties): %#v", b))
+	}
+	return rid
 }
 
 // BlockByRuntimeID attempts to return a Block by its runtime ID. If not found, the bool returned is
@@ -207,8 +210,7 @@ type replaceableBlock interface {
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
 func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
-	b, _ := w.blockInChunk(c, pos)
-	if r, ok := b.(replaceableBlock); ok {
+	if r, ok := w.blockInChunk(c, pos).(replaceableBlock); ok {
 		return r.ReplaceableBy(with)
 	}
 	return false
