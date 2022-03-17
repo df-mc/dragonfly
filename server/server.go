@@ -48,20 +48,23 @@ import (
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
 // trying to join the server.
 type Server struct {
-	started atomic.Bool
+	c       Config
+	log     internal.Logger
 	name    atomic.Value[string]
+	started atomic.Bool
+
+	playerProvider     atomic.Value[player.Provider]
+	world, nether, end *world.World
+
+	listenMu  sync.Mutex
+	listeners []Listener
+	a         atomic.Value[Allower]
+
+	resources []*resource.Pack
 
 	joinMessage, quitMessage atomic.Value[string]
-	playerProvider           player.Provider
 
-	c                  Config
-	log                internal.Logger
-	world, nether, end *world.World
-	players            chan *player.Player
-	resources          []*resource.Pack
-
-	startTime time.Time
-
+	players     chan *player.Player
 	playerMutex sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
@@ -71,12 +74,6 @@ type Server struct {
 	pwg sync.WaitGroup
 
 	wg sync.WaitGroup
-
-	listenMu  sync.Mutex
-	listeners []Listener
-
-	aMu sync.Mutex
-	a   Allower
 }
 
 func init() {
@@ -105,8 +102,8 @@ func New(c *Config, log internal.Logger) *Server {
 		players:        make(chan *player.Player),
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewValue(c.Server.Name),
-		playerProvider: player.NopProvider{},
-		a:              allower{},
+		playerProvider: *atomic.NewValue[player.Provider](player.NopProvider{}),
+		a:              *atomic.NewValue[Allower](allower{}),
 	}
 	set := new(world.Settings)
 	s.world = s.createWorld(world.Overworld, biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, set)
@@ -183,15 +180,6 @@ func (server *Server) Start() error {
 	return nil
 }
 
-// Uptime returns the duration that the server has been running for. Measurement starts the moment a call to
-// Server.Start or Server.Run is made.
-func (server *Server) Uptime() time.Duration {
-	if !server.running() {
-		return 0
-	}
-	return time.Since(server.startTime)
-}
-
 // PlayerCount returns the current player count of the server. It is equivalent to calling
 // len(server.Players()).
 func (server *Server) PlayerCount() int {
@@ -252,7 +240,7 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 	if provider == nil {
 		provider = player.NopProvider{}
 	}
-	server.playerProvider = provider
+	server.playerProvider.Store(provider)
 }
 
 // AddResourcePack loads a resource pack to the server. The pack will eventually be sent to clients who join the
@@ -297,7 +285,7 @@ func (server *Server) Close() error {
 	server.pwg.Wait()
 
 	server.log.Debugf("Closing player provider...")
-	if err := server.playerProvider.Close(); err != nil {
+	if err := server.playerProvider.Load().Close(); err != nil {
 		server.log.Errorf("Error while closing player provider: %v", err)
 	}
 
@@ -330,9 +318,7 @@ func (server *Server) Allow(a Allower) {
 	if a == nil {
 		a = allower{}
 	}
-	server.aMu.Lock()
-	defer server.aMu.Unlock()
-	server.a = a
+	server.a.Store(a)
 }
 
 // Listen makes the Server listen for new connections from the Listener passed. This may be used to listen for players
@@ -360,11 +346,7 @@ func (server *Server) Listen(l Listener) {
 				server.wg.Done()
 				return
 			}
-			server.aMu.Lock()
-			a := server.a
-			server.aMu.Unlock()
-
-			if msg, ok := a.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
+			if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
 				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
 				_ = c.Close()
 				continue
@@ -395,8 +377,6 @@ func (server *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
-	server.startTime = time.Now()
-
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
@@ -431,7 +411,7 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 	data := server.defaultGameData()
 
 	var playerData *player.Data
-	if d, err := server.playerProvider.Load(id); err == nil {
+	if d, err := server.playerProvider.Load().Load(id); err == nil {
 		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 		data.Dimension = int32(server.dimension(d.Dimension).Dimension().EncodeDimension())
@@ -503,7 +483,7 @@ func (server *Server) handleSessionClose(c session.Controllable) {
 	p := server.p[c.UUID()]
 	delete(server.p, c.UUID())
 	server.playerMutex.Unlock()
-	err := server.playerProvider.Save(p.UUID(), p.Data())
+	err := server.playerProvider.Load().Save(p.UUID(), p.Data())
 	if err != nil {
 		server.log.Errorf("Error while saving data: %v", err)
 	}
