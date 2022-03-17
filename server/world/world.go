@@ -634,7 +634,9 @@ func (w *World) SetTime(new int) {
 	w.set.Lock()
 	w.set.Time = int64(new)
 	w.set.Unlock()
-	for _, viewer := range w.allViewers() {
+
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
 		viewer.ViewTime(new)
 	}
 }
@@ -926,7 +928,9 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	w.set.Lock()
 	w.set.Spawn = pos
 	w.set.Unlock()
-	for _, viewer := range w.allViewers() {
+
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
 		viewer.ViewWorldSpawn(pos)
 	}
 }
@@ -1189,7 +1193,7 @@ func (w *World) startTicking() {
 
 // tick ticks the world and updates the time, blocks and entities that require updates.
 func (w *World) tick() {
-	viewers := w.allViewers()
+	viewers, loaders := w.allViewers()
 
 	w.set.Lock()
 	if len(viewers) == 0 && w.set.CurrentTick != 0 {
@@ -1260,7 +1264,7 @@ func (w *World) tick() {
 	}
 
 	w.tickEntities(tick)
-	w.tickRandomBlocks(viewers, tick)
+	w.tickRandomBlocks(loaders, tick)
 	w.tickScheduledBlocks(tick)
 }
 
@@ -1362,7 +1366,7 @@ type blockEntityToTick struct {
 
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered from the viewers passed.
-func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
+func (w *World) tickRandomBlocks(loaders []*Loader, tick int64) {
 	r := int32(w.tickRange())
 	if r == 0 {
 		// NOP if the simulation distance is 0.
@@ -1370,14 +1374,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 	}
 	tickSpeed := w.randomTickSpeed.Load()
 
-	for _, viewer := range viewers {
-		pos := viewer.Position()
-		w.positionCache = append(w.positionCache, ChunkPos{
-			// Technically we could obtain the wrong chunk position here due to truncating, but this
-			// inaccuracy doesn't matter, and it allows us to cut a corner.
-			int32(pos[0]) >> 4,
-			int32(pos[2]) >> 4,
-		})
+	for _, loader := range loaders {
+		w.positionCache = append(w.positionCache, loader.pos)
 	}
 
 	var g randUint4
@@ -1395,7 +1393,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 			}
 		}
 		if !withinSimDist {
-			// No viewers in this chunk that are within the simulation distance, so proceed to the next.
+			// No loaders in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
 		c.Lock()
@@ -1509,13 +1507,13 @@ func (w *World) tickEntities(tick int64) {
 
 		if lastPos != chunkPos {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
-			// for viewers to view it.
+			// for loaders to view it.
 			w.entities[e] = chunkPos
 			var viewers []Viewer
 
 			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
 			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
-			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
+			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := w.chunks[lastPos]; ok {
 				old.Lock()
 				old.entities = sliceutil.DeleteVal(old.entities, e)
@@ -1536,14 +1534,14 @@ func (w *World) tickEntities(tick int64) {
 
 		for _, viewer := range move.viewersBefore {
 			if sliceutil.Index(viewersAfter, viewer) == -1 {
-				// First we hide the entity from all viewers that were previously viewing it, but no
+				// First we hide the entity from all loaders that were previously viewing it, but no
 				// longer are.
 				viewer.HideEntity(move.e)
 			}
 		}
 		for _, viewer := range viewersAfter {
 			if sliceutil.Index(move.viewersBefore, viewer) == -1 {
-				// Then we show the entity to all viewers that are now viewing the entity in the new
+				// Then we show the entity to all loaders that are now viewing the entity in the new
 				// chunk.
 				showEntity(move.e, viewer)
 			}
@@ -1609,11 +1607,11 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 	w.set.ThunderTime = int64(x.Seconds() * 20)
 }
 
-// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() []Viewer {
+// allViewers returns a list of all loaders of the world, regardless of where in the world they are viewing.
+func (w *World) allViewers() ([]Viewer, []*Loader) {
 	w.viewersMu.Lock()
 	defer w.viewersMu.Unlock()
-	return maps.Values(w.viewers)
+	return maps.Values(w.viewers), maps.Keys(w.viewers)
 }
 
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
@@ -1968,7 +1966,7 @@ func (w *World) chunkCacheJanitor() {
 	}
 }
 
-// chunkData represents the data of a chunk including the block entities and viewers. This data is protected
+// chunkData represents the data of a chunk including the block entities and loaders. This data is protected
 // by the mutex present in the chunk.Chunk held.
 type chunkData struct {
 	*chunk.Chunk

@@ -862,11 +862,6 @@ func (s *Session) entityFromRuntimeID(id uint64) (world.Entity, bool) {
 	return e, ok
 }
 
-// Position ...
-func (s *Session) Position() mgl64.Vec3 {
-	return s.c.Position()
-}
-
 // vec32To64 converts a mgl32.Vec3 to a mgl64.Vec3.
 func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 	return mgl64.Vec3{float64(vec3[0]), float64(vec3[1]), float64(vec3[2])}
