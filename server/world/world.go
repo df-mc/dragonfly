@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"math/rand"
 	"sync"
@@ -73,7 +74,7 @@ type World struct {
 	entitiesToTick      []TickerEntity
 
 	viewersMu sync.Mutex
-	viewers   map[Viewer]struct{}
+	viewers   map[*Loader]Viewer
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -91,7 +92,7 @@ func New(log internal.Logger, d Dimension, s *Settings) *World {
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
 		entities:        map[Entity]ChunkPos{},
-		viewers:         map[Viewer]struct{}{},
+		viewers:         map[*Loader]Viewer{},
 		prov:            NoIOProvider{},
 		gen:             *atomic.NewValue[Generator](NopGenerator{}),
 		handler:         *atomic.NewValue[Handler](NopHandler{}),
@@ -856,9 +857,9 @@ func (w *World) AddEntity(e Entity) {
 	viewers := slices.Clone(c.v)
 	c.Unlock()
 
-	for _, viewer := range viewers {
+	for _, v := range viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
-		showEntity(e, viewer)
+		showEntity(e, v)
 	}
 
 	w.Handler().HandleEntitySpawn(e)
@@ -902,8 +903,8 @@ func (w *World) RemoveEntity(e Entity) {
 	delete(w.entities, e)
 	w.entityMu.Unlock()
 
-	for _, viewer := range viewers {
-		viewer.HideEntity(e)
+	for _, v := range viewers {
+		v.HideEntity(e)
 	}
 }
 
@@ -1677,52 +1678,49 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 func (w *World) allViewers() []Viewer {
 	w.viewersMu.Lock()
 	defer w.viewersMu.Unlock()
-	v := make([]Viewer, 0, len(w.viewers))
-	for viewer := range w.viewers {
-		v = append(v, viewer)
-	}
-	return v
+	return maps.Values(w.viewers)
 }
 
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
-func (w *World) addWorldViewer(viewer Viewer) {
+func (w *World) addWorldViewer(l *Loader) {
 	w.viewersMu.Lock()
-	w.viewers[viewer] = struct{}{}
+	w.viewers[l] = l.viewer
 	w.viewersMu.Unlock()
-	viewer.ViewTime(w.Time())
+	l.viewer.ViewTime(w.Time())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
 	w.set.Unlock()
-	viewer.ViewWeather(raining, thundering)
-	viewer.ViewWorldSpawn(w.Spawn())
+	l.viewer.ViewWeather(raining, thundering)
+	l.viewer.ViewWorldSpawn(w.Spawn())
 }
 
 // removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
-func (w *World) removeWorldViewer(viewer Viewer) {
+func (w *World) removeWorldViewer(l *Loader) {
 	w.viewersMu.Lock()
-	delete(w.viewers, viewer)
+	delete(w.viewers, l)
 	w.viewersMu.Unlock()
 }
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
-func (w *World) addViewer(c *chunkData, viewer Viewer) {
+func (w *World) addViewer(c *chunkData, loader *Loader) {
 	if w == nil {
 		return
 	}
-	c.v = append(c.v, viewer)
+	c.v = append(c.v, loader.viewer)
+	c.l = append(c.l, loader)
 
 	entities := slices.Clone(c.entities)
 	c.Unlock()
 
 	for _, entity := range entities {
-		showEntity(entity, viewer)
+		showEntity(entity, loader.viewer)
 	}
 }
 
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
 // viewer and no more calls will be made when events in the chunk happen.
-func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
+func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 	if w == nil {
 		return
 	}
@@ -1731,13 +1729,15 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 		return
 	}
 	c.Lock()
-	c.v = sliceutil.DeleteVal(c.v, viewer)
+	i := slices.Index(c.l, loader)
+	c.v = slices.Delete(c.v, i, i+1)
+	c.l = slices.Delete(c.l, i, i+1)
 	e := slices.Clone(c.entities)
 	c.Unlock()
 
-	// After removing the viewer from the chunk, we also need to hide all entities from the viewer.
+	// After removing the loader from the chunk, we also need to hide all entities from the viewer.
 	for _, entity := range e {
-		viewer.HideEntity(entity)
+		loader.viewer.HideEntity(entity)
 	}
 }
 
@@ -2040,6 +2040,7 @@ type chunkData struct {
 	*chunk.Chunk
 	e        map[cube.Pos]Block
 	v        []Viewer
+	l        []*Loader
 	entities []Entity
 }
 

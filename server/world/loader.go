@@ -35,46 +35,42 @@ func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
 // World returns the World that the Loader is in.
 func (l *Loader) World() *World {
 	l.mu.RLock()
-	w := l.w
-	l.mu.RUnlock()
-	return w
+	defer l.mu.RUnlock()
+	return l.w
 }
 
 // ChangeWorld changes the World of the Loader. The currently loaded chunks are reset and any future loading
 // is done from the new World.
 func (l *Loader) ChangeWorld(new *World) {
 	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	l.reset()
 	l.world(new)
-	l.mu.Unlock()
 }
 
 // ChangeRadius changes the maximum chunk radius of the Loader.
 func (l *Loader) ChangeRadius(new int) {
 	l.mu.Lock()
-	l.r = new
+	defer l.mu.Unlock()
 
+	l.r = new
 	l.evictUnused()
 	l.populateLoadQueue()
-	l.mu.Unlock()
 }
 
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
 func (l *Loader) Move(pos mgl64.Vec3) {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	floorX, floorZ := math.Floor(pos[0]), math.Floor(pos[2])
-	chunkPos := ChunkPos{int32(floorX) >> 4, int32(floorZ) >> 4}
-
+	chunkPos := chunkPosFromVec3(pos)
 	if chunkPos == l.pos {
-		l.mu.Unlock()
 		return
 	}
 	l.pos = chunkPos
 	l.evictUnused()
 	l.populateLoadQueue()
-
-	l.mu.Unlock()
 }
 
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
@@ -82,12 +78,10 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 // The function f must not hold the chunk beyond the function scope.
 // An error is returned if one of the chunks could not be loaded.
 func (l *Loader) Load(n int) error {
-	if n == 0 {
-		return nil
-	}
 	l.mu.Lock()
-	if l.closed || l.w == nil {
-		l.mu.Unlock()
+	defer l.mu.Unlock()
+
+	if n == 0 || l.closed || l.w == nil {
 		return nil
 	}
 	for i := 0; i < n; i++ {
@@ -101,7 +95,7 @@ func (l *Loader) Load(n int) error {
 			return err
 		}
 		l.viewer.ViewChunk(pos, c.Chunk, c.e)
-		l.w.addViewer(c, l.viewer)
+		l.w.addViewer(c, l)
 
 		l.loaded[pos] = struct{}{}
 
@@ -109,7 +103,6 @@ func (l *Loader) Load(n int) error {
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
-	l.mu.Unlock()
 	return nil
 }
 
@@ -117,27 +110,28 @@ func (l *Loader) Load(n int) error {
 // are currently shown to it.
 func (l *Loader) Close() error {
 	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	l.reset()
 	l.closed = true
 	l.viewer = nil
-	l.mu.Unlock()
 	return nil
 }
 
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
 func (l *Loader) reset() {
 	for pos := range l.loaded {
-		l.w.removeViewer(pos, l.viewer)
+		l.w.removeViewer(pos, l)
 	}
 	l.loaded = map[ChunkPos]struct{}{}
-	l.w.removeWorldViewer(l.viewer)
+	l.w.removeWorldViewer(l)
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
 // This is only here to get rid of duplicated code, ChangeWorld should be used instead of this.
 func (l *Loader) world(new *World) {
 	l.w = new
-	l.w.addWorldViewer(l.viewer)
+	l.w.addWorldViewer(l)
 	l.populateLoadQueue()
 }
 
@@ -149,7 +143,7 @@ func (l *Loader) evictUnused() {
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
 		if int(dist) > l.r {
 			delete(l.loaded, pos)
-			l.w.removeViewer(pos, l.viewer)
+			l.w.removeViewer(pos, l)
 		}
 	}
 }
@@ -158,14 +152,11 @@ func (l *Loader) evictUnused() {
 // which chunks around the position the loader is now in should be loaded. Chunks are ordered to be loaded
 // from the middle outwards.
 func (l *Loader) populateLoadQueue() {
-	l.loadQueue = nil
 	// We'll first load the chunk positions to load in a map indexed by the distance to the center (basically,
 	// what precedence it should have), and put them in the loadQueue in that order.
-	toLoad := map[int32][]ChunkPos{}
+	queue := map[int32][]ChunkPos{}
 
-	chunkX, chunkZ := l.pos[0], l.pos[1]
 	r := int32(l.r)
-
 	for x := -r; x <= r; x++ {
 		for z := -r; z <= r; z++ {
 			distance := math.Sqrt(float64(x*x) + float64(z*z))
@@ -174,19 +165,21 @@ func (l *Loader) populateLoadQueue() {
 				// The chunk was outside the chunk radius.
 				continue
 			}
-			pos := ChunkPos{x + chunkX, z + chunkZ}
+			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
 			if _, ok := l.loaded[pos]; ok {
 				// The chunk was already loaded, so we don't need to do anything.
 				continue
 			}
-			if m, ok := toLoad[chunkDistance]; ok {
-				toLoad[chunkDistance] = append(m, pos)
+			if m, ok := queue[chunkDistance]; ok {
+				queue[chunkDistance] = append(m, pos)
 				continue
 			}
-			toLoad[chunkDistance] = []ChunkPos{pos}
+			queue[chunkDistance] = []ChunkPos{pos}
 		}
 	}
+
+	l.loadQueue = l.loadQueue[:0]
 	for i := int32(0); i < r; i++ {
-		l.loadQueue = append(l.loadQueue, toLoad[i]...)
+		l.loadQueue = append(l.loadQueue, queue[i]...)
 	}
 }
