@@ -400,10 +400,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 							}
 							if liq != nil {
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, BlockRuntimeID(liq))
-							} else {
-								if len(sub.Layers()) < 2 {
-									continue
-								}
+							} else if len(sub.Layers()) > 1 {
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
 							}
 						}
