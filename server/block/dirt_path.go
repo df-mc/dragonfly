@@ -36,6 +36,6 @@ func (DirtPath) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DirtPath) EncodeBlock() (string, map[string]interface{}) {
+func (DirtPath) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grass_path", nil
 }

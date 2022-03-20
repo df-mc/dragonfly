@@ -70,8 +70,8 @@ func (s WheatSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EncodeBlock ...
-func (s WheatSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:wheat", map[string]interface{}{"growth": int32(s.Growth)}
+func (s WheatSeeds) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:wheat", map[string]any{"growth": int32(s.Growth)}
 }
 
 // allWheat ...

@@ -2,13 +2,16 @@ package world
 
 import (
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
-	"go.uber.org/atomic"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 	"math/rand"
 	"sync"
 	"time"
@@ -27,8 +30,7 @@ type World struct {
 	// Settings struct held by the World.
 	advance bool
 
-	portalMu sync.Mutex
-	npd, epd *World
+	npd, epd atomic.Value[*World]
 
 	set  *Settings
 	prov Provider
@@ -41,11 +43,8 @@ type World struct {
 	closing chan struct{}
 	running sync.WaitGroup
 
-	handlerMu sync.RWMutex
-	handler   Handler
-
-	genMu sync.RWMutex
-	gen   Generator
+	handler atomic.Value[Handler]
+	gen     atomic.Value[Generator]
 
 	chunkMu sync.Mutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
@@ -75,7 +74,7 @@ type World struct {
 	entitiesToTick      []TickerEntity
 
 	viewersMu sync.Mutex
-	viewers   map[Viewer]struct{}
+	viewers   map[*Loader]Viewer
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -93,10 +92,10 @@ func New(log internal.Logger, d Dimension, s *Settings) *World {
 		r:               rand.New(rand.NewSource(time.Now().Unix())),
 		blockUpdates:    map[cube.Pos]int64{},
 		entities:        map[Entity]ChunkPos{},
-		viewers:         map[Viewer]struct{}{},
+		viewers:         map[*Loader]Viewer{},
 		prov:            NoIOProvider{},
-		gen:             NopGenerator{},
-		handler:         NopHandler{},
+		gen:             *atomic.NewValue[Generator](NopGenerator{}),
+		handler:         *atomic.NewValue[Handler](NopHandler{}),
 		randomTickSpeed: *atomic.NewUint32(3),
 		log:             log,
 		set:             s,
@@ -145,23 +144,16 @@ func (w *World) Block(pos cube.Pos) Block {
 		// Fast way out.
 		return air()
 	}
-	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("error getting block: %v", err)
-		return air()
-	}
-	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
 
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.e[pos]; ok {
-			c.Unlock()
 			return nbtB
 		}
 	}
-	c.Unlock()
-
 	b, _ := BlockByRuntimeID(rid)
 	return b
 }
@@ -174,14 +166,10 @@ func (w *World) Biome(pos cube.Pos) Biome {
 		// Fast way out.
 		return ocean()
 	}
-	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("error reading biome: %v", err)
-		return ocean()
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
+
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
-	c.Unlock()
 	b, ok := BiomeByID(id)
 	if !ok {
 		w.log.Errorf("could not find biome by ID %v", id)
@@ -191,22 +179,20 @@ func (w *World) Biome(pos cube.Pos) Biome {
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
-func (w *World) blockInChunk(c *chunkData, pos cube.Pos) (Block, error) {
+func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
 	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
-		return air(), nil
+		return air()
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.e[pos]; ok {
-			return b, nil
+			return b
 		}
 	}
-
 	b, _ := BlockByRuntimeID(rid)
-	return b, nil
+	return b
 }
 
 // HighestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
@@ -215,13 +201,9 @@ func (w *World) HighestLightBlocker(x, z int) int {
 	if w == nil {
 		return w.ra[0]
 	}
-	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
-	if err != nil {
-		return w.ra[0]
-	}
-	v := c.HighestLightBlocker(uint8(x), uint8(z))
-	c.Unlock()
-	return int(v)
+	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
+	defer c.Unlock()
+	return int(c.HighestLightBlocker(uint8(x), uint8(z)))
 }
 
 // HighestBlock looks up the highest non-air block in the world at a specific x and z in the world. The y
@@ -230,13 +212,9 @@ func (w *World) HighestBlock(x, z int) int {
 	if w == nil {
 		return w.ra[0]
 	}
-	c, err := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
-	if err != nil {
-		return w.ra[0]
-	}
-	v := c.HighestBlock(uint8(x), uint8(z))
-	c.Unlock()
-	return int(v)
+	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
+	defer c.Unlock()
+	return int(c.HighestBlock(uint8(x), uint8(z)))
 }
 
 // highestObstructingBlock returns the highest block in the world at a given x and z that has at least a solid top or
@@ -267,31 +245,17 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 		// Fast way out.
 		return
 	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
 
-	rid, ok := BlockRuntimeID(b)
-	if !ok {
-		w.log.Errorf("runtime ID of block %+v not found", b)
-		return
-	}
-
-	x, z := int32(pos[0]>>4), int32(pos[2]>>4)
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
-		return
-	}
+	rid := BlockRuntimeID(b)
 	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
-
 	if nbtBlocks[rid] {
 		c.e[pos] = b
 	} else {
 		delete(c.e, pos)
 	}
 
-	var viewers []Viewer
-	if len(c.v) > 0 {
-		viewers = make([]Viewer, len(c.v))
-		copy(viewers, c.v)
-	}
+	viewers := slices.Clone(c.v)
 	c.Unlock()
 
 	for _, viewer := range viewers {
@@ -306,15 +270,9 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 		// Fast way out.
 		return
 	}
-
-	x, z, biome := int32(pos[0]>>4), int32(pos[2]>>4), uint32(b.EncodeBiome())
-	c, err := w.chunk(ChunkPos{x, z})
-	if err != nil {
-		return
-	}
-
-	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), biome)
-	c.Unlock()
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
+	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
 // breakParticle has its value set in the block_internal package.
@@ -391,18 +349,13 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			// while not needing to acquire a new chunk lock for every block. This also allows us not to send
 			// block updates, but instead send a single chunk update once.
 			chunkPos := ChunkPos{int32(chunkX), int32(chunkZ)}
-			c, err := w.chunk(chunkPos)
-			if err != nil {
-				w.log.Errorf("error loading chunk for structure: %v", err)
-				continue
-			}
+			c := w.chunk(chunkPos)
 			f := func(x, y, z int) Block {
-				actualX, actualY, actualZ := pos[0]+x, pos[1]+y, pos[2]+z
-				if actualX>>4 == chunkX && actualZ>>4 == chunkZ {
-					b, _ := w.blockInChunk(c, cube.Pos{actualX, actualY, actualZ})
-					return b
+				actual := cube.Pos{pos[0] + x, pos[1] + y, pos[2] + z}
+				if actual[0]>>4 == chunkX && actual[2]>>4 == chunkZ {
+					return w.blockInChunk(c, actual)
 				}
-				return w.Block(cube.Pos{actualX, actualY, actualZ})
+				return w.Block(actual)
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
@@ -436,11 +389,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 							}
 							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
 							if b != nil {
-								rid, ok := BlockRuntimeID(b)
-								if !ok {
-									w.log.Errorf("error setting block of structure: runtime ID of block state %+v not found", b)
-									continue
-								}
+								rid := BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								if nbtBlocks[rid] {
@@ -450,16 +399,8 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								}
 							}
 							if liq != nil {
-								rid, ok := BlockRuntimeID(liq)
-								if !ok {
-									w.log.Errorf("runtime ID of block state %+v not found", liq)
-									continue
-								}
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, rid)
-							} else {
-								if len(sub.Layers()) < 2 {
-									continue
-								}
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, BlockRuntimeID(liq))
+							} else if len(sub.Layers()) > 1 {
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
 							}
 						}
@@ -486,36 +427,28 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 		// Fast way out.
 		return nil, false
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
-		return nil, false
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
 	id := c.Block(x, y, z, 0)
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
-		c.Unlock()
 		return nil, false
 	}
 	if liq, ok := b.(Liquid); ok {
-		c.Unlock()
 		return liq, true
 	}
-
 	id = c.Block(x, y, z, 1)
+
 	b, ok = BlockByRuntimeID(id)
-	c.Unlock()
 	if !ok {
 		w.log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
 	}
-	if liq, ok := b.(Liquid); ok {
-		return liq, true
-	}
-	return nil, false
+	liq, ok := b.(Liquid)
+	return liq, ok
 }
 
 // SetLiquid sets the liquid at a specific position in the world. Unlike SetBlock, SetLiquid will not
@@ -528,11 +461,7 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 		return
 	}
 	chunkPos := chunkPosFromBlockPos(pos)
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("failed setting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
-		return
-	}
+	c := w.chunk(chunkPos)
 	if b == nil {
 		w.removeLiquids(c, pos)
 		c.Unlock()
@@ -541,30 +470,19 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 	}
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	if !replaceable(w, c, pos, b) {
-		current, err := w.blockInChunk(c, pos)
-		if err != nil {
-			c.Unlock()
-			w.log.Errorf("failed setting liquid: error getting block at position %v: %v", chunkPosFromBlockPos(pos), err)
-			return
-		}
-		if displacer, ok := current.(LiquidDisplacer); !ok || !displacer.CanDisplace(b) {
+		if displacer, ok := w.blockInChunk(c, pos).(LiquidDisplacer); !ok || !displacer.CanDisplace(b) {
 			c.Unlock()
 			return
 		}
 	}
-	runtimeID, ok := BlockRuntimeID(b)
-	if !ok {
-		c.Unlock()
-		w.log.Errorf("failed setting liquid: runtime ID of block state %+v not found", b)
-		return
-	}
+	rid := BlockRuntimeID(b)
 	if w.removeLiquids(c, pos) {
-		c.SetBlock(x, y, z, 0, runtimeID)
+		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.v {
 			v.ViewBlockUpdate(pos, b, 0)
 		}
 	} else {
-		c.SetBlock(x, y, z, 1, runtimeID)
+		c.SetBlock(x, y, z, 1, rid)
 		for _, v := range c.v {
 			v.ViewBlockUpdate(pos, b, 1)
 		}
@@ -621,11 +539,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 		// Fast way out.
 		return nil, false
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		w.log.Errorf("failed getting liquid: error getting chunk at position %v: %v", chunkPosFromBlockPos(pos), err)
-		return nil, false
-	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
 	id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
 	c.Unlock()
 	b, ok := BlockByRuntimeID(id)
@@ -649,14 +563,9 @@ func (w *World) Light(pos cube.Pos) uint8 {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		return 0
-	}
-	l := c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
-	c.Unlock()
-
-	return l
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
+	return c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
 // SkyLight returns the skylight level at the position passed. This light level is not influenced by blocks
@@ -671,14 +580,9 @@ func (w *World) SkyLight(pos cube.Pos) uint8 {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	c, err := w.chunk(chunkPosFromBlockPos(pos))
-	if err != nil {
-		return 0
-	}
-	l := c.SkyLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
-	c.Unlock()
-
-	return l
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
+	return c.SkyLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
@@ -701,7 +605,9 @@ func (w *World) SetTime(new int) {
 	w.set.Lock()
 	w.set.Time = int64(new)
 	w.set.Unlock()
-	for _, viewer := range w.allViewers() {
+
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
 		viewer.ViewTime(new)
 	}
 }
@@ -854,20 +760,14 @@ func (w *World) AddEntity(e Entity) {
 	w.entities[e] = chunkPos
 	w.entityMu.Unlock()
 
-	c, err := w.chunk(chunkPos)
-	if err != nil {
-		w.log.Errorf("error loading chunk to add entity: %v", err)
-		return
-	}
+	c := w.chunk(chunkPos)
 	c.entities = append(c.entities, e)
-
-	viewers := make([]Viewer, len(c.v))
-	copy(viewers, c.v)
+	viewers := slices.Clone(c.v)
 	c.Unlock()
 
-	for _, viewer := range viewers {
+	for _, v := range viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
-		showEntity(e, viewer)
+		showEntity(e, v)
 	}
 
 	w.Handler().HandleEntitySpawn(e)
@@ -885,12 +785,11 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	w.entityMu.Lock()
 	chunkPos, found := w.entities[e]
+	w.entityMu.Unlock()
 	if !found {
-		w.entityMu.Unlock()
 		// The entity currently isn't in this world.
 		return
 	}
-	w.entityMu.Unlock()
 
 	w.Handler().HandleEntityDespawn(e)
 
@@ -904,25 +803,16 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 	c.Lock()
-	n := make([]Entity, 0, len(c.entities))
-	for _, entity := range c.entities {
-		if entity != e {
-			n = append(n, entity)
-			continue
-		}
-	}
-	c.entities = n
-
-	viewers := make([]Viewer, len(c.v))
-	copy(viewers, c.v)
+	c.entities = sliceutil.DeleteVal(c.entities, e)
+	viewers := slices.Clone(c.v)
 	c.Unlock()
 
 	w.entityMu.Lock()
 	delete(w.entities, e)
 	w.entityMu.Unlock()
 
-	for _, viewer := range viewers {
-		viewer.HideEntity(e)
+	for _, v := range viewers {
+		v.HideEntity(e)
 	}
 }
 
@@ -944,12 +834,8 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			var entities []Entity
 			c.Lock()
-			if len(c.entities) > 0 {
-				entities = make([]Entity, len(c.entities))
-				copy(entities, c.entities)
-			}
+			entities := slices.Clone(c.entities)
 			c.Unlock()
 
 			for _, entity := range entities {
@@ -972,11 +858,11 @@ func (w *World) Entities() []Entity {
 		return nil
 	}
 	w.entityMu.RLock()
+	defer w.entityMu.RUnlock()
 	m := make([]Entity, 0, len(w.entities))
 	for e := range w.entities {
 		m = append(m, e)
 	}
-	w.entityMu.RUnlock()
 	return m
 }
 
@@ -1013,7 +899,9 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	w.set.Lock()
 	w.set.Spawn = pos
 	w.set.Unlock()
-	for _, viewer := range w.allViewers() {
+
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
 		viewer.ViewWorldSpawn(pos)
 	}
 }
@@ -1168,13 +1056,10 @@ func (w *World) Generator(g Generator) {
 	if w == nil {
 		return
 	}
-	w.genMu.Lock()
-	defer w.genMu.Unlock()
-
 	if g == nil {
 		g = NopGenerator{}
 	}
-	w.gen = g
+	w.gen.Store(g)
 }
 
 // Handle changes the current Handler of the world. As a result, events called by the world will call
@@ -1184,13 +1069,10 @@ func (w *World) Handle(h Handler) {
 	if w == nil {
 		return
 	}
-	w.handlerMu.Lock()
-	defer w.handlerMu.Unlock()
-
 	if h == nil {
 		h = NopHandler{}
 	}
-	w.handler = h
+	w.handler.Store(h)
 }
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
@@ -1204,29 +1086,22 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 		return nil
 	}
 	c.Lock()
-	if len(c.v) > 0 {
-		viewers = make([]Viewer, len(c.v))
-		copy(viewers, c.v)
-	}
-	c.Unlock()
-	return
+	defer c.Unlock()
+	return slices.Clone(c.v)
 }
 
 // SetPortalDestinations sets the destination worlds for any nether and end portals in the World respectively. In order
 // for either portals to work, SetPortalDestinations must first be called.
 // Nil may be passed as destination to prevent the respective portal from transporting entities in it.
 func (w *World) SetPortalDestinations(nether, end *World) {
-	w.portalMu.Lock()
-	defer w.portalMu.Unlock()
-	w.npd, w.epd = nether, end
+	w.npd.Store(nether)
+	w.epd.Store(end)
 }
 
 // PortalDestinations returns the destination worlds for nether and end portals respectively. Upon entering portals in
 // this World, entities are moved to the respective destination worlds.
 func (w *World) PortalDestinations() (nether, end *World) {
-	w.portalMu.Lock()
-	defer w.portalMu.Unlock()
-	return w.npd, w.epd
+	return w.npd.Load(), w.epd.Load()
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -1289,7 +1164,7 @@ func (w *World) startTicking() {
 
 // tick ticks the world and updates the time, blocks and entities that require updates.
 func (w *World) tick() {
-	viewers := w.allViewers()
+	viewers, loaders := w.allViewers()
 
 	w.set.Lock()
 	if len(viewers) == 0 && w.set.CurrentTick != 0 {
@@ -1360,7 +1235,7 @@ func (w *World) tick() {
 	}
 
 	w.tickEntities(tick)
-	w.tickRandomBlocks(viewers, tick)
+	w.tickRandomBlocks(loaders, tick)
 	w.tickScheduledBlocks(tick)
 }
 
@@ -1404,9 +1279,7 @@ func (w *World) strikeLightning(c ChunkPos) {
 	}
 
 	e, _ := EntityByName("minecraft:lightning_bolt")
-	w.AddEntity(e.(interface {
-		New(mgl64.Vec3) Entity
-	}).New(vec))
+	w.AddEntity(e.(interface{ New(mgl64.Vec3) Entity }).New(vec))
 }
 
 // tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
@@ -1464,7 +1337,7 @@ type blockEntityToTick struct {
 
 // tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered from the viewers passed.
-func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
+func (w *World) tickRandomBlocks(loaders []*Loader, tick int64) {
 	r := int32(w.tickRange())
 	if r == 0 {
 		// NOP if the simulation distance is 0.
@@ -1472,14 +1345,8 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 	}
 	tickSpeed := w.randomTickSpeed.Load()
 
-	for _, viewer := range viewers {
-		pos := viewer.Position()
-		w.positionCache = append(w.positionCache, ChunkPos{
-			// Technically we could obtain the wrong chunk position here due to truncating, but this
-			// inaccuracy doesn't matter, and it allows us to cut a corner.
-			int32(pos[0]) >> 4,
-			int32(pos[2]) >> 4,
-		})
+	for _, loader := range loaders {
+		w.positionCache = append(w.positionCache, loader.pos)
 	}
 
 	var g randUint4
@@ -1497,7 +1364,7 @@ func (w *World) tickRandomBlocks(viewers []Viewer, tick int64) {
 			}
 		}
 		if !withinSimDist {
-			// No viewers in this chunk that are within the simulation distance, so proceed to the next.
+			// No loaders in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
 		c.Lock()
@@ -1611,28 +1478,17 @@ func (w *World) tickEntities(tick int64) {
 
 		if lastPos != chunkPos {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
-			// for viewers to view it.
+			// for loaders to view it.
 			w.entities[e] = chunkPos
 			var viewers []Viewer
 
 			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
 			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
-			// the viewers from the old chunk. We can assume they never saw the entity in the first place.
+			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := w.chunks[lastPos]; ok {
 				old.Lock()
-				chunkEntities := make([]Entity, 0, len(old.entities))
-				for _, entity := range old.entities {
-					if entity == e {
-						continue
-					}
-					chunkEntities = append(chunkEntities, entity)
-				}
-				old.entities = chunkEntities
-
-				if len(old.v) > 0 {
-					viewers = make([]Viewer, len(old.v))
-					copy(viewers, old.v)
-				}
+				old.entities = sliceutil.DeleteVal(old.entities, e)
+				viewers = slices.Clone(old.v)
 				old.Unlock()
 			}
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
@@ -1648,15 +1504,15 @@ func (w *World) tickEntities(tick int64) {
 		move.after.Unlock()
 
 		for _, viewer := range move.viewersBefore {
-			if !w.hasViewer(viewer, viewersAfter) {
-				// First we hide the entity from all viewers that were previously viewing it, but no
+			if sliceutil.Index(viewersAfter, viewer) == -1 {
+				// First we hide the entity from all loaders that were previously viewing it, but no
 				// longer are.
 				viewer.HideEntity(move.e)
 			}
 		}
 		for _, viewer := range viewersAfter {
-			if !w.hasViewer(viewer, move.viewersBefore) {
-				// Then we show the entity to all viewers that are now viewing the entity in the new
+			if sliceutil.Index(move.viewersBefore, viewer) == -1 {
+				// Then we show the entity to all loaders that are now viewing the entity in the new
 				// chunk.
 				showEntity(move.e, viewer)
 			}
@@ -1722,57 +1578,53 @@ func (w *World) setThunder(thundering bool, x time.Duration) {
 	w.set.ThunderTime = int64(x.Seconds() * 20)
 }
 
-// allViewers returns a list of all viewers of the world, regardless of where in the world they are viewing.
-func (w *World) allViewers() (v []Viewer) {
+// allViewers returns a list of all loaders of the world, regardless of where in the world they are viewing.
+func (w *World) allViewers() ([]Viewer, []*Loader) {
 	w.viewersMu.Lock()
-	v = make([]Viewer, 0, len(w.viewers))
-	for viewer := range w.viewers {
-		v = append(v, viewer)
-	}
-	w.viewersMu.Unlock()
-	return
+	defer w.viewersMu.Unlock()
+	return maps.Values(w.viewers), maps.Keys(w.viewers)
 }
 
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
-func (w *World) addWorldViewer(viewer Viewer) {
+func (w *World) addWorldViewer(l *Loader) {
 	w.viewersMu.Lock()
-	w.viewers[viewer] = struct{}{}
+	w.viewers[l] = l.viewer
 	w.viewersMu.Unlock()
-	viewer.ViewTime(w.Time())
+	l.viewer.ViewTime(w.Time())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
 	w.set.Unlock()
-	viewer.ViewWeather(raining, thundering)
-	viewer.ViewWorldSpawn(w.Spawn())
+	l.viewer.ViewWeather(raining, thundering)
+	l.viewer.ViewWorldSpawn(w.Spawn())
 }
 
 // removeWorldViewer removes a viewer from the world. Should only be used while the viewer isn't viewing any chunks.
-func (w *World) removeWorldViewer(viewer Viewer) {
+func (w *World) removeWorldViewer(l *Loader) {
 	w.viewersMu.Lock()
-	delete(w.viewers, viewer)
+	delete(w.viewers, l)
 	w.viewersMu.Unlock()
 }
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
-func (w *World) addViewer(c *chunkData, viewer Viewer) {
+func (w *World) addViewer(c *chunkData, loader *Loader) {
 	if w == nil {
 		return
 	}
-	c.v = append(c.v, viewer)
+	c.v = append(c.v, loader.viewer)
+	c.l = append(c.l, loader)
 
-	entities := make([]Entity, len(c.entities))
-	copy(entities, c.entities)
+	entities := slices.Clone(c.entities)
 	c.Unlock()
 
 	for _, entity := range entities {
-		showEntity(entity, viewer)
+		showEntity(entity, loader.viewer)
 	}
 }
 
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
 // viewer and no more calls will be made when events in the chunk happen.
-func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
+func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 	if w == nil {
 		return
 	}
@@ -1781,36 +1633,16 @@ func (w *World) removeViewer(pos ChunkPos, viewer Viewer) {
 		return
 	}
 	c.Lock()
-	n := make([]Viewer, 0, len(c.v))
-	for _, v := range c.v {
-		if v != viewer {
-			// Add all viewers but the one to remove to the new viewers slice.
-			n = append(n, v)
-		}
-	}
-	c.v = n
-
-	e := make([]Entity, len(c.entities))
-	copy(e, c.entities)
+	i := slices.Index(c.l, loader)
+	c.v = slices.Delete(c.v, i, i+1)
+	c.l = slices.Delete(c.l, i, i+1)
+	e := slices.Clone(c.entities)
 	c.Unlock()
 
-	// After removing the viewer from the chunk, we also need to hide all entities from the viewer.
+	// After removing the loader from the chunk, we also need to hide all entities from the viewer.
 	for _, entity := range e {
-		viewer.HideEntity(entity)
+		loader.viewer.HideEntity(entity)
 	}
-}
-
-// hasViewer checks if a chunk at a particular chunk position has the viewer passed. If so, true is returned.
-func (w *World) hasViewer(viewer Viewer, viewers []Viewer) bool {
-	if w == nil {
-		return false
-	}
-	for _, v := range viewers {
-		if v == viewer {
-			return true
-		}
-	}
-	return false
 }
 
 // provider returns the provider of the world. It should always be used, rather than direct field access, in
@@ -1827,19 +1659,7 @@ func (w *World) Handler() Handler {
 	if w == nil {
 		return NopHandler{}
 	}
-	w.handlerMu.RLock()
-	handler := w.handler
-	w.handlerMu.RUnlock()
-	return handler
-}
-
-// generator returns the generator of the world. It should always be used, rather than direct field access, in
-// order to provide synchronisation safety.
-func (w *World) generator() Generator {
-	w.genMu.RLock()
-	generator := w.gen
-	w.genMu.RUnlock()
-	return generator
+	return w.handler.Load()
 }
 
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the
@@ -1866,13 +1686,13 @@ func showEntity(e Entity, viewer Viewer) {
 // An error is returned if the chunk could not be loaded successfully.
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
-func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
+func (w *World) chunk(pos ChunkPos) *chunkData {
 	w.chunkMu.Lock()
 	if pos == w.lastPos && w.lastChunk != nil {
 		c := w.lastChunk
 		w.chunkMu.Unlock()
 		c.Lock()
-		return c, nil
+		return c
 	}
 	c, ok := w.chunks[pos]
 	if !ok {
@@ -1880,8 +1700,8 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 		c, err = w.loadChunk(pos)
 		if err != nil {
 			w.chunkMu.Unlock()
-			w.log.Errorf("%v\n", err)
-			return nil, err
+			w.log.Errorf("load chunk: failed loading %v: %v\n", pos, err)
+			return c
 		}
 		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		c.Unlock()
@@ -1893,7 +1713,7 @@ func (w *World) chunk(pos ChunkPos) (*chunkData, error) {
 	w.chunkMu.Unlock()
 
 	c.Lock()
-	return c, nil
+	return c
 }
 
 // setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
@@ -1924,18 +1744,17 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
 	if err != nil {
-		return nil, fmt.Errorf("error loading chunk %v: %w", pos, err)
+		return newChunkData(chunk.New(airRID, w.d.Range())), err
 	}
 
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		c = chunk.New(airRID, w.d.Range())
-		data := newChunkData(c)
+		data := newChunkData(chunk.New(airRID, w.d.Range()))
 		w.chunks[pos] = data
 		data.Lock()
 		w.chunkMu.Unlock()
 
-		w.generator().GenerateChunk(pos, c)
+		w.gen.Load().GenerateChunk(pos, data.Chunk)
 		return data, nil
 	}
 	data := newChunkData(c)
@@ -2016,7 +1835,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 
 // loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
 // have NBT will then be stored into memory.
-func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interface{}) {
+func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 	c.e = make(map[cube.Pos]Block, len(blockEntityData))
 	for _, data := range blockEntityData {
 		pos := blockPosFromNBT(data)
@@ -2039,7 +1858,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]interf
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
 	// We allocate a new map for all block entities.
-	m := make([]map[string]interface{}, 0, len(c.e))
+	m := make([]map[string]any, 0, len(c.e))
 	for pos, b := range c.e {
 		if n, ok := b.(NBTer); ok {
 			// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
@@ -2118,12 +1937,13 @@ func (w *World) chunkCacheJanitor() {
 	}
 }
 
-// chunkData represents the data of a chunk including the block entities and viewers. This data is protected
+// chunkData represents the data of a chunk including the block entities and loaders. This data is protected
 // by the mutex present in the chunk.Chunk held.
 type chunkData struct {
 	*chunk.Chunk
 	e        map[cube.Pos]Block
 	v        []Viewer
+	l        []*Loader
 	entities []Entity
 }
 

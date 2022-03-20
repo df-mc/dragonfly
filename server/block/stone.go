@@ -69,11 +69,11 @@ func (s Stone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s Stone) EncodeBlock() (string, map[string]interface{}) {
+func (s Stone) EncodeBlock() (string, map[string]any) {
 	if s.Smooth {
 		return "minecraft:smooth_stone", nil
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "stone"}
+	return "minecraft:stone", map[string]any{"stone_type": "stone"}
 }
 
 // EncodeItem ...
@@ -85,11 +85,11 @@ func (a Andesite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (a Andesite) EncodeBlock() (string, map[string]interface{}) {
+func (a Andesite) EncodeBlock() (string, map[string]any) {
 	if a.Polished {
-		return "minecraft:stone", map[string]interface{}{"stone_type": "andesite_smooth"}
+		return "minecraft:stone", map[string]any{"stone_type": "andesite_smooth"}
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "andesite"}
+	return "minecraft:stone", map[string]any{"stone_type": "andesite"}
 }
 
 // EncodeItem ...
@@ -101,11 +101,11 @@ func (d Diorite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d Diorite) EncodeBlock() (string, map[string]interface{}) {
+func (d Diorite) EncodeBlock() (string, map[string]any) {
 	if d.Polished {
-		return "minecraft:stone", map[string]interface{}{"stone_type": "diorite_smooth"}
+		return "minecraft:stone", map[string]any{"stone_type": "diorite_smooth"}
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "diorite"}
+	return "minecraft:stone", map[string]any{"stone_type": "diorite"}
 }
 
 // EncodeItem ...
@@ -117,9 +117,9 @@ func (g Granite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g Granite) EncodeBlock() (string, map[string]interface{}) {
+func (g Granite) EncodeBlock() (string, map[string]any) {
 	if g.Polished {
-		return "minecraft:stone", map[string]interface{}{"stone_type": "granite_smooth"}
+		return "minecraft:stone", map[string]any{"stone_type": "granite_smooth"}
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "granite"}
+	return "minecraft:stone", map[string]any{"stone_type": "granite"}
 }

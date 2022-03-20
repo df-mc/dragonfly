@@ -76,6 +76,6 @@ func (d DeadBush) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DeadBush) EncodeBlock() (string, map[string]interface{}) {
+func (d DeadBush) EncodeBlock() (string, map[string]any) {
 	return "minecraft:deadbush", nil
 }

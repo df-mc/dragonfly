@@ -106,13 +106,13 @@ func (f Flower) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (f Flower) EncodeBlock() (string, map[string]interface{}) {
+func (f Flower) EncodeBlock() (string, map[string]any) {
 	if f.Type == Dandelion() {
 		return "minecraft:yellow_flower", nil
 	} else if f.Type == WitherRose() {
 		return "minecraft:wither_rose", nil
 	}
-	return "minecraft:red_flower", map[string]interface{}{"flower_type": f.Type.String()}
+	return "minecraft:red_flower", map[string]any{"flower_type": f.Type.String()}
 }
 
 // allFlowers ...

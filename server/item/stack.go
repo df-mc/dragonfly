@@ -21,7 +21,7 @@ type Stack struct {
 
 	damage int
 
-	data map[string]interface{}
+	data map[string]any
 
 	enchantments map[reflect.Type]Enchantment
 }
@@ -164,7 +164,7 @@ func (s Stack) AttackDamage() float64 {
 
 // WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
 // according to the rules of fmt.Sprintln.
-func (s Stack) WithCustomName(a ...interface{}) Stack {
+func (s Stack) WithCustomName(a ...any) Stack {
 	s.customName = format(a)
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)
@@ -199,7 +199,7 @@ func (s Stack) Lore() []string {
 //
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
-func (s Stack) WithValue(key string, val interface{}) Stack {
+func (s Stack) WithValue(key string, val any) Stack {
 	s.data = copyMap(s.data)
 	if val != nil {
 		s.data[key] = val
@@ -211,7 +211,7 @@ func (s Stack) WithValue(key string, val interface{}) Stack {
 
 // Value attempts to return a value set to the Stack using Stack.WithValue(). If a value is found by the key
 // passed, it is returned and ok is true. If not found, the value returned is nil and ok is false.
-func (s Stack) Value(key string) (val interface{}, ok bool) {
+func (s Stack) Value(key string) (val any, ok bool) {
 	val, ok = s.data[key]
 	return val, ok
 }
@@ -260,12 +260,12 @@ func (s Stack) Enchantments() []Enchantment {
 // both stacks together don't exceed the max count.
 // If the two stacks are not comparable, AddStack will return both the original stack and the stack passed.
 func (s Stack) AddStack(s2 Stack) (a, b Stack) {
-	if !s.Comparable(s2) {
-		// The items are not comparable and thus cannot be stacked together.
-		return s, s2
-	}
 	if s.Count() >= s.MaxCount() {
 		// No more items could be added to the original stack.
+		return s, s2
+	}
+	if !s.Comparable(s2) {
+		// The items are not comparable and thus cannot be stacked together.
 		return s, s2
 	}
 	diff := s.MaxCount() - s.Count()
@@ -332,7 +332,7 @@ func (s Stack) String() string {
 
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
-func (s Stack) Values() map[string]interface{} {
+func (s Stack) Values() map[string]any {
 	return copyMap(s.data)
 }
 
@@ -356,13 +356,13 @@ func id(s Stack) int32 {
 
 // format is a utility function to format a list of Values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 }
 
 // copyMap makes a copy of the map passed. It does not recursively copy the map.
-func copyMap(m map[string]interface{}) map[string]interface{} {
-	cp := make(map[string]interface{}, len(m))
+func copyMap(m map[string]any) map[string]any {
+	cp := make(map[string]any, len(m))
 	for k, v := range m {
 		cp[k] = v
 	}

@@ -167,7 +167,7 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 }
 
 // DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
-func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
+func (it *Item) DecodeNBT(data map[string]any) any {
 	i := nbtconv.MapItem(data, "Item")
 	if i.Empty() {
 		return nil
@@ -180,8 +180,8 @@ func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the Item entity's properties as a map and returns it.
-func (it *Item) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{
+func (it *Item) EncodeNBT() map[string]any {
+	return map[string]any{
 		"Age":         int16(it.age),
 		"PickupDelay": int64(it.pickupDelay),
 		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),

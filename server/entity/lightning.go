@@ -120,18 +120,18 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 }
 
 // DecodeNBT does nothing.
-func (li *Lightning) DecodeNBT(map[string]interface{}) interface{} {
+func (li *Lightning) DecodeNBT(map[string]any) any {
 	return nil
 }
 
 // EncodeNBT does nothing.
-func (li *Lightning) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{}
+func (li *Lightning) EncodeNBT() map[string]any {
+	return map[string]any{}
 }
 
 // fire returns a fire block.
 func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
 	if !ok {
 		panic("could not find fire block")
 	}

@@ -96,8 +96,8 @@ func (c Coral) BreakInfo() BreakInfo {
 }
 
 // EncodeBlock ...
-func (c Coral) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:coral", map[string]interface{}{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
+func (c Coral) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:coral", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...

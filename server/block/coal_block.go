@@ -28,6 +28,6 @@ func (CoalBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (CoalBlock) EncodeBlock() (name string, properties map[string]interface{}) {
+func (CoalBlock) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:coal_block", nil
 }

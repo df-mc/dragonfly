@@ -84,8 +84,8 @@ func (d DoubleFlower) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DoubleFlower) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:double_plant", map[string]interface{}{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
+func (d DoubleFlower) EncodeBlock() (string, map[string]any) {
+	return "minecraft:double_plant", map[string]any{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
 }
 
 // allDoubleFlowers ...

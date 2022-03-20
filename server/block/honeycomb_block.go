@@ -25,6 +25,6 @@ func (HoneycombBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (HoneycombBlock) EncodeBlock() (string, map[string]interface{}) {
+func (HoneycombBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:honeycomb_block", nil
 }

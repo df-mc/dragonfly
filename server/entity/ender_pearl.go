@@ -144,7 +144,7 @@ func (e *EnderPearl) Own(owner world.Entity) {
 }
 
 // DecodeNBT decodes the properties in a map to a EnderPearl and returns a new EnderPearl entity.
-func (e *EnderPearl) DecodeNBT(data map[string]interface{}) interface{} {
+func (e *EnderPearl) DecodeNBT(data map[string]any) any {
 	return e.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
@@ -154,9 +154,9 @@ func (e *EnderPearl) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the EnderPearl entity's properties as a map and returns it.
-func (e *EnderPearl) EncodeNBT() map[string]interface{} {
+func (e *EnderPearl) EncodeNBT() map[string]any {
 	yaw, pitch := e.Rotation()
-	return map[string]interface{}{
+	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(e.Position()),
 		"Yaw":    yaw,
 		"Pitch":  pitch,

@@ -79,8 +79,8 @@ func (c Cake) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Cake) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:cake", map[string]interface{}{"bite_counter": int32(c.Bites)}
+func (c Cake) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:cake", map[string]any{"bite_counter": int32(c.Bites)}
 }
 
 // Model ...

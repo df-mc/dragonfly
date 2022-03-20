@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
@@ -26,7 +27,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"go.uber.org/atomic"
 	"golang.org/x/text/language"
 	"math"
 	"math/rand"
@@ -43,9 +43,9 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos, vel                            atomic.Value
-	nameTag                             atomic.String
-	scoreTag                            atomic.String
+	pos, vel                            atomic.Value[mgl64.Vec3]
+	nameTag                             atomic.Value[string]
+	scoreTag                            atomic.Value[string]
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 	once                                sync.Once
 
@@ -83,12 +83,12 @@ type Player struct {
 	speed    atomic.Float64
 	health   *entity.HealthManager
 	effects  *entity.EffectManager
-	immunity atomic.Value
+	immunity atomic.Value[time.Time]
 
 	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
-	breakingPos       atomic.Value
+	breakingPos       atomic.Value[cube.Pos]
 	lastBreakDuration time.Duration
 
 	breakParticleCounter atomic.Uint32
@@ -118,17 +118,15 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		name:      name,
 		skin:      skin,
 		speed:     *atomic.NewFloat64(0.1),
-		nameTag:   *atomic.NewString(name),
+		nameTag:   *atomic.NewValue(name),
 		heldSlot:  atomic.NewUint32(0),
 		locale:    language.BritishEnglish,
 		scale:     *atomic.NewFloat64(1),
+		immunity:  *atomic.NewValue(time.Now()),
+		pos:       *atomic.NewValue(pos),
 		cooldowns: make(map[itemHash]time.Time),
+		mc:        &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
-	p.mc = &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true}
-	p.pos.Store(pos)
-	p.vel.Store(mgl64.Vec3{})
-	p.immunity.Store(time.Now())
-	p.breakingPos.Store(cube.Pos{})
 	return p
 }
 
@@ -232,13 +230,13 @@ func (p *Player) Handle(h Handler) {
 
 // Message sends a formatted message to the player. The message is formatted following the rules of
 // fmt.Sprintln, however the newline at the end is not written.
-func (p *Player) Message(a ...interface{}) {
+func (p *Player) Message(a ...any) {
 	p.session().SendMessage(format(a))
 }
 
 // Messagef sends a formatted message using a specific format to the player. The message is formatted
 // according to the fmt.Sprintf formatting rules.
-func (p *Player) Messagef(f string, a ...interface{}) {
+func (p *Player) Messagef(f string, a ...any) {
 	msg := fmt.Sprintf(f, a...)
 	p.session().SendMessage(msg)
 }
@@ -246,19 +244,19 @@ func (p *Player) Messagef(f string, a ...interface{}) {
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
 // overwrites/is overwritten by the name of the item equipped.
 // The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) SendPopup(a ...interface{}) {
+func (p *Player) SendPopup(a ...any) {
 	p.session().SendPopup(format(a))
 }
 
 // SendTip sends a tip to the player. The tip is shown in the middle of the screen of the player.
 // The tip is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) SendTip(a ...interface{}) {
+func (p *Player) SendTip(a ...any) {
 	p.session().SendTip(format(a))
 }
 
 // SendJukeboxPopup sends a formatted jukebox popup to the player. This popup is shown above the hotbar of the player.
 // The popup is close to the position of an action bar message and the text has no background.
-func (p *Player) SendJukeboxPopup(a ...interface{}) {
+func (p *Player) SendJukeboxPopup(a ...any) {
 	p.session().SendJukeboxPopup(format(a))
 }
 
@@ -317,7 +315,7 @@ func (p *Player) RemoveBossBar() {
 
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player and is formatted following the rules of fmt.Sprintln.
-func (p *Player) Chat(msg ...interface{}) {
+func (p *Player) Chat(msg ...any) {
 	message := format(msg)
 	ctx := event.C()
 	p.handler().HandleChat(ctx, &message)
@@ -415,7 +413,7 @@ func (p *Player) NameTag() string {
 
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's
 // name tag.
-func (p *Player) SetScoreTag(a ...interface{}) {
+func (p *Player) SetScoreTag(a ...any) {
 	p.scoreTag.Store(format(a))
 	p.updateState()
 }
@@ -649,12 +647,12 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
 func (p *Player) AttackImmune() bool {
-	return p.immunity.Load().(time.Time).After(time.Now())
+	return p.immunity.Load().After(time.Now())
 }
 
 // AttackImmunity returns the duration the player is immune to entity attacks.
 func (p *Player) AttackImmunity() time.Duration {
-	return time.Until(p.immunity.Load().(time.Time))
+	return time.Until(p.immunity.Load())
 }
 
 // SetAttackImmunity sets the duration the player is immune to entity attacks.
@@ -1545,7 +1543,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 // if the player isn't breaking anything.
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
-	pos := p.breakingPos.Load().(cube.Pos)
+	pos := p.breakingPos.Load()
 	if !p.breaking.Load() {
 		w := p.World()
 		w.SetBlock(pos, w.Block(pos))
@@ -1563,7 +1561,7 @@ func (p *Player) AbortBreaking() {
 		return
 	}
 	p.breakParticleCounter.Store(0)
-	pos := p.breakingPos.Load().(cube.Pos)
+	pos := p.breakingPos.Load()
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(pos, block.StopCrackAction{})
 	}
@@ -1576,7 +1574,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	if !p.breaking.Load() {
 		return
 	}
-	pos := p.breakingPos.Load().(cube.Pos)
+	pos := p.breakingPos.Load()
 
 	p.SwingArm()
 
@@ -1878,12 +1876,12 @@ func (p *Player) World() *world.World {
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl64.Vec3 {
-	return p.pos.Load().(mgl64.Vec3)
+	return p.pos.Load()
 }
 
 // Velocity returns the players current velocity. If there is an attached session, this will be empty.
 func (p *Player) Velocity() mgl64.Vec3 {
-	return p.vel.Load().(mgl64.Vec3)
+	return p.vel.Load()
 }
 
 // SetVelocity updates the player's velocity. If there is an attached session, this will just send
@@ -2313,7 +2311,7 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // Disconnect closes the player and removes it from the world.
 // Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
 // disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
-func (p *Player) Disconnect(msg ...interface{}) {
+func (p *Player) Disconnect(msg ...any) {
 	p.once.Do(func() {
 		p.close(format(msg))
 	})
@@ -2529,6 +2527,6 @@ func (p *Player) viewers() []world.Viewer {
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }

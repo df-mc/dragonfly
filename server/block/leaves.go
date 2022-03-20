@@ -128,12 +128,12 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 }
 
 // EncodeBlock ...
-func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
+func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
 	switch l.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+		return "minecraft:leaves", map[string]any{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	case AcaciaWood(), DarkOakWood():
-		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+		return "minecraft:leaves2", map[string]any{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	}
 	panic("invalid wood type")
 }

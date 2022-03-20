@@ -10,7 +10,7 @@ Minecraft server software, Dragonfly is generally used as a library to extend.
 [![Discord Banner 2](https://discordapp.com/api/guilds/623638955262345216/widget.png?style=banner2)](https://discord.gg/U4kFWHhTNR)
 
 ## Getting started
-Running Dragonfly requires at least **Go 1.16**. After starting the server through one of the methods below,
+Running Dragonfly requires at least **Go 1.18**. After starting the server through one of the methods below,
 **ctrl+c** may be used to shut down the server. Also check out the [wiki](https://github.com/df-mc/dragonfly/wiki) for
 more detailed info.
 

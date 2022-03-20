@@ -19,6 +19,6 @@ func (Bookshelf) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Bookshelf) EncodeBlock() (string, map[string]interface{}) {
+func (Bookshelf) EncodeBlock() (string, map[string]any) {
 	return "minecraft:bookshelf", nil
 }

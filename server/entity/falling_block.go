@@ -79,7 +79,7 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 }
 
 // DecodeNBT decodes the relevant data from the entity NBT passed and returns a new FallingBlock entity.
-func (f *FallingBlock) DecodeNBT(data map[string]interface{}) interface{} {
+func (f *FallingBlock) DecodeNBT(data map[string]any) any {
 	b := nbtconv.MapBlock(data, "FallingBlock")
 	if b == nil {
 		return nil
@@ -90,8 +90,8 @@ func (f *FallingBlock) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the FallingBlock entity to a map that can be encoded for NBT.
-func (f *FallingBlock) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{
+func (f *FallingBlock) EncodeNBT() map[string]any {
+	return map[string]any{
 		"UniqueID":     -rand.Int63(),
 		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
 		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),

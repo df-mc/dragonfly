@@ -101,7 +101,7 @@ func (Grass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Grass) EncodeBlock() (string, map[string]interface{}) {
+func (Grass) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grass", nil
 }
 

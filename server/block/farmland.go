@@ -92,8 +92,8 @@ func (f Farmland) BreakInfo() BreakInfo {
 }
 
 // EncodeBlock ...
-func (f Farmland) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:farmland", map[string]interface{}{"moisturized_amount": int32(f.Hydration)}
+func (f Farmland) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:farmland", map[string]any{"moisturized_amount": int32(f.Hydration)}
 }
 
 // EncodeItem ...

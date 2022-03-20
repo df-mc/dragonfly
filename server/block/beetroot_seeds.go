@@ -73,8 +73,8 @@ func (b BeetrootSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EncodeBlock ...
-func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:beetroot", map[string]interface{}{"growth": int32(b.Growth)}
+func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:beetroot", map[string]any{"growth": int32(b.Growth)}
 }
 
 // allBeetroot ...

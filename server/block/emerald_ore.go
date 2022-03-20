@@ -28,6 +28,6 @@ func (e EmeraldOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (e EmeraldOre) EncodeBlock() (string, map[string]interface{}) {
+func (e EmeraldOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + e.Type.Prefix() + "emerald_ore", nil
 }

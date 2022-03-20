@@ -87,8 +87,8 @@ func (p Potato) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // EncodeBlock ...
-func (p Potato) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:potatoes", map[string]interface{}{"growth": int32(p.Growth)}
+func (p Potato) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:potatoes", map[string]any{"growth": int32(p.Growth)}
 }
 
 // allPotato ...

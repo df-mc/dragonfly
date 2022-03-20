@@ -45,13 +45,13 @@ func (t *Text) NameTag() string {
 }
 
 // DecodeNBT decodes the data passed to create and return a new Text entity.
-func (t *Text) DecodeNBT(data map[string]interface{}) interface{} {
+func (t *Text) DecodeNBT(data map[string]any) any {
 	return NewText(nbtconv.MapString(data, "Text"), nbtconv.MapVec3(data, "Pos"))
 }
 
 // EncodeNBT encodes the Text entity to a map representation that can be encoded to NBT.
-func (t *Text) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{
+func (t *Text) EncodeNBT() map[string]any {
+	return map[string]any{
 		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
 		"Text": t.text,
 	}

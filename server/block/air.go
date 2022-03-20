@@ -18,6 +18,6 @@ func (Air) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Air) EncodeBlock() (string, map[string]interface{}) {
+func (Air) EncodeBlock() (string, map[string]any) {
 	return "minecraft:air", nil
 }

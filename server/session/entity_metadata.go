@@ -11,7 +11,7 @@ import (
 
 // entityMetadata represents a map that holds metadata associated with an entity. The data held in the map
 // depends on the entity and varies on a per-entity basis.
-type entityMetadata map[uint32]interface{}
+type entityMetadata map[uint32]any
 
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.

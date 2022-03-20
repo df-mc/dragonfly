@@ -55,7 +55,7 @@ func (b Barrel) Inventory() *inventory.Inventory {
 }
 
 // WithName returns the barrel after applying a specific name to the block.
-func (b Barrel) WithName(a ...interface{}) world.Item {
+func (b Barrel) WithName(a ...any) world.Item {
 	b.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return b
 }
@@ -132,7 +132,7 @@ func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 }
 
 // DecodeNBT ...
-func (b Barrel) DecodeNBT(data map[string]interface{}) interface{} {
+func (b Barrel) DecodeNBT(data map[string]any) any {
 	facing := b.Facing
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
@@ -143,14 +143,14 @@ func (b Barrel) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT ...
-func (b Barrel) EncodeNBT() map[string]interface{} {
+func (b Barrel) EncodeNBT() map[string]any {
 	if b.inventory == nil {
 		facing, customName := b.Facing, b.CustomName
 		//noinspection GoAssignmentToReceiver
 		b = NewBarrel()
 		b.Facing, b.CustomName = facing, customName
 	}
-	m := map[string]interface{}{
+	m := map[string]any{
 		"Items": nbtconv.InvToNBT(b.inventory),
 		"id":    "Barrel",
 	}
@@ -161,8 +161,8 @@ func (b Barrel) EncodeNBT() map[string]interface{} {
 }
 
 // EncodeBlock ...
-func (b Barrel) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:barrel", map[string]interface{}{"open_bit": boolByte(b.Open), "facing_direction": int32(b.Facing)}
+func (b Barrel) EncodeBlock() (string, map[string]any) {
+	return "minecraft:barrel", map[string]any{"open_bit": boolByte(b.Open), "facing_direction": int32(b.Facing)}
 }
 
 // EncodeItem ...

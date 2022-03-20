@@ -27,7 +27,7 @@ func ByAlias(alias string) (Command, bool) {
 // Commands returns a map of all registered commands indexed by the alias they were registered with.
 func Commands() map[string]Command {
 	cmd := make(map[string]Command)
-	commands.Range(func(key, value interface{}) bool {
+	commands.Range(func(key, value any) bool {
 		cmd[key.(string)] = value.(Command)
 		return true
 	})

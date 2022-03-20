@@ -29,6 +29,6 @@ func (l LapisOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l LapisOre) EncodeBlock() (string, map[string]interface{}) {
+func (l LapisOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + l.Type.Prefix() + "lapis_ore", nil
 }

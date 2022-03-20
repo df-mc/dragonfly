@@ -79,12 +79,12 @@ func (g TallGrass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g TallGrass) EncodeBlock() (name string, properties map[string]interface{}) {
+func (g TallGrass) EncodeBlock() (name string, properties map[string]any) {
 	switch g.Type {
 	case NormalGrass():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "tall"}
 	case Fern():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "fern"}
 	}
 	panic("should never happen")
 }

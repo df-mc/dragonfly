@@ -27,6 +27,6 @@ func (DiamondBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DiamondBlock) EncodeBlock() (string, map[string]interface{}) {
+func (DiamondBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:diamond_block", nil
 }

@@ -26,6 +26,6 @@ func (Terracotta) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Terracotta) EncodeBlock() (string, map[string]interface{}) {
+func (Terracotta) EncodeBlock() (string, map[string]any) {
 	return "minecraft:hardened_clay", nil
 }

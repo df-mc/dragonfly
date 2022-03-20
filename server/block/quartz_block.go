@@ -82,21 +82,21 @@ func (q QuartzPillar) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (q Quartz) EncodeBlock() (name string, properties map[string]interface{}) {
+func (q Quartz) EncodeBlock() (name string, properties map[string]any) {
 	if q.Smooth {
-		return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "smooth", "pillar_axis": "y"}
+		return "minecraft:quartz_block", map[string]any{"chisel_type": "smooth", "pillar_axis": "y"}
 	}
-	return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "default", "pillar_axis": "y"}
+	return "minecraft:quartz_block", map[string]any{"chisel_type": "default", "pillar_axis": "y"}
 }
 
 // EncodeBlock ...
-func (ChiseledQuartz) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:quartz_block", map[string]interface{}{"chisel_type": "chiseled", "pillar_axis": "y"}
+func (ChiseledQuartz) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:quartz_block", map[string]any{"chisel_type": "chiseled", "pillar_axis": "y"}
 }
 
 // EncodeBlock ...
-func (q QuartzPillar) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:quartz_block", map[string]interface{}{"pillar_axis": q.Axis.String(), "chisel_type": "lines"}
+func (q QuartzPillar) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:quartz_block", map[string]any{"pillar_axis": q.Axis.String(), "chisel_type": "lines"}
 }
 
 // allQuartz ...

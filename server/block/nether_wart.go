@@ -67,8 +67,8 @@ func (NetherWart) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NetherWart) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:nether_wart", map[string]interface{}{"age": int32(n.Age)}
+func (n NetherWart) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:nether_wart", map[string]any{"age": int32(n.Age)}
 }
 
 // allNetherWart ...

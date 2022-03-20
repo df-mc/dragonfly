@@ -242,12 +242,12 @@ func (f Fire) LightEmissionLevel() uint8 {
 }
 
 // EncodeBlock ...
-func (f Fire) EncodeBlock() (name string, properties map[string]interface{}) {
+func (f Fire) EncodeBlock() (name string, properties map[string]any) {
 	switch f.Type {
 	case NormalFire():
-		return "minecraft:fire", map[string]interface{}{"age": int32(f.Age)}
+		return "minecraft:fire", map[string]any{"age": int32(f.Age)}
 	case SoulFire():
-		return "minecraft:soul_fire", map[string]interface{}{"age": int32(f.Age)}
+		return "minecraft:soul_fire", map[string]any{"age": int32(f.Age)}
 	}
 	panic("unknown fire type")
 }

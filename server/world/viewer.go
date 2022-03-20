@@ -10,8 +10,6 @@ import (
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
 // entities and the changes of blocks.
 type Viewer interface {
-	// Position returns the position of the viewer.
-	Position() mgl64.Vec3
 	// ViewEntity views the entity passed. It is called for every entity that the viewer may encounter in the
 	// world, either by moving entities or by moving the viewer using a world.Loader.
 	ViewEntity(e Entity)
@@ -73,7 +71,6 @@ var _ Viewer = NopViewer{}
 
 // Position returns an empty mgl64.Vec3. We can do this because this position is only used for checking if a chunk
 // should have random block ticking, which is generally not desirable with a NopViewer anyway.
-func (NopViewer) Position() mgl64.Vec3                                          { return mgl64.Vec3{} }
 func (NopViewer) ViewEntity(Entity)                                             {}
 func (NopViewer) HideEntity(Entity)                                             {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}

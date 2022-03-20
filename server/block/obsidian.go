@@ -30,7 +30,7 @@ func (o Obsidian) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (o Obsidian) EncodeBlock() (string, map[string]interface{}) {
+func (o Obsidian) EncodeBlock() (string, map[string]any) {
 	if o.Crying {
 		return "minecraft:crying_obsidian", nil
 	}

@@ -61,6 +61,6 @@ func (m MossCarpet) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (m MossCarpet) EncodeBlock() (string, map[string]interface{}) {
+func (m MossCarpet) EncodeBlock() (string, map[string]any) {
 	return "minecraft:moss_carpet", nil
 }
