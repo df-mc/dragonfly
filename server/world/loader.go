@@ -17,7 +17,7 @@ type Loader struct {
 	mu        sync.RWMutex
 	pos       ChunkPos
 	loadQueue []ChunkPos
-	loaded    map[ChunkPos]struct{}
+	loaded    map[ChunkPos]*chunkData
 
 	closed bool
 }
@@ -27,7 +27,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]struct{}), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunkData), viewer: v}
 	l.world(world)
 	return l
 }
@@ -88,14 +88,12 @@ func (l *Loader) Load(n int) {
 		if len(l.loadQueue) == 0 {
 			break
 		}
+
 		pos := l.loadQueue[0]
-		c, err := l.w.chunk(pos)
-		if err != nil {
-			l.mu.Unlock()
-			continue
-		}
+		c := l.w.chunk(pos)
+
 		l.viewer.ViewSkeletonChunk(pos, c.Chunk)
-		l.w.addViewer(c, l.viewer)
+		l.w.addViewer(c, l)
 
 		l.loaded[pos] = c
 
@@ -103,8 +101,6 @@ func (l *Loader) Load(n int) {
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
-	l.mu.Unlock()
-	return nil
 }
 
 // Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
@@ -131,17 +127,17 @@ func (l *Loader) Close() error {
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
 func (l *Loader) reset() {
 	for pos := range l.loaded {
-		l.w.removeViewer(pos, l.viewer)
+		l.w.removeViewer(pos, l)
 	}
-	l.loaded = map[ChunkPos]struct{}{}
-	l.w.removeWorldViewer(l.viewer)
+	l.loaded = map[ChunkPos]*chunkData{}
+	l.w.removeWorldViewer(l)
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
 // This is only here to get rid of duplicated code, ChangeWorld should be used instead of this.
 func (l *Loader) world(new *World) {
 	l.w = new
-	l.w.addWorldViewer(l.viewer)
+	l.w.addWorldViewer(l)
 	l.populateLoadQueue()
 }
 
@@ -153,7 +149,7 @@ func (l *Loader) evictUnused() {
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
 		if int(dist) > l.r {
 			delete(l.loaded, pos)
-			l.w.removeViewer(pos, l.viewer)
+			l.w.removeViewer(pos, l)
 		}
 	}
 }
@@ -175,16 +171,16 @@ func (l *Loader) populateLoadQueue() {
 				// The chunk was outside the chunk radius.
 				continue
 			}
-			pos := ChunkPos{x + chunkX, z + chunkZ}
+			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
 			if _, ok := l.loaded[pos]; ok {
 				// The chunk was already loaded, so we don't need to do anything.
 				continue
 			}
-			if m, ok := toLoad[chunkDistance]; ok {
-				toLoad[chunkDistance] = append(m, pos)
+			if m, ok := queue[chunkDistance]; ok {
+				queue[chunkDistance] = append(m, pos)
 				continue
 			}
-			toLoad[chunkDistance] = []ChunkPos{pos}
+			queue[chunkDistance] = []ChunkPos{pos}
 		}
 	}
 

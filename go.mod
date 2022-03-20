@@ -10,7 +10,7 @@ require (
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.3
-	github.com/sandertv/gophertunnel v1.19.1
+	github.com/sandertv/gophertunnel v1.19.3-0.20220312171908-b6af5c5f774c
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/exp v0.0.0-20220314205449-43aec2f8a4e7
 	golang.org/x/text v0.3.6
