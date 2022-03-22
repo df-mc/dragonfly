@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"sort"
 )
 
 // WriteItem encodes an item stack into a map that can be encoded using NBT.
@@ -55,13 +56,33 @@ func writeBlock(m map[string]any, b world.Block) {
 
 // writeDragonflyData writes additional data associated with an item.Stack to a map for NBT encoding.
 func writeDragonflyData(m map[string]any, s item.Stack) {
-	if len(s.Values()) != 0 {
+	if v := s.Values(); len(v) != 0 {
 		buf := new(bytes.Buffer)
-		if err := gob.NewEncoder(buf).Encode(s.Values()); err != nil {
+		if err := gob.NewEncoder(buf).Encode(mapToSlice(v)); err != nil {
 			panic("error encoding item user data: " + err.Error())
 		}
 		m["dragonflyData"] = buf.Bytes()
 	}
+}
+
+// mapToSlice converts a map to a slice of the type mapValue and orders the slice by the keys in the map to ensure a
+// deterministic order.
+func mapToSlice(m map[string]any) []mapValue {
+	values := make([]mapValue, 0, len(m))
+	for k, v := range m {
+		values = append(values, mapValue{key: k, val: v})
+	}
+	sort.Slice(values, func(i, j int) bool {
+		return values[i].key < values[j].key
+	})
+	return values
+}
+
+// mapValue represents a value in a map. It is used to convert maps to a slice and order the slice before encoding to
+// NBT to ensure a deterministic output.
+type mapValue struct {
+	key string
+	val any
 }
 
 // writeEnchantments writes the enchantments of an item to a map for NBT encoding.
