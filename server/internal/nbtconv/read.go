@@ -111,7 +111,7 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 			panic("error decoding item user data: " + err.Error())
 		}
 		for _, val := range values {
-			*s = s.WithValue(val.key, val.val)
+			*s = s.WithValue(val.K, val.V)
 		}
 	}
 }

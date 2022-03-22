@@ -70,10 +70,10 @@ func writeDragonflyData(m map[string]any, s item.Stack) {
 func mapToSlice(m map[string]any) []mapValue {
 	values := make([]mapValue, 0, len(m))
 	for k, v := range m {
-		values = append(values, mapValue{key: k, val: v})
+		values = append(values, mapValue{K: k, V: v})
 	}
 	sort.Slice(values, func(i, j int) bool {
-		return values[i].key < values[j].key
+		return values[i].K < values[j].K
 	})
 	return values
 }
@@ -81,8 +81,8 @@ func mapToSlice(m map[string]any) []mapValue {
 // mapValue represents a value in a map. It is used to convert maps to a slice and order the slice before encoding to
 // NBT to ensure a deterministic output.
 type mapValue struct {
-	key string
-	val any
+	K string
+	V any
 }
 
 // writeEnchantments writes the enchantments of an item to a map for NBT encoding.
