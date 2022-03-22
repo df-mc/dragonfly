@@ -7,44 +7,9 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// MapSlice reads an interface slice from a map at the key passed.
-func MapSlice(m map[string]any, key string) []any {
-	return safeRead[[]any](m, key)
-}
-
-// MapString reads a string from a map at the key passed.
-func MapString(m map[string]any, key string) string {
-	return safeRead[string](m, key)
-}
-
-// MapInt16 reads an int16 from a map at the key passed.
-func MapInt16(m map[string]any, key string) int16 {
-	return safeRead[int16](m, key)
-}
-
-// MapInt32 reads an int32 from a map at the key passed.
-func MapInt32(m map[string]any, key string) int32 {
-	return safeRead[int32](m, key)
-}
-
-// MapInt64 reads an int64 from a map at the key passed.
-func MapInt64(m map[string]any, key string) int64 {
-	return safeRead[int64](m, key)
-}
-
-// MapByte reads a byte from a map at the key passed.
-func MapByte(m map[string]any, key string) byte {
-	return safeRead[byte](m, key)
-}
-
-// MapFloat32 reads a float32 from a map at the key passed.
-func MapFloat32(m map[string]any, key string) float32 {
-	return safeRead[float32](m, key)
-}
-
-// safeRead reads a value of the type T from the map passed. safeRead never panics. If the key was not found in the map
+// Map reads a value of the type T from the map passed. Map never panics. If the key was not found in the map
 // or if the value was of a different type, the default value of type T is returned.
-func safeRead[T any](m map[string]any, key string) T {
+func Map[T any](m map[string]any, key string) T {
 	v, _ := m[key].(T)
 	return v
 }

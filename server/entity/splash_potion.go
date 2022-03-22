@@ -196,9 +196,9 @@ func (s *SplashPotion) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		potion.From(nbtconv.MapInt32(data, "PotionId")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		potion.From(nbtconv.Map[int32](data, "PotionId")),
 	)
 }
 
