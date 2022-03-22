@@ -37,15 +37,10 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	var (
 		data   = chunk.Encode(c, chunk.NetworkEncoding)
 		count  = uint32(len(data.SubChunks))
-		blobs  = make([][]byte, count+1)
+		blobs  = append(data.SubChunks, data.Biomes)
 		hashes = make([]uint64, len(blobs))
 		m      = make(map[uint64]struct{}, len(blobs))
 	)
-	for i := range data.SubChunks {
-		blobs[i] = data.SubChunks[i]
-	}
-	blobs[len(blobs)-1] = data.Biomes
-
 	for i, blob := range blobs {
 		h := xxhash.Sum64(blob)
 		hashes[i], m[h] = h, struct{}{}
