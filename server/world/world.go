@@ -1057,15 +1057,11 @@ func (w *World) Close() error {
 
 	w.chunkMu.Lock()
 	w.lastChunk = nil
-	chunksToSave := make(map[ChunkPos]*chunkData, len(w.chunks))
-	for pos, c := range w.chunks {
-		// We delete all chunks from the cache and save them to the provider.
-		delete(w.chunks, pos)
-		chunksToSave[pos] = c
-	}
+	toSave := maps.Clone(w.chunks)
+	maps.Clear(w.chunks)
 	w.chunkMu.Unlock()
 
-	for pos, c := range chunksToSave {
+	for pos, c := range toSave {
 		w.saveChunk(pos, c)
 	}
 
