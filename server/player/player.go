@@ -44,7 +44,7 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos, vel                            atomic.Value[mgl64.Vec3]
+	pos, vel, spawnPoint                atomic.Value[mgl64.Vec3]
 	nameTag                             atomic.Value[string]
 	scoreTag                            atomic.Value[string]
 	yaw, pitch, absorptionHealth, scale atomic.Float64
@@ -828,7 +828,11 @@ func (p *Player) Respawn() {
 	case world.End:
 		_, w = w.PortalDestinations()
 	}
-	pos := w.Spawn().Vec3Middle()
+
+	pos := p.spawnPoint.Load()
+	if pos.ApproxEqual(mgl64.Vec3{}) {
+		pos = w.Spawn().Vec3Middle()
+	}
 
 	p.handler().HandleRespawn(&pos, &w)
 
@@ -2362,6 +2366,7 @@ func (p *Player) close(msg string) {
 func (p *Player) load(data Data) {
 	p.yaw.Store(data.Yaw)
 	p.pitch.Store(data.Pitch)
+	p.spawnPoint.Store(data.SpawnPoint)
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
@@ -2405,6 +2410,7 @@ func (p *Player) Data() Data {
 		Velocity:        mgl64.Vec3{},
 		Yaw:             yaw,
 		Pitch:           pitch,
+		SpawnPoint:      p.spawnPoint.Load(),
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
@@ -2511,6 +2517,12 @@ func (p *Player) viewers() []world.Viewer {
 		return append(viewers, s)
 	}
 	return viewers
+}
+
+// SetSpawnPoint sets the spawn point of the player. When the player respawns, they will be teleported to this location.
+// if the spawn point is nil, the player will be teleported to the world's spawn point.
+func (p *Player) SetSpawnPoint(pos mgl64.Vec3) {
+	p.spawnPoint.Store(pos)
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
