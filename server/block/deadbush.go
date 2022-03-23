@@ -19,7 +19,7 @@ type DeadBush struct {
 // NeighbourUpdateTick ...
 func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: d})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		w.SetBlock(pos, nil, nil)
 	}
 }

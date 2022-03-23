@@ -51,7 +51,7 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 // NeighbourUpdateTick ...
 func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: g})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
 		w.SetBlock(pos, nil, nil)
 	}
 }

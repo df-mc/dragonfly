@@ -26,7 +26,7 @@ func (MelonSeeds) SameCrop(c Crop) bool {
 // NeighbourUpdateTick ...
 func (m MelonSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: w.Block(pos)})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: w.Block(pos)})
 		w.SetBlock(pos, nil, nil)
 	} else if m.Direction != cube.FaceDown {
 		if _, ok := w.Block(pos.Side(m.Direction)).(Melon); !ok {

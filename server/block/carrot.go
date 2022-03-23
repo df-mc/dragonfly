@@ -80,7 +80,7 @@ func (c Carrot) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (c Carrot) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: c})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		w.SetBlock(pos, nil, nil)
 	} else if c.Growth < 7 && r.Float64() <= c.CalculateGrowthChance(pos, w) {
 		c.Growth++

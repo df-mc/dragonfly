@@ -26,7 +26,7 @@ func (PumpkinSeeds) SameCrop(c Crop) bool {
 // NeighbourUpdateTick ...
 func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: p})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
 		w.SetBlock(pos, nil, nil)
 	} else if p.Direction != cube.FaceDown {
 		if pumpkin, ok := w.Block(pos.Side(p.Direction)).(Pumpkin); !ok || pumpkin.Carved {

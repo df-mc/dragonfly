@@ -47,7 +47,7 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 // NeighbourUpdateTick ...
 func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: c})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		w.SetBlock(pos, nil, nil)
 	}
 }

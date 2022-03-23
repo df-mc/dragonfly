@@ -63,7 +63,7 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 // NeighbourUpdateTick ...
 func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: f})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
 		w.SetBlock(pos, nil, nil)
 	}
 }

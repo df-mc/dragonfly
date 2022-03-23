@@ -1549,7 +1549,7 @@ func (p *Player) FinishBreaking() {
 	pos := p.breakingPos.Load()
 	if !p.breaking.Load() {
 		w := p.World()
-		w.SetBlock(pos, w.Block(pos), &world.Opts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+		w.SetBlock(pos, w.Block(pos), disabledOpts)
 		return
 	}
 	p.AbortBreaking()
@@ -1682,7 +1682,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	if _, breakable := b.(block.Breakable); !breakable && !p.GameMode().CreativeInventory() {
 		// Block cannot be broken server-side. Set the block back so viewers have it resent and cancel all
 		// further action.
-		w.SetBlock(pos, w.Block(pos), &world.Opts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+		w.SetBlock(pos, w.Block(pos), disabledOpts)
 		return
 	}
 
@@ -1693,7 +1693,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	ctx.Continue(func() {
 		p.SwingArm()
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: w.Block(pos)})
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: b})
 		w.SetBlock(pos, nil, nil)
 
 		for _, drop := range drops {

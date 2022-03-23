@@ -22,7 +22,7 @@ func (s SporeBlossom) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (s SporeBlossom) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, w) {
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: s})
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		w.SetBlock(pos, nil, nil)
 	}
 }
