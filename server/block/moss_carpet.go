@@ -32,7 +32,7 @@ func (MossCarpet) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (MossCarpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 }
 

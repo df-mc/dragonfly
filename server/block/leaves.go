@@ -63,9 +63,9 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
 		if findLog(pos, w, &[]cube.Pos{}, 0) {
 			l.ShouldUpdate = false
-			w.PlaceBlock(pos, l)
+			w.SetBlock(pos, l, nil)
 		} else {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 		}
 	}
 }
@@ -74,7 +74,7 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Persistent && !l.ShouldUpdate {
 		l.ShouldUpdate = true
-		w.PlaceBlock(pos, l)
+		w.SetBlock(pos, l, nil)
 	}
 }
 

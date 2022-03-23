@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand"
@@ -45,7 +46,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 	if s.AdditionalCount != 3 {
 		s.AdditionalCount = 3
-		w.PlaceBlock(pos, s)
+		w.SetBlock(pos, s, nil)
 	}
 
 	for x := -2; x <= 2; x++ {
@@ -63,7 +64,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 				if coral, ok := w.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 					continue
 				}
-				w.PlaceBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1})
+				w.SetBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1}, nil)
 			}
 		}
 	}
@@ -79,7 +80,7 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		}
 
 		existing.AdditionalCount++
-		w.PlaceBlock(pos, existing)
+		w.SetBlock(pos, existing, nil)
 		ctx.CountSub = 1
 		return true
 	}
@@ -105,7 +106,8 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 // NeighbourUpdateTick ...
 func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !s.canSurvive(pos, w) {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: s})
+		w.SetBlock(pos, nil, nil)
 		return
 	}
 
@@ -115,7 +117,7 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	}
 	if s.Dead == alive {
 		s.Dead = !alive
-		w.PlaceBlock(pos, s)
+		w.SetBlock(pos, s, nil)
 	}
 }
 

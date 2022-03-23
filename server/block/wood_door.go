@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -44,14 +45,17 @@ func (d WoodDoor) Model() world.BlockModel {
 func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.Top {
 		if _, ok := w.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
-			w.BreakBlock(pos)
+			w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: d})
+			w.SetBlock(pos, nil, nil)
 		}
 		return
 	}
 	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: d})
+		w.SetBlock(pos, nil, nil)
 	} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: d})
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -96,13 +100,13 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 // Activate ...
 func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	d.Open = !d.Open
-	w.PlaceBlock(pos, d)
+	w.SetBlock(pos, d, nil)
 
 	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
 	other := w.Block(otherPos)
 	if door, ok := other.(WoodDoor); ok {
 		door.Open = d.Open
-		w.PlaceBlock(otherPos, door)
+		w.SetBlock(otherPos, door, nil)
 	}
 
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})

@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -46,7 +47,8 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 // NeighbourUpdateTick ...
 func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: c})
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -59,10 +61,10 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) b
 		w.PlaySound(u.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 		c.Bites++
 		if c.Bites > 6 {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 			return true
 		}
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 		return true
 	}
 	return false

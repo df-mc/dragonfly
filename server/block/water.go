@@ -127,7 +127,7 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 		ctx := event.C()
 		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{})
 		ctx.Continue(func() {
-			wo.PlaceBlock(pos, Stone{})
+			wo.SetBlock(pos, Stone{}, nil)
 			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 		})
 		return true
@@ -135,7 +135,7 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 		ctx := event.C()
 		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Cobblestone{})
 		ctx.Continue(func() {
-			wo.PlaceBlock(*flownIntoBy, Cobblestone{})
+			wo.SetBlock(*flownIntoBy, Cobblestone{}, nil)
 			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 		})
 		return true

@@ -143,12 +143,12 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			case trace.BlockResult:
 				pos := result.BlockPosition().Side(result.Face())
 				if w.Block(pos) == fire() {
-					w.SetBlock(pos, air())
+					w.SetBlock(pos, air(), nil)
 				}
 
 				for _, f := range cube.HorizontalFaces() {
 					if h := pos.Side(f); w.Block(h) == fire() {
-						w.SetBlock(h, air())
+						w.SetBlock(h, air(), nil)
 					}
 				}
 			case trace.EntityResult:

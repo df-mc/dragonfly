@@ -141,7 +141,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		return false
 	}
 	if _, air := existing.(Air); !air {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 	if removable.HasLiquidDrops() {
 		if b, ok := existing.(Breakable); ok {

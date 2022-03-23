@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -25,11 +26,12 @@ func (MelonSeeds) SameCrop(c Crop) bool {
 // NeighbourUpdateTick ...
 func (m MelonSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: w.Block(pos)})
+		w.SetBlock(pos, nil, nil)
 	} else if m.Direction != cube.FaceDown {
 		if _, ok := w.Block(pos.Side(m.Direction)).(Melon); !ok {
 			m.Direction = cube.FaceDown
-			w.PlaceBlock(pos, m)
+			w.SetBlock(pos, m, nil)
 		}
 	}
 }
@@ -39,7 +41,7 @@ func (m MelonSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if r.Float64() <= m.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if m.Growth < 7 {
 			m.Growth++
-			w.PlaceBlock(pos, m)
+			w.SetBlock(pos, m, nil)
 		} else {
 			directions := cube.Directions()
 			for _, i := range directions {
@@ -53,8 +55,8 @@ func (m MelonSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
 				case Farmland, Dirt, Grass:
 					m.Direction = direction
-					w.PlaceBlock(pos, m)
-					w.PlaceBlock(stemPos, Melon{})
+					w.SetBlock(pos, m, nil)
+					w.SetBlock(stemPos, Melon{}, nil)
 				}
 			}
 		}
@@ -67,7 +69,7 @@ func (m MelonSeeds) BoneMeal(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 	m.Growth = min(m.Growth+rand.Intn(4)+2, 7)
-	w.PlaceBlock(pos, m)
+	w.SetBlock(pos, m, nil)
 	return true
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -61,7 +62,8 @@ func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // NeighbourUpdateTick ...
 func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: c})
+		w.SetBlock(pos, nil, nil)
 		return
 	}
 	if c.Dead {
@@ -86,7 +88,7 @@ func (c Coral) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	}, w.Range())
 	if !adjacentWater {
 		c.Dead = true
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 	}
 }
 

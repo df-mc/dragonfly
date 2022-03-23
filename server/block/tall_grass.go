@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -40,8 +41,8 @@ func (g TallGrass) BreakInfo() BreakInfo {
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 	upper := DoubleTallGrass{Type: g.Type, UpperPart: true}
 	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-		w.SetBlock(pos, DoubleTallGrass{Type: g.Type})
-		w.SetBlock(pos.Side(cube.FaceUp), upper)
+		w.SetBlock(pos, DoubleTallGrass{Type: g.Type}, nil)
+		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
 	}
 	return false
@@ -50,7 +51,8 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 // NeighbourUpdateTick ...
 func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: g})
+		w.SetBlock(pos, nil, nil)
 	}
 }
 

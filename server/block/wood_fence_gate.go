@@ -45,7 +45,7 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 		return false
 	}
 	f.Facing = user.Facing()
-	//TODO: Set Lowered if placed next to wall block
+	// TODO: Set Lowered if placed next to wall block.
 
 	place(w, pos, f, user, ctx)
 	return placed(ctx)
@@ -57,7 +57,7 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u ite
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
 	}
-	w.PlaceBlock(pos, f)
+	w.SetBlock(pos, f, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 	return true
 }

@@ -1291,6 +1291,9 @@ func (p *Player) UsingItem() bool {
 	return p.usingItem.Load()
 }
 
+// disabledOpts holds a *world.Opts with all options disabled, this is typically used for resending blocks to players.
+var disabledOpts = &world.Opts{DisableBlockUpdates: true, DisableLiquidDisplacement: true}
+
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
@@ -1306,8 +1309,8 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		if !success {
 			// Resend both the block clicked and the one on the face of that block clicked if using the item was not
 			// successful.
-			w.SetBlock(pos, b)
-			w.SetBlock(pos.Side(face), w.Block(pos.Side(face)))
+			w.SetBlock(pos, b, disabledOpts)
+			w.SetBlock(pos.Side(face), w.Block(pos.Side(face)), disabledOpts)
 			if liq, ok := w.Liquid(pos); ok {
 				w.SetLiquid(pos, liq)
 			}
@@ -1474,7 +1477,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	if _, ok := w.Block(pos.Side(face)).(block.Fire); ok {
-		w.BreakBlockWithoutParticles(pos.Side(face))
+		w.SetBlock(pos.Side(face), nil, nil)
 		w.PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
@@ -1546,7 +1549,7 @@ func (p *Player) FinishBreaking() {
 	pos := p.breakingPos.Load()
 	if !p.breaking.Load() {
 		w := p.World()
-		w.SetBlock(pos, w.Block(pos))
+		w.SetBlock(pos, w.Block(pos), &world.Opts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 		return
 	}
 	p.AbortBreaking()
@@ -1615,9 +1618,9 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 	defer func() {
 		if !success {
 			pos.Neighbours(func(neighbour cube.Pos) {
-				w.SetBlock(neighbour, w.Block(neighbour))
+				w.SetBlock(neighbour, w.Block(neighbour), disabledOpts)
 			}, w.Range())
-			w.SetBlock(pos, w.Block(pos))
+			w.SetBlock(pos, w.Block(pos), disabledOpts)
 		}
 	}()
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
@@ -1630,7 +1633,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) (succe
 	ctx := event.C()
 	p.handler().HandleBlockPlace(ctx, pos, b)
 	ctx.Continue(func() {
-		w.PlaceBlock(pos, b)
+		w.SetBlock(pos, b, nil)
 		w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 		p.SwingArm()
 		success = true
@@ -1679,7 +1682,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	if _, breakable := b.(block.Breakable); !breakable && !p.GameMode().CreativeInventory() {
 		// Block cannot be broken server-side. Set the block back so viewers have it resent and cancel all
 		// further action.
-		w.SetBlock(pos, w.Block(pos))
+		w.SetBlock(pos, w.Block(pos), &world.Opts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 		return
 	}
 
@@ -1690,7 +1693,8 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	ctx.Continue(func() {
 		p.SwingArm()
-		w.BreakBlock(pos)
+		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: w.Block(pos)})
+		w.SetBlock(pos, nil, nil)
 
 		for _, drop := range drops {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())
@@ -1707,7 +1711,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		}
 	})
 	ctx.Stop(func() {
-		w.SetBlock(pos, w.Block(pos))
+		w.SetBlock(pos, w.Block(pos), disabledOpts)
 	})
 }
 
@@ -2191,7 +2195,7 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 	ctx.Continue(func() {
 		sign.Text = text
 	})
-	w.SetBlock(pos, sign)
+	w.SetBlock(pos, sign, nil)
 	return nil
 }
 
