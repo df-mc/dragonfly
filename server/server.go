@@ -33,6 +33,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/maps"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -205,12 +206,7 @@ func (server *Server) MaxPlayerCount() int {
 func (server *Server) Players() []*player.Player {
 	server.playerMutex.RLock()
 	defer server.playerMutex.RUnlock()
-
-	players := make([]*player.Player, 0, len(server.p))
-	for _, p := range server.p {
-		players = append(players, p)
-	}
-	return players
+	return maps.Values(server.p)
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the player is returned and the bool

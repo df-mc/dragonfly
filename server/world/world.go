@@ -1235,39 +1235,27 @@ func (w *World) tickRandomBlocks(loaders []*Loader, tick int64) {
 			}
 		}
 
-		subChunks := c.Sub()
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 
-		// We generate a random block in every chunk
+		// We generate up to j random positions for every sub chunk.
+		x, y, z := g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 		for j := uint32(0); j < tickSpeed; j++ {
-			generateNew := true
-			var x, y, z uint8
-			for i, sub := range subChunks {
+			for i, sub := range c.Sub() {
 				if sub.Empty() {
 					// SubChunk is empty, so skip it right away.
 					continue
 				}
-				if generateNew {
-					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
-				}
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				rid := sub.Layers()[0].At(x, y, z)
-				if rid == airRID {
-					// The block was air, take the fast route out.
-					continue
-				}
-
-				if randomTickBlocks[rid] {
-					subY := (i + (w.ra[0] >> 4)) << 4
+				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
+					subY := (i + (w.ra.Min() >> 4)) << 4
 					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY + int(y), cz + int(z)}})
-					generateNew = true
-					continue
+
+					// Only generate new coordinates if a tickable block was actually found. If not, we can just re-use
+					// the coordinates for the next sub chunk.
+					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
 				}
-				// No block at this position that was a RandomTicker. In this case, we can actually just move one sub
-				// chunk up and try again, without generating any new positions. This one wasn't used, after all.
-				generateNew = false
 			}
 		}
 		c.Unlock()
