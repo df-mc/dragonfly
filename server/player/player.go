@@ -2303,9 +2303,9 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	eyes := entity.EyePosition(p)
 
 	if p.GameMode().CreativeInventory() {
-		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()
+		return eyes.Sub(pos).Len() <= creativeRange && !p.Dead()
 	}
-	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
+	return eyes.Sub(pos).Len() <= survivalRange && !p.Dead()
 }
 
 // Disconnect closes the player and removes it from the world.

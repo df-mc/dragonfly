@@ -37,47 +37,19 @@ type Provider interface {
 	SaveBlockNBT(position ChunkPos, data []map[string]any) error
 }
 
-// NoIOProvider implements a Provider while not performing any disk I/O. It generates values on the run and
-// dynamically, instead of reading and writing data, and returns otherwise empty values.
-type NoIOProvider struct{}
+// Compile time check to make sure NopProvider implements Provider.
+var _ Provider = (*NopProvider)(nil)
 
-// Settings ...
-func (NoIOProvider) Settings(*Settings) {}
+// NopProvider implements a Provider that does not perform any disk I/O. It generates values on the run and
+// dynamically, instead of reading and writing data, and otherwise returns empty values.
+type NopProvider struct{}
 
-// SaveSettings ...
-func (NoIOProvider) SaveSettings(*Settings) {}
-
-// LoadEntities ...
-func (NoIOProvider) LoadEntities(ChunkPos) ([]SaveableEntity, error) {
-	return nil, nil
-}
-
-// SaveEntities ...
-func (NoIOProvider) SaveEntities(ChunkPos, []SaveableEntity) error {
-	return nil
-}
-
-// LoadBlockNBT ...
-func (NoIOProvider) LoadBlockNBT(ChunkPos) ([]map[string]any, error) {
-	return nil, nil
-}
-
-// SaveBlockNBT ...
-func (NoIOProvider) SaveBlockNBT(ChunkPos, []map[string]any) error {
-	return nil
-}
-
-// SaveChunk ...
-func (NoIOProvider) SaveChunk(ChunkPos, *chunk.Chunk) error {
-	return nil
-}
-
-// LoadChunk ...
-func (NoIOProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error) {
-	return nil, false, nil
-}
-
-// Close ...
-func (NoIOProvider) Close() error {
-	return nil
-}
+func (NopProvider) Settings(*Settings)                              {}
+func (NopProvider) SaveSettings(*Settings)                          {}
+func (NopProvider) LoadEntities(ChunkPos) ([]SaveableEntity, error) { return nil, nil }
+func (NopProvider) SaveEntities(ChunkPos, []SaveableEntity) error   { return nil }
+func (NopProvider) LoadBlockNBT(ChunkPos) ([]map[string]any, error) { return nil, nil }
+func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any) error   { return nil }
+func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk) error          { return nil }
+func (NopProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error)  { return nil, false, nil }
+func (NopProvider) Close() error                                    { return nil }

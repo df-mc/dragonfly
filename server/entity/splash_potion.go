@@ -114,7 +114,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 					continue
 				}
 
-				dist := world.Distance(pos, m.pos)
+				dist := pos.Sub(m.pos).Len()
 				if dist > 4 {
 					continue
 				}

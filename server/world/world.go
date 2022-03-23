@@ -79,7 +79,7 @@ type World struct {
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
-// from files until it has been given a different provider than the default. (NoIOProvider)
+// from files until it has been given a different provider than the default. (NopProvider)
 // By default, the name of the world will be 'World'.
 // The Settings passed specify the initial settings of the World created. These Settings are changed as soon as
 // Provider is called, at which point they will be replaced with the Settings as created by the Provider passed. If nil
@@ -94,7 +94,7 @@ func New(log internal.Logger, d Dimension, s *Settings) *World {
 		blockUpdates:    map[cube.Pos]int64{},
 		entities:        map[Entity]ChunkPos{},
 		viewers:         map[*Loader]Viewer{},
-		prov:            *atomic.NewValue[Provider](NoIOProvider{}),
+		prov:            *atomic.NewValue[Provider](NopProvider{}),
 		gen:             *atomic.NewValue[Generator](NopGenerator{}),
 		handler:         *atomic.NewValue[Handler](NopHandler{}),
 		randomTickSpeed: *atomic.NewUint32(3),
@@ -963,14 +963,14 @@ func (w *World) updateNeighbour(pos, changedNeighbour cube.Pos) {
 	w.neighbourUpdatePositions = append(w.neighbourUpdatePositions, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
 }
 
-// Provider changes the provider of the world to the provider passed. If nil is passed, the NoIOProvider
+// Provider changes the provider of the world to the provider passed. If nil is passed, the NopProvider
 // will be set, which does not read or write any data.
 func (w *World) Provider(p Provider) {
 	if w == nil {
 		return
 	}
 	if p == nil {
-		p = NoIOProvider{}
+		p = NopProvider{}
 	}
 
 	w.set.Lock()

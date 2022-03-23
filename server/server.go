@@ -627,20 +627,16 @@ func (server *Server) biomes() map[string]any {
 
 // loadResources loads resource packs from path of specifed directory.
 func (server *Server) loadResources(p string, log internal.Logger) {
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		_ = os.Mkdir(p, 0777)
-	}
+	_ = os.Mkdir(p, 0777)
 	resources, err := os.ReadDir(p)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed opening resource pack directory: %v\n", err)
 	}
 	for _, entry := range resources {
 		pack, err := resource.Compile(filepath.Join(p, entry.Name()))
 		if err != nil {
-			log.Infof("Failed to load resource: %v", entry.Name())
-			continue
+			log.Fatalf("Failed loading resource pack: %v", entry.Name())
 		}
-
 		server.AddResourcePack(pack)
 	}
 }
