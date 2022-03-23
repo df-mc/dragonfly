@@ -16,8 +16,7 @@ type Data struct {
 	Username string
 	// Position is the last position the player was located at.
 	// Velocity is the speed at which the player was moving.
-	// SpawnPoint is the position of where the player will spawn at after death.
-	Position, Velocity, SpawnPoint mgl64.Vec3
+	Position, Velocity mgl64.Vec3
 	// Yaw and Pitch represent the rotation of the player.
 	Yaw, Pitch float64
 	// Health, MaxHealth ...

@@ -44,7 +44,7 @@ type Player struct {
 	uuid                                uuid.UUID
 	xuid                                string
 	locale                              language.Tag
-	pos, vel, spawnPoint                atomic.Value[mgl64.Vec3]
+	pos, vel                            atomic.Value[mgl64.Vec3]
 	nameTag                             atomic.Value[string]
 	scoreTag                            atomic.Value[string]
 	yaw, pitch, absorptionHealth, scale atomic.Float64
@@ -828,12 +828,7 @@ func (p *Player) Respawn() {
 	case world.End:
 		_, w = w.PortalDestinations()
 	}
-	var pos mgl64.Vec3
-	if p.spawnPoint.Value.Load() != nil {
-		pos = p.spawnPoint.Load()
-	} else {
-		pos = w.Spawn().Vec3Middle()
-	}
+	pos := w.Spawn().Vec3Middle()
 
 	p.handler().HandleRespawn(&pos, &w)
 
@@ -2367,7 +2362,6 @@ func (p *Player) close(msg string) {
 func (p *Player) load(data Data) {
 	p.yaw.Store(data.Yaw)
 	p.pitch.Store(data.Pitch)
-	p.spawnPoint.Store(data.SpawnPoint)
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
@@ -2411,7 +2405,6 @@ func (p *Player) Data() Data {
 		Velocity:        mgl64.Vec3{},
 		Yaw:             yaw,
 		Pitch:           pitch,
-		SpawnPoint:      p.spawnPoint.Load(),
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,

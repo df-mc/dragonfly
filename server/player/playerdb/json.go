@@ -13,7 +13,6 @@ func fromJson(d jsonData) player.Data {
 		Username:        d.Username,
 		Position:        d.Position,
 		Velocity:        d.Velocity,
-		SpawnPoint:      d.SpawnPoint,
 		Yaw:             d.Yaw,
 		Pitch:           d.Pitch,
 		Health:          d.Health,
@@ -41,7 +40,6 @@ func toJson(d player.Data) jsonData {
 		Username:        d.Username,
 		Position:        d.Position,
 		Velocity:        d.Velocity,
-		SpawnPoint:      d.SpawnPoint,
 		Yaw:             d.Yaw,
 		Pitch:           d.Pitch,
 		Health:          d.Health,
@@ -66,7 +64,7 @@ func toJson(d player.Data) jsonData {
 type jsonData struct {
 	UUID                             string
 	Username                         string
-	Position, Velocity, SpawnPoint   mgl64.Vec3
+	Position, Velocity               mgl64.Vec3
 	Yaw, Pitch                       float64
 	Health, MaxHealth                float64
 	Hunger                           int
