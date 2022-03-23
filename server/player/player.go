@@ -829,7 +829,7 @@ func (p *Player) Respawn() {
 		_, w = w.PortalDestinations()
 	}
 	var pos mgl64.Vec3
-	if !p.spawnPoint.Load().ApproxEqual(mgl64.Vec3{}) {
+	if p.spawnPoint.Value.Load() != nil {
 		pos = p.spawnPoint.Load()
 	} else {
 		pos = w.Spawn().Vec3Middle()
@@ -2518,12 +2518,6 @@ func (p *Player) viewers() []world.Viewer {
 		return append(viewers, s)
 	}
 	return viewers
-}
-
-// SetSpawnPoint sets the spawn point of the player. When the player respawns, they will be teleported to this location.
-// if the spawn point is nil, the player will be teleported to the world's spawn point.
-func (p *Player) SetSpawnPoint(pos mgl64.Vec3) {
-	p.spawnPoint.Store(pos)
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
