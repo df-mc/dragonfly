@@ -25,7 +25,6 @@ import (
 type World struct {
 	log internal.Logger
 	d   Dimension
-	ra  cube.Range
 	// advance is a bool that specifies if this World should advance the current tick, time and weather saved in the
 	// Settings struct held by the World.
 	advance bool
@@ -38,6 +37,7 @@ type World struct {
 	gen     atomic.Value[Generator]
 
 	weather
+	ticker
 
 	rdonly atomic.Bool
 
@@ -61,18 +61,11 @@ type World struct {
 	randomTickSpeed atomic.Uint32
 
 	updateMu sync.Mutex
-	// blockUpdates is a map of tick time values indexed by the block position at which an update is
+	// scheduledUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
-	blockUpdates             map[cube.Pos]int64
-	updatePositions          []cube.Pos
-	neighbourUpdatePositions []neighbourUpdate
-	neighbourUpdatesSync     []neighbourUpdate
-
-	toTick              []toTick
-	blockEntitiesToTick []blockEntityToTick
-	positionCache       []ChunkPos
-	entitiesToTick      []TickerEntity
+	scheduledUpdates map[cube.Pos]int64
+	neighbourUpdates []neighbourUpdate
 
 	viewersMu sync.Mutex
 	viewers   map[*Loader]Viewer
@@ -89,25 +82,24 @@ func New(log internal.Logger, d Dimension, s *Settings) *World {
 		s = defaultSettings()
 	}
 	w := &World{
-		advance:         s.ref.Inc() == 1,
-		r:               rand.New(rand.NewSource(time.Now().Unix())),
-		blockUpdates:    map[cube.Pos]int64{},
-		entities:        map[Entity]ChunkPos{},
-		viewers:         map[*Loader]Viewer{},
-		prov:            *atomic.NewValue[Provider](NopProvider{}),
-		gen:             *atomic.NewValue[Generator](NopGenerator{}),
-		handler:         *atomic.NewValue[Handler](NopHandler{}),
-		randomTickSpeed: *atomic.NewUint32(3),
-		log:             log,
-		set:             s,
-		closing:         make(chan struct{}),
-		d:               d,
-		ra:              d.Range(),
+		advance:          s.ref.Inc() == 1,
+		r:                rand.New(rand.NewSource(time.Now().Unix())),
+		scheduledUpdates: map[cube.Pos]int64{},
+		entities:         map[Entity]ChunkPos{},
+		viewers:          map[*Loader]Viewer{},
+		prov:             *atomic.NewValue[Provider](NopProvider{}),
+		gen:              *atomic.NewValue[Generator](NopGenerator{}),
+		handler:          *atomic.NewValue[Handler](NopHandler{}),
+		randomTickSpeed:  *atomic.NewUint32(3),
+		log:              log,
+		set:              s,
+		closing:          make(chan struct{}),
+		d:                d,
 	}
-	w.weather = weather{w: w}
+	w.weather, w.ticker = weather{w: w}, ticker{w: w}
 
 	w.initChunkCache()
-	go w.startTicking()
+	go w.tickLoop()
 	go w.chunkCacheJanitor()
 	return w
 }
@@ -135,14 +127,14 @@ func (w *World) Range() cube.Range {
 	if w == nil {
 		return cube.Range{}
 	}
-	return w.ra
+	return w.d.Range()
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) Block(pos cube.Pos) Block {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return air()
 	}
@@ -164,7 +156,7 @@ func (w *World) Block(pos cube.Pos) Block {
 // loaded, or generated if it could not be found in the world save, and the biome returned. Chunks will be
 // loaded synchronously.
 func (w *World) Biome(pos cube.Pos) Biome {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return ocean()
 	}
@@ -182,7 +174,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
-	if pos.OutOfBounds(w.ra) {
+	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return air()
 	}
@@ -201,7 +193,7 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
 // passed in the world.
 func (w *World) HighestLightBlocker(x, z int) int {
 	if w == nil {
-		return w.ra[0]
+		return w.Range()[0]
 	}
 	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	defer c.Unlock()
@@ -212,7 +204,7 @@ func (w *World) HighestLightBlocker(x, z int) int {
 // value of the highest block is returned, or 0 if no blocks were present in the column.
 func (w *World) HighestBlock(x, z int) int {
 	if w == nil {
-		return w.ra[0]
+		return w.Range()[0]
 	}
 	c := w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)})
 	defer c.Unlock()
@@ -226,14 +218,14 @@ func (w *World) highestObstructingBlock(x, z int) int {
 		return 0
 	}
 	yHigh := w.HighestBlock(x, z)
-	for y := yHigh; y >= w.ra[0]; y-- {
+	for y := yHigh; y >= w.Range()[0]; y-- {
 		pos := cube.Pos{x, y, z}
 		m := w.Block(pos).Model()
 		if m.FaceSolid(pos, cube.FaceUp, w) || m.FaceSolid(pos, cube.FaceDown, w) {
 			return y
 		}
 	}
-	return w.ra[0]
+	return w.Range()[0]
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -243,7 +235,7 @@ func (w *World) highestObstructingBlock(x, z int) int {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block) {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
@@ -268,7 +260,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 // SetBiome sets the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
 func (w *World) SetBiome(pos cube.Pos, b Biome) {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
@@ -362,7 +354,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
 			for i, sub := range subs {
-				baseY := (i + (w.ra[0] >> 4)) << 4
+				baseY := (i + (w.Range()[0] >> 4)) << 4
 				if baseY>>4 < pos[1]>>4 {
 					continue
 				} else if baseY >= maxY {
@@ -371,10 +363,10 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 
 				for localY := 0; localY < 16; localY++ {
 					yOffset := baseY + localY
-					if yOffset > w.ra[1] || yOffset >= maxY {
+					if yOffset > w.Range()[1] || yOffset >= maxY {
 						// We've hit the height limit for blocks.
 						break
-					} else if yOffset < w.ra[0] || yOffset < pos[1] {
+					} else if yOffset < w.Range()[0] || yOffset < pos[1] {
 						// We've got a block below the minimum, but other blocks might still reach above
 						// it, so don't break but continue.
 						continue
@@ -423,7 +415,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
 func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return nil, false
 	}
@@ -456,7 +448,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 // there already is a liquid at that position, in which case it will be overwritten.
 // If nil is passed for the liquid, any liquid currently present will be removed.
 func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
@@ -535,7 +527,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer u
 // additionalLiquid checks if the block at a position has additional liquid on another layer and returns the
 // liquid if so.
 func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
-	if pos.OutOfBounds(w.ra) {
+	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return nil, false
 	}
@@ -555,11 +547,11 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) Light(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < w.ra[0] {
+	if w == nil || pos[1] < w.Range()[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > w.ra[1] {
+	if pos[1] > w.Range()[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
@@ -572,11 +564,11 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
 func (w *World) SkyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < w.ra[0] {
+	if w == nil || pos[1] < w.Range()[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > w.ra[1] {
+	if pos[1] > w.Range()[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
@@ -825,7 +817,7 @@ func (w *World) Spawn() cube.Pos {
 	w.set.Lock()
 	s := w.set.Spawn
 	w.set.Unlock()
-	if s[1] > w.ra[1] {
+	if s[1] > w.Range()[1] {
 		s[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
 	return s
@@ -922,24 +914,24 @@ func (w *World) SetRandomTickSpeed(v int) {
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
 func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		return
 	}
 	w.updateMu.Lock()
 	defer w.updateMu.Unlock()
-	if _, exists := w.blockUpdates[pos]; exists {
+	if _, exists := w.scheduledUpdates[pos]; exists {
 		return
 	}
 	w.set.Lock()
 	t := w.set.CurrentTick
 	w.set.Unlock()
 
-	w.blockUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
 func (w *World) doBlockUpdatesAround(pos cube.Pos) {
-	if w == nil || pos.OutOfBounds(w.ra) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		return
 	}
 
@@ -949,7 +941,7 @@ func (w *World) doBlockUpdatesAround(pos cube.Pos) {
 	w.updateNeighbour(pos, changed)
 	pos.Neighbours(func(pos cube.Pos) {
 		w.updateNeighbour(pos, changed)
-	}, w.ra)
+	}, w.Range())
 	w.updateMu.Unlock()
 }
 
@@ -960,7 +952,7 @@ type neighbourUpdate struct {
 
 // updateNeighbour ticks the position passed as a result of the neighbour passed being updated.
 func (w *World) updateNeighbour(pos, changedNeighbour cube.Pos) {
-	w.neighbourUpdatePositions = append(w.neighbourUpdatePositions, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
+	w.neighbourUpdates = append(w.neighbourUpdates, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
 }
 
 // Provider changes the provider of the world to the provider passed. If nil is passed, the NopProvider
@@ -1078,298 +1070,6 @@ func (w *World) Close() error {
 	}
 	w.Handle(NopHandler{})
 	return nil
-}
-
-// startTicking starts ticking the world, updating all entities, blocks and other features such as the time of
-// the world, as required.
-func (w *World) startTicking() {
-	ticker := time.NewTicker(time.Second / 20)
-	defer ticker.Stop()
-
-	w.running.Add(1)
-	for {
-		select {
-		case <-ticker.C:
-			w.tick()
-		case <-w.closing:
-			// World is being closed: Stop ticking and get rid of a task.
-			w.running.Done()
-			return
-		}
-	}
-}
-
-// tick ticks the world and updates the time, blocks and entities that require updates.
-func (w *World) tick() {
-	viewers, loaders := w.allViewers()
-
-	w.set.Lock()
-	if len(viewers) == 0 && w.set.CurrentTick != 0 {
-		w.set.Unlock()
-		return
-	}
-	if w.advance {
-		w.set.CurrentTick++
-		if w.set.TimeCycle {
-			w.set.Time++
-		}
-		if w.set.WeatherCycle {
-			w.advanceWeather()
-		}
-	}
-
-	rain, thunder, tick, t := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
-	w.set.Unlock()
-
-	if tick%20 == 0 {
-		for _, viewer := range viewers {
-			if w.d.TimeCycle() {
-				viewer.ViewTime(t)
-			}
-			if w.d.WeatherCycle() {
-				viewer.ViewWeather(rain, thunder)
-			}
-		}
-	}
-	if thunder {
-		w.tickLightning()
-	}
-
-	w.tickEntities(tick)
-	w.tickRandomBlocks(loaders, tick)
-	w.tickScheduledBlocks(tick)
-}
-
-// tickScheduledBlocks executes scheduled block ticks in chunks that are still loaded at the time of
-// execution.
-func (w *World) tickScheduledBlocks(tick int64) {
-	w.updateMu.Lock()
-	for pos, scheduledTick := range w.blockUpdates {
-		if scheduledTick <= tick {
-			w.updatePositions = append(w.updatePositions, pos)
-			delete(w.blockUpdates, pos)
-		}
-	}
-	w.neighbourUpdatesSync = append(w.neighbourUpdatesSync, w.neighbourUpdatePositions...)
-	w.neighbourUpdatePositions = w.neighbourUpdatePositions[:0]
-	w.updateMu.Unlock()
-
-	for _, pos := range w.updatePositions {
-		if ticker, ok := w.Block(pos).(ScheduledTicker); ok {
-			ticker.ScheduledTick(pos, w, w.r)
-		}
-		if liquid, ok := w.additionalLiquid(pos); ok {
-			if ticker, ok := liquid.(ScheduledTicker); ok {
-				ticker.ScheduledTick(pos, w, w.r)
-			}
-		}
-	}
-	for _, update := range w.neighbourUpdatesSync {
-		pos, changedNeighbour := update.pos, update.neighbour
-		if ticker, ok := w.Block(pos).(NeighbourUpdateTicker); ok {
-			ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
-		}
-		if liquid, ok := w.additionalLiquid(pos); ok {
-			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
-				ticker.NeighbourUpdateTick(pos, changedNeighbour, w)
-			}
-		}
-	}
-
-	w.updatePositions = w.updatePositions[:0]
-	w.neighbourUpdatesSync = w.neighbourUpdatesSync[:0]
-}
-
-// toTick is a struct used to keep track of blocks that need to be ticked upon a random tick.
-type toTick struct {
-	b   RandomTicker
-	pos cube.Pos
-}
-
-// blockEntityToTick is a struct used to keep track of block entities that need to be ticked upon a normal
-// world tick.
-type blockEntityToTick struct {
-	b   TickerBlock
-	pos cube.Pos
-}
-
-// tickRandomBlocks executes random block ticks in each sub chunk in the world that has at least one viewer
-// registered from the viewers passed.
-func (w *World) tickRandomBlocks(loaders []*Loader, tick int64) {
-	r := int32(w.tickRange())
-	if r == 0 {
-		// NOP if the simulation distance is 0.
-		return
-	}
-	tickSpeed := w.randomTickSpeed.Load()
-
-	for _, loader := range loaders {
-		w.positionCache = append(w.positionCache, loader.pos)
-	}
-
-	var g randUint4
-
-	w.chunkMu.Lock()
-	for pos, c := range w.chunks {
-		withinSimDist := false
-		for _, chunkPos := range w.positionCache {
-			xDiff, zDiff := chunkPos[0]-pos[0], chunkPos[1]-pos[1]
-			if (xDiff*xDiff)+(zDiff*zDiff) <= r*r {
-				// The chunk was within the simulation distance of at least one viewer, so we can proceed to
-				// ticking the block.
-				withinSimDist = true
-				break
-			}
-		}
-		if !withinSimDist {
-			// No loaders in this chunk that are within the simulation distance, so proceed to the next.
-			continue
-		}
-		c.Lock()
-		for pos, b := range c.e {
-			if ticker, ok := b.(TickerBlock); ok {
-				w.blockEntitiesToTick = append(w.blockEntitiesToTick, blockEntityToTick{
-					b:   ticker,
-					pos: pos,
-				})
-			}
-		}
-
-		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
-
-		// We generate up to j random positions for every sub chunk.
-		x, y, z := g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
-		for j := uint32(0); j < tickSpeed; j++ {
-			for i, sub := range c.Sub() {
-				if sub.Empty() {
-					// SubChunk is empty, so skip it right away.
-					continue
-				}
-				// Generally we would want to make sure the block has its block entities, but provided blocks
-				// with block entities are generally ticked already, we are safe to assume that blocks
-				// implementing the RandomTicker don't rely on additional block entity data.
-				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
-					subY := (i + (w.ra.Min() >> 4)) << 4
-					w.toTick = append(w.toTick, toTick{b: blocks[rid].(RandomTicker), pos: cube.Pos{cx + int(x), subY + int(y), cz + int(z)}})
-
-					// Only generate new coordinates if a tickable block was actually found. If not, we can just re-use
-					// the coordinates for the next sub chunk.
-					x, y, z = g.uint4(w.r), g.uint4(w.r), g.uint4(w.r)
-				}
-			}
-		}
-		c.Unlock()
-	}
-	w.chunkMu.Unlock()
-
-	for _, a := range w.toTick {
-		a.b.RandomTick(a.pos, w, w.r)
-	}
-	for _, b := range w.blockEntitiesToTick {
-		b.b.Tick(tick, b.pos, w)
-	}
-	w.toTick = w.toTick[:0]
-	w.blockEntitiesToTick = w.blockEntitiesToTick[:0]
-	w.positionCache = w.positionCache[:0]
-}
-
-// randUint4 is a structure used to generate random uint4s.
-type randUint4 struct {
-	x uint64
-	n uint8
-}
-
-// uint4 returns a random uint4.
-func (g *randUint4) uint4(r *rand.Rand) uint8 {
-	if g.n == 0 {
-		g.x = r.Uint64()
-		g.n = 16
-	}
-	val := g.x & 0b1111
-
-	g.x >>= 4
-	g.n--
-	return uint8(val)
-}
-
-// tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
-// updating where necessary.
-func (w *World) tickEntities(tick int64) {
-	type entityToMove struct {
-		e             Entity
-		after         *chunkData
-		viewersBefore []Viewer
-	}
-	var entitiesToMove []entityToMove
-
-	w.chunkMu.Lock()
-	w.entityMu.Lock()
-	for e, lastPos := range w.entities {
-		chunkPos := chunkPosFromVec3(e.Position())
-
-		c, ok := w.chunks[chunkPos]
-		if !ok {
-			continue
-		}
-
-		c.Lock()
-		v := len(c.v)
-		c.Unlock()
-
-		if v > 0 {
-			if ticker, ok := e.(TickerEntity); ok {
-				w.entitiesToTick = append(w.entitiesToTick, ticker)
-			}
-		}
-
-		if lastPos != chunkPos {
-			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
-			// for loaders to view it.
-			w.entities[e] = chunkPos
-			var viewers []Viewer
-
-			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
-			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
-			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
-			if old, ok := w.chunks[lastPos]; ok {
-				old.Lock()
-				old.entities = sliceutil.DeleteVal(old.entities, e)
-				viewers = slices.Clone(old.v)
-				old.Unlock()
-			}
-			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
-		}
-	}
-	w.entityMu.Unlock()
-	w.chunkMu.Unlock()
-
-	for _, move := range entitiesToMove {
-		move.after.Lock()
-		move.after.entities = append(move.after.entities, move.e)
-		viewersAfter := move.after.v
-		move.after.Unlock()
-
-		for _, viewer := range move.viewersBefore {
-			if sliceutil.Index(viewersAfter, viewer) == -1 {
-				// First we hide the entity from all loaders that were previously viewing it, but no
-				// longer are.
-				viewer.HideEntity(move.e)
-			}
-		}
-		for _, viewer := range viewersAfter {
-			if sliceutil.Index(move.viewersBefore, viewer) == -1 {
-				// Then we show the entity to all loaders that are now viewing the entity in the new
-				// chunk.
-				showEntity(move.e, viewer)
-			}
-		}
-	}
-	for _, ticker := range w.entitiesToTick {
-		// We gather entities to tick and tick them later, so that the lock on the entity mutex is no longer
-		// active.
-		ticker.Tick(w, tick)
-	}
-	w.entitiesToTick = w.entitiesToTick[:0]
 }
 
 // allViewers returns a list of all loaders of the world, regardless of where in the world they are viewing.

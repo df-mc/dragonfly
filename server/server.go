@@ -402,8 +402,7 @@ func (server *Server) wait() {
 func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// UUID is validated by gophertunnel.
-	id, _ := uuid.Parse(conn.IdentityData().Identity)
+	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := server.defaultGameData()
 
 	var playerData *player.Data
