@@ -632,6 +632,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	}
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
+
 	velocity = velocity.Normalize().Mul(force)
 	velocity[1] = height
 
@@ -1446,6 +1447,12 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 		if vulnerable {
 			p.Exhaust(0.1)
+
+			if s, ok := i.Enchantment(enchantment.KnockBack{}); ok {
+				diff := float64(s.Level()) / 2
+				force += diff
+				height += diff
+			}
 			living.KnockBack(p.Position(), force, height)
 
 			if flammable, ok := living.(entity.Flammable); ok {
