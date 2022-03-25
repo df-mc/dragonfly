@@ -298,22 +298,15 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.teleportMu.Lock()
 		s.teleportPos = &position
 		s.teleportMu.Unlock()
-
-		s.writePacket(&packet.MovePlayer{
-			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(entityOffset(e))),
-			Pitch:           float32(pitch),
-			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-			Mode:            packet.MoveModeTeleport,
-		})
-		return
 	}
-	s.writePacket(&packet.MoveActorAbsolute{
+
+	s.writePacket(&packet.MovePlayer{
 		EntityRuntimeID: id,
 		Position:        vec64To32(position.Add(entityOffset(e))),
-		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-		Flags:           byte(packet.MoveFlagTeleport),
+		Pitch:           float32(pitch),
+		Yaw:             float32(yaw),
+		HeadYaw:         float32(yaw),
+		Mode:            packet.MoveModeTeleport,
 	})
 }
 
