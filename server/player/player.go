@@ -1448,10 +1448,10 @@ func (p *Player) AttackEntity(e world.Entity) {
 		if vulnerable {
 			p.Exhaust(0.1)
 
-			if s, ok := i.Enchantment(enchantment.KnockBack{}); ok {
-				diff := float64(s.Level()) / 2
-				force += diff
-				height += diff
+			if k, ok := i.Enchantment(enchantment.KnockBack{}); ok {
+				inc := (enchantment.KnockBack{}).Force(k.Level())
+				force += inc
+				height += inc
 			}
 			living.KnockBack(p.Position(), force, height)
 
