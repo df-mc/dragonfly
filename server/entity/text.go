@@ -46,7 +46,7 @@ func (t *Text) NameTag() string {
 
 // DecodeNBT decodes the data passed to create and return a new Text entity.
 func (t *Text) DecodeNBT(data map[string]any) any {
-	return NewText(nbtconv.MapString(data, "Text"), nbtconv.MapVec3(data, "Pos"))
+	return NewText(nbtconv.Map[string](data, "Text"), nbtconv.MapVec3(data, "Pos"))
 }
 
 // EncodeNBT encodes the Text entity to a map representation that can be encoded to NBT.

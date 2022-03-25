@@ -174,8 +174,8 @@ func (it *Item) DecodeNBT(data map[string]any) any {
 	}
 	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
 	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.age = int(nbtconv.MapInt16(data, "Age"))
-	n.pickupDelay = int(nbtconv.MapInt64(data, "PickupDelay"))
+	n.age = int(nbtconv.Map[int16](data, "Age"))
+	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
 	return n
 }
 

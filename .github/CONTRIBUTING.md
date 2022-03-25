@@ -36,7 +36,7 @@ opening a pull request:
   conventions for documentation in pull requests:
   - Exported symbols (TypeName, FunctionName) should always have documentation over them, but if
     the function exists merely to satisfy an interface, the documentation may read 
-    `// FunctionName ...`.
+    `// FunctionName ...` or be completely absent if the method has no functional behaviour.
   - Unexported symbols (typeName, functionName) _should_ have documentation, but doing so is not
     mandatory if the function is very simple and needs no clarification.
 * Make sure to use British English and proper punctuation throughout symbol names, variables and

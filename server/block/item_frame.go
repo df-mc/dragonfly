@@ -114,8 +114,8 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 
 // DecodeNBT ...
 func (i ItemFrame) DecodeNBT(data map[string]any) any {
-	i.DropChance = float64(nbtconv.MapFloat32(data, "ItemDropChance"))
-	i.Rotations = int(nbtconv.MapByte(data, "ItemRotation"))
+	i.DropChance = float64(nbtconv.Map[float32](data, "ItemDropChance"))
+	i.Rotations = int(nbtconv.Map[byte](data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
 	return i
 }

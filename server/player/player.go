@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -1107,9 +1108,8 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 // The game mode may be changed using Player.SetGameMode().
 func (p *Player) GameMode() world.GameMode {
 	p.gameModeMu.RLock()
-	mode := p.gameMode
-	p.gameModeMu.RUnlock()
-	return mode
+	defer p.gameModeMu.RUnlock()
+	return p.gameMode
 }
 
 // itemHash is used as a hash for a world.Item.
@@ -1813,9 +1813,18 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // position of the player.
 // Move also rotates the player, adding deltaYaw and deltaPitch to the respective values.
 func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
-	if p.Dead() || p.immobile.Load() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
+	if p.Dead() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
 		return
 	}
+	if p.immobile.Load() {
+		if mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
+			// If only the position was changed, don't continue with the movement when immobile.
+			return
+		}
+		// Still update rotation if it was changed.
+		deltaPos = mgl64.Vec3{}
+	}
+
 	w := p.World()
 
 	pos := p.Position()
@@ -2303,9 +2312,9 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 	eyes := entity.EyePosition(p)
 
 	if p.GameMode().CreativeInventory() {
-		return world.Distance(eyes, pos) <= creativeRange && !p.Dead()
+		return eyes.Sub(pos).Len() <= creativeRange && !p.Dead()
 	}
-	return world.Distance(eyes, pos) <= survivalRange && !p.Dead()
+	return eyes.Sub(pos).Len() <= survivalRange && !p.Dead()
 }
 
 // Disconnect closes the player and removes it from the world.
@@ -2386,10 +2395,7 @@ func (p *Player) loadInventory(data InventoryData) {
 		_ = p.Inventory().SetItem(slot, stack)
 	}
 	_ = p.offHand.SetItem(0, data.OffHand)
-	p.Armour().SetBoots(data.Boots)
-	p.Armour().SetLeggings(data.Leggings)
-	p.Armour().SetChestplate(data.Chestplate)
-	p.Armour().SetHelmet(data.Helmet)
+	p.Armour().Set(data.Helmet, data.Chestplate, data.Leggings, data.Boots)
 }
 
 // Data returns the player data that needs to be saved. This is used when the player
@@ -2435,13 +2441,11 @@ func (p *Player) Data() Data {
 // is returned.
 func (p *Player) session() *session.Session {
 	p.sMutex.RLock()
-	s := p.s
-	p.sMutex.RUnlock()
-
-	if s == nil {
+	defer p.sMutex.RUnlock()
+	if p.s == nil {
 		return session.Nop
 	}
-	return s
+	return p.s
 }
 
 // useContext returns an item.UseContext initialised for a Player.
@@ -2489,9 +2493,8 @@ func (p *Player) useContext() *item.UseContext {
 // handler returns the Handler of the player.
 func (p *Player) handler() Handler {
 	p.hMutex.RLock()
-	handler := p.h
-	p.hMutex.RUnlock()
-	return handler
+	defer p.hMutex.RUnlock()
+	return p.h
 }
 
 // broadcastItems broadcasts the items held to viewers.
@@ -2511,16 +2514,10 @@ func (p *Player) broadcastArmour(int, item.Stack) {
 // viewers returns a list of all viewers of the Player.
 func (p *Player) viewers() []world.Viewer {
 	viewers := p.World().Viewers(p.Position())
-	s := p.session()
+	var s world.Viewer = p.session()
 
-	found := false
-	for _, v := range viewers {
-		if v == s {
-			found = true
-		}
-	}
-	if !found {
-		viewers = append(viewers, s)
+	if sliceutil.Index(viewers, s) == -1 {
+		return append(viewers, s)
 	}
 	return viewers
 }

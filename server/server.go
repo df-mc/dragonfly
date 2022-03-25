@@ -33,6 +33,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/maps"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -205,12 +206,7 @@ func (server *Server) MaxPlayerCount() int {
 func (server *Server) Players() []*player.Player {
 	server.playerMutex.RLock()
 	defer server.playerMutex.RUnlock()
-
-	players := make([]*player.Player, 0, len(server.p))
-	for _, p := range server.p {
-		players = append(players, p)
-	}
-	return players
+	return maps.Values(server.p)
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the player is returned and the bool
@@ -406,8 +402,7 @@ func (server *Server) wait() {
 func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// UUID is validated by gophertunnel.
-	id, _ := uuid.Parse(conn.IdentityData().Identity)
+	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := server.defaultGameData()
 
 	var playerData *player.Data
@@ -631,20 +626,16 @@ func (server *Server) biomes() map[string]any {
 
 // loadResources loads resource packs from path of specifed directory.
 func (server *Server) loadResources(p string, log internal.Logger) {
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		_ = os.Mkdir(p, 0777)
-	}
+	_ = os.Mkdir(p, 0777)
 	resources, err := os.ReadDir(p)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed opening resource pack directory: %v\n", err)
 	}
 	for _, entry := range resources {
 		pack, err := resource.Compile(filepath.Join(p, entry.Name()))
 		if err != nil {
-			log.Infof("Failed to load resource: %v", entry.Name())
-			continue
+			log.Fatalf("Failed loading resource pack: %v", entry.Name())
 		}
-
 		server.AddResourcePack(pack)
 	}
 }

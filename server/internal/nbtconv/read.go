@@ -35,7 +35,7 @@ func readItemStack(m map[string]any) item.Stack {
 	if blockItem, ok := MapBlock(m, "Block").(world.Item); ok {
 		it = blockItem
 	}
-	if v, ok := world.ItemByName(MapString(m, "Name"), MapInt16(m, "Damage")); ok {
+	if v, ok := world.ItemByName(Map[string](m, "Name"), Map[int16](m, "Damage")); ok {
 		it = v
 	}
 	if it == nil {
@@ -44,31 +44,31 @@ func readItemStack(m map[string]any) item.Stack {
 	if n, ok := it.(world.NBTer); ok {
 		it = n.DecodeNBT(m).(world.Item)
 	}
-	return item.NewStack(it, int(MapByte(m, "Count")))
+	return item.NewStack(it, int(Map[byte](m, "Count")))
 }
 
 // readDamage reads the damage value stored in the NBT with the Damage tag and saves it to the item.Stack passed.
 func readDamage(m map[string]any, s *item.Stack, disk bool) {
 	if disk {
-		*s = s.Damage(int(MapInt16(m, "Damage")))
+		*s = s.Damage(int(Map[int16](m, "Damage")))
 		return
 	}
-	*s = s.Damage(int(MapInt32(m, "Damage")))
+	*s = s.Damage(int(Map[int32](m, "Damage")))
 }
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
 func readEnchantments(m map[string]any, s *item.Stack) {
 	enchantments, ok := m["ench"].([]map[string]any)
 	if !ok {
-		for _, e := range MapSlice(m, "ench") {
+		for _, e := range Map[[]any](m, "ench") {
 			if v, ok := e.(map[string]any); ok {
 				enchantments = append(enchantments, v)
 			}
 		}
 	}
 	for _, ench := range enchantments {
-		if t, ok := item.EnchantmentByID(int(MapInt16(ench, "id"))); ok {
-			*s = s.WithEnchantments(item.NewEnchantment(t, int(MapInt16(ench, "lvl"))))
+		if t, ok := item.EnchantmentByID(int(Map[int16](ench, "id"))); ok {
+			*s = s.WithEnchantments(item.NewEnchantment(t, int(Map[int16](ench, "lvl"))))
 		}
 	}
 }
@@ -106,12 +106,12 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 				}
 			}
 		}
-		var m map[string]any
-		if err := gob.NewDecoder(bytes.NewBuffer(d)).Decode(&m); err != nil {
+		var values []mapValue
+		if err := gob.NewDecoder(bytes.NewBuffer(d)).Decode(&values); err != nil {
 			panic("error decoding item user data: " + err.Error())
 		}
-		for k, v := range m {
-			*s = s.WithValue(k, v)
+		for _, val := range values {
+			*s = s.WithValue(val.K, val.V)
 		}
 	}
 }
