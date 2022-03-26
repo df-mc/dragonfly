@@ -178,7 +178,9 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 		t.w.Block(pos).(RandomTicker).RandomTick(pos, t.w, t.w.r)
 	}
 	for _, pos := range blockEntities {
-		t.w.Block(pos).(TickerBlock).Tick(tick, pos, t.w)
+		if tb, ok := t.w.Block(pos).(TickerBlock); ok {
+			tb.Tick(tick, pos, t.w)
+		}
 	}
 }
 
