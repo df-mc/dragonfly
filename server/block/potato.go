@@ -80,8 +80,8 @@ func (p Potato) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (p Potato) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
 	} else if p.Growth < 7 && r.Float64() <= p.CalculateGrowthChance(pos, w) {
 		p.Growth++
 		w.SetBlock(pos, p, nil)

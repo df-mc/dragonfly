@@ -228,8 +228,8 @@ func (w *World) highestObstructingBlock(x, z int) int {
 	return w.Range()[0]
 }
 
-// Opts ...
-type Opts struct {
+// SetOpts ...
+type SetOpts struct {
 	// DisableBlockUpdates ...
 	DisableBlockUpdates bool
 	// DisableLiquidDisplacement ...
@@ -242,13 +242,13 @@ type Opts struct {
 // Nil may be passed as the block to set the block to air.
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
-func (w *World) SetBlock(pos cube.Pos, b Block, opts *Opts) {
+func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
 	if opts == nil {
-		opts = &Opts{}
+		opts = &SetOpts{}
 	}
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])

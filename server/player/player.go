@@ -1291,8 +1291,8 @@ func (p *Player) UsingItem() bool {
 	return p.usingItem.Load()
 }
 
-// disabledOpts holds a *world.Opts with all options disabled, this is typically used for resending blocks to players.
-var disabledOpts = &world.Opts{DisableBlockUpdates: true, DisableLiquidDisplacement: true}
+// disabledOpts holds a *world.SetOpts with all options disabled, this is typically used for resending blocks to players.
+var disabledOpts = &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true}
 
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
@@ -1693,8 +1693,8 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	ctx.Continue(func() {
 		p.SwingArm()
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: b})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
 		for _, drop := range drops {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())

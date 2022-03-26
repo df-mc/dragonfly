@@ -45,17 +45,17 @@ func (d WoodDoor) Model() world.BlockModel {
 func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.Top {
 		if _, ok := w.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		}
 		return
 	}
 	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 

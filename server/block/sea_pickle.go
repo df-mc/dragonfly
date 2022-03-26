@@ -106,8 +106,8 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 // NeighbourUpdateTick ...
 func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !s.canSurvive(pos, w) {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		return
 	}
 

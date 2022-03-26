@@ -21,8 +21,8 @@ type Ladder struct {
 // NeighbourUpdateTick ...
 func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(l.Facing.Opposite().Face())).(LightDiffuser); ok {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: w.Block(pos)})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
 	}
 }
 
