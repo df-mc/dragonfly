@@ -243,7 +243,7 @@ type Opts struct {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block, opts *Opts) {
-  if w == nil || pos.OutOfBounds(w.Range()) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
