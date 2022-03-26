@@ -79,7 +79,11 @@ func (board *Scoreboard) Lines() []string {
 	lines := slices.Clone(board.lines)
 	if board.padding {
 		for i, line := range lines {
-			lines[i] = " " + line
+			if len(board.name)-len(line)-2 <= 0 {
+				lines[i] = " " + line + " "
+				continue
+			}
+			lines[i] = " " + line + strings.Repeat(" ", len(board.name)-len(line)-2)
 		}
 	}
 	return board.lines
