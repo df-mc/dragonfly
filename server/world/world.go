@@ -228,11 +228,14 @@ func (w *World) highestObstructingBlock(x, z int) int {
 	return w.Range()[0]
 }
 
-// SetOpts ...
+// SetOpts holds several parameters that may be set to disable updates in the World of different kinds as a result of
+// a call to SetBlock.
 type SetOpts struct {
-	// DisableBlockUpdates ...
+	// DisableBlockUpdates makes SetBlock not update any neighbouring blocks as a result of the SetBlock call.
 	DisableBlockUpdates bool
-	// DisableLiquidDisplacement ...
+	// DisableLiquidDisplacement disables the displacement of liquid blocks to the second layer (or back to the first
+	// layer, if it already was on the second layer). Disabling this is not strongly recommended unless performance is
+	// very important or where it is known no liquid can be present anyway.
 	DisableLiquidDisplacement bool
 }
 
@@ -240,6 +243,11 @@ type SetOpts struct {
 // first loaded or generated if it could not be found in the world save.
 // SetBlock panics if the block passed has not yet been registered using RegisterBlock().
 // Nil may be passed as the block to set the block to air.
+//
+// A SetOpts struct may be passed to additionally modify behaviour of SetBlock, specifically to improve performance
+// under specific circumstances. Nil should be passed where performance is not essential, to make sure the world is
+// updated adequately.
+//
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
