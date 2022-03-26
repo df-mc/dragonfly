@@ -133,89 +133,32 @@ type NopHandler struct{}
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = (*NopHandler)(nil)
 
-// HandleItemDrop ...
-func (NopHandler) HandleItemDrop(*event.Context, *entity.Item) {}
-
-// HandleMove ...
-func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64) {}
-
-// HandleJump ...
-func (NopHandler) HandleJump() {}
-
-// HandleTeleport ...
-func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3) {}
-
-// HandleChangeWorld ...
-func (NopHandler) HandleChangeWorld(*world.World, *world.World) {}
-
-// HandleToggleSprint ...
-func (NopHandler) HandleToggleSprint(*event.Context, bool) {}
-
-// HandleToggleSneak ...
-func (NopHandler) HandleToggleSneak(*event.Context, bool) {}
-
-// HandleCommandExecution ...
-func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) {}
-
-// HandleTransfer ...
-func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr) {}
-
-// HandleChat ...
-func (NopHandler) HandleChat(*event.Context, *string) {}
-
-// HandleSkinChange ...
-func (NopHandler) HandleSkinChange(*event.Context, skin.Skin) {}
-
-// HandleStartBreak ...
-func (NopHandler) HandleStartBreak(*event.Context, cube.Pos) {}
-
-// HandleBlockBreak ...
-func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack) {}
-
-// HandleBlockPlace ...
-func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block) {}
-
-// HandleBlockPick ...
-func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block) {}
-
-// HandleSignEdit ...
-func (NopHandler) HandleSignEdit(*event.Context, string, string) {}
-
-// HandleItemPickup ...
-func (NopHandler) HandleItemPickup(*event.Context, item.Stack) {}
-
-// HandleItemUse ...
-func (NopHandler) HandleItemUse(*event.Context) {}
-
-// HandleItemUseOnBlock ...
-func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3) {}
-
-// HandleItemUseOnEntity ...
-func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity) {}
-
-// HandleItemDamage ...
-func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int) {}
-
-// HandleAttackEntity ...
+func (NopHandler) HandleItemDrop(*event.Context, *entity.Item)                                {}
+func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64)                    {}
+func (NopHandler) HandleJump()                                                                {}
+func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3)                                  {}
+func (NopHandler) HandleChangeWorld(*world.World, *world.World)                               {}
+func (NopHandler) HandleToggleSprint(*event.Context, bool)                                    {}
+func (NopHandler) HandleToggleSneak(*event.Context, bool)                                     {}
+func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string)               {}
+func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr)                                {}
+func (NopHandler) HandleChat(*event.Context, *string)                                         {}
+func (NopHandler) HandleSkinChange(*event.Context, skin.Skin)                                 {}
+func (NopHandler) HandleStartBreak(*event.Context, cube.Pos)                                  {}
+func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack)                   {}
+func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
+func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
+func (NopHandler) HandleSignEdit(*event.Context, string, string)                              {}
+func (NopHandler) HandleItemPickup(*event.Context, item.Stack)                                {}
+func (NopHandler) HandleItemUse(*event.Context)                                               {}
+func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3)       {}
+func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity)                         {}
+func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int)                           {}
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
-
-// HandlePunchAir ...
-func (NopHandler) HandlePunchAir(*event.Context) {}
-
-// HandleHurt ...
-func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source) {}
-
-// HandleHeal ...
-func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source) {}
-
-// HandleFoodLoss ...
-func (NopHandler) HandleFoodLoss(*event.Context, int, int) {}
-
-// HandleDeath ...
-func (NopHandler) HandleDeath(damage.Source) {}
-
-// HandleRespawn ...
-func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World) {}
-
-// HandleQuit ...
-func (NopHandler) HandleQuit() {}
+func (NopHandler) HandlePunchAir(*event.Context)                                              {}
+func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source)                         {}
+func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source)                        {}
+func (NopHandler) HandleFoodLoss(*event.Context, int, int)                                    {}
+func (NopHandler) HandleDeath(damage.Source)                                                  {}
+func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
+func (NopHandler) HandleQuit()                                                                {}

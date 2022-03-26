@@ -3,7 +3,10 @@ package item
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 	"reflect"
+	"sort"
 	"strings"
 	"sync/atomic"
 )
@@ -200,7 +203,7 @@ func (s Stack) Lore() []string {
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
 func (s Stack) WithValue(key string, val any) Stack {
-	s.data = copyMap(s.data)
+	s.data = maps.Clone(s.data)
 	if val != nil {
 		s.data[key] = val
 	} else {
@@ -245,12 +248,18 @@ func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
 	return ench, ok
 }
 
-// Enchantments returns an array of all Enchantments on the item.
+// Enchantments returns an array of all Enchantments on the item. Enchantments returns the enchantments of a Stack in a
+// deterministic order.
 func (s Stack) Enchantments() []Enchantment {
 	e := make([]Enchantment, 0, len(s.enchantments))
 	for _, ench := range s.enchantments {
 		e = append(e, ench)
 	}
+	sort.Slice(e, func(i, j int) bool {
+		id1, _ := EnchantmentID(e[i].t)
+		id2, _ := EnchantmentID(e[j].t)
+		return id1 < id2
+	})
 	return e
 }
 
@@ -293,16 +302,14 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage {
+	if name != name2 || meta != meta2 || s.damage != s2.damage || s.customName != s2.customName {
 		return false
 	}
-	if s.customName != s2.customName || len(s.lore) != len(s2.lore) || len(s.enchantments) != len(s2.enchantments) {
+	for !slices.Equal(s.lore, s2.lore) {
 		return false
 	}
-	for i := range s.lore {
-		if s.lore[i] != s2.lore[i] {
-			return false
-		}
+	if len(s.enchantments) != len(s2.enchantments) {
+		return false
 	}
 	for i := range s.enchantments {
 		if s.enchantments[i] != s2.enchantments[i] {
@@ -314,10 +321,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 	}
 	if nbt, ok := s.Item().(world.NBTer); ok {
 		nbt2, ok := s2.Item().(world.NBTer)
-		if !ok {
-			return false
-		}
-		return reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
+		return ok && reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
 	}
 	return true
 }
@@ -333,7 +337,7 @@ func (s Stack) String() string {
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
 func (s Stack) Values() map[string]any {
-	return copyMap(s.data)
+	return maps.Clone(s.data)
 }
 
 // stackID is a counter for unique stack IDs.
@@ -358,15 +362,6 @@ func id(s Stack) int32 {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
-}
-
-// copyMap makes a copy of the map passed. It does not recursively copy the map.
-func copyMap(m map[string]any) map[string]any {
-	cp := make(map[string]any, len(m))
-	for k, v := range m {
-		cp[k] = v
-	}
-	return cp
 }
 
 // copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.

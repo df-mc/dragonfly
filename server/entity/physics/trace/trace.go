@@ -2,7 +2,6 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
@@ -24,7 +23,7 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 
 	delta := safeDivideVec3(step, dir)
 
-	r := world.Distance(start, end)
+	r := start.Sub(end).Len()
 	for {
 		if !f(b) {
 			return

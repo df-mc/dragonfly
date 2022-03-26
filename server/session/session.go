@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -444,15 +445,11 @@ func (s *Session) initPlayerList() {
 // other sessions.
 func (s *Session) closePlayerList() {
 	sessionMu.Lock()
-	n := make([]*Session, 0, len(sessions)-1)
 	for _, session := range sessions {
-		if session != s {
-			n = append(n, session)
-		}
 		// Remove the player of the session from the player list of all other sessions.
 		session.removeFromPlayerList(s)
 	}
-	sessions = n
+	sessions = sliceutil.DeleteVal(sessions, s)
 	sessionMu.Unlock()
 }
 
