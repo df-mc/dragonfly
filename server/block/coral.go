@@ -62,8 +62,8 @@ func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // NeighbourUpdateTick ...
 func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		return
 	}
 	if c.Dead {

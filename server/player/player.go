@@ -1693,8 +1693,8 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	ctx.Continue(func() {
 		p.SwingArm()
-		w.AddParticle(pos.Vec3Middle(), particle.BlockBreak{Block: b})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
 		for _, drop := range drops {
 			itemEntity := entity.NewItem(drop, pos.Vec3Centre())

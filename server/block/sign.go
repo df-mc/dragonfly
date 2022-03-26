@@ -121,14 +121,14 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if s.Attach.hanging {
 		if _, ok := w.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		}
 		return
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 	}
 }
 

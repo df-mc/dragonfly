@@ -30,19 +30,19 @@ func (d DoubleTallGrass) HasLiquidDrops() bool {
 func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.UpperPart {
 		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleTallGrass); !ok || bottom.Type != d.Type || bottom.UpperPart {
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		}
 		return
 	}
 	if upper, ok := w.Block(pos.Side(cube.FaceUp)).(DoubleTallGrass); !ok || upper.Type != d.Type || !upper.UpperPart {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		return
 	}
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 

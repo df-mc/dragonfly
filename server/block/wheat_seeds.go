@@ -63,8 +63,8 @@ func (s WheatSeeds) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (s WheatSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 	} else if s.Growth < 7 && r.Float64() <= s.CalculateGrowthChance(pos, w) {
 		s.Growth++
 		w.SetBlock(pos, s, nil)
