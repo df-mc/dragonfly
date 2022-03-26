@@ -37,15 +37,10 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	var (
 		data   = chunk.Encode(c, chunk.NetworkEncoding)
 		count  = uint32(len(data.SubChunks))
-		blobs  = make([][]byte, count+1)
+		blobs  = append(data.SubChunks, data.Biomes)
 		hashes = make([]uint64, len(blobs))
 		m      = make(map[uint64]struct{}, len(blobs))
 	)
-	for i := range data.SubChunks {
-		blobs[i] = data.SubChunks[i]
-	}
-	blobs[len(blobs)-1] = data.Biomes
-
 	for i, blob := range blobs {
 		h := xxhash.Sum64(blob)
 		hashes[i], m[h] = h, struct{}{}
@@ -298,7 +293,10 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.teleportMu.Lock()
 		s.teleportPos = &position
 		s.teleportMu.Unlock()
+	}
 
+	switch e.(type) {
+	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
@@ -307,14 +305,14 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
 		})
-		return
+	default:
+		s.writePacket(&packet.MoveActorAbsolute{
+			EntityRuntimeID: id,
+			Position:        vec64To32(position.Add(entityOffset(e))),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+			Flags:           packet.MoveFlagTeleport,
+		})
 	}
-	s.writePacket(&packet.MoveActorAbsolute{
-		EntityRuntimeID: id,
-		Position:        vec64To32(position.Add(entityOffset(e))),
-		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-		Flags:           byte(packet.MoveFlagTeleport),
-	})
 }
 
 // ViewEntityItems ...
@@ -571,6 +569,14 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:
 		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
+	case sound.LevelUp:
+		pk.SoundType, pk.ExtraData = packet.SoundEventLevelUp, 0x10000000
+	case sound.Experience:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundExperienceOrbPickup,
+			Position:  vec64To32(pos),
+		})
+		return
 	}
 	s.writePacket(pk)
 }

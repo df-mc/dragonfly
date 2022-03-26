@@ -66,10 +66,9 @@ type Viewer interface {
 // prevent having to implement all of Viewer's methods.
 type NopViewer struct{}
 
+// Compile time check to make sure NopViewer implements Viewer.
 var _ Viewer = NopViewer{}
 
-// Position returns an empty mgl64.Vec3. We can do this because this position is only used for checking if a chunk
-// should have random block ticking, which is generally not desirable with a NopViewer anyway.
 func (NopViewer) ViewEntity(Entity)                                             {}
 func (NopViewer) HideEntity(Entity)                                             {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
