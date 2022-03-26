@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -45,7 +46,7 @@ func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 		return true
 	}
 
-	w.SetBlock(pos, i)
+	w.SetBlock(pos, i, nil)
 	return true
 }
 
@@ -66,7 +67,7 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 	}
 	i.Item, i.Rotations = item.Stack{}, 0
 	w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRemove{})
-	w.SetBlock(pos, i)
+	w.SetBlock(pos, i, nil)
 }
 
 // UseOnBlock ...
@@ -159,7 +160,8 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if (w.Block(pos.Side(i.Facing)).Model() == model.Empty{}) {
 		// TODO: Allow exceptions for pressure plates.
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: i})
 	}
 }
 

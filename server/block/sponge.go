@@ -66,8 +66,8 @@ func (s Sponge) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 // particle at the sponge's position with an offset of 0.5 on each axis.
 func (s Sponge) setWet(pos cube.Pos, w *world.World) {
 	s.Wet = true
-	w.SetBlock(pos, s)
-	w.AddParticle(pos.Vec3().Add(mgl64.Vec3{0.5, 0.5, 0.5}), particle.BlockBreak{Block: Water{Depth: 1}})
+	w.SetBlock(pos, s, nil)
+	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: Water{Depth: 1}})
 }
 
 // absorbWater replaces water blocks near the sponge by air out to a taxicab geometry of 7 in all directions.

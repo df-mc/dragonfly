@@ -103,7 +103,7 @@ func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 		// Recalculating pyramid level and powering up players in range once every 4 seconds.
 		b.level = b.recalculateLevel(pos, w)
 		if before != b.level {
-			w.SetBlock(pos, b)
+			w.SetBlock(pos, b, nil)
 		}
 		if b.level == 0 {
 			return

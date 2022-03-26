@@ -228,25 +228,65 @@ func (w *World) highestObstructingBlock(x, z int) int {
 	return w.Range()[0]
 }
 
+// SetOpts holds several parameters that may be set to disable updates in the World of different kinds as a result of
+// a call to SetBlock.
+type SetOpts struct {
+	// DisableBlockUpdates makes SetBlock not update any neighbouring blocks as a result of the SetBlock call.
+	DisableBlockUpdates bool
+	// DisableLiquidDisplacement disables the displacement of liquid blocks to the second layer (or back to the first
+	// layer, if it already was on the second layer). Disabling this is not strongly recommended unless performance is
+	// very important or where it is known no liquid can be present anyway.
+	DisableLiquidDisplacement bool
+}
+
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
 // SetBlock panics if the block passed has not yet been registered using RegisterBlock().
 // Nil may be passed as the block to set the block to air.
+//
+// A SetOpts struct may be passed to additionally modify behaviour of SetBlock, specifically to improve performance
+// under specific circumstances. Nil should be passed where performance is not essential, to make sure the world is
+// updated adequately.
+//
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
-func (w *World) SetBlock(pos cube.Pos, b Block) {
+func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
+	if opts == nil {
+		opts = &SetOpts{}
+	}
+
+	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
 
 	rid := BlockRuntimeID(b)
-	c.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, rid)
+
+	var before uint32
+	if rid != airRID && !opts.DisableLiquidDisplacement {
+		before = c.Block(x, y, z, 0)
+	}
+
+	c.SetBlock(x, y, z, 0, rid)
 	if nbtBlocks[rid] {
 		c.e[pos] = b
 	} else {
 		delete(c.e, pos)
+	}
+
+	if !opts.DisableLiquidDisplacement {
+		if rid == airRID {
+			if li := c.Block(x, y, z, 1); li != airRID {
+				c.SetBlock(x, y, z, 0, li)
+			}
+		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
+			l, _ := BlockByRuntimeID(before)
+			if liq := l.(Liquid); b.(LiquidDisplacer).CanDisplace(liq) && liq.LiquidDepth() == 8 {
+				c.SetBlock(x, y, z, 1, before)
+			}
+		}
 	}
 
 	viewers := slices.Clone(c.v)
@@ -254,6 +294,10 @@ func (w *World) SetBlock(pos cube.Pos, b Block) {
 
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)
+	}
+
+	if !opts.DisableBlockUpdates {
+		w.doBlockUpdatesAround(pos)
 	}
 }
 
@@ -267,60 +311,6 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	defer c.Unlock()
 	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
-}
-
-// breakParticle has its value set in the block_internal package.
-var breakParticle func(b Block) Particle
-
-// BreakBlock breaks a block at the position passed. Unlike when setting the block at that position to air,
-// BreakBlock will also show particles and update blocks around the position.
-func (w *World) BreakBlock(pos cube.Pos) {
-	if w == nil {
-		return
-	}
-	old := w.Block(pos)
-	w.SetBlock(pos, nil)
-	w.AddParticle(pos.Vec3Centre(), breakParticle(old))
-	if liq, ok := w.Liquid(pos); ok {
-		// Move the liquid down a layer.
-		w.SetLiquid(pos, liq)
-	} else {
-		w.doBlockUpdatesAround(pos)
-	}
-}
-
-// BreakBlockWithoutParticles breaks a block at the position passed. Unlike when setting the block at that position to air,
-// BreakBlockWithoutParticles will also update blocks around the position.
-func (w *World) BreakBlockWithoutParticles(pos cube.Pos) {
-	if w == nil {
-		return
-	}
-	w.SetBlock(pos, nil)
-	if liq, ok := w.Liquid(pos); ok {
-		// Move the liquid down a layer.
-		w.SetLiquid(pos, liq)
-	} else {
-		w.doBlockUpdatesAround(pos)
-	}
-}
-
-// PlaceBlock places a block at the position passed. Unlike when using SetBlock, PlaceBlock also schedules
-// block updates around the position.
-// If the block can displace liquids at the position placed, it will do so, and liquid source blocks will be
-// put into the same block as the one passed.
-func (w *World) PlaceBlock(pos cube.Pos, b Block) {
-	if w == nil {
-		return
-	}
-	var liquid Liquid
-	if displacer, ok := b.(LiquidDisplacer); ok {
-		liq, ok := w.Liquid(pos)
-		if ok && displacer.CanDisplace(liq) && liq.LiquidDepth() == 8 {
-			liquid = liq
-		}
-	}
-	w.SetBlock(pos, b)
-	w.SetLiquid(pos, liquid)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the world. Unlike SetBlock, it takes a

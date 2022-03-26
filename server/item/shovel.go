@@ -26,7 +26,7 @@ func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}
-			w.PlaceBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
 			ctx.DamageItem(1)
