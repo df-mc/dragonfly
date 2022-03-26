@@ -64,14 +64,14 @@ func (b Barrel) WithName(a ...any) world.Item {
 func (b Barrel) open(w *world.World, pos cube.Pos) {
 	b.Open = true
 	w.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
-	w.SetBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 }
 
 // close closes the barrel, displaying the animation and playing a sound.
 func (b Barrel) close(w *world.World, pos cube.Pos) {
 	b.Open = false
 	w.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
-	w.SetBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 }
 
 // AddViewer adds a viewer to the barrel, so that it is updated whenever the inventory of the barrel is changed.
@@ -137,8 +137,8 @@ func (b Barrel) DecodeNBT(data map[string]any) any {
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
 	b.Facing = facing
-	b.CustomName = nbtconv.MapString(data, "CustomName")
-	nbtconv.InvFromNBT(b.inventory, nbtconv.MapSlice(data, "Items"))
+	b.CustomName = nbtconv.Map[string](data, "CustomName")
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Map[[]any](data, "Items"))
 	return b
 }
 

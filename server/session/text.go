@@ -101,10 +101,10 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 // scoreboard. If the string passed is already of the same length as the name of the scoreboard or longer, the string
 // will receive one space of padding.
 func padScoreboardString(sb *scoreboard.Scoreboard, s string) string {
-	if len(sb.Name())-len(s)-2 <= 0 {
-		return " " + s + " "
+	if len(sb.Name())-len(s)-1 <= 0 {
+		return s + " "
 	}
-	return " " + s + strings.Repeat(" ", len(sb.Name())-len(s)-2)
+	return s + strings.Repeat(" ", len(sb.Name())-len(s)-1)
 }
 
 // colours holds a list of colour codes to be filled out for empty lines in a scoreboard.

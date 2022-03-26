@@ -58,7 +58,7 @@ func (l Lava) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
 			if _, ok := w.Block(pos).(Air); ok {
 				if neighboursLavaFlammable(pos, w) {
-					w.PlaceBlock(pos, Fire{})
+					w.SetBlock(pos, Fire{}, nil)
 				}
 			}
 		}
@@ -67,7 +67,7 @@ func (l Lava) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
 			if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); ok {
 				if flammable, ok := w.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable && flammable.FlammabilityInfo().Encouragement > 0 {
-					w.PlaceBlock(pos, Fire{})
+					w.SetBlock(pos, Fire{}, nil)
 				}
 			}
 		}
@@ -163,7 +163,7 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 			w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)
 			ctx.Continue(func() {
 				w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-				w.PlaceBlock(pos, b)
+				w.SetBlock(pos, b, nil)
 			})
 			return true
 		}
@@ -182,7 +182,7 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 	ctx := event.C()
 	w.Handler().HandleLiquidHarden(ctx, pos, l, water, b)
 	ctx.Continue(func() {
-		w.PlaceBlock(pos, b)
+		w.SetBlock(pos, b, nil)
 		w.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 	})
 	return true

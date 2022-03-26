@@ -67,7 +67,7 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {
 		b := w.Block(pos)
 		if r, ok := b.(replaceable); ok && r.ReplaceableBy(f.block) {
-			w.PlaceBlock(pos, f.block)
+			w.SetBlock(pos, f.block, nil)
 		} else {
 			if i, ok := f.block.(world.Item); ok {
 				w.AddEntity(NewItem(item.NewStack(i, 1), pos.Vec3Middle()))

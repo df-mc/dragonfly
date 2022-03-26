@@ -18,7 +18,7 @@ type Axe struct {
 func (a Axe) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if s, ok := w.Block(pos).(strippable); ok {
 		if res, ok := s.Strip(); ok {
-			w.PlaceBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
 			ctx.DamageItem(1)

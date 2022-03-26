@@ -343,7 +343,10 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.teleportMu.Lock()
 		s.teleportPos = &position
 		s.teleportMu.Unlock()
+	}
 
+	switch e.(type) {
+	case Controllable:
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
@@ -352,14 +355,14 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
 		})
-		return
+	default:
+		s.writePacket(&packet.MoveActorAbsolute{
+			EntityRuntimeID: id,
+			Position:        vec64To32(position.Add(entityOffset(e))),
+			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+			Flags:           packet.MoveFlagTeleport,
+		})
 	}
-	s.writePacket(&packet.MoveActorAbsolute{
-		EntityRuntimeID: id,
-		Position:        vec64To32(position.Add(entityOffset(e))),
-		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-		Flags:           byte(packet.MoveFlagTeleport),
-	})
 }
 
 // ViewEntityItems ...
@@ -616,6 +619,14 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:
 		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
+	case sound.LevelUp:
+		pk.SoundType, pk.ExtraData = packet.SoundEventLevelUp, 0x10000000
+	case sound.Experience:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundExperienceOrbPickup,
+			Position:  vec64To32(pos),
+		})
+		return
 	}
 	s.writePacket(pk)
 }

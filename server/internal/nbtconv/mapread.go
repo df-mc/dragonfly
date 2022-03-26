@@ -7,48 +7,11 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// MapSlice reads an interface slice from a map at the key passed.
-func MapSlice(m map[string]any, key string) []any {
-	b, _ := m[key].([]any)
-	return b
-}
-
-// MapString reads a string from a map at the key passed.
-func MapString(m map[string]any, key string) string {
-	b, _ := m[key].(string)
-	return b
-}
-
-// MapInt16 reads an int16 from a map at the key passed.
-func MapInt16(m map[string]any, key string) int16 {
-	b, _ := m[key].(int16)
-	return b
-}
-
-// MapInt32 reads an int32 from a map at the key passed.
-func MapInt32(m map[string]any, key string) int32 {
-	b, _ := m[key].(int32)
-	return b
-}
-
-// MapInt64 reads an int64 from a map at the key passed.
-func MapInt64(m map[string]any, key string) int64 {
-	b, _ := m[key].(int64)
-	return b
-}
-
-// MapByte reads a byte from a map at the key passed.
-//noinspection GoCommentLeadingSpace
-func MapByte(m map[string]any, key string) byte {
-	b, _ := m[key].(byte)
-	return b
-}
-
-// MapFloat32 reads a float32 from a map at the key passed.
-//noinspection GoCommentLeadingSpace
-func MapFloat32(m map[string]any, key string) float32 {
-	b, _ := m[key].(float32)
-	return b
+// Map reads a value of the type T from the map passed. Map never panics. If the key was not found in the map
+// or if the value was of a different type, the default value of type T is returned.
+func Map[T any](m map[string]any, key string) T {
+	v, _ := m[key].(T)
+	return v
 }
 
 // MapVec3 converts x, y and z values in an NBT map to an mgl64.Vec3.

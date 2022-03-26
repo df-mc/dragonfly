@@ -36,7 +36,7 @@ func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 
 // DecodeNBT ...
 func (n NoteBlock) DecodeNBT(data map[string]any) any {
-	n.Pitch = int(nbtconv.MapByte(data, "note"))
+	n.Pitch = int(nbtconv.Map[byte](data, "note"))
 	return n
 }
 
@@ -60,7 +60,7 @@ func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, w)
-	w.SetBlock(pos, n)
+	w.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 	return true
 }
 

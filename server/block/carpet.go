@@ -55,7 +55,7 @@ func (Carpet) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Add(cube.Pos{0, -1})).(Air); ok {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
