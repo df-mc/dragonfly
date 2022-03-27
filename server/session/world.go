@@ -289,10 +289,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	yaw, pitch := e.Rotation()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
-
-		s.teleportMu.Lock()
-		s.teleportPos = &position
-		s.teleportMu.Unlock()
+		s.teleportPos.Store(&position)
 	}
 
 	switch e.(type) {

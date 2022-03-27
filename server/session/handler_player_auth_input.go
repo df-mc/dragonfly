@@ -46,18 +46,16 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		return nil
 	}
 
-	s.teleportMu.Lock()
-	if s.teleportPos != nil {
-		if newPos.Sub(*s.teleportPos).Len() > 0.5 {
+	if expected := s.teleportPos.Load(); expected != nil {
+		if newPos.Sub(*expected).Len() > 1 {
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
-			s.teleportMu.Unlock()
+			s.log.Debugf("failed processing packet from %v (%v): %T: outdated movement position, got %v but expected %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, newPos, *expected)
 			return nil
 		}
-		s.teleportPos = nil
+		s.teleportPos.Store(nil)
 	}
-	s.teleportMu.Unlock()
 
 	s.c.Move(deltaPos, deltaYaw, deltaPitch)
 
