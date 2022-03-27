@@ -30,7 +30,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// Sometimes, the PlayerAuthInput packet is in fact sent with NaN/INF after being teleported (to another
 			// world), see #425. For this reason, we don't actually return an error if this happens, because this will
 			// result in the player being kicked. Just log it and don't handle it.
-			s.log.Debugf("failed processing packet from %v (%v): %T: must not have nan/inf values, got %v\n", s.conn.RemoteAddr(), s.c.Name(), pk, f)
+			s.log.Debugf("failed processing packet from %v (%v): %T: must not have nan/inf values, but got %v (%v, %v, %v)\n", s.conn.RemoteAddr(), s.c.Name(), pk, pk.Position, pk.Pitch, pk.Yaw, pk.HeadYaw)
 			return nil
 		}
 	}
