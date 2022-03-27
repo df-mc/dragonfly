@@ -114,7 +114,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 					continue
 				}
 
-				dist := world.Distance(pos, m.pos)
+				dist := pos.Sub(m.pos).Len()
 				if dist > 4 {
 					continue
 				}
@@ -143,12 +143,12 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			case trace.BlockResult:
 				pos := result.BlockPosition().Side(result.Face())
 				if w.Block(pos) == fire() {
-					w.SetBlock(pos, air())
+					w.SetBlock(pos, air(), nil)
 				}
 
 				for _, f := range cube.HorizontalFaces() {
 					if h := pos.Side(f); w.Block(h) == fire() {
-						w.SetBlock(h, air())
+						w.SetBlock(h, air(), nil)
 					}
 				}
 			case trace.EntityResult:
@@ -192,20 +192,20 @@ func (s *SplashPotion) Own(owner world.Entity) {
 }
 
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
-func (s *SplashPotion) DecodeNBT(data map[string]interface{}) interface{} {
+func (s *SplashPotion) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		potion.From(nbtconv.MapInt32(data, "PotionId")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		potion.From(nbtconv.Map[int32](data, "PotionId")),
 	)
 }
 
 // EncodeNBT encodes the SplashPotion entity's properties as a map and returns it.
-func (s *SplashPotion) EncodeNBT() map[string]interface{} {
+func (s *SplashPotion) EncodeNBT() map[string]any {
 	yaw, pitch := s.Rotation()
-	return map[string]interface{}{
+	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Yaw":      yaw,
 		"Pitch":    pitch,
@@ -217,7 +217,7 @@ func (s *SplashPotion) EncodeNBT() map[string]interface{} {
 
 // air returns an air block.
 func air() world.Block {
-	f, ok := world.BlockByName("minecraft:air", map[string]interface{}{})
+	f, ok := world.BlockByName("minecraft:air", map[string]any{})
 	if !ok {
 		panic("could not find air block")
 	}

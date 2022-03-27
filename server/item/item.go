@@ -115,7 +115,7 @@ type Cooldown interface {
 // name displayed in their interface.
 type nameable interface {
 	// WithName returns the block itself, except with a custom name applied to it.
-	WithName(a ...interface{}) world.Item
+	WithName(a ...any) world.Item
 }
 
 // Releaser represents an entity that can release items, such as bows.

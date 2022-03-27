@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -8,17 +9,10 @@ import (
 
 // blockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
 // map is assumed to have an 'x', 'y' and 'z' key.
-//noinspection GoCommentLeadingSpace
-func blockPosFromNBT(data map[string]interface{}) cube.Pos {
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	xInterface, _ := data["x"]
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	yInterface, _ := data["y"]
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	zInterface, _ := data["z"]
-	x, _ := xInterface.(int32)
-	y, _ := yInterface.(int32)
-	z, _ := zInterface.(int32)
+func blockPosFromNBT(data map[string]any) cube.Pos {
+	x, _ := data["x"].(int32)
+	y, _ := data["y"].(int32)
+	z, _ := data["z"].(int32)
 	return cube.Pos{int(x), int(y), int(z)}
 }
 
@@ -38,6 +32,11 @@ func (p ChunkPos) Z() int32 {
 	return p[1]
 }
 
+// String implements fmt.Stringer and returns (x, z).
+func (p ChunkPos) String() string {
+	return fmt.Sprintf("(%v, %v)", p[0], p[1])
+}
+
 // chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
 // those of the Vec3 divided by 16, then rounded down.
 func chunkPosFromVec3(vec3 mgl64.Vec3) ChunkPos {
@@ -47,12 +46,7 @@ func chunkPosFromVec3(vec3 mgl64.Vec3) ChunkPos {
 	}
 }
 
-// chunkPosFromBlockPos returns a chunk position of the chunk that a block at this position would be in.
+// chunkPosFromBlockPos returns the ChunkPos of the chunk that a block at a cube.Pos is in.
 func chunkPosFromBlockPos(p cube.Pos) ChunkPos {
 	return ChunkPos{int32(p[0] >> 4), int32(p[2] >> 4)}
-}
-
-// Distance returns the distance between two vectors.
-func Distance(a, b mgl64.Vec3) float64 {
-	return b.Sub(a).Len()
 }

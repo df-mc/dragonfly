@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // DiamondBlock is a block which can only be gained by crafting it.
@@ -11,8 +11,8 @@ type DiamondBlock struct {
 
 // BreakInfo ...
 func (d DiamondBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(5, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
+	return newBreakInfo(5, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
 	}, pickaxeEffective, oneOf(d))
 }
 
@@ -27,6 +27,6 @@ func (DiamondBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DiamondBlock) EncodeBlock() (string, map[string]interface{}) {
+func (DiamondBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:diamond_block", nil
 }

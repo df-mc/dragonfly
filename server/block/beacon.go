@@ -49,20 +49,20 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 }
 
 // DecodeNBT ...
-func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
-	b.level = int(nbtconv.MapInt32(data, "Levels"))
-	if primary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Primary"))); ok {
+func (b Beacon) DecodeNBT(data map[string]any) any {
+	b.level = int(nbtconv.Map[int32](data, "Levels"))
+	if primary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Primary"))); ok {
 		b.Primary = primary.(effect.LastingType)
 	}
-	if secondary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Secondary"))); ok {
+	if secondary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Secondary"))); ok {
 		b.Secondary = secondary.(effect.LastingType)
 	}
 	return b
 }
 
 // EncodeNBT ...
-func (b Beacon) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (b Beacon) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"Levels": int32(b.level),
 	}
 	if primary, ok := effect.ID(b.Primary); ok {
@@ -103,7 +103,7 @@ func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 		// Recalculating pyramid level and powering up players in range once every 4 seconds.
 		b.level = b.recalculateLevel(pos, w)
 		if before != b.level {
-			w.SetBlock(pos, b)
+			w.SetBlock(pos, b, nil)
 		}
 		if b.level == 0 {
 			return
@@ -220,6 +220,6 @@ func (Beacon) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Beacon) EncodeBlock() (string, map[string]interface{}) {
+func (Beacon) EncodeBlock() (string, map[string]any) {
 	return "minecraft:beacon", nil
 }

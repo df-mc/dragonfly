@@ -27,7 +27,7 @@ func (g GlassBottle) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *worl
 			ctx.CountSub = 1
 			if res != bl {
 				// Some blocks (think a cauldron) change when using a bottle on it.
-				w.PlaceBlock(pos, res)
+				w.SetBlock(pos, res, nil)
 			}
 		}
 	}

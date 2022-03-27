@@ -11,7 +11,7 @@ import (
 
 // entityMetadata represents a map that holds metadata associated with an entity. The data held in the map
 // depends on the entity and varies on a per-entity basis.
-type entityMetadata map[uint32]interface{}
+type entityMetadata map[uint32]any
 
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
@@ -62,6 +62,9 @@ func parseEntityMetadata(e world.Entity) entityMetadata {
 		m[dataKeyAlwaysShowNameTag] = uint8(1)
 		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
 		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
+	}
+	if s, ok := e.(scoreTag); ok {
+		m[dataKeyScoreTag] = s.ScoreTag()
 	}
 	if s, ok := e.(splash); ok {
 		pot := s.Type()
@@ -117,6 +120,7 @@ const (
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
 	dataKeyAlwaysShowNameTag = 81
+	dataKeyScoreTag          = 84
 )
 
 //noinspection GoUnusedConst
@@ -168,6 +172,10 @@ type scaled interface {
 
 type named interface {
 	NameTag() string
+}
+
+type scoreTag interface {
+	ScoreTag() string
 }
 
 type splash interface {

@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 )
@@ -10,15 +9,6 @@ import (
 // health is lost, it will not regenerate.
 type Absorption struct {
 	nopLasting
-}
-
-// Absorbs checks if Absorption absorbs the damage source passed.
-func (Absorption) Absorbs(src damage.Source) bool {
-	switch src.(type) {
-	case damage.SourceWitherEffect, damage.SourceInstantDamageEffect, damage.SourcePoisonEffect, damage.SourceStarvation:
-		return true
-	}
-	return false
 }
 
 // Start ...

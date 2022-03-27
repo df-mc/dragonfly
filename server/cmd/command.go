@@ -159,7 +159,7 @@ func (cmd Command) Execute(args string, source Source) {
 // by calling Command.Params().
 type ParamInfo struct {
 	Name     string
-	Value    interface{}
+	Value    any
 	Optional bool
 	Suffix   string
 }
@@ -315,7 +315,7 @@ func verifySignature(command reflect.Value) error {
 
 // getTypeName returns a readable type name for the interface value passed. If none could be found, 'value'
 // is returned.
-func getTypeName(i interface{}) string {
+func getTypeName(i any) string {
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
 		return "int"

@@ -36,7 +36,7 @@ opening a pull request:
   conventions for documentation in pull requests:
   - Exported symbols (TypeName, FunctionName) should always have documentation over them, but if
     the function exists merely to satisfy an interface, the documentation may read 
-    `// FunctionName ...`.
+    `// FunctionName ...` or be completely absent if the method has no functional behaviour.
   - Unexported symbols (typeName, functionName) _should_ have documentation, but doing so is not
     mandatory if the function is very simple and needs no clarification.
 * Make sure to use British English and proper punctuation throughout symbol names, variables and
@@ -44,6 +44,10 @@ opening a pull request:
 * Where possible, try to expose as few exported symbols (functions, types) as possible, unless 
   strictly necessary. This makes it easier for us to change code in the future and ensures that 
   users cannot use functions not suitable for the API.
+* Try to be conservative with the usage of generics. While these are often useful, they can quickly
+  pollute code if used in excess. Consider carefully if generics are needed, particularly for 
+  exported types and functions. Don't hesitate on using them if they are able to clean up the code
+  significantly.
 * We strive to have only completely functional features in the codebase. While we recognise that
   it is not always possible to provide full functionality for a feature in a single pull request,
   you should attempt to do so to the extent that you can. Specific smaller features part of the

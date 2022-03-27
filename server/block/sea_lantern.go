@@ -28,6 +28,6 @@ func (SeaLantern) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (SeaLantern) EncodeBlock() (string, map[string]interface{}) {
+func (SeaLantern) EncodeBlock() (string, map[string]any) {
 	return "minecraft:seaLantern", nil
 }

@@ -127,19 +127,19 @@ func (s *Snowball) Own(owner world.Entity) {
 }
 
 // DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
-func (s *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
+func (s *Snowball) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
 	)
 }
 
 // EncodeNBT encodes the Snowball entity's properties as a map and returns it.
-func (s *Snowball) EncodeNBT() map[string]interface{} {
+func (s *Snowball) EncodeNBT() map[string]any {
 	yaw, pitch := s.Rotation()
-	return map[string]interface{}{
+	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Yaw":    yaw,
 		"Pitch":  pitch,

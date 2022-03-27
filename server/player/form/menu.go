@@ -16,7 +16,7 @@ type Menu struct {
 
 // NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
 // title passed is formatted following the rules of fmt.Sprintln.
-func NewMenu(submittable MenuSubmittable, title ...interface{}) Menu {
+func NewMenu(submittable MenuSubmittable, title ...any) Menu {
 	t := reflect.TypeOf(submittable)
 	if t.Kind() != reflect.Struct {
 		panic("submittable must be struct")
@@ -28,7 +28,7 @@ func NewMenu(submittable MenuSubmittable, title ...interface{}) Menu {
 
 // MarshalJSON ...
 func (m Menu) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "form",
 		"title":   m.title,
 		"content": m.body,
@@ -38,7 +38,7 @@ func (m Menu) MarshalJSON() ([]byte, error) {
 
 // WithBody creates a copy of the Menu form and changes its body to the body passed, after which the new Menu
 // form is returned. The text is formatted following the rules of fmt.Sprintln.
-func (m Menu) WithBody(body ...interface{}) Menu {
+func (m Menu) WithBody(body ...any) Menu {
 	m.body = format(body)
 	return m
 }

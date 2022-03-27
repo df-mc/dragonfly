@@ -20,3 +20,9 @@ type Explosion struct{ sound }
 
 // Thunder is a sound played when lightning strikes the ground.
 type Thunder struct{ sound }
+
+// LevelUp is a sound played for a player whenever they level up.
+type LevelUp struct{ sound }
+
+// Experience is a sound played whenever a player picks up an XP orb.
+type Experience struct{ sound }

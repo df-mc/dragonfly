@@ -21,6 +21,6 @@ func (Melon) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Melon) EncodeBlock() (string, map[string]interface{}) {
+func (Melon) EncodeBlock() (string, map[string]any) {
 	return "minecraft:melon_block", nil
 }

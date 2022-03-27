@@ -40,3 +40,9 @@ func Biomes() []Biome {
 	}
 	return bs
 }
+
+// ocean returns an ocean biome.
+func ocean() Biome {
+	o, _ := BiomeByID(0)
+	return o
+}

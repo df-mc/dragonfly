@@ -28,12 +28,12 @@ func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if l.Hanging {
 		up := pos.Side(cube.FaceUp)
 		if _, ok := w.Block(up).(Chain); !ok && !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 		}
 	} else {
 		down := pos.Side(cube.FaceDown)
 		if !w.Block(down).Model().FaceSolid(down, cube.FaceUp, w) {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 		}
 	}
 }
@@ -95,12 +95,12 @@ func (l Lantern) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l Lantern) EncodeBlock() (name string, properties map[string]interface{}) {
+func (l Lantern) EncodeBlock() (name string, properties map[string]any) {
 	switch l.Type {
 	case NormalFire():
-		return "minecraft:lantern", map[string]interface{}{"hanging": l.Hanging}
+		return "minecraft:lantern", map[string]any{"hanging": l.Hanging}
 	case SoulFire():
-		return "minecraft:soul_lantern", map[string]interface{}{"hanging": l.Hanging}
+		return "minecraft:soul_lantern", map[string]any{"hanging": l.Hanging}
 	}
 	panic("invalid fire type")
 }

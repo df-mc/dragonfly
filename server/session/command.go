@@ -10,6 +10,9 @@ import (
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
 // command, which might be the player or a websocket server.
 func (s *Session) SendCommandOutput(output *cmd.Output) {
+	if s == Nop {
+		return
+	}
 	messages := make([]protocol.CommandOutputMessage, 0, output.MessageCount()+output.ErrorCount())
 	for _, message := range output.Messages() {
 		messages = append(messages, protocol.CommandOutputMessage{
@@ -82,7 +85,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 
 // valueToParamType finds the command argument type of the value passed and returns it, in addition to creating
 // an enum if applicable.
-func valueToParamType(i interface{}, source cmd.Source) (t uint32, enum protocol.CommandEnum) {
+func valueToParamType(i any, source cmd.Source) (t uint32, enum protocol.CommandEnum) {
 	switch i.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return protocol.CommandArgTypeInt, enum

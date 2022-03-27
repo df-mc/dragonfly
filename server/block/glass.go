@@ -18,6 +18,6 @@ func (Glass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Glass) EncodeBlock() (string, map[string]interface{}) {
+func (Glass) EncodeBlock() (string, map[string]any) {
 	return "minecraft:glass", nil
 }

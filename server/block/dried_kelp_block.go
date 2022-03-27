@@ -21,6 +21,6 @@ func (DriedKelpBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DriedKelpBlock) EncodeBlock() (string, map[string]interface{}) {
+func (DriedKelpBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:dried_kelp_block", nil
 }

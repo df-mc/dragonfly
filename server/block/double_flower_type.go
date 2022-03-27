@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // DoubleFlowerType represents a type of double flower.
 type DoubleFlowerType struct {
 	doubleFlower
@@ -47,21 +45,6 @@ func (d doubleFlower) Name() string {
 		return "Peony"
 	}
 	panic("unknown double plant type")
-}
-
-// FromString ...
-func (d doubleFlower) FromString(s string) (interface{}, error) {
-	switch s {
-	case "sunflower":
-		return DoubleFlowerType{doubleFlower(0)}, nil
-	case "syringa":
-		return DoubleFlowerType{doubleFlower(1)}, nil
-	case "rose":
-		return DoubleFlowerType{doubleFlower(4)}, nil
-	case "paeonia":
-		return DoubleFlowerType{doubleFlower(5)}, nil
-	}
-	return nil, fmt.Errorf("unexpected double plant type '%v', expecting one of 'sunflower', 'syringa', 'rose', or 'paeonia'", s)
 }
 
 // String ...

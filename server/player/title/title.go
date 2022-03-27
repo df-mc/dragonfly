@@ -16,7 +16,7 @@ type Title struct {
 // New returns a new title using the text passed. The text is formatted according to the formatting rules of
 // fmt.Sprintln, but with no newline at the end.
 // The title has default durations set, which will generally suffice.
-func New(text ...interface{}) Title {
+func New(text ...any) Title {
 	return Title{
 		text:            format(text),
 		fadeInDuration:  time.Second / 20,
@@ -34,7 +34,7 @@ func (title Title) Text() string {
 // rules of fmt.Sprintln, but without the newline.
 // The subtitle is shown under the title in a somewhat smaller font.
 // The new Title with the subtitle is returned.
-func (title Title) WithSubtitle(text ...interface{}) Title {
+func (title Title) WithSubtitle(text ...any) Title {
 	title.subtitle = format(text)
 	return title
 }
@@ -49,7 +49,7 @@ func (title Title) Subtitle() string {
 // will synchronise with the title.
 // SetActionText will format the text passed using the formatting rules of fmt.Sprintln, but without newline.
 // The new Title with the action text is returned.
-func (title Title) WithActionText(text ...interface{}) Title {
+func (title Title) WithActionText(text ...any) Title {
 	title.actionText = format(text)
 	return title
 }
@@ -101,6 +101,6 @@ func (title *Title) FadeOutDuration() time.Duration {
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }

@@ -241,19 +241,19 @@ func (a *Arrow) Owner() world.Entity {
 }
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
-func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
+func (a *Arrow) DecodeNBT(data map[string]any) any {
 	arr := a.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
 		nil,
 		false, // Vanilla doesn't save this value, so we don't either.
-		nbtconv.MapByte(data, "player") == 1,
-		nbtconv.MapByte(data, "isCreative") == 1,
-		potion.From(nbtconv.MapInt32(data, "auxValue")-1),
+		nbtconv.Map[byte](data, "player") == 1,
+		nbtconv.Map[byte](data, "isCreative") == 1,
+		potion.From(nbtconv.Map[int32](data, "auxValue")-1),
 	).(*Arrow)
-	arr.baseDamage = float64(nbtconv.MapFloat32(data, "Damage"))
+	arr.baseDamage = float64(nbtconv.Map[float32](data, "Damage"))
 	if _, ok := data["StuckToBlockPos"]; ok {
 		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
 		arr.collided = true
@@ -262,9 +262,9 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
-func (a *Arrow) EncodeNBT() map[string]interface{} {
+func (a *Arrow) EncodeNBT() map[string]any {
 	yaw, pitch := a.Rotation()
-	nbt := map[string]interface{}{
+	nbt := map[string]any{
 		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
 		"Yaw":        yaw,
 		"Pitch":      pitch,

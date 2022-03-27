@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -74,7 +73,7 @@ func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 
 // BreakInfo ...
 func (s WoodSlab) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if s.Double {
 			s.Double = false
 			// If the slab is double, it should drop two single slabs.
@@ -115,17 +114,17 @@ func (s WoodSlab) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s WoodSlab) EncodeBlock() (name string, properties map[string]any) {
 	if s.Double {
 		if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
-			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]interface{}{"top_slot_bit": s.Top}
+			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]any{"top_slot_bit": s.Top}
 		}
-		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+		return "minecraft:double_wooden_slab", map[string]any{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 	}
 	if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
-		return "minecraft:" + s.Wood.String() + "_slab", map[string]interface{}{"top_slot_bit": s.Top}
+		return "minecraft:" + s.Wood.String() + "_slab", map[string]any{"top_slot_bit": s.Top}
 	}
-	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+	return "minecraft:wooden_slab", map[string]any{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 }
 
 // CanDisplace ...

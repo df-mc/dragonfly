@@ -18,7 +18,7 @@ type InkSac struct {
 func (i InkSac) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if in, ok := w.Block(pos).(inkable); ok {
 		if res, ok := in.Ink(i.Glowing); ok {
-			w.SetBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			ctx.SubtractFromCount(1)
 			return true
 		}

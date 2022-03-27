@@ -2,6 +2,7 @@ package scoreboard
 
 import (
 	"fmt"
+	"golang.org/x/exp/slices"
 	"strings"
 )
 
@@ -10,16 +11,17 @@ import (
 // Scoreboard implements the io.Writer and io.StringWriter interfaces. fmt.Fprintf and fmt.Fprint may be used
 // to write formatted text to the scoreboard.
 type Scoreboard struct {
-	name  string
-	lines []string
+	name    string
+	lines   []string
+	padding bool
 }
 
 // New returns a new scoreboard with the display name passed. Once returned, lines may be added to the
 // scoreboard to add text to it. The name is formatted according to the rules of fmt.Sprintln.
 // Changing the scoreboard after sending it to a player will not update the scoreboard of the player
 // automatically: Player.SendScoreboard() must be called again to update it.
-func New(name ...interface{}) *Scoreboard {
-	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n")}
+func New(name ...any) *Scoreboard {
+	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n"), padding: true}
 }
 
 // Name returns the display name of the scoreboard, as passed during the construction of the scoreboard.
@@ -46,28 +48,43 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 	return len(lines), nil
 }
 
-// Set changes a specific line in the scoreboard.
-func (board *Scoreboard) Set(index int, s string) (err error) {
-	if index < 0 || len(board.lines) <= index {
-		return fmt.Errorf("index out of range %v", index)
+// Set changes a specific line in the scoreboard and adds empty lines until this index is reached. Set panics if the
+// index passed is negative or 15+.
+func (board *Scoreboard) Set(index int, s string) {
+	if index < 0 || index >= 15 {
+		panic(fmt.Sprintf("index out of range %v", index))
+	}
+	if diff := index - (len(board.lines) - 1); diff > 0 {
+		board.lines = append(board.lines, make([]string, diff)...)
 	}
 	// Remove new lines from the string
 	board.lines[index] = strings.TrimSuffix(strings.TrimSuffix(s, "\n"), "\n")
-
-	return nil
 }
 
-// Remove removes a specific line from the scoreboard.
-func (board *Scoreboard) Remove(index int) (err error) {
-	if index < 0 || len(board.lines) <= index {
-		return fmt.Errorf("index out of range %v", index)
+// Remove removes a specific line from the scoreboard. Remove panics if the index passed is negative or 15+.
+func (board *Scoreboard) Remove(index int) {
+	if index < 0 || index >= 15 {
+		panic(fmt.Sprintf("index out of range %v", index))
 	}
 	board.lines = append(board.lines[:index], board.lines[index+1:]...)
+}
 
-	return nil
+// RemovePadding removes the padding of one space that is added to the start of every line.
+func (board *Scoreboard) RemovePadding() {
+	board.padding = false
 }
 
 // Lines returns the data of the Scoreboard as a slice of strings.
 func (board *Scoreboard) Lines() []string {
+	lines := slices.Clone(board.lines)
+	if board.padding {
+		for i, line := range lines {
+			if len(board.name)-len(line)-2 <= 0 {
+				lines[i] = " " + line + " "
+				continue
+			}
+			lines[i] = " " + line + strings.Repeat(" ", len(board.name)-len(line)-2)
+		}
+	}
 	return board.lines
 }

@@ -5,20 +5,20 @@ import (
 )
 
 // InvFromNBT decodes the data of an NBT slice into the inventory passed.
-func InvFromNBT(inv *inventory.Inventory, items []interface{}) {
+func InvFromNBT(inv *inventory.Inventory, items []any) {
 	for _, itemData := range items {
-		data, _ := itemData.(map[string]interface{})
+		data, _ := itemData.(map[string]any)
 		it := ReadItem(data, nil)
 		if it.Empty() {
 			continue
 		}
-		_ = inv.SetItem(int(MapByte(data, "Slot")), it)
+		_ = inv.SetItem(int(Map[byte](data, "Slot")), it)
 	}
 }
 
 // InvToNBT encodes an inventory to a data slice which may be encoded as NBT.
-func InvToNBT(inv *inventory.Inventory) []map[string]interface{} {
-	var items []map[string]interface{}
+func InvToNBT(inv *inventory.Inventory) []map[string]any {
+	var items []map[string]any
 	for index, i := range inv.Slots() {
 		if i.Empty() {
 			continue

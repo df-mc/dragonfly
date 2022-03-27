@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // PrismarineType represents a type of prismarine.
 type PrismarineType struct {
 	prismarine
@@ -40,19 +38,6 @@ func (s prismarine) Name() string {
 		return "Prismarine Bricks"
 	}
 	panic("unknown prismarine type")
-}
-
-// FromString ...
-func (s prismarine) FromString(str string) (interface{}, error) {
-	switch str {
-	case "normal", "default":
-		return NormalPrismarine(), nil
-	case "dark":
-		return DarkPrismarine(), nil
-	case "bricks":
-		return BrickPrismarine(), nil
-	}
-	return nil, fmt.Errorf("unexpected prismarine type '%v'", s)
 }
 
 // String ...

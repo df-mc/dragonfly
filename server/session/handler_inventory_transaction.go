@@ -30,21 +30,18 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		h.resendInventories(s)
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
-		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-			return nil
+		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+			return err
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
-		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-			return nil
+		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+			return err
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
-		held, _ := s.c.HeldItems()
-		if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-			return nil
+		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+			return err
 		}
 		return h.handleReleaseItemTransaction(s)
 	}

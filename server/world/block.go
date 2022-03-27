@@ -15,7 +15,7 @@ import (
 type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
-	EncodeBlock() (string, map[string]interface{})
+	EncodeBlock() (string, map[string]any)
 	// Hash returns a unique identifier of the block including the block states. This function is used internally to
 	// convert a block to a single integer which can be used in map lookups. The hash produced therefore does not need
 	// to match anything in the game, but it must be unique among all registered blocks.
@@ -84,31 +84,39 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(RandomTicker); ok {
 		randomTickBlocks[rid] = true
 	}
+	if _, ok := b.(Liquid); ok {
+		liquidBlocks[rid] = true
+	}
+	if _, ok := b.(LiquidDisplacer); ok {
+		liquidDisplacingBlocks[rid] = true
+	}
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
-// If the runtime ID is found, the bool returned is true. It is otherwise false.
-func BlockRuntimeID(b Block) (uint32, bool) {
+// If the runtime ID cannot be found because the BLock wasn't registered, BlockRuntimeID will panic.
+func BlockRuntimeID(b Block) uint32 {
 	if b == nil {
-		return airRID, true
+		return airRID
 	}
 	if h := b.Hash(); h != math.MaxUint64 {
-		rid, ok := hashes.Get(int64(h))
-		if !ok {
-			panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
+		if rid, ok := hashes.Get(int64(h)); ok {
+			return uint32(rid)
 		}
-		return uint32(rid), ok
+		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
 	}
 	return slowBlockRuntimeID(b)
 }
 
 // slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the
 // Block.EncodeBlock method and looking it up in the stateRuntimeIDs map.
-func slowBlockRuntimeID(b Block) (uint32, bool) {
+func slowBlockRuntimeID(b Block) uint32 {
 	name, properties := b.EncodeBlock()
 
 	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
-	return rid, ok
+	if !ok {
+		panic(fmt.Sprintf("cannot find block by (name + properties): %#v", b))
+	}
+	return rid
 }
 
 // BlockByRuntimeID attempts to return a Block by its runtime ID. If not found, the bool returned is
@@ -122,7 +130,7 @@ func BlockByRuntimeID(rid uint32) (Block, bool) {
 
 // BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
 // false.
-func BlockByName(name string, properties map[string]interface{}) (Block, bool) {
+func BlockByName(name string, properties map[string]any) (Block, bool) {
 	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
 		return nil, false
@@ -173,9 +181,9 @@ type NeighbourUpdateTicker interface {
 type NBTer interface {
 	// DecodeNBT returns the (new) item, block or entity, depending on which of those the NBTer was, with the NBT data
 	// decoded into it.
-	DecodeNBT(data map[string]interface{}) interface{}
+	DecodeNBT(data map[string]any) any
 	// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
-	EncodeNBT() map[string]interface{}
+	EncodeNBT() map[string]any
 }
 
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without
@@ -208,8 +216,7 @@ type replaceableBlock interface {
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
 func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
-	b, _ := w.blockInChunk(c, pos)
-	if r, ok := b.(replaceableBlock); ok {
+	if r, ok := w.blockInChunk(c, pos).(replaceableBlock); ok {
 		return r.ReplaceableBy(with)
 	}
 	return false
