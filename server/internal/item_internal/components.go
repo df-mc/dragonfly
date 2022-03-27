@@ -2,7 +2,6 @@ package item_internal
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
 	"strings"
 )
@@ -29,7 +28,7 @@ func ComponentsFromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		},
 	}
 
-	if x, ok := it.(armour.Armour); ok {
+	if x, ok := it.(item.Armour); ok {
 		components["minecraft:armor"] = map[string]interface{}{
 			"protection": int32(x.DefencePoints()),
 		}
@@ -39,13 +38,13 @@ func ComponentsFromItem(it world.CustomItem) (map[string]interface{}, bool) {
 
 		var slot int32
 		switch it.(type) {
-		case armour.Helmet:
+		case item.HelmetType:
 			slot = 2
-		case armour.Chestplate:
+		case item.ChestplateType:
 			slot = 3
-		case armour.Leggings:
+		case item.LeggingsType:
 			slot = 4
-		case armour.Boots:
+		case item.BootsType:
 			slot = 5
 		}
 		components["minecraft:wearable"] = map[string]interface{}{"slot": slot}
