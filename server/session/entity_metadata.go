@@ -58,7 +58,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 		m[dataKeyScale] = float32(sc.Scale())
 	}
 	if o, ok := e.(owned); ok {
-		m[dataKeyOwnerRuntimeID] = s.entityRuntimeID(o.Owner())
+		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
 	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
