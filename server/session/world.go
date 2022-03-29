@@ -661,7 +661,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  parseEntityMetadata(e),
+		EntityMetadata:  s.parseEntityMetadata(e),
 	})
 }
 
