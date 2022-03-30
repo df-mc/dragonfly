@@ -292,6 +292,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		s.teleportPos.Store(&position)
 	}
 
+	s.writePacket(&packet.SetActorMotion{EntityRuntimeID: id})
 	switch e.(type) {
 	case Controllable:
 		s.writePacket(&packet.MovePlayer{
