@@ -13,7 +13,7 @@ require (
 	github.com/sandertv/gophertunnel v1.19.4
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/exp v0.0.0-20220314205449-43aec2f8a4e7
-	golang.org/x/text v0.3.6
+	golang.org/x/text v0.3.7
 )
 
 require (
@@ -23,9 +23,9 @@ require (
 	github.com/muhammadmuzzammil1998/jsonc v0.0.0-20201229145248-615b0916ca38 // indirect
 	github.com/sandertv/go-raknet v1.10.4 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
-	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
+	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914 // indirect
 	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
