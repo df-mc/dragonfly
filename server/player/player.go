@@ -196,7 +196,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleSkinChange(ctx, skin)
+	p.handler().HandleSkinChange(ctx, &skin)
 	ctx.Continue(func() {
 		p.skinMu.Lock()
 		p.skin = skin

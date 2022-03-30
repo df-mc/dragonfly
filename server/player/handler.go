@@ -56,7 +56,7 @@ type Handler interface {
 	HandleRespawn(pos *mgl64.Vec3, w **world.World)
 	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
-	HandleSkinChange(ctx *event.Context, skin skin.Skin)
+	HandleSkinChange(ctx *event.Context, skin *skin.Skin)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
@@ -143,7 +143,7 @@ func (NopHandler) HandleToggleSneak(*event.Context, bool)                       
 func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string)               {}
 func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr)                                {}
 func (NopHandler) HandleChat(*event.Context, *string)                                         {}
-func (NopHandler) HandleSkinChange(*event.Context, skin.Skin)                                 {}
+func (NopHandler) HandleSkinChange(*event.Context, *skin.Skin)                                {}
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos)                                  {}
 func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack)                   {}
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
