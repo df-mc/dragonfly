@@ -24,7 +24,7 @@ type Chunk struct {
 // New initialises a new chunk and returns it, so that it may be used.
 func New(air uint32, r cube.Range) *Chunk {
 	n := (r.Height() >> 4) + 1
-	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n)
+	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n+1)
 	for i := range sub {
 		sub[i] = NewSubChunk(air)
 		biomes[i] = emptyStorage(0)
