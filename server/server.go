@@ -63,8 +63,8 @@ type Server struct {
 	listeners []Listener
 	a         atomic.Value[Allower]
 
-	resources []*resource.Pack
-	itemComponents     map[string]map[string]interface{}
+	resources      []*resource.Pack
+	itemComponents map[string]map[string]interface{}
 
 	joinMessage, quitMessage atomic.Value[string]
 
@@ -376,10 +376,12 @@ func (server *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
+	texturePacksRequired := server.c.Resources.Required
 	server.makeItemComponents()
 	if server.c.Resources.AutoBuildPack {
 		if pack, ok := pack_builder.BuildResourcePack(); ok {
 			server.resources = append(server.resources, pack)
+			texturePacksRequired = true
 		}
 	}
 
@@ -388,9 +390,8 @@ func (server *Server) startListening() error {
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 		ResourcePacks:          server.resources,
-		TexturePacksRequired:   true,
 		Biomes:                 server.biomes(),
-		TexturePacksRequired:   server.c.Resources.Required,
+		TexturePacksRequired:   texturePacksRequired,
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)
