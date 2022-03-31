@@ -50,6 +50,9 @@ type Config struct {
 	Resources struct {
 		// Folder controls the location where resource packs will be loaded from.
 		Folder string
+
+		// Required is a boolean to force the client to load the resource pack on join. If they do not accept, they'll have to leave the server
+		Required bool
 	}
 }
 
@@ -68,5 +71,6 @@ func DefaultConfig() Config {
 	c.Players.SaveData = true
 	c.Players.Folder = "players"
 	c.Resources.Folder = "resources"
+	c.Resources.Required = false
 	return c
 }

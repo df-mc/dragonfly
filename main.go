@@ -27,7 +27,6 @@ func main() {
 	if err := srv.Start(); err != nil {
 		log.Fatalln(err)
 	}
-
 	for {
 		if _, err := srv.Accept(); err != nil {
 			return
