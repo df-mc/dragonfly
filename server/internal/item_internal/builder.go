@@ -2,6 +2,7 @@ package item_internal
 
 import (
 	"github.com/df-mc/dragonfly/server/item/category"
+	"golang.org/x/exp/maps"
 	"strings"
 )
 
@@ -11,8 +12,8 @@ type ComponentBuilder struct {
 	identifier string
 	category   category.Category
 
-	itemProperties map[string]interface{}
-	components     map[string]interface{}
+	properties map[string]any
+	components map[string]any
 }
 
 // NewComponentBuilder returns a new component builder with the provided item data.
@@ -22,40 +23,40 @@ func NewComponentBuilder(name, identifier string, category category.Category) *C
 		identifier: identifier,
 		category:   category,
 
-		itemProperties: make(map[string]interface{}),
-		components:     make(map[string]interface{}),
+		properties: make(map[string]any),
+		components: make(map[string]any),
 	}
 }
 
-// AddItemProperty adds the provided item property to the builder.
-func (builder *ComponentBuilder) AddItemProperty(name string, value interface{}) {
-	builder.itemProperties[name] = value
+// AddProperty adds the provided property to the builder.
+func (builder *ComponentBuilder) AddProperty(name string, value any) {
+	builder.properties[name] = value
 }
 
 // AddComponent adds the provided component to the builder.
-func (builder *ComponentBuilder) AddComponent(name string, value interface{}) {
+func (builder *ComponentBuilder) AddComponent(name string, value any) {
 	builder.components[name] = value
 }
 
 // Empty returns if there are no components or item properties in the builder.
 func (builder *ComponentBuilder) Empty() bool {
-	return len(builder.itemProperties) == 0 && len(builder.components) == 0
+	return len(builder.properties) == 0 && len(builder.components) == 0
 }
 
 // Construct constructs the final item components map and returns it. It also applies the default properties required
 // for the item to work without modifying the original maps in the builder.
-func (builder *ComponentBuilder) Construct() map[string]interface{} {
-	itemProperties := builder.copyMap(builder.itemProperties)
-	components := builder.copyMap(builder.components)
-	builder.applyDefaultItemProperties(itemProperties)
-	builder.applyDefaultComponents(components, itemProperties)
-	return map[string]interface{}{"components": components}
+func (builder *ComponentBuilder) Construct() map[string]any {
+	properties := maps.Clone(builder.properties)
+	components := maps.Clone(builder.components)
+	builder.applyDefaultProperties(properties)
+	builder.applyDefaultComponents(components, properties)
+	return map[string]any{"components": components}
 }
 
-// applyDefaultItemProperties applies the default itemProperties to the provided map. It is important that this method does
-// not modify the builder's itemProperties map directly otherwise Empty() will return false in future use of the builder.
-func (builder *ComponentBuilder) applyDefaultItemProperties(x map[string]interface{}) {
-	x["minecraft:icon"] = map[string]interface{}{
+// applyDefaultProperties applies the default properties to the provided map. It is important that this method does
+// not modify the builder's properties map directly otherwise Empty() will return false in future use of the builder.
+func (builder *ComponentBuilder) applyDefaultProperties(x map[string]any) {
+	x["minecraft:icon"] = map[string]any{
 		"texture": strings.Split(builder.identifier, ":")[1],
 	}
 	x["creative_group"] = builder.category.String()
@@ -67,18 +68,9 @@ func (builder *ComponentBuilder) applyDefaultItemProperties(x map[string]interfa
 
 // applyDefaultComponents applies the default components to the provided map. It is important that this method does not
 // modify the builder's components map directly otherwise Empty() will return false in future use of the builder.
-func (builder *ComponentBuilder) applyDefaultComponents(x, itemProperties map[string]interface{}) {
-	x["item_properties"] = itemProperties
-	x["minecraft:display_name"] = map[string]interface{}{
+func (builder *ComponentBuilder) applyDefaultComponents(x, properties map[string]any) {
+	x["item_properties"] = properties
+	x["minecraft:display_name"] = map[string]any{
 		"value": builder.name,
 	}
-}
-
-// copyMap copies the keys and values of the provided map into a new map and returns it.
-func (builder *ComponentBuilder) copyMap(x map[string]interface{}) map[string]interface{} {
-	y := make(map[string]interface{})
-	for k, v := range x {
-		y[k] = v
-	}
-	return y
 }

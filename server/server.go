@@ -410,7 +410,7 @@ func (server *Server) makeItemComponents() {
 	server.itemComponents = make(map[string]map[string]interface{})
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
-		if data, ok := item_internal.ComponentsFromItem(it); ok {
+		if data, ok := item_internal.Components(it); ok {
 			server.itemComponents[name] = data
 		}
 	}

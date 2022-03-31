@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-// ComponentsFromItem returns all the components of the given custom item. If the item has no components, a nil map and
-// false are returned.
-func ComponentsFromItem(it world.CustomItem) (map[string]interface{}, bool) {
+// Components returns all the components of the given custom item. If the item has no components, a nil map and false
+// are returned.
+func Components(it world.CustomItem) (map[string]interface{}, bool) {
 	category := it.Category()
 	identifier, _ := it.EncodeItem()
 	name := strings.Split(identifier, ":")[1]
@@ -39,12 +39,12 @@ func ComponentsFromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		})
 	}
 	if x, ok := it.(item.Consumable); ok {
-		builder.AddItemProperty("use_duration", int32(x.ConsumeDuration().Seconds()*20))
+		builder.AddProperty("use_duration", int32(x.ConsumeDuration().Seconds()*20))
 
 		if y, ok := it.(item.Drinkable); ok && y.Drinkable() {
-			builder.AddItemProperty("use_animation", int32(2))
+			builder.AddProperty("use_animation", int32(2))
 		} else {
-			builder.AddItemProperty("use_animation", int32(1))
+			builder.AddProperty("use_animation", int32(1))
 			// The data in minecraft:food is only used by vanilla server-side, but we must send at least an empty map so
 			// the client will play the eating animation.
 			builder.AddComponent("minecraft:food", map[string]interface{}{})
@@ -62,10 +62,10 @@ func ComponentsFromItem(it world.CustomItem) (map[string]interface{}, bool) {
 		})
 	}
 	if x, ok := it.(item.MaxCounter); ok {
-		builder.AddItemProperty("max_stack_size", int32(x.MaxCount()))
+		builder.AddProperty("max_stack_size", int32(x.MaxCount()))
 	}
 	if x, ok := it.(item.OffHand); ok {
-		builder.AddItemProperty("allow_off_hand", x.OffHand())
+		builder.AddProperty("allow_off_hand", x.OffHand())
 	}
 	if x, ok := it.(item.Throwable); ok {
 		// The data in minecraft:projectile is only used by vanilla server-side, but we must send at least an empty map
