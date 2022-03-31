@@ -390,6 +390,7 @@ func (server *Server) startListening() error {
 		ResourcePacks:          server.resources,
 		TexturePacksRequired:   true,
 		Biomes:                 server.biomes(),
+		TexturePacksRequired:   server.c.Resources.Required,
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)

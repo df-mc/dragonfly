@@ -21,6 +21,7 @@ type (
 	// Dimension is a dimension of a World. It influences a variety of properties of a World such as the building range,
 	// the sky colour and the behaviour of liquid blocks.
 	Dimension interface {
+		// Range returns the lowest and highest valid Y coordinates of a block in the Dimension.
 		Range() cube.Range
 		EncodeDimension() int
 		WaterEvaporates() bool
@@ -34,7 +35,7 @@ type (
 	nopDim    struct{}
 )
 
-func (overworld) Range() cube.Range                 { return cube.Range{-64, 320} }
+func (overworld) Range() cube.Range                 { return cube.Range{-64, 319} }
 func (overworld) EncodeDimension() int              { return 0 }
 func (overworld) WaterEvaporates() bool             { return false }
 func (overworld) LavaSpreadDuration() time.Duration { return time.Second * 3 / 2 }
@@ -42,7 +43,7 @@ func (overworld) WeatherCycle() bool                { return true }
 func (overworld) TimeCycle() bool                   { return true }
 func (overworld) String() string                    { return "Overworld" }
 
-func (nether) Range() cube.Range                 { return cube.Range{0, 256} }
+func (nether) Range() cube.Range                 { return cube.Range{0, 255} }
 func (nether) EncodeDimension() int              { return 1 }
 func (nether) WaterEvaporates() bool             { return true }
 func (nether) LavaSpreadDuration() time.Duration { return time.Second / 4 }
@@ -50,7 +51,7 @@ func (nether) WeatherCycle() bool                { return false }
 func (nether) TimeCycle() bool                   { return false }
 func (nether) String() string                    { return "Nether" }
 
-func (end) Range() cube.Range                 { return cube.Range{0, 256} }
+func (end) Range() cube.Range                 { return cube.Range{0, 255} }
 func (end) EncodeDimension() int              { return 2 }
 func (end) WaterEvaporates() bool             { return false }
 func (end) LavaSpreadDuration() time.Duration { return time.Second * 3 / 2 }

@@ -133,7 +133,7 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 		return
 	}
 
-	loaded := make([]ChunkPos, len(loaders))
+	loaded := make([]ChunkPos, 0, len(loaders))
 	for _, loader := range loaders {
 		loaded = append(loaded, loader.pos)
 	}
