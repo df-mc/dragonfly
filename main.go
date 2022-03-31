@@ -29,8 +29,7 @@ func main() {
 	}
 
 	for {
-		_, err := srv.Accept()
-		if err != nil {
+		if _, err := srv.Accept(); err != nil {
 			return
 		}
 	}
