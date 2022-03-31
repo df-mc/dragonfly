@@ -1,27 +1,30 @@
 package category
 
-// Category is used to categorize groups of creative items client-side.
+// Category represents the category a custom item will be displayed in, in the creative inventory.
 type Category struct {
 	group    string
 	category uint8
 }
 
-// Construction ...
+// Construction is the first tab in the creative inventory and usually contains blocks that are more for decoration and
+// building than actual functionality.
 func Construction() Category {
 	return Category{category: 1}
 }
 
-// Nature ...
+// Nature is the fourth tab in the creative inventory and usually contains blocks and items that can be found naturally
+// in vanilla-generated world.
 func Nature() Category {
 	return Category{category: 2}
 }
 
-// Equipment ...
+// Equipment is the second tab in the creative inventory and usually contains armour, weapons and tools.
 func Equipment() Category {
 	return Category{category: 3}
 }
 
-// Items ...
+// Items is the third tab in the creative inventory and usually contains blocks and items that do not come under any
+// other category, such as minerals, mob drops, containers and redstone etc.
 func Items() Category {
 	return Category{category: 4}
 }
@@ -31,7 +34,8 @@ func (c Category) Uint8() uint8 {
 	return c.category
 }
 
-// WithGroup ...
+// WithGroup returns the category with the provided subgroup. This can be used to put an item inside a group such as
+// swords, food or different types of blocks.
 func (c Category) WithGroup(group string) Category {
 	c.group = group
 	return c
