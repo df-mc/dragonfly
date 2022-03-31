@@ -64,7 +64,7 @@ type Server struct {
 	a         atomic.Value[Allower]
 
 	resources      []*resource.Pack
-	itemComponents map[string]map[string]interface{}
+	itemComponents map[string]map[string]any
 
 	joinMessage, quitMessage atomic.Value[string]
 
@@ -407,7 +407,7 @@ func (server *Server) startListening() error {
 // makeItemComponents initializes the server's item components map using the registered custom items. It allows item
 // components to be created only once at startup
 func (server *Server) makeItemComponents() {
-	server.itemComponents = make(map[string]map[string]interface{})
+	server.itemComponents = make(map[string]map[string]any)
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
 		if data, ok := item_internal.Components(it); ok {

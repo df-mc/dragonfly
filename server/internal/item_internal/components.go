@@ -8,7 +8,7 @@ import (
 
 // Components returns all the components of the given custom item. If the item has no components, a nil map and false
 // are returned.
-func Components(it world.CustomItem) (map[string]interface{}, bool) {
+func Components(it world.CustomItem) (map[string]any, bool) {
 	category := it.Category()
 	identifier, _ := it.EncodeItem()
 	name := strings.Split(identifier, ":")[1]
@@ -16,10 +16,10 @@ func Components(it world.CustomItem) (map[string]interface{}, bool) {
 	builder := NewComponentBuilder(it.Name(), identifier, category)
 
 	if x, ok := it.(item.Armour); ok {
-		builder.AddComponent("minecraft:armor", map[string]interface{}{
+		builder.AddComponent("minecraft:armor", map[string]any{
 			"protection": int32(x.DefencePoints()),
 		})
-		builder.AddComponent("minecraft:knockback_resistance", map[string]interface{}{
+		builder.AddComponent("minecraft:knockback_resistance", map[string]any{
 			"protection": float32(x.KnockBackResistance()),
 		})
 
@@ -34,7 +34,7 @@ func Components(it world.CustomItem) (map[string]interface{}, bool) {
 		case item.BootsType:
 			slot = 5
 		}
-		builder.AddComponent("minecraft:wearable", map[string]interface{}{
+		builder.AddComponent("minecraft:wearable", map[string]any{
 			"slot": slot,
 		})
 	}
@@ -47,17 +47,17 @@ func Components(it world.CustomItem) (map[string]interface{}, bool) {
 			builder.AddProperty("use_animation", int32(1))
 			// The data in minecraft:food is only used by vanilla server-side, but we must send at least an empty map so
 			// the client will play the eating animation.
-			builder.AddComponent("minecraft:food", map[string]interface{}{})
+			builder.AddComponent("minecraft:food", map[string]any{})
 		}
 	}
 	if x, ok := it.(item.Cooldown); ok {
-		builder.AddComponent("minecraft:cooldown", map[string]interface{}{
+		builder.AddComponent("minecraft:cooldown", map[string]any{
 			"category": name,
 			"duration": float32(x.Cooldown().Seconds()),
 		})
 	}
 	if x, ok := it.(item.Durable); ok {
-		builder.AddComponent("minecraft:durability", map[string]interface{}{
+		builder.AddComponent("minecraft:durability", map[string]any{
 			"max_durability": int32(x.DurabilityInfo().MaxDurability),
 		})
 	}
@@ -70,8 +70,8 @@ func Components(it world.CustomItem) (map[string]interface{}, bool) {
 	if x, ok := it.(item.Throwable); ok {
 		// The data in minecraft:projectile is only used by vanilla server-side, but we must send at least an empty map
 		// so the client will play the throwing animation.
-		builder.AddComponent("minecraft:projectile", map[string]interface{}{})
-		builder.AddComponent("minecraft:throwable", map[string]interface{}{
+		builder.AddComponent("minecraft:projectile", map[string]any{})
+		builder.AddComponent("minecraft:throwable", map[string]any{
 			"do_swing_animation": x.SwingAnimation(),
 		})
 	}

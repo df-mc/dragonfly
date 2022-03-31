@@ -23,7 +23,7 @@ func buildItems(dir string) (count int, lang []string) {
 		panic(err)
 	}
 
-	textureData := make(map[string]interface{})
+	textureData := make(map[string]any)
 	for _, item := range world.CustomItems() {
 		identifier, _ := item.EncodeItem()
 		lang = append(lang, fmt.Sprintf("item.%s.name=%s", identifier, item.Name()))
@@ -37,7 +37,7 @@ func buildItems(dir string) (count int, lang []string) {
 		count++
 	}
 
-	buildItemAtlas(dir, map[string]interface{}{
+	buildItemAtlas(dir, map[string]any{
 		"resource_pack_name": "vanilla",
 		"texture_name":       "atlas.items",
 		"texture_data":       textureData,
@@ -62,14 +62,14 @@ func buildItemTexture(dir, name string, img image.Image) {
 
 // buildItem creases an item JSON file for the provided item and its properties and writes it to the pack.
 func buildItem(dir, identifier, name string, item world.CustomItem) {
-	itemData, err := json.Marshal(map[string]interface{}{
+	itemData, err := json.Marshal(map[string]any{
 		"format_version": formatVersion,
-		"minecraft:item": map[string]interface{}{
-			"description": map[string]interface{}{
+		"minecraft:item": map[string]any{
+			"description": map[string]any{
 				"identifier": identifier,
 				"category":   item.Category().Name(),
 			},
-			"components": map[string]interface{}{
+			"components": map[string]any{
 				"minecraft:icon":           name,
 				"minecraft:render_offsets": "tools",
 			},
@@ -84,7 +84,7 @@ func buildItem(dir, identifier, name string, item world.CustomItem) {
 }
 
 // buildItemAtlas creates the identifier to texture mapping and writes it to the pack.
-func buildItemAtlas(dir string, atlas map[string]interface{}) {
+func buildItemAtlas(dir string, atlas map[string]any) {
 	b, err := json.Marshal(atlas)
 	if err != nil {
 		panic(err)
