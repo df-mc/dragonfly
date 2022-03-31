@@ -27,6 +27,8 @@ func New(air uint32, r cube.Range) *Chunk {
 	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n+1)
 	for i := range sub {
 		sub[i] = NewSubChunk(air)
+	}
+	for i := range biomes {
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{r: r, air: air, sub: sub, biomes: biomes}
