@@ -379,6 +379,7 @@ func (server *Server) startListening() error {
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 		ResourcePacks:          server.resources,
 		Biomes:                 server.biomes(),
+		TexturePacksRequired:   server.c.Resources.Required,
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)
