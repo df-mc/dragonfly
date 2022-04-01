@@ -196,7 +196,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleSkinChange(ctx, skin)
+	p.handler().HandleSkinChange(ctx, &skin)
 	ctx.Continue(func() {
 		p.skinMu.Lock()
 		p.skin = skin
@@ -1818,6 +1818,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 		v.ViewEntityTeleport(p, pos)
 	}
 	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current

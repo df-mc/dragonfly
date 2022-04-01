@@ -29,6 +29,8 @@ type World struct {
 	// Settings struct held by the World.
 	advance bool
 
+	o sync.Once
+
 	npd, epd atomic.Value[*World]
 
 	set     *Settings
@@ -1032,6 +1034,16 @@ func (w *World) Close() error {
 	if w == nil {
 		return nil
 	}
+	w.o.Do(w.close)
+	return nil
+}
+
+// close stops the World from ticking, saves all chunks to the Provider and updates the world's settings.
+func (w *World) close() {
+	// Let user code run anything that needs to be finished before the World is closed.
+	w.Handler().HandleClose()
+	w.Handle(NopHandler{})
+
 	close(w.closing)
 	w.running.Wait()
 
@@ -1058,8 +1070,6 @@ func (w *World) Close() error {
 	if err := w.provider().Close(); err != nil {
 		w.log.Errorf("error closing world provider: %v", err)
 	}
-	w.Handle(NopHandler{})
-	return nil
 }
 
 // allViewers returns a list of all loaders of the world, regardless of where in the world they are viewing.

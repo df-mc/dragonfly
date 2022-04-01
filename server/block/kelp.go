@@ -19,7 +19,7 @@ type Kelp struct {
 
 // BoneMeal ...
 func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
-	for y := pos.Y(); y < w.Range()[1]; y++ {
+	for y := pos.Y(); y <= w.Range()[1]; y++ {
 		currentPos := cube.Pos{pos.X(), y, pos.Z()}
 		block := w.Block(currentPos)
 		if kelp, ok := block.(Kelp); ok {
