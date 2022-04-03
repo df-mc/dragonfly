@@ -1433,26 +1433,23 @@ type chunkData struct {
 
 // BlockEntities returns the block entities of the chunk.
 func (c *chunkData) BlockEntities() map[cube.Pos]Block {
-	// TODO: Copy the map and return the copy.
 	c.Lock()
 	defer c.Unlock()
-	return c.e
+	return maps.Clone(c.e)
 }
 
 // Viewers returns the viewers of the chunk.
 func (c *chunkData) Viewers() []Viewer {
-	// TODO: Copy the slice and return it.
 	c.Lock()
 	defer c.Unlock()
-	return c.v
+	return slices.Clone(c.v)
 }
 
 // Entities returns the entities of the chunk.
 func (c *chunkData) Entities() []Entity {
-	// TODO: Copy the slice and return it.
 	c.Lock()
 	defer c.Unlock()
-	return c.entities
+	return slices.Clone(c.entities)
 }
 
 // newChunkData returns a new chunkData wrapper around the chunk.Chunk passed.
