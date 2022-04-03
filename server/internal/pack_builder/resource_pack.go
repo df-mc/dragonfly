@@ -28,6 +28,10 @@ func BuildResourcePack() (*resource.Pack, bool) {
 	assets += itemCount
 	lang = append(lang, itemLang...)
 
+	blockCount, blockLang := buildBlocks(dir)
+	assets += blockCount
+	lang = append(lang, blockLang...)
+
 	if assets > 0 {
 		buildLanguageFile(dir, lang)
 		hash, err := dirhash.HashDir(dir, "", dirhash.Hash1)

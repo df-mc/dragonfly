@@ -18,6 +18,8 @@ var (
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
 	blocks []Block
+	// customBlocks ...
+	customBlocks []CustomBlock
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.

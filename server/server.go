@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/item_internal"
@@ -474,8 +475,16 @@ func (server *Server) defaultGameData() minecraft.GameData {
 		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 		Difficulty:                   2,
 		Items:                        server.itemEntries(),
+		CustomBlocks:                 server.blockEntries(),
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
+		Experiments: []protocol.ExperimentData{
+			{
+				// The 'data_driven_items' experiment is required for custom blocks to render.
+				Name:    "data_driven_items",
+				Enabled: true,
+			},
+		},
 	}
 }
 
@@ -630,6 +639,37 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 			Name:           name,
 			RuntimeID:      int16(rid),
 			ComponentBased: componentBased,
+		})
+	}
+	return
+}
+
+// blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
+func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
+	for _, b := range world.CustomBlocks() {
+		identifier, _ := b.EncodeBlock()
+		name := strings.Split(identifier, ":")[1]
+
+		materials := make(map[string]customblock.Material)
+		for target := range b.Textures() {
+			actualTarget := target
+			if target == "*" {
+				target = "all"
+			}
+			materials[actualTarget] = customblock.NewMaterial(name+"_"+target, customblock.OpaqueRenderMethod())
+		}
+		geometry := b.Geometries().Geometry[0]
+		model := customblock.NewModel(geometry.Description.Identifier, geometry.Origin(), geometry.Size())
+		for target, material := range materials {
+			model = model.WithMaterial(target, material)
+		}
+		components := model.Encode()
+
+		entries = append(entries, protocol.BlockEntry{
+			Name: identifier,
+			Properties: map[string]any{
+				"components": components,
+			},
 		})
 	}
 	return

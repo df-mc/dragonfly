@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"image"
 	"math"
 	"math/rand"
 )
@@ -23,6 +25,18 @@ type Block interface {
 	Hash() uint64
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
+}
+
+// CustomBlock represents a block that is non-vanilla and requires a resource pack and extra steps to show it to the
+// client.
+type CustomBlock interface {
+	Block
+	// Name is the name that will be displayed on the block item to all clients.
+	Name() string
+	// Geometries is the geometries for the block that define the shape of the block.
+	Geometries() customblock.Geometries
+	// Textures is a map of images indexed by their target, used to map textures on to the block.
+	Textures() map[string]image.Image
 }
 
 // Liquid represents a block that can be moved through and which can flow in the world after placement. There
@@ -56,11 +70,17 @@ func RegisterBlock(b Block) {
 	name, properties := b.EncodeBlock()
 	h := stateHash{name: name, properties: hashProperties(properties)}
 
-	rid, ok := stateRuntimeIDs[h]
-	if !ok {
-		// We assume all blocks must have all their states registered beforehand. Vanilla blocks will have
-		// this done through registering of all states present in the block_states.nbt file.
-		panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
+	var rid uint32
+	if _, ok := b.(CustomBlock); ok {
+		rid = uint32(len(stateRuntimeIDs))
+		registerBlockState(blockState{Name: name, Properties: properties})
+	} else {
+		rid, ok = stateRuntimeIDs[h]
+		if !ok {
+			// We assume all blocks must have all their states registered beforehand. Vanilla blocks will have
+			// this done through registering of all states present in the block_states.nbt file.
+			panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
+		}
 	}
 	if _, ok := blocks[rid].(unknownBlock); !ok {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
@@ -89,6 +109,9 @@ func RegisterBlock(b Block) {
 	}
 	if _, ok := b.(LiquidDisplacer); ok {
 		liquidDisplacingBlocks[rid] = true
+	}
+	if c, ok := b.(CustomBlock); ok {
+		customBlocks = append(customBlocks, c)
 	}
 }
 
@@ -226,4 +249,8 @@ func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
 // viewers in a world so that they can see these actions.
 type BlockAction interface {
 	BlockAction()
+}
+
+func CustomBlocks() []CustomBlock {
+	return customBlocks
 }
