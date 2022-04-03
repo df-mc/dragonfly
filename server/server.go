@@ -11,6 +11,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/item_internal"
+	"github.com/df-mc/dragonfly/server/internal/pack_builder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
@@ -61,7 +63,8 @@ type Server struct {
 	listeners []Listener
 	a         atomic.Value[Allower]
 
-	resources []*resource.Pack
+	resources      []*resource.Pack
+	itemComponents map[string]map[string]any
 
 	joinMessage, quitMessage atomic.Value[string]
 
@@ -373,13 +376,22 @@ func (server *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
+	texturePacksRequired := server.c.Resources.Required
+	server.makeItemComponents()
+	if server.c.Resources.AutoBuildPack {
+		if pack, ok := pack_builder.BuildResourcePack(); ok {
+			server.resources = append(server.resources, pack)
+			texturePacksRequired = true
+		}
+	}
+
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 		ResourcePacks:          server.resources,
 		Biomes:                 server.biomes(),
-		TexturePacksRequired:   server.c.Resources.Required,
+		TexturePacksRequired:   texturePacksRequired,
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)
@@ -390,6 +402,18 @@ func (server *Server) startListening() error {
 
 	server.log.Infof("Server running on %v.\n", l.Addr())
 	return nil
+}
+
+// makeItemComponents initializes the server's item components map using the registered custom items. It allows item
+// components to be created only once at startup
+func (server *Server) makeItemComponents() {
+	server.itemComponents = make(map[string]map[string]any)
+	for _, it := range world.CustomItems() {
+		name, _ := it.EncodeItem()
+		if data, ok := item_internal.Components(it); ok {
+			server.itemComponents[name] = data
+		}
+	}
 }
 
 // wait awaits the closing of all Listeners added to the Server through a call to Listen and closed the players channel
@@ -420,6 +444,15 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
+
+	itemComponentEntries := make([]protocol.ItemComponentEntry, len(server.itemComponents))
+	for name, entry := range server.itemComponents {
+		itemComponentEntries = append(itemComponentEntries, protocol.ItemComponentEntry{
+			Name: name,
+			Data: entry,
+		})
+	}
+	_ = conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries})
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
@@ -586,6 +619,17 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 		entries = append(entries, protocol.ItemEntry{
 			Name:      name,
 			RuntimeID: int16(rid),
+		})
+	}
+	for _, it := range world.CustomItems() {
+		name, _ := it.EncodeItem()
+		rid, _, _ := world.ItemRuntimeID(it)
+
+		_, componentBased := server.itemComponents[name]
+		entries = append(entries, protocol.ItemEntry{
+			Name:           name,
+			RuntimeID:      int16(rid),
+			ComponentBased: componentBased,
 		})
 	}
 	return
