@@ -615,7 +615,13 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 // itemEntries loads a list of all custom item entries of the server, ready to be sent in the StartGame
 // packet.
 func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
-	for _, it := range world.Items() {
+	for name, rid := range itemRuntimeIDs {
+		entries = append(entries, protocol.ItemEntry{
+			Name:      name,
+			RuntimeID: int16(rid),
+		})
+	}
+	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
 
