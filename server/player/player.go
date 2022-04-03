@@ -1217,12 +1217,18 @@ func (p *Player) UseItem() {
 					// The required duration for consuming this item was not met, so we don't consume it.
 					return
 				}
-				p.SetHeldItems(p.subtractItem(i, 1), left)
 
-				ctx := p.useContext()
-				ctx.NewItem = usable.Consume(w, p)
-				p.addNewItem(ctx)
-				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+				ctx := event.C()
+				p.handler().HandleItemConsume(ctx, i)
+
+				ctx.Continue(func() {
+					p.SetHeldItems(p.subtractItem(i, 1), left)
+
+					ctx := p.useContext()
+					ctx.NewItem = usable.Consume(w, p)
+					p.addNewItem(ctx)
+					w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+				})
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()

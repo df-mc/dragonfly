@@ -44,6 +44,8 @@
   Folder = "players"
 
 [Resources]
+  # AutoBuildPack is if the server should automatically generate a resource pack for custom features.
+  AutoBuildPack = true
   # Folder configures the directory used by the server to load resource packs.
   Folder = "resources"
   # Required configures whether or not the server will require players to have a resource pack to join.
