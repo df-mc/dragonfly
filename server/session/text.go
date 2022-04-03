@@ -102,6 +102,8 @@ var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", 
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
 	s.writePacket(&packet.RemoveObjective{ObjectiveName: s.currentScoreboard.Load()})
+	s.currentScoreboard.Store("")
+	s.currentLines.Store([]string{})
 }
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.

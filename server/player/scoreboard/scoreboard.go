@@ -86,5 +86,5 @@ func (board *Scoreboard) Lines() []string {
 			lines[i] = " " + line + strings.Repeat(" ", len(board.name)-len(line)-2)
 		}
 	}
-	return board.lines
+	return lines
 }
