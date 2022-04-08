@@ -66,7 +66,7 @@ func (m Menu) Buttons() []Button {
 	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
 	v.Set(reflect.ValueOf(m.submittable))
 
-	var buttons []Button
+	buttons := make([]Button, 0)
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if !field.CanSet() {
