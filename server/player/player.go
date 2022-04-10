@@ -196,7 +196,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 	}
 
 	ctx := event.C()
-	p.handler().HandleSkinChange(ctx, skin)
+	p.handler().HandleSkinChange(ctx, &skin)
 	ctx.Continue(func() {
 		p.skinMu.Lock()
 		p.skin = skin
@@ -633,6 +633,7 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	}
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
+
 	velocity = velocity.Normalize().Mul(force)
 	velocity[1] = height
 
@@ -1216,12 +1217,18 @@ func (p *Player) UseItem() {
 					// The required duration for consuming this item was not met, so we don't consume it.
 					return
 				}
-				p.SetHeldItems(p.subtractItem(i, 1), left)
 
-				ctx := p.useContext()
-				ctx.NewItem = usable.Consume(w, p)
-				p.addNewItem(ctx)
-				w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+				ctx := event.C()
+				p.handler().HandleItemConsume(ctx, i)
+
+				ctx.Continue(func() {
+					p.SetHeldItems(p.subtractItem(i, 1), left)
+
+					ctx := p.useContext()
+					ctx.NewItem = usable.Consume(w, p)
+					p.addNewItem(ctx)
+					w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+				})
 			}
 			p.usingSince.Store(time.Now().UnixNano())
 			p.updateState()
@@ -1449,6 +1456,12 @@ func (p *Player) AttackEntity(e world.Entity) {
 		}
 		if vulnerable {
 			p.Exhaust(0.1)
+
+			if k, ok := i.Enchantment(enchantment.KnockBack{}); ok {
+				inc := (enchantment.KnockBack{}).Force(k.Level())
+				force += inc
+				height += inc
+			}
 			living.KnockBack(p.Position(), force, height)
 
 			if flammable, ok := living.(entity.Flammable); ok {
@@ -1811,6 +1824,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 		v.ViewEntityTeleport(p, pos)
 	}
 	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current

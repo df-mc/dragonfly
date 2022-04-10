@@ -6,7 +6,7 @@ import "golang.org/x/exp/slices"
 func Convert[A, B any, S ~[]B](v S) []A {
 	a := make([]A, len(v))
 	for i, b := range v {
-		a[i] = (interface{})(b).(A)
+		a[i] = (any)(b).(A)
 	}
 	return a
 }
@@ -16,7 +16,7 @@ func Convert[A, B any, S ~[]B](v S) []A {
 // slices.Index, but might panic if E is not comparable.
 func Index[E any](s []E, v E) int {
 	for i, vs := range s {
-		if (interface{})(v) == (interface{})(vs) {
+		if (any)(v) == (any)(vs) {
 			return i
 		}
 	}

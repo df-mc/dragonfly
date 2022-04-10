@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"strings"
 	"time"
 )
 
@@ -89,22 +88,12 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 			ObjectiveName: sb.Name(),
 			Score:         int32(k),
 			IdentityType:  protocol.ScoreboardIdentityFakePlayer,
-			DisplayName:   padScoreboardString(sb, line),
+			DisplayName:   line,
 		})
 	}
 	if len(pk.Entries) > 0 {
 		s.writePacket(pk)
 	}
-}
-
-// padScoreboardString pads the string passed for as much as needed to achieve the same length as the name of the
-// scoreboard. If the string passed is already of the same length as the name of the scoreboard or longer, the string
-// will receive one space of padding.
-func padScoreboardString(sb *scoreboard.Scoreboard, s string) string {
-	if len(sb.Name())-len(s)-1 <= 0 {
-		return s + " "
-	}
-	return s + strings.Repeat(" ", len(sb.Name())-len(s)-1)
 }
 
 // colours holds a list of colour codes to be filled out for empty lines in a scoreboard.
@@ -113,6 +102,8 @@ var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", 
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
 	s.writePacket(&packet.RemoveObjective{ObjectiveName: s.currentScoreboard.Load()})
+	s.currentScoreboard.Store("")
+	s.currentLines.Store([]string{})
 }
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.

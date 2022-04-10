@@ -47,8 +47,7 @@ type Session struct {
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
-	teleportMu  sync.Mutex
-	teleportPos *mgl64.Vec3
+	teleportPos atomic.Value[*mgl64.Vec3]
 
 	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
