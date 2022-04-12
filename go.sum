@@ -149,8 +149,11 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/rogpeppe/go-internal v1.3.0 h1:RR9dF3JtopPvtkroDZuVD7qquD0bnHlKSqaQhgwt8yk=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
+github.com/sandertv/go-raknet v1.10.2/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
 github.com/sandertv/go-raknet v1.10.4 h1:dVKRhLHRBMKaSdX8+zewo9ej0qJkRVpY9LMwwZyPnyA=
 github.com/sandertv/go-raknet v1.10.4/go.mod h1:s1lD7LTts74R9csTeI4WlGcp6PmXAGX+DeJlQF3KMlg=
+github.com/sandertv/gophertunnel v1.19.3-0.20220412175847-3a21d71c58f0 h1:ur+m/FuNHGez1MsAXpGwRl+pEXz6EeBGm/hI9Se/8x0=
+github.com/sandertv/gophertunnel v1.19.3-0.20220412175847-3a21d71c58f0/go.mod h1:cu9ZDQVTXY1RJO/te3syrPvCeCAzKt9eB4jkSzXljTw=
 github.com/sandertv/gophertunnel v1.19.4 h1:2UYu9qjpJadr2iJdOcnyVWE2XIV5rL8eeG243QE3ufw=
 github.com/sandertv/gophertunnel v1.19.4/go.mod h1:Os4c7g8H/VyvaU7bpg7/yOwSJU9XSRFrgmFid3Szs/c=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
