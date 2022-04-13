@@ -39,8 +39,21 @@ func (t *Text) Immobile() bool {
 	return true
 }
 
+// SetNameTag updates the text passed to NewText.
+func (t *Text) SetNameTag(text string) {
+	t.mu.Lock()
+	t.text = text
+	t.mu.Unlock()
+
+	for _, v := range t.World().Viewers(t.Position()) {
+		v.ViewEntityState(t)
+	}
+}
+
 // NameTag returns the text passed to NewText.
 func (t *Text) NameTag() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	return t.text
 }
 
