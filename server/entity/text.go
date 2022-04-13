@@ -39,8 +39,8 @@ func (t *Text) Immobile() bool {
 	return true
 }
 
-// SetNameTag updates the text passed to NewText.
-func (t *Text) SetNameTag(text string) {
+// SetText updates the text passed to NewText.
+func (t *Text) SetText(text string) {
 	t.mu.Lock()
 	t.text = text
 	t.mu.Unlock()
@@ -50,11 +50,16 @@ func (t *Text) SetNameTag(text string) {
 	}
 }
 
-// NameTag returns the text passed to NewText.
-func (t *Text) NameTag() string {
+// Text returns the text passed to NewText.
+func (t *Text) Text() string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.text
+}
+
+// NameTag returns the text passed to NewText. It is an alias for the Text function.
+func (t *Text) NameTag() string {
+	return t.Text()
 }
 
 // DecodeNBT decodes the data passed to create and return a new Text entity.
