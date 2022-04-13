@@ -39,7 +39,7 @@ func (t *Text) Immobile() bool {
 	return true
 }
 
-// SetText updates the text passed to NewText.
+// SetText updates the designated text of the entity.
 func (t *Text) SetText(text string) {
 	t.mu.Lock()
 	t.text = text
@@ -50,14 +50,14 @@ func (t *Text) SetText(text string) {
 	}
 }
 
-// Text returns the text passed to NewText.
+// Text returns the designated text of the entity.
 func (t *Text) Text() string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	return t.text
 }
 
-// NameTag returns the text passed to NewText. It is an alias for the Text function.
+// NameTag returns the designated text of the entity. It is an alias for the Text function.
 func (t *Text) NameTag() string {
 	return t.Text()
 }
