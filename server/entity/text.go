@@ -39,9 +39,27 @@ func (t *Text) Immobile() bool {
 	return true
 }
 
-// NameTag returns the text passed to NewText.
-func (t *Text) NameTag() string {
+// SetText updates the designated text of the entity.
+func (t *Text) SetText(text string) {
+	t.mu.Lock()
+	t.text = text
+	t.mu.Unlock()
+
+	for _, v := range t.World().Viewers(t.Position()) {
+		v.ViewEntityState(t)
+	}
+}
+
+// Text returns the designated text of the entity.
+func (t *Text) Text() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	return t.text
+}
+
+// NameTag returns the designated text of the entity. It is an alias for the Text function.
+func (t *Text) NameTag() string {
+	return t.Text()
 }
 
 // DecodeNBT decodes the data passed to create and return a new Text entity.
