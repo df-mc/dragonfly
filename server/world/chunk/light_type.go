@@ -17,7 +17,7 @@ var (
 )
 
 type (
-	// light is a type that can be used to Set and retrieve light of a specific type in a sub chunk.
+	// light is a type that can be used to set and retrieve light of a specific type in a sub chunk.
 	light interface {
 		light(sub *SubChunk, x, y, z uint8) uint8
 		setLight(sub *SubChunk, x, y, z, v uint8)

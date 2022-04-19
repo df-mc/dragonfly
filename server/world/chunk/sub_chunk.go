@@ -20,7 +20,7 @@ func (sub *SubChunk) Empty() bool {
 	return len(sub.storages) == 0 || (len(sub.storages) == 1 && len(sub.storages[0].palette.values) == 1 && sub.storages[0].palette.values[0] == sub.air)
 }
 
-// Layer returns a certain block storage/layer from a sub chunk. If no storage At the layer exists, the layer
+// Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer
 // is created, as well as all layers between the current highest layer and the new highest layer.
 func (sub *SubChunk) Layer(layer uint8) *PalettedStorage {
 	for uint8(len(sub.storages)) <= layer {
@@ -36,7 +36,7 @@ func (sub *SubChunk) Layers() []*PalettedStorage {
 	return sub.storages
 }
 
-// Block returns the runtime ID of the block located At the given X, Y and Z. X, Y and Z must be in a
+// Block returns the runtime ID of the block located at the given X, Y and Z. X, Y and Z must be in a
 // range of 0-15.
 func (sub *SubChunk) Block(x, y, z byte, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
@@ -45,12 +45,12 @@ func (sub *SubChunk) Block(x, y, z byte, layer uint8) uint32 {
 	return sub.storages[layer].At(x, y, z)
 }
 
-// SetBlock sets the given block runtime ID At the given X, Y and Z. X, Y and Z must be in a range of 0-15.
+// SetBlock sets the given block runtime ID at the given X, Y and Z. X, Y and Z must be in a range of 0-15.
 func (sub *SubChunk) SetBlock(x, y, z byte, layer uint8, block uint32) {
 	sub.Layer(layer).Set(x, y, z, block)
 }
 
-// SetBlockLight sets the block light value At a specific position in the sub chunk.
+// SetBlockLight sets the block light value at a specific position in the sub chunk.
 func (sub *SubChunk) SetBlockLight(x, y, z byte, level uint8) {
 	if ptr := &sub.blockLight[0]; ptr == noLightPtr {
 		// Copy the block light as soon as it is changed to create a COW system.
@@ -63,14 +63,14 @@ func (sub *SubChunk) SetBlockLight(x, y, z byte, level uint8) {
 	sub.blockLight[i] = (sub.blockLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
-// BlockLight returns the block light value At a specific value At a specific position in the sub chunk.
+// BlockLight returns the block light value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) BlockLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
 	return (sub.blockLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
-// SetSkyLight sets the skylight value At a specific position in the sub chunk.
+// SetSkyLight sets the skylight value at a specific position in the sub chunk.
 func (sub *SubChunk) SetSkyLight(x, y, z byte, level uint8) {
 	if ptr := &sub.skyLight[0]; ptr == fullLightPtr || ptr == noLightPtr {
 		// Copy the skylight as soon as it is changed to create a COW system.
@@ -83,7 +83,7 @@ func (sub *SubChunk) SetSkyLight(x, y, z byte, level uint8) {
 	sub.skyLight[i] = (sub.skyLight[i] & (0xf0 >> bit)) | (level << bit)
 }
 
-// SkyLight returns the skylight value At a specific value At a specific position in the sub chunk.
+// SkyLight returns the skylight value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
 
