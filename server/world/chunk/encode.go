@@ -33,7 +33,7 @@ type (
 		// sub holds the data of the serialised sub chunks in a chunk. Sub chunks that are empty or that otherwise
 		// don't exist are represented as an empty slice (or technically, nil).
 		SubChunks [][]byte
-		// Biomes is the biome data of the chunk, which is composed of a biome storage for each subchunk.
+		// Biomes is the biome data of the chunk, which is composed of a biome storage for each sub-chunk.
 		Biomes []byte
 		// BlockNBT is an encoded NBT array of all blocks that carry additional NBT, such as chests, with all
 		// their contents.

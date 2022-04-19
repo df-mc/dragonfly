@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-// HeightMap represents the height-map of a chunk. It holds the y value of all the highest blocks in the chunk
+// HeightMap represents the heightmap of a chunk. It holds the y value of all the highest blocks in the chunk
 // that diffuse or obstruct light.
 type HeightMap []int16
 

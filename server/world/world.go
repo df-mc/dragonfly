@@ -393,6 +393,8 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 					}
 				}
 			}
+			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
+
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
 			for _, viewer := range c.v {
