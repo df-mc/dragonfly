@@ -44,37 +44,34 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			continue
 		}
 
-		// God forgive me for this.
-		// TODO: Move this into *chunk.SubChunk so we don't have to generate this per request.
-		heightMapType, heightMap := byte(protocol.HeightMapDataHasData), make([]byte, 256)
+		chunkMap := ch.HeightMap()
+		subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]byte, 256)
 		higher, lower := true, true
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				y := ch.HighestLightBlocker(x, z) + 1
-				i := (uint16(x) << 4) | uint16(z)
-
+				y, i := chunkMap.At(x, z), (uint16(x)<<4)|uint16(z)
 				otherInd := ch.SubIndex(y)
 				if otherInd > ind {
-					heightMap[i], lower = 16, false
+					subMap[i], lower = 16, false
 				} else if otherInd < ind {
-					heightMap[i], higher = 255, false
+					subMap[i], higher = 255, false
 				} else {
-					heightMap[i], lower, higher = byte(y-ch.SubY(otherInd)), false, false
+					subMap[i], lower, higher = byte(y-ch.SubY(otherInd)), false, false
 				}
 			}
 		}
 		if higher {
-			heightMapType, heightMap = protocol.HeightMapDataTooHigh, nil
+			subMapType, subMap = protocol.HeightMapDataTooHigh, nil
 		} else if lower {
-			heightMapType, heightMap = protocol.HeightMapDataTooLow, nil
+			subMapType, subMap = protocol.HeightMapDataTooLow, nil
 		}
 
 		sub := ch.Sub()[ind]
 		if sub.Empty() {
 			entries = append(entries, protocol.SubChunkEntry{
 				Result:        protocol.SubChunkResultSuccessAllAir,
-				HeightMapType: heightMapType,
-				HeightMapData: heightMap,
+				HeightMapType: subMapType,
+				HeightMapData: subMap,
 				Offset:        offset,
 			})
 			continue
@@ -95,8 +92,8 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		entry := protocol.SubChunkEntry{
 			Result:        protocol.SubChunkResultSuccess,
 			RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
-			HeightMapType: heightMapType,
-			HeightMapData: heightMap,
+			HeightMapType: subMapType,
+			HeightMapData: subMap,
 			Offset:        offset,
 		}
 		if s.conn.ClientCacheEnabled() {

@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
+// insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of At least 1.
 // If one is found, a node is added for it to the node queue.
 func (a *lightArea) insertBlockLightNodes(queue *list.List) {
 	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
@@ -27,8 +27,8 @@ func anyLightBlocks(sub *SubChunk) bool {
 	return false
 }
 
-// insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
-// chunk. In addition, any skylight above those nodes will be set to 15.
+// insertSkyLightNodes iterates over the chunk and inserts a light node anywhere At the highest block in the
+// chunk. In addition, any skylight above those nodes will be Set to 15.
 func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY int) {
 		// If we hit a block like water or leaves (something that diffuses but does not block light), we
@@ -78,7 +78,7 @@ func (a *lightArea) nodesNeeded(lt light) func(sa, sb *SubChunk) bool {
 		}
 	}
 	return func(sa, sb *SubChunk) bool {
-		// Don't add nodes if both sub chunks are either both fully filled with light or have no light at all.
+		// Don't add nodes if both sub chunks are either both fully filled with light or have no light At all.
 		return &sa.blockLight[0] != &sb.blockLight[0]
 	}
 }

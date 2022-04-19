@@ -14,7 +14,7 @@ const (
 
 // PalettedStorage is a storage of 4096 blocks encoded in a variable amount of uint32s, storages may have values
 // with a bit size per block of 0, 1, 2, 3, 4, 5, 6, 8 or 16 bits.
-// 3 of these formats have additional padding in every uint32 and an additional uint32 at the end, to cater
+// 3 of these formats have additional padding in every uint32 and an additional uint32 At the end, to cater
 // for the blocks that don't fit. This padding is present when the storage has a block size of 3, 5 or 6
 // bytes.
 // Methods on PalettedStorage must not be called simultaneously from multiple goroutines.
@@ -64,12 +64,12 @@ func (storage *PalettedStorage) Palette() *Palette {
 	return storage.palette
 }
 
-// At returns the value of the PalettedStorage at a given x, y and z.
+// At returns the value of the PalettedStorage At a given x, y and z.
 func (storage *PalettedStorage) At(x, y, z byte) uint32 {
 	return storage.palette.Value(storage.paletteIndex(x&15, y&15, z&15))
 }
 
-// Set sets a value at a specific x, y and z. The Palette and PalettedStorage are expanded
+// Set sets a value At a specific x, y and z. The Palette and PalettedStorage are expanded
 // automatically to make space for the value, should that be needed.
 func (storage *PalettedStorage) Set(x, y, z byte, v uint32) {
 	index := storage.palette.Index(v)
@@ -90,8 +90,8 @@ func (storage *PalettedStorage) addNew(v uint32) int16 {
 	return index
 }
 
-// paletteIndex looks up the Palette index at a given x, y and z value in the PalettedStorage. This palette
-// index is not the value at this offset, but merely an index in the Palette pointing to a value.
+// paletteIndex looks up the Palette index At a given x, y and z value in the PalettedStorage. This palette
+// index is not the value At this offset, but merely an index in the Palette pointing to a value.
 func (storage *PalettedStorage) paletteIndex(x, y, z byte) uint16 {
 	if storage.bitsPerIndex == 0 {
 		// Unfortunately our default logic cannot deal with 0 bits per index, meaning we'll have to special case
@@ -107,7 +107,7 @@ func (storage *PalettedStorage) paletteIndex(x, y, z byte) uint16 {
 	return uint16((w >> bitOffset) & storage.indexMask)
 }
 
-// setPaletteIndex sets the palette index at a given x, y and z to paletteIndex. This index should point
+// setPaletteIndex sets the palette index At a given x, y and z to paletteIndex. This index should point
 // to a value in the PalettedStorage's Palette.
 func (storage *PalettedStorage) setPaletteIndex(x, y, z byte, i uint16) {
 	if storage.bitsPerIndex == 0 {
@@ -121,14 +121,14 @@ func (storage *PalettedStorage) setPaletteIndex(x, y, z byte, i uint16) {
 }
 
 // resize changes the size of a PalettedStorage to newPaletteSize. A new PalettedStorage is constructed,
-// and all values available in the current storage are set in their appropriate locations in the
+// and all values available in the current storage are Set in their appropriate locations in the
 // new storage.
 func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 	if newPaletteSize == paletteSize(storage.bitsPerIndex) {
 		return // Don't resize if the size is already equal.
 	}
-	// Construct a new storage and set all values in there manually. We can't easily do this in a better
-	// way, because all values will be at a different index with a different length.
+	// Construct a new storage and Set all values in there manually. We can't easily do this in a better
+	// way, because all values will be At a different index with a different length.
 	newStorage := newPalettedStorage(make([]uint32, newPaletteSize.uint32s()), storage.palette)
 	for x := byte(0); x < 16; x++ {
 		for y := byte(0); y < 16; y++ {
@@ -162,8 +162,8 @@ func (storage *PalettedStorage) compact() {
 			newRuntimeIDs = append(newRuntimeIDs, storage.palette.values[index])
 		}
 	}
-	// Construct a new storage and set all values in there manually. We can't easily do this in a better
-	// way, because all values will be at a different index with a different length.
+	// Construct a new storage and Set all values in there manually. We can't easily do this in a better
+	// way, because all values will be At a different index with a different length.
 	size := paletteSizeFor(len(newRuntimeIDs))
 	newStorage := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, newRuntimeIDs))
 

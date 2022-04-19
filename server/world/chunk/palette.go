@@ -28,8 +28,8 @@ func (palette *Palette) Len() int {
 	return len(palette.values)
 }
 
-// Add adds a values to the Palette. It does not first check if the value was already set in the Palette.
-// The index at which the value was added is returned. Another bool is returned indicating if the Palette
+// Add adds a values to the Palette. It does not first check if the value was already Set in the Palette.
+// The index At which the value was added is returned. Another bool is returned indicating if the Palette
 // was resized as a result of adding the value.
 func (palette *Palette) Add(v uint32) (index int16, resize bool) {
 	i := int16(len(palette.values))
@@ -43,7 +43,7 @@ func (palette *Palette) Add(v uint32) (index int16, resize bool) {
 }
 
 // Replace calls the function passed for each value present in the Palette. The value returned by the
-// function replaces the value present at the index of the value passed.
+// function replaces the value present At the index of the value passed.
 func (palette *Palette) Replace(f func(v uint32) uint32) {
 	// Reset last runtime ID as it now has a different offset.
 	palette.last = math.MaxUint32
@@ -77,7 +77,7 @@ func (palette *Palette) indexSlow(runtimeID uint32) int16 {
 	return -1
 }
 
-// Value returns the value in the Palette at a specific index.
+// Value returns the value in the Palette At a specific index.
 func (palette *Palette) Value(i uint16) uint32 {
 	return palette.values[i]
 }

@@ -15,7 +15,7 @@ type lightArea struct {
 	r            cube.Range
 }
 
-// LightArea creates a lightArea with the lower corner of the lightArea at baseX and baseY. The length of the Chunk
+// LightArea creates a lightArea with the lower corner of the lightArea At baseX and baseY. The length of the Chunk
 // slice must be a square of a number, so 1, 4, 9 etc.
 func LightArea(c []*Chunk, baseX, baseY int) *lightArea {
 	w := int(math.Sqrt(float64(len(c))))
@@ -51,12 +51,12 @@ func (a *lightArea) Spread() {
 	}
 }
 
-// light returns the light at a cube.Pos with the light type l.
+// light returns the light At a cube.Pos with the light type l.
 func (a *lightArea) light(pos cube.Pos, l light) uint8 {
 	return l.light(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf))
 }
 
-// light sets the light at a cube.Pos with the light type l.
+// light sets the light At a cube.Pos with the light type l.
 func (a *lightArea) setLight(pos cube.Pos, l light, v uint8) {
 	l.setLight(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), v)
 }
@@ -94,7 +94,7 @@ func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cu
 	}
 }
 
-// iterEdges iterates over all chunk edges within the lightArea and calls the function f with the cube.Pos at either
+// iterEdges iterates over all chunk edges within the lightArea and calls the function f with the cube.Pos At either
 // side of the edge.
 func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube.Pos)) {
 	minY, maxY := a.r[0]>>4, a.r[1]>>4
@@ -132,13 +132,19 @@ func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube
 	}
 }
 
-// iterHeightmap iterates over the heightmap of the lightArea and calls the function f with the heightmap value, the
-// heightmap value of the highest neighbour and the Y value of the highest non-empty SubChunk.
+// iterHeightmap iterates over the HeightMap of the lightArea and calls the function f with the HeightMap value, the
+// HeightMap value of the highest neighbour and the Y value of the highest non-empty SubChunk.
 func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
-	m, highestY := a.calculateHeightmap()
+	m, highestY := a.c[0].HeightMap(), a.c[0].Range().Min()
+	for index := range a.c[0].sub {
+		if a.c[0].sub[index].Empty() {
+			continue
+		}
+		highestY = int(a.c[0].SubY(int16(index))) + 15
+	}
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.at(x, z)), int(m.highestNeighbour(x, z)), highestY)
+			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.At(x, z)), int(m.HighestNeighbour(x, z)), highestY)
 		}
 	}
 }
@@ -155,7 +161,7 @@ func (a *lightArea) iterSubChunk(f func(x, y, z int)) {
 	}
 }
 
-// highest looks up through the blocks at first and second layer at the cube.Pos passed and runs their runtime IDs
+// highest looks up through the blocks At first and second layer At the cube.Pos passed and runs their runtime IDs
 // through the slice m passed, finding the highest value in this slice between those runtime IDs and returning it.
 func (a *lightArea) highest(pos cube.Pos, m []uint8) uint8 {
 	x, y, z, sub := uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), a.sub(pos)
@@ -219,7 +225,7 @@ func (a *lightArea) chunk(pos cube.Pos) *Chunk {
 	return a.c[a.chunkIndex(x>>4, z>>4)]
 }
 
-// chunkIndex finds the index in the chunk slice of an lightArea for a Chunk at a specific x and z.
+// chunkIndex finds the index in the chunk slice of an lightArea for a Chunk At a specific x and z.
 func (a *lightArea) chunkIndex(x, z int) int {
 	return x + (z * a.w)
 }
