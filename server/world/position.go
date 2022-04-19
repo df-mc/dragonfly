@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -11,6 +12,11 @@ import (
 // positions in the way that increasing the X/Z by one means increasing the absolute value on the X/Z axis in
 // terms of blocks by 16.
 type ChunkPos [2]int32
+
+// String implements fmt.Stringer and returns (x, z).
+func (p ChunkPos) String() string {
+	return fmt.Sprintf("(%v, %v)", p[0], p[1])
+}
 
 // X returns the X coordinate of the chunk position.
 func (p ChunkPos) X() int32 {
@@ -28,6 +34,11 @@ func (p ChunkPos) Z() int32 {
 // terms of blocks by 16.
 type SubChunkPos [3]int32
 
+// String implements fmt.Stringer and returns (x, y, z).
+func (p SubChunkPos) String() string {
+	return fmt.Sprintf("(%v, %v, %v)", p[0], p[1], p[2])
+}
+
 // X returns the X coordinate of the sub-chunk position.
 func (p SubChunkPos) X() int32 {
 	return p[0]
@@ -41,11 +52,6 @@ func (p SubChunkPos) Y() int32 {
 // Z returns the Z coordinate of the sub-chunk position.
 func (p SubChunkPos) Z() int32 {
 	return p[2]
-}
-
-// Distance returns the distance between two vectors.
-func Distance(a, b mgl64.Vec3) float64 {
-	return b.Sub(a).Len()
 }
 
 // blockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
