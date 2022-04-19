@@ -391,7 +391,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:      s.Model,
 		PersonaSkin:       s.Persona,
 		CapeID:            uuid.New().String(),
-		FullSkinID:        uuid.New().String(),
+		FullID:            uuid.New().String(),
 		Animations:        animations,
 		Trusted:           true,
 	}
