@@ -8,8 +8,8 @@ import (
 
 // legacyBlockEntry represents a block entry used in versions prior to 1.13.
 type legacyBlockEntry struct {
-	ID   int32 `nbt:"oldid,omitempty"`
-	Meta int16 `nbt:"val,omitempty"`
+	Name string `nbt:"name,omitempty"`
+	Meta int16  `nbt:"val,omitempty"`
 }
 
 var (
@@ -20,11 +20,11 @@ var (
 )
 
 // upgradeLegacyEntry upgrades a legacy block entry to a new one.
-func upgradeLegacyEntry(id int32, meta int16) (blockEntry, bool) {
-	entry, ok := legacyMappings[legacyBlockEntry{ID: id, Meta: meta}]
+func upgradeLegacyEntry(name string, meta int16) (blockEntry, bool) {
+	entry, ok := legacyMappings[legacyBlockEntry{Name: name, Meta: meta}]
 	if !ok {
 		// Also try cases where the meta should be disregarded.
-		entry, ok = legacyMappings[legacyBlockEntry{ID: id}]
+		entry, ok = legacyMappings[legacyBlockEntry{Name: name}]
 	}
 	return entry, ok
 }

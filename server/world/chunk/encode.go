@@ -44,7 +44,7 @@ type (
 		Name    string         `nbt:"name"`
 		State   map[string]any `nbt:"states"`
 		Version int32          `nbt:"version"`
-		ID      int32          `nbt:"oldid,omitempty"`
+		ID      int32          `nbt:"oldid,omitempty"` // PM writes this field, so we allow it anyway to avoid issues loading PM worlds.
 		Meta    int16          `nbt:"val,omitempty"`
 	}
 )
