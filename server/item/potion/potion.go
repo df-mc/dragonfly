@@ -230,11 +230,6 @@ func From(id int32) Potion {
 	return Potion{potion(id)}
 }
 
-// Equals ...
-func (p Potion) Equals(other Potion) bool {
-	return p.Uint8() == other.Uint8()
-}
-
 // Effects returns the effects of the potion.
 func (p Potion) Effects() []effect.Effect {
 	switch p {
