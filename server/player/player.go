@@ -2200,6 +2200,12 @@ func (p *Player) PlaySound(sound world.Sound) {
 	p.session().ViewSound(entity.EyePosition(p), sound)
 }
 
+// ShowParticle shows a particle that only this Player can see. Unlike World.AddParticle, it is not broadcast
+// to players around it.
+func (p *Player) ShowParticle(pos mgl64.Vec3, particle world.Particle) {
+	p.session().ViewParticle(pos, particle)
+}
+
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present or if the Player cannot edit it, an error is returned
 func (p *Player) EditSign(pos cube.Pos, text string) error {
