@@ -8,12 +8,12 @@ import (
 
 var (
 	// Overworld is the Dimension implementation of a normal overworld. It has a blue sky under normal circumstances and
-	// has a sun, clouds, stars and a moon. Overworld has a building range of [-64, 320].
+	// has a sun, clouds, stars and a moon. Overworld has a building range of [-64, 320).
 	Overworld overworld
 	// Nether is a Dimension implementation with a lower base light level and a darker sky without sun/moon. It has a
-	// building range of [0, 256].
+	// building range of [0, 128).
 	Nether nether
-	// End is a Dimension implementation with a dark sky. It has a building range of [0, 256].
+	// End is a Dimension implementation with a dark sky. It has a building range of [0, 256).
 	End end
 )
 
@@ -43,7 +43,7 @@ func (overworld) WeatherCycle() bool                { return true }
 func (overworld) TimeCycle() bool                   { return true }
 func (overworld) String() string                    { return "Overworld" }
 
-func (nether) Range() cube.Range                 { return cube.Range{0, 255} }
+func (nether) Range() cube.Range                 { return cube.Range{0, 127} }
 func (nether) EncodeDimension() int              { return 1 }
 func (nether) WaterEvaporates() bool             { return true }
 func (nether) LavaSpreadDuration() time.Duration { return time.Second / 4 }
