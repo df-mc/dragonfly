@@ -14,4 +14,8 @@ type Map interface {
 	SetPixels([][]color.RGBA)
 	TrackEntity(Entity)
 	TrackBlock(cube.Pos)
+
+	GetPixels() [][]color.RGBA
+	GetTrackedEntities() []Entity
+	GetTrackedBlocks() []cube.Pos
 }
