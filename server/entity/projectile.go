@@ -30,12 +30,15 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	velBefore := vel
 	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	end := pos.Add(vel)
-	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), ignored)
+	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), func(e world.Entity) bool {
+		g, ok := e.(interface{ GameMode() world.GameMode })
+		return (ok && !g.GameMode().HasCollision()) || ignored(e)
+	})
 	if ok {
 		vel = zeroVec3
 		end = hit.Position()
 	} else {
-		yaw, pitch = math.Atan2(vel[0], vel[2])*180/math.Pi, math.Atan2(vel[1], math.Sqrt(vel[0]*vel[0]+vel[2]*vel[2]))*180/math.Pi
+		yaw, pitch = mgl64.RadToDeg(math.Atan2(vel[0], vel[2])), mgl64.RadToDeg(math.Atan2(vel[1], math.Sqrt(vel[0]*vel[0]+vel[2]*vel[2])))
 	}
 	c.onGround = ok
 

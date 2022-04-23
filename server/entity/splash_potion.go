@@ -138,7 +138,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 					splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
 				}
 			}
-		} else if s.t.Equals(potion.Water()) {
+		} else if s.t == potion.Water() {
 			switch result := result.(type) {
 			case trace.BlockResult:
 				pos := result.BlockPosition().Side(result.Face())
