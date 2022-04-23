@@ -10,7 +10,7 @@ type FilledMap struct {
 	DisplayPlayers bool
 	// Scale should be 0 to 4.
 	Scale int32
-	// IsInit has unknown functionality (referring to the Minecraft Wiki).
+	// IsScaling has unknown functionality (referring to the Minecraft Wiki).
 	IsScaling bool
 }
 
