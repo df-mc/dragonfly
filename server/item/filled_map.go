@@ -1,5 +1,9 @@
 package item
 
+type MapInterface interface {
+	GetMapID() int64
+}
+
 type baseMap struct {
 	// IsInit has unknown functionality (referring to the Minecraft Wiki).
 	IsInit bool
@@ -29,6 +33,10 @@ func (m baseMap) EncodeNBT() map[string]any {
 		"map_scale":           m.Scale,
 		"map_is_scaling":      m.IsScaling,
 	}
+}
+
+func (m baseMap) GetMapID() int64 {
+	return m.Uuid
 }
 
 type FilledMap struct {
