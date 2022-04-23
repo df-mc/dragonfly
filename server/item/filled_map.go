@@ -1,6 +1,8 @@
 package item
 
 type FilledMap struct {
+	// IsInit has unknown functionality (referring to the Minecraft Wiki).
+	IsInit bool
 	// Uuid is the numeric identifier of the map (data) used in this item.
 	// Sending packet.ClientBoundMapItemData can create or update map data at client side.
 	Uuid int64
