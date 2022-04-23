@@ -1,7 +1,7 @@
 package item
 
 type WoodlandExplorerMap struct {
-	FilledMap
+	baseMap
 }
 
 // EncodeItem ...

@@ -1,6 +1,6 @@
 package item
 
-type FilledMap struct {
+type baseMap struct {
 	// IsInit has unknown functionality (referring to the Minecraft Wiki).
 	IsInit bool
 	// Uuid is the numeric identifier of the map (data) used in this item.
@@ -16,16 +16,11 @@ type FilledMap struct {
 	IsScaling bool
 }
 
-// EncodeItem ...
-func (m FilledMap) EncodeItem() (name string, meta int16) {
-	return "minecraft:filled_map", 0
-}
-
-func (m FilledMap) DecodeNBT(data map[string]any) any {
+func (m baseMap) DecodeNBT(data map[string]any) any {
 	return m
 }
 
-func (m FilledMap) EncodeNBT() map[string]any {
+func (m baseMap) EncodeNBT() map[string]any {
 	return map[string]any{
 		"map_is_init":         m.IsInit,
 		"map_uuid":            m.Uuid,
@@ -34,4 +29,13 @@ func (m FilledMap) EncodeNBT() map[string]any {
 		"map_scale":           m.Scale,
 		"map_is_scaling":      m.IsScaling,
 	}
+}
+
+type FilledMap struct {
+	baseMap
+}
+
+// EncodeItem ...
+func (m FilledMap) EncodeItem() (name string, meta int16) {
+	return "minecraft:filled_map", 0
 }

@@ -1,7 +1,7 @@
 package item
 
 type OceanMap struct {
-	FilledMap
+	baseMap
 }
 
 // EncodeItem ...
