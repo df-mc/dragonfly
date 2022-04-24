@@ -585,14 +585,18 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if src.ReducedByArmour() {
 		defencePoints := 0.0
+		toughness := 0.0
 		for _, it := range p.armour.Items() {
 			if a, ok := it.Item().(item.Armour); ok {
 				defencePoints += a.DefencePoints()
+				toughness += a.Toughness()
 			}
 		}
-		// Armour in Bedrock edition reduces the damage taken by 4% for every armour point that the player
-		// has, with a maximum of 4*20=80%
-		dmg -= dmg * 0.04 * defencePoints
+		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
+		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
+		// reduction is decreased by the toughness armor value. Effective armour point will at minimum be 20% of
+		// armour points.
+		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
 	}
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())

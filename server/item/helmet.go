@@ -40,6 +40,11 @@ func (h Helmet) KnockBackResistance() float64 {
 	return h.Tier.KnockBackResistance
 }
 
+// Toughness ...
+func (h Helmet) Toughness() float64 {
+	return h.Tier.Toughness
+}
+
 // DurabilityInfo ...
 func (h Helmet) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
