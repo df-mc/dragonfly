@@ -959,7 +959,7 @@ func (p *Player) StopFlying() {
 	p.session().SendGameMode(p.GameMode())
 }
 
-// Jump makes the player jump if they are on ground. It exhausts the player by 0.2 food points, an additional 0.6
+// Jump makes the player jump if they are on ground. It exhausts the player by 0.05 food points, an additional 0.15
 // is exhausted if the player is sprint jumping.
 func (p *Player) Jump() {
 	if p.Dead() {
@@ -975,9 +975,9 @@ func (p *Player) Jump() {
 		p.vel.Store(mgl64.Vec3{0, jumpVel})
 	}
 	if p.Sprinting() {
-		p.Exhaust(0.8)
-	} else {
 		p.Exhaust(0.2)
+	} else {
+		p.Exhaust(0.05)
 	}
 }
 
