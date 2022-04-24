@@ -152,7 +152,7 @@ func (s Stack) Item() world.Item {
 	return s.item
 }
 
-// AttackDamage returns the attack damage to the stack. By default, the value returned is 2.0. If the item
+// AttackDamage returns the attack damage to the stack. By default, the value returned is 1.0. If the item
 // held implements the item.Weapon interface, this damage may be different.
 func (s Stack) AttackDamage() float64 {
 	if weapon, ok := s.Item().(Weapon); ok {
@@ -162,7 +162,7 @@ func (s Stack) AttackDamage() float64 {
 		// The tooltip displayed in-game is therefore not exactly correct.
 		return weapon.AttackDamage() + 1
 	}
-	return 2.0
+	return 1.0
 }
 
 // WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
