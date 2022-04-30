@@ -516,8 +516,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		ctx         = event.C()
 		vulnerable  = false
 		totalDamage = 0.0
+		immunity    = time.Second / 2
 	)
-	p.handler().HandleHurt(ctx, &dmg, source)
+	p.handler().HandleHurt(ctx, &dmg, &immunity, source)
 
 	ctx.Continue(func() {
 		vulnerable = true
@@ -553,7 +554,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, entity.HurtAction{})
 		}
-		p.SetAttackImmunity(time.Second / 2)
+		p.immunity.Store(time.Now().Add(immunity))
 		if p.Dead() {
 			p.kill(source)
 		}

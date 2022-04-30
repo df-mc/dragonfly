@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"net"
+	"time"
 )
 
 // Handler handles events that are called by a player. Implementations of Handler may be used to listen to
@@ -46,7 +47,7 @@ type Handler interface {
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
-	HandleHurt(ctx *event.Context, damage *float64, src damage.Source)
+	HandleHurt(ctx *event.Context, damage *float64, attackImmunity *time.Duration, src damage.Source)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(src damage.Source)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
@@ -160,7 +161,7 @@ func (NopHandler) HandleItemConsume(*event.Context, item.Stack)                 
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int)                           {}
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
 func (NopHandler) HandlePunchAir(*event.Context)                                              {}
-func (NopHandler) HandleHurt(*event.Context, *float64, damage.Source)                         {}
+func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, damage.Source)         {}
 func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source)                        {}
 func (NopHandler) HandleFoodLoss(*event.Context, int, int)                                    {}
 func (NopHandler) HandleDeath(damage.Source)                                                  {}
