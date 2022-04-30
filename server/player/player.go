@@ -50,20 +50,14 @@ type Player struct {
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 	once                                sync.Once
 
-	gameModeMu sync.RWMutex
-	gameMode   world.GameMode
+	gameMode atomic.Value[world.GameMode]
 
-	skinMu sync.RWMutex
-	skin   skin.Skin
-
-	sMutex sync.RWMutex
+	skin atomic.Value[skin.Skin]
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
-	s *session.Session
-
-	hMutex sync.RWMutex
+	s atomic.Value[*session.Session]
 	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
-	h Handler
+	h atomic.Value[Handler]
 
 	inv, offHand *inventory.Inventory
 	armour       *inventory.Armour
@@ -114,10 +108,10 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		hunger:    newHungerManager(),
 		health:    entity.NewHealthManager(),
 		effects:   entity.NewEffectManager(),
-		gameMode:  world.GameModeSurvival,
-		h:         NopHandler{},
+		gameMode:  *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:         *atomic.NewValue[Handler](NopHandler{}),
 		name:      name,
-		skin:      skin,
+		skin:      *atomic.NewValue(skin),
 		speed:     *atomic.NewFloat64(0.1),
 		nameTag:   *atomic.NewValue(name),
 		heldSlot:  atomic.NewUint32(0),
@@ -138,7 +132,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // you can leave the data as nil to use default data.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
-	p.s, p.uuid, p.xuid, p.skin = s, uuid, xuid, skin
+	p.s, p.uuid, p.xuid, p.skin = *atomic.NewValue(s), uuid, xuid, *atomic.NewValue(skin)
 	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	if data != nil {
@@ -183,9 +177,7 @@ func (p *Player) Addr() net.Addr {
 // that the player is shown to.
 // If the player was not connected to a network session, a default skin will be set.
 func (p *Player) Skin() skin.Skin {
-	p.skinMu.RLock()
-	defer p.skinMu.RUnlock()
-	return p.skin
+	return p.skin.Load()
 }
 
 // SetSkin changes the skin of the player. This skin will be visible to other players that the player
@@ -198,10 +190,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 	ctx := event.C()
 	p.handler().HandleSkinChange(ctx, &skin)
 	ctx.Continue(func() {
-		p.skinMu.Lock()
-		p.skin = skin
-		p.skinMu.Unlock()
-
+		p.skin.Store(skin)
 		for _, v := range p.viewers() {
 			v.ViewSkin(p)
 		}
@@ -220,13 +209,10 @@ func (p *Player) Locale() language.Tag {
 // handlers of the Handler passed.
 // Handle sets the player's handler to NopHandler if nil is passed.
 func (p *Player) Handle(h Handler) {
-	p.hMutex.Lock()
-	defer p.hMutex.Unlock()
-
 	if h == nil {
 		h = NopHandler{}
 	}
-	p.h = h
+	p.h.Store(h)
 }
 
 // Message sends a formatted message to the player. The message is formatted following the rules of
@@ -238,8 +224,7 @@ func (p *Player) Message(a ...any) {
 // Messagef sends a formatted message using a specific format to the player. The message is formatted
 // according to the fmt.Sprintf formatting rules.
 func (p *Player) Messagef(f string, a ...any) {
-	msg := fmt.Sprintf(f, a...)
-	p.session().SendMessage(msg)
+	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
@@ -318,9 +303,9 @@ func (p *Player) RemoveBossBar() {
 // player and is formatted following the rules of fmt.Sprintln.
 func (p *Player) Chat(msg ...any) {
 	message := format(msg)
+
 	ctx := event.C()
 	p.handler().HandleChat(ctx, &message)
-
 	ctx.Continue(func() {
 		_, _ = fmt.Fprintf(chat.Global, "<%v> %v\n", p.name, message)
 	})
@@ -333,37 +318,35 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		return
 	}
 	args := strings.Split(commandLine, " ")
-	commandName := strings.TrimPrefix(args[0], "/")
-
-	command, ok := cmd.ByAlias(commandName)
+	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
-		output := &cmd.Output{}
-		output.Errorf("Unknown command: %v. Please check that the command exists and that you have permission to use it.", commandName)
-		p.SendCommandOutput(output)
+		o := &cmd.Output{}
+		o.Errorf("Unknown command: %v. Please check that the command exists and that you have permission to use it.", args[0])
+		p.SendCommandOutput(o)
 		return
 	}
 
 	ctx := event.C()
 	p.handler().HandleCommandExecution(ctx, command, args[1:])
 	ctx.Continue(func() {
-		command.Execute(strings.TrimPrefix(strings.TrimPrefix(commandLine, "/"+commandName), " "), p)
+		command.Execute(strings.Join(args[1:], " "), p)
 	})
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
 // error is returned. If it is returned, the player is closed and transferred to the server.
-func (p *Player) Transfer(address string) (err error) {
+func (p *Player) Transfer(address string) error {
 	addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		return err
 	}
+
 	ctx := event.C()
 	p.handler().HandleTransfer(ctx, addr)
-
 	ctx.Continue(func() {
 		p.session().Transfer(addr.IP, addr.Port)
 	})
-	return
+	return nil
 }
 
 // SendCommandOutput sends the output of a command to the player.
@@ -736,15 +719,12 @@ func (*Player) BeaconAffected() bool {
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
 // exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
 func (p *Player) Exhaust(points float64) {
-	if !p.GameMode().AllowsTakingDamage() {
+	if !p.GameMode().AllowsTakingDamage() || p.World().Difficulty().FoodRegenerates() {
 		return
 	}
 	before := p.hunger.Food()
-	if !p.World().Difficulty().FoodRegenerates() {
-		p.hunger.exhaust(points)
-	}
-	after := p.hunger.Food()
-	if before != after {
+	p.hunger.exhaust(points)
+	if after := p.hunger.Food(); before != after {
 		// Temporarily set the food level back so that it hasn't yet changed once the event is handled.
 		p.hunger.SetFood(before)
 
@@ -806,9 +786,9 @@ func (p *Player) kill(src damage.Source) {
 func (p *Player) dropItems() {
 	w, pos := p.World(), p.Position()
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
-		itemEntity := entity.NewItem(it, pos)
-		itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		w.AddEntity(itemEntity)
+		ent := entity.NewItem(it, pos)
+		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+		w.AddEntity(ent)
 	}
 	p.inv.Clear()
 	p.armour.Clear()
@@ -1091,11 +1071,7 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
 // with the world that it is in.
 func (p *Player) SetGameMode(mode world.GameMode) {
-	p.gameModeMu.Lock()
-	previous := p.gameMode
-	p.gameMode = mode
-	p.gameModeMu.Unlock()
-
+	previous := p.gameMode.Swap(mode)
 	p.session().SendGameMode(mode)
 
 	if !mode.AllowsFlying() {
@@ -1112,9 +1088,7 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 // be the same as that of the world that the player spawns in.
 // The game mode may be changed using Player.SetGameMode().
 func (p *Player) GameMode() world.GameMode {
-	p.gameModeMu.RLock()
-	defer p.gameModeMu.RUnlock()
-	return p.gameMode
+	return p.gameMode.Load()
 }
 
 // itemHash is used as a hash for a world.Item.
@@ -2372,18 +2346,7 @@ func (p *Player) close(msg string) {
 	if p.Dead() && p.session() != nil {
 		p.Respawn()
 	}
-
-	p.sMutex.Lock()
-	s := p.s
-	p.s = nil
-	p.sMutex.Unlock()
-
-	p.hMutex.Lock()
-	h := p.h
-	p.h = NopHandler{}
-	p.hMutex.Unlock()
-
-	if s != nil {
+	if s := p.s.Swap(nil); s != nil {
 		s.Disconnect(msg)
 		s.CloseConnection()
 	} else {
@@ -2391,7 +2354,7 @@ func (p *Player) close(msg string) {
 		// session will remove the player once ready.
 		p.World().RemoveEntity(p)
 	}
-	h.HandleQuit()
+	p.h.Swap(NopHandler{}).HandleQuit()
 }
 
 // load reads the player data from the provider. It uses the default values if the provider
@@ -2407,7 +2370,7 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.gameMode = data.GameMode
+	p.gameMode.Store(data.GameMode)
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
 	}
@@ -2468,12 +2431,10 @@ func (p *Player) Data() Data {
 // session returns the network session of the player. If it has one, it is returned. If not, a no-op session
 // is returned.
 func (p *Player) session() *session.Session {
-	p.sMutex.RLock()
-	defer p.sMutex.RUnlock()
-	if p.s == nil {
-		return session.Nop
+	if s := p.s.Load(); s != nil {
+		return s
 	}
-	return p.s
+	return session.Nop
 }
 
 // useContext returns an item.UseContext initialised for a Player.
@@ -2520,9 +2481,7 @@ func (p *Player) useContext() *item.UseContext {
 
 // handler returns the Handler of the player.
 func (p *Player) handler() Handler {
-	p.hMutex.RLock()
-	defer p.hMutex.RUnlock()
-	return p.h
+	return p.h.Load()
 }
 
 // broadcastItems broadcasts the items held to viewers.
