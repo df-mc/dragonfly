@@ -88,7 +88,7 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, damage.SourceEntityAttack{Attacker: s}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: s, Owner: s.Owner()}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
