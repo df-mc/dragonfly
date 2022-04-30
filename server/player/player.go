@@ -1862,7 +1862,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 	})
 	ctx.Stop(func() {
-		if p.session() != session.Nop {
+		if p.session() != session.Nop && pos.ApproxEqual(p.Position()) {
 			p.teleport(pos)
 		}
 	})
