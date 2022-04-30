@@ -645,6 +645,11 @@ func (p *Player) AttackImmunity() time.Duration {
 	return time.Until(p.immunity.Load())
 }
 
+// SetAttackImmunity sets the duration the player is immune to entity attacks.
+func (p *Player) SetAttackImmunity(d time.Duration) {
+	p.immunity.Store(time.Now().Add(d))
+}
+
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
 // and 20. Every half drumstick is one level.
 func (p *Player) Food() int {
