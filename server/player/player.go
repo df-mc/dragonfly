@@ -533,8 +533,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		ctx         = event.C()
 		vulnerable  = false
 		totalDamage = 0.0
+		immunity    = time.Second / 2
 	)
-	p.handler().HandleHurt(ctx, &dmg, source)
+	p.handler().HandleHurt(ctx, &dmg, &immunity, source)
 
 	ctx.Continue(func() {
 		vulnerable = true
@@ -570,7 +571,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		for _, viewer := range p.viewers() {
 			viewer.ViewEntityAction(p, entity.HurtAction{})
 		}
-		p.SetAttackImmunity(time.Second / 2)
+		p.immunity.Store(time.Now().Add(immunity))
 		if p.Dead() {
 			p.kill(source)
 		}
@@ -659,11 +660,6 @@ func (p *Player) AttackImmune() bool {
 // AttackImmunity returns the duration the player is immune to entity attacks.
 func (p *Player) AttackImmunity() time.Duration {
 	return time.Until(p.immunity.Load())
-}
-
-// SetAttackImmunity sets the duration the player is immune to entity attacks.
-func (p *Player) SetAttackImmunity(d time.Duration) {
-	p.immunity.Store(time.Now().Add(d))
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
