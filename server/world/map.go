@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// registeredMaps is a map that uses ID as key and NewMap as value.
+// registeredMaps is a map that uses ID (int64) as key and NewMap as value.
 var registeredMaps sync.Map
 
 // RegisterMap returns the map ID.
