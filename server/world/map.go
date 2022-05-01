@@ -11,7 +11,7 @@ import (
 var registeredMaps sync.Map
 
 // RegisterMap returns the map ID.
-// The map will be saved to disk
+// The map will be saved to disk if presistent is true.
 func RegisterMap(m NewMap, presistent bool) int64 {
 	panic("implement me")
 }
