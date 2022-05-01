@@ -807,6 +807,7 @@ func (p *Player) Respawn() {
 	p.hunger.Reset()
 	p.sendFood()
 	p.Extinguish()
+	p.ResetFallDistance()
 
 	switch w.Dimension() {
 	case world.Nether:
