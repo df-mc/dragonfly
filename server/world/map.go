@@ -7,15 +7,27 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// registeredMaps is a map that uses ID as key and Map as value.
+// registeredMaps is a map that uses ID as key and NewMap as value.
 var registeredMaps sync.Map
 
-type Map interface {
-	SetPixels([][]color.RGBA)
-	TrackEntity(Entity)
-	TrackBlock(cube.Pos)
+// RegisterMap returns the map ID.
+// The map will be saved to disk
+func RegisterMap(m NewMap, presistent bool) int64 {
+	panic("implement me")
+}
 
-	GetPixels() [][]color.RGBA
-	GetTrackedEntities() []Entity
-	GetTrackedBlocks() []cube.Pos
+func UpdateMap(m UpdatedMap) {
+	panic("implement me")
+}
+
+type UpdatedMap struct {
+	XOffset, YOffset int32
+
+	NewMap
+}
+
+type NewMap struct {
+	Pixels        [][]color.RGBA
+	TrackEntities []Entity
+	TrackBlocks   []cube.Pos
 }
