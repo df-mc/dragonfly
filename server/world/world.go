@@ -1230,7 +1230,9 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
 	if err != nil {
-		return newChunkData(chunk.New(airRID, w.d.Range())), err
+		ch := newChunkData(chunk.New(airRID, w.d.Range()))
+		ch.Lock()
+		return ch, err
 	}
 
 	if !found {
