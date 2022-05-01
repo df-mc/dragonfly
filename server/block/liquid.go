@@ -120,10 +120,10 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 			return true
 		}
 		ctx := event.C()
-		w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
-		ctx.Continue(func() {
-			w.SetLiquid(pos, b.WithDepth(newDepth, falling))
-		})
+		if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+			return false
+		}
+		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 		return true
 	} else if alsoLiquid {
 		existingLiquid.Harden(pos, w, &src)
@@ -155,10 +155,10 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		}
 	}
 	ctx := event.C()
-	w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
-	ctx.Continue(func() {
-		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
-	})
+	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+		return false
+	}
+	w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
 }
 

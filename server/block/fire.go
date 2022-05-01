@@ -172,18 +172,18 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // spread attempts to spread fire from a cube.Pos to another. If the block burn or fire spreading events are cancelled,
 // this might end up not happening.
 func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
-	ctx := event.C()
 	if _, air := w.Block(to).(Air); !air {
-		w.Handler().HandleBlockBurn(ctx, to)
+		ctx := event.C()
+		if w.Handler().HandleBlockBurn(ctx, to); ctx.Cancelled() {
+			return
+		}
 	}
-	ctx.Continue(func() {
-		ctx = event.C()
-		w.Handler().HandleFireSpread(ctx, from, to)
-		ctx.Continue(func() {
-			w.SetBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}, nil)
-			w.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
-		})
-	})
+	ctx := event.C()
+	if w.Handler().HandleFireSpread(ctx, from, to); ctx.Cancelled() {
+		return
+	}
+	w.SetBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}, nil)
+	w.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
 }
 
 // EntityInside ...

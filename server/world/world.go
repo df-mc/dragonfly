@@ -650,12 +650,12 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 // the sound if they're close enough.
 func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	ctx := event.C()
-	w.Handler().HandleSound(ctx, s, pos)
-	ctx.Continue(func() {
-		for _, viewer := range w.Viewers(pos) {
-			viewer.ViewSound(pos, s)
-		}
-	})
+	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
+		return
+	}
+	for _, viewer := range w.Viewers(pos) {
+		viewer.ViewSound(pos, s)
+	}
 }
 
 var (
