@@ -16,7 +16,7 @@ func RegisterMap(m NewMap, presistent bool) int64 {
 	panic("implement me")
 }
 
-// UpdateMap broadcast the update to all viewers.
+// UpdateMap broadcasts the update to all viewers.
 // And overrides NewMap by the update's offsets, so new viewers can also receive the update.
 // If it is presistent, the updated NewMap will be saved to disk.
 func UpdateMap(m UpdatedMap) {
