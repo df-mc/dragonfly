@@ -248,6 +248,11 @@ func (server *Server) AddResourcePack(pack *resource.Pack) {
 	server.resources = append(server.resources, pack)
 }
 
+// Resources returns a list of all resource packs currently loaded on the server.
+func (server *Server) Resources() []*resource.Pack {
+	return server.resources
+}
+
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
 // The formatting of the name passed follows the rules of fmt.Sprint.
 func (server *Server) SetName(a ...any) {

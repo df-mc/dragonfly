@@ -1221,15 +1221,9 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 	w.chunkMu.Lock()
 	defer w.chunkMu.Unlock()
 
-	data, ok := w.chunks[pos]
-	if ok {
-		data.Lock()
-		defer data.Unlock()
-	} else {
-		data = newChunkData(c)
-		w.chunks[pos] = data
-	}
+	data := newChunkData(c)
 	data.e = e
+	w.chunks[pos] = data
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
