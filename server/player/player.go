@@ -809,11 +809,15 @@ func (p *Player) Respawn() {
 	p.Extinguish()
 	p.ResetFallDistance()
 
+	var newW *world.World
 	switch w.Dimension() {
 	case world.Nether:
-		w, _ = w.PortalDestinations()
+		newW, _ = w.PortalDestinations()
 	case world.End:
-		_, w = w.PortalDestinations()
+		_, newW = w.PortalDestinations()
+	}
+	if newW != nil {
+		w = newW
 	}
 	pos := w.Spawn().Vec3Middle()
 
