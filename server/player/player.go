@@ -312,7 +312,8 @@ func (p *Player) Chat(msg ...any) {
 }
 
 // ExecuteCommand executes a command passed as the player. If the command could not be found, or if the usage
-// was incorrect, an error message is sent to the player.
+// was incorrect, an error message is sent to the player. This message should start with a "/" for the command to be
+// recognised.
 func (p *Player) ExecuteCommand(commandLine string) {
 	if p.Dead() {
 		return
