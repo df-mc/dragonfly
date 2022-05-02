@@ -514,11 +514,16 @@ func (server *Server) checkNetIsolation() {
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(c session.Controllable) {
 	server.playerMutex.Lock()
-	p := server.p[c.UUID()]
+	p, ok := server.p[c.UUID()]
 	delete(server.p, c.UUID())
 	server.playerMutex.Unlock()
-	err := server.playerProvider.Load().Save(p.UUID(), p.Data())
-	if err != nil {
+	if !ok {
+		// When a player disconnects immediately after a session is started, it might not be added to the players map
+		// yet. This is expected, but we need to be careful not to crash when this happens.
+		return
+	}
+
+	if err := server.playerProvider.Load().Save(p.UUID(), p.Data()); err != nil {
 		server.log.Errorf("Error while saving data: %v", err)
 	}
 	server.pwg.Done()
