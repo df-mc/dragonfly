@@ -1127,9 +1127,10 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 		return
 	}
 	c.Lock()
-	i := slices.Index(c.l, loader)
-	c.v = slices.Delete(c.v, i, i+1)
-	c.l = slices.Delete(c.l, i, i+1)
+	if i := slices.Index(c.l, loader); i != -1 {
+		c.v = slices.Delete(c.v, i, i+1)
+		c.l = slices.Delete(c.l, i, i+1)
+	}
 	e := slices.Clone(c.entities)
 	c.Unlock()
 
