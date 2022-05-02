@@ -471,27 +471,28 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 }
 
 // fall is called when a falling entity hits the ground.
-func (p *Player) fall(fallDistance float64) {
-	w := p.World()
-	pos := cube.PosFromVec3(p.Position())
-	b := w.Block(pos)
+func (p *Player) fall(distance float64) {
+	var (
+		w   = p.World()
+		pos = cube.PosFromVec3(p.Position())
+		b   = w.Block(pos)
+		dmg = distance - 3
+	)
 	if len(b.Model().AABB(pos, w)) == 0 {
-		pos = pos.Side(cube.FaceDown)
+		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
 		h.EntityLand(pos, w, p)
 	}
 
-	fallDamage := fallDistance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
-		fallDamage -= float64(boost.Level())
+		dmg -= float64(boost.Level())
 	}
-	if fallDamage < 0.5 {
+	if dmg < 0.5 {
 		return
 	}
-
-	p.Hurt(math.Ceil(fallDamage), damage.SourceFall{})
+	p.Hurt(math.Ceil(dmg), damage.SourceFall{})
 }
 
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,

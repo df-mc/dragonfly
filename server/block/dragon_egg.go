@@ -40,7 +40,7 @@ func (d DragonEgg) teleport(pos cube.Pos, w *world.World) {
 		if _, ok := w.Block(newPos).(Air); ok {
 			w.SetBlock(newPos, d, nil)
 			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Subtract(newPos)})
+			w.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Sub(newPos)})
 			return
 		}
 	}
