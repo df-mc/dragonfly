@@ -45,9 +45,9 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 			builder.AddProperty("use_animation", int32(2))
 		} else {
 			builder.AddProperty("use_animation", int32(1))
-			// The data in minecraft:food is only used by vanilla server-side, but we must send at least an empty map so
-			// the client will play the eating animation.
-			builder.AddComponent("minecraft:food", map[string]any{})
+			builder.AddComponent("minecraft:food", map[string]any{
+				"can_always_eat": x.AlwaysConsumable(),
+			})
 		}
 	}
 	if x, ok := it.(item.Cooldown); ok {
