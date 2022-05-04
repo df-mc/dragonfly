@@ -40,14 +40,14 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 	}
 	if x, ok := it.(item.Consumable); ok {
 		builder.AddProperty("use_duration", int32(x.ConsumeDuration().Seconds()*20))
+		builder.AddComponent("minecraft:food", map[string]any{
+			"can_always_eat": x.AlwaysConsumable(),
+		})
 
 		if y, ok := it.(item.Drinkable); ok && y.Drinkable() {
 			builder.AddProperty("use_animation", int32(2))
 		} else {
 			builder.AddProperty("use_animation", int32(1))
-			builder.AddComponent("minecraft:food", map[string]any{
-				"can_always_eat": x.AlwaysConsumable(),
-			})
 		}
 	}
 	if x, ok := it.(item.Cooldown); ok {
