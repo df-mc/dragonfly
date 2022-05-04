@@ -92,7 +92,7 @@ func (l *Loader) Load(n int) {
 		pos := l.loadQueue[0]
 		c := l.w.chunk(pos)
 
-		l.viewer.ViewSkeletonChunk(pos, c.Chunk)
+		l.viewer.ViewChunk(pos, c.Chunk)
 		l.w.addViewer(c, l)
 
 		l.loaded[pos] = c

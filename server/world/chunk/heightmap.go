@@ -4,21 +4,21 @@ import (
 	"math"
 )
 
-// HeightMap represents the heightmap of a chunk. It holds the y value of all the highest blocks in the chunk
+// HeightMap represents the height map of a chunk. It holds the y value of all the highest blocks in the chunk
 // that diffuse or obstruct light.
 type HeightMap []int16
 
-// At returns the heightmap value at a specific column in the chunk.
+// At returns the height map value at a specific column in the chunk.
 func (h HeightMap) At(x, z uint8) int16 {
 	return h[(uint16(x)<<4)|uint16(z)]
 }
 
-// Set changes the heightmap value at a specific column in the chunk.
+// Set changes the height map value at a specific column in the chunk.
 func (h HeightMap) Set(x, z uint8, val int16) {
 	h[(uint16(x)<<4)|uint16(z)] = val
 }
 
-// HighestNeighbour returns the heightmap value of the highest directly neighbouring column of the x and z values
+// HighestNeighbour returns the height map value of the highest directly neighbouring column of the x and z values
 // passed.
 func (h HeightMap) HighestNeighbour(x, z uint8) int16 {
 	highest := int16(math.MinInt16)

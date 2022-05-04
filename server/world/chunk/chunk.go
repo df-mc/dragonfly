@@ -14,10 +14,10 @@ type Chunk struct {
 	r cube.Range
 	// air is the runtime ID of air.
 	air uint32
-	// recalculateHeightMap is true if the chunk's height-map should be recalculated on the next call to the HeightMap
+	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
 	// function.
 	recalculateHeightMap bool
-	// heightMap is the height-map of the chunk.
+	// heightMap is the height map of the chunk.
 	heightMap HeightMap
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
@@ -137,7 +137,8 @@ func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
 	return int16(chunk.r[0])
 }
 
-// HeightMap returns the height map of the chunk.
+// HeightMap returns the height map of the chunk. If the chunk is edited, the height map will be recalculated on the
+// next call to this function.
 func (chunk *Chunk) HeightMap() HeightMap {
 	if chunk.recalculateHeightMap {
 		for x := uint8(0); x < 16; x++ {

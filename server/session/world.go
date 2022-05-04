@@ -115,8 +115,8 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 	})
 }
 
-// ViewSkeletonChunk ...
-func (s *Session) ViewSkeletonChunk(pos world.ChunkPos, c *chunk.Chunk) {
+// ViewChunk ...
+func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
 	if !s.conn.ClientCacheEnabled() {
 		s.writePacket(&packet.LevelChunk{
