@@ -46,7 +46,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		}
 
 		chunkMap := ch.HeightMap()
-		subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]byte, 256)
+		subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
 		higher, lower := true, true
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
@@ -55,9 +55,9 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 				if otherInd > ind {
 					subMap[i], lower = 16, false
 				} else if otherInd < ind {
-					subMap[i], higher = 255, false
+					subMap[i], higher = -1, false
 				} else {
-					subMap[i], lower, higher = byte(y-ch.SubY(otherInd)), false, false
+					subMap[i], lower, higher = int8(y-ch.SubY(otherInd)), false, false
 				}
 			}
 		}
