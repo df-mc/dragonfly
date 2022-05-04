@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -43,7 +42,6 @@ type Session struct {
 	currentScoreboard atomic.Value[string]
 	currentLines      atomic.Value[[]string]
 
-	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
@@ -138,7 +136,6 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 
 	s := &Session{
-		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(51, nil),
@@ -402,6 +399,7 @@ func (s *Session) registerHandlers() {
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
+		packet.IDItemFrameDropItem:     nil,
 		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
@@ -412,9 +410,9 @@ func (s *Session) registerHandlers() {
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
+		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
-		packet.IDItemFrameDropItem:     nil,
 	}
 }
 

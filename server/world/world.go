@@ -393,10 +393,12 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 					}
 				}
 			}
+			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
+
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
 			for _, viewer := range c.v {
-				viewer.ViewChunk(chunkPos, c.Chunk, c.e)
+				viewer.ViewChunk(chunkPos, c.Chunk)
 			}
 			c.Unlock()
 		}
@@ -1434,6 +1436,27 @@ type chunkData struct {
 	v        []Viewer
 	l        []*Loader
 	entities []Entity
+}
+
+// BlockEntities returns the block entities of the chunk.
+func (c *chunkData) BlockEntities() map[cube.Pos]Block {
+	c.Lock()
+	defer c.Unlock()
+	return maps.Clone(c.e)
+}
+
+// Viewers returns the viewers of the chunk.
+func (c *chunkData) Viewers() []Viewer {
+	c.Lock()
+	defer c.Unlock()
+	return slices.Clone(c.v)
+}
+
+// Entities returns the entities of the chunk.
+func (c *chunkData) Entities() []Entity {
+	c.Lock()
+	defer c.Unlock()
+	return slices.Clone(c.entities)
 }
 
 // newChunkData returns a new chunkData wrapper around the chunk.Chunk passed.
