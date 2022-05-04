@@ -27,7 +27,8 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 	w := s.c.World()
 	r := w.Range()
 
-	var entries []protocol.SubChunkEntry
+	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
+	transaction := make(map[uint64]struct{})
 	for _, offset := range offsets {
 		ch, ok := s.chunkLoader.Chunk(world.ChunkPos{
 			center.X() + int32(offset[0]),
@@ -98,15 +99,19 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		}
 		if s.conn.ClientCacheEnabled() {
 			hash := xxhash.Sum64(serialisedSubChunk)
-			if !s.openTransaction(hash, serialisedSubChunk) {
-				// Failed to open the transaction, so just stop here.
+			if !s.trackBlob(hash, serialisedSubChunk) {
+				// Failed to track blob, so just stop here.
 				return
 			}
+
+			transaction[hash] = struct{}{}
+
 			entry.BlobHash = hash
 			entry.RawPayload = blockEntityBuf.Bytes()
 		}
 		entries = append(entries, entry)
 	}
+	s.openChunkTransactions = append(s.openChunkTransactions, transaction)
 	s.writePacket(&packet.SubChunk{
 		Dimension:       int32(w.Dimension().EncodeDimension()),
 		Position:        protocol.SubChunkPos(center),
@@ -128,7 +133,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 		return
 	}
 
-	if hash := xxhash.Sum64(biomes); s.openTransaction(hash, biomes) {
+	if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
 		s.writePacket(&packet.LevelChunk{
 			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
 			Position:            protocol.ChunkPos(pos),
@@ -139,12 +144,11 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 	}
 }
 
-// openTransaction opens a chunk transaction for a given blob.
-func (s *Session) openTransaction(hash uint64, blob []byte) bool {
+// trackBlob attempts to track the given blob. If the player has too many pending blobs, it returns false.
+func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 	s.blobMu.Lock()
 	defer s.blobMu.Unlock()
 
-	s.openChunkTransactions = append(s.openChunkTransactions, map[uint64]struct{}{hash: {}})
 	if l := len(s.blobs); l > 4096 {
 		s.blobMu.Unlock()
 		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), l)
