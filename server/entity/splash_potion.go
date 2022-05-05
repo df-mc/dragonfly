@@ -2,7 +2,7 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	trace2 "github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -119,7 +119,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 				}
 
 				f := 1 - dist/4
-				if entityResult, ok := result.(trace2.EntityResult); ok && entityResult.Entity() == e {
+				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == e {
 					f = 1
 				}
 
@@ -139,7 +139,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			}
 		} else if s.t == potion.Water() {
 			switch result := result.(type) {
-			case trace2.BlockResult:
+			case trace.BlockResult:
 				pos := result.BlockPosition().Side(result.Face())
 				if w.Block(pos) == fire() {
 					w.SetBlock(pos, air(), nil)
@@ -150,7 +150,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 						w.SetBlock(h, air(), nil)
 					}
 				}
-			case trace2.EntityResult:
+			case trace.EntityResult:
 				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
 			}
 		}

@@ -2,7 +2,7 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	trace2 "github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -194,7 +194,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		a.setCritical(false)
 		w.PlaySound(m.pos, sound.ArrowHit{})
 
-		if res, ok := result.(trace2.BlockResult); ok {
+		if res, ok := result.(trace.BlockResult); ok {
 			a.mu.Lock()
 			a.collisionPos, a.collided = res.BlockPosition(), true
 			a.mu.Unlock()
@@ -202,7 +202,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			for _, v := range w.Viewers(m.pos) {
 				v.ViewEntityAction(a, ArrowShakeAction{Duration: time.Millisecond * 350})
 			}
-		} else if res, ok := result.(trace2.EntityResult); ok {
+		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
 				living.Hurt(a.damage(), damage.SourceProjectile{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
