@@ -1632,13 +1632,14 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
-	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
-		return
-	}
 	w := p.World()
 	b := w.Block(pos)
 	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
+		return
+	}
+	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
+		p.resendBlocks(pos, w)
 		return
 	}
 	if _, breakable := b.(block.Breakable); !breakable && !p.GameMode().CreativeInventory() {
@@ -2474,20 +2475,19 @@ func (p *Player) resendBlocks(pos cube.Pos, w *world.World, faces ...cube.Face) 
 	if p.session() == session.Nop {
 		return
 	}
+	p.resendBlock(pos, w)
+	for _, f := range faces {
+		p.resendBlock(pos.Side(f), w)
+	}
+}
+
+// resendBlock resends the block at a cube.Pos in the world.World passed.
+func (p *Player) resendBlock(pos cube.Pos, w *world.World) {
 	b := w.Block(pos)
+	p.session().ViewBlockUpdate(pos, b, 0)
 	if _, ok := b.(world.Liquid); !ok {
 		if liq, ok := w.Liquid(pos); ok {
 			p.session().ViewBlockUpdate(pos, liq, 1)
-		}
-	}
-	for _, f := range faces {
-		b = w.Block(pos.Side(f))
-		p.session().ViewBlockUpdate(pos.Side(f), b, 0)
-
-		if _, ok := b.(world.Liquid); !ok {
-			if liq, ok := w.Liquid(pos.Side(f)); ok {
-				p.session().ViewBlockUpdate(pos.Side(f), liq, 1)
-			}
 		}
 	}
 }
