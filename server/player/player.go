@@ -1139,16 +1139,18 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 func (p *Player) UseItem() {
 	var (
 		i, left = p.HeldItems()
-		it      = i.Item()
 		w       = p.World()
 		ctx     = event.C()
 	)
-	if p.HasCooldown(it) {
+	if p.HasCooldown(i.Item()) {
 		return
 	}
 	if p.handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
+	i, left = p.HeldItems()
+	it := i.Item()
+
 	if cd, ok := it.(item.Cooldown); ok {
 		p.SetCooldown(it, cd.Cooldown())
 	}
@@ -1278,12 +1280,8 @@ var disabledOpts = &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDispla
 // returns immediately.
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	var (
-		i, left = p.HeldItems()
-		w       = p.World()
-		b       = w.Block(pos)
-	)
-	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
+	w := p.World()
+	if _, ok := w.Block(pos).(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
 		// to use the item immediately.
 		p.resendBlocks(pos, w, face)
@@ -1294,6 +1292,8 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendBlocks(pos, w, face)
 		return
 	}
+	i, left := p.HeldItems()
+	b := w.Block(pos)
 	if act, ok := b.(block.Activatable); ok {
 		// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 		// items, in which case the block will be activated as usual.
@@ -1371,7 +1371,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		return
 	}
 	var (
-		i, left        = p.HeldItems()
 		force, height  = 0.45, 0.3608
 		_, slowFalling = p.Effect(effect.SlowFalling{})
 		_, blind       = p.Effect(effect.Blindness{})
@@ -1383,6 +1382,8 @@ func (p *Player) AttackEntity(e world.Entity) {
 		return
 	}
 	p.SwingArm()
+
+	i, left := p.HeldItems()
 	living, ok := e.(entity.Living)
 	if !ok || living.AttackImmune() {
 		return
@@ -1403,6 +1404,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	}
 
 	n, vulnerable := living.Hurt(dmg, damage.SourceEntityAttack{Attacker: p})
+	i, left = p.HeldItems()
 
 	p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
@@ -1646,7 +1648,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		p.resendBlocks(pos, w)
 		return
 	}
-	held, left := p.HeldItems()
+	held, _ := p.HeldItems()
 	drops := p.drops(held, b)
 
 	ctx := event.C()
@@ -1654,6 +1656,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		p.resendBlocks(pos, w)
 		return
 	}
+	held, left := p.HeldItems()
 
 	p.SwingArm()
 	w.SetBlock(pos, nil, nil)
