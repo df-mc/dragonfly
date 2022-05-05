@@ -362,6 +362,7 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
 		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 	}
+	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }
 
