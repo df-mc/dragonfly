@@ -98,11 +98,11 @@ type Drinkable interface {
 	Drinkable() bool
 }
 
-// Enchanted represents a custom item that can have a permanent enchantment glint, this glint is purely cosmetic and
+// Glinted represents a custom item that can have a permanent enchantment glint, this glint is purely cosmetic and
 // will show regardless of whether it is actually enchanted. An example of this is the enchanted golden apple.
-type Enchanted interface {
-	// Enchanted returns whether the item has an enchantment glint.
-	Enchanted() bool
+type Glinted interface {
+	// Glinted returns whether the item has an enchantment glint.
+	Glinted() bool
 }
 
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2

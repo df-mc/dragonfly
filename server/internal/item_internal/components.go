@@ -75,7 +75,7 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 			"do_swing_animation": x.SwingAnimation(),
 		})
 	}
-	if x, ok := it.(item.Enchanted); ok {
+	if x, ok := it.(item.Glinted); ok {
 		builder.AddProperty("foil", x.Enchanted())
 	}
 
