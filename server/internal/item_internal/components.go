@@ -76,7 +76,7 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 		})
 	}
 	if x, ok := it.(item.Glinted); ok {
-		builder.AddProperty("foil", x.Enchanted())
+		builder.AddProperty("foil", x.Glinted())
 	}
 
 	// If an item has no new components or properties then it should not be considered a component-based item.
