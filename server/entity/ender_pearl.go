@@ -100,12 +100,12 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 
 		if owner := e.Owner(); owner != nil {
 			if user, ok := owner.(teleporter); ok {
-				w.PlaySound(user.Position(), sound.EndermanTeleport{})
+				w.PlaySound(user.Position(), sound.Teleport{})
 
 				user.Teleport(m.pos)
 
 				w.AddParticle(m.pos, particle.EndermanTeleportParticle{})
-				w.PlaySound(m.pos, sound.EndermanTeleport{})
+				w.PlaySound(m.pos, sound.Teleport{})
 
 				user.Hurt(5, damage.SourceFall{})
 			}
