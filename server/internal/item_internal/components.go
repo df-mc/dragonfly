@@ -75,6 +75,9 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 			"do_swing_animation": x.SwingAnimation(),
 		})
 	}
+	if x, ok := it.(item.Enchanted); ok {
+		builder.AddProperty("foil", x.Enchanted())
+	}
 
 	// If an item has no new components or properties then it should not be considered a component-based item.
 	if builder.Empty() {
