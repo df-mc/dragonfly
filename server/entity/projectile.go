@@ -1,22 +1,15 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
 
-// Owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type Owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.
 type ProjectileComputer struct {
-	*MovementComputer
+	mc *MovementComputer
 }
 
 // TickMovement performs a movement tick on a projectile. Velocity is applied and changed according to the values
@@ -28,9 +21,9 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
-	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
+	vel = c.mc.applyHorizontalForces(w, pos, c.mc.applyVerticalForces(vel))
 	end := pos.Add(vel)
-	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), func(e world.Entity) bool {
+	hit, ok := trace.Perform(pos, end, w, e.BBox().Grow(1.0), func(e world.Entity) bool {
 		g, ok := e.(interface{ GameMode() world.GameMode })
 		return (ok && !g.GameMode().HasCollision()) || ignored(e)
 	})
@@ -40,10 +33,10 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	} else {
 		yaw, pitch = mgl64.RadToDeg(math.Atan2(vel[0], vel[2])), mgl64.RadToDeg(math.Atan2(vel[1], math.Sqrt(vel[0]*vel[0]+vel[2]*vel[2])))
 	}
-	c.onGround = ok
+	c.mc.onGround = ok
 
 	return &Movement{v: viewers, e: e,
 		pos: end, vel: vel, dpos: end.Sub(pos), dvel: vel.Sub(velBefore),
-		yaw: yaw, pitch: pitch, onGround: c.onGround,
+		yaw: yaw, pitch: pitch, onGround: c.mc.onGround,
 	}, hit
 }

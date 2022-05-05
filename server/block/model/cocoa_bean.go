@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -16,9 +15,9 @@ type CocoaBean struct {
 	Age int
 }
 
-// AABB returns a single physics.AABB whose size depends on the age of the CocoaBean.
-func (c CocoaBean) AABB(cube.Pos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).
+// BBox returns a single physics.BBox whose size depends on the age of the CocoaBean.
+func (c CocoaBean) BBox(cube.Pos, *world.World) []cube.BBox {
+	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).
 		Stretch(c.Facing.RotateRight().Face().Axis(), -(6-float64(c.Age))/16).
 		ExtendTowards(cube.FaceDown, -0.25).
 		ExtendTowards(cube.FaceUp, -((7-float64(c.Age)*2)/16)).

@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -43,9 +42,9 @@ func (li *Lightning) World() *world.World {
 	return w
 }
 
-// AABB ...
-func (Lightning) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{})
+// BBox ...
+func (Lightning) BBox() cube.BBox {
+	return cube.Box(mgl64.Vec3{}, mgl64.Vec3{})
 }
 
 // Close closes the lighting.
@@ -90,7 +89,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		w.PlaySound(pos, sound.Thunder{})
 		w.PlaySound(pos, sound.Explosion{})
 
-		bb := li.AABB().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
+		bb := li.BBox().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {

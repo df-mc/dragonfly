@@ -2,9 +2,8 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
@@ -58,9 +57,9 @@ func (s *SplashPotion) EncodeEntity() string {
 	return "minecraft:splash_potion"
 }
 
-// AABB ...
-func (s *SplashPotion) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (s *SplashPotion) BBox() cube.BBox {
+	return cube.Box(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
 }
 
 // Rotation ...
@@ -97,7 +96,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		aabb := s.AABB().Translate(m.pos)
+		box := s.BBox().Translate(m.pos)
 
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
 		if effects := s.t.Effects(); len(effects) > 0 {
@@ -108,9 +107,9 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 				return !living || entity == s
 			}
 
-			for _, e := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
+			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
 				pos := e.Position()
-				if !e.AABB().Translate(pos).IntersectsWith(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
+				if !e.BBox().Translate(pos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 					continue
 				}
 

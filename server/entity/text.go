@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -29,9 +29,9 @@ func (t *Text) EncodeEntity() string {
 	return "dragonfly:text"
 }
 
-// AABB returns an empty physics.AABB so that players cannot interact with the entity.
-func (t *Text) AABB() physics.AABB {
-	return physics.AABB{}
+// BBox returns an empty physics.BBox so that players cannot interact with the entity.
+func (t *Text) BBox() cube.BBox {
+	return cube.BBox{}
 }
 
 // Immobile always returns true.

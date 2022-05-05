@@ -10,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/healing"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
@@ -479,7 +478,7 @@ func (p *Player) fall(distance float64) {
 		b   = w.Block(pos)
 		dmg = distance - 3
 	)
-	if len(b.Model().AABB(pos, w)) == 0 {
+	if len(b.Model().BBox(pos, w)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
@@ -1139,16 +1138,18 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 func (p *Player) UseItem() {
 	var (
 		i, left = p.HeldItems()
-		it      = i.Item()
 		w       = p.World()
 		ctx     = event.C()
 	)
-	if p.HasCooldown(it) {
+	if p.HasCooldown(i.Item()) {
 		return
 	}
 	if p.handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
+	i, left = p.HeldItems()
+	it := i.Item()
+
 	if cd, ok := it.(item.Cooldown); ok {
 		p.SetCooldown(it, cd.Cooldown())
 	}
@@ -1278,12 +1279,8 @@ var disabledOpts = &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDispla
 // returns immediately.
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	var (
-		i, left = p.HeldItems()
-		w       = p.World()
-		b       = w.Block(pos)
-	)
-	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
+	w := p.World()
+	if _, ok := w.Block(pos).(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
 		// to use the item immediately.
 		p.resendBlocks(pos, w, face)
@@ -1294,6 +1291,8 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendBlocks(pos, w, face)
 		return
 	}
+	i, left := p.HeldItems()
+	b := w.Block(pos)
 	if act, ok := b.(block.Activatable); ok {
 		// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 		// items, in which case the block will be activated as usual.
@@ -1371,7 +1370,6 @@ func (p *Player) AttackEntity(e world.Entity) {
 		return
 	}
 	var (
-		i, left        = p.HeldItems()
 		force, height  = 0.45, 0.3608
 		_, slowFalling = p.Effect(effect.SlowFalling{})
 		_, blind       = p.Effect(effect.Blindness{})
@@ -1383,6 +1381,8 @@ func (p *Player) AttackEntity(e world.Entity) {
 		return
 	}
 	p.SwingArm()
+
+	i, _ := p.HeldItems()
 	living, ok := e.(entity.Living)
 	if !ok || living.AttackImmune() {
 		return
@@ -1403,6 +1403,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	}
 
 	n, vulnerable := living.Hurt(dmg, damage.SourceEntityAttack{Attacker: p})
+	i, left := p.HeldItems()
 
 	p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
@@ -1571,7 +1572,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 // An item.UseContext may be passed to obtain information on if the block placement was successful. (SubCount will
 // be incremented). Nil may also be passed for the context parameter.
 func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
-	if !p.placeBlock(pos, b, ctx.IgnoreAABB) {
+	if !p.placeBlock(pos, b, ctx.IgnoreBBox) {
 		return
 	}
 	if ctx != nil {
@@ -1581,13 +1582,13 @@ func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
 
 // placeBlock makes the player place the block passed at the position passed, granted it is within the range
 // of the player. A bool is returned indicating if a block was placed successfully.
-func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) bool {
+func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	w := p.World()
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
-	if !ignoreAABB && p.obstructedPos(pos, b) {
+	if !ignoreBBox && p.obstructedPos(pos, b) {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
@@ -1607,12 +1608,12 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) bool {
 // The function returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	w := p.World()
-	blockBoxes := b.Model().AABB(pos, w)
+	blockBoxes := b.Model().BBox(pos, w)
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
+	around := w.EntitiesWithin(cube.Box(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside item entities is fine.
@@ -1622,7 +1623,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			// Placing blocks inside arrow entities is fine.
 			continue
 		}
-		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
+		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position())) {
 			return true
 		}
 	}
@@ -1632,20 +1633,21 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
-	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
-		return
-	}
 	w := p.World()
 	b := w.Block(pos)
 	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
 		return
 	}
+	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
+		p.resendBlocks(pos, w)
+		return
+	}
 	if _, breakable := b.(block.Breakable); !breakable && !p.GameMode().CreativeInventory() {
 		p.resendBlocks(pos, w)
 		return
 	}
-	held, left := p.HeldItems()
+	held, _ := p.HeldItems()
 	drops := p.drops(held, b)
 
 	ctx := event.C()
@@ -1653,6 +1655,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		p.resendBlocks(pos, w)
 		return
 	}
+	held, left := p.HeldItems()
 
 	p.SwingArm()
 	w.SetBlock(pos, nil, nil)
@@ -2047,8 +2050,8 @@ func (p *Player) starve(w *world.World) {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(w *world.World) {
-	aabb := p.AABB().Translate(p.Position()).Grow(-0.0001)
-	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
+	box := p.BBox().Translate(p.Position()).Grow(-0.0001)
+	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
 	for y := min[1]; y <= max[1]; y++ {
 		for x := min[0]; x <= max[0]; x++ {
@@ -2074,18 +2077,18 @@ func (p *Player) checkBlockCollisions(w *world.World) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(w *world.World) bool {
-	aabb := p.AABB().Translate(p.Position())
+	box := p.BBox().Translate(p.Position())
 
-	b := aabb.Grow(1)
+	b := box.Grow(1)
 
 	min, max := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
 	for x := min[0]; x <= max[0]; x++ {
 		for z := min[2]; z <= max[2]; z++ {
 			for y := min[1]; y < max[1]; y++ {
 				pos := cube.Pos{x, y, z}
-				aabbList := w.Block(pos).Model().AABB(pos, w)
-				for _, bb := range aabbList {
-					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(aabb) {
+				boxList := w.Block(pos).Model().BBox(pos, w)
+				for _, bb := range boxList {
+					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(box) {
 						return true
 					}
 				}
@@ -2095,16 +2098,16 @@ func (p *Player) checkOnGround(w *world.World) bool {
 	return false
 }
 
-// AABB returns the axis aligned bounding box of the player.
-func (p *Player) AABB() physics.AABB {
+// BBox returns the axis aligned bounding box of the player.
+func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
 	case p.Sneaking():
-		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
+		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
 	case p.Swimming():
-		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
+		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
 	default:
-		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
+		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
 	}
 }
 
@@ -2140,7 +2143,7 @@ func (p *Player) EyeHeight() float64 {
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
 // to players around it.
 func (p *Player) PlaySound(sound world.Sound) {
-	p.session().ViewSound(entity.EyePosition(p), sound)
+	p.session().PlaySound(sound)
 }
 
 // ShowParticle shows a particle that only this Player can see. Unlike World.AddParticle, it is not broadcast
@@ -2474,20 +2477,19 @@ func (p *Player) resendBlocks(pos cube.Pos, w *world.World, faces ...cube.Face) 
 	if p.session() == session.Nop {
 		return
 	}
+	p.resendBlock(pos, w)
+	for _, f := range faces {
+		p.resendBlock(pos.Side(f), w)
+	}
+}
+
+// resendBlock resends the block at a cube.Pos in the world.World passed.
+func (p *Player) resendBlock(pos cube.Pos, w *world.World) {
 	b := w.Block(pos)
+	p.session().ViewBlockUpdate(pos, b, 0)
 	if _, ok := b.(world.Liquid); !ok {
 		if liq, ok := w.Liquid(pos); ok {
 			p.session().ViewBlockUpdate(pos, liq, 1)
-		}
-	}
-	for _, f := range faces {
-		b = w.Block(pos.Side(f))
-		p.session().ViewBlockUpdate(pos.Side(f), b, 0)
-
-		if _, ok := b.(world.Liquid); !ok {
-			if liq, ok := w.Liquid(pos.Side(f)); ok {
-				p.session().ViewBlockUpdate(pos.Side(f), liq, 1)
-			}
 		}
 	}
 }

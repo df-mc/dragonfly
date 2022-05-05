@@ -502,14 +502,15 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	}
 }
 
-// ViewSound ...
-func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
+// playSound plays a world.Sound at a position, disabling relative volume if set to true.
+func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool) {
 	pk := &packet.LevelSoundEvent{
-		Position:   vec64To32(pos),
-		EntityType: ":",
-		ExtraData:  -1,
+		Position:              vec64To32(pos),
+		EntityType:            ":",
+		ExtraData:             -1,
+		DisableRelativeVolume: disableRelative,
 	}
-	switch so := soundType.(type) {
+	switch so := t.(type) {
 	case sound.Note:
 		pk.SoundType = packet.SoundEventNote
 		pk.ExtraData = (so.Instrument.Int32() << 8) | int32(so.Pitch)
@@ -535,12 +536,8 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 			Position:  vec64To32(pos),
 		})
 		return
-	case sound.EndermanTeleport:
-		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventSoundEndermanTeleport,
-			Position:  vec64To32(pos),
-		})
-		return
+	case sound.Teleport:
+		pk.SoundType = packet.SoundEventTeleport
 	case sound.ItemFrameAdd:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundAddItem,
@@ -630,6 +627,17 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 		return
 	}
 	s.writePacket(pk)
+}
+
+// PlaySound plays a world.Sound to the client. The volume is not dependent on the distance to the source if it is a
+// sound of the LevelSoundEvent packet.
+func (s *Session) PlaySound(t world.Sound) {
+	s.playSound(entity.EyePosition(s.c), t, true)
+}
+
+// ViewSound ...
+func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
+	s.playSound(pos, soundType, false)
 }
 
 // ViewBlockUpdate ...

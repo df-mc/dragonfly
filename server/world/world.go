@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -743,16 +742,16 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 }
 
-// EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
-// those which are contained within the AABB when it comes to their position.
-func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []Entity {
+// EntitiesWithin does a lookup through the entities in the chunks touched by the BBox passed, returning all
+// those which are contained within the BBox when it comes to their position.
+func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entity {
 	if w == nil {
 		return nil
 	}
 	// Make an estimate of 16 entities on average.
 	m := make([]Entity, 0, 16)
 
-	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
+	minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
 
 	for x := minPos[0]; x <= maxPos[0]; x++ {
 		for z := minPos[1]; z <= maxPos[1]; z++ {
@@ -769,8 +768,8 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 				if ignored != nil && ignored(entity) {
 					continue
 				}
-				if aabb.Vec3Within(entity.Position()) {
-					// The entity position was within the AABB, so we add it to the slice to return.
+				if box.Vec3Within(entity.Position()) {
+					// The entity position was within the BBox, so we add it to the slice to return.
 					m = append(m, entity)
 				}
 			}

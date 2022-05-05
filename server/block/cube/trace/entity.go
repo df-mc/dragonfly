@@ -2,22 +2,21 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
 // EntityResult is the result of a ray trace collision with an entities bounding box.
 type EntityResult struct {
-	bb   physics.AABB
+	bb   cube.BBox
 	pos  mgl64.Vec3
 	face cube.Face
 
 	entity world.Entity
 }
 
-// AABB returns the entities bounding box that was collided with.
-func (r EntityResult) AABB() physics.AABB {
+// BBox returns the entities bounding box that was collided with.
+func (r EntityResult) BBox() cube.BBox {
 	return r.bb
 }
 
@@ -41,9 +40,9 @@ func (r EntityResult) Entity() world.Entity {
 // EntityIntercept returns an EntityResult with the entity collided with and with the colliding vector closest to the start position,
 // if no colliding point was found, a zero BlockResult is returned ok is false.
 func EntityIntercept(e world.Entity, start, end mgl64.Vec3) (result EntityResult, ok bool) {
-	bb := e.AABB().Translate(e.Position()).Grow(0.3)
+	bb := e.BBox().Translate(e.Position()).Grow(0.3)
 
-	r, ok := AABBIntercept(bb, start, end)
+	r, ok := BBoxIntercept(bb, start, end)
 	if !ok {
 		return
 	}

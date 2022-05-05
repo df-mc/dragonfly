@@ -21,16 +21,16 @@ type Viewer interface {
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool)
 	// ViewEntityVelocity views the velocity of an entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.
-	ViewEntityVelocity(e Entity, velocity mgl64.Vec3)
+	ViewEntityVelocity(e Entity, vel mgl64.Vec3)
 	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
 	// target position.
-	ViewEntityTeleport(e Entity, position mgl64.Vec3)
+	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
-	ViewTime(time int)
+	ViewTime(t int)
 	// ViewEntityItems views the items currently held by an entity that is able to equip items.
 	ViewEntityItems(e Entity)
 	// ViewEntityArmour views the items currently equipped as armour by the entity.
@@ -53,7 +53,7 @@ type Viewer interface {
 	// package, and include things such as a chest opening.
 	ViewBlockAction(pos cube.Pos, a BlockAction)
 	// ViewEmote views an emote being performed by another entity.
-	ViewEmote(player Entity, emote uuid.UUID)
+	ViewEmote(e Entity, emote uuid.UUID)
 	// ViewSkin views the current skin of a player.
 	ViewSkin(e Entity)
 	// ViewWorldSpawn views the current spawn location of the world.

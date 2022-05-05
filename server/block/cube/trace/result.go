@@ -2,7 +2,6 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -10,8 +9,8 @@ import (
 
 // Result represents the result of a ray trace collision with a bounding box.
 type Result interface {
-	// AABB returns the bounding box collided with.
-	AABB() physics.AABB
+	// BBox returns the bounding box collided with.
+	BBox() cube.BBox
 	// Position returns where the ray first collided with the bounding box.
 	Position() mgl64.Vec3
 	// Face returns the face of the bounding box that was collided on.
@@ -19,9 +18,9 @@ type Result interface {
 }
 
 // Perform performs a ray trace between start and end, checking if any blocks or entities collided with the
-// ray. The physics.AABB that's passed is used for checking if any entity within the bounding box collided
+// ray. The physics.BBox that's passed is used for checking if any entity within the bounding box collided
 // with the ray.
-func Perform(start, end mgl64.Vec3, w *world.World, aabb physics.AABB, ignored func(world.Entity) bool) (hit Result, ok bool) {
+func Perform(start, end mgl64.Vec3, w *world.World, box cube.BBox, ignored func(world.Entity) bool) (hit Result, ok bool) {
 	// Check if there's any blocks that we may collide with.
 	TraverseBlocks(start, end, func(pos cube.Pos) (cont bool) {
 		b := w.Block(pos)
@@ -37,9 +36,9 @@ func Perform(start, end mgl64.Vec3, w *world.World, aabb physics.AABB, ignored f
 
 	// Now check for any entities that we may collide with.
 	dist := math.MaxFloat64
-	bb := aabb.Translate(start).Extend(end.Sub(start))
+	bb := box.Translate(start).Extend(end.Sub(start))
 	for _, entity := range w.EntitiesWithin(bb.Grow(8.0), ignored) {
-		if ignored != nil && ignored(entity) || !entity.AABB().Translate(entity.Position()).IntersectsWith(bb) {
+		if ignored != nil && ignored(entity) || !entity.BBox().Translate(entity.Position()).IntersectsWith(bb) {
 			continue
 		}
 		// Check if we collide with the entities bounding box.

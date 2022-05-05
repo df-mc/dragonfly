@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -15,12 +14,12 @@ type Fence struct {
 	Wood bool
 }
 
-// AABB returns multiple physics.AABB depending on how many connections it has with the surrounding blocks.
-func (f Fence) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+// BBox returns multiple physics.BBox depending on how many connections it has with the surrounding blocks.
+func (f Fence) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 	const offset = 0.375
 
-	boxes := make([]physics.AABB, 0, 5)
-	mainBox := physics.NewAABB(mgl64.Vec3{offset, 0, offset}, mgl64.Vec3{1 - offset, 1.5, 1 - offset})
+	boxes := make([]cube.BBox, 0, 5)
+	mainBox := cube.Box(mgl64.Vec3{offset, 0, offset}, mgl64.Vec3{1 - offset, 1.5, 1 - offset})
 
 	for i := cube.Face(2); i < 6; i++ {
 		pos := pos.Side(i)
