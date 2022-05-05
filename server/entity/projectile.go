@@ -9,7 +9,7 @@ import (
 
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.
 type ProjectileComputer struct {
-	mc *MovementComputer
+	*MovementComputer
 }
 
 // TickMovement performs a movement tick on a projectile. Velocity is applied and changed according to the values
@@ -21,7 +21,7 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
-	vel = c.mc.applyHorizontalForces(w, pos, c.mc.applyVerticalForces(vel))
+	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	end := pos.Add(vel)
 	hit, ok := trace.Perform(pos, end, w, e.BBox().Grow(1.0), func(e world.Entity) bool {
 		g, ok := e.(interface{ GameMode() world.GameMode })
@@ -33,10 +33,10 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	} else {
 		yaw, pitch = mgl64.RadToDeg(math.Atan2(vel[0], vel[2])), mgl64.RadToDeg(math.Atan2(vel[1], math.Sqrt(vel[0]*vel[0]+vel[2]*vel[2])))
 	}
-	c.mc.onGround = ok
+	c.onGround = ok
 
 	return &Movement{v: viewers, e: e,
 		pos: end, vel: vel, dpos: end.Sub(pos), dvel: vel.Sub(velBefore),
-		yaw: yaw, pitch: pitch, onGround: c.mc.onGround,
+		yaw: yaw, pitch: pitch, onGround: c.onGround,
 	}, hit
 }
