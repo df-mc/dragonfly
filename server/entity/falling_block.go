@@ -3,7 +3,6 @@ package entity
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -40,9 +39,9 @@ func (f *FallingBlock) EncodeEntity() string {
 	return "minecraft:falling_block"
 }
 
-// AABB ...
-func (f *FallingBlock) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.49, 0, -0.49}, mgl64.Vec3{0.49, 0.98, 0.49})
+// BBox ...
+func (f *FallingBlock) BBox() cube.BBox {
+	return cube.Box(mgl64.Vec3{-0.49, 0, -0.49}, mgl64.Vec3{0.49, 0.98, 0.49})
 }
 
 // Block ...

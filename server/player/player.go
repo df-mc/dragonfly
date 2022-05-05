@@ -10,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/entity/healing"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
@@ -479,7 +478,7 @@ func (p *Player) fall(distance float64) {
 		b   = w.Block(pos)
 		dmg = distance - 3
 	)
-	if len(b.Model().AABB(pos, w)) == 0 {
+	if len(b.Model().BBox(pos, w)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
@@ -1573,7 +1572,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 // An item.UseContext may be passed to obtain information on if the block placement was successful. (SubCount will
 // be incremented). Nil may also be passed for the context parameter.
 func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
-	if !p.placeBlock(pos, b, ctx.IgnoreAABB) {
+	if !p.placeBlock(pos, b, ctx.IgnoreBBox) {
 		return
 	}
 	if ctx != nil {
@@ -1583,13 +1582,13 @@ func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
 
 // placeBlock makes the player place the block passed at the position passed, granted it is within the range
 // of the player. A bool is returned indicating if a block was placed successfully.
-func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) bool {
+func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	w := p.World()
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
-	if !ignoreAABB && p.obstructedPos(pos, b) {
+	if !ignoreBBox && p.obstructedPos(pos, b) {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
@@ -1609,12 +1608,12 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreAABB bool) bool {
 // The function returns true if there is an entity in the way that could prevent the block from being placed.
 func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	w := p.World()
-	blockBoxes := b.Model().AABB(pos, w)
+	blockBoxes := b.Model().BBox(pos, w)
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := w.EntitiesWithin(physics.NewAABB(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
+	around := w.EntitiesWithin(cube.Box(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside item entities is fine.
@@ -1624,7 +1623,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			// Placing blocks inside arrow entities is fine.
 			continue
 		}
-		if physics.AnyIntersections(blockBoxes, e.AABB().Translate(e.Position())) {
+		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position())) {
 			return true
 		}
 	}
@@ -2051,8 +2050,8 @@ func (p *Player) starve(w *world.World) {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(w *world.World) {
-	aabb := p.AABB().Translate(p.Position()).Grow(-0.0001)
-	min, max := cube.PosFromVec3(aabb.Min()), cube.PosFromVec3(aabb.Max())
+	box := p.BBox().Translate(p.Position()).Grow(-0.0001)
+	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
 	for y := min[1]; y <= max[1]; y++ {
 		for x := min[0]; x <= max[0]; x++ {
@@ -2078,18 +2077,18 @@ func (p *Player) checkBlockCollisions(w *world.World) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(w *world.World) bool {
-	aabb := p.AABB().Translate(p.Position())
+	box := p.BBox().Translate(p.Position())
 
-	b := aabb.Grow(1)
+	b := box.Grow(1)
 
 	min, max := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
 	for x := min[0]; x <= max[0]; x++ {
 		for z := min[2]; z <= max[2]; z++ {
 			for y := min[1]; y < max[1]; y++ {
 				pos := cube.Pos{x, y, z}
-				aabbList := w.Block(pos).Model().AABB(pos, w)
-				for _, bb := range aabbList {
-					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(aabb) {
+				boxList := w.Block(pos).Model().BBox(pos, w)
+				for _, bb := range boxList {
+					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(box) {
 						return true
 					}
 				}
@@ -2099,16 +2098,16 @@ func (p *Player) checkOnGround(w *world.World) bool {
 	return false
 }
 
-// AABB returns the axis aligned bounding box of the player.
-func (p *Player) AABB() physics.AABB {
+// BBox returns the axis aligned bounding box of the player.
+func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
 	case p.Sneaking():
-		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
+		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
 	case p.Swimming():
-		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
+		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
 	default:
-		return physics.NewAABB(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
+		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
 	}
 }
 

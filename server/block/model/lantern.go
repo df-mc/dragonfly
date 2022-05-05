@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -13,12 +12,12 @@ type Lantern struct {
 	Hanging bool
 }
 
-// AABB returns a physics.AABB attached to either the ceiling or to the ground.
-func (l Lantern) AABB(cube.Pos, *world.World) []physics.AABB {
+// BBox returns a physics.BBox attached to either the ceiling or to the ground.
+func (l Lantern) BBox(cube.Pos, *world.World) []cube.BBox {
 	if l.Hanging {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.3125, 0.125, 0.3125}, mgl64.Vec3{0.6875, 0.625, 0.6875})}
+		return []cube.BBox{cube.Box(mgl64.Vec3{0.3125, 0.125, 0.3125}, mgl64.Vec3{0.6875, 0.625, 0.6875})}
 	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.3125, 0, 0.3125}, mgl64.Vec3{0.6875, 0.5, 0.6875})}
+	return []cube.BBox{cube.Box(mgl64.Vec3{0.3125, 0, 0.3125}, mgl64.Vec3{0.6875, 0.5, 0.6875})}
 }
 
 // FaceSolid always returns false.

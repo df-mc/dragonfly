@@ -2,7 +2,7 @@ package entity
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -49,9 +49,9 @@ func (it *Item) EncodeEntity() string {
 	return "minecraft:item"
 }
 
-// AABB ...
-func (it *Item) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (it *Item) BBox() cube.BBox {
+	return cube.Box(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
 }
 
 // Item returns the item stack that the item entity holds.
@@ -98,13 +98,13 @@ func (it *Item) Tick(w *world.World, current int64) {
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby(w *world.World, pos mgl64.Vec3) {
-	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range w.EntitiesWithin(it.AABB().Translate(pos).Grow(2), nil) {
+	grown := it.BBox().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
+	for _, e := range w.EntitiesWithin(it.BBox().Translate(pos).Grow(2), nil) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
 		}
-		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
+		if e.BBox().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				// A collector was within range to pick up the entity.
 				it.collect(w, collector, pos)

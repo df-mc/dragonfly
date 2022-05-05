@@ -16,7 +16,7 @@ type entityMetadata map[uint32]any
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
 func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
-	bb := e.AABB()
+	bb := e.BBox()
 	m := entityMetadata{
 		dataKeyBoundingBoxWidth:  float32(bb.Width()),
 		dataKeyBoundingBoxHeight: float32(bb.Height()),

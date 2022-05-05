@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -190,7 +189,7 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 
 	// Finding entities in range.
 	r := 10 + (b.level * 10)
-	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
+	entitiesInRange := w.EntitiesWithin(cube.Box(
 		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
 		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
 	), nil)

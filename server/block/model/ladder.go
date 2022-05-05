@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -13,9 +12,9 @@ type Ladder struct {
 	Facing cube.Direction
 }
 
-// AABB returns one physics.AABB that depends on the facing direction of the Ladder.
-func (l Ladder) AABB(cube.Pos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(l.Facing.Face(), -0.8125)}
+// BBox returns one physics.BBox that depends on the facing direction of the Ladder.
+func (l Ladder) BBox(cube.Pos, *world.World) []cube.BBox {
+	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(l.Facing.Face(), -0.8125)}
 }
 
 // FaceSolid always returns false.

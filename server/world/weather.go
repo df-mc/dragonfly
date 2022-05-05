@@ -2,7 +2,6 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
@@ -190,7 +189,7 @@ func (w weather) lightningPosition(c ChunkPos) mgl64.Vec3 {
 	x, z := float64(c[0]<<4+(v&0xf)), float64(c[1]<<4+((v>>8)&0xf))
 
 	vec := w.adjustPositionToEntities(mgl64.Vec3{x, float64(w.w.HighestBlock(int(x), int(z)) + 1), z})
-	if pos := cube.PosFromVec3(vec); len(w.w.Block(pos).Model().AABB(pos, w.w)) != 0 {
+	if pos := cube.PosFromVec3(vec); len(w.w.Block(pos).Model().BBox(pos, w.w)) != 0 {
 		// If lightning is about to strike inside a block that is not fully transparent. In this case, move the
 		// lightning up by one block so that it strikes above the block.
 		return vec.Add(mgl64.Vec3{0, 1})
@@ -201,7 +200,7 @@ func (w weather) lightningPosition(c ChunkPos) mgl64.Vec3 {
 // adjustPositionToEntities adjusts the mgl64.Vec3 passed to the position of any entity found in the 3x3 column upwards
 // from the mgl64.Vec3. If multiple entities are found, the position of one of the entities is selected randomly.
 func (w weather) adjustPositionToEntities(vec mgl64.Vec3) mgl64.Vec3 {
-	ent := w.w.EntitiesWithin(physics.NewAABB(vec, vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
+	ent := w.w.EntitiesWithin(cube.Box(vec, vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
 
 	list := make([]mgl64.Vec3, 0, len(ent)/3)
 	for _, e := range ent {
