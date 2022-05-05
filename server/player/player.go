@@ -1383,7 +1383,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	}
 	p.SwingArm()
 
-	i, left := p.HeldItems()
+	i, _ := p.HeldItems()
 	living, ok := e.(entity.Living)
 	if !ok || living.AttackImmune() {
 		return
@@ -1404,7 +1404,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	}
 
 	n, vulnerable := living.Hurt(dmg, damage.SourceEntityAttack{Attacker: p})
-	i, left = p.HeldItems()
+	i, left := p.HeldItems()
 
 	p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
