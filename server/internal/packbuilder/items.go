@@ -1,4 +1,4 @@
-package pack_builder
+package packbuilder
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-// buildItems builds all of the item-related files for the resource pack. This includes textures, language
+// buildItems builds all the item-related files for the resource pack. This includes textures, language
 // entries and item atlas.
 func buildItems(dir string) (count int, lang []string) {
 	if err := os.Mkdir(filepath.Join(dir, "items"), os.ModePerm); err != nil {

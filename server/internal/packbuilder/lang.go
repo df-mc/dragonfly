@@ -1,4 +1,4 @@
-package pack_builder
+package packbuilder
 
 import (
 	"io/ioutil"
