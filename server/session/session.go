@@ -120,9 +120,9 @@ var sessionMu sync.Mutex
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
 
-// ErrSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
+// errSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
 // must therefore always be 1.
-var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
+var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
 
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
