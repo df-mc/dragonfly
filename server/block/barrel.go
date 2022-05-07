@@ -55,7 +55,7 @@ func (b Barrel) Inventory() *inventory.Inventory {
 }
 
 // WithName returns the barrel after applying a specific name to the block.
-func (b Barrel) WithName(a ...interface{}) world.Item {
+func (b Barrel) WithName(a ...any) world.Item {
 	b.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return b
 }
@@ -64,14 +64,14 @@ func (b Barrel) WithName(a ...interface{}) world.Item {
 func (b Barrel) open(w *world.World, pos cube.Pos) {
 	b.Open = true
 	w.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
-	w.SetBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 }
 
 // close closes the barrel, displaying the animation and playing a sound.
 func (b Barrel) close(w *world.World, pos cube.Pos) {
 	b.Open = false
 	w.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
-	w.SetBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 }
 
 // AddViewer adds a viewer to the barrel, so that it is updated whenever the inventory of the barrel is changed.
@@ -132,25 +132,25 @@ func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 }
 
 // DecodeNBT ...
-func (b Barrel) DecodeNBT(data map[string]interface{}) interface{} {
+func (b Barrel) DecodeNBT(data map[string]any) any {
 	facing := b.Facing
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
 	b.Facing = facing
-	b.CustomName = nbtconv.MapString(data, "CustomName")
-	nbtconv.InvFromNBT(b.inventory, nbtconv.MapSlice(data, "Items"))
+	b.CustomName = nbtconv.Map[string](data, "CustomName")
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Map[[]any](data, "Items"))
 	return b
 }
 
 // EncodeNBT ...
-func (b Barrel) EncodeNBT() map[string]interface{} {
+func (b Barrel) EncodeNBT() map[string]any {
 	if b.inventory == nil {
 		facing, customName := b.Facing, b.CustomName
 		//noinspection GoAssignmentToReceiver
 		b = NewBarrel()
 		b.Facing, b.CustomName = facing, customName
 	}
-	m := map[string]interface{}{
+	m := map[string]any{
 		"Items": nbtconv.InvToNBT(b.inventory),
 		"id":    "Barrel",
 	}
@@ -161,8 +161,8 @@ func (b Barrel) EncodeNBT() map[string]interface{} {
 }
 
 // EncodeBlock ...
-func (b Barrel) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:barrel", map[string]interface{}{"open_bit": boolByte(b.Open), "facing_direction": int32(b.Facing)}
+func (b Barrel) EncodeBlock() (string, map[string]any) {
+	return "minecraft:barrel", map[string]any{"open_bit": boolByte(b.Open), "facing_direction": int32(b.Facing)}
 }
 
 // EncodeItem ...

@@ -34,6 +34,6 @@ func (SoulSand) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (SoulSand) EncodeBlock() (string, map[string]interface{}) {
+func (SoulSand) EncodeBlock() (string, map[string]any) {
 	return "minecraft:soul_sand", nil
 }

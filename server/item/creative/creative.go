@@ -36,16 +36,16 @@ type creativeItemEntry struct {
 	Meta  int16  `nbt:"meta"`
 	NBT   string `nbt:"nbt"`
 	Block struct {
-		Name       string                 `nbt:"name"`
-		Properties map[string]interface{} `nbt:"states"`
-		Version    int32                  `nbt:"version"`
+		Name       string         `nbt:"name"`
+		Properties map[string]any `nbt:"states"`
+		Version    int32          `nbt:"version"`
 	} `nbt:"block"`
 }
 
 // init initialises the creative items, registering all creative items that have also been registered as
 // normal items and are present in vanilla.
 func init() {
-	var temp map[string]interface{}
+	var temp map[string]any
 
 	var m []creativeItemEntry
 	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {

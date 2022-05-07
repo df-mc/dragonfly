@@ -18,7 +18,7 @@ type Modal struct {
 // title passed is formatted following the fmt.Sprintln rules.
 // Default 'yes' and 'no' buttons may be passed by setting the two exported struct fields of the submittable
 // to YesButton() and NoButton() respectively.
-func NewModal(submittable ModalSubmittable, title ...interface{}) Modal {
+func NewModal(submittable ModalSubmittable, title ...any) Modal {
 	t := reflect.TypeOf(submittable)
 	if t.Kind() != reflect.Struct {
 		panic("submittable must be struct")
@@ -40,7 +40,7 @@ func NoButton() Button {
 
 // MarshalJSON ...
 func (m Modal) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "modal",
 		"title":   m.title,
 		"content": m.body,
@@ -51,7 +51,7 @@ func (m Modal) MarshalJSON() ([]byte, error) {
 
 // WithBody creates a copy of the Modal form and changes its body to the body passed, after which the new Modal
 // form is returned. The text is formatted following the rules of fmt.Sprintln.
-func (m Modal) WithBody(body ...interface{}) Modal {
+func (m Modal) WithBody(body ...any) Modal {
 	m.body = format(body)
 	return m
 }

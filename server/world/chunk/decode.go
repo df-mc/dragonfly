@@ -7,7 +7,7 @@ import (
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
-var StateToRuntimeID func(name string, properties map[string]interface{}) (runtimeID uint32, found bool)
+var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
 
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
@@ -104,10 +104,10 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		if ver == 9 {
 			uIndex, err := buf.ReadByte()
 			if err != nil {
-				return nil, fmt.Errorf("error reading subchunk index: %w", err)
+				return nil, fmt.Errorf("error reading sub-chunk index: %w", err)
 			}
-			// The index as written here isn't the actual index of the subchunk within the chunk. Rather, it is the Y
-			// value of the subchunk. This means that we need to translate it to an index.
+			// The index as written here isn't the actual index of the sub-chunk within the chunk. Rather, it is the Y
+			// value of the sub-chunk. This means that we need to translate it to an index.
 			*index = uint8(int8(uIndex) - int8(c.r[0]>>4))
 		}
 		sub.storages = make([]*PalettedStorage, storageCount)

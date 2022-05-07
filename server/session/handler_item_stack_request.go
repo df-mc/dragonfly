@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
@@ -49,7 +48,6 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 	defer s.inTransaction.Store(false)
 
 	for _, req := range pk.Requests {
-		h.currentRequest = req.RequestID
 		if err := h.handleRequest(req, s); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
@@ -61,6 +59,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 
 // handleRequest resolves a single item stack request from the client.
 func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session) (err error) {
+	h.currentRequest = req.RequestID
 	defer func() {
 		if err != nil {
 			s.log.Debugf("%v", err)
@@ -91,6 +90,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
+		case *protocol.MineBlockStackRequestAction:
+			err = h.handleMineBlock(a, s)
 		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
@@ -231,17 +232,14 @@ func (h *ItemStackRequestHandler) handleCraft(recipeNetworkID uint32, auto bool,
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
 // the event.Context was cancelled either before or after the call.
 func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
-	var err error
-	ctx.Stop(func() {
-		err = fmt.Errorf("action was cancelled")
-	})
-	ctx.Continue(func() {
-		f(ctx, slot, it)
-		ctx.Stop(func() {
-			err = fmt.Errorf("action was cancelled")
-		})
-	})
-	return err
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	f(ctx, slot, it)
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	return nil
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -296,8 +294,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	}
 
 	inv, _ := s.invByID(int32(a.Source.ContainerID))
-	ctx := event.C()
-	if err := call(ctx, int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
 		return err
 	}
 
@@ -317,7 +314,7 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no beacon container opened")
 	}
-	pos := s.openedPos.Load().(cube.Pos)
+	pos := s.openedPos.Load()
 	beacon, ok := s.c.World().Block(pos).(block.Beacon)
 	if !ok {
 		return fmt.Errorf("no beacon container opened")
@@ -344,13 +341,32 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if sOk {
 		beacon.Secondary = secondary.(effect.LastingType)
 	}
-	s.c.World().SetBlock(pos, beacon)
+	s.c.World().SetBlock(pos, beacon, nil)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
 	// could just not send it.
 	// We just ignore the next Destroy action and set the item to air here.
 	h.setItemInSlot(slot, item.NewStack(block.Air{}, 0), s)
 	h.ignoreDestroy = true
+	return nil
+}
+
+// handleMineBlock handles the action associated with a block being mined by the player. This seems to be a workaround
+// by Mojang to deal with the durability changes client-side.
+func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequestAction, s *Session) error {
+	slot := protocol.StackRequestSlotInfo{
+		ContainerID:    containerInventory,
+		Slot:           byte(a.HotbarSlot),
+		StackNetworkID: a.StackNetworkID,
+	}
+	if err := h.verifySlot(slot, s); err != nil {
+		return err
+	}
+
+	// Update the slots through ItemStackResponses, don't actually do anything special with this action.
+	i, _ := h.itemInSlot(slot, s)
+	h.setItemInSlot(slot, i, s)
+
 	return nil
 }
 
@@ -453,7 +469,6 @@ func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protoco
 			delete(h.responseChanges, requestID)
 		}
 	}
-
 	return nil
 }
 
@@ -489,10 +504,11 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	_ = inv.SetItem(sl, i)
 
 	respSlot := protocol.StackResponseSlotInfo{
-		Slot:           slot.Slot,
-		HotbarSlot:     slot.Slot,
-		Count:          byte(i.Count()),
-		StackNetworkID: item_id(i),
+		Slot:                 slot.Slot,
+		HotbarSlot:           slot.Slot,
+		Count:                byte(i.Count()),
+		StackNetworkID:       item_id(i),
+		DurabilityCorrection: int32(i.MaxDurability() - i.Durability()),
 	}
 
 	if h.changes[slot.ContainerID] == nil {

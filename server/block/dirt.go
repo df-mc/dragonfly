@@ -50,9 +50,9 @@ func (d Dirt) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d Dirt) EncodeBlock() (string, map[string]interface{}) {
+func (d Dirt) EncodeBlock() (string, map[string]any) {
 	if d.Coarse {
-		return "minecraft:dirt", map[string]interface{}{"dirt_type": "coarse"}
+		return "minecraft:dirt", map[string]any{"dirt_type": "coarse"}
 	}
-	return "minecraft:dirt", map[string]interface{}{"dirt_type": "normal"}
+	return "minecraft:dirt", map[string]any{"dirt_type": "normal"}
 }

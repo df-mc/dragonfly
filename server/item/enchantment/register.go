@@ -8,14 +8,14 @@ func init() {
 	item.RegisterEnchantment(2, FeatherFalling{})
 	item.RegisterEnchantment(3, BlastProtection{})
 	item.RegisterEnchantment(4, ProjectileProtection{})
-	item.RegisterEnchantment(5, Thorns{})
+	// TODO: (5) Thorns.
 	// TODO: (6) Respiration.
 	// TODO: (7) Depth Strider.
 	item.RegisterEnchantment(8, AquaAffinity{})
 	item.RegisterEnchantment(9, Sharpness{})
 	// TODO: (10) Smite. (Requires undead mobs)
 	// TODO: (11) Bane of Arthropods. (Requires arthropod mobs)
-	// TODO: (12) Knockback.
+	item.RegisterEnchantment(12, KnockBack{})
 	item.RegisterEnchantment(13, FireAspect{})
 	// TODO: (14) Looting.
 	item.RegisterEnchantment(15, Efficiency{})

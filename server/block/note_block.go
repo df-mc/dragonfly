@@ -35,14 +35,14 @@ func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 }
 
 // DecodeNBT ...
-func (n NoteBlock) DecodeNBT(data map[string]interface{}) interface{} {
-	n.Pitch = int(nbtconv.MapByte(data, "note"))
+func (n NoteBlock) DecodeNBT(data map[string]any) any {
+	n.Pitch = int(nbtconv.Map[byte](data, "note"))
 	return n
 }
 
 // EncodeNBT ...
-func (n NoteBlock) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"note": byte(n.Pitch)}
+func (n NoteBlock) EncodeNBT() map[string]any {
+	return map[string]any{"note": byte(n.Pitch)}
 }
 
 // Punch ...
@@ -60,7 +60,7 @@ func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, w)
-	w.SetBlock(pos, n)
+	w.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 	return true
 }
 
@@ -75,6 +75,6 @@ func (n NoteBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
+func (n NoteBlock) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:noteblock", nil
 }

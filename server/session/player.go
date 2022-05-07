@@ -3,8 +3,8 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -15,10 +15,10 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"go.uber.org/atomic"
 	"math"
 	"net"
 	"time"
@@ -51,16 +51,16 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
-	pos := s.openedPos.Load().(cube.Pos)
+	pos := s.openedPos.Load()
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}
 }
 
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
-func (s *Session) SendRespawn() {
+func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Position:        vec64To32(pos.Add(entityOffset(s.c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -125,21 +125,21 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, barrel := b.(block.Barrel); barrel {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, beacon := b.(block.Beacon); beacon {
 				return s.ui, true
 			}
@@ -234,6 +234,9 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
+	if s == Nop {
+		return
+	}
 	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
@@ -243,6 +246,10 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if !mode.HasCollision() {
 		flags |= packet.AdventureFlagNoClip
+		defer s.c.StartFlying()
+		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
+		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
+		s.ViewEntityTeleport(s.c, s.c.Position())
 	}
 	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
@@ -253,9 +260,6 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		flags |= packet.AdventureSettingsFlagsNoPvM
 	} else {
 		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
-	}
-	if !mode.Visible() {
-		flags |= packet.AdventureFlagMuted
 	}
 	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
@@ -406,7 +410,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:      s.Model,
 		PersonaSkin:       s.Persona,
 		CapeID:            uuid.New().String(),
-		FullSkinID:        uuid.New().String(),
+		FullID:            uuid.New().String(),
 		Animations:        animations,
 		Trusted:           true,
 	}
@@ -507,6 +511,36 @@ func (s *Session) SetHeldSlot(slot int) error {
 	return nil
 }
 
+// UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
+// matches an expected item stack.
+func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
+	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
+	// different place in the inventory.
+	if slot > 8 {
+		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
+		// Old slot was the same as new slot, so don't do anything.
+		return nil
+	}
+	// The user swapped changed held slots so stop using item right away.
+	s.c.ReleaseItem()
+
+	clientSideItem := expected
+	actual, _ := s.inv.Item(slot)
+
+	// The item the client claims to have must be identical to the one we have registered server-side.
+	if !clientSideItem.Equal(actual) {
+		// Only ever debug these as they are frequent and expected to happen whenever client and server get
+		// out of sync.
+		s.log.Debugf("failed processing packet from %v (%v): failed changing held slot: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
+	}
+	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+		viewer.ViewEntityItems(s.c)
+	}
+	return nil
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -514,10 +548,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID, ok = world.BlockRuntimeID(b)
-		if !ok {
-			panic("should never happen")
-		}
+		blockRuntimeID = world.BlockRuntimeID(b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -664,7 +695,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
 	s.Cape.Pix = sk.CapeData
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err = json.Unmarshal(sk.SkinGeometry, &m); err != nil {
 		return skin.Skin{}, fmt.Errorf("SkinGeometry was not a valid JSON string: %v", err)
 	}

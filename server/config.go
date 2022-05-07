@@ -46,10 +46,13 @@ type Config struct {
 		// player provider if it is enabled.
 		Folder string
 	}
-
 	Resources struct {
+		// AutoBuildPack is if the server should automatically generate a resource pack for custom features.
+		AutoBuildPack bool
 		// Folder controls the location where resource packs will be loaded from.
 		Folder string
+		// Required is a boolean to force the client to load the resource pack on join. If they do not accept, they'll have to leave the server.
+		Required bool
 	}
 }
 
@@ -67,6 +70,8 @@ func DefaultConfig() Config {
 	c.Players.MaximumChunkRadius = 32
 	c.Players.SaveData = true
 	c.Players.Folder = "players"
+	c.Resources.AutoBuildPack = true
 	c.Resources.Folder = "resources"
+	c.Resources.Required = false
 	return c
 }

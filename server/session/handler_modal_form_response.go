@@ -3,9 +3,9 @@ package session
 import (
 	"bytes"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"go.uber.org/atomic"
 	"sync"
 )
 

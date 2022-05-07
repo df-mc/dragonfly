@@ -17,6 +17,6 @@ func (t Tuff) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (t Tuff) EncodeBlock() (string, map[string]interface{}) {
+func (t Tuff) EncodeBlock() (string, map[string]any) {
 	return "minecraft:tuff", nil
 }

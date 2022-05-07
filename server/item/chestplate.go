@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,7 +8,7 @@ import (
 // the most defence of all armour items.
 type Chestplate struct {
 	// Tier is the tier of the chestplate.
-	Tier armour.Tier
+	Tier ArmourTier
 }
 
 // Use handles the using of a chestplate to auto-equip it in the designated armour slot.
@@ -26,16 +25,21 @@ func (c Chestplate) MaxCount() int {
 // DefencePoints ...
 func (c Chestplate) DefencePoints() float64 {
 	switch c.Tier {
-	case armour.TierLeather:
+	case ArmourTierLeather:
 		return 3
-	case armour.TierGold, armour.TierChain:
+	case ArmourTierGold, ArmourTierChain:
 		return 5
-	case armour.TierIron:
+	case ArmourTierIron:
 		return 6
-	case armour.TierDiamond, armour.TierNetherite:
+	case ArmourTierDiamond, ArmourTierNetherite:
 		return 8
 	}
 	panic("invalid chestplate tier")
+}
+
+// Toughness ...
+func (c Chestplate) Toughness() float64 {
+	return c.Tier.Toughness
 }
 
 // KnockBackResistance ...

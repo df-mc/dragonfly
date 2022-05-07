@@ -23,7 +23,7 @@ func (n NetherBricks) EncodeItem() (id string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NetherBricks) EncodeBlock() (name string, properties map[string]interface{}) {
+func (n NetherBricks) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + n.Type.String(), nil
 }
 

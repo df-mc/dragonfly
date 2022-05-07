@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
 // DiamondOre is a rare ore that generates underground.
@@ -16,8 +15,8 @@ type DiamondOre struct {
 
 // BreakInfo ...
 func (d DiamondOre) BreakInfo() BreakInfo {
-	i := newBreakInfo(d.Type.Hardness(), func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
+	i := newBreakInfo(d.Type.Hardness(), func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
 	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d))
 	i.XPDrops = XPDropRange{3, 7}
 	return i
@@ -29,6 +28,6 @@ func (d DiamondOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DiamondOre) EncodeBlock() (string, map[string]interface{}) {
+func (d DiamondOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + d.Type.Prefix() + "diamond_ore", nil
 }

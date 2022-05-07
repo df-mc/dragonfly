@@ -61,6 +61,27 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&e); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
+
+	if e.Meta > 0 && len(e.State) == 0 {
+		// For some reason, whenever Mojang converts a world prior to 1.13 to the latest format, they include an extra
+		// "val" field, containing the meta. The only problem with this is that they also clear the regular states field,
+		// which means we can't simply ignore them, but instead convert them to the new format ourselves, so we can fill
+		// in the gaps. Immaculate, Mojang.
+		conversion, ok := upgradeLegacyEntry(e.Name, e.Meta)
+		if !ok {
+			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", e.Name, e.Meta)
+		}
+
+		// The name already exists, so we only need to update the states field.
+		e.State = conversion.State
+	}
+
+	// As of 1.18.30, many common block state names have been renamed for consistency and the old names are now aliases.
+	// This function checks if the entry has an alias and if so, returns the updated entry.
+	if updatedEntry, ok := upgradeAliasEntry(e); ok {
+		e = updatedEntry
+	}
+
 	v, ok := StateToRuntimeID(e.Name, e.State)
 	if !ok {
 		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", e.Name, e.State)

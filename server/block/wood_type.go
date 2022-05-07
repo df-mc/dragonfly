@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // WoodType represents a type of wood of a block. Some blocks, such as log blocks, bark blocks, wooden planks and
 // others carry one of these types.
 type WoodType struct {
@@ -81,29 +79,6 @@ func (w wood) Name() string {
 		return "Warped Wood"
 	}
 	panic("unknown wood type")
-}
-
-// FromString ...
-func (w wood) FromString(s string) (interface{}, error) {
-	switch s {
-	case "oak":
-		return WoodType{wood(0)}, nil
-	case "spruce":
-		return WoodType{wood(1)}, nil
-	case "birch":
-		return WoodType{wood(2)}, nil
-	case "jungle":
-		return WoodType{wood(3)}, nil
-	case "acacia":
-		return WoodType{wood(4)}, nil
-	case "dark_oak":
-		return WoodType{wood(5)}, nil
-	case "crimson":
-		return WoodType{wood(6)}, nil
-	case "warped":
-		return WoodType{wood(7)}, nil
-	}
-	return nil, fmt.Errorf("unexpected wood type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'crimson' or 'warped'", s)
 }
 
 // String ...

@@ -23,7 +23,7 @@ type Runnable interface {
 	// Run runs the Command, using the arguments passed to the Command. The source is passed to the method,
 	// which is the source of the execution of the Command, and the output is passed, to which messages may be
 	// added which get sent to the source.
-	Run(source Source, output *Output)
+	Run(src Source, o *Output)
 }
 
 // Allower may be implemented by a type also implementing Runnable to limit the sources that may run the
@@ -31,7 +31,7 @@ type Runnable interface {
 type Allower interface {
 	// Allow checks if the Source passed is allowed to execute the command. True is returned if the Source is
 	// allowed to execute the command.
-	Allow(s Source) bool
+	Allow(src Source) bool
 }
 
 // Command is a wrapper around a Runnable. It provides additional identity and utility methods for the actual
@@ -159,7 +159,7 @@ func (cmd Command) Execute(args string, source Source) {
 // by calling Command.Params().
 type ParamInfo struct {
 	Name     string
-	Value    interface{}
+	Value    any
 	Optional bool
 	Suffix   string
 }
@@ -218,7 +218,7 @@ func (cmd Command) String() string {
 // executeRunnable executes a Runnable v, by parsing the args passed using the source and output obtained. If
 // parsing was not successful or the Runnable could not be run by this source, an error is returned, and the
 // leftover command line.
-func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
+func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
 		//lint:ignore ST1005 Error string is capitalised because it is shown to the player.
 		//goland:noinspection GoErrorStringFormat
@@ -237,7 +237,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		argFrags = record
 	}
 	parser := parser{}
-	arguments := &Line{args: argFrags, src: source}
+	arguments := &line{args: argFrags, src: source}
 
 	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
@@ -315,7 +315,7 @@ func verifySignature(command reflect.Value) error {
 
 // getTypeName returns a readable type name for the interface value passed. If none could be found, 'value'
 // is returned.
-func getTypeName(i interface{}) string {
+func getTypeName(i any) string {
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
 		return "int"

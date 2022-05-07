@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -11,9 +10,9 @@ import (
 // 1x1x1 collision box.
 type Solid struct{}
 
-// AABB returns a physics.AABB spanning a full block.
-func (Solid) AABB(cube.Pos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+// BBox returns a physics.BBox spanning a full block.
+func (Solid) BBox(cube.Pos, *world.World) []cube.BBox {
+	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
 }
 
 // FaceSolid always returns true.

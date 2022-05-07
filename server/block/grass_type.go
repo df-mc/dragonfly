@@ -1,9 +1,5 @@
 package block
 
-import (
-	"fmt"
-)
-
 // GrassType represents a grass plant, which can be placed on top of grass blocks.
 type GrassType struct {
 	grass
@@ -40,17 +36,6 @@ func (g grass) Name() string {
 		return "Fern"
 	}
 	panic("unknown grass type")
-}
-
-// FromString ...
-func (g grass) FromString(s string) (interface{}, error) {
-	switch s {
-	case "grass":
-		return NormalGrass(), nil
-	case "fern":
-		return Fern(), nil
-	}
-	return nil, fmt.Errorf("unexpected grass type '%v', expecting one of 'grass' or 'fern'", s)
 }
 
 // String ...

@@ -67,17 +67,17 @@ func (s SandstoneStairs) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SandstoneStairs) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s SandstoneStairs) EncodeBlock() (name string, properties map[string]any) {
 	if s.Smooth {
 		if s.Red {
-			return "minecraft:smooth_red_sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+			return "minecraft:smooth_red_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 		}
-		return "minecraft:smooth_sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+		return "minecraft:smooth_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	if s.Red {
-		return "minecraft:red_sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+		return "minecraft:red_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
-	return "minecraft:sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+	return "minecraft:sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 
 }
 

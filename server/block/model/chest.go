@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -11,9 +10,9 @@ import (
 // axes.
 type Chest struct{}
 
-// AABB returns a physics.AABB that is slightly smaller than a full block.
-func (Chest) AABB(cube.Pos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
+// BBox returns a physics.BBox that is slightly smaller than a full block.
+func (Chest) BBox(cube.Pos, *world.World) []cube.BBox {
+	return []cube.BBox{cube.Box(mgl64.Vec3{0.025, 0, 0.025}, mgl64.Vec3{0.975, 0.95, 0.975})}
 }
 
 // FaceSolid always returns false.

@@ -11,16 +11,16 @@ import (
 	"strings"
 )
 
-// Line represents a command line holding command arguments that were passed upon the execution of the
+// line represents a command line holding command arguments that were passed upon the execution of the
 // command. It is a convenience wrapper around a string slice.
-type Line struct {
+type line struct {
 	args []string
 	src  Source
 }
 
 // Next reads the next argument from the command line and returns it. If there were no more arguments to
 // consume, false is returned.
-func (line *Line) Next() (string, bool) {
+func (line *line) Next() (string, bool) {
 	v, ok := line.NextN(1)
 	if !ok {
 		return "", false
@@ -30,7 +30,7 @@ func (line *Line) Next() (string, bool) {
 
 // NextN reads the next N arguments from the command line and returns them. If there were not enough arguments
 // (n arguments), false is returned.
-func (line *Line) NextN(n int) ([]string, bool) {
+func (line *line) NextN(n int) ([]string, bool) {
 	if len(line.args) < n {
 		return nil, false
 	}
@@ -39,12 +39,12 @@ func (line *Line) NextN(n int) ([]string, bool) {
 }
 
 // RemoveNext consumes the next argument from the command line.
-func (line *Line) RemoveNext() {
+func (line *line) RemoveNext() {
 	line.RemoveN(1)
 }
 
 // RemoveN consumes the next N arguments from the command line.
-func (line *Line) RemoveN(n int) {
+func (line *line) RemoveN(n int) {
 	if len(line.args) < n {
 		line.args = nil
 		return
@@ -53,18 +53,18 @@ func (line *Line) RemoveN(n int) {
 }
 
 // Leftover takes the leftover arguments from the command line.
-func (line *Line) Leftover() []string {
+func (line *line) Leftover() []string {
 	v := line.args
 	line.args = nil
 	return v
 }
 
 // Len returns the leftover length of the arguments in the command line.
-func (line *Line) Len() int {
+func (line *line) Len() int {
 	return len(line.args)
 }
 
-// parser manages the parsing of a Line, turning the raw arguments into values which are then stored in the
+// parser manages the parsing of a line, turning the raw arguments into values which are then stored in the
 // struct fields.
 type parser struct {
 	currentField string
@@ -72,7 +72,7 @@ type parser struct {
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
 // parsing was not successful, an error is returned.
-func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source Source) (err error) {
+func (p parser) parseArgument(line *line, v reflect.Value, optional bool, source Source) (err error) {
 	i := v.Interface()
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
@@ -123,7 +123,7 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 var ErrInsufficientArgs = errors.New("not enough arguments for command")
 
 // int ...
-func (p parser) int(line *Line, v reflect.Value) error {
+func (p parser) int(line *line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -137,7 +137,7 @@ func (p parser) int(line *Line, v reflect.Value) error {
 }
 
 // uint ...
-func (p parser) uint(line *Line, v reflect.Value) error {
+func (p parser) uint(line *line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -151,7 +151,7 @@ func (p parser) uint(line *Line, v reflect.Value) error {
 }
 
 // float ...
-func (p parser) float(line *Line, v reflect.Value) error {
+func (p parser) float(line *line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -165,7 +165,7 @@ func (p parser) float(line *Line, v reflect.Value) error {
 }
 
 // string ...
-func (p parser) string(line *Line, v reflect.Value) error {
+func (p parser) string(line *line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -175,7 +175,7 @@ func (p parser) string(line *Line, v reflect.Value) error {
 }
 
 // bool ...
-func (p parser) bool(line *Line, v reflect.Value) error {
+func (p parser) bool(line *line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -189,7 +189,7 @@ func (p parser) bool(line *Line, v reflect.Value) error {
 }
 
 // enum ...
-func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error {
+func (p parser) enum(line *line, val reflect.Value, v Enum, source Source) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -208,7 +208,7 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 }
 
 // sub reads verifies a SubCommand against the next argument.
-func (p parser) sub(line *Line, v SubCommand) error {
+func (p parser) sub(line *line, v SubCommand) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
@@ -220,7 +220,7 @@ func (p parser) sub(line *Line, v SubCommand) error {
 }
 
 // vec3 ...
-func (p parser) vec3(line *Line, v reflect.Value) error {
+func (p parser) vec3(line *line, v reflect.Value) error {
 	if err := p.float(line, v.Index(0)); err != nil {
 		return err
 	}
@@ -233,13 +233,13 @@ func (p parser) vec3(line *Line, v reflect.Value) error {
 }
 
 // varargs ...
-func (p parser) varargs(line *Line, v reflect.Value) error {
+func (p parser) varargs(line *line, v reflect.Value) error {
 	v.SetString(strings.Join(line.Leftover(), " "))
 	return nil
 }
 
 // targets ...
-func (p parser) targets(line *Line, v reflect.Value) error {
+func (p parser) targets(line *line, v reflect.Value) error {
 	targets, err := p.parseTargets(line)
 	if err != nil {
 		return err
@@ -251,8 +251,8 @@ func (p parser) targets(line *Line, v reflect.Value) error {
 	return nil
 }
 
-// parseTargets parses one or more Targets from the Line passed.
-func (p parser) parseTargets(line *Line) ([]Target, error) {
+// parseTargets parses one or more Targets from the line passed.
+func (p parser) parseTargets(line *line) ([]Target, error) {
 	entities, players := targets(line.src)
 	first, ok := line.Next()
 	if !ok {
@@ -289,11 +289,11 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 	}
 }
 
-// parsePlayer parses one Player from the Line, reading more arguments if necessary to find a valid player
+// parsePlayer parses one Player from the line, reading more arguments if necessary to find a valid player
 // from the players Target list.
 func (p parser) parsePlayer(players []Target, name string) (Target, error) {
 	for _, p := range players {
-		if p.Name() == name {
+		if strings.EqualFold(p.Name(), name) {
 			// We found a match for this amount of arguments. Following arguments may still be a better
 			// match though (subset in the name, such as 'Hello' vs 'Hello World' as name), so keep going
 			// until we saturate the command line or pass 15 characters.

@@ -81,7 +81,7 @@ type spectator struct{}
 
 func (spectator) AllowsEditing() bool      { return false }
 func (spectator) AllowsTakingDamage() bool { return false }
-func (spectator) CreativeInventory() bool  { return true }
+func (spectator) CreativeInventory() bool  { return false }
 func (spectator) HasCollision() bool       { return false }
 func (spectator) AllowsFlying() bool       { return true }
 func (spectator) AllowsInteraction() bool  { return false }
