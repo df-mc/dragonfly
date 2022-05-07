@@ -218,7 +218,7 @@ func (cmd Command) String() string {
 // executeRunnable executes a Runnable v, by parsing the args passed using the source and output obtained. If
 // parsing was not successful or the Runnable could not be run by this source, an error is returned, and the
 // leftover command line.
-func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*line, error) {
+func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
 		//lint:ignore ST1005 Error string is capitalised because it is shown to the player.
 		//goland:noinspection GoErrorStringFormat
@@ -237,7 +237,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		argFrags = record
 	}
 	parser := parser{}
-	arguments := &line{args: argFrags, src: source}
+	arguments := &Line{args: argFrags, src: source}
 
 	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
