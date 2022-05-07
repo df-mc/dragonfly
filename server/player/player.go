@@ -2312,15 +2312,16 @@ func (p *Player) close(msg string) {
 	if p.Dead() && p.session() != nil {
 		p.Respawn()
 	}
+	p.h.Swap(NopHandler{}).HandleQuit()
+
 	if s := p.s.Swap(nil); s != nil {
 		s.Disconnect(msg)
 		s.CloseConnection()
-	} else {
-		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
-		// session will remove the player once ready.
-		p.World().RemoveEntity(p)
+		return
 	}
-	p.h.Swap(NopHandler{}).HandleQuit()
+	// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
+	// session will remove the player once ready.
+	p.World().RemoveEntity(p)
 }
 
 // load reads the player data from the provider. It uses the default values if the provider
