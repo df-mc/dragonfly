@@ -1613,7 +1613,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := w.EntitiesWithin(cube.Box(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
+	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside item entities is fine.
@@ -2103,11 +2103,11 @@ func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
 	case p.Sneaking():
-		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
+		return cube.Box(0.3*s, 0, -0.3*s, 0.3*s, 1.65*s, 0.3*s)
 	case p.Swimming():
-		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
+		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
-		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
+		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
 	}
 }
 

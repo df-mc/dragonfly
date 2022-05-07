@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Slab is the model of a slab-like block, which is either a half block or a full block, depending on if the
@@ -18,12 +17,12 @@ type Slab struct {
 // depending on the Double and Top fields.
 func (s Slab) BBox(cube.Pos, *world.World) []cube.BBox {
 	if s.Double {
-		return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+		return []cube.BBox{full}
 	}
 	if s.Top {
-		return []cube.BBox{cube.Box(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})}
+		return []cube.BBox{cube.Box(0, 0.5, 0, 1, 1, 1)}
 	}
-	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
+	return []cube.BBox{cube.Box(0, 0, 0, 1, 0.5, 1)}
 }
 
 // FaceSolid returns true if the Slab is double, or if the face is cube.FaceUp when the Top field is true, or if the

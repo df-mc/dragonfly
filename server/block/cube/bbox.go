@@ -10,9 +10,19 @@ type BBox struct {
 	min, max mgl64.Vec3
 }
 
-// Box creates a new axis aligned bounding box with the minimum and maximum coordinates provided.
-func Box(min, max mgl64.Vec3) BBox {
-	return BBox{min: min, max: max}
+// Box creates a new axis aligned bounding box with the minimum and maximum coordinates provided. The returned
+// box has minimum and maximum coordinates swapped if necessary so that it is well-formed.
+func Box(x0, y0, z0, x1, y1, z1 float64) BBox {
+	if x0 > x1 {
+		x0, x1 = x1, x0
+	}
+	if y0 > y1 {
+		y0, y1 = y1, y0
+	}
+	if z0 > z1 {
+		z0, z1 = z1, z0
+	}
+	return BBox{min: mgl64.Vec3{x0, y0, z0}, max: mgl64.Vec3{x1, y1, z1}}
 }
 
 // Grow grows the bounding box in all directions by x and returns the new bounding box.
@@ -111,7 +121,7 @@ func (box BBox) Stretch(a Axis, x float64) BBox {
 // Translate moves the entire BBox with the Vec3 given. The (minimum and maximum) x, y and z coordinates are
 // moved by those in the Vec3 passed.
 func (box BBox) Translate(vec mgl64.Vec3) BBox {
-	return Box(box.min.Add(vec), box.max.Add(vec))
+	return BBox{min: box.min.Add(vec), max: box.max.Add(vec)}
 }
 
 // IntersectsWith checks if the BBox intersects with another BBox, returning true if this is the case.

@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // FenceGate is a model used by fence gates. The model is completely zero-ed when the FenceGate is opened.
@@ -20,7 +19,7 @@ func (f FenceGate) BBox(cube.Pos, *world.World) []cube.BBox {
 	if f.Open {
 		return nil
 	}
-	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1.5, 1}).Stretch(f.Facing.Face().Axis(), -0.375)}
+	return []cube.BBox{cube.Box(0, 0, 0, 1, 1.5, 1).Stretch(f.Facing.Face().Axis(), -0.375)}
 }
 
 // FaceSolid always returns false.

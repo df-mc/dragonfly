@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Leaves is a model for leaves-like blocks. These blocks have a full collision box, but none of their faces
@@ -12,7 +11,7 @@ type Leaves struct{}
 
 // BBox returns a physics.BBox that spans a full block.
 func (Leaves) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+	return []cube.BBox{full}
 }
 
 // FaceSolid always returns false.

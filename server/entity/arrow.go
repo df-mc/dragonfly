@@ -143,7 +143,7 @@ func (a *Arrow) VanishOnPickup() {
 
 // BBox ...
 func (a *Arrow) BBox() cube.BBox {
-	return cube.Box(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
