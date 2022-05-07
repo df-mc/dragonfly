@@ -130,21 +130,21 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
 		// First we move the entity BBox on the Y axis.
 		for _, blockBBox := range blocks {
-			deltaY = entityBBox.CalculateYOffset(blockBBox, deltaY)
+			deltaY = entityBBox.YOffset(blockBBox, deltaY)
 		}
 		entityBBox = entityBBox.Translate(mgl64.Vec3{0, deltaY})
 	}
 	if !mgl64.FloatEqualThreshold(deltaX, 0, epsilon) {
 		// Then on the X axis.
 		for _, blockBBox := range blocks {
-			deltaX = entityBBox.CalculateXOffset(blockBBox, deltaX)
+			deltaX = entityBBox.XOffset(blockBBox, deltaX)
 		}
 		entityBBox = entityBBox.Translate(mgl64.Vec3{deltaX})
 	}
 	if !mgl64.FloatEqualThreshold(deltaZ, 0, epsilon) {
 		// And finally on the Z axis.
 		for _, blockBBox := range blocks {
-			deltaZ = entityBBox.CalculateZOffset(blockBBox, deltaZ)
+			deltaZ = entityBBox.ZOffset(blockBBox, deltaZ)
 		}
 	}
 	if !mgl64.FloatEqual(vel[1], 0) {

@@ -180,10 +180,10 @@ func (box BBox) Vec3WithinXY(vec mgl64.Vec3) bool {
 	return vec[1] >= box.min[1] && vec[1] <= box.max[1]
 }
 
-// CalculateXOffset calculates the offset on the X axis between two bounding boxes, returning a delta always
+// XOffset calculates the offset on the X axis between two bounding boxes, returning a delta always
 // smaller than or equal to deltaX if deltaX is bigger than 0, or always bigger than or equal to deltaX if it
 // is smaller than 0.
-func (box BBox) CalculateXOffset(nearby BBox, deltaX float64) float64 {
+func (box BBox) XOffset(nearby BBox, deltaX float64) float64 {
 	// Bail out if not within the same Y/Z plane.
 	if box.max[1] <= nearby.min[1] || box.min[1] >= nearby.max[1] {
 		return deltaX
@@ -206,10 +206,10 @@ func (box BBox) CalculateXOffset(nearby BBox, deltaX float64) float64 {
 	return deltaX
 }
 
-// CalculateYOffset calculates the offset on the Y axis between two bounding boxes, returning a delta always
+// YOffset calculates the offset on the Y axis between two bounding boxes, returning a delta always
 // smaller than or equal to deltaY if deltaY is bigger than 0, or always bigger than or equal to deltaY if it
 // is smaller than 0.
-func (box BBox) CalculateYOffset(nearby BBox, deltaY float64) float64 {
+func (box BBox) YOffset(nearby BBox, deltaY float64) float64 {
 	// Bail out if not within the same X/Z plane.
 	if box.max[0] <= nearby.min[0] || box.min[0] >= nearby.max[0] {
 		return deltaY
@@ -232,10 +232,10 @@ func (box BBox) CalculateYOffset(nearby BBox, deltaY float64) float64 {
 	return deltaY
 }
 
-// CalculateZOffset calculates the offset on the Z axis between two bounding boxes, returning a delta always
+// ZOffset calculates the offset on the Z axis between two bounding boxes, returning a delta always
 // smaller than or equal to deltaZ if deltaZ is bigger than 0, or always bigger than or equal to deltaZ if it
 // is smaller than 0.
-func (box BBox) CalculateZOffset(nearby BBox, deltaZ float64) float64 {
+func (box BBox) ZOffset(nearby BBox, deltaZ float64) float64 {
 	// Bail out if not within the same X/Y plane.
 	if box.max[0] <= nearby.min[0] || box.min[0] >= nearby.max[0] {
 		return deltaZ
