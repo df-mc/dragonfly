@@ -434,7 +434,9 @@ func (s *Session) initPlayerList() {
 		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
 		// currently open to the player list of the new session.
 		session.addToPlayerList(s)
-		s.addToPlayerList(session)
+		if s != session {
+			s.addToPlayerList(session)
+		}
 	}
 	sessionMu.Unlock()
 }
