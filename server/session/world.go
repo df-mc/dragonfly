@@ -706,8 +706,16 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	case entity.EatAction:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
-
-			rid, meta, _ := world.ItemRuntimeID(held.Item())
+			it := held.Item()
+			if held.Empty() {
+				// This can happen sometimes if the user switches between items very quickly, so just ignore the action.
+				return
+			}
+			if _, ok := it.(item.Consumable); !ok {
+				// Not consumable, refer to the comment above.
+				return
+			}
+			rid, meta, _ := world.ItemRuntimeID(it)
 			s.writePacket(&packet.ActorEvent{
 				EntityRuntimeID: s.entityRuntimeID(e),
 				EventType:       packet.ActorEventFeed,
