@@ -55,7 +55,7 @@ type Player struct {
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
 	s atomic.Value[*session.Session]
-	// h holds the current handler of the player. It may be changed at any time by calling the Start method.
+	// h holds the current handler of the player. It may be changed at any time by calling the Handle method.
 	h atomic.Value[Handler]
 
 	inv, offHand *inventory.Inventory

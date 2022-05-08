@@ -127,7 +127,7 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
-// Session.Start().
+// Session.Spawn().
 func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
@@ -152,20 +152,16 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
+		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
-	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(cube.Pos{})
-	s.currentScoreboard.Store("")
-	s.currentLines.Store([]string{})
 
 	s.registerHandlers()
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
-// the session in the world.
+// Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
+func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
@@ -200,8 +196,16 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+}
 
+// Start makes the session start handling incoming packets from the client.
+func (s *Session) Start() {
 	go s.handlePackets()
+}
+
+// Controllable returns the Controllable entity that the Session controls.
+func (s *Session) Controllable() Controllable {
+	return s.c
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
