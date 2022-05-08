@@ -362,13 +362,17 @@ func (server *Server) Listen(l Listener) {
 				server.wg.Done()
 				return
 			}
-			if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-				_ = c.Close()
-				continue
-			}
+
 			wg.Add(1)
-			go server.finaliseConn(ctx, c, l, wg)
+			go func() {
+				defer wg.Done()
+				if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
+					_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
+					_ = c.Close()
+					return
+				}
+				server.finaliseConn(ctx, c, l)
+			}()
 		}
 	}()
 }
@@ -441,9 +445,7 @@ func (server *Server) wait() {
 }
 
 // finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
-func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := server.defaultGameData()
 
