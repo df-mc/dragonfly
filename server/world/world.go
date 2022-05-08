@@ -677,9 +677,7 @@ func (w *World) AddEntity(e Entity) {
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 
-	worldsMu.Lock()
-	entityWorlds[e] = w
-	worldsMu.Unlock()
+	add(e, w)
 
 	chunkPos := chunkPosFromVec3(e.Position())
 	w.entityMu.Lock()
@@ -697,6 +695,13 @@ func (w *World) AddEntity(e Entity) {
 	}
 
 	w.Handler().HandleEntitySpawn(e)
+}
+
+// add maps an Entity to a World in the entityWorlds map.
+func add(e Entity, w *World) {
+	worldsMu.Lock()
+	entityWorlds[e] = w
+	worldsMu.Unlock()
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity

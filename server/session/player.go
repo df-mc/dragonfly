@@ -651,3 +651,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
+
+//go:linkname world_add github.com/df-mc/dragonfly/server/world.add
+//noinspection ALL
+func world_add(e world.Entity, w *world.World)

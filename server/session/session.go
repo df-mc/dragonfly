@@ -179,7 +179,7 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	s.initPlayerList()
 
-	w.AddEntity(c)
+	world_add(c, w)
 	s.c.SetGameMode(gm)
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
@@ -200,6 +200,7 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 
 // Start makes the session start handling incoming packets from the client.
 func (s *Session) Start() {
+	s.c.World().AddEntity(s.c)
 	go s.handlePackets()
 }
 
