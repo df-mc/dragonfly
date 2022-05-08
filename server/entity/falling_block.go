@@ -41,7 +41,7 @@ func (f *FallingBlock) EncodeEntity() string {
 
 // BBox ...
 func (f *FallingBlock) BBox() cube.BBox {
-	return cube.Box(mgl64.Vec3{-0.49, 0, -0.49}, mgl64.Vec3{0.49, 0.98, 0.49})
+	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }
 
 // Block ...

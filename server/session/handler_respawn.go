@@ -13,7 +13,7 @@ func (*RespawnHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.Respawn)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID
+		return errSelfRuntimeID
 	}
 	if pk.State != packet.RespawnStateClientReadyToSpawn {
 		return fmt.Errorf("respawn state must always be %v, but got %v", packet.RespawnStateClientReadyToSpawn, pk.State)

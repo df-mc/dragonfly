@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // CocoaBean is a model used by cocoa bean blocks.
@@ -17,7 +16,7 @@ type CocoaBean struct {
 
 // BBox returns a single physics.BBox whose size depends on the age of the CocoaBean.
 func (c CocoaBean) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).
+	return []cube.BBox{full.
 		Stretch(c.Facing.RotateRight().Face().Axis(), -(6-float64(c.Age))/16).
 		ExtendTowards(cube.FaceDown, -0.25).
 		ExtendTowards(cube.FaceUp, -((7-float64(c.Age)*2)/16)).

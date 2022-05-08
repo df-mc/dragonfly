@@ -44,7 +44,7 @@ func (li *Lightning) World() *world.World {
 
 // BBox ...
 func (Lightning) BBox() cube.BBox {
-	return cube.Box(mgl64.Vec3{}, mgl64.Vec3{})
+	return cube.Box(0, 0, 0, 0, 0, 0)
 }
 
 // Close closes the lighting.

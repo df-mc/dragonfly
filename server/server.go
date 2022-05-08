@@ -11,8 +11,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
-	"github.com/df-mc/dragonfly/server/internal/pack_builder"
+	"github.com/df-mc/dragonfly/server/internal/iteminternal"
+	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
@@ -384,7 +384,7 @@ func (server *Server) startListening() error {
 	texturePacksRequired := server.c.Resources.Required
 	server.makeItemComponents()
 	if server.c.Resources.AutoBuildPack {
-		if pack, ok := pack_builder.BuildResourcePack(); ok {
+		if pack, ok := packbuilder.BuildResourcePack(); ok {
 			server.resources = append(server.resources, pack)
 			texturePacksRequired = true
 		}
@@ -415,7 +415,7 @@ func (server *Server) makeItemComponents() {
 	server.itemComponents = make(map[string]map[string]any)
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
-		if data, ok := item_internal.Components(it); ok {
+		if data, ok := iteminternal.Components(it); ok {
 			server.itemComponents[name] = data
 		}
 	}

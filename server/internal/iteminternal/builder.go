@@ -1,4 +1,4 @@
-package item_internal
+package iteminternal
 
 import (
 	"github.com/df-mc/dragonfly/server/item/category"

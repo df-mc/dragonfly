@@ -1,4 +1,4 @@
-package pack_builder
+package packbuilder
 
 import (
 	"github.com/rogpeppe/go-internal/dirhash"

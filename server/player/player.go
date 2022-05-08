@@ -1613,7 +1613,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := w.EntitiesWithin(cube.Box(mgl64.Vec3{-3, -3, -3}, mgl64.Vec3{3, 3, 3}).Translate(pos.Vec3()), nil)
+	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		if _, ok := e.(*entity.Item); ok {
 			// Placing blocks inside item entities is fine.
@@ -2103,11 +2103,11 @@ func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
 	case p.Sneaking():
-		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.65 * s, 0.3 * s})
+		return cube.Box(0.3*s, 0, -0.3*s, 0.3*s, 1.65*s, 0.3*s)
 	case p.Swimming():
-		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 0.6 * s, 0.3 * s})
+		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
-		return cube.Box(mgl64.Vec3{-0.3 * s, 0, -0.3 * s}, mgl64.Vec3{0.3 * s, 1.8 * s, 0.3 * s})
+		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
 	}
 }
 
@@ -2312,15 +2312,16 @@ func (p *Player) close(msg string) {
 	if p.Dead() && p.session() != nil {
 		p.Respawn()
 	}
+	p.h.Swap(NopHandler{}).HandleQuit()
+
 	if s := p.s.Swap(nil); s != nil {
 		s.Disconnect(msg)
 		s.CloseConnection()
-	} else {
-		// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
-		// session will remove the player once ready.
-		p.World().RemoveEntity(p)
+		return
 	}
-	p.h.Swap(NopHandler{}).HandleQuit()
+	// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
+	// session will remove the player once ready.
+	p.World().RemoveEntity(p)
 }
 
 // load reads the player data from the provider. It uses the default values if the provider

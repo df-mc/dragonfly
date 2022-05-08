@@ -2,7 +2,6 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // BlockModel represents the model of a block. These models specify the ways a block can be collided with and
@@ -20,7 +19,7 @@ type unknownModel struct{}
 
 // BBox ...
 func (u unknownModel) BBox(cube.Pos, *World) []cube.BBox {
-	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
+	return []cube.BBox{cube.Box(0, 0, 0, 1, 1, 1)}
 }
 
 // FaceSolid ...

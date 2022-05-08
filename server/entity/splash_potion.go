@@ -59,7 +59,7 @@ func (s *SplashPotion) EncodeEntity() string {
 
 // BBox ...
 func (s *SplashPotion) BBox() cube.BBox {
-	return cube.Box(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
