@@ -733,7 +733,6 @@ func (w *World) RemoveEntity(e Entity) {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		return
 	}
-	c.Lock()
 	c.entities = sliceutil.DeleteVal(c.entities, e)
 	viewers := slices.Clone(c.v)
 	c.Unlock()
@@ -765,7 +764,6 @@ func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entit
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			c.Lock()
 			entities := slices.Clone(c.entities)
 			c.Unlock()
 
@@ -1016,7 +1014,6 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	if !ok {
 		return nil
 	}
-	c.Lock()
 	defer c.Unlock()
 	return slices.Clone(c.v)
 }
@@ -1132,7 +1129,6 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 	if !ok {
 		return
 	}
-	c.Lock()
 	if i := slices.Index(c.l, loader); i != -1 {
 		c.v = slices.Delete(c.v, i, i+1)
 		c.l = slices.Delete(c.l, i, i+1)
@@ -1166,6 +1162,9 @@ func (w *World) Handler() Handler {
 func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
 	w.chunkMu.Lock()
 	c, ok := w.chunks[pos]
+	if ok {
+		c.Lock()
+	}
 	w.chunkMu.Unlock()
 	return c, ok
 }
