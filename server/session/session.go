@@ -336,11 +336,11 @@ func (s *Session) background() {
 func (s *Session) sendChunks() {
 	const maxChunkTransactions = 8
 
-	s.blobMu.Lock()
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
 		s.handleWorldSwitch(w)
 	}
 
+	s.blobMu.Lock()
 	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 	s.blobMu.Unlock()
 	if toLoad > 4 {
@@ -352,6 +352,7 @@ func (s *Session) sendChunks() {
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
+		s.blobMu.Lock()
 		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
 		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
 		for h, blob := range s.blobs {
@@ -361,6 +362,7 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
+		s.blobMu.Unlock()
 	}
 
 	if w.Dimension() != s.chunkLoader.World().Dimension() {

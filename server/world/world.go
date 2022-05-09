@@ -1162,10 +1162,10 @@ func (w *World) Handler() Handler {
 func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
 	w.chunkMu.Lock()
 	c, ok := w.chunks[pos]
+	w.chunkMu.Unlock()
 	if ok {
 		c.Lock()
 	}
-	w.chunkMu.Unlock()
 	return c, ok
 }
 
