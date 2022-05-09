@@ -2102,8 +2102,7 @@ func (p *Player) checkOnGround(w *world.World) bool {
 func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
-	case p.Sneaking():
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.65*s, 0.3*s)
+	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
 	case p.Swimming():
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
