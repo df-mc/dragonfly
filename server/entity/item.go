@@ -51,7 +51,7 @@ func (it *Item) EncodeEntity() string {
 
 // BBox ...
 func (it *Item) BBox() cube.BBox {
-	return cube.Box(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Item returns the item stack that the item entity holds.

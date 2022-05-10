@@ -200,7 +200,8 @@ func (w weather) lightningPosition(c ChunkPos) mgl64.Vec3 {
 // adjustPositionToEntities adjusts the mgl64.Vec3 passed to the position of any entity found in the 3x3 column upwards
 // from the mgl64.Vec3. If multiple entities are found, the position of one of the entities is selected randomly.
 func (w weather) adjustPositionToEntities(vec mgl64.Vec3) mgl64.Vec3 {
-	ent := w.w.EntitiesWithin(cube.Box(vec, vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
+	max := vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})
+	ent := w.w.EntitiesWithin(cube.Box(vec[0], vec[1], vec[2], max[0], max[1], max[2]).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
 
 	list := make([]mgl64.Vec3, 0, len(ent)/3)
 	for _, e := range ent {

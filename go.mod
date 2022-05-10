@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/rogpeppe/go-internal v1.3.0
-	github.com/sandertv/gophertunnel v1.19.10
+	github.com/sandertv/gophertunnel v1.19.13
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/exp v0.0.0-20220328175248-053ad81199eb
 	golang.org/x/text v0.3.7
@@ -22,7 +22,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
-	github.com/sandertv/go-raknet v1.10.6 // indirect
+	github.com/sandertv/go-raknet v1.10.9 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/image v0.0.0-20220321031419-a8550c1d254a // indirect

@@ -677,9 +677,7 @@ func (w *World) AddEntity(e Entity) {
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 
-	worldsMu.Lock()
-	entityWorlds[e] = w
-	worldsMu.Unlock()
+	add(e, w)
 
 	chunkPos := chunkPosFromVec3(e.Position())
 	w.entityMu.Lock()
@@ -697,6 +695,13 @@ func (w *World) AddEntity(e Entity) {
 	}
 
 	w.Handler().HandleEntitySpawn(e)
+}
+
+// add maps an Entity to a World in the entityWorlds map.
+func add(e Entity, w *World) {
+	worldsMu.Lock()
+	entityWorlds[e] = w
+	worldsMu.Unlock()
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -728,7 +733,6 @@ func (w *World) RemoveEntity(e Entity) {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		return
 	}
-	c.Lock()
 	c.entities = sliceutil.DeleteVal(c.entities, e)
 	viewers := slices.Clone(c.v)
 	c.Unlock()
@@ -760,7 +764,6 @@ func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entit
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			c.Lock()
 			entities := slices.Clone(c.entities)
 			c.Unlock()
 
@@ -1011,7 +1014,6 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	if !ok {
 		return nil
 	}
-	c.Lock()
 	defer c.Unlock()
 	return slices.Clone(c.v)
 }
@@ -1127,7 +1129,6 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 	if !ok {
 		return
 	}
-	c.Lock()
 	if i := slices.Index(c.l, loader); i != -1 {
 		c.v = slices.Delete(c.v, i, i+1)
 		c.l = slices.Delete(c.l, i, i+1)
@@ -1162,6 +1163,9 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
 	w.chunkMu.Lock()
 	c, ok := w.chunks[pos]
 	w.chunkMu.Unlock()
+	if ok {
+		c.Lock()
+	}
 	return c, ok
 }
 

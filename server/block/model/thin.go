@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Thin is a model for thin, partial blocks such as a glass pane or an iron bar. It changes its bounding box depending
@@ -16,7 +15,7 @@ func (t Thin) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 	const offset = 0.4375
 
 	boxes := make([]cube.BBox, 0, 5)
-	mainBox := cube.Box(mgl64.Vec3{offset, 0, offset}, mgl64.Vec3{1 - offset, 1, 1 - offset})
+	mainBox := cube.Box(offset, 0, offset, 1-offset, 1, 1-offset)
 
 	for _, f := range cube.HorizontalFaces() {
 		pos := pos.Side(f)

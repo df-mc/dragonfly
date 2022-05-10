@@ -10,7 +10,7 @@ func (a AdventureSettingsHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.AdventureSettings)
 
 	if pk.PlayerUniqueID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID
+		return errSelfRuntimeID
 	}
 
 	mode := s.c.GameMode()

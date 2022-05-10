@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Fence is a model used by fences of any type. It can attach to blocks with solid faces and other fences of the same
@@ -19,7 +18,7 @@ func (f Fence) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 	const offset = 0.375
 
 	boxes := make([]cube.BBox, 0, 5)
-	mainBox := cube.Box(mgl64.Vec3{offset, 0, offset}, mgl64.Vec3{1 - offset, 1.5, 1 - offset})
+	mainBox := cube.Box(offset, 0, offset, 1-offset, 1.5, 1-offset)
 
 	for i := cube.Face(2); i < 6; i++ {
 		pos := pos.Side(i)

@@ -5,14 +5,13 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
-	"github.com/df-mc/dragonfly/server/internal/item_internal"
-	"github.com/df-mc/dragonfly/server/internal/pack_builder"
+	"github.com/df-mc/dragonfly/server/internal/iteminternal"
+	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
@@ -68,7 +67,7 @@ type Server struct {
 
 	joinMessage, quitMessage atomic.Value[string]
 
-	players     chan *player.Player
+	incoming    chan *session.Session
 	playerMutex sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
@@ -103,7 +102,7 @@ func New(c *Config, log internal.Logger) *Server {
 	s := &Server{
 		c:              *c,
 		log:            log,
-		players:        make(chan *player.Player),
+		incoming:       make(chan *session.Session),
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewValue(c.Server.Name),
 		playerProvider: *atomic.NewValue[player.Provider](player.NopProvider{}),
@@ -136,18 +135,31 @@ func New(c *Config, log internal.Logger) *Server {
 	return s
 }
 
-// Accept accepts an incoming player into the server. It blocks until a player connects to the server.
-// Accept returns an error if the Server is closed using a call to Close.
-func (server *Server) Accept() (*player.Player, error) {
-	p, ok := <-server.players
+// HandleFunc is a function that may be passed to Server.Accept(). It can be used to prepare the session of a
+// player before it can do anything.
+type HandleFunc func(p *player.Player)
+
+// Accept accepts an incoming player into the server. It blocks until a player connects to the server. A HandleFunc may
+// be passed which is run immediately before a *player.Player is accepted to the Server. This function may be used to
+// add a player.Handler to the player and prepare its session. The function may be nil if player joining does not need
+// to be handled.
+// Accept returns false if the Server is closed using a call to Close.
+func (server *Server) Accept(f HandleFunc) bool {
+	s, ok := <-server.incoming
 	if !ok {
-		return nil, errors.New("server closed")
+		return false
 	}
+	p := s.Controllable().(*player.Player)
+	if f != nil {
+		f(p)
+	}
+
 	server.playerMutex.Lock()
 	server.p[p.UUID()] = p
 	server.playerMutex.Unlock()
 
-	return p, nil
+	s.Start()
+	return true
 }
 
 // World returns the overworld of the server. Players will be spawned in this world and this world will be read
@@ -350,13 +362,17 @@ func (server *Server) Listen(l Listener) {
 				server.wg.Done()
 				return
 			}
-			if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-				_ = c.Close()
-				continue
-			}
+
 			wg.Add(1)
-			go server.finaliseConn(ctx, c, l, wg)
+			go func() {
+				defer wg.Done()
+				if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
+					_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
+					_ = c.Close()
+					return
+				}
+				server.finaliseConn(ctx, c, l)
+			}()
 		}
 	}()
 }
@@ -384,7 +400,7 @@ func (server *Server) startListening() error {
 	texturePacksRequired := server.c.Resources.Required
 	server.makeItemComponents()
 	if server.c.Resources.AutoBuildPack {
-		if pack, ok := pack_builder.BuildResourcePack(); ok {
+		if pack, ok := packbuilder.BuildResourcePack(); ok {
 			server.resources = append(server.resources, pack)
 			texturePacksRequired = true
 		}
@@ -415,7 +431,7 @@ func (server *Server) makeItemComponents() {
 	server.itemComponents = make(map[string]map[string]any)
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
-		if data, ok := item_internal.Components(it); ok {
+		if data, ok := iteminternal.Components(it); ok {
 			server.itemComponents[name] = data
 		}
 	}
@@ -425,13 +441,11 @@ func (server *Server) makeItemComponents() {
 // once that happens.
 func (server *Server) wait() {
 	server.wg.Wait()
-	close(server.players)
+	close(server.incoming)
 }
 
 // finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
-func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := server.defaultGameData()
 
@@ -461,7 +475,7 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
-	server.players <- server.createPlayer(id, conn, playerData)
+	server.incoming <- server.createPlayer(id, conn, playerData)
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It may later be modified if the player was
@@ -530,7 +544,7 @@ func (server *Server) handleSessionClose(c session.Controllable) {
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *player.Player {
+func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *session.Session {
 	w, gm, pos := server.world, server.world.DefaultGameMode(), server.world.Spawn().Vec3Middle()
 	if data != nil {
 		w, gm, pos = server.dimension(data.Dimension), data.GameMode, data.Position
@@ -538,9 +552,9 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, pos, data)
 
-	s.Start(p, w, gm, server.handleSessionClose)
+	s.Spawn(p, w, gm, server.handleSessionClose)
 	server.pwg.Add(1)
-	return p
+	return s
 }
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.

@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Ladder is the model for a ladder block.
@@ -14,7 +13,7 @@ type Ladder struct {
 
 // BBox returns one physics.BBox that depends on the facing direction of the Ladder.
 func (l Ladder) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(l.Facing.Face(), -0.8125)}
+	return []cube.BBox{full.ExtendTowards(l.Facing.Face(), -0.8125)}
 }
 
 // FaceSolid always returns false.

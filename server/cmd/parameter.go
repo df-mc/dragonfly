@@ -5,9 +5,9 @@ import "reflect"
 // Parameter is an interface for a generic parameters. Users may have types as command parameters that
 // implement this parameter.
 type Parameter interface {
-	// Parse takes an arbitrary amount of arguments from the command line passed and parses it, so that it can
-	// store it to value v. If the arguments cannot be parsed from the line, an error should be returned.
-	Parse(line *line, v reflect.Value) error
+	// Parse takes an arbitrary amount of arguments from the command Line passed and parses it, so that it can
+	// store it to value v. If the arguments cannot be parsed from the Line, an error should be returned.
+	Parse(line *Line, v reflect.Value) error
 	// Type returns the type of the parameter. It will show up in the usage of the command, and, if one of the
 	// known type names, will also show up client-side.
 	Type() string

@@ -105,6 +105,13 @@ type Glinted interface {
 	Glinted() bool
 }
 
+// HandEquipped represents an item that can be 'hand equipped'. This means the item will show up in third person like
+// a tool, sword or stick would, giving them a different orientation in the hand and making them slightly bigger.
+type HandEquipped interface {
+	// HandEquipped returns whether the item is hand equipped.
+	HandEquipped() bool
+}
+
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {

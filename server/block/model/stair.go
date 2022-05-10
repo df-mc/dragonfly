@@ -19,32 +19,32 @@ type Stair struct {
 // BBox returns a slice of physics.BBox depending on if the Stair is upside down and which direction it is facing.
 // Additionally, these BBoxs depend on the Stair blocks surrounding this one, which can influence the model.
 func (s Stair) BBox(pos cube.Pos, w *world.World) []cube.BBox {
-	b := []cube.BBox{cube.Box(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
+	b := []cube.BBox{cube.Box(0, 0, 0, 1, 0.5, 1)}
 	if s.UpsideDown {
-		b[0] = cube.Box(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})
+		b[0] = cube.Box(0, 0.5, 0, 1, 1, 1)
 	}
 	t := s.cornerType(pos, w)
 
 	face, oppositeFace := s.Facing.Face(), s.Facing.Opposite().Face()
 	if t == noCorner || t == cornerRightInner || t == cornerLeftInner {
-		b = append(b, cube.Box(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
+		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
 			ExtendTowards(face, 0.5).
 			Stretch(s.Facing.RotateRight().Face().Axis(), 0.5))
 	}
 	if t == cornerRightOuter {
-		b = append(b, cube.Box(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
+		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
 			ExtendTowards(face, 0.5).
 			ExtendTowards(s.Facing.RotateLeft().Face(), 0.5))
 	} else if t == cornerLeftOuter {
-		b = append(b, cube.Box(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
+		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
 			ExtendTowards(face, 0.5).
 			ExtendTowards(s.Facing.RotateRight().Face(), 0.5))
 	} else if t == cornerRightInner {
-		b = append(b, cube.Box(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
+		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
 			ExtendTowards(oppositeFace, 0.5).
 			ExtendTowards(s.Facing.RotateRight().Face(), 0.5))
 	} else if t == cornerLeftInner {
-		b = append(b, cube.Box(mgl64.Vec3{0.5, 0.5, 0.5}, mgl64.Vec3{0.5, 1, 0.5}).
+		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
 			ExtendTowards(oppositeFace, 0.5).
 			ExtendTowards(s.Facing.RotateLeft().Face(), 0.5))
 	}
