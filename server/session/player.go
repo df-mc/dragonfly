@@ -218,6 +218,9 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
+	if s == Nop {
+		return
+	}
 	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
@@ -391,7 +394,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:      s.Model,
 		PersonaSkin:       s.Persona,
 		CapeID:            uuid.New().String(),
-		FullSkinID:        uuid.New().String(),
+		FullID:            uuid.New().String(),
 		Animations:        animations,
 		Trusted:           true,
 	}
@@ -648,3 +651,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
+
+//go:linkname world_add github.com/df-mc/dragonfly/server/world.add
+//noinspection ALL
+func world_add(e world.Entity, w *world.World)

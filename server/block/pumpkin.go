@@ -58,6 +58,11 @@ func (p Pumpkin) DefencePoints() float64 {
 	return 0
 }
 
+// Toughness ...
+func (p Pumpkin) Toughness() float64 {
+	return 0
+}
+
 // KnockBackResistance ...
 func (p Pumpkin) KnockBackResistance() float64 {
 	return 0

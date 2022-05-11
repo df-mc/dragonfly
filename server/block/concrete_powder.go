@@ -27,7 +27,7 @@ func (c ConcretePowder) Solidifies(pos cube.Pos, w *world.World) bool {
 func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	for i := cube.Face(0); i < 6; i++ {
 		if _, ok := w.Block(pos.Side(i)).(Water); ok {
-			w.PlaceBlock(pos, Concrete{Colour: c.Colour})
+			w.SetBlock(pos, Concrete{Colour: c.Colour}, nil)
 			return
 		}
 	}
@@ -46,7 +46,7 @@ func (c ConcretePowder) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c ConcretePowder) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:concretePowder", map[string]any{"color": c.Colour.String()}
+	return "minecraft:concrete_powder", map[string]any{"color": c.Colour.String()}
 }
 
 // allConcretePowder returns concrete powder with all possible colours.

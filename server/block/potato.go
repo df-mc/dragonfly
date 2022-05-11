@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -42,7 +43,7 @@ func (p Potato) BoneMeal(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 	p.Growth = min(p.Growth+rand.Intn(4)+2, 7)
-	w.PlaceBlock(pos, p)
+	w.SetBlock(pos, p, nil)
 	return true
 }
 
@@ -79,10 +80,11 @@ func (p Potato) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (p Potato) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
 	} else if p.Growth < 7 && r.Float64() <= p.CalculateGrowthChance(pos, w) {
 		p.Growth++
-		w.PlaceBlock(pos, p)
+		w.SetBlock(pos, p, nil)
 	}
 }
 

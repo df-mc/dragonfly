@@ -30,7 +30,7 @@ type crop struct {
 func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		b := w.Block(pos)
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 		if breakable, ok := b.(Breakable); ok {
 			for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, []item.Enchantment{}) {
 				itemEntity := entity.NewItem(drop, pos.Vec3Centre())

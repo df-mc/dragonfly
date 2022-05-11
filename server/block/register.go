@@ -1,7 +1,6 @@
 package block
 
 import (
-	_ "github.com/df-mc/dragonfly/server/internal/block_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )

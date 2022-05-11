@@ -43,6 +43,11 @@ func (b Boots) DefencePoints() float64 {
 	panic("invalid boots tier")
 }
 
+// Toughness ...
+func (b Boots) Toughness() float64 {
+	return b.Tier.Toughness
+}
+
 // KnockBackResistance ...
 func (b Boots) KnockBackResistance() float64 {
 	return b.Tier.KnockBackResistance

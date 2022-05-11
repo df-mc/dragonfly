@@ -1,9 +1,9 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -51,9 +51,9 @@ func (e *EnderPearl) EncodeEntity() string {
 	return "minecraft:ender_pearl"
 }
 
-// AABB ...
-func (e *EnderPearl) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (e *EnderPearl) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
@@ -92,7 +92,7 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 	if result != nil {
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, damage.SourceEntityAttack{Attacker: e}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: e, Owner: e.Owner()}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
@@ -100,12 +100,12 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 
 		if owner := e.Owner(); owner != nil {
 			if user, ok := owner.(teleporter); ok {
-				w.PlaySound(user.Position(), sound.EndermanTeleport{})
+				w.PlaySound(user.Position(), sound.Teleport{})
 
 				user.Teleport(m.pos)
 
 				w.AddParticle(m.pos, particle.EndermanTeleportParticle{})
-				w.PlaySound(m.pos, sound.EndermanTeleport{})
+				w.PlaySound(m.pos, sound.Teleport{})
 
 				user.Hurt(5, damage.SourceFall{})
 			}

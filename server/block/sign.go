@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"image/color"
@@ -120,12 +121,14 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if s.Attach.hanging {
 		if _, ok := w.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			w.BreakBlock(pos)
+			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		}
 		return
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 	}
 }
 

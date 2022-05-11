@@ -26,6 +26,12 @@ var (
 	// randomTickBlocks holds a list of RandomTicker implementations for blocks registered that implement the RandomTicker interface.
 	// These are indexed by their runtime IDs. Blocks that do not implement RandomTicker have a false value in this slice.
 	randomTickBlocks []bool
+	// liquidBlocks holds a list of Liquid implementations for blocks registered that implement the Liquid interface.
+	// These are indexed by their runtime IDs. Blocks that do not implement Liquid have a false value in this slice.
+	liquidBlocks []bool
+	// liquidDisplacingBlocks holds a list of LiquidDisplacer implementations for blocks registered that implement the LiquidDisplacer interface.
+	// These are indexed by their runtime IDs. Blocks that do not implement LiquidDisplacer have a false value in this slice.
+	liquidDisplacingBlocks []bool
 	// airRID is the runtime ID of an air block.
 	airRID uint32
 )
@@ -72,6 +78,8 @@ func registerBlockState(s blockState) {
 
 	nbtBlocks = append(nbtBlocks, false)
 	randomTickBlocks = append(randomTickBlocks, false)
+	liquidBlocks = append(liquidBlocks, false)
+	liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
 	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 }

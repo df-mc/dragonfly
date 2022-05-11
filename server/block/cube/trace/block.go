@@ -2,7 +2,6 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -10,15 +9,15 @@ import (
 
 // BlockResult is the result of a ray trace collision with a block's model.
 type BlockResult struct {
-	bb   physics.AABB
+	bb   cube.BBox
 	pos  mgl64.Vec3
 	face cube.Face
 
 	blockPos cube.Pos
 }
 
-// AABB returns the AABB that was collided within the block's model.
-func (r BlockResult) AABB() physics.AABB {
+// BBox returns the BBox that was collided within the block's model.
+func (r BlockResult) BBox() cube.BBox {
 	return r.bb
 }
 
@@ -42,7 +41,7 @@ func (r BlockResult) BlockPosition() cube.Pos {
 // BlockIntercept returns a BlockResult with the block collided with and with the colliding vector closest to the start position,
 // if no colliding point was found, a zero BlockResult is returned and ok is false.
 func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl64.Vec3) (result BlockResult, ok bool) {
-	bbs := b.Model().AABB(pos, w)
+	bbs := b.Model().BBox(pos, w)
 	if len(bbs) == 0 {
 		return
 	}
@@ -53,7 +52,7 @@ func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl6
 	)
 
 	for _, bb := range bbs {
-		next, ok := AABBIntercept(bb.Translate(pos.Vec3()), start, end)
+		next, ok := BBoxIntercept(bb.Translate(pos.Vec3()), start, end)
 		if !ok {
 			continue
 		}
@@ -69,5 +68,5 @@ func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl6
 		return result, false
 	}
 
-	return BlockResult{bb: hit.AABB(), pos: hit.Position(), face: hit.Face(), blockPos: pos}, true
+	return BlockResult{bb: hit.BBox(), pos: hit.Position(), face: hit.Face(), blockPos: pos}, true
 }

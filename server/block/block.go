@@ -137,7 +137,7 @@ func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *ite
 		placer.PlaceBlock(pos, b, ctx)
 		return
 	}
-	w.PlaceBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 }
 
@@ -184,7 +184,7 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 
 		e := entity.NewFallingBlock(b, pos.Vec3Middle())
 		w.AddEntity(e)

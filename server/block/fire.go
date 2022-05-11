@@ -67,7 +67,7 @@ func (f Fire) burn(from, to cube.Pos, w *world.World, r *rand.Rand, chanceBound 
 		if r.Intn(f.Age+10) < 5 && !rainingAround(to, w) {
 			f.spread(from, to, w, r)
 		} else {
-			w.BreakBlockWithoutParticles(to)
+			w.SetBlock(to, nil, nil)
 		}
 		//TODO: Light TNT
 	}
@@ -93,13 +93,13 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	infinitelyBurns := infinitelyBurning(pos, w)
 	if !infinitelyBurns && (20+f.Age*3) > r.Intn(100) && rainingAround(pos, w) {
 		// Fire is extinguished by the rain.
-		w.SetBlock(pos, Air{})
+		w.SetBlock(pos, nil, nil)
 		return
 	}
 
 	if f.Age < 15 && r.Intn(3) == 0 {
 		f.Age++
-		w.PlaceBlock(pos, f)
+		w.SetBlock(pos, f, nil)
 	}
 
 	w.ScheduleBlockUpdate(pos, time.Duration(30+r.Intn(10))*time.Second/20)
@@ -107,17 +107,17 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if !infinitelyBurns {
 		_, waterBelow := w.Block(pos.Side(cube.FaceDown)).(Water)
 		if waterBelow {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 			return
 		}
 		if !neighboursFlammable(pos, w) {
 			if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, w) || f.Age > 3 {
-				w.BreakBlockWithoutParticles(pos)
+				w.SetBlock(pos, nil, nil)
 			}
 			return
 		}
 		if !flammableBlock(w.Block(pos.Side(cube.FaceDown))) && f.Age == 15 && r.Intn(4) == 0 {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 			return
 		}
 	}
@@ -172,18 +172,18 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // spread attempts to spread fire from a cube.Pos to another. If the block burn or fire spreading events are cancelled,
 // this might end up not happening.
 func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
-	ctx := event.C()
 	if _, air := w.Block(to).(Air); !air {
-		w.Handler().HandleBlockBurn(ctx, to)
+		ctx := event.C()
+		if w.Handler().HandleBlockBurn(ctx, to); ctx.Cancelled() {
+			return
+		}
 	}
-	ctx.Continue(func() {
-		ctx = event.C()
-		w.Handler().HandleFireSpread(ctx, from, to)
-		ctx.Continue(func() {
-			w.PlaceBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)})
-			w.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
-		})
-	})
+	ctx := event.C()
+	if w.Handler().HandleFireSpread(ctx, from, to); ctx.Cancelled() {
+		return
+	}
+	w.SetBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}, nil)
+	w.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
 }
 
 // EntityInside ...
@@ -212,20 +212,20 @@ func (f Fire) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 func (f Fire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
 	below := w.Block(pos.Side(cube.FaceDown))
 	if diffuser, ok := below.(LightDiffuser); (ok && diffuser.LightDiffusionLevel() != 15) && (!neighboursFlammable(pos, w) || f.Type == SoulFire()) {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 		return
 	}
 	switch below.(type) {
 	case SoulSand, SoulSoil:
 		f.Type = SoulFire()
-		w.PlaceBlock(pos, f)
+		w.SetBlock(pos, f, nil)
 	case Water:
 		if neighbour == pos {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 		}
 	default:
 		if f.Type == SoulFire() {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 			return
 		}
 	}
@@ -261,7 +261,7 @@ func (f Fire) Start(w *world.World, pos cube.Pos) {
 	if isAir || isTallGrass {
 		below := w.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
-			w.PlaceBlock(pos, Fire{})
+			w.SetBlock(pos, Fire{}, nil)
 		}
 	}
 }

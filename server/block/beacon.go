@@ -3,11 +3,9 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
 )
@@ -103,7 +101,7 @@ func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 		// Recalculating pyramid level and powering up players in range once every 4 seconds.
 		b.level = b.recalculateLevel(pos, w)
 		if before != b.level {
-			w.SetBlock(pos, b)
+			w.SetBlock(pos, b, nil)
 		}
 		if b.level == 0 {
 			return
@@ -190,9 +188,9 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 
 	// Finding entities in range.
 	r := 10 + (b.level * 10)
-	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
-		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
-		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
+	entitiesInRange := w.EntitiesWithin(cube.Box(
+		float64(pos.X()-r), -math.MaxFloat64, float64(pos.Z()-r),
+		float64(pos.X()+r), math.MaxFloat64, float64(pos.Z()+r),
 	), nil)
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {

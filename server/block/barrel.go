@@ -64,14 +64,14 @@ func (b Barrel) WithName(a ...any) world.Item {
 func (b Barrel) open(w *world.World, pos cube.Pos) {
 	b.Open = true
 	w.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
-	w.SetBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 }
 
 // close closes the barrel, displaying the animation and playing a sound.
 func (b Barrel) close(w *world.World, pos cube.Pos) {
 	b.Open = false
 	w.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
-	w.SetBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 }
 
 // AddViewer adds a viewer to the barrel, so that it is updated whenever the inventory of the barrel is changed.

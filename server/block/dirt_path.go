@@ -21,7 +21,7 @@ func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	up := pos.Add(cube.Pos{0, 1})
 	if w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
 		// A block with a solid side at the bottom was placed onto this one.
-		w.SetBlock(pos, Dirt{})
+		w.SetBlock(pos, Dirt{}, nil)
 	}
 }
 

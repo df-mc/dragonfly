@@ -5,12 +5,13 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/iteminternal"
+	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/player"
@@ -33,6 +34,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/maps"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -60,11 +62,12 @@ type Server struct {
 	listeners []Listener
 	a         atomic.Value[Allower]
 
-	resources []*resource.Pack
+	resources      []*resource.Pack
+	itemComponents map[string]map[string]any
 
 	joinMessage, quitMessage atomic.Value[string]
 
-	players     chan *player.Player
+	incoming    chan *session.Session
 	playerMutex sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they leave, they are removed from
 	// the map.
@@ -99,7 +102,7 @@ func New(c *Config, log internal.Logger) *Server {
 	s := &Server{
 		c:              *c,
 		log:            log,
-		players:        make(chan *player.Player),
+		incoming:       make(chan *session.Session),
 		p:              make(map[uuid.UUID]*player.Player),
 		name:           *atomic.NewValue(c.Server.Name),
 		playerProvider: *atomic.NewValue[player.Provider](player.NopProvider{}),
@@ -132,18 +135,31 @@ func New(c *Config, log internal.Logger) *Server {
 	return s
 }
 
-// Accept accepts an incoming player into the server. It blocks until a player connects to the server.
-// Accept returns an error if the Server is closed using a call to Close.
-func (server *Server) Accept() (*player.Player, error) {
-	p, ok := <-server.players
+// HandleFunc is a function that may be passed to Server.Accept(). It can be used to prepare the session of a
+// player before it can do anything.
+type HandleFunc func(p *player.Player)
+
+// Accept accepts an incoming player into the server. It blocks until a player connects to the server. A HandleFunc may
+// be passed which is run immediately before a *player.Player is accepted to the Server. This function may be used to
+// add a player.Handler to the player and prepare its session. The function may be nil if player joining does not need
+// to be handled.
+// Accept returns false if the Server is closed using a call to Close.
+func (server *Server) Accept(f HandleFunc) bool {
+	s, ok := <-server.incoming
 	if !ok {
-		return nil, errors.New("server closed")
+		return false
 	}
+	p := s.Controllable().(*player.Player)
+	if f != nil {
+		f(p)
+	}
+
 	server.playerMutex.Lock()
 	server.p[p.UUID()] = p
 	server.playerMutex.Unlock()
 
-	return p, nil
+	s.Start()
+	return true
 }
 
 // World returns the overworld of the server. Players will be spawned in this world and this world will be read
@@ -205,12 +221,7 @@ func (server *Server) MaxPlayerCount() int {
 func (server *Server) Players() []*player.Player {
 	server.playerMutex.RLock()
 	defer server.playerMutex.RUnlock()
-
-	players := make([]*player.Player, 0, len(server.p))
-	for _, p := range server.p {
-		players = append(players, p)
-	}
-	return players
+	return maps.Values(server.p)
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the player is returned and the bool
@@ -247,6 +258,11 @@ func (server *Server) PlayerProvider(provider player.Provider) {
 // server when started.
 func (server *Server) AddResourcePack(pack *resource.Pack) {
 	server.resources = append(server.resources, pack)
+}
+
+// Resources returns a list of all resource packs currently loaded on the server.
+func (server *Server) Resources() []*resource.Pack {
+	return server.resources
 }
 
 // SetName sets the name of the Server, also known as the MOTD. This name is displayed in the server list.
@@ -346,13 +362,17 @@ func (server *Server) Listen(l Listener) {
 				server.wg.Done()
 				return
 			}
-			if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-				_ = c.Close()
-				continue
-			}
+
 			wg.Add(1)
-			go server.finaliseConn(ctx, c, l, wg)
+			go func() {
+				defer wg.Done()
+				if msg, ok := server.a.Load().Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
+					_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
+					_ = c.Close()
+					return
+				}
+				server.finaliseConn(ctx, c, l)
+			}()
 		}
 	}()
 }
@@ -377,12 +397,22 @@ func (server *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
+	texturePacksRequired := server.c.Resources.Required
+	server.makeItemComponents()
+	if server.c.Resources.AutoBuildPack {
+		if pack, ok := packbuilder.BuildResourcePack(); ok {
+			server.resources = append(server.resources, pack)
+			texturePacksRequired = true
+		}
+	}
+
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         server.c.Players.MaxCount,
 		StatusProvider:         statusProvider{s: server},
 		AuthenticationDisabled: !server.c.Server.AuthEnabled,
 		ResourcePacks:          server.resources,
 		Biomes:                 server.biomes(),
+		TexturePacksRequired:   texturePacksRequired,
 	}
 
 	l, err := cfg.Listen("raknet", server.c.Network.Address)
@@ -395,19 +425,28 @@ func (server *Server) startListening() error {
 	return nil
 }
 
+// makeItemComponents initializes the server's item components map using the registered custom items. It allows item
+// components to be created only once at startup
+func (server *Server) makeItemComponents() {
+	server.itemComponents = make(map[string]map[string]any)
+	for _, it := range world.CustomItems() {
+		name, _ := it.EncodeItem()
+		if data, ok := iteminternal.Components(it); ok {
+			server.itemComponents[name] = data
+		}
+	}
+}
+
 // wait awaits the closing of all Listeners added to the Server through a call to Listen and closed the players channel
 // once that happens.
 func (server *Server) wait() {
 	server.wg.Wait()
-	close(server.players)
+	close(server.incoming)
 }
 
 // finaliseConn finalises the session.Conn passed and subtracts from the sync.WaitGroup once done.
-func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	// UUID is validated by gophertunnel.
-	id, _ := uuid.Parse(conn.IdentityData().Identity)
+func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
+	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := server.defaultGameData()
 
 	var playerData *player.Data
@@ -424,10 +463,19 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 		server.log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
+
+	itemComponentEntries := make([]protocol.ItemComponentEntry, len(server.itemComponents))
+	for name, entry := range server.itemComponents {
+		itemComponentEntries = append(itemComponentEntries, protocol.ItemComponentEntry{
+			Name: name,
+			Data: entry,
+		})
+	}
+	_ = conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries})
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
-	server.players <- server.createPlayer(id, conn, playerData)
+	server.incoming <- server.createPlayer(id, conn, playerData)
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It may later be modified if the player was
@@ -480,18 +528,23 @@ func (server *Server) checkNetIsolation() {
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
 func (server *Server) handleSessionClose(c session.Controllable) {
 	server.playerMutex.Lock()
-	p := server.p[c.UUID()]
+	p, ok := server.p[c.UUID()]
 	delete(server.p, c.UUID())
 	server.playerMutex.Unlock()
-	err := server.playerProvider.Load().Save(p.UUID(), p.Data())
-	if err != nil {
+	if !ok {
+		// When a player disconnects immediately after a session is started, it might not be added to the players map
+		// yet. This is expected, but we need to be careful not to crash when this happens.
+		return
+	}
+
+	if err := server.playerProvider.Load().Save(p.UUID(), p.Data()); err != nil {
 		server.log.Errorf("Error while saving data: %v", err)
 	}
 	server.pwg.Done()
 }
 
 // createPlayer creates a new player instance using the UUID and connection passed.
-func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *player.Player {
+func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *session.Session {
 	w, gm, pos := server.world, server.world.DefaultGameMode(), server.world.Spawn().Vec3Middle()
 	if data != nil {
 		w, gm, pos = server.dimension(data.Dimension), data.GameMode, data.Position
@@ -499,9 +552,9 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 	s := session.New(conn, server.c.Players.MaximumChunkRadius, server.log, &server.joinMessage, &server.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, server.createSkin(conn.ClientData()), s, pos, data)
 
-	s.Start(p, w, gm, server.handleSessionClose)
+	s.Spawn(p, w, gm, server.handleSessionClose)
 	server.pwg.Add(1)
-	return p
+	return s
 }
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.
@@ -592,6 +645,17 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 			RuntimeID: int16(rid),
 		})
 	}
+	for _, it := range world.CustomItems() {
+		name, _ := it.EncodeItem()
+		rid, _, _ := world.ItemRuntimeID(it)
+
+		_, componentBased := server.itemComponents[name]
+		entries = append(entries, protocol.ItemEntry{
+			Name:           name,
+			RuntimeID:      int16(rid),
+			ComponentBased: componentBased,
+		})
+	}
 	return
 }
 
@@ -631,20 +695,16 @@ func (server *Server) biomes() map[string]any {
 
 // loadResources loads resource packs from path of specifed directory.
 func (server *Server) loadResources(p string, log internal.Logger) {
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		_ = os.Mkdir(p, 0777)
-	}
+	_ = os.Mkdir(p, 0777)
 	resources, err := os.ReadDir(p)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed opening resource pack directory: %v\n", err)
 	}
 	for _, entry := range resources {
 		pack, err := resource.Compile(filepath.Join(p, entry.Name()))
 		if err != nil {
-			log.Infof("Failed to load resource: %v", entry.Name())
-			continue
+			log.Fatalf("Failed loading resource pack: %v", entry.Name())
 		}
-
 		server.AddResourcePack(pack)
 	}
 }

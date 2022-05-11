@@ -84,6 +84,12 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(RandomTicker); ok {
 		randomTickBlocks[rid] = true
 	}
+	if _, ok := b.(Liquid); ok {
+		liquidBlocks[rid] = true
+	}
+	if _, ok := b.(LiquidDisplacer); ok {
+		liquidDisplacingBlocks[rid] = true
+	}
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().

@@ -28,10 +28,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for {
-		if _, err := srv.Accept(); err != nil {
-			return
-		}
+	for srv.Accept(nil) {
 	}
 }
 

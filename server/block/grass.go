@@ -48,7 +48,7 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	aboveLight := w.Light(pos.Add(cube.Pos{0, 1}))
 	if aboveLight < 4 {
 		// The light above the block is too low: The grass turns to dirt.
-		w.SetBlock(pos, Dirt{})
+		w.SetBlock(pos, Dirt{}, nil)
 		return
 	}
 	if aboveLight < 9 {
@@ -73,7 +73,7 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		if w.Light(spreadPos.Add(cube.Pos{0, 1})) < 4 {
 			continue
 		}
-		w.SetBlock(spreadPos, g)
+		w.SetBlock(spreadPos, g, nil)
 	}
 }
 
@@ -83,7 +83,7 @@ func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
 		x := randWithinRange(pos.X()-3, pos.X()+3)
 		z := randWithinRange(pos.Z()-3, pos.Z()+3)
 		if (w.Block(cube.Pos{x, pos.Y() + 1, z}) == Air{}) && (w.Block(cube.Pos{x, pos.Y(), z}) == Grass{}) {
-			w.SetBlock(cube.Pos{x, pos.Y() + 1, z}, plantSelection[randWithinRange(0, len(plantSelection)-1)])
+			w.SetBlock(cube.Pos{x, pos.Y() + 1, z}, plantSelection[randWithinRange(0, len(plantSelection)-1)], nil)
 		}
 	}
 
