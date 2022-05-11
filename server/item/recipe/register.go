@@ -1,5 +1,7 @@
 package recipe
 
+import "golang.org/x/exp/slices"
+
 // recipes is a list of each recipe.
 var recipes []Recipe
 
@@ -10,6 +12,5 @@ func Register(recipe Recipe) {
 
 // Recipes returns each recipe in a slice.
 func Recipes() []Recipe {
-	// Return a copy of the slice.
-	return append([]Recipe(nil), recipes...)
+	return slices.Clone(recipes)
 }

@@ -15,18 +15,18 @@ var vanillaCraftingData []byte
 func init() {
 	var vanillaRecipes struct {
 		Shaped []struct {
-			Input    inputItems `nbt:"input"`
-			Output   outputItem `nbt:"output"`
-			Width    int32      `nbt:"width"`
-			Height   int32      `nbt:"height"`
-			Block    string     `nbt:"block"`
-			Priority int32      `nbt:"priority"`
+			Input    inputItems  `nbt:"input"`
+			Output   outputItems `nbt:"output"`
+			Block    string      `nbt:"block"`
+			Width    int32       `nbt:"width"`
+			Height   int32       `nbt:"height"`
+			Priority int32       `nbt:"priority"`
 		} `nbt:"shaped"`
 		Shapeless []struct {
-			Input    inputItems `nbt:"input"`
-			Output   outputItem `nbt:"output"`
-			Block    string     `nbt:"block"`
-			Priority int32      `nbt:"priority"`
+			Input    inputItems  `nbt:"input"`
+			Output   outputItems `nbt:"output"`
+			Block    string      `nbt:"block"`
+			Priority int32       `nbt:"priority"`
 		} `nbt:"shapeless"`
 	}
 
@@ -35,12 +35,13 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shapeless {
-		input, inputOK := s.Input.Items()
-		output, outputOk := s.Output.Stack()
-		if !inputOK || !outputOk {
+		input, ok := s.Input.Items()
+		output, okTwo := s.Output.Stacks()
+		if !ok || !okTwo {
+			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
 			continue
 		}
-		Register(&ShapelessRecipe{recipe{
+		Register(ShapelessRecipe{recipe{
 			input:  input,
 			output: output,
 			block:  s.Block,
@@ -48,12 +49,13 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shaped {
-		input, inputOK := s.Input.Items()
-		output, outputOK := s.Output.Stack()
-		if !inputOK || !outputOK {
+		input, ok := s.Input.Items()
+		output, okTwo := s.Output.Stacks()
+		if !ok || !okTwo {
+			// This can be expected to happen - refer to the comment above.
 			continue
 		}
-		Register(&ShapedRecipe{
+		Register(ShapedRecipe{
 			Dimensions: Dimensions{int(s.Width), int(s.Height)},
 			recipe: recipe{
 				input:  input,

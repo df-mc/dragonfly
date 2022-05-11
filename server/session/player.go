@@ -541,6 +541,37 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	return nil
 }
 
+// protocolRecipes returns all recipes as protocol recipes.
+func (s *Session) protocolRecipes() []protocol.Recipe {
+	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
+		networkID := uint32(index) + 1
+		s.recipes[networkID] = i
+
+		switch i := i.(type) {
+		case recipe.ShapelessRecipe:
+			recipes = append(recipes, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Input:           itemsToRecipeIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.ShapedRecipe:
+			recipes = append(recipes, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Width:           int32(i.Dimensions[0]),
+				Height:          int32(i.Dimensions[1]),
+				Input:           itemsToRecipeIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	return recipes
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -565,31 +596,18 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 }
 
-// instanceFromItem converts an item.Stack to its network ItemInstance representation.
-func instanceFromItem(it item.Stack) protocol.ItemInstance {
-	return protocol.ItemInstance{
-		StackNetworkID: item_id(it),
-		Stack:          stackFromItem(it),
-	}
-}
-
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
-	var t world.Item
-	var ok bool
-
-	if it.BlockRuntimeID != 0 {
-		var b world.Block
+	t, ok := world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
+	if !ok {
+		t = block.Air{}
+	}
+	if it.BlockRuntimeID > 0 {
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
 		// return air anyway.
-		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
+		b, _ := world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
-			t = block.Air{}
-		}
-	} else {
-		t, ok = world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
-		if !ok {
 			t = block.Air{}
 		}
 	}
@@ -601,71 +619,45 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
-// itemToRecipeIngredientItem converts a recipe.InputItem into a type that can be used over the protocol.
-func itemToRecipeIngredientItem(s recipe.InputItem) protocol.RecipeIngredientItem {
-	if s.Item() == nil {
-		return protocol.RecipeIngredientItem{}
+// instanceFromItem converts an item.Stack to its network ItemInstance representation.
+func instanceFromItem(it item.Stack) protocol.ItemInstance {
+	return protocol.ItemInstance{
+		StackNetworkID: item_id(it),
+		Stack:          stackFromItem(it),
 	}
-	rid, meta, ok := world.ItemRuntimeID(s.Item())
-	if !ok {
-		panic("should never happen")
-	}
+}
 
-	if s.Variants {
-		// math.MaxInt16 is used to represent "any variant".
-		meta = math.MaxInt16
+// stacksToRecipeStacks converts a list of item.Stacks to their protocol representation with damage stripped for recipes.
+func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
+	items := make([]protocol.ItemStack, 0, len(inputs))
+	for _, i := range inputs {
+		items = append(items, deleteDamage(stackFromItem(i)))
 	}
-
-	return protocol.RecipeIngredientItem{
-		NetworkID:     rid,
-		MetadataValue: int32(meta),
-		Count:         int32(s.Count()),
-	}
+	return items
 }
 
 // itemsToRecipeIngredientItems converts a list of recipe.Items into a type that can be used over the protocol.
-func itemsToRecipeIngredientItems(s []recipe.InputItem) (r []protocol.RecipeIngredientItem) {
-	for _, st := range s {
-		r = append(r, itemToRecipeIngredientItem(st))
-	}
-	return
-}
-
-// deleteDamage strips the damage from a protocol item.
-func deleteDamage(st protocol.ItemStack) protocol.ItemStack {
-	delete(st.NBTData, "Damage")
-	return st
-}
-
-// protocolRecipes returns all recipes as protocol recipes.
-func (s *Session) protocolRecipes() []protocol.Recipe {
-	recipeList := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-	for index, i := range recipe.Recipes() {
-		networkID := uint32(index) + 1
-		s.recipeMapping[networkID] = i
-
-		switch newRecipe := i.(type) {
-		case *recipe.ShapelessRecipe:
-			recipeList = append(recipeList, &protocol.ShapelessRecipe{
-				RecipeID:        uuid.New().String(),
-				Input:           itemsToRecipeIngredientItems(newRecipe.Input()),
-				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output()))},
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		case *recipe.ShapedRecipe:
-			recipeList = append(recipeList, &protocol.ShapedRecipe{
-				RecipeID:        uuid.New().String(),
-				Width:           int32(newRecipe.Dimensions[0]),
-				Height:          int32(newRecipe.Dimensions[1]),
-				Input:           itemsToRecipeIngredientItems(newRecipe.Input()),
-				Output:          []protocol.ItemStack{deleteDamage(stackFromItem(newRecipe.Output()))},
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
+func itemsToRecipeIngredientItems(inputs []recipe.InputItem) []protocol.RecipeIngredientItem {
+	items := make([]protocol.RecipeIngredientItem, 0, len(inputs))
+	for _, i := range inputs {
+		if i.Item() == nil {
+			items = append(items, protocol.RecipeIngredientItem{})
+			continue
 		}
+		rid, meta, ok := world.ItemRuntimeID(i.Item())
+		if !ok {
+			panic("should never happen")
+		}
+		if i.Variants {
+			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
+		}
+		items = append(items, protocol.RecipeIngredientItem{
+			NetworkID:     rid,
+			MetadataValue: int32(meta),
+			Count:         int32(i.Count()),
+		})
 	}
-	return recipeList
+	return items
 }
 
 // creativeItems returns all creative inventory items as protocol item stacks.
@@ -678,6 +670,12 @@ func creativeItems() []protocol.CreativeItem {
 		})
 	}
 	return it
+}
+
+// deleteDamage strips the damage from a protocol item.
+func deleteDamage(st protocol.ItemStack) protocol.ItemStack {
+	delete(st.NBTData, "Damage")
+	return st
 }
 
 // protocolToSkin converts protocol.Skin to skin.Skin.

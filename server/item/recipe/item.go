@@ -18,33 +18,24 @@ type InputItem struct {
 type inputItemData struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
-	// MetadataValue is the meta of the item. This can change the item almost completely, or act as durability.
-	MetadataValue int32 `nbt:"meta"`
+	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
+	Meta int32 `nbt:"meta"`
 	// Count is the amount of the item.
 	Count int32 `nbt:"count"`
 }
 
-// inputItem converts an inputItemData to an InputItem.
-func (i inputItemData) inputItem() (InputItem, bool) {
-	it, ok := world.ItemByName(i.Name, int16(i.MetadataValue))
-	if !ok {
-		return InputItem{}, false
-	}
-
-	return InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.MetadataValue == math.MaxInt16}, true
-}
-
-// inputItems is an array of input items.
+// inputItems is a type representing a list of input items, with helper functions to convert them to
 type inputItems []inputItemData
 
-// Items converts inputItems into an array of input items.
-func (i inputItems) Items() (s []InputItem, ok bool) {
-	for _, it := range i {
-		st, ok := it.inputItem()
+// Items converts input items into an array of input items.
+func (d inputItems) Items() ([]InputItem, bool) {
+	s := make([]InputItem, 0, len(d))
+	for _, i := range d {
+		it, ok := world.ItemByName(i.Name, int16(i.Meta))
 		if !ok {
 			return nil, false
 		}
-		s = append(s, st)
+		s = append(s, InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.Meta == math.MaxInt16})
 	}
 	return s, true
 }
@@ -53,8 +44,8 @@ func (i inputItems) Items() (s []InputItem, ok bool) {
 type outputItem struct {
 	// Name is the name of the item being output.
 	Name string `nbt:"name"`
-	// MetadataValue is the meta of the item. This can change the item almost completely, or act as durability.
-	MetadataValue int32 `nbt:"meta"`
+	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
+	Meta int32 `nbt:"meta"`
 	// Count is the amount of the item.
 	Count int16 `nbt:"count"`
 	// State is included if the output is a block. If it's not included, the meta can be discarded and the output item can be incorrect.
@@ -67,22 +58,23 @@ type outputItem struct {
 	NBTData map[string]interface{} `nbt:"data"`
 }
 
-// Stack converts an output item to an item stack.
-func (o outputItem) Stack() (item.Stack, bool) {
-	var it world.Item
-	var ok bool
-	if o.State.Version != 0 {
+// outputItems is an array of output items.
+type outputItems []outputItem
+
+// Stacks converts output items to item stacks.
+func (d outputItems) Stacks() ([]item.Stack, bool) {
+	s := make([]item.Stack, 0, len(d))
+	for _, o := range d {
+		it, ok := world.ItemByName(o.Name, int16(o.Meta))
+		if !ok {
+			return nil, false
+		}
 		if b, ok := world.BlockByName(o.State.Name, o.State.Properties); ok {
 			if it, ok = b.(world.Item); !ok {
-				return item.Stack{}, false
+				return nil, false
 			}
 		}
-	} else {
-		it, ok = world.ItemByName(o.Name, int16(o.MetadataValue))
-		if !ok {
-			return item.Stack{}, false
-		}
+		s = append(s, item.NewStack(it, int(o.Count)))
 	}
-
-	return item.NewStack(it, int(o.Count)), true
+	return s, true
 }
