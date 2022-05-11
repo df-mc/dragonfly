@@ -280,15 +280,14 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
 
-	input := make([]recipe.InputItem, len(craft.Input()))
-	output := make([]item.Stack, len(craft.Output()))
-	for ind, i := range input {
+	input := make([]recipe.InputItem, 0, len(craft.Input()))
+	output := make([]item.Stack, 0, len(craft.Output()))
+	for _, i := range craft.Input() {
 		i.Stack = i.Grow(i.Count() * (int(a.TimesCrafted) - 1))
-		input[ind] = i
+		input = append(input, i)
 	}
-	for ind, o := range output {
-		o = o.Grow(o.Count() * (int(a.TimesCrafted) - 1))
-		output[ind] = o
+	for _, o := range craft.Output() {
+		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 
 	// TODO: Consume items.
