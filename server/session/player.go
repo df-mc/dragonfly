@@ -552,6 +552,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		case recipe.ShapelessRecipe:
 			recipes = append(recipes, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
 				Input:           itemsToRecipeIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
 				Block:           i.Block(),
@@ -560,8 +561,9 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		case recipe.ShapedRecipe:
 			recipes = append(recipes, &protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
-				Width:           int32(i.Dimensions[0]),
-				Height:          int32(i.Dimensions[1]),
+				Priority:        int32(i.Priority()),
+				Width:           int32(i.Shape.Width()),
+				Height:          int32(i.Shape.Height()),
 				Input:           itemsToRecipeIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
 				Block:           i.Block(),

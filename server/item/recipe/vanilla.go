@@ -42,9 +42,10 @@ func init() {
 			continue
 		}
 		Register(ShapelessRecipe{recipe{
-			input:  input,
-			output: output,
-			block:  s.Block,
+			input:    input,
+			output:   output,
+			block:    s.Block,
+			priority: int(s.Priority),
 		}})
 	}
 
@@ -56,11 +57,12 @@ func init() {
 			continue
 		}
 		Register(ShapedRecipe{
-			Dimensions: Dimensions{int(s.Width), int(s.Height)},
+			Shape: Shape{int(s.Width), int(s.Height)},
 			recipe: recipe{
-				input:  input,
-				output: output,
-				block:  s.Block,
+				input:    input,
+				output:   output,
+				block:    s.Block,
+				priority: int(s.Priority),
 			},
 		})
 	}

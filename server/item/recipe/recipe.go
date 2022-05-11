@@ -10,6 +10,9 @@ type Recipe interface {
 	Output() []item.Stack
 	// Block returns the block that is used to craft the recipe.
 	Block() string
+	// Priority returns the priority of the recipe. Recipes with lower priority are preferred compared to recipes with
+	// higher priority.
+	Priority() int
 }
 
 // ShapelessRecipe is a recipe that has no particular shape.
@@ -20,8 +23,8 @@ type ShapelessRecipe struct {
 // ShapedRecipe is a recipe that has a specific shape that must be used to craft the output of the recipe.
 type ShapedRecipe struct {
 	recipe
-	// Dimensions are the dimensions for the shaped recipe.
-	Dimensions Dimensions
+	// Shape contains the width and height of the shaped recipe.
+	Shape Shape
 }
 
 // recipe implements the Recipe interface. Structs in this package may embed it to gets its functionality
@@ -34,19 +37,26 @@ type recipe struct {
 	output []item.Stack
 	// block is the block that is used to craft the recipe.
 	block string
+	// priority is the priority of the recipe versus others.
+	priority int
 }
 
-// Input returns the items required to craft the recipe.
+// Input ...
 func (r recipe) Input() []InputItem {
 	return r.input
 }
 
-// Output returns the item that is produced when the recipe is crafted.
+// Output ...
 func (r recipe) Output() []item.Stack {
 	return r.output
 }
 
-// Block returns the block that is used to craft the recipe.
+// Block ...
 func (r recipe) Block() string {
 	return r.block
+}
+
+// Priority ...
+func (r recipe) Priority() int {
+	return r.priority
 }

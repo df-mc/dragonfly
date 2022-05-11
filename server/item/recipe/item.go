@@ -29,13 +29,17 @@ type inputItems []inputItemData
 
 // Items converts input items into an array of input items.
 func (d inputItems) Items() ([]InputItem, bool) {
-	s := make([]InputItem, 0, len(d))
-	for _, i := range d {
+	s := make([]InputItem, len(d))
+	for ind, i := range d {
+		if len(i.Name) == 0 {
+			// Empty input allowed, so continue and check the next one.
+			continue
+		}
 		it, ok := world.ItemByName(i.Name, int16(i.Meta))
 		if !ok {
 			return nil, false
 		}
-		s = append(s, InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.Meta == math.MaxInt16})
+		s[ind] = InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.Meta == math.MaxInt16}
 	}
 	return s, true
 }
