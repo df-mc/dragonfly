@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"math/rand"
@@ -833,6 +834,27 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	for _, viewer := range viewers {
 		viewer.ViewWorldSpawn(pos)
 	}
+}
+
+// PlayerSpawn returns the location of the player spawn in the world.
+func (w *World) PlayerSpawn(uuid uuid.UUID) mgl64.Vec3 {
+	if w == nil {
+		return mgl64.Vec3{}
+	}
+	position, err := w.prov.Load().LoadPlayerSpawnPosition(uuid)
+	if err != nil {
+		return mgl64.Vec3{}
+	}
+	return position
+}
+
+// SetPlayerSpawn sets the spawn of the player. If The player has a player spawn in the world, the player will
+// be teleported to this location on respawn.
+func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos mgl64.Vec3) error {
+	if w == nil {
+		return nil
+	}
+	return w.prov.Load().SavePlayerSpawnPosition(uuid, pos)
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game

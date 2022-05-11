@@ -805,7 +805,11 @@ func (p *Player) Respawn() {
 	case world.End:
 		_, w = w.PortalDestinations()
 	}
+
 	pos := w.Spawn().Vec3Middle()
+	if playerSpawn := w.PlayerSpawn(p.UUID()); !playerSpawn.ApproxEqual(mgl64.Vec3{}) {
+		pos = playerSpawn
+	}
 
 	p.handler().HandleRespawn(&pos, &w)
 
