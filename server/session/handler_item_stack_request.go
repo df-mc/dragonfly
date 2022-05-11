@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -83,6 +84,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleDrop(a, s)
 		case *protocol.BeaconPaymentStackRequestAction:
 			err = h.handleBeaconPayment(a, s)
+		case *protocol.CraftRecipeStackRequestAction:
+			err = h.handleCraft(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
@@ -182,6 +185,80 @@ func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context
 	if ctx.Cancelled() {
 		return fmt.Errorf("action was cancelled")
 	}
+	return nil
+}
+
+// handleCraft handles the CraftRecipe request action.
+func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+	if s.c.GameMode().CreativeInventory() {
+		return fmt.Errorf("can only craft items in gamemode survival/adventure")
+	}
+	if int(a.RecipeNetworkID) > len(s.recipes) {
+		return fmt.Errorf("recipe with network id %v does not exist (cap: %v)", a.RecipeNetworkID, len(s.recipes))
+	}
+
+	craft := s.recipes[a.RecipeNetworkID]
+	_, shaped := craft.(recipe.ShapedRecipe)
+	_, shapeless := craft.(recipe.ShapelessRecipe)
+	if !shaped && !shapeless {
+		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	}
+
+	input := craft.Input()
+	size := s.craftingSize()
+	offset := s.craftingOffset()
+	consumptions := make(map[uint32]recipe.InputItem)
+	for _, expected := range input {
+		var consumed bool
+		for slot := offset; slot < offset+size; slot++ {
+			if _, ok := consumptions[slot]; ok {
+				// Already consumed this slot, skip to the next.
+				continue
+			}
+			has, _ := s.ui.Item(int(slot))
+			if has.Empty() && !expected.Empty() {
+				// Expected is not empty, but we don't have anything.
+				continue
+			}
+			if !has.Empty() && expected.Empty() {
+				// Expected is empty, but we have an item.
+				continue
+			}
+			if has.Empty() && expected.Empty() {
+				consumed = true
+				break
+			}
+			if !expected.Variants && has.Comparable(expected.Stack) {
+				consumed, consumptions[slot] = true, expected
+				break
+			}
+			name, _ := has.Item().EncodeItem()
+			otherName, _ := expected.Item().EncodeItem()
+			if name == otherName && has.Count() >= expected.Count() {
+				consumed, consumptions[slot] = true, expected
+				break
+			}
+		}
+		if !consumed {
+			return fmt.Errorf("could not consume item %v from crafting grid", expected)
+		}
+	}
+	for slot, expected := range consumptions {
+		has, _ := s.ui.Item(int(slot))
+		st := has.Grow(-expected.Count())
+		h.setItemInSlot(protocol.StackRequestSlotInfo{
+			ContainerID:    containerCraftingGrid,
+			Slot:           byte(slot),
+			StackNetworkID: item_id(st),
+		}, st, s)
+	}
+
+	output := craft.Output()[0]
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID:    containerCraftingResult,
+		Slot:           craftingResultIndex,
+		StackNetworkID: item_id(output),
+	}, output, s)
 	return nil
 }
 
