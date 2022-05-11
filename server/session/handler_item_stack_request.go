@@ -86,6 +86,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
 			err = h.handleCraft(a, s)
+		case *protocol.AutoCraftRecipeStackRequestAction:
+			err = h.handleAutoCraft(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
@@ -259,6 +261,43 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		Slot:           craftingResultIndex,
 		StackNetworkID: item_id(output),
 	}, output, s)
+	return nil
+}
+
+// handleAutoCraft handles the AutoCraftRecipe request action.
+func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session) error {
+	if s.c.GameMode().CreativeInventory() {
+		return fmt.Errorf("can only craft items in gamemode survival/adventure")
+	}
+	if int(a.RecipeNetworkID) > len(s.recipes) {
+		return fmt.Errorf("recipe with network id %v does not exist (cap: %v)", a.RecipeNetworkID, len(s.recipes))
+	}
+
+	craft := s.recipes[a.RecipeNetworkID]
+	_, shaped := craft.(recipe.ShapedRecipe)
+	_, shapeless := craft.(recipe.ShapelessRecipe)
+	if !shaped && !shapeless {
+		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	}
+
+	input := make([]recipe.InputItem, len(craft.Input()))
+	output := make([]item.Stack, len(craft.Output()))
+	for ind, i := range input {
+		i.Stack = i.Grow(i.Count() * (int(a.TimesCrafted) - 1))
+		input[ind] = i
+	}
+	for ind, o := range output {
+		o = o.Grow(o.Count() * (int(a.TimesCrafted) - 1))
+		output[ind] = o
+	}
+
+	// TODO: Consume items.
+
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID:    containerCraftingResult,
+		Slot:           craftingResultIndex,
+		StackNetworkID: item_id(output[0]),
+	}, output[0], s)
 	return nil
 }
 
