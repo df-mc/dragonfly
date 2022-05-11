@@ -152,7 +152,6 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, err 
 	buf := bytes.NewBuffer(nil)
 	buf.Write(vec3)
 
-	pos = mgl64.Vec3{}
 	err = binary.Read(buf, binary.LittleEndian, &pos)
 	if err != nil {
 		return mgl64.Vec3{}, err
