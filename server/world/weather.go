@@ -17,7 +17,7 @@ func (w weather) StopWeatherCycle() {
 
 // StartWeatherCycle enables weather cycle of the World.
 func (w weather) StartWeatherCycle() {
-	w.enableWeatherCycle(false)
+	w.enableWeatherCycle(true)
 }
 
 // SnowingAt checks if it is snowing at a specific cube.Pos in the World. True is returned if the temperature in the
