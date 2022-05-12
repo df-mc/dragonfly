@@ -261,7 +261,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	expectancies := make([]item.Stack, 0, len(input))
 	for _, i := range input {
 		if i.Empty() {
-			// Optional item, skip it.
+			// We don't actually need this item - it's empty, so avoid putting it in our expectancies.
 			continue
 		}
 
