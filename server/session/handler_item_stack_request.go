@@ -206,17 +206,24 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	size := s.craftingSize()
 	offset := s.craftingOffset()
 	for _, expected := range input {
+		var processed bool
 		for slot := offset; slot < offset+size; slot++ {
 			has, _ := s.ui.Item(int(slot))
 			if has.Empty() != expected.Empty() || has.Count() < expected.Count() || !has.Comparable(expected) {
-				return fmt.Errorf("could not craft recipe (%v): expected %v, got %v", a.RecipeNetworkID, expected, has)
+				// We can't process this item, as it's not a part of the recipe.
+				continue
 			}
+			processed = true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				ContainerID:    containerCraftingGrid,
 				Slot:           byte(slot),
 				StackNetworkID: item_id(st),
 			}, st, s)
+			break
+		}
+		if !processed {
+			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
 
@@ -247,10 +254,13 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range input {
-		_ = expected
+		var processed bool
 		for _, has := range append(s.inv.Items(), s.ui.Items()...) { // TODO: is it ui then inv, or vice versa?
 			_ = has
 			// TODO
+		}
+		if !processed {
+			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
 
