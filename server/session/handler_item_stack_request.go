@@ -205,14 +205,9 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	input := craft.Input()
 	size := s.craftingSize()
 	offset := s.craftingOffset()
-	consumed := make(map[uint32]recipe.InputItem)
 	for _, expected := range input {
 		var processed bool
 		for slot := offset; slot < offset+size; slot++ {
-			if _, ok := consumed[slot]; ok {
-				// Already processed this item, skip to the next.
-				continue
-			}
 			has, _ := s.ui.Item(int(slot))
 			if has.Empty() && !expected.Empty() {
 				// Expected is not empty, but we don't have anything.
@@ -226,29 +221,22 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				processed = true
 				break
 			}
-			if !expected.Variants && has.Comparable(expected.Stack) {
-				processed, consumed[slot] = true, expected
-				break
-			}
 			name, _ := has.Item().EncodeItem()
 			otherName, _ := expected.Item().EncodeItem()
-			if name == otherName && has.Count() >= expected.Count() {
-				processed, consumed[slot] = true, expected
+			if name == otherName && has.Count() >= expected.Count() || !expected.Variants && has.Comparable(expected.Stack) {
+				st := has.Grow(-expected.Count())
+				h.setItemInSlot(protocol.StackRequestSlotInfo{
+					ContainerID:    containerCraftingGrid,
+					Slot:           byte(slot),
+					StackNetworkID: item_id(st),
+				}, st, s)
+				processed = true
 				break
 			}
 		}
 		if !processed {
 			return fmt.Errorf("could not consume item %v from crafting grid", expected)
 		}
-	}
-	for slot, expected := range consumed {
-		has, _ := s.ui.Item(int(slot))
-		st := has.Grow(-expected.Count())
-		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID:    containerCraftingGrid,
-			Slot:           byte(slot),
-			StackNetworkID: item_id(st),
-		}, st, s)
 	}
 
 	output := craft.Output()
