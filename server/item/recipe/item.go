@@ -6,8 +6,8 @@ import (
 	"math"
 )
 
-// inputItem contains data for an item that is inputted to a crafting menu.
-type inputItem struct {
+// inputItems is a type representing a list of input items, with helper functions to convert them to
+type inputItems []struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
 	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
@@ -15,9 +15,6 @@ type inputItem struct {
 	// Count is the amount of the item.
 	Count int32 `nbt:"count"`
 }
-
-// inputItems is a type representing a list of input items, with helper functions to convert them to
-type inputItems []inputItem
 
 // Stacks converts input items to item stacks.
 func (d inputItems) Stacks() ([]item.Stack, bool) {
@@ -40,8 +37,8 @@ func (d inputItems) Stacks() ([]item.Stack, bool) {
 	return s, true
 }
 
-// outputItem is an item that is outputted after crafting.
-type outputItem struct {
+// outputItems is an array of output items.
+type outputItems []struct {
 	// Name is the name of the item being output.
 	Name string `nbt:"name"`
 	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
@@ -57,9 +54,6 @@ type outputItem struct {
 	// NBTData contains extra NBTData which may modify the item in other, more discreet ways.
 	NBTData map[string]interface{} `nbt:"data"`
 }
-
-// outputItems is an array of output items.
-type outputItems []outputItem
 
 // Stacks converts output items to item stacks.
 func (d outputItems) Stacks() ([]item.Stack, bool) {
