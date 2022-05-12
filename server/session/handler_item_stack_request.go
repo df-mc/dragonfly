@@ -301,7 +301,6 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 	output := make([]item.Stack, 0, len(craft.Output()))
 	for _, o := range craft.Output() {
-		fmt.Println(o.Count() * (int(a.TimesCrafted) - 1))
 		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
