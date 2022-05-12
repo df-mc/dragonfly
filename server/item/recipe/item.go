@@ -24,7 +24,7 @@ func (d inputItems) Stacks() ([]item.Stack, bool) {
 	s := make([]item.Stack, 0, len(d))
 	for _, i := range d {
 		if len(i.Name) == 0 {
-			// Empty input allowed, so continue and check the next one.
+			s = append(s, item.Stack{})
 			continue
 		}
 		it, ok := world.ItemByName(i.Name, int16(i.Meta))
