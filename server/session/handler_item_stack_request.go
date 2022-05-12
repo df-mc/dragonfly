@@ -209,12 +209,12 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	input := craft.Input()
 	size := s.craftingSize()
 	offset := s.craftingOffset()
-	consumptions := make(map[uint32]recipe.InputItem)
+	consumed := make(map[uint32]recipe.InputItem)
 	for _, expected := range input {
-		var consumed bool
+		var processed bool
 		for slot := offset; slot < offset+size; slot++ {
-			if _, ok := consumptions[slot]; ok {
-				// Already consumed this slot, skip to the next.
+			if _, ok := consumed[slot]; ok {
+				// Already processed this item, skip to the next.
 				continue
 			}
 			has, _ := s.ui.Item(int(slot))
@@ -227,25 +227,25 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				continue
 			}
 			if has.Empty() && expected.Empty() {
-				consumed = true
+				processed = true
 				break
 			}
 			if !expected.Variants && has.Comparable(expected.Stack) {
-				consumed, consumptions[slot] = true, expected
+				processed, consumed[slot] = true, expected
 				break
 			}
 			name, _ := has.Item().EncodeItem()
 			otherName, _ := expected.Item().EncodeItem()
 			if name == otherName && has.Count() >= expected.Count() {
-				consumed, consumptions[slot] = true, expected
+				processed, consumed[slot] = true, expected
 				break
 			}
 		}
-		if !consumed {
+		if !processed {
 			return fmt.Errorf("could not consume item %v from crafting grid", expected)
 		}
 	}
-	for slot, expected := range consumptions {
+	for slot, expected := range consumed {
 		has, _ := s.ui.Item(int(slot))
 		st := has.Grow(-expected.Count())
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
@@ -291,12 +291,12 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range input {
-		var consumed bool
+		var processed bool
 		for _, has := range append(s.inv.Items(), s.ui.Items()...) {
 			_ = has
 			// TODO
 		}
-		if !consumed {
+		if !processed {
 			return fmt.Errorf("could not consume item %v from inventory", expected)
 		}
 	}
