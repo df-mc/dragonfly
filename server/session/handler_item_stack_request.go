@@ -309,7 +309,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 			}
 		}
 		if expected.Count() > 0 {
-			return fmt.Errorf("recipe %v: could not consume expected item (a): %v", a.RecipeNetworkID, expected)
+			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
 
