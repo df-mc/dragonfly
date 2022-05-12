@@ -247,13 +247,10 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range input {
-		var processed bool
-		for _, has := range append(s.inv.Items(), s.ui.Items()...) {
+		_ = expected
+		for _, has := range append(s.inv.Items(), s.ui.Items()...) { // TODO: is it ui then inv, or vice versa?
 			_ = has
 			// TODO
-		}
-		if !processed {
-			return fmt.Errorf("could not consume item %v from inventory", expected)
 		}
 	}
 
