@@ -278,11 +278,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	for _, expected := range expectancies {
 		for _, inv := range []*inventory.Inventory{s.ui, s.inv} {
 			for slot, has := range inv.Slots() {
-				if has.Empty() {
-					// We don't have this item, skip it.
-					continue
-				}
-				if !has.Comparable(expected) {
+				if has.Empty() || !has.Comparable(expected) {
 					// We don't have this item, skip it.
 					continue
 				}
