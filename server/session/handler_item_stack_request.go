@@ -276,7 +276,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range expectancies {
-		for _, inv := range []*inventory.Inventory{s.ui, s.inv} {
+		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() || !has.Comparable(expected) {
 					// We don't have this item, skip it.
@@ -288,17 +288,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 					removal = remaining
 				}
 
-				var container byte
-				switch inv {
-				case s.ui:
-					container = containerCraftingGrid
-				case s.inv:
-					container = containerFullInventory
-				}
-
 				expected, has = expected.Grow(-removal), has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
-					ContainerID:    container,
+					ContainerID:    id,
 					Slot:           byte(slot),
 					StackNetworkID: item_id(has),
 				}, has, s)
