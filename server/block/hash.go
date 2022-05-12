@@ -28,6 +28,7 @@ const (
 	hashCoalBlock
 	hashCoalOre
 	hashCobblestone
+	hashCobblestoneStairs
 	hashCocoaBean
 	hashConcrete
 	hashConcretePowder
@@ -103,6 +104,7 @@ const (
 	hashQuartz
 	hashQuartzBricks
 	hashQuartzPillar
+	hashQuartzStairs
 	hashRawCopperBlock
 	hashRawGoldBlock
 	hashRawIronBlock
@@ -122,6 +124,7 @@ const (
 	hashStainedGlassPane
 	hashStainedTerracotta
 	hashStone
+	hashStoneBrickStairs
 	hashStoneBricks
 	hashTallGrass
 	hashTerracotta
@@ -237,6 +240,10 @@ func (c CoalOre) Hash() uint64 {
 
 func (c Cobblestone) Hash() uint64 {
 	return hashCobblestone | uint64(boolByte(c.Mossy))<<8
+}
+
+func (s CobblestoneStairs) Hash() uint64 {
+	return hashCobblestoneStairs | uint64(boolByte(s.Mossy))<<8 | uint64(boolByte(s.UpsideDown))<<9 | uint64(s.Facing)<<10
 }
 
 func (c CocoaBean) Hash() uint64 {
@@ -539,6 +546,10 @@ func (q QuartzPillar) Hash() uint64 {
 	return hashQuartzPillar | uint64(q.Axis)<<8
 }
 
+func (s QuartzStairs) Hash() uint64 {
+	return hashQuartzStairs | uint64(boolByte(s.UpsideDown))<<8 | uint64(s.Facing)<<9 | uint64(boolByte(s.Smooth))<<11
+}
+
 func (RawCopperBlock) Hash() uint64 {
 	return hashRawCopperBlock
 }
@@ -613,6 +624,10 @@ func (t StainedTerracotta) Hash() uint64 {
 
 func (s Stone) Hash() uint64 {
 	return hashStone | uint64(boolByte(s.Smooth))<<8
+}
+
+func (s StoneBrickStairs) Hash() uint64 {
+	return hashStoneBrickStairs | uint64(boolByte(s.UpsideDown))<<8 | uint64(s.Facing)<<9
 }
 
 func (c StoneBricks) Hash() uint64 {
