@@ -313,7 +313,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 	if name != name2 || s.damage != s2.damage || s.customName != s2.customName {
 		return false
 	}
-	if !s.variants && meta != meta2 {
+	if !s.variants && !s2.variants && meta != meta2 {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {

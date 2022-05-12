@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/exp/slices"
 	"math"
 	"time"
 )
@@ -205,15 +206,20 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	input := craft.Input()
 	size := s.craftingSize()
 	offset := s.craftingOffset()
+	consumed := make([]uint32, 0, size)
 	for _, expected := range input {
 		var processed bool
 		for slot := offset; slot < offset+size; slot++ {
+			if slices.Contains(consumed, slot) {
+				// We've already consumed this slot, skip it.
+				continue
+			}
 			has, _ := s.ui.Item(int(slot))
 			if has.Empty() != expected.Empty() || has.Count() < expected.Count() || !has.Comparable(expected) {
 				// We can't process this item, as it's not a part of the recipe.
 				continue
 			}
-			processed = true
+			processed, consumed = true, append(consumed, slot)
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				ContainerID:    containerCraftingGrid,
