@@ -41,12 +41,7 @@ func init() {
 			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
 			continue
 		}
-		Register(ShapelessRecipe{recipe{
-			input:    input,
-			output:   output,
-			block:    s.Block,
-			priority: int(s.Priority),
-		}})
+		Register(NewShapelessRecipe(input, output, s.Block, int(s.Priority)))
 	}
 
 	for _, s := range vanillaRecipes.Shaped {
@@ -56,14 +51,6 @@ func init() {
 			// This can be expected to happen - refer to the comment above.
 			continue
 		}
-		Register(ShapedRecipe{
-			Shape: Shape{int(s.Width), int(s.Height)},
-			recipe: recipe{
-				input:    input,
-				output:   output,
-				block:    s.Block,
-				priority: int(s.Priority),
-			},
-		})
+		Register(NewShapedRecipe(input, output, s.Block, int(s.Priority), Shape{int(s.Width), int(s.Height)}))
 	}
 }

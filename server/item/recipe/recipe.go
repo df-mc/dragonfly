@@ -20,11 +20,34 @@ type ShapelessRecipe struct {
 	recipe
 }
 
+// NewShapelessRecipe creates a new shapeless recipe and returns it.
+func NewShapelessRecipe(input []item.Stack, output []item.Stack, block string, priority int) ShapelessRecipe {
+	return ShapelessRecipe{recipe: recipe{
+		input:    input,
+		output:   output,
+		block:    block,
+		priority: priority,
+	}}
+}
+
 // ShapedRecipe is a recipe that has a specific shape that must be used to craft the output of the recipe.
 type ShapedRecipe struct {
 	recipe
 	// Shape contains the width and height of the shaped recipe.
 	Shape Shape
+}
+
+// NewShapedRecipe creates a new shaped recipe and returns it.
+func NewShapedRecipe(input []item.Stack, output []item.Stack, block string, priority int, shape Shape) ShapedRecipe {
+	return ShapedRecipe{
+		Shape: shape,
+		recipe: recipe{
+			input:    input,
+			output:   output,
+			block:    block,
+			priority: priority,
+		},
+	}
 }
 
 // recipe implements the Recipe interface. Structs in this package may embed it to gets its functionality
