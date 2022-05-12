@@ -223,16 +223,21 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			}
 			name, _ := has.Item().EncodeItem()
 			otherName, _ := expected.Item().EncodeItem()
-			if name == otherName && has.Count() >= expected.Count() || !expected.Variants && has.Comparable(expected.Stack) {
-				st := has.Grow(-expected.Count())
-				h.setItemInSlot(protocol.StackRequestSlotInfo{
-					ContainerID:    containerCraftingGrid,
-					Slot:           byte(slot),
-					StackNetworkID: item_id(st),
-				}, st, s)
-				processed = true
+			if expected.Variants && (name != otherName || has.Count() < expected.Count()) {
+				// Variants are allowed, but the item type is not similar, or we don't have enough of the type.
 				break
 			}
+			if !has.Comparable(expected.Stack) {
+				// The item is not comparable and variants are not allowed.
+				break
+			}
+			processed = true
+			st := has.Grow(-expected.Count())
+			h.setItemInSlot(protocol.StackRequestSlotInfo{
+				ContainerID:    containerCraftingGrid,
+				Slot:           byte(slot),
+				StackNetworkID: item_id(st),
+			}, st, s)
 		}
 		if !processed {
 			return fmt.Errorf("could not consume item %v from crafting grid", expected)
@@ -261,13 +266,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	input := make([]recipe.InputItem, 0, len(craft.Input()))
-	output := make([]item.Stack, 0, len(craft.Output()))
 	for _, i := range craft.Input() {
 		i.Stack = i.Grow(i.Count() * (int(a.TimesCrafted) - 1))
 		input = append(input, i)
-	}
-	for _, o := range craft.Output() {
-		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 
 	for _, expected := range input {
@@ -281,6 +282,10 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		}
 	}
 
+	output := make([]item.Stack, 0, len(craft.Output()))
+	for _, o := range craft.Output() {
+		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
+	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID:    containerCraftingResult,
 		Slot:           craftingResultIndex,
