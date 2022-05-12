@@ -5,7 +5,7 @@ import "github.com/df-mc/dragonfly/server/item"
 // Recipe is implemented by all recipe types.
 type Recipe interface {
 	// Input returns the items required to craft the recipe.
-	Input() []InputItem
+	Input() []item.Stack
 	// Output returns the items that are produced when the recipe is crafted.
 	Output() []item.Stack
 	// Block returns the block that is used to craft the recipe.
@@ -32,7 +32,7 @@ type ShapedRecipe struct {
 type recipe struct {
 	// input is a list of items that serve as the input of the shaped recipe. These items are the items
 	// required to craft the output. The amount of input items must be exactly equal to Width * Height.
-	input []InputItem
+	input []item.Stack
 	// output contains items that are created as a result of crafting the recipe.
 	output []item.Stack
 	// block is the block that is used to craft the recipe.
@@ -42,7 +42,7 @@ type recipe struct {
 }
 
 // Input ...
-func (r recipe) Input() []InputItem {
+func (r recipe) Input() []item.Stack {
 	return r.input
 }
 

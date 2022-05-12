@@ -6,16 +6,8 @@ import (
 	"math"
 )
 
-// InputItem is a recipe item. It is an item stack inherently, but it also has an extra value for if it applies to all types.
-type InputItem struct {
-	item.Stack
-	// Variants is true if the item applies to all of its possible variants. This is so it can be rendered in the recipe book
-	// for alternative types.
-	Variants bool
-}
-
-// inputItemData contains data for an item that is inputted to a crafting menu.
-type inputItemData struct {
+// inputItem contains data for an item that is inputted to a crafting menu.
+type inputItem struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
 	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
@@ -25,12 +17,12 @@ type inputItemData struct {
 }
 
 // inputItems is a type representing a list of input items, with helper functions to convert them to
-type inputItems []inputItemData
+type inputItems []inputItem
 
-// Items converts input items into an array of input items.
-func (d inputItems) Items() ([]InputItem, bool) {
-	s := make([]InputItem, len(d))
-	for ind, i := range d {
+// Stacks converts input items to item stacks.
+func (d inputItems) Stacks() ([]item.Stack, bool) {
+	s := make([]item.Stack, 0, len(d))
+	for _, i := range d {
 		if len(i.Name) == 0 {
 			// Empty input allowed, so continue and check the next one.
 			continue
@@ -39,7 +31,11 @@ func (d inputItems) Items() ([]InputItem, bool) {
 		if !ok {
 			return nil, false
 		}
-		s[ind] = InputItem{Stack: item.NewStack(it, int(i.Count)), Variants: i.Meta == math.MaxInt16}
+		st := item.NewStack(it, int(i.Count))
+		if i.Meta == math.MaxInt16 {
+			st = st.WithVariants()
+		}
+		s = append(s, st)
 	}
 	return s, true
 }

@@ -553,7 +553,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 			recipes = append(recipes, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),
-				Input:           itemsToRecipeIngredientItems(i.Input()),
+				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
@@ -564,7 +564,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Priority:        int32(i.Priority()),
 				Width:           int32(i.Shape.Width()),
 				Height:          int32(i.Shape.Height()),
-				Input:           itemsToRecipeIngredientItems(i.Input()),
+				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
@@ -638,11 +638,11 @@ func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
 	return items
 }
 
-// itemsToRecipeIngredientItems converts a list of recipe.Items into a type that can be used over the protocol.
-func itemsToRecipeIngredientItems(inputs []recipe.InputItem) []protocol.RecipeIngredientItem {
+// stacksToIngredientItems converts a list of item.Stacks to recipe ingredient items used over the network.
+func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientItem {
 	items := make([]protocol.RecipeIngredientItem, 0, len(inputs))
 	for _, i := range inputs {
-		if i.Item() == nil {
+		if i.Empty() {
 			items = append(items, protocol.RecipeIngredientItem{})
 			continue
 		}
@@ -650,7 +650,7 @@ func itemsToRecipeIngredientItems(inputs []recipe.InputItem) []protocol.RecipeIn
 		if !ok {
 			panic("should never happen")
 		}
-		if i.Variants {
+		if i.Variants() {
 			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
 		}
 		items = append(items, protocol.RecipeIngredientItem{

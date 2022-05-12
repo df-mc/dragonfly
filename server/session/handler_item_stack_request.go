@@ -213,22 +213,16 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				processed = true
 				break
 			}
-			if has.Empty() && !expected.Empty() {
-				// Expected is not empty, but we don't have anything.
+			if has.Empty() && !expected.Empty() || !has.Empty() && expected.Empty() {
+				// Expected is not empty, but we don't have anything, or vice versa.
 				continue
 			}
-			if !has.Empty() && expected.Empty() {
-				// Expected is empty, but we have an item.
+			if has.Count() < expected.Count() {
+				// Expected is not empty, but we don't have enough.
 				continue
 			}
-			name, _ := has.Item().EncodeItem()
-			otherName, _ := expected.Item().EncodeItem()
-			if expected.Variants && (name != otherName || has.Count() < expected.Count()) {
-				// Variants are allowed, but the item type is not similar, or we don't have enough of the type.
-				break
-			}
-			if !has.Comparable(expected.Stack) {
-				// The item is not comparable and variants are not allowed.
+			if !has.Comparable(expected) {
+				// The item is not comparable.
 				break
 			}
 			processed = true
@@ -265,10 +259,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
 
-	input := make([]recipe.InputItem, 0, len(craft.Input()))
+	input := make([]item.Stack, 0, len(craft.Input()))
 	for _, i := range craft.Input() {
-		i.Stack = i.Grow(i.Count() * (int(a.TimesCrafted) - 1))
-		input = append(input, i)
+		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
 	}
 
 	for _, expected := range input {

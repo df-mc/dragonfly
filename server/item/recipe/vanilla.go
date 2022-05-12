@@ -35,7 +35,7 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shapeless {
-		input, ok := s.Input.Items()
+		input, ok := s.Input.Stacks()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
@@ -50,7 +50,7 @@ func init() {
 	}
 
 	for _, s := range vanillaRecipes.Shaped {
-		input, ok := s.Input.Items()
+		input, ok := s.Input.Stacks()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen - refer to the comment above.
