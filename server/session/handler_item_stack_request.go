@@ -63,7 +63,6 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 	h.currentRequest = req.RequestID
 	defer func() {
 		if err != nil {
-			s.log.Debugf("%v", err)
 			h.reject(req.RequestID, s)
 			return
 		}
