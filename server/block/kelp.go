@@ -58,6 +58,11 @@ func (Kelp) CanDisplace(b world.Liquid) bool {
 	return water
 }
 
+// HasLiquidDrops ...
+func (Kelp) HasLiquidDrops() bool {
+	return false
+}
+
 // SideClosed will always return false since kelp doesn't close any side.
 func (Kelp) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
