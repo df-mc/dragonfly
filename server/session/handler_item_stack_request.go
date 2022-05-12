@@ -259,14 +259,58 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
 	}
 
-	for _, expected := range input {
-		var processed bool
-		for _, has := range append(s.inv.Items(), s.ui.Items()...) { // TODO: is it ui then inv, or vice versa?
-			_ = has
-			// TODO
+	targets := make(map[string]int)
+	for _, i := range input {
+		if i.Empty() {
+			// Optional item, skip it.
+			continue
 		}
-		if !processed {
-			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
+		name, _ := i.Item().EncodeItem()
+		if _, ok := targets[name]; ok {
+			targets[name] += i.Count()
+			continue
+		}
+		targets[name] = i.Count()
+	}
+
+	for expected, remaining := range targets {
+		for _, inv := range []*inventory.Inventory{s.ui, s.inv} {
+			for slot, has := range inv.Slots() {
+				if has.Empty() {
+					// We don't have this item, skip it.
+					continue
+				}
+				name, _ := has.Item().EncodeItem()
+				if name != expected {
+					// Not the item we're looking for, skip it.
+					continue
+				}
+
+				removal := has.Count()
+				if remaining < removal {
+					removal = remaining
+				}
+
+				remaining -= removal
+
+				var container byte
+				switch inv {
+				case s.ui:
+					container = containerCraftingGrid
+				case s.inv:
+					container = containerFullInventory
+				}
+
+				st := has.Grow(-removal)
+				h.setItemInSlot(protocol.StackRequestSlotInfo{
+					ContainerID:    container,
+					Slot:           byte(slot),
+					StackNetworkID: item_id(st),
+				}, st, s)
+			}
+		}
+		if remaining > 0 {
+			return fmt.Errorf("recipe %v: could not consume expected item (a): %v", a.RecipeNetworkID, expected)
 		}
 	}
 
