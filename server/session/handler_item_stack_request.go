@@ -192,14 +192,10 @@ func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context
 
 // handleCraft handles the CraftRecipe request action.
 func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
-	if s.c.GameMode().CreativeInventory() {
-		return fmt.Errorf("can only craft items in gamemode survival/adventure")
+	craft, ok := s.recipes[a.RecipeNetworkID]
+	if !ok {
+		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	if int(a.RecipeNetworkID) > len(s.recipes) {
-		return fmt.Errorf("recipe with network id %v does not exist (cap: %v)", a.RecipeNetworkID, len(s.recipes))
-	}
-
-	craft := s.recipes[a.RecipeNetworkID]
 	_, shaped := craft.(recipe.ShapedRecipe)
 	_, shapeless := craft.(recipe.ShapelessRecipe)
 	if !shaped && !shapeless {
@@ -266,14 +262,10 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
 func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session) error {
-	if s.c.GameMode().CreativeInventory() {
-		return fmt.Errorf("can only craft items in gamemode survival/adventure")
+	craft, ok := s.recipes[a.RecipeNetworkID]
+	if !ok {
+		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	if int(a.RecipeNetworkID) > len(s.recipes) {
-		return fmt.Errorf("recipe with network id %v does not exist (cap: %v)", a.RecipeNetworkID, len(s.recipes))
-	}
-
-	craft := s.recipes[a.RecipeNetworkID]
 	_, shaped := craft.(recipe.ShapedRecipe)
 	_, shapeless := craft.(recipe.ShapelessRecipe)
 	if !shaped && !shapeless {
