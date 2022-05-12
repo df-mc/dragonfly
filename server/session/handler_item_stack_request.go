@@ -259,39 +259,38 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
 	}
 
-	targets := make(map[string]int)
+	expectancies := make([]item.Stack, 0, len(input))
 	for _, i := range input {
 		if i.Empty() {
 			// Optional item, skip it.
 			continue
 		}
-		name, _ := i.Item().EncodeItem()
-		if _, ok := targets[name]; ok {
-			targets[name] += i.Count()
-			continue
+
+		if ind := slices.IndexFunc(expectancies, func(stack item.Stack) bool {
+			return stack.Comparable(i)
+		}); ind >= 0 {
+			i = i.Grow(expectancies[ind].Count())
+			expectancies = slices.Delete(expectancies, ind, ind+1)
 		}
-		targets[name] = i.Count()
+		expectancies = append(expectancies, i)
 	}
 
-	for expected, remaining := range targets {
+	for _, expected := range expectancies {
 		for _, inv := range []*inventory.Inventory{s.ui, s.inv} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() {
 					// We don't have this item, skip it.
 					continue
 				}
-				name, _ := has.Item().EncodeItem()
-				if name != expected {
-					// Not the item we're looking for, skip it.
+				if !has.Comparable(expected) {
+					// We don't have this item, skip it.
 					continue
 				}
 
-				removal := has.Count()
+				remaining, removal := expected.Count(), has.Count()
 				if remaining < removal {
 					removal = remaining
 				}
-
-				remaining -= removal
 
 				var container byte
 				switch inv {
@@ -301,15 +300,15 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 					container = containerFullInventory
 				}
 
-				st := has.Grow(-removal)
+				expected, has = expected.Grow(-removal), has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
 					ContainerID:    container,
 					Slot:           byte(slot),
-					StackNetworkID: item_id(st),
-				}, st, s)
+					StackNetworkID: item_id(has),
+				}, has, s)
 			}
 		}
-		if remaining > 0 {
+		if expected.Count() > 0 {
 			return fmt.Errorf("recipe %v: could not consume expected item (a): %v", a.RecipeNetworkID, expected)
 		}
 	}
