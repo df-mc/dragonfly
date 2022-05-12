@@ -202,14 +202,13 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
 
-	input := craft.Input()
 	size := s.craftingSize()
 	offset := s.craftingOffset()
-	consumed := make([]uint32, 0, size)
-	for _, expected := range input {
+	consumed := make([]bool, size)
+	for _, expected := range craft.Input() {
 		var processed bool
 		for slot := offset; slot < offset+size; slot++ {
-			if slices.Contains(consumed, slot) {
+			if consumed[slot-offset] {
 				// We've already consumed this slot, skip it.
 				continue
 			}
@@ -218,7 +217,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				// We can't process this item, as it's not a part of the recipe.
 				continue
 			}
-			processed, consumed = true, append(consumed, slot)
+			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				ContainerID:    containerCraftingGrid,
@@ -302,6 +301,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 	output := make([]item.Stack, 0, len(craft.Output()))
 	for _, o := range craft.Output() {
+		fmt.Println(o.Count() * (int(a.TimesCrafted) - 1))
 		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
