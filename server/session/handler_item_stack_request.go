@@ -209,6 +209,10 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		var processed bool
 		for slot := offset; slot < offset+size; slot++ {
 			has, _ := s.ui.Item(int(slot))
+			if has.Empty() && expected.Empty() {
+				processed = true
+				break
+			}
 			if has.Empty() && !expected.Empty() {
 				// Expected is not empty, but we don't have anything.
 				continue
@@ -216,10 +220,6 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			if !has.Empty() && expected.Empty() {
 				// Expected is empty, but we have an item.
 				continue
-			}
-			if has.Empty() && expected.Empty() {
-				processed = true
-				break
 			}
 			name, _ := has.Item().EncodeItem()
 			otherName, _ := expected.Item().EncodeItem()
