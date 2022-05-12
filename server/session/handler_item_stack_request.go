@@ -255,12 +255,12 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		}, st, s)
 	}
 
-	output := craft.Output()[0]
+	output := craft.Output()
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID:    containerCraftingResult,
 		Slot:           craftingResultIndex,
-		StackNetworkID: item_id(output),
-	}, output, s)
+		StackNetworkID: item_id(output[0]),
+	}, output[0], s)
 	return nil
 }
 
@@ -290,7 +290,16 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 
-	// TODO: Consume items.
+	for _, expected := range input {
+		var consumed bool
+		for _, has := range append(s.inv.Items(), s.ui.Items()...) {
+			_ = has
+			// TODO
+		}
+		if !consumed {
+			return fmt.Errorf("could not consume item %v from inventory", expected)
+		}
+	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID:    containerCraftingResult,
