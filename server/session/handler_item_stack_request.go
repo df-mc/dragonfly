@@ -209,7 +209,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		for slot := offset; slot < offset+size; slot++ {
 			has, _ := s.ui.Item(int(slot))
 			if has.Empty() && !expected.Empty() || !has.Empty() && expected.Empty() || has.Count() < expected.Count() || !has.Comparable(expected) {
-				return fmt.Errorf("could not craft recipe (%v), expected %v, got %v", a.RecipeNetworkID, expected, has)
+				return fmt.Errorf("could not craft recipe (%v): expected %v, got %v", a.RecipeNetworkID, expected, has)
 			}
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
