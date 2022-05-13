@@ -89,7 +89,7 @@ const (
 	craftingGridSizeLarge   = 9
 	craftingGridSmallOffset = 28
 	craftingGridLargeOffset = 32
-	craftingResultIndex     = 50
+	craftingGridResult      = 50
 )
 
 const (
