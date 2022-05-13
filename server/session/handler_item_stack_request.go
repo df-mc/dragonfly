@@ -233,7 +233,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 
 	output := craft.Output()
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingResult,
+		ContainerID:    containerCraftingGrid,
 		Slot:           craftingResultIndex,
 		StackNetworkID: item_id(output[0]),
 	}, output[0], s)
@@ -312,7 +312,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingResult,
+		ContainerID:    containerCraftingGrid,
 		Slot:           craftingResultIndex,
 		StackNetworkID: item_id(output[0]),
 	}, output[0], s)
