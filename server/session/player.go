@@ -85,8 +85,8 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 const (
-	craftingSizeSmall       = 4
-	craftingSizeLarge       = 9
+	craftingGridSizeSmall   = 4
+	craftingGridSizeLarge   = 9
 	craftingGridSmallOffset = 28
 	craftingGridLargeOffset = 32
 	craftingResultIndex     = 50

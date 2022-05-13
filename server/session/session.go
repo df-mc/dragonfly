@@ -306,9 +306,9 @@ func (s *Session) handlePackets() {
 // craftingSize gets the crafting size based on the opened container ID.
 func (s *Session) craftingSize() uint32 {
 	if s.openedContainerID.Load() == 1 {
-		return craftingSizeLarge
+		return craftingGridSizeLarge
 	}
-	return craftingSizeSmall
+	return craftingGridSizeSmall
 }
 
 // craftingOffset gets the crafting offset based on the opened container ID.
