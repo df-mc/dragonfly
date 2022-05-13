@@ -292,17 +292,17 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 					Slot:           byte(slot),
 					StackNetworkID: item_id(has),
 				}, has, s)
-				if expected.Count() == 0 {
-					// Consumed all items we needed, so we can stop here.
+				if expected.Empty() {
+					// Consumed this item, so go to the next one.
 					break
 				}
 			}
-			if expected.Count() == 0 {
-				// Consumed all items we needed, so we can stop here.
+			if expected.Empty() {
+				// Consumed this item, so go to the next one.
 				break
 			}
 		}
-		if expected.Count() > 0 {
+		if !expected.Empty() {
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
