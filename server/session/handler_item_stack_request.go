@@ -292,6 +292,14 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 					Slot:           byte(slot),
 					StackNetworkID: item_id(has),
 				}, has, s)
+				if expected.Count() == 0 {
+					// Consumed all items we needed, so we can stop here.
+					break
+				}
+			}
+			if expected.Count() == 0 {
+				// Consumed all items we needed, so we can stop here.
+				break
 			}
 		}
 		if expected.Count() > 0 {
