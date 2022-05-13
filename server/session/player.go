@@ -21,6 +21,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
+	"strings"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -546,8 +547,10 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
-		blockName, _ := i.Block().EncodeBlock()
 		s.recipes[networkID] = i
+
+		blockName, _ := i.Block().EncodeBlock()
+		blockName = strings.Split(blockName, ":")[1]
 
 		switch i := i.(type) {
 		case recipe.ShapelessRecipe:
