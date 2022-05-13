@@ -546,6 +546,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
+		blockName, _ := i.Block().EncodeBlock()
 		s.recipes[networkID] = i
 
 		switch i := i.(type) {
@@ -555,7 +556,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Priority:        int32(i.Priority()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
+				Block:           blockName,
 				RecipeNetworkID: networkID,
 			})
 		case recipe.ShapedRecipe:
@@ -566,7 +567,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Height:          int32(i.Shape().Height()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
+				Block:           blockName,
 				RecipeNetworkID: networkID,
 			})
 		}

@@ -4,6 +4,7 @@ import (
 	// Insure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
 	_ "github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 
 	_ "embed"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -41,11 +42,12 @@ func init() {
 			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
 			continue
 		}
+		b, _ := world.BlockByName("minecraft:"+s.Block, nil)
 		Register(ShapelessRecipe{recipe{
 			input:    input,
 			output:   output,
-			block:    s.Block,
-			priority: int(s.Priority),
+			block:    b,
+			priority: uint32(s.Priority),
 		}})
 	}
 
@@ -56,13 +58,14 @@ func init() {
 			// This can be expected to happen - refer to the comment above.
 			continue
 		}
+		b, _ := world.BlockByName("minecraft:"+s.Block, nil)
 		Register(ShapedRecipe{
 			shape: Shape{int(s.Width), int(s.Height)},
 			recipe: recipe{
 				input:    input,
 				output:   output,
-				block:    s.Block,
-				priority: int(s.Priority),
+				block:    b,
+				priority: uint32(s.Priority),
 			},
 		})
 	}

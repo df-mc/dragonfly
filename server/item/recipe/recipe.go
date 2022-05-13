@@ -3,7 +3,6 @@ package recipe
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"strings"
 )
 
 // Recipe is implemented by all recipe types.
@@ -13,10 +12,10 @@ type Recipe interface {
 	// Output returns the items that are produced when the recipe is crafted.
 	Output() []item.Stack
 	// Block returns the block that is used to craft the recipe.
-	Block() string
+	Block() world.Block
 	// Priority returns the priority of the recipe. Recipes with lower priority are preferred compared to recipes with
 	// higher priority.
-	Priority() int
+	Priority() uint32
 }
 
 // ShapelessRecipe is a recipe that has no particular shape.
@@ -25,13 +24,12 @@ type ShapelessRecipe struct {
 }
 
 // NewShapelessRecipe creates a new shapeless recipe and returns it.
-func NewShapelessRecipe(input []item.Stack, output []item.Stack, block world.Block, priority int) ShapelessRecipe {
-	name, _ := block.EncodeBlock()
+func NewShapelessRecipe(input []item.Stack, output []item.Stack, block world.Block, priority uint32) ShapelessRecipe {
 	return ShapelessRecipe{recipe: recipe{
 		input:    input,
 		output:   output,
 		priority: priority,
-		block:    strings.Split(name, ":")[1],
+		block:    block,
 	}}
 }
 
@@ -43,15 +41,14 @@ type ShapedRecipe struct {
 }
 
 // NewShapedRecipe creates a new shaped recipe and returns it.
-func NewShapedRecipe(input []item.Stack, output []item.Stack, block world.Block, priority int, shape Shape) ShapedRecipe {
-	name, _ := block.EncodeBlock()
+func NewShapedRecipe(input []item.Stack, output []item.Stack, block world.Block, priority uint32, shape Shape) ShapedRecipe {
 	return ShapedRecipe{
 		shape: shape,
 		recipe: recipe{
 			input:    input,
 			output:   output,
 			priority: priority,
-			block:    strings.Split(name, ":")[1],
+			block:    block,
 		},
 	}
 }
@@ -70,9 +67,9 @@ type recipe struct {
 	// output contains items that are created as a result of crafting the recipe.
 	output []item.Stack
 	// block is the block that is used to craft the recipe.
-	block string
+	block world.Block
 	// priority is the priority of the recipe versus others.
-	priority int
+	priority uint32
 }
 
 // Input ...
@@ -86,11 +83,11 @@ func (r recipe) Output() []item.Stack {
 }
 
 // Block ...
-func (r recipe) Block() string {
+func (r recipe) Block() world.Block {
 	return r.block
 }
 
 // Priority ...
-func (r recipe) Priority() int {
+func (r recipe) Priority() uint32 {
 	return r.priority
 }
