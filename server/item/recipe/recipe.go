@@ -1,6 +1,10 @@
 package recipe
 
-import "github.com/df-mc/dragonfly/server/item"
+import (
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
+	"strings"
+)
 
 // Recipe is implemented by all recipe types.
 type Recipe interface {
@@ -21,33 +25,40 @@ type ShapelessRecipe struct {
 }
 
 // NewShapelessRecipe creates a new shapeless recipe and returns it.
-func NewShapelessRecipe(input []item.Stack, output []item.Stack, block string, priority int) ShapelessRecipe {
+func NewShapelessRecipe(input []item.Stack, output []item.Stack, block world.Block, priority int) ShapelessRecipe {
+	name, _ := block.EncodeBlock()
 	return ShapelessRecipe{recipe: recipe{
 		input:    input,
 		output:   output,
-		block:    block,
 		priority: priority,
+		block:    strings.Split(name, ":")[1],
 	}}
 }
 
 // ShapedRecipe is a recipe that has a specific shape that must be used to craft the output of the recipe.
 type ShapedRecipe struct {
 	recipe
-	// Shape contains the width and height of the shaped recipe.
-	Shape Shape
+	// shape contains the width and height of the shaped recipe.
+	shape Shape
 }
 
 // NewShapedRecipe creates a new shaped recipe and returns it.
-func NewShapedRecipe(input []item.Stack, output []item.Stack, block string, priority int, shape Shape) ShapedRecipe {
+func NewShapedRecipe(input []item.Stack, output []item.Stack, block world.Block, priority int, shape Shape) ShapedRecipe {
+	name, _ := block.EncodeBlock()
 	return ShapedRecipe{
-		Shape: shape,
+		shape: shape,
 		recipe: recipe{
 			input:    input,
 			output:   output,
-			block:    block,
 			priority: priority,
+			block:    strings.Split(name, ":")[1],
 		},
 	}
+}
+
+// Shape returns the shape of the recipe.
+func (r ShapedRecipe) Shape() Shape {
+	return r.shape
 }
 
 // recipe implements the Recipe interface. Structs in this package may embed it to gets its functionality

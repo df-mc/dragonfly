@@ -562,8 +562,8 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 			recipes = append(recipes, &protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),
-				Width:           int32(i.Shape.Width()),
-				Height:          int32(i.Shape.Height()),
+				Width:           int32(i.Shape().Width()),
+				Height:          int32(i.Shape().Height()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
 				Block:           i.Block(),
