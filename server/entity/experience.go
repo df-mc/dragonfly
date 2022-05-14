@@ -1,31 +1,33 @@
 package entity
 
 import (
+	"fmt"
 	"math"
 	"sync"
 )
 
-var maxLevel int32 = math.MaxInt32
-
+// ExperienceManager manages experience and levels for entities, and provides functions to add, remove, and calculate
+// experience needed for upcoming levels.
 type ExperienceManager struct {
-	mu              sync.RWMutex
-	totalExperience int
+	mu         sync.RWMutex
+	experience int
 }
 
-// NewExperienceManager return a ExperienceManager with default value of level, progress and totalExperience that are equal to 0.
+// NewExperienceManager returns a new ExperienceManager with no experience.
 func NewExperienceManager() *ExperienceManager {
 	return &ExperienceManager{}
 }
 
-// Level get experience level.
-func (e *ExperienceManager) Level() int32 {
+// Level returns the current experience level.
+// TODO: Improve.
+func (e *ExperienceManager) Level() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	experience := e.totalExperience
-	var level int32 = 1
+	experience := e.experience
+	level := 1
 	nextLevel := true
 	for nextLevel {
-		xp := e.ExperienceForLevel(level)
+		xp := experienceForLevel(level)
 		if xp <= experience {
 			experience -= xp
 			level++
@@ -36,15 +38,16 @@ func (e *ExperienceManager) Level() int32 {
 	return level
 }
 
-// Progress get the progress of the experience bar, the value are Between 0.00 and 1.00.
+// Progress returns the progress towards the next level, calculated using the current level and experience.
+// TODO: Improve.
 func (e *ExperienceManager) Progress() float64 {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	experience := e.totalExperience
-	var level int32 = 1
+	experience := e.experience
+	level := 1
 	nextLevel := true
 	for nextLevel {
-		xp := e.ExperienceForLevel(level)
+		xp := experienceForLevel(level)
 		if xp <= experience {
 			experience -= xp
 			level++
@@ -52,142 +55,82 @@ func (e *ExperienceManager) Progress() float64 {
 			nextLevel = false
 		}
 	}
-	return e.ExperienceToProgress(experience, level)
+	return experienceToProgress(experience, level)
 }
 
-func (e *ExperienceManager) LevelAndProgress() (int32, float64) {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	experience := e.totalExperience
-	var level int32 = 1
-	nextLevel := true
-	for nextLevel {
-		xp := e.ExperienceForLevel(level)
-		if xp <= experience {
-			experience -= xp
-			level++
-		} else {
-			nextLevel = false
-		}
-	}
-	return level, e.ExperienceToProgress(experience, level)
-}
-
-// MaxLevel get the max experience level.
-func (e *ExperienceManager) MaxLevel() int32 {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return maxLevel
-}
-
-// TotalExperience get the total experience collected.
+// TotalExperience returns the total experience collected overall, including levels.
 func (e *ExperienceManager) TotalExperience() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return e.totalExperience
+	return e.experience
 }
 
-// SetTotalExperience set the total experience
+// SetTotalExperience sets the total experience collected overall, including levels.
 func (e *ExperienceManager) SetTotalExperience(experience int) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	e.totalExperience = experience
+	e.experience = experience
 }
 
-// ExperienceToNextLevel get the total experience netted to level up.
-func (e *ExperienceManager) ExperienceToNextLevel() int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return e.ExperienceForLevel(e.Level())
-}
-
-// ExperienceNeededToLevelUp get experience that you need to level up with reducing experience that you already have.
-func (e *ExperienceManager) ExperienceNeededToLevelUp() int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	experience := e.totalExperience
-	var level int32 = 1
-	nextLevel := true
-	for nextLevel {
-		xp := e.ExperienceForLevel(level)
-		if xp <= experience {
-			experience -= xp
-			level++
-		} else {
-			nextLevel = false
-		}
-	}
-	return e.ExperienceForLevel(level) - experience
-}
-
-// ExperienceForLevel get the amount experience to level up in a specific level.
-func (e *ExperienceManager) ExperienceForLevel(level int32) int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	// I have make like MINET
-	if level > 30 {
-		return int(9*level - 158)
-	} else if level > 15 {
-		return int(5*level - 38)
-	}
-	return int(2*level + 7)
-}
-
-// ExperienceForLevels calculate amount of experience for reach a level.
-func (e *ExperienceManager) ExperienceForLevels(level int32) int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	experience := 0
-	for i := int32(0); i <= level; i++ {
-		experience += e.ExperienceForLevel(i)
-	}
-	return experience
-}
-
-// ProgressToExperience get the amount of experience that you have (not total but start on level) whit progress.
-func (e *ExperienceManager) ProgressToExperience(level int32, progress float64) int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return int(float64(e.ExperienceForLevel(level)) * progress)
-}
-
-// ExperienceToProgress get progress with the amount of experience and a level.
-func (e *ExperienceManager) ExperienceToProgress(experience int, level int32) float64 {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return float64(experience) / float64(e.ExperienceForLevel(level))
-}
-
-// AddExperience add experience, that check if you level up.
+// AddExperience adds experience to the manager's total experience.
 func (e *ExperienceManager) AddExperience(amount int) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	e.totalExperience += amount
+	e.experience += amount
 }
 
-// SetLevel set a new level, this recalculates the total experience.
-func (e *ExperienceManager) SetLevel(level int32) {
+// SetLevel sets the experience level of the manager, recalculating the total experience.
+// TODO: Improve.
+func (e *ExperienceManager) SetLevel(level int) error {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	if level < 0 {
-		level = 0
-	} else if level > maxLevel {
-		level = maxLevel
+	if level < 0 || level > math.MaxInt32 {
+		return fmt.Errorf("progress must be between 0 and 2,147,483,647, got %d", level)
 	}
 	progress := e.Progress()
-	e.totalExperience = e.ExperienceForLevels(level) + e.ProgressToExperience(level, progress)
-
+	e.experience = experienceForLevels(level) + progressToExperience(level, progress)
+	return nil
 }
 
-// SetProgress set a new progress, this recalculates the total experience.
-func (e *ExperienceManager) SetProgress(progress float64) {
+// SetProgress sets the experience progress of the manager, recalculating the total experience.
+// TODO: Improve.
+func (e *ExperienceManager) SetProgress(progress float64) error {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	if progress < 0 {
-		progress = 0
-	} else if progress >= 1 {
-		progress = 0.99
+	if progress < 0 || progress > 1 {
+		return fmt.Errorf("progress must be between 0 and 1, got %f", progress)
 	}
-	lvl := e.Level()
-	e.totalExperience = e.ExperienceForLevels(lvl) + e.ProgressToExperience(lvl, progress)
+	level := e.Level()
+	e.experience = experienceForLevels(level) + progressToExperience(level, progress)
+	return nil
+}
+
+// progressToExperience returns the amount of experience needed for the given level and progress.
+func progressToExperience(level int, progress float64) int {
+	return int(float64(experienceForLevel(level)) * progress)
+}
+
+// experienceToProgress returns the progress towards the next level, calculated using the current level and experience.
+func experienceToProgress(experience int, level int) float64 {
+	return float64(experience) / float64(experienceForLevel(level))
+}
+
+// experienceForLevels calculates the amount of experience needed in total to reach a certain level.
+func experienceForLevels(level int) int {
+	if level <= 16 {
+		return level*level + level*6
+	} else if level <= 31 {
+		return int(float64(level*level)*2.5 - 40.5*float64(level) + 360)
+	}
+	return int(float64(level*level)*4.5 - 162.5*float64(level) + 2220)
+}
+
+// experienceForLevel returns the amount experience needed to reach level + 1.
+func experienceForLevel(level int) int {
+	if level <= 15 {
+		return 2*level + 7
+	} else if level <= 30 {
+		return 5*level - 38
+	}
+	return 9*level - 158
 }

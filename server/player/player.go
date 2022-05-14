@@ -2088,18 +2088,21 @@ func (p *Player) AddExperience(amount int) {
 }
 
 // SetExperienceLevel set the experience level of the player, the level must have a value between 0 and 2147483647.
-func (p *Player) SetExperienceLevel(level int) {
-	if level > math.MaxInt32 {
-		level = math.MaxInt32
+func (p *Player) SetExperienceLevel(level int) error {
+	if err := p.experience.SetLevel(level); err != nil {
+		return err
 	}
-	p.experience.SetLevel(int32(level))
 	p.session().SendExperienceValue(p.experience)
+	return nil
 }
 
 //SetExperienceProgress set the experience progress of the player, this accepts a value between 0.00 and 1.00.
-func (p *Player) SetExperienceProgress(progress float64) {
-	p.experience.SetProgress(progress)
+func (p *Player) SetExperienceProgress(progress float64) error {
+	if err := p.experience.SetProgress(progress); err != nil {
+		return err
+	}
 	p.session().SendExperienceValue(p.experience)
+	return nil
 }
 
 // close closed the player without disconnecting it. It executes code shared by both the closing and the
