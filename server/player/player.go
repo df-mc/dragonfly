@@ -2305,38 +2305,33 @@ func (p *Player) Close() error {
 	return nil
 }
 
-// ExperienceLevel get level of the player.
+// ExperienceLevel returns the experience level of the player.
 func (p *Player) ExperienceLevel() int {
-	return int(p.experience.Level())
+	return p.experience.Level()
 }
 
-// ExperienceProgress get the progress of the player.
+// ExperienceProgress returns the experience progress of the player.
 func (p *Player) ExperienceProgress() float64 {
 	return p.experience.Progress()
 }
 
-// AddExperience add experience to the player.
+// AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) {
-	p.experience.AddExperience(amount)
+	before := p.experience.Level()
+	level, _ := p.experience.Add(amount)
+	if level/5 > before/5 {
+		p.PlaySound(sound.LevelUp{})
+	} else if amount > 0 {
+		p.PlaySound(sound.Experience{})
+	}
 	p.session().SendExperienceValue(p.experience)
 }
 
-// SetExperienceLevel set the experience level of the player, the level must have a value between 0 and 2147483647.
-func (p *Player) SetExperienceLevel(level int) error {
-	if err := p.experience.SetLevel(level); err != nil {
-		return err
-	}
+// SetExperienceLevelAndProgress sets the experience level and progress of the player, the level must have a value
+// between 0 and 2147483647 and the progress must be between 0.0 and 1.0.
+func (p *Player) SetExperienceLevelAndProgress(level int, progress float64) {
+	p.experience.SetLevelAndProgress(level, progress)
 	p.session().SendExperienceValue(p.experience)
-	return nil
-}
-
-//SetExperienceProgress set the experience progress of the player, this accepts a value between 0.00 and 1.00.
-func (p *Player) SetExperienceProgress(progress float64) error {
-	if err := p.experience.SetProgress(progress); err != nil {
-		return err
-	}
-	p.session().SendExperienceValue(p.experience)
-	return nil
 }
 
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
