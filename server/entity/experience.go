@@ -61,7 +61,7 @@ func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	defer e.mu.Unlock()
 	amount = int(math.Min(float64(amount), float64(math.MaxInt32-e.total)))
 	e.total += amount
-	e.level, e.progress = progressFromExperience(progressToExperience(e.level, e.progress) + amount)
+	e.level, e.progress = progressFromExperience(experienceForLevels(e.level) + int(float64(experienceForLevel(e.level))*e.progress) + amount)
 	return e.level, e.progress
 }
 
