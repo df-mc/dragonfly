@@ -753,7 +753,7 @@ func (p *Player) kill(src damage.Source) {
 	p.StopSprinting()
 
 	w := p.World()
-	p.dropItems()
+	p.dropContents()
 
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
@@ -775,9 +775,13 @@ func (p *Player) kill(src damage.Source) {
 	})
 }
 
-// dropItems drops all items in any inventory of the Player on the ground in random directions.
-func (p *Player) dropItems() {
+// dropContents drops all items and experience of the Player on the ground in random directions.
+func (p *Player) dropContents() {
 	w, pos := p.World(), p.Position()
+	for _, orb := range entity.NewExperienceOrbs(pos, int(math.Min(float64(p.experience.Level()*7), 100))) {
+		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+		w.AddEntity(orb)
+	}
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
@@ -786,6 +790,7 @@ func (p *Player) dropItems() {
 	p.inv.Clear()
 	p.armour.Clear()
 	p.offHand.Clear()
+	p.experience.Reset()
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
@@ -2274,7 +2279,7 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
 	}
 	if p.Dead() {
-		p.dropItems()
+		p.dropContents()
 	}
 }
 

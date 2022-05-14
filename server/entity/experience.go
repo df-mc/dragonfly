@@ -82,9 +82,7 @@ func (e *ExperienceManager) SetLevelAndProgress(level int, progress float64) {
 func (e *ExperienceManager) Reset() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.total = 0
-	e.level = 0
-	e.progress = 0
+	e.total, e.level, e.progress = 0, 0, 0
 }
 
 // progressFromExperience ...
