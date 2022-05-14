@@ -4,7 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -76,7 +76,7 @@ func spreadOutwards(b world.Liquid, pos cube.Pos, w *world.World, displacer worl
 				flowInto(b, pos, neighbour, w, false)
 			}
 		}
-	})
+	}, w.Range())
 }
 
 // sourceAround checks if there is a source in the blocks around the position passed.
@@ -98,7 +98,7 @@ func sourceAround(b world.Liquid, pos cube.Pos, w *world.World) (sourcePresent b
 		if neighbour[1] == pos[1]+1 || source(side) || side.LiquidDepth() > b.LiquidDepth() {
 			sourcePresent = true
 		}
-	})
+	}, w.Range())
 	return
 }
 
@@ -115,15 +115,15 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 	existing := w.Block(pos)
 	if existingLiquid, alsoLiquid := existing.(world.Liquid); alsoLiquid && existingLiquid.LiquidType() == b.LiquidType() {
 		if existingLiquid.LiquidDepth() >= newDepth || existingLiquid.LiquidFalling() {
-			// The existing liquid had a higher depth than the one we're propagating or it was falling
+			// The existing liquid had a higher depth than the one we're propagating, or it was falling
 			// (basically considered full depth), so no need to continue.
 			return true
 		}
 		ctx := event.C()
-		w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
-		ctx.Continue(func() {
-			w.SetLiquid(pos, b.WithDepth(newDepth, falling))
-		})
+		if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+			return false
+		}
+		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 		return true
 	} else if alsoLiquid {
 		existingLiquid.Harden(pos, w, &src)
@@ -141,11 +141,11 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		return false
 	}
 	if _, air := existing.(Air); !air {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 	if removable.HasLiquidDrops() {
 		if b, ok := existing.(Breakable); ok {
-			for _, d := range b.BreakInfo().Drops(tool.None{}, nil) {
+			for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
 				itemEntity := entity.NewItem(d, pos.Vec3Centre())
 				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 				w.AddEntity(itemEntity)
@@ -155,10 +155,10 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		}
 	}
 	ctx := event.C()
-	w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
-	ctx.Continue(func() {
-		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
-	})
+	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+		return false
+	}
+	w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
 }
 
@@ -306,7 +306,7 @@ func (node liquidNode) Path(src cube.Pos) liquidPath {
 
 // liquidQueuePool is use to re-use liquid node queues.
 var liquidQueuePool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &liquidQueue{
 			nodes:        make([]liquidNode, 0, 64),
 			shortestPath: math.MaxInt8,

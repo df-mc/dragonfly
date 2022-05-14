@@ -24,10 +24,10 @@ func (s SeaLantern) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (SeaLantern) EncodeItem() (name string, meta int16) {
-	return "minecraft:sealantern", 0
+	return "minecraft:sea_lantern", 0
 }
 
 // EncodeBlock ...
-func (SeaLantern) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:seaLantern", nil
+func (SeaLantern) EncodeBlock() (string, map[string]any) {
+	return "minecraft:sea_lantern", nil
 }

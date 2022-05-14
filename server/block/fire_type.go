@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // FireType represents a type of fire. Used by flaming blocks such as torches, lanterns, fire, and campfires.
 type FireType struct {
 	fire
@@ -11,12 +9,12 @@ type fire uint8
 
 // NormalFire is the default variant of fires
 func NormalFire() FireType {
-	return FireType{fire(0)}
+	return FireType{0}
 }
 
 // SoulFire is a turquoise variant of normal fire
 func SoulFire() FireType {
-	return FireType{fire(1)}
+	return FireType{1}
 }
 
 // Uint8 returns the fire as a uint8.
@@ -44,17 +42,6 @@ func (f fire) Name() string {
 		return "Soul Fire"
 	}
 	panic("unknown fire type")
-}
-
-// FromString ...
-func (f fire) FromString(s string) (interface{}, error) {
-	switch s {
-	case "normal":
-		return NormalFire(), nil
-	case "soul":
-		return SoulFire(), nil
-	}
-	return nil, fmt.Errorf("unexpected fire type '%v', expecting one of 'normal' or 'soul'", s)
 }
 
 // String ...

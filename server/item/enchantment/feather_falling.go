@@ -2,13 +2,10 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/armour"
 )
 
 // FeatherFalling is an enchantment to boots that reduces fall damage. It does not affect falling speed.
-type FeatherFalling struct {
-	enchantment
-}
+type FeatherFalling struct{}
 
 // Multiplier returns the damage multiplier of feather falling.
 func (e FeatherFalling) Multiplier(lvl int) float64 {
@@ -25,13 +22,8 @@ func (e FeatherFalling) MaxLevel() int {
 	return 4
 }
 
-// WithLevel ...
-func (e FeatherFalling) WithLevel(level int) item.Enchantment {
-	return FeatherFalling{e.withLevel(level, e)}
-}
-
 // CompatibleWith ...
 func (e FeatherFalling) CompatibleWith(s item.Stack) bool {
-	b, ok := s.Item().(armour.Boots)
+	b, ok := s.Item().(item.BootsType)
 	return ok && b.Boots()
 }

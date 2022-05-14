@@ -24,7 +24,7 @@ func (c Cobblestone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Cobblestone) EncodeBlock() (string, map[string]interface{}) {
+func (c Cobblestone) EncodeBlock() (string, map[string]any) {
 	if c.Mossy {
 		return "minecraft:mossy_cobblestone", nil
 	}

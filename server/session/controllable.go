@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -12,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Controllable represents an entity that may be controlled by a Session. Generally, a Controllable is
+// Controllable represents an entity that may be controlled by a Session. Generally, Controllable is
 // implemented in the form of a Player.
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
@@ -20,13 +21,14 @@ type Controllable interface {
 	item.Carrier
 	form.Submitter
 	cmd.Source
+	chat.Subscriber
 	SetHeldItems(right, left item.Stack)
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	Speed() float64
 	Facing() cube.Direction
 
-	Chat(msg ...interface{})
+	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
 	GameMode() world.GameMode
 	SetGameMode(mode world.GameMode)
@@ -44,6 +46,7 @@ type Controllable interface {
 	PunchAir()
 
 	Respawn()
+	Dead() bool
 
 	StartSneaking()
 	Sneaking() bool
@@ -54,6 +57,10 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	StartFlying()
+	Flying() bool
+	StopFlying()
+	Jump()
 
 	StartBreaking(pos cube.Pos, face cube.Face)
 	ContinueBreaking(face cube.Face)

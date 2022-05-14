@@ -11,14 +11,14 @@ import (
 type Subscriber interface {
 	// Message sends a formatted message to the subscriber. The message is formatted as it would when using
 	// fmt.Println.
-	Message(a ...interface{})
+	Message(a ...any)
 }
 
 // StdoutSubscriber is an implementation of Subscriber that forwards messages sent to the chat to the stdout.
 type StdoutSubscriber struct{}
 
 // Message ...
-func (c StdoutSubscriber) Message(a ...interface{}) {
+func (c StdoutSubscriber) Message(a ...any) {
 	s := make([]string, len(a))
 	for i, b := range a {
 		s[i] = fmt.Sprint(b)

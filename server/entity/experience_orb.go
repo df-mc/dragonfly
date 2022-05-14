@@ -37,9 +37,9 @@ func (*ExperienceOrb) EncodeEntity() string {
 	return "minecraft:experience_orb"
 }
 
-// AABB ...
-func (*ExperienceOrb) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (e *ExperienceOrb) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Tick ...

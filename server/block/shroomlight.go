@@ -21,6 +21,6 @@ func (Shroomlight) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Shroomlight) EncodeBlock() (string, map[string]interface{}) {
+func (Shroomlight) EncodeBlock() (string, map[string]any) {
 	return "minecraft:shroomlight", nil
 }

@@ -34,7 +34,7 @@ func (t Torch) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(w, pos, face, t)
 	if !used {
 		return false
@@ -67,7 +67,7 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *
 // NeighbourUpdateTick ...
 func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -88,16 +88,16 @@ func (t Torch) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (t Torch) EncodeBlock() (name string, properties map[string]interface{}) {
+func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 	face := t.Facing.String()
 	if t.Facing == cube.FaceDown {
 		face = "top"
 	}
 	switch t.Type {
 	case NormalFire():
-		return "minecraft:torch", map[string]interface{}{"torch_facing_direction": face}
+		return "minecraft:torch", map[string]any{"torch_facing_direction": face}
 	case SoulFire():
-		return "minecraft:soul_torch", map[string]interface{}{"torch_facing_direction": face}
+		return "minecraft:soul_torch", map[string]any{"torch_facing_direction": face}
 	}
 	panic("invalid fire type")
 }

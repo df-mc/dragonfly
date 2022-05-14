@@ -3,14 +3,11 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
-	_ "unsafe" // For compiler directives.
 )
 
 // Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump
@@ -28,33 +25,42 @@ type Beacon struct {
 	level int
 }
 
+// BeaconSource represents a block which is capable of contributing to powering a beacon pyramid.
+type BeaconSource interface {
+	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
+	// beacon pyramid.
+	PowersBeacon() bool
+}
+
 // BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b), XPDropRange{})
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
+		return true
 	}
+	return true
 }
 
 // DecodeNBT ...
-func (b Beacon) DecodeNBT(data map[string]interface{}) interface{} {
-	b.level = int(nbtconv.MapInt32(data, "Levels"))
-	if primary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Primary"))); ok {
+func (b Beacon) DecodeNBT(data map[string]any) any {
+	b.level = int(nbtconv.Map[int32](data, "Levels"))
+	if primary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Primary"))); ok {
 		b.Primary = primary.(effect.LastingType)
 	}
-	if secondary, ok := effect.ByID(int(nbtconv.MapInt32(data, "Secondary"))); ok {
+	if secondary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Secondary"))); ok {
 		b.Secondary = secondary.(effect.LastingType)
 	}
 	return b
 }
 
 // EncodeNBT ...
-func (b Beacon) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (b Beacon) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"Levels": int32(b.level),
 	}
 	if primary, ok := effect.ID(b.Primary); ok {
@@ -95,7 +101,7 @@ func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 		// Recalculating pyramid level and powering up players in range once every 4 seconds.
 		b.level = b.recalculateLevel(pos, w)
 		if before != b.level {
-			w.SetBlock(pos, b)
+			w.SetBlock(pos, b, nil)
 		}
 		if b.level == 0 {
 			return
@@ -132,7 +138,7 @@ func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 	// Slow obstructed light calculation, if the fast way out didn't suffice.
-	return w.HighestLightBlocker(pos.X(), pos.Z()) > int16(pos[1])
+	return w.HighestLightBlocker(pos.X(), pos.Z()) > pos[1]
 }
 
 // broadcastBeaconEffects determines the entities in range which could receive the beacon's powers, and
@@ -182,10 +188,10 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 
 	// Finding entities in range.
 	r := 10 + (b.level * 10)
-	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
-		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
-		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
-	))
+	entitiesInRange := w.EntitiesWithin(cube.Box(
+		float64(pos.X()-r), -math.MaxFloat64, float64(pos.Z()-r),
+		float64(pos.X()+r), math.MaxFloat64, float64(pos.Z()+r),
+	), nil)
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
 			if primaryEff.Type() != nil {
@@ -198,12 +204,20 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 	}
 }
 
+// beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
+type beaconAffected interface {
+	// AddEffect adds a specific effect to the entity that implements this interface.
+	AddEffect(e effect.Effect)
+	// BeaconAffected returns whether this entity can be powered by a beacon.
+	BeaconAffected() bool
+}
+
 // EncodeItem ...
 func (Beacon) EncodeItem() (name string, meta int16) {
 	return "minecraft:beacon", 0
 }
 
 // EncodeBlock ...
-func (Beacon) EncodeBlock() (string, map[string]interface{}) {
+func (Beacon) EncodeBlock() (string, map[string]any) {
 	return "minecraft:beacon", nil
 }

@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // LapisBlock is a decorative mineral block that is crafted from lapis lazuli.
@@ -11,9 +11,9 @@ type LapisBlock struct {
 
 // BreakInfo ...
 func (l LapisBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(3, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(l), XPDropRange{})
+	return newBreakInfo(3, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(l))
 }
 
 // EncodeItem ...
@@ -22,6 +22,6 @@ func (LapisBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (LapisBlock) EncodeBlock() (string, map[string]interface{}) {
+func (LapisBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:lapis_block", nil
 }

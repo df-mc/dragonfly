@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -21,12 +22,13 @@ func (s SporeBlossom) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (s SporeBlossom) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, w) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 	}
 }
 
 // UseOnBlock ...
-func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, s)
 	if !used {
 		return
@@ -50,6 +52,6 @@ func (s SporeBlossom) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SporeBlossom) EncodeBlock() (string, map[string]interface{}) {
+func (s SporeBlossom) EncodeBlock() (string, map[string]any) {
 	return "minecraft:spore_blossom", nil
 }

@@ -16,6 +16,6 @@ func (AmethystBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (AmethystBlock) EncodeBlock() (string, map[string]interface{}) {
+func (AmethystBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:amethyst_block", nil
 }

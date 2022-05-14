@@ -3,8 +3,8 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -18,12 +18,31 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"go.uber.org/atomic"
 	"math"
 	"net"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
+
+// StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
+// StartShowingEntity is made.
+func (s *Session) StopShowingEntity(e world.Entity) {
+	s.HideEntity(e)
+	s.entityMutex.Lock()
+	s.hiddenEntities[e] = struct{}{}
+	s.entityMutex.Unlock()
+}
+
+// StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
+func (s *Session) StartShowingEntity(e world.Entity) {
+	s.entityMutex.Lock()
+	delete(s.hiddenEntities, e)
+	s.entityMutex.Unlock()
+	s.ViewEntity(e)
+	s.ViewEntityState(e)
+	s.ViewEntityItems(e)
+	s.ViewEntityArmour(e)
+}
 
 // closeCurrentContainer closes the container the player might currently have open.
 func (s *Session) closeCurrentContainer() {
@@ -31,16 +50,16 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
-	pos := s.openedPos.Load().(cube.Pos)
+	pos := s.openedPos.Load()
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}
 }
 
-// SendRespawn spawns the controllable of the session client-side in the world, provided it is has died.
-func (s *Session) SendRespawn() {
+// SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
+func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Position:        vec64To32(pos.Add(entityOffset(s.c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -52,7 +71,7 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 		WindowID: windowID,
 		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
 	}
-	for _, i := range inv.Items() {
+	for _, i := range inv.Slots() {
 		pk.Content = append(pk.Content, instanceFromItem(i))
 	}
 	s.writePacket(pk)
@@ -86,25 +105,25 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.offHand, true
 	case containerArmour:
 		// Armour inventory.
-		return s.armour.Inv(), true
+		return s.armour.Inventory(), true
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, barrel := b.(block.Barrel); barrel {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, beacon := b.(block.Beacon); beacon {
 				return s.ui, true
 			}
@@ -139,15 +158,6 @@ func (s *Session) SendSpeed(speed float64) {
 	})
 }
 
-// SendCameraShake sends a shake amount for the players camera
-func (s *Session) SendCameraShake(Intensity, Duration float32, Type CameraShakeType) {
-	s.writePacket(&packet.CameraShake{
-		Duration:  Duration,
-		Intensity: Intensity,
-		Type:      uint8(Type),
-	})
-}
-
 // SendFood ...
 func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	s.writePacket(&packet.UpdateAttributes{
@@ -169,14 +179,6 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 				Max:   5, Min: 0, Default: 0,
 			},
 		},
-	})
-}
-
-// SendVelocity sends the velocity of the player to the client.
-func (s *Session) SendVelocity(velocity mgl64.Vec3) {
-	s.writePacket(&packet.SetActorMotion{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Velocity:        vec64To32(velocity),
 	})
 }
 
@@ -213,15 +215,25 @@ func (s *Session) Transfer(ip net.IP, port int) {
 	})
 }
 
-// SendGameMode sends the game mode of the Controllable of the session to the client. It makes sure the right
+// SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
-	flags, id, perms := uint32(0), int32(packet.GameTypeSurvivalSpectator), uint32(0)
+	if s == Nop {
+		return
+	}
+	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
+		if s.c.Flying() {
+			flags |= packet.AdventureFlagFlying
+		}
 	}
 	if !mode.HasCollision() {
 		flags |= packet.AdventureFlagNoClip
+		defer s.c.StartFlying()
+		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
+		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
+		s.ViewEntityTeleport(s.c, s.c.Position())
 	}
 	if !mode.AllowsEditing() {
 		flags |= packet.AdventureFlagWorldImmutable
@@ -229,28 +241,21 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
 	}
 	if !mode.AllowsInteraction() {
-		flags |= packet.AdventureFlagNoPVP
+		flags |= packet.AdventureSettingsFlagsNoPvM
 	} else {
-		perms |= packet.ActionPermissionDoorsAndSwitched | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
+		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
-	if !mode.Visible() {
-		flags |= packet.AdventureFlagMuted
-	}
-	// Creative or spectator players:
+	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-		// Cannot interact with the world, so this is a spectator.
-		if !mode.AllowsEditing() && !mode.AllowsInteraction() {
-			id = packet.GameTypeCreativeSpectator
-		}
 	}
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 	s.writePacket(&packet.AdventureSettings{
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,
 		ActionPermissions: perms,
 	})
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 }
 
 // SendHealth sends the health and max health to the player.
@@ -389,7 +394,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:      s.Model,
 		PersonaSkin:       s.Persona,
 		CapeID:            uuid.New().String(),
-		FullSkinID:        uuid.New().String(),
+		FullID:            uuid.New().String(),
 		Animations:        animations,
 		Trusted:           true,
 	}
@@ -413,7 +418,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 	})
 }
 
-// HandleInventories starts handling the inventories of the Controllable of the session. It sends packets when
+// HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
@@ -490,6 +495,36 @@ func (s *Session) SetHeldSlot(slot int) error {
 	return nil
 }
 
+// UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
+// matches an expected item stack.
+func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
+	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
+	// different place in the inventory.
+	if slot > 8 {
+		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
+		// Old slot was the same as new slot, so don't do anything.
+		return nil
+	}
+	// The user swapped changed held slots so stop using item right away.
+	s.c.ReleaseItem()
+
+	clientSideItem := expected
+	actual, _ := s.inv.Item(slot)
+
+	// The item the client claims to have must be identical to the one we have registered server-side.
+	if !clientSideItem.Equal(actual) {
+		// Only ever debug these as they are frequent and expected to happen whenever client and server get
+		// out of sync.
+		s.log.Debugf("failed processing packet from %v (%v): failed changing held slot: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
+	}
+	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
+		viewer.ViewEntityItems(s.c)
+	}
+	return nil
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -497,10 +532,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID, ok = world.BlockRuntimeID(b)
-		if !ok {
-			panic("should never happen")
-		}
+		blockRuntimeID = world.BlockRuntimeID(b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -534,7 +566,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		var b world.Block
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
-		// return air anyways.
+		// return air anyway.
 		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}
@@ -582,7 +614,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
 	s.Cape.Pix = sk.CapeData
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err = json.Unmarshal(sk.SkinGeometry, &m); err != nil {
 		return skin.Skin{}, fmt.Errorf("SkinGeometry was not a valid JSON string: %v", err)
 	}
@@ -633,17 +665,13 @@ func (s *Session) SendExperienceValue(e *entity.ExperienceManager) {
 	})
 }
 
-// CameraShakeType is the type of camera shake that the player receives
-type CameraShakeType uint8
-
-const (
-	CameraShakePositional = iota
-	CameraShakeRotational
-)
-
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
+
+//go:linkname world_add github.com/df-mc/dragonfly/server/world.add
+//noinspection ALL
+func world_add(e world.Entity, w *world.World)

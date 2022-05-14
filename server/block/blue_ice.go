@@ -21,6 +21,6 @@ func (BlueIce) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (BlueIce) EncodeBlock() (string, map[string]interface{}) {
+func (BlueIce) EncodeBlock() (string, map[string]any) {
 	return "minecraft:blue_ice", nil
 }

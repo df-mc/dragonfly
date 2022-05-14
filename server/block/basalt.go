@@ -44,11 +44,11 @@ func (b Basalt) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
+func (b Basalt) EncodeBlock() (name string, properties map[string]any) {
 	if b.Polished {
-		return "minecraft:polished_basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
+		return "minecraft:polished_basalt", map[string]any{"pillar_axis": b.Axis.String()}
 	}
-	return "minecraft:basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
+	return "minecraft:basalt", map[string]any{"pillar_axis": b.Axis.String()}
 }
 
 // allBasalt ...

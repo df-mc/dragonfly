@@ -15,9 +15,9 @@ type NetherSprouts struct {
 }
 
 // NeighbourUpdateTick ...
-func (n NetherSprouts) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(n, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos) //TODO: Nylium & mycelium
+		w.SetBlock(pos, nil, nil) //TODO: Nylium & mycelium
 	}
 }
 
@@ -37,7 +37,7 @@ func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 
 // HasLiquidDrops ...
 func (n NetherSprouts) HasLiquidDrops() bool {
-	return true
+	return false
 }
 
 // FlammabilityInfo ...
@@ -47,7 +47,9 @@ func (n NetherSprouts) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (n NetherSprouts) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(n), XPDropRange{})
+	return newBreakInfo(0, func(t item.Tool) bool {
+		return t.ToolType() == item.TypeShears
+	}, nothingEffective, oneOf(n))
 }
 
 // EncodeItem ...
@@ -56,6 +58,6 @@ func (n NetherSprouts) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NetherSprouts) EncodeBlock() (string, map[string]interface{}) {
+func (n NetherSprouts) EncodeBlock() (string, map[string]any) {
 	return "minecraft:nether_sprouts", nil
 }

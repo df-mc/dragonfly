@@ -11,7 +11,7 @@ type Podzol struct {
 // SoilFor ...
 func (p Podzol) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, DeadBush:
 		return true
 	}
 	return false
@@ -33,6 +33,6 @@ func (Podzol) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Podzol) EncodeBlock() (string, map[string]interface{}) {
+func (Podzol) EncodeBlock() (string, map[string]any) {
 	return "minecraft:podzol", nil
 }

@@ -29,11 +29,11 @@ func (s Sandstone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s Sandstone) EncodeBlock() (string, map[string]interface{}) {
+func (s Sandstone) EncodeBlock() (string, map[string]any) {
 	if s.Red {
-		return "minecraft:red_sandstone", map[string]interface{}{"sand_stone_type": s.Type.String()}
+		return "minecraft:red_sandstone", map[string]any{"sand_stone_type": s.Type.String()}
 	}
-	return "minecraft:sandstone", map[string]interface{}{"sand_stone_type": s.Type.String()}
+	return "minecraft:sandstone", map[string]any{"sand_stone_type": s.Type.String()}
 }
 
 // allSandstones returns a list of all sandstone block variants.

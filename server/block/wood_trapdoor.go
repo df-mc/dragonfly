@@ -20,7 +20,7 @@ type WoodTrapdoor struct {
 	Wood WoodType
 	// Facing is the direction the trapdoor is facing.
 	Facing cube.Direction
-	// Open is whether or not the trapdoor is open.
+	// Open is whether the trapdoor is open.
 	Open bool
 	// Top is whether the trapdoor occupies the top or bottom part of a block.
 	Top bool
@@ -54,10 +54,11 @@ func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 }
 
 // Activate ...
-func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	t.Open = !t.Open
-	w.PlaceBlock(pos, t)
+	w.SetBlock(pos, t, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	return true
 }
 
 // BreakInfo ...
@@ -85,12 +86,12 @@ func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]interface{}) {
+func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]any) {
 	switch t.Wood {
 	case OakWood():
-		return "minecraft:trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
+		return "minecraft:trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	default:
-		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]interface{}{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
+		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	}
 }
 

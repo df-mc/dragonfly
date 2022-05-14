@@ -4,12 +4,13 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
 )
 
-// Coral is a non solid block that comes in 5 variants.
+// Coral is a non-solid block that comes in 5 variants.
 type Coral struct {
 	empty
 	transparent
@@ -22,7 +23,7 @@ type Coral struct {
 }
 
 // UseOnBlock ...
-func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
@@ -54,14 +55,15 @@ func (c Coral) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (c Coral) SideClosed(pos, side cube.Pos, w *world.World) bool {
+func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // NeighbourUpdateTick ...
-func (c Coral) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		return
 	}
 	if c.Dead {
@@ -83,10 +85,10 @@ func (c Coral) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 				adjacentWater = true
 			}
 		}
-	})
+	}, w.Range())
 	if !adjacentWater {
 		c.Dead = true
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 	}
 }
 
@@ -96,8 +98,8 @@ func (c Coral) BreakInfo() BreakInfo {
 }
 
 // EncodeBlock ...
-func (c Coral) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:coral", map[string]interface{}{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
+func (c Coral) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:coral", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...

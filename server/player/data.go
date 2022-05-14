@@ -52,6 +52,9 @@ type Data struct {
 	// FallDistance is the distance the player has currently been falling.
 	// This is used to calculate fall damage.
 	FallDistance float64
+	// Dimension is the ID of the dimension that the player was last in. The player is added to the correct world based
+	// on this number.
+	Dimension int
 }
 
 // InventoryData is a struct that contains all data of the player inventories.

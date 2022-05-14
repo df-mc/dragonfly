@@ -7,7 +7,7 @@ type DriedKelpBlock struct {
 
 // FlammabilityInfo ...
 func (DriedKelpBlock) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(60, 30, true)
+	return newFlammabilityInfo(30, 60, false)
 }
 
 // BreakInfo ...
@@ -21,6 +21,6 @@ func (DriedKelpBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DriedKelpBlock) EncodeBlock() (string, map[string]interface{}) {
+func (DriedKelpBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:dried_kelp_block", nil
 }

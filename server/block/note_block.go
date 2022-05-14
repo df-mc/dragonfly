@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -26,26 +25,28 @@ func (n NoteBlock) playNote(pos cube.Pos, w *world.World) {
 }
 
 // updateInstrument ...
-func (n NoteBlock) instrument(pos cube.Pos, w *world.World) instrument.Instrument {
-	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(InstrumentBlock); ok {
+func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
+	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(interface {
+		Instrument() sound.Instrument
+	}); ok {
 		return instrumentBlock.Instrument()
 	}
-	return instrument.Piano()
+	return sound.Piano()
 }
 
 // DecodeNBT ...
-func (n NoteBlock) DecodeNBT(data map[string]interface{}) interface{} {
-	n.Pitch = int(nbtconv.MapByte(data, "note"))
+func (n NoteBlock) DecodeNBT(data map[string]any) any {
+	n.Pitch = int(nbtconv.Map[byte](data, "note"))
 	return n
 }
 
 // EncodeNBT ...
-func (n NoteBlock) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"note": byte(n.Pitch)}
+func (n NoteBlock) EncodeNBT() map[string]any {
+	return map[string]any{"note": byte(n.Pitch)}
 }
 
 // Punch ...
-func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
@@ -53,13 +54,14 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
-		return
+		return false
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, w)
-	w.SetBlock(pos, n)
+	w.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+	return true
 }
 
 // BreakInfo ...
@@ -73,6 +75,6 @@ func (n NoteBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NoteBlock) EncodeBlock() (name string, properties map[string]interface{}) {
+func (n NoteBlock) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:noteblock", nil
 }

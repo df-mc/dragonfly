@@ -38,6 +38,6 @@ func (NetherBrickFence) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (NetherBrickFence) EncodeBlock() (string, map[string]interface{}) {
+func (NetherBrickFence) EncodeBlock() (string, map[string]any) {
 	return "minecraft:nether_brick_fence", nil
 }

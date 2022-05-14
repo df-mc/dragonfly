@@ -17,6 +17,6 @@ func (QuartzBricks) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (QuartzBricks) EncodeBlock() (string, map[string]interface{}) {
+func (QuartzBricks) EncodeBlock() (string, map[string]any) {
 	return "minecraft:quartz_bricks", nil
 }

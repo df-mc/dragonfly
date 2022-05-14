@@ -51,8 +51,8 @@ func (s EndBrickStairs) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s EndBrickStairs) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:end_brick_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+func (s EndBrickStairs) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:end_brick_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 }
 
 // CanDisplace ...

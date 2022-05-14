@@ -17,6 +17,6 @@ func (EndStone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (EndStone) EncodeBlock() (string, map[string]interface{}) {
+func (EndStone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:end_stone", nil
 }

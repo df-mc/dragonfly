@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,10 +8,10 @@ import (
 // faster than without tool and to break cobwebs rapidly.
 type Sword struct {
 	// Tier is the tier of the sword.
-	Tier tool.Tier
+	Tier ToolTier
 }
 
-// AttackDamage returns the attack damage of the sword.
+// AttackDamage returns the attack damage to the sword.
 func (s Sword) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage + 3
 }
@@ -23,8 +22,8 @@ func (s Sword) MaxCount() int {
 }
 
 // ToolType returns the tool type for swords.
-func (s Sword) ToolType() tool.Type {
-	return tool.TypeSword
+func (s Sword) ToolType() ToolType {
+	return TypeSword
 }
 
 // HarvestLevel returns the harvest level of the sword tier.

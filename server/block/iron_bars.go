@@ -33,6 +33,6 @@ func (IronBars) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (IronBars) EncodeBlock() (string, map[string]interface{}) {
+func (IronBars) EncodeBlock() (string, map[string]any) {
 	return "minecraft:iron_bars", nil
 }

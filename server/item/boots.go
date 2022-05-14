@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,18 +8,12 @@ import (
 // leather, gold, chain, iron and diamond.
 type Boots struct {
 	// Tier is the tier of the boots.
-	Tier armour.Tier
+	Tier ArmourTier
 }
 
 // Use handles the auto-equipping of boots in the armour slot when using it.
-func (b Boots) Use(_ *world.World, user User, _ *UseContext) bool {
-	if armoured, ok := user.(Armoured); ok {
-		currentEquipped := armoured.Armour().Boots()
-
-		right, left := user.HeldItems()
-		armoured.Armour().SetBoots(right)
-		user.SetHeldItems(currentEquipped, left)
-	}
+func (b Boots) Use(_ *world.World, _ User, ctx *UseContext) bool {
+	ctx.SwapHeldWithArmour(3)
 	return false
 }
 
@@ -40,14 +33,19 @@ func (b Boots) DurabilityInfo() DurabilityInfo {
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
 	switch b.Tier {
-	case armour.TierLeather, armour.TierGold, armour.TierChain:
+	case ArmourTierLeather, ArmourTierGold, ArmourTierChain:
 		return 1
-	case armour.TierIron:
+	case ArmourTierIron:
 		return 2
-	case armour.TierDiamond, armour.TierNetherite:
+	case ArmourTierDiamond, ArmourTierNetherite:
 		return 3
 	}
 	panic("invalid boots tier")
+}
+
+// Toughness ...
+func (b Boots) Toughness() float64 {
+	return b.Tier.Toughness
 }
 
 // KnockBackResistance ...

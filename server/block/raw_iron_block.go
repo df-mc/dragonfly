@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // RawIronBlock is a raw metal block equivalent to nine raw iron.
@@ -12,9 +12,9 @@ type RawIronBlock struct {
 
 // BreakInfo ...
 func (r RawIronBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(5, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(r), XPDropRange{})
+	return newBreakInfo(5, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(r))
 }
 
 // EncodeItem ...
@@ -23,6 +23,6 @@ func (RawIronBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (RawIronBlock) EncodeBlock() (string, map[string]interface{}) {
+func (RawIronBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:raw_iron_block", nil
 }

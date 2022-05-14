@@ -25,6 +25,6 @@ func (Netherrack) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Netherrack) EncodeBlock() (string, map[string]interface{}) {
+func (Netherrack) EncodeBlock() (string, map[string]any) {
 	return "minecraft:netherrack", nil
 }

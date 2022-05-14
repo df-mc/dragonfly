@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // NetheriteBlock is a precious mineral block made from 9 netherite ingots.
@@ -12,9 +12,9 @@ type NetheriteBlock struct {
 
 // BreakInfo ...
 func (n NetheriteBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(50, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(n), XPDropRange{})
+	return newBreakInfo(50, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
+	}, pickaxeEffective, oneOf(n))
 }
 
 // PowersBeacon ...
@@ -28,6 +28,6 @@ func (NetheriteBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (NetheriteBlock) EncodeBlock() (string, map[string]interface{}) {
+func (NetheriteBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:netherite_block", nil
 }

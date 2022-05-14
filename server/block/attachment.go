@@ -28,6 +28,11 @@ func (a Attachment) Uint8() uint8 {
 	return uint8(a.facing) << 1
 }
 
+// FaceUint8 returns the facing of the Attachment as a uint8.
+func (a Attachment) FaceUint8() uint8 {
+	return uint8(a.facing)
+}
+
 // RotateLeft rotates the Attachment the left way around by 90 degrees.
 func (a Attachment) RotateLeft() Attachment {
 	return Attachment{hanging: a.hanging, facing: a.facing.RotateLeft(), o: a.o.RotateLeft()}

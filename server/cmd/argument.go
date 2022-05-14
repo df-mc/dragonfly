@@ -109,9 +109,6 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 	if err == nil {
 		// The argument was parsed successfully, so it needs to be removed from the command line.
 		line.RemoveNext()
-		if _, ok := i.(mgl64.Vec3); ok {
-			line.RemoveN(2)
-		}
 	} else if err == ErrInsufficientArgs && optional {
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
 		// not matter. Make sure to clear the value though.
@@ -206,7 +203,7 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 	if found == "" {
 		return fmt.Errorf(`invalid argument "%v" for enum parameter "%v"`, arg, v.Type())
 	}
-	v.SetOption(found, val)
+	val.SetString(found)
 	return nil
 }
 
@@ -227,9 +224,11 @@ func (p parser) vec3(line *Line, v reflect.Value) error {
 	if err := p.float(line, v.Index(0)); err != nil {
 		return err
 	}
+	line.RemoveNext()
 	if err := p.float(line, v.Index(1)); err != nil {
 		return err
 	}
+	line.RemoveNext()
 	return p.float(line, v.Index(2))
 }
 
@@ -294,7 +293,7 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 // from the players Target list.
 func (p parser) parsePlayer(players []Target, name string) (Target, error) {
 	for _, p := range players {
-		if p.Name() == name {
+		if strings.EqualFold(p.Name(), name) {
 			// We found a match for this amount of arguments. Following arguments may still be a better
 			// match though (subset in the name, such as 'Hello' vs 'Hello World' as name), so keep going
 			// until we saturate the command line or pass 15 characters.

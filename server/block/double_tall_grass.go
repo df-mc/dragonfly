@@ -3,8 +3,8 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -30,16 +30,19 @@ func (d DoubleTallGrass) HasLiquidDrops() bool {
 func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.UpperPart {
 		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleTallGrass); !ok || bottom.Type != d.Type || bottom.UpperPart {
-			w.BreakBlock(pos)
+			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		}
 		return
 	}
 	if upper, ok := w.Block(pos.Side(cube.FaceUp)).(DoubleTallGrass); !ok || upper.Type != d.Type || !upper.UpperPart {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		return
 	}
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 
@@ -68,15 +71,15 @@ func (d DoubleTallGrass) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DoubleTallGrass) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == tool.TypeShears || hasSilkTouch(enchantments) {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
-		return []item.Stack{}
-	}, XPDropRange{})
+		return nil
+	})
 }
 
 // EncodeItem ...
@@ -85,8 +88,8 @@ func (d DoubleTallGrass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DoubleTallGrass) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:double_plant", map[string]interface{}{"double_flower_type": d.Type.String(), "upper_block_bit": d.UpperPart}
+func (d DoubleTallGrass) EncodeBlock() (string, map[string]any) {
+	return "minecraft:double_plant", map[string]any{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
 }
 
 // allDoubleTallGrass ...
