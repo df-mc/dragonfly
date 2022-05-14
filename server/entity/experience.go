@@ -57,11 +57,12 @@ func (e *ExperienceManager) Experience() int {
 
 // Add adds experience to the total experience.
 func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
-	amount = int(math.Min(float64(amount), float64(math.MinInt32-e.total)))
+	amount = int(math.Min(float64(amount), float64(math.MaxInt32-e.total)))
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	current := progressToExperience(e.level, e.progress)
 	e.total += amount
-	e.level, e.progress = progressFromExperience(e.total)
+	e.level, e.progress = progressFromExperience(current + amount)
 	return e.level, e.progress
 }
 
