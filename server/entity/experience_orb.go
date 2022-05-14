@@ -2,15 +2,17 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// ExperienceOrb is an entity carrying a varying amount of experience. These can be collected by nearby players, and
+// ExperienceOrb is an entity that carries a varying amount of experience. These can be collected by nearby players, and
 // are then added to the player's own experience.
 type ExperienceOrb struct {
 	transform
-	xp int
-	c  *MovementComputer
+	age, xp int
+	c       *MovementComputer
 }
 
 // NewExperienceOrb creates a new experience orb and returns it.
@@ -34,7 +36,7 @@ func (*ExperienceOrb) Name() string {
 
 // EncodeEntity ...
 func (*ExperienceOrb) EncodeEntity() string {
-	return "minecraft:experience_orb"
+	return "minecraft:xp_orb"
 }
 
 // BBox ...
@@ -43,7 +45,40 @@ func (e *ExperienceOrb) BBox() cube.BBox {
 }
 
 // Tick ...
-func (e *ExperienceOrb) Tick(int64) {
-	//TODO implement me
-	panic("implement me")
+func (e *ExperienceOrb) Tick(w *world.World, current int64) {
+	e.mu.Lock()
+	m := e.c.TickMovement(e, e.pos, e.vel, 0, 0)
+	e.pos, e.vel = m.pos, m.vel
+	e.mu.Unlock()
+
+	m.Send()
+
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
+		_ = e.Close()
+		return
+	}
+	if e.age++; e.age > 6000 {
+		_ = e.Close()
+		return
+	}
+
+	// TODO: Follow players.
+}
+
+// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
+func (e *ExperienceOrb) DecodeNBT(data map[string]any) any {
+	o := NewExperienceOrb(int(nbtconv.Map[int32](data, "Value")), nbtconv.MapVec3(data, "Pos"))
+	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	o.age = int(nbtconv.Map[int16](data, "Age"))
+	return e
+}
+
+// EncodeNBT encodes the Item entity's properties as a map and returns it.
+func (e *ExperienceOrb) EncodeNBT() map[string]any {
+	return map[string]any{
+		"Age":    int16(e.age),
+		"Value":  int32(e.xp),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(e.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(e.Velocity()),
+	}
 }
