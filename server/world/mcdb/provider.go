@@ -21,9 +21,9 @@ import (
 // Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
 type Provider struct {
 	db  *leveldb.DB
-	dim world.Dimension
 	dir string
 	d   data
+	set *world.Settings
 }
 
 // chunkVersion is the current version of chunks.
@@ -35,10 +35,10 @@ const chunkVersion = 27
 // A compression type may be passed which will be used for the compression of new blocks written to the database. This
 // will only influence the compression. Decompression of the database will happen based on IDs found in the compressed
 // blocks.
-func New(dir string, d world.Dimension, compression opt.Compression) (*Provider, error) {
+func New(dir string, compression opt.Compression) (*Provider, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	p := &Provider{dir: dir, dim: d}
+	p := &Provider{dir: dir}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
@@ -56,19 +56,15 @@ func New(dir string, d world.Dimension, compression opt.Compression) (*Provider,
 			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
 		p.d.WorldStartCount++
+		p.loadSettings()
 	}
-	db, ok := cacheLoad(dir)
-	if !ok {
-		var err error
-		if db, err = leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
-			Compression: compression,
-			BlockSize:   16 * opt.KiB,
-		}); err != nil {
-			return nil, fmt.Errorf("error opening leveldb database: %w", err)
-		}
-		cacheStore(dir, db)
+	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
+		Compression: compression,
+		BlockSize:   16 * opt.KiB,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error opening leveldb database: %w", err)
 	}
-
 	p.db = db
 	return p, nil
 }
@@ -104,20 +100,28 @@ func (p *Provider) initDefaultLevelDat() {
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
-func (p *Provider) Settings(s *world.Settings) {
-	s.Name = p.d.LevelName
-	s.Spawn = cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)}
-	s.Time = p.d.Time
-	s.TimeCycle = p.d.DoDayLightCycle
-	s.WeatherCycle = p.d.DoWeatherCycle
-	s.RainTime = int64(p.d.RainTime)
-	s.Raining = p.d.RainLevel > 0
-	s.ThunderTime = int64(p.d.LightningTime)
-	s.Thundering = p.d.LightningLevel > 0
-	s.CurrentTick = p.d.CurrentTick
-	s.DefaultGameMode = p.loadDefaultGameMode()
-	s.Difficulty = p.loadDifficulty()
-	s.TickRange = p.d.ServerChunkTickRange
+func (p *Provider) Settings() *world.Settings {
+	return p.set
+}
+
+// loadSettings loads the settings in the level.dat into a world.Settings struct and stores it, so that it can be
+// returned through a call to Settings.
+func (p *Provider) loadSettings() {
+	p.set = &world.Settings{
+		Name:            p.d.LevelName,
+		Spawn:           cube.Pos{int(p.d.SpawnX), int(p.d.SpawnY), int(p.d.SpawnZ)},
+		Time:            p.d.Time,
+		TimeCycle:       p.d.DoDayLightCycle,
+		RainTime:        int64(p.d.RainTime),
+		Raining:         p.d.RainLevel > 0,
+		ThunderTime:     int64(p.d.LightningTime),
+		Thundering:      p.d.LightningLevel > 0,
+		WeatherCycle:    p.d.DoWeatherCycle,
+		CurrentTick:     p.d.CurrentTick,
+		DefaultGameMode: p.loadDefaultGameMode(),
+		Difficulty:      p.loadDifficulty(),
+		TickRange:       p.d.ServerChunkTickRange,
+	}
 }
 
 // SaveSettings saves the world.Settings passed to the level.dat.
@@ -143,9 +147,9 @@ func (p *Provider) SaveSettings(s *world.Settings) {
 
 // LoadChunk loads a chunk at the position passed from the leveldb database. If it doesn't exist, exists is
 // false. If an error is returned, exists is always assumed to be true.
-func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bool, err error) {
+func (p *Provider) LoadChunk(position world.ChunkPos, dim world.Dimension) (c *chunk.Chunk, exists bool, err error) {
 	data := chunk.SerialisedData{}
-	key := p.index(position)
+	key := p.index(position, dim)
 
 	// This key is where the version of a chunk resides. The chunk version has changed many times, without any
 	// actual substantial changes, so we don't check this.
@@ -173,9 +177,9 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 	if err != nil && err != leveldb.ErrNotFound {
 		return nil, true, fmt.Errorf("error reading block entities: %w", err)
 	}
-	data.SubChunks = make([][]byte, (p.dim.Range().Height()>>4)+1)
+	data.SubChunks = make([][]byte, (dim.Range().Height()>>4)+1)
 	for i := range data.SubChunks {
-		data.SubChunks[i], err = p.db.Get(append(key, keySubChunkData, uint8(i+(p.dim.Range()[0]>>4))), nil)
+		data.SubChunks[i], err = p.db.Get(append(key, keySubChunkData, uint8(i+(dim.Range()[0]>>4))), nil)
 		if err == leveldb.ErrNotFound {
 			// No sub chunk present at this Y level. We skip this one and move to the next, which might still
 			// be present.
@@ -184,16 +188,16 @@ func (p *Provider) LoadChunk(position world.ChunkPos) (c *chunk.Chunk, exists bo
 			return nil, true, fmt.Errorf("error reading sub chunk data %v: %w", i, err)
 		}
 	}
-	c, err = chunk.DiskDecode(data, p.dim.Range())
+	c, err = chunk.DiskDecode(data, dim.Range())
 	return c, true, err
 }
 
 // SaveChunk saves a chunk at the position passed to the leveldb database. Its version is written as the
 // version in the chunkVersion constant.
-func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk) error {
+func (p *Provider) SaveChunk(position world.ChunkPos, c *chunk.Chunk, dim world.Dimension) error {
 	data := chunk.Encode(c, chunk.DiskEncoding)
 
-	key := p.index(position)
+	key := p.index(position, dim)
 	_ = p.db.Put(append(key, keyVersion), []byte{chunkVersion}, nil)
 	// Write the heightmap by just writing 512 empty bytes.
 	_ = p.db.Put(append(key, key3DData), append(make([]byte, 512), data.Biomes...), nil)
@@ -265,8 +269,8 @@ func (p *Provider) saveDifficulty(d world.Difficulty) {
 }
 
 // LoadEntities loads all entities from the chunk position passed.
-func (p *Provider) LoadEntities(pos world.ChunkPos) ([]world.SaveableEntity, error) {
-	data, err := p.db.Get(append(p.index(pos), keyEntities), nil)
+func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]world.SaveableEntity, error) {
+	data, err := p.db.Get(append(p.index(pos, dim), keyEntities), nil)
 	if err != leveldb.ErrNotFound && err != nil {
 		return nil, err
 	}
@@ -299,9 +303,9 @@ func (p *Provider) LoadEntities(pos world.ChunkPos) ([]world.SaveableEntity, err
 }
 
 // SaveEntities saves all entities to the chunk position passed.
-func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEntity) error {
+func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEntity, dim world.Dimension) error {
 	if len(entities) == 0 {
-		return p.db.Delete(append(p.index(pos), keyEntities), nil)
+		return p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -313,12 +317,12 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEnt
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
 		}
 	}
-	return p.db.Put(append(p.index(pos), keyEntities), buf.Bytes(), nil)
+	return p.db.Put(append(p.index(pos, dim), keyEntities), buf.Bytes(), nil)
 }
 
 // LoadBlockNBT loads all block entities from the chunk position passed.
-func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]any, error) {
-	data, err := p.db.Get(append(p.index(position), keyBlockEntities), nil)
+func (p *Provider) LoadBlockNBT(position world.ChunkPos, dim world.Dimension) ([]map[string]any, error) {
+	data, err := p.db.Get(append(p.index(position, dim), keyBlockEntities), nil)
 	if err != leveldb.ErrNotFound && err != nil {
 		return nil, err
 	}
@@ -338,9 +342,9 @@ func (p *Provider) LoadBlockNBT(position world.ChunkPos) ([]map[string]any, erro
 }
 
 // SaveBlockNBT saves all block NBT data to the chunk position passed.
-func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any) error {
+func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any, dim world.Dimension) error {
 	if len(data) == 0 {
-		return p.db.Delete(append(p.index(position), keyBlockEntities), nil)
+		return p.db.Delete(append(p.index(position, dim), keyBlockEntities), nil)
 	}
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
@@ -349,16 +353,12 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any) 
 			return fmt.Errorf("error encoding block NBT: %w", err)
 		}
 	}
-	return p.db.Put(append(p.index(position), keyBlockEntities), buf.Bytes(), nil)
+	return p.db.Put(append(p.index(position, dim), keyBlockEntities), buf.Bytes(), nil)
 }
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
 func (p *Provider) Close() error {
 	p.d.LastPlayed = time.Now().Unix()
-	if cacheDelete(p.dir) != 0 {
-		// The same provider is still alive elsewhere. Don't store the data to the level.dat and levelname.txt just yet.
-		return nil
-	}
 	f, err := os.OpenFile(filepath.Join(p.dir, "level.dat"), os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("error opening level.dat file: %w", err)
@@ -387,8 +387,8 @@ func (p *Provider) Close() error {
 
 // index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New
 // is not world.Overworld, the length of the index returned is 12. It is 8 otherwise.
-func (p *Provider) index(position world.ChunkPos) []byte {
-	x, z, dim := uint32(position[0]), uint32(position[1]), uint32(p.dim.EncodeDimension())
+func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
+	x, z, dim := uint32(position[0]), uint32(position[1]), uint32(d.EncodeDimension())
 	b := make([]byte, 12)
 
 	binary.LittleEndian.PutUint32(b, x)
