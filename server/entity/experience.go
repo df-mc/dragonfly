@@ -31,7 +31,7 @@ func (e *ExperienceManager) Level() int {
 func (e *ExperienceManager) Experience() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return progressToExperience(e.level, e.progress)
+	return int(float64(experienceForLevel(e.level)) * e.progress)
 }
 
 // Progress returns the progress towards the next level, calculated using the current level and experience.
@@ -106,11 +106,6 @@ func progressFromExperience(experience int) (level int, progress float64) {
 		sol = -b / (2 * a)
 	}
 	return int(sol), sol - math.Trunc(sol)
-}
-
-// progressToExperience returns the amount of experience needed for the given level and progress.
-func progressToExperience(level int, progress float64) int {
-	return int(float64(experienceForLevel(level)) * progress)
 }
 
 // experienceForLevels calculates the amount of experience needed in total to reach a certain level.
