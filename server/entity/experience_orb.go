@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"golang.org/x/exp/slices"
 	"math"
 	"time"
 )
@@ -19,8 +20,28 @@ type ExperienceOrb struct {
 	c          *MovementComputer
 }
 
+// orbSplitSizes contains split sizes used for dropping experience orbs.
+var orbSplitSizes = []int{2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1}
+
+// NewExperienceOrbs takes in a position and an amount and automatically splits the amount into multiple orbs, returning
+// a slice of the created orbs.
+func NewExperienceOrbs(pos mgl64.Vec3, amount int) (orbs []*ExperienceOrb) {
+	for amount > 0 {
+		size := orbSplitSizes[slices.IndexFunc(orbSplitSizes, func(value int) bool {
+			if amount >= value {
+				return true
+			}
+			return false
+		})]
+
+		orbs = append(orbs, NewExperienceOrb(pos, size))
+		amount -= size
+	}
+	return
+}
+
 // NewExperienceOrb creates a new experience orb and returns it.
-func NewExperienceOrb(xp int, pos mgl64.Vec3) *ExperienceOrb {
+func NewExperienceOrb(pos mgl64.Vec3, xp int) *ExperienceOrb {
 	o := &ExperienceOrb{
 		xp:         xp,
 		lastSearch: time.Now(),
@@ -45,8 +66,13 @@ func (*ExperienceOrb) EncodeEntity() string {
 }
 
 // BBox ...
-func (e *ExperienceOrb) BBox() cube.BBox {
+func (*ExperienceOrb) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+// Experience returns the amount of experience the orb carries.
+func (e *ExperienceOrb) Experience() int {
+	return e.xp
 }
 
 // experienceCollector represents an entity that can collect experience orbs.
@@ -107,7 +133,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 			e.vel = e.vel.Add(vec.Normalize().Mul(0.2 * math.Pow(1-math.Sqrt(dist), 2)))
 		}
 
-		if e.BBox().IntersectsWith(e.target.BBox()) {
+		if e.BBox().Translate(e.pos).IntersectsWith(e.target.BBox().Translate(e.target.Position())) {
 			e.target.AddExperience(e.xp)
 			_ = e.Close()
 		}
@@ -116,7 +142,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 
 // DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
 func (e *ExperienceOrb) DecodeNBT(data map[string]any) any {
-	o := NewExperienceOrb(int(nbtconv.Map[int32](data, "Value")), nbtconv.MapVec3(data, "Pos"))
+	o := NewExperienceOrb(nbtconv.MapVec3(data, "Pos"), int(nbtconv.Map[int32](data, "Value")))
 	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
 	o.age = int(nbtconv.Map[int16](data, "Age"))
 	return e
