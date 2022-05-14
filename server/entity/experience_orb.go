@@ -28,10 +28,7 @@ var orbSplitSizes = []int{2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1}
 func NewExperienceOrbs(pos mgl64.Vec3, amount int) (orbs []*ExperienceOrb) {
 	for amount > 0 {
 		size := orbSplitSizes[slices.IndexFunc(orbSplitSizes, func(value int) bool {
-			if amount >= value {
-				return true
-			}
-			return false
+			return amount >= value
 		})]
 
 		orbs = append(orbs, NewExperienceOrb(pos, size))
