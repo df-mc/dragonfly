@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
@@ -24,9 +24,9 @@ func (e *ExperienceOrb) EncodeEntity() string {
 	return "minecraft:xp_orb"
 }
 
-// AABB ...
-func (e *ExperienceOrb) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (e *ExperienceOrb) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 func NewExperienceOrb(experienceAmount int, pos mgl64.Vec3) *ExperienceOrb {
 	if experienceAmount > math.MaxInt16 {

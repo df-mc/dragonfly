@@ -117,10 +117,11 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		nameTag:    *atomic.NewValue(name),
 		heldSlot:   atomic.NewUint32(0),
 		locale:     language.BritishEnglish,
-		scale:      *atomic.NewFloat64(1),immunity:  *atomic.NewValue(time.Now()),
-		pos:       *atomic.NewValue(pos),
-		cooldowns: make(map[itemHash]time.Time),
-		mc:        &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		scale:      *atomic.NewFloat64(1),
+		immunity:   *atomic.NewValue(time.Now()),
+		pos:        *atomic.NewValue(pos),
+		cooldowns:  make(map[itemHash]time.Time),
+		mc:         &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }

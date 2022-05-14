@@ -665,14 +665,6 @@ func (s *Session) SendExperienceValue(e *entity.ExperienceManager) {
 	})
 }
 
-// CameraShakeType is the type of camera shake that the player receives
-type CameraShakeType uint8
-
-const (
-	CameraShakePositional = iota
-	CameraShakeRotational
-)
-
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
