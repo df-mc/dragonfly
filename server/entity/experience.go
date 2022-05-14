@@ -106,7 +106,6 @@ func progressFromExperience(experience int) (level int, progress float64) {
 	} else if d == 0 {
 		sol = -b / (2 * a)
 	}
-
 	return int(sol), sol - math.Trunc(sol)
 }
 
