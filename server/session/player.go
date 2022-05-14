@@ -525,8 +525,8 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	return nil
 }
 
-// SendExperienceValue send the xp level and progress to player.
-func (s *Session) SendExperienceValue(e *entity.ExperienceManager) {
+// SendExperience sends the experience level and progress from the given experience manager to the player.
+func (s *Session) SendExperience(e *entity.ExperienceManager) {
 	level, progress := e.Level(), e.Progress()
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
