@@ -42,25 +42,19 @@ func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	return placed(ctx)
 }
 
-var quartzBreakInfo = newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(Quartz{}))
-
 // BreakInfo ...
 func (q Quartz) BreakInfo() BreakInfo {
-	return quartzBreakInfo
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(Quartz{}), XPDropRange{})
 }
 
 // BreakInfo ...
 func (c ChiseledQuartz) BreakInfo() BreakInfo {
-	i := quartzBreakInfo
-	i.Drops = simpleDrops(item.NewStack(c, 1))
-	return i
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(c, 1)), XPDropRange{})
 }
 
 // BreakInfo ...
 func (q QuartzPillar) BreakInfo() BreakInfo {
-	i := quartzBreakInfo
-	i.Drops = simpleDrops(item.NewStack(q, 1))
-	return i
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(q, 1)), XPDropRange{})
 }
 
 // EncodeItem ...

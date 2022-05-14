@@ -14,7 +14,7 @@ func (h HoneycombBlock) Instrument() instrument.Instrument {
 
 // BreakInfo ...
 func (h HoneycombBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(h))
+	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(h), XPDropRange{})
 }
 
 // EncodeItem ...

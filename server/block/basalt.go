@@ -32,7 +32,7 @@ func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (b Basalt) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b))
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b), XPDropRange{})
 }
 
 // EncodeItem ...

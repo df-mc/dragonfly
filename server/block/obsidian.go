@@ -41,5 +41,5 @@ func (o Obsidian) EncodeBlock() (string, map[string]interface{}) {
 func (o Obsidian) BreakInfo() BreakInfo {
 	return newBreakInfo(50, func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(o))
+	}, pickaxeEffective, oneOf(o), XPDropRange{})
 }

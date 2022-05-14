@@ -76,7 +76,7 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
 		return []item.Stack{}
-	})
+	}, XPDropRange{})
 }
 
 // EncodeItem ...

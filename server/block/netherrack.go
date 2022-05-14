@@ -16,7 +16,7 @@ func (n Netherrack) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (n Netherrack) BreakInfo() BreakInfo {
-	return newBreakInfo(0.4, pickaxeHarvestable, pickaxeEffective, oneOf(n))
+	return newBreakInfo(0.4, pickaxeHarvestable, pickaxeEffective, oneOf(n), XPDropRange{})
 }
 
 // EncodeItem ...

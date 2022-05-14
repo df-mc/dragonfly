@@ -17,7 +17,7 @@ type StainedTerracotta struct {
 
 // BreakInfo ...
 func (t StainedTerracotta) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t), XPDropRange{})
 }
 
 // EncodeItem ...

@@ -17,7 +17,7 @@ type StainedGlass struct {
 
 // BreakInfo ...
 func (g StainedGlass) BreakInfo() BreakInfo {
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(g))
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(g), XPDropRange{})
 }
 
 // EncodeItem ...

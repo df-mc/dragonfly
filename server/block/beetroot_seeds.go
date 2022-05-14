@@ -55,7 +55,7 @@ func (b BeetrootSeeds) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(b, 1)}
 		}
 		return []item.Stack{item.NewStack(item.Beetroot{}, 1), item.NewStack(b, rand.Intn(4)+1)}
-	})
+	}, XPDropRange{})
 }
 
 // EncodeItem ...

@@ -34,7 +34,7 @@ func (Carpet) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (c Carpet) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c), XPDropRange{})
 }
 
 // EncodeItem ...

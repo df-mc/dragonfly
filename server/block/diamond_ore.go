@@ -16,11 +16,9 @@ type DiamondOre struct {
 
 // BreakInfo ...
 func (d DiamondOre) BreakInfo() BreakInfo {
-	i := newBreakInfo(d.Type.Hardness(), func(t tool.Tool) bool {
+	return newBreakInfo(d.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d))
-	i.XPDrops = XPDropRange{3, 7}
-	return i
+	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d), XPDropRange{3, 7})
 }
 
 // EncodeItem ...

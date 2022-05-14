@@ -15,7 +15,7 @@ type Prismarine struct {
 
 // BreakInfo ...
 func (p Prismarine) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p), XPDropRange{})
 }
 
 // EncodeItem ...

@@ -45,7 +45,7 @@ func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 
 // BreakInfo ...
 func (l Log) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l), XPDropRange{})
 }
 
 // Strip ...

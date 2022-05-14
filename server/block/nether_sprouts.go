@@ -47,7 +47,7 @@ func (n NetherSprouts) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (n NetherSprouts) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(n))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(n), XPDropRange{})
 }
 
 // EncodeItem ...

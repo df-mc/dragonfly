@@ -26,7 +26,7 @@ func (w Wool) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (w Wool) BreakInfo() BreakInfo {
-	return newBreakInfo(0.8, alwaysHarvestable, shearsEffective, oneOf(w))
+	return newBreakInfo(0.8, alwaysHarvestable, shearsEffective, oneOf(w), XPDropRange{})
 }
 
 // EncodeItem ...

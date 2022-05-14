@@ -80,7 +80,7 @@ func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity) {
 
 // BreakInfo ...
 func (f Farmland) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}), XPDropRange{})
 }
 
 // EncodeBlock ...

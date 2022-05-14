@@ -54,7 +54,7 @@ func (s WoodStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s WoodStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(s))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(s), XPDropRange{})
 }
 
 // EncodeItem ...

@@ -41,7 +41,7 @@ func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 
 // BreakInfo ...
 func (s SporeBlossom) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(s))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(s), XPDropRange{})
 }
 
 // EncodeItem ...

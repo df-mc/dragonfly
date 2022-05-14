@@ -18,7 +18,7 @@ type GoldOre struct {
 func (g GoldOre) BreakInfo() BreakInfo {
 	return newBreakInfo(g.Type.Hardness(), func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.RawGold{}, g))
+	}, pickaxeEffective, silkTouchOneOf(item.RawGold{}, g), XPDropRange{})
 }
 
 // EncodeItem ...

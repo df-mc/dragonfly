@@ -13,7 +13,7 @@ type LapisBlock struct {
 func (l LapisBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t tool.Tool) bool {
 		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(l))
+	}, pickaxeEffective, oneOf(l), XPDropRange{})
 }
 
 // EncodeItem ...

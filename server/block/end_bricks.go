@@ -8,7 +8,7 @@ type EndBricks struct {
 
 // BreakInfo ...
 func (e EndBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(e))
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(e), XPDropRange{})
 }
 
 // EncodeItem ...

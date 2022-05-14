@@ -36,7 +36,7 @@ func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (c ConcretePowder) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(c))
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(c), XPDropRange{})
 }
 
 // EncodeItem ...
