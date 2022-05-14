@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // WoodType represents a type of wood of a block. Some blocks, such as log blocks, bark blocks, wooden planks and
 // others carry one of these types.
 type WoodType struct {
@@ -10,42 +8,42 @@ type WoodType struct {
 
 // OakWood returns oak wood material.
 func OakWood() WoodType {
-	return WoodType{wood(0)}
+	return WoodType{0}
 }
 
 // SpruceWood returns spruce wood material.
 func SpruceWood() WoodType {
-	return WoodType{wood(1)}
+	return WoodType{1}
 }
 
-// BirchWood returns birch wood material.
+// BirchWood returns birchwood material.
 func BirchWood() WoodType {
-	return WoodType{wood(2)}
+	return WoodType{2}
 }
 
 // JungleWood returns jungle wood material.
 func JungleWood() WoodType {
-	return WoodType{wood(3)}
+	return WoodType{3}
 }
 
 // AcaciaWood returns acacia wood material.
 func AcaciaWood() WoodType {
-	return WoodType{wood(4)}
+	return WoodType{4}
 }
 
 // DarkOakWood returns dark oak wood material.
 func DarkOakWood() WoodType {
-	return WoodType{wood(5)}
+	return WoodType{5}
 }
 
 // CrimsonWood returns crimson wood material.
 func CrimsonWood() WoodType {
-	return WoodType{wood(6)}
+	return WoodType{6}
 }
 
 // WarpedWood returns warped wood material.
 func WarpedWood() WoodType {
-	return WoodType{wood(7)}
+	return WoodType{7}
 }
 
 // WoodTypes returns a list of all wood types
@@ -81,29 +79,6 @@ func (w wood) Name() string {
 		return "Warped Wood"
 	}
 	panic("unknown wood type")
-}
-
-// FromString ...
-func (w wood) FromString(s string) (interface{}, error) {
-	switch s {
-	case "oak":
-		return WoodType{wood(0)}, nil
-	case "spruce":
-		return WoodType{wood(1)}, nil
-	case "birch":
-		return WoodType{wood(2)}, nil
-	case "jungle":
-		return WoodType{wood(3)}, nil
-	case "acacia":
-		return WoodType{wood(4)}, nil
-	case "dark_oak":
-		return WoodType{wood(5)}, nil
-	case "crimson":
-		return WoodType{wood(6)}, nil
-	case "warped":
-		return WoodType{wood(7)}, nil
-	}
-	return nil, fmt.Errorf("unexpected wood type '%v', expecting one of 'oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'crimson' or 'warped'", s)
 }
 
 // String ...

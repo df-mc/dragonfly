@@ -1,6 +1,8 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/block/instrument"
+import (
+	"github.com/df-mc/dragonfly/server/world/sound"
+)
 
 // HoneycombBlock is a decorative blocks crafted from honeycombs.
 type HoneycombBlock struct {
@@ -8,8 +10,8 @@ type HoneycombBlock struct {
 }
 
 // Instrument ...
-func (h HoneycombBlock) Instrument() instrument.Instrument {
-	return instrument.Flute()
+func (h HoneycombBlock) Instrument() sound.Instrument {
+	return sound.Flute()
 }
 
 // BreakInfo ...
@@ -23,6 +25,6 @@ func (HoneycombBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (HoneycombBlock) EncodeBlock() (string, map[string]interface{}) {
+func (HoneycombBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:honeycomb_block", nil
 }

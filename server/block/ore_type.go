@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // OreType represents a variant of ore blocks.
 type OreType struct {
 	ore
@@ -9,12 +7,12 @@ type OreType struct {
 
 // StoneOre returns the stone ore variant.
 func StoneOre() OreType {
-	return OreType{ore(0)}
+	return OreType{0}
 }
 
 // DeepslateOre returns the deepslate ore variant.
 func DeepslateOre() OreType {
-	return OreType{ore(1)}
+	return OreType{1}
 }
 
 // OreTypes returns a list of all ore types
@@ -38,17 +36,6 @@ func (o ore) Name() string {
 		return "Deepslate"
 	}
 	panic("unknown ore type")
-}
-
-// FromString ...
-func (o ore) FromString(s string) (interface{}, error) {
-	switch s {
-	case "stone":
-		return OreType{ore(0)}, nil
-	case "deepslate":
-		return OreType{ore(1)}, nil
-	}
-	return nil, fmt.Errorf("unexpected ore type '%v', expecting one of 'stone' or 'deepslate'", s)
 }
 
 // String ...

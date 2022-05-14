@@ -39,12 +39,12 @@ func (p Planks) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
+func (p Planks) EncodeBlock() (name string, properties map[string]any) {
 	switch p.Wood {
 	case CrimsonWood(), WarpedWood():
 		return "minecraft:" + p.Wood.String() + "_planks", nil
 	default:
-		return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
+		return "minecraft:planks", map[string]any{"wood_type": p.Wood.String()}
 	}
 }
 

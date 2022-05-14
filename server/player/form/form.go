@@ -26,7 +26,7 @@ type Custom struct {
 
 // MarshalJSON ...
 func (f Custom) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "custom_form",
 		"title":   f.title,
 		"content": f.Elements(),
@@ -39,7 +39,7 @@ func (f Custom) MarshalJSON() ([]byte, error) {
 // fields are used to set text, defaults and placeholders. If the Submittable passed is not a struct, New
 // panics. New also panics if one of the exported field types of the Submittable is not one that implements
 // the Element interface.
-func New(submittable Submittable, title ...interface{}) Custom {
+func New(submittable Submittable, title ...any) Custom {
 	t := reflect.TypeOf(submittable)
 	if t.Kind() != reflect.Struct {
 		panic("submittable must be struct")
@@ -74,8 +74,8 @@ func (f Custom) Elements() []Element {
 
 // SubmitJSON submits a JSON data slice to the form. The form will check all values in the JSON array passed,
 // making sure their values are valid for the form's elements.
-// If the values are valid and can be parsed properly, the Submit() method of the form's Submittable is called
-// and the fields of the Submittable will be filled out.
+// If the values are valid and can be parsed properly, the Submittable.Submit() method of the form's Submittable is
+// called and the fields of the Submittable will be filled out.
 func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
 		if closer, ok := f.submittable.(Closer); ok {
@@ -87,7 +87,7 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	dec := json.NewDecoder(bytes.NewBuffer(b))
 	dec.UseNumber()
 
-	var data []interface{}
+	var data []any
 	if err := dec.Decode(&data); err != nil {
 		return fmt.Errorf("error decoding JSON data to slice: %w", err)
 	}
@@ -116,9 +116,9 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 	return nil
 }
 
-// parseValue parses a value into the Element passed and returns it as a reflect.Value. If the value is not
+// parseValue parses a value into the Element passed and returns it as a reflection Value. If the value is not
 // valid for the element, an error is returned.
-func (f Custom) parseValue(elem Element, s interface{}) (reflect.Value, error) {
+func (f Custom) parseValue(elem Element, s any) (reflect.Value, error) {
 	var ok bool
 	var value reflect.Value
 
@@ -182,7 +182,9 @@ func (f Custom) parseValue(elem Element, s interface{}) (reflect.Value, error) {
 func (f Custom) verify() {
 	el := reflect.TypeOf((*Element)(nil)).Elem()
 
-	v := reflect.ValueOf(f.submittable)
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
+
 	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
@@ -196,7 +198,7 @@ func (f Custom) verify() {
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }
 

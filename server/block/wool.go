@@ -1,9 +1,9 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // Wool is a colourful block that can be obtained by killing/shearing sheep, or crafted using four string.
@@ -15,8 +15,8 @@ type Wool struct {
 }
 
 // Instrument ...
-func (w Wool) Instrument() instrument.Instrument {
-	return instrument.Guitar()
+func (w Wool) Instrument() sound.Instrument {
+	return sound.Guitar()
 }
 
 // FlammabilityInfo ...
@@ -35,8 +35,8 @@ func (w Wool) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (w Wool) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:wool", map[string]interface{}{"color": w.Colour.String()}
+func (w Wool) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:wool", map[string]any{"color": w.Colour.String()}
 }
 
 // allWool returns wool blocks with all possible colours.

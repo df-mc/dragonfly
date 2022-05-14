@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,7 +11,7 @@ import (
 // shovels may be used to turn grass into dirt paths.
 type Shovel struct {
 	// Tier is the tier of the shovel.
-	Tier tool.Tier
+	Tier ToolTier
 }
 
 // UseOnBlock handles the creation of dirt path blocks from dirt or grass blocks.
@@ -27,7 +26,7 @@ func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}
-			w.PlaceBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
 			ctx.DamageItem(1)
@@ -49,14 +48,14 @@ func (s Shovel) MaxCount() int {
 	return 1
 }
 
-// AttackDamage returns the attack damage of the shovel.
+// AttackDamage returns the attack damage to the shovel.
 func (s Shovel) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage
 }
 
 // ToolType returns the tool type for shovels.
-func (s Shovel) ToolType() tool.Type {
-	return tool.TypeShovel
+func (s Shovel) ToolType() ToolType {
+	return TypeShovel
 }
 
 // HarvestLevel ...

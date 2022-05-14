@@ -24,7 +24,7 @@ func (c CoalOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c CoalOre) EncodeBlock() (string, map[string]interface{}) {
+func (c CoalOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + c.Type.Prefix() + "coal_ore", nil
 
 }

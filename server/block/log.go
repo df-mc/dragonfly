@@ -75,22 +75,22 @@ func (l Log) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l Log) EncodeBlock() (name string, properties map[string]interface{}) {
+func (l Log) EncodeBlock() (name string, properties map[string]any) {
 	if !l.Stripped {
 		switch l.Wood {
 		case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-			return "minecraft:log", map[string]interface{}{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.String()}
+			return "minecraft:log", map[string]any{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.String()}
 		case AcaciaWood(), DarkOakWood():
-			return "minecraft:log2", map[string]interface{}{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
+			return "minecraft:log2", map[string]any{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
 		case CrimsonWood(), WarpedWood():
-			return "minecraft:" + l.Wood.String() + "_stem", map[string]interface{}{"pillar_axis": l.Axis.String()}
+			return "minecraft:" + l.Wood.String() + "_stem", map[string]any{"pillar_axis": l.Axis.String()}
 		}
 	}
 	switch l.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:stripped_" + l.Wood.String() + "_log", map[string]interface{}{"pillar_axis": l.Axis.String()}
+		return "minecraft:stripped_" + l.Wood.String() + "_log", map[string]any{"pillar_axis": l.Axis.String()}
 	case CrimsonWood(), WarpedWood():
-		return "minecraft:stripped_" + l.Wood.String() + "_stem", map[string]interface{}{"pillar_axis": l.Axis.String()}
+		return "minecraft:stripped_" + l.Wood.String() + "_stem", map[string]any{"pillar_axis": l.Axis.String()}
 	}
 	panic("invalid wood type")
 }

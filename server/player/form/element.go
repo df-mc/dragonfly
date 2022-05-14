@@ -26,7 +26,7 @@ func NewLabel(text string) Label {
 
 // MarshalJSON ...
 func (l Label) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type": "label",
 		"text": l.Text,
 	})
@@ -54,7 +54,7 @@ func NewInput(text, defaultValue, placeholder string) Input {
 
 // MarshalJSON ...
 func (i Input) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":        "input",
 		"text":        i.Text,
 		"default":     i.Default,
@@ -86,7 +86,7 @@ func NewToggle(text string, defaultValue bool) Toggle {
 
 // MarshalJSON ...
 func (t Toggle) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "toggle",
 		"text":    t.Text,
 		"default": t.Default,
@@ -122,7 +122,7 @@ func NewSlider(text string, min, max, stepSize, defaultValue float64) Slider {
 
 // MarshalJSON ...
 func (s Slider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "slider",
 		"text":    s.Text,
 		"min":     s.Min,
@@ -159,7 +159,7 @@ func NewDropdown(text string, options []string, defaultIndex int) Dropdown {
 
 // MarshalJSON ...
 func (d Dropdown) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "dropdown",
 		"text":    d.Text,
 		"default": d.DefaultIndex,
@@ -184,7 +184,7 @@ func NewStepSlider(text string, options []string, defaultIndex int) StepSlider {
 
 // MarshalJSON ...
 func (s StepSlider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "step_slider",
 		"text":    s.Text,
 		"default": s.DefaultIndex,
@@ -204,7 +204,7 @@ type Button struct {
 	// Text holds the text displayed on the button. It may use Minecraft formatting codes and may have
 	// newlines.
 	Text string
-	// Image holds a path to an image for the button. The Image may either be an URL pointing to an image,
+	// Image holds a path to an image for the button. The Image may either be a URL pointing to an image,
 	// such as 'https://someimagewebsite.com/someimage.png', or a path pointing to a local asset, such as
 	// 'textures/blocks/grass_carried'.
 	Image string
@@ -217,13 +217,13 @@ func NewButton(text, image string) Button {
 
 // MarshalJSON ...
 func (b Button) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{"text": b.Text}
+	m := map[string]any{"text": b.Text}
 	if b.Image != "" {
 		buttonType := "path"
 		if strings.HasPrefix(b.Image, "http:") || strings.HasPrefix(b.Image, "https:") {
 			buttonType = "url"
 		}
-		m["image"] = map[string]interface{}{"type": buttonType, "data": b.Image}
+		m["image"] = map[string]any{"type": buttonType, "data": b.Image}
 	}
 	return json.Marshal(m)
 }

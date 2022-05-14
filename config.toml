@@ -27,9 +27,6 @@
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
   # present, the folder will be made.
   Folder = "world"
-  # SimulationDistance is the maximum distance in chunks that a chunk must be to a player in order for
-  # it to receive random ticks. This field may be set to 0 to disable random block updates altogether.
-  SimulationDistance = 8
 
 [Players]
   # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
@@ -47,5 +44,9 @@
   Folder = "players"
 
 [Resources]
+  # AutoBuildPack is if the server should automatically generate a resource pack for custom features.
+  AutoBuildPack = true
   # Folder configures the directory used by the server to load resource packs.
   Folder = "resources"
+  # Required configures whether or not the server will require players to have a resource pack to join.
+  Required = true

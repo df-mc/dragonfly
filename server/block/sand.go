@@ -15,6 +15,12 @@ type Sand struct {
 	Red bool
 }
 
+// SoilFor ...
+func (s Sand) SoilFor(block world.Block) bool {
+	_, ok := block.(DeadBush)
+	return ok
+}
+
 // NeighbourUpdateTick ...
 func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	s.fall(s, pos, w)
@@ -34,9 +40,9 @@ func (s Sand) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s Sand) EncodeBlock() (string, map[string]interface{}) {
+func (s Sand) EncodeBlock() (string, map[string]any) {
 	if s.Red {
-		return "minecraft:sand", map[string]interface{}{"sand_type": "red"}
+		return "minecraft:sand", map[string]any{"sand_type": "red"}
 	}
-	return "minecraft:sand", map[string]interface{}{"sand_type": "normal"}
+	return "minecraft:sand", map[string]any{"sand_type": "normal"}
 }

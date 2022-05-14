@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,18 +8,12 @@ import (
 // different defence points and armour toughness.
 type Helmet struct {
 	// Tier is the tier of the armour.
-	Tier armour.Tier
+	Tier ArmourTier
 }
 
 // Use handles the using of a helmet to auto-equip it in an armour slot.
-func (h Helmet) Use(_ *world.World, user User, _ *UseContext) bool {
-	if armoured, ok := user.(Armoured); ok {
-		currentEquipped := armoured.Armour().Helmet()
-
-		right, left := user.HeldItems()
-		armoured.Armour().SetHelmet(right)
-		user.SetHeldItems(currentEquipped, left)
-	}
+func (h Helmet) Use(_ *world.World, _ User, ctx *UseContext) bool {
+	ctx.SwapHeldWithArmour(0)
 	return false
 }
 
@@ -32,11 +25,11 @@ func (h Helmet) MaxCount() int {
 // DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
 	switch h.Tier {
-	case armour.TierLeather:
+	case ArmourTierLeather:
 		return 1
-	case armour.TierGold, armour.TierChain, armour.TierIron:
+	case ArmourTierGold, ArmourTierChain, ArmourTierIron:
 		return 2
-	case armour.TierDiamond, armour.TierNetherite:
+	case ArmourTierDiamond, ArmourTierNetherite:
 		return 3
 	}
 	panic("invalid helmet tier")
@@ -45,6 +38,11 @@ func (h Helmet) DefencePoints() float64 {
 // KnockBackResistance ...
 func (h Helmet) KnockBackResistance() float64 {
 	return h.Tier.KnockBackResistance
+}
+
+// Toughness ...
+func (h Helmet) Toughness() float64 {
+	return h.Tier.Toughness
 }
 
 // DurabilityInfo ...

@@ -2,115 +2,87 @@ package damage
 
 import "github.com/df-mc/dragonfly/server/world"
 
-// Source represents the source of the damage dealt to an entity. This source may be passed to the Hurt()
-// method of an entity in order to deal damage to an entity with a specific source.
-type Source interface {
-	// ReducedByArmour checks if the source of damage may be reduced if the receiver of the damage is wearing
-	// armour.
-	ReducedByArmour() bool
-}
+type (
+	// Source represents the source of the damage dealt to an entity. This source may be passed to the Hurt()
+	// method of an entity in order to deal damage to an entity with a specific source.
+	Source interface {
+		// ReducedByArmour checks if the source of damage may be reduced if the receiver of the damage is wearing
+		// armour.
+		ReducedByArmour() bool
+		// AffectedByResistance specifies if the Source is affected by the resistance effect. If false, damage dealt
+		// to an entity with this source will not be lowered if the entity has the resistance effect.
+		AffectedByResistance() bool
+	}
 
-// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
-// player.
-type SourceEntityAttack struct {
-	// Attacker holds the attacking entity. The entity may be a player or any other entity.
-	Attacker world.Entity
-}
+	// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
+	// player.
+	SourceEntityAttack struct {
+		// Attacker holds the attacking entity. The entity may be a player or any other entity.
+		Attacker world.Entity
+	}
+	// SourceStarvation is used for damage caused by a completely depleted food bar.
+	SourceStarvation struct{}
 
-// SourceStarvation is used for damage caused by a completely depleted food bar.
-type SourceStarvation struct{}
+	// SourceInstantDamageEffect is used for damage caused by an effect.InstantDamage applied to an entity.
+	SourceInstantDamageEffect struct{}
 
-// SourceInstantDamageEffect is used for damage caused by an effect.InstantDamage applied to an entity.
-type SourceInstantDamageEffect struct{}
+	// SourceVoid is used for damage caused by an entity being in the void.
+	SourceVoid struct{}
 
-// SourceVoid is used for damage caused by an entity being in the void.
-type SourceVoid struct{}
+	// SourcePoisonEffect is used for damage caused by an effect.Poison or effect.FatalPoison applied to an
+	// entity.
+	SourcePoisonEffect struct {
+		// Fatal specifies if the damage was caused by effect.FatalPoison or not.
+		Fatal bool
+	}
 
-// SourcePoisonEffect is used for damage caused by an effect.Poison or effect.FatalPoison applied to an
-// entity.
-type SourcePoisonEffect struct {
-	// Fatal specifies if the damage was caused by effect.FatalPoison or not.
-	Fatal bool
-}
+	// SourceWitherEffect is used for damage caused by an effect.Wither applied to an entity.
+	SourceWitherEffect struct{}
 
-// SourceWitherEffect is used for damage caused by an effect.Wither applied to an entity.
-type SourceWitherEffect struct{}
+	// SourceFire is used for damage caused by being in fire.
+	SourceFire struct{}
 
-// SourceFire is used for damage caused by being in fire.
-type SourceFire struct{}
+	// SourceFireTick is used for damage caused by being on fire.
+	SourceFireTick struct{}
 
-// SourceFireTick is used for damage caused by being on fire.
-type SourceFireTick struct{}
+	// SourceLava is used for damage caused by being in lava.
+	SourceLava struct{}
 
-// SourceLava is used for damage caused by being in lava.
-type SourceLava struct{}
+	// SourceFall is used for damage caused by falling.
+	SourceFall struct{}
 
-// SourceFall is a source that is used if the player fell.
-type SourceFall struct{}
+	// SourceLightning is used for damage caused by being struck by lightning.
+	SourceLightning struct{}
 
-// SourceLightning is used for damage caused by being struck by lightning.
-type SourceLightning struct{}
+	// SourceProjectile is used for damage caused by a projectile.
+	SourceProjectile struct {
+		// Projectile and Owner are the world.Entity that dealt the damage and the one that fired the projectile
+		// respectively.
+		Projectile, Owner world.Entity
+	}
+)
 
-// SourceCustom is a cause used for dealing any kind of custom damage. Armour reduces damage of this source,
-// but otherwise no enchantments have an additional effect.
-type SourceCustom struct{}
-
-// ReducedByArmour ...
-func (SourceFall) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceLightning) ReducedByArmour() bool {
-	return true
-}
-
-// ReducedByArmour ...
-func (SourceEntityAttack) ReducedByArmour() bool {
-	return true
-}
-
-// ReducedByArmour ...
-func (SourceStarvation) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceInstantDamageEffect) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceCustom) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceVoid) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourcePoisonEffect) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceWitherEffect) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceFire) ReducedByArmour() bool {
-	return true
-}
-
-// ReducedByArmour ...
-func (SourceFireTick) ReducedByArmour() bool {
-	return false
-}
-
-// ReducedByArmour ...
-func (SourceLava) ReducedByArmour() bool {
-	return true
-}
+func (SourceFall) ReducedByArmour() bool                     { return false }
+func (SourceFall) AffectedByResistance() bool                { return true }
+func (SourceLightning) ReducedByArmour() bool                { return true }
+func (SourceLightning) AffectedByResistance() bool           { return true }
+func (SourceEntityAttack) ReducedByArmour() bool             { return true }
+func (SourceEntityAttack) AffectedByResistance() bool        { return true }
+func (SourceStarvation) ReducedByArmour() bool               { return false }
+func (SourceStarvation) AffectedByResistance() bool          { return false }
+func (SourceInstantDamageEffect) ReducedByArmour() bool      { return false }
+func (SourceInstantDamageEffect) AffectedByResistance() bool { return true }
+func (SourceVoid) AffectedByResistance() bool                { return false }
+func (SourceVoid) ReducedByArmour() bool                     { return false }
+func (SourcePoisonEffect) AffectedByResistance() bool        { return true }
+func (SourcePoisonEffect) ReducedByArmour() bool             { return false }
+func (SourceWitherEffect) AffectedByResistance() bool        { return true }
+func (SourceWitherEffect) ReducedByArmour() bool             { return false }
+func (SourceFire) AffectedByResistance() bool                { return true }
+func (SourceFire) ReducedByArmour() bool                     { return true }
+func (SourceFireTick) AffectedByResistance() bool            { return true }
+func (SourceFireTick) ReducedByArmour() bool                 { return false }
+func (SourceLava) AffectedByResistance() bool                { return true }
+func (SourceLava) ReducedByArmour() bool                     { return true }
+func (SourceProjectile) AffectedByResistance() bool          { return true }
+func (SourceProjectile) ReducedByArmour() bool               { return true }

@@ -1,10 +1,8 @@
 package block
 
 import (
-	_ "github.com/df-mc/dragonfly/server/internal/block_internal"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 //go:generate go run ../../cmd/blockhash -o hash.go .
@@ -91,6 +89,10 @@ func init() {
 	world.RegisterBlock(HoneycombBlock{})
 	world.RegisterBlock(Podzol{})
 	world.RegisterBlock(AmethystBlock{})
+	world.RegisterBlock(PackedIce{})
+	world.RegisterBlock(DeadBush{})
+	world.RegisterBlock(Snow{})
+	world.RegisterBlock(Bookshelf{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -109,6 +111,7 @@ func init() {
 	registerAll(allWool())
 	registerAll(allStainedTerracotta())
 	registerAll(allGlazedTerracotta())
+	registerAll(allItemFrames())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
 	registerAll(allLanterns())
@@ -135,15 +138,21 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allQuartz())
 	registerAll(allNetherWart())
+	registerAll(allNetherBricks())
 	registerAll(allTallGrass())
 	registerAll(allDoubleTallGrass())
 	registerAll(allSandstones())
+	registerAll(allStoneBricks())
 	registerAll(allDoubleFlowers())
 	registerAll(allFlowers())
 	registerAll(allPrismarine())
 	registerAll(allSigns())
 	registerAll(allLight())
 	registerAll(allLadders())
+	registerAll(allSandstoneStairs())
+	registerAll(allSeaPickles())
+	registerAll(allWood())
+	registerAll(allChains())
 }
 
 func init() {
@@ -176,6 +185,8 @@ func init() {
 	world.RegisterItem(NetheriteBlock{})
 	world.RegisterItem(GoldBlock{})
 	world.RegisterItem(IronBlock{})
+	world.RegisterItem(ItemFrame{})
+	world.RegisterItem(ItemFrame{Glowing: true})
 	world.RegisterItem(CoalBlock{})
 	world.RegisterItem(Beacon{})
 	world.RegisterItem(Sponge{})
@@ -242,6 +253,16 @@ func init() {
 	world.RegisterItem(Podzol{})
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(AmethystBlock{})
+	world.RegisterItem(PackedIce{})
+	world.RegisterItem(DeadBush{})
+	world.RegisterItem(SeaPickle{})
+	world.RegisterItem(Snow{})
+	world.RegisterItem(Bookshelf{})
+	world.RegisterItem(Chain{})
+	world.RegisterItem(SandstoneStairs{})
+	world.RegisterItem(SandstoneStairs{Red: true})
+	world.RegisterItem(SandstoneStairs{Smooth: true})
+	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
@@ -256,6 +277,9 @@ func init() {
 		world.RegisterItem(c.(world.Item))
 	}
 	for _, s := range allSandstones() {
+		world.RegisterItem(s.(world.Item))
+	}
+	for _, s := range allStoneBricks() {
 		world.RegisterItem(s.(world.Item))
 	}
 	for _, c := range item.Colours() {
@@ -283,6 +307,8 @@ func init() {
 		world.RegisterItem(WoodTrapdoor{Wood: w})
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
+		world.RegisterItem(Wood{Wood: w})
+		world.RegisterItem(Wood{Wood: w, Stripped: true})
 	}
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
@@ -310,15 +336,10 @@ func init() {
 	for _, p := range PrismarineTypes() {
 		world.RegisterItem(Prismarine{Type: p})
 	}
+	for _, t := range NetherBricksTypes() {
+		world.RegisterItem(NetherBricks{Type: t})
+	}
 }
-
-//noinspection GoCommentLeadingSpace
-
-//noinspection GoCommentLeadingSpace
-
-//noinspection GoCommentLeadingSpace
-
-//noinspection GoCommentLeadingSpace
 
 func registerAll(blocks []world.Block) {
 	for _, b := range blocks {
