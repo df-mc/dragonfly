@@ -2323,6 +2323,11 @@ func (p *Player) ExperienceProgress() float64 {
 	return p.experience.Progress()
 }
 
+// Experience returns the amount of experience the player has.
+func (p *Player) Experience() int {
+	return p.experience.Experience()
+}
+
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) {
 	before := p.experience.Level()
