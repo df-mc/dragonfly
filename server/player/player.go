@@ -2328,7 +2328,7 @@ func (p *Player) AddExperience(amount int) {
 }
 
 // SetExperienceLevelAndProgress sets the experience level and progress of the player, the level must have a value
-// between 0 and 2147483647 and the progress must be between 0.0 and 1.0.
+// between 0 and 2,147,483,647 and the progress must be between 0.0 and 1.0.
 func (p *Player) SetExperienceLevelAndProgress(level int, progress float64) {
 	p.experience.SetLevelAndProgress(level, progress)
 	p.session().SendExperienceValue(p.experience)
@@ -2367,7 +2367,7 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.experience.SetTotalExperience(data.XPTotal)
+	p.experience.SetTotal(data.XPTotal)
 	p.session().SendExperienceValue(p.experience)
 
 	p.gameMode.Store(data.GameMode)
@@ -2408,9 +2408,9 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
-		XPLevel:         int(p.experience.Level()),
+		XPLevel:         p.experience.Level(),
 		XPPercentage:    p.experience.Progress(),
-		XPTotal:         p.experience.TotalExperience(),
+		XPTotal:         p.experience.Total(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,

@@ -5,20 +5,25 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
+	"time"
 )
 
 // ExperienceOrb is an entity that carries a varying amount of experience. These can be collected by nearby players, and
 // are then added to the player's own experience.
 type ExperienceOrb struct {
 	transform
-	age, xp int
-	c       *MovementComputer
+	age, xp    int
+	lastSearch time.Time
+	target     experienceCollector
+	c          *MovementComputer
 }
 
 // NewExperienceOrb creates a new experience orb and returns it.
 func NewExperienceOrb(xp int, pos mgl64.Vec3) *ExperienceOrb {
 	o := &ExperienceOrb{
-		xp: xp,
+		xp:         xp,
+		lastSearch: time.Now(),
 		c: &MovementComputer{
 			Gravity:           0.04,
 			Drag:              0.02,
@@ -44,6 +49,18 @@ func (e *ExperienceOrb) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
+// experienceCollector represents an entity that can collect experience orbs.
+type experienceCollector interface {
+	Living
+	// AddExperience adds the given amount of experience to the entity.
+	AddExperience(amount int)
+	// GameMode returns the current game mode assigned to the collector.
+	GameMode() world.GameMode
+}
+
+// followBox is the bounding box used to search for collectors to follow for experience orbs.
+var followBox = cube.Box(-8, -8, -8, 8, 8, 8)
+
 // Tick ...
 func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 	e.mu.Lock()
@@ -62,7 +79,39 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 		return
 	}
 
-	// TODO: Follow players.
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.target != nil && (e.target.Dead() || e.target.World() != w || e.pos.Sub(e.target.Position()).Len() > 8) {
+		e.target = nil
+	}
+
+	if time.Since(e.lastSearch) >= time.Second {
+		if e.target == nil {
+			if collectors := w.EntitiesWithin(followBox.Translate(e.pos), func(o world.Entity) bool {
+				c, ok := o.(experienceCollector)
+				return !ok || !c.GameMode().AllowsInteraction()
+			}); len(collectors) > 0 {
+				e.target = collectors[0].(experienceCollector)
+			}
+		}
+		e.lastSearch = time.Now()
+	}
+
+	if e.target != nil {
+		vec := e.target.Position()
+		if o, ok := e.target.(Eyed); ok {
+			vec[1] += o.EyeHeight() / 2
+		}
+		vec = vec.Sub(e.pos).Mul(0.125)
+		if dist := vec.LenSqr(); dist < 1 {
+			e.vel = e.vel.Add(vec.Normalize().Mul(0.2 * math.Pow(1-math.Sqrt(dist), 2)))
+		}
+
+		if e.BBox().IntersectsWith(e.target.BBox()) {
+			e.target.AddExperience(e.xp)
+			_ = e.Close()
+		}
+	}
 }
 
 // DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
