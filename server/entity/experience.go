@@ -49,12 +49,13 @@ func (e *ExperienceManager) SetTotal(total int) {
 }
 
 // Add adds experience to the total experience.
-func (e *ExperienceManager) Add(amount int) {
+func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	amount = int(math.Min(float64(amount), float64(math.MinInt32-e.total)))
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.total += amount
 	e.level, e.progress = progressFromExperience(e.total)
+	return e.level, e.progress
 }
 
 // SetLevelAndProgress sets the level and progress of the manager, recalculating the total experience.
@@ -79,16 +80,6 @@ func (e *ExperienceManager) Reset() {
 	e.progress = 0
 }
 
-// experienceForLevels calculates the amount of experience needed in total to reach a certain level.
-func experienceForLevels(level int) int {
-	if level <= 16 {
-		return level*level + level*6
-	} else if level <= 31 {
-		return int(float64(level*level)*2.5 - 40.5*float64(level) + 360)
-	}
-	return int(float64(level*level)*4.5 - 162.5*float64(level) + 2220)
-}
-
 // progressFromExperience ...
 func progressFromExperience(experience int) (level int, progress float64) {
 	var a, b, c float64
@@ -110,4 +101,14 @@ func progressFromExperience(experience int) (level int, progress float64) {
 	}
 
 	return int(sol), sol - math.Trunc(sol)
+}
+
+// experienceForLevels calculates the amount of experience needed in total to reach a certain level.
+func experienceForLevels(level int) int {
+	if level <= 16 {
+		return level*level + level*6
+	} else if level <= 31 {
+		return int(float64(level*level)*2.5 - 40.5*float64(level) + 360)
+	}
+	return int(float64(level*level)*4.5 - 162.5*float64(level) + 2220)
 }

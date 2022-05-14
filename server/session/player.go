@@ -525,6 +525,26 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	return nil
 }
 
+// SendExperienceValue send the xp level and progress to player.
+func (s *Session) SendExperienceValue(e *entity.ExperienceManager) {
+	level, progress := e.Level(), e.Progress()
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{
+			{
+				Name:  "minecraft:player.level",
+				Value: float32(level),
+				Max:   float32(math.MaxInt32),
+			},
+			{
+				Name:  "minecraft:player.experience",
+				Value: float32(progress),
+				Max:   1,
+			},
+		},
+	})
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -643,26 +663,6 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		s.Animations = append(s.Animations, animation)
 	}
 	return
-}
-
-// SendExperienceValue send the xp level and progress to player.
-func (s *Session) SendExperienceValue(e *entity.ExperienceManager) {
-	level, progress := e.Level(), e.Progress()
-	s.writePacket(&packet.UpdateAttributes{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Attributes: []protocol.Attribute{
-			{
-				Name:  "minecraft:player.level",
-				Value: float32(level),
-				Max:   float32(math.MaxInt32),
-			},
-			{
-				Name:  "minecraft:player.experience",
-				Value: float32(progress),
-				Max:   1,
-			},
-		},
-	})
 }
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
