@@ -49,7 +49,7 @@ func (n NetherSprouts) FlammabilityInfo() FlammabilityInfo {
 func (n NetherSprouts) BreakInfo() BreakInfo {
 	return newBreakInfo(0, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears
-	}, nothingEffective, oneOf(n))
+	}, nothingEffective, oneOf(n), XPDropRange{})
 }
 
 // EncodeItem ...

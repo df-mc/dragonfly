@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -43,7 +43,7 @@ func (e *ExperienceOrb) BBox() cube.BBox {
 }
 
 // Tick ...
-func (o *ExperienceOrb) Tick(int64) {
+func (e *ExperienceOrb) Tick(int64) {
 	//TODO implement me
 	panic("implement me")
 }

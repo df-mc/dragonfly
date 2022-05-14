@@ -44,7 +44,7 @@ func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.W
 
 // BreakInfo ...
 func (w Wood) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w), XPDropRange{})
 }
 
 // Strip ...

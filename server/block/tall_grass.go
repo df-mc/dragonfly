@@ -34,7 +34,7 @@ func (g TallGrass) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
 		return nil
-	})
+	}, XPDropRange{})
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
