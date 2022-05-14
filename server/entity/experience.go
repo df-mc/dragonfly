@@ -79,16 +79,6 @@ func (e *ExperienceManager) Reset() {
 	e.progress = 0
 }
 
-// progressToExperience returns the amount of experience needed for the given level and progress.
-func progressToExperience(level int, progress float64) int {
-	return int(float64(experienceForLevel(level)) * progress)
-}
-
-// experienceToProgress returns the progress towards the next level, calculated using the current level and experience.
-func experienceToProgress(experience int, level int) float64 {
-	return float64(experience) / float64(experienceForLevel(level))
-}
-
 // experienceForLevels calculates the amount of experience needed in total to reach a certain level.
 func experienceForLevels(level int) int {
 	if level <= 16 {
@@ -97,16 +87,6 @@ func experienceForLevels(level int) int {
 		return int(float64(level*level)*2.5 - 40.5*float64(level) + 360)
 	}
 	return int(float64(level*level)*4.5 - 162.5*float64(level) + 2220)
-}
-
-// experienceForLevel returns the amount experience needed to reach level + 1.
-func experienceForLevel(level int) int {
-	if level <= 15 {
-		return 2*level + 7
-	} else if level <= 30 {
-		return 5*level - 38
-	}
-	return 9*level - 158
 }
 
 // progressFromExperience ...
