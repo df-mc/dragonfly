@@ -27,6 +27,13 @@ func (e *ExperienceManager) Level() int {
 	return e.level
 }
 
+// Experience returns the amount of experience the manager currently has.
+func (e *ExperienceManager) Experience() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return progressToExperience(e.level, e.progress)
+}
+
 // Progress returns the progress towards the next level, calculated using the current level and experience.
 func (e *ExperienceManager) Progress() float64 {
 	e.mu.RLock()
@@ -48,18 +55,11 @@ func (e *ExperienceManager) SetTotal(total int) {
 	e.total = total
 }
 
-// Experience returns the amount of experience the manager currently has.
-func (e *ExperienceManager) Experience() int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return progressToExperience(e.level, e.progress)
-}
-
 // Add adds experience to the total experience.
 func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
-	amount = int(math.Min(float64(amount), float64(math.MaxInt32-e.total)))
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	amount = int(math.Min(float64(amount), float64(math.MaxInt32-e.total)))
 	current := progressToExperience(e.level, e.progress)
 	e.total += amount
 	e.level, e.progress = progressFromExperience(current + amount)
