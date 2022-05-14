@@ -2332,14 +2332,14 @@ func (p *Player) AddExperience(amount int) {
 	} else if amount > 0 {
 		p.PlaySound(sound.Experience{})
 	}
-	p.session().SendExperienceValue(p.experience)
+	p.session().SendExperience(p.experience)
 }
 
 // SetExperienceLevelAndProgress sets the experience level and progress of the player, the level must have a value
 // between 0 and 2,147,483,647 and the progress must be between 0.0 and 1.0.
 func (p *Player) SetExperienceLevelAndProgress(level int, progress float64) {
 	p.experience.SetLevelAndProgress(level, progress)
-	p.session().SendExperienceValue(p.experience)
+	p.session().SendExperience(p.experience)
 }
 
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
@@ -2376,7 +2376,7 @@ func (p *Player) load(data Data) {
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
 	p.experience.SetTotal(data.XPTotal)
-	p.session().SendExperienceValue(p.experience)
+	p.session().SendExperience(p.experience)
 
 	p.gameMode.Store(data.GameMode)
 	for _, potion := range data.Effects {
