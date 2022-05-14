@@ -2320,6 +2320,11 @@ func (p *Player) Close() error {
 	return nil
 }
 
+// TotalExperience returns the total experience of the player over its lifetime.
+func (p *Player) TotalExperience() int {
+	return p.experience.Total()
+}
+
 // ExperienceLevel returns the experience level of the player.
 func (p *Player) ExperienceLevel() int {
 	return p.experience.Level()
@@ -2388,6 +2393,7 @@ func (p *Player) load(data Data) {
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
 	p.experience.SetTotal(data.XPTotal)
+	p.experience.SetLevelAndProgress(data.XPLevel, data.XPPercentage)
 	p.session().SendExperience(p.experience)
 
 	p.gameMode.Store(data.GameMode)
@@ -2428,9 +2434,9 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
-		XPLevel:         p.experience.Level(),
-		XPPercentage:    p.experience.Progress(),
-		XPTotal:         p.experience.Total(),
+		XPLevel:         p.ExperienceLevel(),
+		XPPercentage:    p.ExperienceProgress(),
+		XPTotal:         p.TotalExperience(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
