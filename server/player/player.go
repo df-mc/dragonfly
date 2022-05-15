@@ -791,6 +791,7 @@ func (p *Player) dropContents() {
 	p.armour.Clear()
 	p.offHand.Clear()
 	p.experience.Reset()
+	p.session().SendExperience(p.experience)
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
