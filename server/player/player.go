@@ -1912,7 +1912,7 @@ func (p *Player) Collect(s item.Stack) int {
 }
 
 // CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
-// is returned indicating whether the player was able to collect the experience, or not, due to the 100ms delay between
+// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
 // experience collection or if the player was dead or in a game mode that doesn't allow collection.
 func (p *Player) CollectExperience(value int) bool {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
@@ -1922,8 +1922,7 @@ func (p *Player) CollectExperience(value int) bool {
 		return false
 	}
 	p.lastXPPickup.Store(time.Now())
-	p.AddExperience(value)
-	return true
+	return p.AddExperience(value) != 0
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
@@ -2359,7 +2358,12 @@ func (p *Player) Experience() int {
 }
 
 // AddExperience adds experience to the player.
-func (p *Player) AddExperience(amount int) {
+func (p *Player) AddExperience(amount int) int {
+	a := &amount
+	ctx := event.C()
+	if p.handler().HandleExperienceGain(ctx, a); ctx.Cancelled() {
+		return 0
+	}
 	before := p.experience.Level()
 	level, _ := p.experience.Add(amount)
 	if level/5 > before/5 {
@@ -2368,6 +2372,7 @@ func (p *Player) AddExperience(amount int) {
 		p.PlaySound(sound.Experience{})
 	}
 	p.session().SendExperience(p.experience)
+	return *a
 }
 
 // RemoveExperience removes experience from the player.
