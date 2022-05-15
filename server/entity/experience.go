@@ -122,11 +122,6 @@ func progressFromExperience(experience int) (level int, progress float64) {
 	return int(sol), sol - math.Trunc(sol)
 }
 
-// progressToExperience ...
-func progressToExperience(level int, progress float64) int {
-	return experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
-}
-
 // experienceForLevels calculates the amount of experience needed in total to reach a certain level.
 func experienceForLevels(level int) int {
 	if level <= 16 {
