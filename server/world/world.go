@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -393,10 +392,12 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 					}
 				}
 			}
+			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
+
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
 			for _, viewer := range c.v {
-				viewer.ViewChunk(chunkPos, c.Chunk, c.e)
+				viewer.ViewChunk(chunkPos, c.Chunk)
 			}
 			c.Unlock()
 		}
@@ -650,12 +651,12 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 // the sound if they're close enough.
 func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	ctx := event.C()
-	w.Handler().HandleSound(ctx, s, pos)
-	ctx.Continue(func() {
-		for _, viewer := range w.Viewers(pos) {
-			viewer.ViewSound(pos, s)
-		}
-	})
+	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
+		return
+	}
+	for _, viewer := range w.Viewers(pos) {
+		viewer.ViewSound(pos, s)
+	}
 }
 
 var (
@@ -676,9 +677,7 @@ func (w *World) AddEntity(e Entity) {
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 
-	worldsMu.Lock()
-	entityWorlds[e] = w
-	worldsMu.Unlock()
+	add(e, w)
 
 	chunkPos := chunkPosFromVec3(e.Position())
 	w.entityMu.Lock()
@@ -696,6 +695,13 @@ func (w *World) AddEntity(e Entity) {
 	}
 
 	w.Handler().HandleEntitySpawn(e)
+}
+
+// add maps an Entity to a World in the entityWorlds map.
+func add(e Entity, w *World) {
+	worldsMu.Lock()
+	entityWorlds[e] = w
+	worldsMu.Unlock()
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -727,7 +733,6 @@ func (w *World) RemoveEntity(e Entity) {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		return
 	}
-	c.Lock()
 	c.entities = sliceutil.DeleteVal(c.entities, e)
 	viewers := slices.Clone(c.v)
 	c.Unlock()
@@ -741,16 +746,16 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 }
 
-// EntitiesWithin does a lookup through the entities in the chunks touched by the AABB passed, returning all
-// those which are contained within the AABB when it comes to their position.
-func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []Entity {
+// EntitiesWithin does a lookup through the entities in the chunks touched by the BBox passed, returning all
+// those which are contained within the BBox when it comes to their position.
+func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entity {
 	if w == nil {
 		return nil
 	}
 	// Make an estimate of 16 entities on average.
 	m := make([]Entity, 0, 16)
 
-	minPos, maxPos := chunkPosFromVec3(aabb.Min()), chunkPosFromVec3(aabb.Max())
+	minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
 
 	for x := minPos[0]; x <= maxPos[0]; x++ {
 		for z := minPos[1]; z <= maxPos[1]; z++ {
@@ -759,7 +764,6 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			c.Lock()
 			entities := slices.Clone(c.entities)
 			c.Unlock()
 
@@ -767,8 +771,8 @@ func (w *World) EntitiesWithin(aabb physics.AABB, ignored func(Entity) bool) []E
 				if ignored != nil && ignored(entity) {
 					continue
 				}
-				if aabb.Vec3Within(entity.Position()) {
-					// The entity position was within the AABB, so we add it to the slice to return.
+				if box.Vec3Within(entity.Position()) {
+					// The entity position was within the BBox, so we add it to the slice to return.
 					m = append(m, entity)
 				}
 			}
@@ -1010,7 +1014,6 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	if !ok {
 		return nil
 	}
-	c.Lock()
 	defer c.Unlock()
 	return slices.Clone(c.v)
 }
@@ -1126,10 +1129,10 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 	if !ok {
 		return
 	}
-	c.Lock()
-	i := slices.Index(c.l, loader)
-	c.v = slices.Delete(c.v, i, i+1)
-	c.l = slices.Delete(c.l, i, i+1)
+	if i := slices.Index(c.l, loader); i != -1 {
+		c.v = slices.Delete(c.v, i, i+1)
+		c.l = slices.Delete(c.l, i, i+1)
+	}
 	e := slices.Clone(c.entities)
 	c.Unlock()
 
@@ -1160,6 +1163,9 @@ func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
 	w.chunkMu.Lock()
 	c, ok := w.chunks[pos]
 	w.chunkMu.Unlock()
+	if ok {
+		c.Lock()
+	}
 	return c, ok
 }
 
@@ -1221,22 +1227,18 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 	w.chunkMu.Lock()
 	defer w.chunkMu.Unlock()
 
-	data, ok := w.chunks[pos]
-	if ok {
-		data.Lock()
-		defer data.Unlock()
-	} else {
-		data = newChunkData(c)
-		w.chunks[pos] = data
-	}
+	data := newChunkData(c)
 	data.e = e
+	w.chunks[pos] = data
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos)
 	if err != nil {
-		return newChunkData(chunk.New(airRID, w.d.Range())), err
+		ch := newChunkData(chunk.New(airRID, w.d.Range()))
+		ch.Lock()
+		return ch, err
 	}
 
 	if !found {
@@ -1437,6 +1439,27 @@ type chunkData struct {
 	v        []Viewer
 	l        []*Loader
 	entities []Entity
+}
+
+// BlockEntities returns the block entities of the chunk.
+func (c *chunkData) BlockEntities() map[cube.Pos]Block {
+	c.Lock()
+	defer c.Unlock()
+	return maps.Clone(c.e)
+}
+
+// Viewers returns the viewers of the chunk.
+func (c *chunkData) Viewers() []Viewer {
+	c.Lock()
+	defer c.Unlock()
+	return slices.Clone(c.v)
+}
+
+// Entities returns the entities of the chunk.
+func (c *chunkData) Entities() []Entity {
+	c.Lock()
+	defer c.Unlock()
+	return slices.Clone(c.entities)
 }
 
 // newChunkData returns a new chunkData wrapper around the chunk.Chunk passed.

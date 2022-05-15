@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -43,7 +42,6 @@ type Session struct {
 	currentScoreboard atomic.Value[string]
 	currentLines      atomic.Value[[]string]
 
-	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
@@ -122,14 +120,14 @@ var sessionMu sync.Mutex
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
 
-// ErrSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
+// errSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
 // must therefore always be 1.
-var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
+var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
 
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
-// Session.Start().
+// Session.Spawn().
 func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
@@ -138,7 +136,6 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 
 	s := &Session{
-		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(51, nil),
@@ -155,20 +152,16 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
+		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
-	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(cube.Pos{})
-	s.currentScoreboard.Store("")
-	s.currentLines.Store([]string{})
 
 	s.registerHandlers()
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
-// the session in the world.
+// Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
+func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
@@ -186,7 +179,7 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	s.initPlayerList()
 
-	w.AddEntity(c)
+	world_add(c, w)
 	s.c.SetGameMode(gm)
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
@@ -203,8 +196,17 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+}
 
+// Start makes the session start handling incoming packets from the client.
+func (s *Session) Start() {
+	s.c.World().AddEntity(s.c)
 	go s.handlePackets()
+}
+
+// Controllable returns the Controllable entity that the Session controls.
+func (s *Session) Controllable() Controllable {
+	return s.c
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
@@ -334,11 +336,11 @@ func (s *Session) background() {
 func (s *Session) sendChunks() {
 	const maxChunkTransactions = 8
 
-	s.blobMu.Lock()
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
 		s.handleWorldSwitch(w)
 	}
 
+	s.blobMu.Lock()
 	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 	s.blobMu.Unlock()
 	if toLoad > 4 {
@@ -350,6 +352,7 @@ func (s *Session) sendChunks() {
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
+		s.blobMu.Lock()
 		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
 		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
 		for h, blob := range s.blobs {
@@ -359,12 +362,14 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
+		s.blobMu.Unlock()
 	}
 
 	if w.Dimension() != s.chunkLoader.World().Dimension() {
 		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
 		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 	}
+	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }
 
@@ -402,6 +407,7 @@ func (s *Session) registerHandlers() {
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
+		packet.IDItemFrameDropItem:     nil,
 		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
@@ -412,9 +418,9 @@ func (s *Session) registerHandlers() {
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
+		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
-		packet.IDItemFrameDropItem:     nil,
 	}
 }
 
@@ -435,7 +441,9 @@ func (s *Session) initPlayerList() {
 		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
 		// currently open to the player list of the new session.
 		session.addToPlayerList(s)
-		s.addToPlayerList(session)
+		if s != session {
+			s.addToPlayerList(session)
+		}
 	}
 	sessionMu.Unlock()
 }

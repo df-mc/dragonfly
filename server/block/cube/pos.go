@@ -41,8 +41,8 @@ func (p Pos) Add(pos Pos) Pos {
 	return Pos{p[0] + pos[0], p[1] + pos[1], p[2] + pos[2]}
 }
 
-// Subtract subtracts two block positions together and returns a new one with the combined values.
-func (p Pos) Subtract(pos Pos) Pos {
+// Sub subtracts pos from p and returns a new one with the subtracted values.
+func (p Pos) Sub(pos Pos) Pos {
 	return Pos{p[0] - pos[0], p[1] - pos[1], p[2] - pos[2]}
 }
 

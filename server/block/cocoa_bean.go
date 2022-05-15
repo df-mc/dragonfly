@@ -68,7 +68,7 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	}
 	if woodType == JungleWood() {
 		c.Facing = face.Opposite().Direction()
-		ctx.IgnoreAABB = true
+		ctx.IgnoreBBox = true
 
 		place(w, pos, c, user, ctx)
 		return placed(ctx)

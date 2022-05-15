@@ -10,9 +10,9 @@ var (
 	// ArmourTierIron is the ArmourTier of iron armour.
 	ArmourTierIron = ArmourTier{BaseDurability: 165, Name: "iron"}
 	// ArmourTierDiamond is the ArmourTier of diamond armour.
-	ArmourTierDiamond = ArmourTier{BaseDurability: 363, Name: "diamond"}
+	ArmourTierDiamond = ArmourTier{BaseDurability: 363, Toughness: 2, Name: "diamond"}
 	// ArmourTierNetherite is the ArmourTier of netherite armour.
-	ArmourTierNetherite = ArmourTier{BaseDurability: 408, KnockBackResistance: 0.1, Name: "netherite"}
+	ArmourTierNetherite = ArmourTier{BaseDurability: 408, Toughness: 3, KnockBackResistance: 0.1, Name: "netherite"}
 )
 
 type (
@@ -22,6 +22,9 @@ type (
 	Armour interface {
 		// DefencePoints returns the defence points that the armour provides when worn.
 		DefencePoints() float64
+		// Toughness returns the toughness that the armor provides when worn. The toughness reduces defense reduction
+		// caused by increased damage.
+		Toughness() float64
 		// KnockBackResistance returns a number from 0-1 that decides the amount of knock back force that is
 		// resisted upon being attacked. 1 knock back resistance point client-side translates to 10% knock back
 		// reduction.
@@ -32,6 +35,8 @@ type (
 		// BaseDurability is the base durability of armour with this tier. This is otherwise the durability of
 		// the helmet with this tier.
 		BaseDurability float64
+		// Toughness reduces the defense reduction caused by damage increases.
+		Toughness float64
 		// KnockBackResistance is a number from 0-1 that decides the amount of knock back force that is resisted
 		// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
 		KnockBackResistance float64

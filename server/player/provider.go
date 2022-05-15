@@ -12,8 +12,8 @@ type Provider interface {
 	// Save is called when the player leaves the server. The Data of the player is passed.
 	Save(UUID uuid.UUID, data Data) error
 	// Load is called when the player joins and passes the UUID of the player.
-	// It expects to the player data, and an error that is nil if the player data could be found. If non-nil the player
-	// 	will use default values, and you can use an empty Data struct.
+	// It expects to the player data, and an error that is nil if the player data could be found. If non-nil, the player
+	// will use default values, and you can use an empty Data struct.
 	Load(UUID uuid.UUID) (Data, error)
 	// Closer is used on server close when the server calls Provider.Close() and is used to safely close the Provider.
 	io.Closer

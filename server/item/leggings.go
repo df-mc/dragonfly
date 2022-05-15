@@ -39,6 +39,11 @@ func (l Leggings) DefencePoints() float64 {
 	panic("invalid leggings tier")
 }
 
+// Toughness ...
+func (l Leggings) Toughness() float64 {
+	return l.Tier.Toughness
+}
+
 // KnockBackResistance ...
 func (l Leggings) KnockBackResistance() float64 {
 	return l.Tier.KnockBackResistance

@@ -173,17 +173,14 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
 // the event.Context was cancelled either before or after the call.
 func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
-	var err error
-	ctx.Stop(func() {
-		err = fmt.Errorf("action was cancelled")
-	})
-	ctx.Continue(func() {
-		f(ctx, slot, it)
-		ctx.Stop(func() {
-			err = fmt.Errorf("action was cancelled")
-		})
-	})
-	return err
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	f(ctx, slot, it)
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	return nil
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -238,8 +235,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	}
 
 	inv, _ := s.invByID(int32(a.Source.ContainerID))
-	ctx := event.C()
-	if err := call(ctx, int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
 		return err
 	}
 

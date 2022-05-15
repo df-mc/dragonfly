@@ -4,14 +4,9 @@
 // After creation of the server, `Server.Start()` may be called to start and run the server. It should be followed up
 // by a loop as such:
 //
-//   for {
-//        p, err := srv.Accept()
-//		  if err != nil {
-//			  return
-//		  }
-//        // Use p
-//	  }
+//   for srv.Accept(nil) {
+//	 }
 //
-// `Server.Accept()` blocks until a new player connects to the server and spawns in the default world and returns it
-// once this happens. If `Server.Accept()` returns an error, this means the server was closed.
+// `Server.Accept()` blocks until a new player connects to the server and spawns in the default world and calls the
+// function passed to it once this happens. If `Server.Accept()` returns an error, this means the server was closed.
 package server
