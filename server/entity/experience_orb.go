@@ -75,10 +75,10 @@ func (e *ExperienceOrb) Experience() int {
 // experienceCollector represents an entity that can collect experience orbs.
 type experienceCollector interface {
 	Living
-	// AddExperience adds the given amount of experience to the entity.
-	AddExperience(amount int)
-	// GameMode returns the current game mode assigned to the collector.
-	GameMode() world.GameMode
+	// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
+	// is returned indicating whether the player was able to collect the experience, or not, due to the 100ms delay between
+	// experience collection.
+	CollectExperience(value int) bool
 }
 
 // followBox is the bounding box used to search for collectors to follow for experience orbs.
@@ -111,8 +111,8 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 	if time.Since(e.lastSearch) >= time.Second {
 		if e.target == nil {
 			if collectors := w.EntitiesWithin(followBox.Translate(e.pos), func(o world.Entity) bool {
-				c, ok := o.(experienceCollector)
-				return !ok || !c.GameMode().AllowsInteraction() || c.Dead()
+				_, ok := o.(experienceCollector)
+				return !ok
 			}); len(collectors) > 0 {
 				e.target = collectors[0].(experienceCollector)
 			}
@@ -130,8 +130,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 			e.vel = e.vel.Add(vec.Normalize().Mul(0.2 * math.Pow(1-math.Sqrt(dist), 2)))
 		}
 
-		if e.BBox().Translate(e.pos).IntersectsWith(e.target.BBox().Translate(e.target.Position())) {
-			e.target.AddExperience(e.xp)
+		if e.BBox().Translate(e.pos).IntersectsWith(e.target.BBox().Translate(e.target.Position())) && e.target.CollectExperience(e.xp) {
 			_ = e.Close()
 		}
 	}

@@ -78,7 +78,9 @@ type Player struct {
 	health     *entity.HealthManager
 	experience *entity.ExperienceManager
 	effects    *entity.EffectManager
-	immunity   atomic.Value[time.Time]
+
+	lastXPPickup atomic.Value[time.Time]
+	immunity     atomic.Value[time.Time]
 
 	mc *entity.MovementComputer
 
@@ -1907,6 +1909,21 @@ func (p *Player) Collect(s item.Stack) int {
 	}
 	n, _ := p.Inventory().AddItem(s)
 	return n
+}
+
+// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
+// is returned indicating whether the player was able to collect the experience, or not, due to the 100ms delay between
+// experience collection.
+func (p *Player) CollectExperience(value int) bool {
+	if p.Dead() || !p.GameMode().AllowsInteraction() {
+		return false
+	}
+	if time.Since(p.lastXPPickup.Load()) < time.Millisecond*100 {
+		return false
+	}
+	p.lastXPPickup.Store(time.Now())
+	p.AddExperience(value)
+	return true
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
