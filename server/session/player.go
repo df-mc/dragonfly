@@ -540,6 +540,26 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	return nil
 }
 
+// SendExperience sends the experience level and progress from the given experience manager to the player.
+func (s *Session) SendExperience(e *entity.ExperienceManager) {
+	level, progress := e.Level(), e.Progress()
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{
+			{
+				Name:  "minecraft:player.level",
+				Value: float32(level),
+				Max:   float32(math.MaxInt32),
+			},
+			{
+				Name:  "minecraft:player.experience",
+				Value: float32(progress),
+				Max:   1,
+			},
+		},
+	})
+}
+
 // protocolRecipes returns all recipes as protocol recipes.
 func (s *Session) protocolRecipes() []protocol.Recipe {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))

@@ -54,6 +54,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.setFlag(dataKeyFlags, dataFlagCritical)
 	}
+	if o, ok := e.(orb); ok {
+		m[dataKeyExperienceValue] = int32(o.Experience())
+	}
 	if sc, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(sc.Scale())
 	}
@@ -117,6 +120,7 @@ const (
 	dataKeyAir
 	dataKeyPotionColour
 	dataKeyPotionAmbient
+	dataKeyExperienceValue   = 15
 	dataKeyCustomDisplay     = 18
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
@@ -207,4 +211,8 @@ type using interface {
 
 type arrow interface {
 	Critical() bool
+}
+
+type orb interface {
+	Experience() int
 }
