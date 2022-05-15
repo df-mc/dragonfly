@@ -807,7 +807,7 @@ func (p *Player) Respawn() {
 	}
 
 	pos := w.Spawn().Vec3Middle()
-	if playerSpawn := w.PlayerSpawn(p.UUID()); !playerSpawn.ApproxEqual(mgl64.Vec3{}) {
+	if playerSpawn, ok := w.PlayerSpawn(p.UUID()); !ok {
 		pos = playerSpawn
 	}
 

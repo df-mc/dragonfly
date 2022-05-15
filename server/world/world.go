@@ -837,15 +837,15 @@ func (w *World) SetSpawn(pos cube.Pos) {
 }
 
 // PlayerSpawn returns the location of the player spawn in the world.
-func (w *World) PlayerSpawn(uuid uuid.UUID) mgl64.Vec3 {
+func (w *World) PlayerSpawn(uuid uuid.UUID) (mgl64.Vec3, bool) {
 	if w == nil {
-		return mgl64.Vec3{}
+		return mgl64.Vec3{}, false
 	}
 	position, err := w.prov.Load().LoadPlayerSpawnPosition(uuid)
 	if err != nil {
-		return mgl64.Vec3{}
+		return mgl64.Vec3{}, false
 	}
-	return position
+	return position, true
 }
 
 // SetPlayerSpawn sets the spawn of the player. If The player has a player spawn in the world, the player will
