@@ -9,6 +9,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"io/ioutil"
@@ -139,6 +141,33 @@ func (p *Provider) SaveSettings(s *world.Settings) {
 	p.d.ServerChunkTickRange = s.TickRange
 	p.saveDefaultGameMode(s.DefaultGameMode)
 	p.saveDifficulty(s.Difficulty)
+}
+
+// LoadPlayerSpawnPosition loads the players spawn position stored in the level.dat from their UUID.
+func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, err error) {
+	vec3, err := p.db.Get(append([]byte("p"), uuid[:]...), nil)
+	if err != nil {
+		return mgl64.Vec3{}, err
+	}
+	buf := bytes.NewBuffer(nil)
+	buf.Write(vec3)
+
+	err = binary.Read(buf, binary.LittleEndian, &pos)
+	if err != nil {
+		return mgl64.Vec3{}, err
+	}
+	return pos, nil
+}
+
+// SavePlayerSpawnPosition saves the player spawn position passed to the level.dat.
+func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error {
+	buf := bytes.NewBuffer(nil)
+	err := binary.Write(buf, binary.LittleEndian, pos)
+	if err != nil {
+		return err
+	}
+	fmt.Println(buf)
+	return p.db.Put(append([]byte("p"), uuid[:]...), buf.Bytes(), nil)
 }
 
 // LoadChunk loads a chunk at the position passed from the leveldb database. If it doesn't exist, exists is

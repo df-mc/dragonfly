@@ -2,6 +2,8 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"io"
 )
 
@@ -14,6 +16,11 @@ type Provider interface {
 	// SaveSettings saves the settings of a World.
 	SaveSettings(*Settings)
 
+	// LoadPlayerSpawnPosition loads the player spawn point if found, otherwise an error will be returned.
+	LoadPlayerSpawnPosition(uuid uuid.UUID) (mgl64.Vec3, error)
+	// SavePlayerSpawnPosition saves the player spawn point, in vanilla, this can be done with beds in the overworld
+	// and respawn anchors in the nether.
+	SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -53,3 +60,7 @@ func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any) error   { return nil
 func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk) error          { return nil }
 func (NopProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error)  { return nil, false, nil }
 func (NopProvider) Close() error                                    { return nil }
+func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (mgl64.Vec3, error) {
+	return mgl64.Vec3{}, nil
+}
+func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, mgl64.Vec3) error { return nil }
