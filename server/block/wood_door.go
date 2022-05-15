@@ -60,7 +60,7 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // UseOnBlock handles the directional placing of doors
-func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	if face != cube.FaceUp {
 		// Doors can only be placed when clicking the top face.
 		return false
@@ -93,6 +93,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	ctx.IgnoreBBox = true
 	place(w, pos, d, user, ctx)
 	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	ctx.CountSub = 1
 	return placed(ctx)
 }
 
