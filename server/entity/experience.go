@@ -10,7 +10,6 @@ import (
 // experience needed for upcoming levels.
 type ExperienceManager struct {
 	mu         sync.RWMutex
-	total      int
 	experience int
 }
 
@@ -30,8 +29,6 @@ func (e *ExperienceManager) Experience() int {
 func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	amount = min(amount, math.MaxInt32-e.total)
-	e.total += amount
 	e.experience += amount
 	return progressFromExperience(e.experience)
 }
@@ -82,25 +79,11 @@ func (e *ExperienceManager) SetProgress(progress float64) {
 	e.experience += experienceForLevels(currentLevel) + int(float64(experienceForLevel(currentLevel))*progress)
 }
 
-// LifetimeTotal returns the total experience collected in the manager's lifetime.
-func (e *ExperienceManager) LifetimeTotal() int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return e.total
-}
-
-// SetLifetimeTotal sets the total experience collected in the manager's lifetime.
-func (e *ExperienceManager) SetLifetimeTotal(total int) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	e.total = total
-}
-
 // Reset resets the total experience, level, and progress of the manager to zero.
 func (e *ExperienceManager) Reset() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.total, e.experience = 0, 0
+	e.experience = 0
 }
 
 // progressFromExperience returns the level and progress from the total experience given.
@@ -142,12 +125,4 @@ func experienceForLevel(level int) int {
 		return 5*level - 38
 	}
 	return 9*level - 158
-}
-
-// min ...
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

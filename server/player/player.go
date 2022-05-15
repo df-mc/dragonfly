@@ -1911,6 +1911,58 @@ func (p *Player) Collect(s item.Stack) int {
 	return n
 }
 
+// Experience returns the amount of experience the player has.
+func (p *Player) Experience() int {
+	return p.experience.Experience()
+}
+
+// AddExperience adds experience to the player.
+func (p *Player) AddExperience(amount int) int {
+	ctx := event.C()
+	if p.handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
+		return 0
+	}
+	before := p.experience.Level()
+	level, _ := p.experience.Add(amount)
+	if level/5 > before/5 {
+		p.PlaySound(sound.LevelUp{})
+	} else if amount > 0 {
+		p.PlaySound(sound.Experience{})
+	}
+	p.session().SendExperience(p.experience)
+	return amount
+}
+
+// RemoveExperience removes experience from the player.
+func (p *Player) RemoveExperience(amount int) {
+	p.experience.Remove(amount)
+	p.session().SendExperience(p.experience)
+}
+
+// ExperienceLevel returns the experience level of the player.
+func (p *Player) ExperienceLevel() int {
+	return p.experience.Level()
+}
+
+// SetExperienceLevel sets the experience level of the player. The level must have a value between 0 and 2,147,483,647,
+// otherwise the method panics.
+func (p *Player) SetExperienceLevel(level int) {
+	p.experience.SetLevel(level)
+	p.session().SendExperience(p.experience)
+}
+
+// ExperienceProgress returns the experience progress of the player.
+func (p *Player) ExperienceProgress() float64 {
+	return p.experience.Progress()
+}
+
+// SetExperienceProgress sets the experience progress of the player. The progress must have a value between 0.0 and 1.0, otherwise
+// the method panics.
+func (p *Player) SetExperienceProgress(progress float64) {
+	p.experience.SetProgress(progress)
+	p.session().SendExperience(p.experience)
+}
+
 // CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
 // is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
 // experience collection or if the player was dead or in a game mode that doesn't allow collection.
@@ -2337,63 +2389,6 @@ func (p *Player) Close() error {
 	return nil
 }
 
-// TotalLifetimeExperience returns the total experience of the player over its lifetime.
-func (p *Player) TotalLifetimeExperience() int {
-	return p.experience.LifetimeTotal()
-}
-
-// ExperienceLevel returns the experience level of the player.
-func (p *Player) ExperienceLevel() int {
-	return p.experience.Level()
-}
-
-// ExperienceProgress returns the experience progress of the player.
-func (p *Player) ExperienceProgress() float64 {
-	return p.experience.Progress()
-}
-
-// Experience returns the amount of experience the player has.
-func (p *Player) Experience() int {
-	return p.experience.Experience()
-}
-
-// AddExperience adds experience to the player.
-func (p *Player) AddExperience(amount int) int {
-	ctx := event.C()
-	if p.handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
-		return 0
-	}
-	before := p.experience.Level()
-	level, _ := p.experience.Add(amount)
-	if level/5 > before/5 {
-		p.PlaySound(sound.LevelUp{})
-	} else if amount > 0 {
-		p.PlaySound(sound.Experience{})
-	}
-	p.session().SendExperience(p.experience)
-	return amount
-}
-
-// RemoveExperience removes experience from the player.
-func (p *Player) RemoveExperience(amount int) {
-	p.experience.Remove(amount)
-	p.session().SendExperience(p.experience)
-}
-
-// SetExperienceLevel sets the experience level of the player. The level must have a value between 0 and 2,147,483,647,
-// otherwise the method panics.
-func (p *Player) SetExperienceLevel(level int) {
-	p.experience.SetLevel(level)
-	p.session().SendExperience(p.experience)
-}
-
-// SetProgress sets the experience progress of the player. The progress must have a value between 0.0 and 1.0, otherwise
-// the method panics.
-func (p *Player) SetProgress(progress float64) {
-	p.experience.SetProgress(progress)
-	p.session().SendExperience(p.experience)
-}
-
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
@@ -2427,9 +2422,7 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
-	p.experience.SetLifetimeTotal(data.XPTotal)
-	p.experience.SetLevel(data.XPLevel)
-	p.experience.SetProgress(data.XPPercentage)
+	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)
 
 	p.gameMode.Store(data.GameMode)
@@ -2470,9 +2463,7 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
-		XPLevel:         p.ExperienceLevel(),
-		XPPercentage:    p.ExperienceProgress(),
-		XPTotal:         p.TotalLifetimeExperience(),
+		Experience:      p.Experience(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
