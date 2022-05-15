@@ -2353,6 +2353,12 @@ func (p *Player) AddExperience(amount int) {
 	p.session().SendExperience(p.experience)
 }
 
+// RemoveExperience removes experience from the player.
+func (p *Player) RemoveExperience(amount int) {
+	p.experience.Remove(amount)
+	p.session().SendExperience(p.experience)
+}
+
 // SetExperienceLevel sets the experience level of the player. The level must have a value between 0 and 2,147,483,647,
 // otherwise the method panics.
 func (p *Player) SetExperienceLevel(level int) {
