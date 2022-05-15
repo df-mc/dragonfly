@@ -9,10 +9,9 @@ import (
 // ExperienceManager manages experience and levels for entities, and provides functions to add, remove, and calculate
 // experience needed for upcoming levels.
 type ExperienceManager struct {
-	mu       sync.RWMutex
-	total    int
-	level    int
-	progress float64
+	mu         sync.RWMutex
+	total      int
+	experience int
 }
 
 // NewExperienceManager returns a new ExperienceManager with no experience.
@@ -20,85 +19,90 @@ func NewExperienceManager() *ExperienceManager {
 	return &ExperienceManager{}
 }
 
-// Level returns the current experience level.
-func (e *ExperienceManager) Level() int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return e.level
-}
-
 // Experience returns the amount of experience the manager currently has.
 func (e *ExperienceManager) Experience() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return experienceForLevels(e.level) + int(float64(experienceForLevel(e.level))*e.progress)
-}
-
-// Progress returns the progress towards the next level.
-func (e *ExperienceManager) Progress() float64 {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return e.progress
-}
-
-// Total returns the total experience collected in the manager's lifetime.
-func (e *ExperienceManager) Total() int {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
-	return e.total
-}
-
-// SetTotal sets the total experience collected in the manager's lifetime.
-func (e *ExperienceManager) SetTotal(total int) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	e.total = total
+	return e.experience
 }
 
 // Add adds experience to the total experience and recalculates the level and progress if necessary.
 func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	amount = int(math.Min(float64(amount), float64(math.MaxInt32-e.total)))
+	amount = min(amount, math.MaxInt32-e.total)
 	e.total += amount
-	e.level, e.progress = progressFromExperience(experienceForLevels(e.level) + int(float64(experienceForLevel(e.level))*e.progress) + amount)
-	return e.level, e.progress
+	e.experience += amount
+	level, progress = progressFromExperience(e.experience)
+	return
 }
 
 // Remove removes experience from the total experience and recalculates the level and progress if necessary.
 func (e *ExperienceManager) Remove(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	amount = int(math.Min(float64(amount), float64(e.total)))
-	e.level, e.progress = progressFromExperience(experienceForLevels(e.level) + int(float64(experienceForLevel(e.level))*e.progress) - amount)
-	return e.level, e.progress
+	e.experience -= amount
+	level, progress = progressFromExperience(e.experience)
+	return
+}
+
+// Level returns the current experience level.
+func (e *ExperienceManager) Level() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	level, _ := progressFromExperience(e.experience)
+	return level
 }
 
 // SetLevel sets the level of the manager.
 func (e *ExperienceManager) SetLevel(level int) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
 	if level < 0 || level > math.MaxInt32 {
 		panic(fmt.Sprintf("level must be between 0 and 2,147,483,647, got %d", level))
 	}
-	e.level = level
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	_, progress := progressFromExperience(e.experience)
+	e.experience += experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
+}
+
+// Progress returns the progress towards the next level.
+func (e *ExperienceManager) Progress() float64 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	_, progress := progressFromExperience(e.experience)
+	return progress
 }
 
 // SetProgress sets the progress of the manager.
 func (e *ExperienceManager) SetProgress(progress float64) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
 	if progress < 0 || progress > 1 {
 		panic(fmt.Sprintf("progress must be between 0 and 1, got %f", progress))
 	}
-	e.progress = progress
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	currentLevel, _ := progressFromExperience(e.experience)
+	e.experience += experienceForLevels(currentLevel) + int(float64(experienceForLevel(currentLevel))*progress)
+}
+
+// LifetimeTotal returns the total experience collected in the manager's lifetime.
+func (e *ExperienceManager) LifetimeTotal() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.total
+}
+
+// SetLifetimeTotal sets the total experience collected in the manager's lifetime.
+func (e *ExperienceManager) SetLifetimeTotal(total int) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.total = total
 }
 
 // Reset resets the total experience, level, and progress of the manager to zero.
 func (e *ExperienceManager) Reset() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.total, e.level, e.progress = 0, 0, 0
+	e.total, e.experience = 0, 0
 }
 
 // progressFromExperience returns the level and progress from the total experience given.
@@ -140,4 +144,12 @@ func experienceForLevel(level int) int {
 		return 5*level - 38
 	}
 	return 9*level - 158
+}
+
+// min ...
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
