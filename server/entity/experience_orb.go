@@ -112,7 +112,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 		if e.target == nil {
 			if collectors := w.EntitiesWithin(followBox.Translate(e.pos), func(o world.Entity) bool {
 				c, ok := o.(experienceCollector)
-				return !ok || !c.GameMode().AllowsInteraction()
+				return !ok || !c.GameMode().AllowsInteraction() || c.Dead()
 			}); len(collectors) > 0 {
 				e.target = collectors[0].(experienceCollector)
 			}
