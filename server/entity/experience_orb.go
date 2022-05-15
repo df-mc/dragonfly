@@ -142,7 +142,7 @@ func (e *ExperienceOrb) DecodeNBT(data map[string]any) any {
 	o := NewExperienceOrb(nbtconv.MapVec3(data, "Pos"), int(nbtconv.Map[int32](data, "Value")))
 	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
 	o.age = int(nbtconv.Map[int16](data, "Age"))
-	return e
+	return o
 }
 
 // EncodeNBT encodes the Item entity's properties as a map and returns it.
