@@ -33,8 +33,7 @@ func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	amount = min(amount, math.MaxInt32-e.total)
 	e.total += amount
 	e.experience += amount
-	level, progress = progressFromExperience(e.experience)
-	return
+	return progressFromExperience(e.experience)
 }
 
 // Remove removes experience from the total experience and recalculates the level and progress if necessary.
@@ -42,8 +41,7 @@ func (e *ExperienceManager) Remove(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.experience -= amount
-	level, progress = progressFromExperience(e.experience)
-	return
+	return progressFromExperience(e.experience)
 }
 
 // Level returns the current experience level.
