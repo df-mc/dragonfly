@@ -74,7 +74,7 @@ func (l Ladder) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (l Ladder) BreakInfo() BreakInfo {
-	return newBreakInfo(0.4, alwaysHarvestable, axeEffective, oneOf(l), XPDropRange{})
+	return newBreakInfo(0.4, alwaysHarvestable, axeEffective, oneOf(l))
 }
 
 // EncodeItem ...

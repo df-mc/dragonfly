@@ -17,7 +17,7 @@ func (Terracotta) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (t Terracotta) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t), XPDropRange{})
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
 }
 
 // EncodeItem ...

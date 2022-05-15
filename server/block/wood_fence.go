@@ -19,7 +19,7 @@ type WoodFence struct {
 
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w), XPDropRange{})
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
 // CanDisplace ...

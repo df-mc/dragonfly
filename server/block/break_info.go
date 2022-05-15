@@ -88,14 +88,19 @@ type BreakInfo struct {
 }
 
 // newBreakInfo creates a BreakInfo struct with the properties passed. The XPDrops field is 0 by default.
-func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack, xp XPDropRange) BreakInfo {
+func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack) BreakInfo {
 	return BreakInfo{
 		Hardness:    hardness,
 		Harvestable: harvestable,
 		Effective:   effective,
 		Drops:       drops,
-		XPDrops:     xp,
 	}
+}
+
+// withXPDropRange sets the XPDropRange field of the BreakInfo struct to the passed value.
+func (b BreakInfo) withXPDropRange(min, max int) BreakInfo {
+	b.XPDrops = XPDropRange{min, max}
+	return b
 }
 
 // XPDropRange holds the min & max XP drop amounts of blocks.

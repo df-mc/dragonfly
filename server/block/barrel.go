@@ -123,7 +123,7 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...), XPDropRange{})
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...))
 }
 
 // FlammabilityInfo ...

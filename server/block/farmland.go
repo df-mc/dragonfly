@@ -88,7 +88,7 @@ type fallDistanceEntity interface {
 
 // BreakInfo ...
 func (f Farmland) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}), XPDropRange{})
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
 }
 
 // EncodeBlock ...

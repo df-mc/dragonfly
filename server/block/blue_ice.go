@@ -7,7 +7,7 @@ type BlueIce struct {
 
 // BreakInfo ...
 func (b BlueIce) BreakInfo() BreakInfo {
-	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b), XPDropRange{})
+	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b))
 }
 
 // Friction ...

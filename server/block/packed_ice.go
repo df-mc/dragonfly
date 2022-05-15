@@ -16,7 +16,7 @@ func (PackedIce) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (p PackedIce) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(p), XPDropRange{})
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(p))
 }
 
 // Friction ...

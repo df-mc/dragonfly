@@ -94,7 +94,7 @@ func (Flower) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (f Flower) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(f), XPDropRange{})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(f))
 }
 
 // EncodeItem ...

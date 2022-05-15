@@ -17,7 +17,7 @@ type Concrete struct {
 
 // BreakInfo ...
 func (c Concrete) BreakInfo() BreakInfo {
-	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c), XPDropRange{})
+	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
 // EncodeItem ...

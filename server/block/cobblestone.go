@@ -12,7 +12,7 @@ type Cobblestone struct {
 
 // BreakInfo ...
 func (c Cobblestone) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c), XPDropRange{})
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
 // EncodeItem ...

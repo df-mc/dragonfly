@@ -66,7 +66,7 @@ func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 
 // BreakInfo ...
 func (n NoteBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(n), XPDropRange{})
+	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(n))
 }
 
 // EncodeItem ...

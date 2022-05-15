@@ -24,7 +24,7 @@ func (Podzol) Shovel() (world.Block, bool) {
 
 // BreakInfo ...
 func (p Podzol) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p), XPDropRange{})
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
 }
 
 // EncodeItem ...

@@ -34,7 +34,7 @@ type BeaconSource interface {
 
 // BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
-	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b), XPDropRange{})
+	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
 }
 
 // Activate manages the opening of a beacon by activating it.

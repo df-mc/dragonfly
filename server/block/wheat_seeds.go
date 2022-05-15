@@ -52,7 +52,7 @@ func (s WheatSeeds) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(s, 1)}
 		}
 		return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.Intn(4)+1)}
-	}, XPDropRange{})
+	})
 }
 
 // EncodeItem ...

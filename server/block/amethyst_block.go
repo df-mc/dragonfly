@@ -7,7 +7,7 @@ type AmethystBlock struct {
 
 // BreakInfo ...
 func (a AmethystBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeHarvestable, oneOf(a), XPDropRange{})
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeHarvestable, oneOf(a))
 }
 
 // EncodeItem ...

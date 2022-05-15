@@ -18,7 +18,7 @@ type LapisOre struct {
 func (l LapisOre) BreakInfo() BreakInfo {
 	return newBreakInfo(l.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4), item.NewStack(l, 1)), XPDropRange{2, 5})
+	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4), item.NewStack(l, 1))).withXPDropRange(2, 5)
 }
 
 // EncodeItem ...

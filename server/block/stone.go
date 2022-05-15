@@ -30,24 +30,24 @@ type (
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
 	if s.Smooth {
-		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s), XPDropRange{})
+		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 	}
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}), XPDropRange{})
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}))
 }
 
 // BreakInfo ...
 func (g Granite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g), XPDropRange{})
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g))
 }
 
 // BreakInfo ...
 func (d Diorite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d), XPDropRange{})
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d))
 }
 
 // BreakInfo ...
 func (a Andesite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a), XPDropRange{})
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
 }
 
 // EncodeItem ...

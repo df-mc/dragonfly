@@ -69,7 +69,7 @@ func (c Carrot) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, 1)}
 		}
 		return []item.Stack{item.NewStack(c, rand.Intn(4)+2)}
-	}, XPDropRange{})
+	})
 }
 
 // EncodeItem ...

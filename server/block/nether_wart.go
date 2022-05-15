@@ -58,7 +58,7 @@ func (n NetherWart) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(n, rand.Intn(3)+2)}
 		}
 		return []item.Stack{item.NewStack(n, 1)}
-	}, XPDropRange{})
+	})
 }
 
 // EncodeItem ...

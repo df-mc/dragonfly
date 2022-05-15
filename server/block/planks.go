@@ -24,7 +24,7 @@ func (p Planks) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (p Planks) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p), XPDropRange{})
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p))
 }
 
 // EncodeItem ...

@@ -8,7 +8,7 @@ type QuartzBricks struct {
 
 // BreakInfo ...
 func (q QuartzBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(q), XPDropRange{})
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(q))
 }
 
 // EncodeItem ...

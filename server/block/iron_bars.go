@@ -13,7 +13,7 @@ type IronBars struct {
 
 // BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i), XPDropRange{})
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i))
 }
 
 // CanDisplace ...

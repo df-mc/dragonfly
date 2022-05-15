@@ -12,7 +12,7 @@ func (DriedKelpBlock) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DriedKelpBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(d), XPDropRange{})
+	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(d))
 }
 
 // EncodeItem ...

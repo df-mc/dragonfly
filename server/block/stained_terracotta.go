@@ -23,7 +23,7 @@ func (t StainedTerracotta) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (t StainedTerracotta) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t), XPDropRange{})
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
 }
 
 // EncodeItem ...

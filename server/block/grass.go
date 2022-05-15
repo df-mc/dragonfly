@@ -92,7 +92,7 @@ func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g), XPDropRange{})
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
 }
 
 // EncodeItem ...

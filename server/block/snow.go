@@ -9,7 +9,7 @@ type Snow struct {
 
 // BreakInfo ...
 func (s Snow) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, shovelEffective, silkTouchDrop(item.NewStack(item.Snowball{}, 4), item.NewStack(s, 1)), XPDropRange{})
+	return newBreakInfo(0.2, alwaysHarvestable, shovelEffective, silkTouchDrop(item.NewStack(item.Snowball{}, 4), item.NewStack(s, 1)))
 }
 
 // EncodeItem ...

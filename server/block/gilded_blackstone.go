@@ -17,7 +17,7 @@ func (b GildedBlackstone) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)}
 		}
 		return []item.Stack{item.NewStack(b, 1)}
-	}, XPDropRange{})
+	})
 }
 
 // EncodeItem ...

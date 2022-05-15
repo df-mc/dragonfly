@@ -90,7 +90,7 @@ func (m MelonSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // BreakInfo ...
 func (m MelonSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(m), XPDropRange{})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(m))
 }
 
 // EncodeItem ...
