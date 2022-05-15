@@ -70,7 +70,6 @@ func (e *ExperienceManager) Remove(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	amount = int(math.Min(float64(amount), float64(e.total)))
-	e.total -= amount
 	e.level, e.progress = progressFromExperience(experienceForLevels(e.level) + int(float64(experienceForLevel(e.level))*e.progress) - amount)
 	return e.level, e.progress
 }
