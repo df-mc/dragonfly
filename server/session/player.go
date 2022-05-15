@@ -547,8 +547,11 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
 
-		blockName, _ := i.Block().EncodeBlock()
-		blockName = strings.Split(blockName, ":")[1]
+		blockName := "crafting_table"
+		if b := i.Block(); b != nil {
+			blockName, _ = b.EncodeBlock()
+			blockName = strings.Split(blockName, ":")[1]
+		}
 
 		switch i := i.(type) {
 		case recipe.Shapeless:

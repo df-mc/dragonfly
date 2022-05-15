@@ -24,7 +24,8 @@ type Shapeless struct {
 }
 
 // NewShapeless creates a new shapeless recipe and returns it. The recipe can only be crafted on the block passed in the
-// parameters.
+// parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
+// player's inventory. If nil is passed, the block will be autofilled as a crafting table.
 func NewShapeless(input []item.Stack, output item.Stack, block world.Block) Shapeless {
 	return Shapeless{recipe: recipe{
 		input:  input,
@@ -41,7 +42,9 @@ type Shaped struct {
 }
 
 // NewShaped creates a new shaped recipe and returns it. The recipe can only be crafted on the block passed in the
-// parameters. The inputs must always match the width*height of the shape.
+// parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
+// player's inventory. If nil is passed, the block will be autofilled as a crafting table. The inputs must always match
+// the width*height of the shape.
 func NewShaped(input []item.Stack, output item.Stack, block world.Block, shape Shape) Shaped {
 	return Shaped{
 		shape: shape,
