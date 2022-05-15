@@ -30,7 +30,7 @@ func (d inputItems) Stacks() ([]item.Stack, bool) {
 		}
 		st := item.NewStack(it, int(i.Count))
 		if i.Meta == math.MaxInt16 {
-			st = st.WithVariants()
+			st = st.WithValue("variants", true)
 		}
 		s = append(s, st)
 	}

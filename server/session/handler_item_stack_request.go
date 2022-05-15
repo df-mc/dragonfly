@@ -213,9 +213,22 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				continue
 			}
 			has, _ := s.ui.Item(int(slot))
-			if has.Empty() != expected.Empty() || has.Count() < expected.Count() || !has.Comparable(expected) {
+			_, variants := expected.Value("variants")
+			if has.Empty() != expected.Empty() || has.Count() < expected.Count() {
 				// We can't process this item, as it's not a part of the recipe.
 				continue
+			}
+			if !variants && !has.Comparable(expected) {
+				// Not the same item without accounting for variants.
+				continue
+			}
+			if variants {
+				nameOne, _ := has.Item().EncodeItem()
+				nameTwo, _ := expected.Item().EncodeItem()
+				if nameOne != nameTwo {
+					// Not the same item even when accounting for variants.
+					continue
+				}
 			}
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
@@ -264,7 +277,15 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 			continue
 		}
 
-		if ind := slices.IndexFunc(expectancies, i.Comparable); ind >= 0 {
+		_, variants := i.Value("variants")
+		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
+			if variants {
+				nameOne, _ := st.Item().EncodeItem()
+				nameTwo, _ := i.Item().EncodeItem()
+				return nameOne == nameTwo
+			}
+			return st.Comparable(i)
+		}); ind >= 0 {
 			i = i.Grow(expectancies[ind].Count())
 			expectancies = slices.Delete(expectancies, ind, ind+1)
 		}
@@ -272,11 +293,24 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range expectancies {
+		_, variants := expected.Value("variants")
 		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
 			for slot, has := range inv.Slots() {
-				if has.Empty() || !has.Comparable(expected) {
+				if has.Empty() {
 					// We don't have this item, skip it.
 					continue
+				}
+				if !variants && !has.Comparable(expected) {
+					// Not the same item without accounting for variants.
+					continue
+				}
+				if variants {
+					nameOne, _ := has.Item().EncodeItem()
+					nameTwo, _ := expected.Item().EncodeItem()
+					if nameOne != nameTwo {
+						// Not the same item even when accounting for variants.
+						continue
+					}
 				}
 
 				remaining, removal := expected.Count(), has.Count()

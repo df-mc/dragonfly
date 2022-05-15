@@ -655,7 +655,7 @@ func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientIte
 		if !ok {
 			panic("should never happen")
 		}
-		if i.Variants() {
+		if _, ok = i.Value("variants"); ok {
 			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
 		}
 		items = append(items, protocol.RecipeIngredientItem{

@@ -22,8 +22,7 @@ type Stack struct {
 	customName string
 	lore       []string
 
-	damage   int
-	variants bool
+	damage int
 
 	data map[string]any
 
@@ -136,13 +135,6 @@ func (s Stack) WithDurability(d int) Stack {
 		return durable.DurabilityInfo().BrokenItem()
 	}
 	s.damage = maxDurability - d
-	return s
-}
-
-// WithVariants returns an item stack with variants allowed. This is used mainly for crafting recipes with multiple
-// variants.
-func (s Stack) WithVariants() Stack {
-	s.variants = true
 	return s
 }
 
@@ -310,10 +302,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || s.damage != s2.damage || s.customName != s2.customName {
-		return false
-	}
-	if !s.variants && !s2.variants && meta != meta2 {
+	if name != name2 || meta != meta2 || s.damage != s2.damage || s.customName != s2.customName {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
@@ -335,12 +324,6 @@ func (s Stack) Comparable(s2 Stack) bool {
 		return ok && reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
 	}
 	return true
-}
-
-// Variants returns true if multiple variants are allowed for the item stack. This is used mainly for crafting recipe
-// inputs.
-func (s Stack) Variants() bool {
-	return s.variants
 }
 
 // String implements the fmt.Stringer interface.
