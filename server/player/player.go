@@ -1913,7 +1913,7 @@ func (p *Player) Collect(s item.Stack) int {
 
 // CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
 // is returned indicating whether the player was able to collect the experience, or not, due to the 100ms delay between
-// experience collection.
+// experience collection or if the player was dead or in a game mode that doesn't allow collection.
 func (p *Player) CollectExperience(value int) bool {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
 		return false
