@@ -551,7 +551,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		blockName = strings.Split(blockName, ":")[1]
 
 		switch i := i.(type) {
-		case recipe.ShapelessRecipe:
+		case recipe.Shapeless:
 			recipes = append(recipes, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),
@@ -560,7 +560,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Block:           blockName,
 				RecipeNetworkID: networkID,
 			})
-		case recipe.ShapedRecipe:
+		case recipe.Shaped:
 			recipes = append(recipes, &protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),

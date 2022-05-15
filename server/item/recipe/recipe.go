@@ -18,43 +18,43 @@ type Recipe interface {
 	Priority() uint32
 }
 
-// ShapelessRecipe is a recipe that has no particular shape.
-type ShapelessRecipe struct {
+// Shapeless is a recipe that has no particular shape.
+type Shapeless struct {
 	recipe
 }
 
-// NewShapelessRecipe creates a new shapeless recipe and returns it.
-func NewShapelessRecipe(input []item.Stack, output []item.Stack, block world.Block, priority uint32) ShapelessRecipe {
-	return ShapelessRecipe{recipe: recipe{
-		input:    input,
-		output:   output,
-		priority: priority,
-		block:    block,
+// NewShapeless creates a new shapeless recipe and returns it. The recipe can only be crafted on the block passed in the
+// parameters.
+func NewShapeless(input []item.Stack, output item.Stack, block world.Block) Shapeless {
+	return Shapeless{recipe: recipe{
+		input:  input,
+		output: []item.Stack{output},
+		block:  block,
 	}}
 }
 
-// ShapedRecipe is a recipe that has a specific shape that must be used to craft the output of the recipe.
-type ShapedRecipe struct {
+// Shaped is a recipe that has a specific shape that must be used to craft the output of the recipe.
+type Shaped struct {
 	recipe
 	// shape contains the width and height of the shaped recipe.
 	shape Shape
 }
 
-// NewShapedRecipe creates a new shaped recipe and returns it.
-func NewShapedRecipe(input []item.Stack, output []item.Stack, block world.Block, priority uint32, shape Shape) ShapedRecipe {
-	return ShapedRecipe{
+// NewShaped creates a new shaped recipe and returns it. The recipe can only be crafted on the block passed in the
+// parameters. The inputs must always match the width*height of the shape.
+func NewShaped(input []item.Stack, output item.Stack, block world.Block, shape Shape) Shaped {
+	return Shaped{
 		shape: shape,
 		recipe: recipe{
-			input:    input,
-			output:   output,
-			priority: priority,
-			block:    block,
+			input:  input,
+			output: []item.Stack{output},
+			block:  block,
 		},
 	}
 }
 
 // Shape returns the shape of the recipe.
-func (r ShapedRecipe) Shape() Shape {
+func (r Shaped) Shape() Shape {
 	return r.shape
 }
 

@@ -43,7 +43,7 @@ func init() {
 			continue
 		}
 		b, _ := world.BlockByName("minecraft:"+s.Block, nil)
-		Register(ShapelessRecipe{recipe{
+		Register(Shapeless{recipe{
 			input:    input,
 			output:   output,
 			block:    b,
@@ -59,7 +59,7 @@ func init() {
 			continue
 		}
 		b, _ := world.BlockByName("minecraft:"+s.Block, nil)
-		Register(ShapedRecipe{
+		Register(Shaped{
 			shape: Shape{int(s.Width), int(s.Height)},
 			recipe: recipe{
 				input:    input,

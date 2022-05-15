@@ -196,8 +196,8 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	_, shaped := craft.(recipe.ShapedRecipe)
-	_, shapeless := craft.(recipe.ShapelessRecipe)
+	_, shaped := craft.(recipe.Shaped)
+	_, shapeless := craft.(recipe.Shapeless)
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
@@ -246,8 +246,8 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	_, shaped := craft.(recipe.ShapedRecipe)
-	_, shapeless := craft.(recipe.ShapelessRecipe)
+	_, shaped := craft.(recipe.Shaped)
+	_, shapeless := craft.(recipe.Shapeless)
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
@@ -264,9 +264,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 			continue
 		}
 
-		if ind := slices.IndexFunc(expectancies, func(stack item.Stack) bool {
-			return stack.Comparable(i)
-		}); ind >= 0 {
+		if ind := slices.IndexFunc(expectancies, i.Comparable); ind >= 0 {
 			i = i.Grow(expectancies[ind].Count())
 			expectancies = slices.Delete(expectancies, ind, ind+1)
 		}
