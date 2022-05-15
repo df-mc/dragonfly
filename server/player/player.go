@@ -1922,7 +1922,7 @@ func (p *Player) CollectExperience(value int) bool {
 		return false
 	}
 	p.lastXPPickup.Store(time.Now())
-	return p.AddExperience(value) != 0
+	return p.AddExperience(value) > 0
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
@@ -2359,9 +2359,8 @@ func (p *Player) Experience() int {
 
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
-	a := &amount
 	ctx := event.C()
-	if p.handler().HandleExperienceGain(ctx, a); ctx.Cancelled() {
+	if p.handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
 		return 0
 	}
 	before := p.experience.Level()
@@ -2372,7 +2371,7 @@ func (p *Player) AddExperience(amount int) int {
 		p.PlaySound(sound.Experience{})
 	}
 	p.session().SendExperience(p.experience)
-	return *a
+	return amount
 }
 
 // RemoveExperience removes experience from the player.
