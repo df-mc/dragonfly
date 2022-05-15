@@ -3,11 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 func main() {
@@ -28,7 +31,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		go func() {
+			for {
+				p.SendTip(entity.Facing(p))
+				time.Sleep(200 * time.Millisecond)
+			}
+		}()
+	}) {
 	}
 }
 

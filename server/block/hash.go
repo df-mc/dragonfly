@@ -7,6 +7,7 @@ const (
 	hashAmethystBlock
 	hashAncientDebris
 	hashAndesite
+	hashAnvil
 	hashBarrel
 	hashBarrier
 	hashBasalt
@@ -152,6 +153,10 @@ func (AncientDebris) Hash() uint64 {
 
 func (a Andesite) Hash() uint64 {
 	return hashAndesite | uint64(boolByte(a.Polished))<<8
+}
+
+func (a Anvil) Hash() uint64 {
+	return hashAnvil | uint64(a.Type.Uint8())<<8 | uint64(a.Facing)<<10
 }
 
 func (b Barrel) Hash() uint64 {

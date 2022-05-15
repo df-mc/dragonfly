@@ -78,24 +78,26 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 const (
-	containerArmour         = 6
-	containerChest          = 7
-	containerBeacon         = 8
-	containerFullInventory  = 12
-	containerCraftingGrid   = 13
-	containerHotbar         = 27
-	containerInventory      = 28
-	containerOffHand        = 33
-	containerBarrel         = 57
-	containerCursor         = 58
-	containerCreativeOutput = 59
+	containerAnvilInput    = 0
+	containerAnvilMaterial = 1
+	containerArmour        = 6
+	containerChest         = 7
+	containerBeacon        = 8
+	containerFullInventory = 12
+	containerCraftingGrid  = 13
+	containerHotbar        = 27
+	containerInventory     = 28
+	containerOffHand       = 33
+	containerBarrel        = 57
+	containerCursor        = 58
+	containerOutput        = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerCreativeOutput, containerCursor:
+	case containerCraftingGrid, containerOutput, containerCursor:
 		// UI inventory.
 		return s.ui, true
 	case containerHotbar, containerInventory, containerFullInventory:
@@ -125,6 +127,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, beacon := b.(block.Beacon); beacon {
+				return s.ui, true
+			}
+		}
+	case containerAnvilInput, containerAnvilMaterial:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, anvil := b.(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}

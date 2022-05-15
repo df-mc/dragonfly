@@ -756,9 +756,12 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
+	case block.Anvil:
+		containerType = 5
 	case block.Beacon:
 		containerType = 13
 	}
+	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
 		ContainerType:           containerType,
@@ -905,6 +908,7 @@ func (s *Session) closeWindow() {
 	if !s.containerOpened.CAS(true, false) {
 		return
 	}
+	s.openedContainerID.Store(0)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }

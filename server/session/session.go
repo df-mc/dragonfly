@@ -63,8 +63,9 @@ type Session struct {
 
 	breakingPos cube.Pos
 
-	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
+	openedWindowID                 atomic.Uint32
+	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
@@ -397,6 +398,7 @@ func (s *Session) registerHandlers() {
 		packet.IDActorEvent:            nil,
 		packet.IDAdventureSettings:     &AdventureSettingsHandler{},
 		packet.IDAnimate:               nil,
+		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
@@ -408,7 +410,7 @@ func (s *Session) registerHandlers() {
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemFrameDropItem:     nil,
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},

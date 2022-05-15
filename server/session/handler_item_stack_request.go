@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -18,7 +19,7 @@ import (
 type ItemStackRequestHandler struct {
 	currentRequest  int32
 	changes         map[byte]map[byte]changeInfo
-	responseChanges map[int32]map[byte]map[byte]responseChange
+	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
 	current         time.Time
 	ignoreDestroy   bool
 }
@@ -81,11 +82,13 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleDrop(a, s)
 		case *protocol.BeaconPaymentStackRequestAction:
 			err = h.handleBeaconPayment(a, s)
+		case *protocol.CraftRecipeOptionalStackRequestAction:
+			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
 			err = h.handleMineBlock(a, s)
-		case *protocol.CraftResultsDeprecatedStackRequestAction:
+		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
 			return fmt.Errorf("unhandled stack request action %#v", action)
@@ -196,7 +199,7 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	it = it.Grow(it.MaxCount() - 1)
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCreativeOutput,
+		ContainerID:    containerOutput,
 		Slot:           50,
 		StackNetworkID: item_id(it),
 	}, it, s)
@@ -311,6 +314,76 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 	return nil
 }
 
+// handleCraftRecipeOptional ...
+func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) error {
+	// First check if there actually is an anvil opened.
+	if !s.containerOpened.Load() {
+		return fmt.Errorf("no anvil container opened")
+	}
+	pos := s.openedPos.Load()
+	anvil, ok := s.c.World().Block(pos).(block.Anvil)
+	if !ok {
+		return fmt.Errorf("no anvil container opened")
+	}
+	if len(filterStrings) < int(a.FilterStringIndex) {
+		// Invalid filter string index.
+		return nil
+	}
+	_ = anvil // TODO
+
+	first, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerAnvilInput,
+		Slot:        1,
+	}, s)
+	if first.Empty() {
+		// First anvil slot is empty, can't result in anything.
+		return nil
+	}
+	result := first.WithCustomName(filterStrings[a.FilterStringIndex])
+
+	second, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerAnvilMaterial,
+		Slot:        0x2,
+	}, s)
+
+	if _, ok := second.Item().(item.Durable); ok {
+
+	}
+
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerAnvilInput,
+		Slot:        1,
+	}, item.Stack{}, s)
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerAnvilMaterial,
+		Slot:        2,
+	}, item.Stack{}, s)
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerOutput,
+		Slot:        50,
+	}, result, s)
+	return nil
+}
+
+// validRepair ...
+func (h *ItemStackRequestHandler) validRepair(first, second item.Stack) (bool, int) {
+	//if it, ok := first.Item().(item.Tool); ok {
+	//	switch it.ToolType() {
+	//	case item.ToolTierWood:
+	//	case item.ToolTierStone:
+	//	case item.ToolTierGold:
+	//	case item.ToolTierIron:
+	//	case item.ToolTierDiamond:
+	//	case item.ToolTierNetherite:
+	//	}
+	//}
+	//var tier item.ToolTier
+	//if it, ok := first.Item().(item.Armour); ok {
+	//
+	//}
+	return false, 0
+}
+
 // validBeaconEffect checks if the ID passed is a valid beacon effect.
 func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beacon) bool {
 	switch id {
@@ -340,16 +413,19 @@ func (h *ItemStackRequestHandler) verifySlots(s *Session, slots ...protocol.Stac
 
 // verifySlot checks if the slot passed by the client is the same as that expected by the server.
 func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo, s *Session) error {
-	h.tryAcknowledgeChanges(slot)
+	if err := h.tryAcknowledgeChanges(s, slot); err != nil {
+		return err
+	}
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
 	}
+	inv, _ := s.invByID(int32(slot.ContainerID))
 
 	i, err := h.itemInSlot(slot, s)
 	if err != nil {
 		return err
 	}
-	clientID, err := h.resolveID(slot)
+	clientID, err := h.resolveID(inv, slot)
 	if err != nil {
 		return err
 	}
@@ -364,7 +440,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 // resolveID resolves the stack network ID in the slot passed. If it is negative, it points to an earlier
 // request, in which case it will look it up in the changes of an earlier response to a request to find the
 // actual stack network ID in the slot. If it is positive, the ID will be returned again.
-func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) (int32, error) {
+func (h *ItemStackRequestHandler) resolveID(inv *inventory.Inventory, slot protocol.StackRequestSlotInfo) (int32, error) {
 	if slot.StackNetworkID >= 0 {
 		return slot.StackNetworkID, nil
 	}
@@ -372,7 +448,7 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v, but request could not be found", slot.StackNetworkID)
 	}
-	changes, ok := containerChanges[slot.ContainerID]
+	changes, ok := containerChanges[inv]
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.ContainerID)
 	}
@@ -386,37 +462,43 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 // tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
 // info passed from the client has the right stack network ID in any of the stored slots. If this is the case,
 // that entry is removed, so that the maps are cleaned up eventually.
-func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
+func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protocol.StackRequestSlotInfo) error {
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return fmt.Errorf("could not find container with id %v", slot.ContainerID)
+	}
+
 	for requestID, containerChanges := range h.responseChanges {
-		for containerID, changes := range containerChanges {
+		for newInv, changes := range containerChanges {
 			for slotIndex, val := range changes {
-				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && inv == newInv) || h.current.Sub(val.timestamp) > time.Second*5 {
 					delete(changes, slotIndex)
 				}
 			}
 			if len(changes) == 0 {
-				delete(containerChanges, containerID)
+				delete(containerChanges, newInv)
 			}
 		}
 		if len(containerChanges) == 0 {
 			delete(h.responseChanges, requestID)
 		}
 	}
+	return nil
 }
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
 func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session) (item.Stack, error) {
-	inventory, ok := s.invByID(int32(slot.ContainerID))
+	inv, ok := s.invByID(int32(slot.ContainerID))
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
 	}
 
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	i, err := inventory.Item(sl)
+	i, err := inv.Item(sl)
 	if err != nil {
 		return i, err
 	}
@@ -452,12 +534,12 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	}
 
 	if h.responseChanges[h.currentRequest] == nil {
-		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
+		h.responseChanges[h.currentRequest] = map[*inventory.Inventory]map[byte]responseChange{}
 	}
-	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
-		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
+	if h.responseChanges[h.currentRequest][inv] == nil {
+		h.responseChanges[h.currentRequest][inv] = map[byte]responseChange{}
 	}
-	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+	h.responseChanges[h.currentRequest][inv][slot.Slot] = responseChange{
 		id:        respSlot.StackNetworkID,
 		timestamp: h.current,
 	}

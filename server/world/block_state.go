@@ -65,6 +65,7 @@ func init() {
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
 func registerBlockState(s blockState) {
+	fmt.Println(s)
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
