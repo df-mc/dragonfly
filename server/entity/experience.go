@@ -65,17 +65,24 @@ func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	return e.level, e.progress
 }
 
-// SetLevelAndProgress sets the level and progress of the manager, recalculating the total experience.
-func (e *ExperienceManager) SetLevelAndProgress(level int, progress float64) {
+// SetLevel sets the level of the manager.
+func (e *ExperienceManager) SetLevel(level int) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if level < 0 || level > math.MaxInt32 {
 		panic(fmt.Sprintf("level must be between 0 and 2,147,483,647, got %d", level))
 	}
+	e.level = level
+}
+
+// SetProgress sets the progress of the manager.
+func (e *ExperienceManager) SetProgress(progress float64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	if progress < 0 || progress > 1 {
 		panic(fmt.Sprintf("progress must be between 0 and 1, got %f", progress))
 	}
-	e.level, e.progress = level, progress
+	e.progress = progress
 }
 
 // Reset ...
