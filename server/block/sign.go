@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"image/color"
 	"strings"
+	"time"
 )
 
 // Sign is a non-solid block that can display text.
@@ -48,6 +49,11 @@ func (s Sign) MaxCount() int {
 // FlammabilityInfo ...
 func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
+}
+
+// FuelInfo ...
+func (Sign) FuelInfo() item.FuelInfo {
+	return item.FuelInfo{Duration: time.Second * 10}
 }
 
 // EncodeItem ...

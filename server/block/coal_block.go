@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"time"
 )
 
 // CoalBlock is a precious mineral block made from 9 coal.
@@ -20,6 +21,11 @@ func (c CoalBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierWood.HarvestLevel
 	}, pickaxeEffective, oneOf(c))
+}
+
+// FuelInfo ...
+func (CoalBlock) FuelInfo() item.FuelInfo {
+	return item.FuelInfo{Duration: time.Second * 800}
 }
 
 // EncodeItem ...

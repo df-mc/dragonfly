@@ -1,7 +1,6 @@
-package block
+package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"time"
 )
 
@@ -17,5 +16,5 @@ type FuelInfo struct {
 	// Duration returns the amount of time the fuel can be used to burn an input in a smelter.
 	Duration time.Duration
 	// Residue is the resulting item from burning the fuel in a smelter.
-	Residue item.Stack
+	Residue Stack
 }

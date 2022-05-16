@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Shovel is a tool generally used for mining ground-like blocks, such as sand, gravel and dirt. Additionally,
@@ -76,6 +77,14 @@ func (s Shovel) DurabilityInfo() DurabilityInfo {
 		AttackDurability: 2,
 		BreakDurability:  1,
 	}
+}
+
+// FuelInfo ...
+func (s Shovel) FuelInfo() FuelInfo {
+	if s.Tier == ToolTierWood {
+		return FuelInfo{Duration: time.Second * 10}
+	}
+	return FuelInfo{}
 }
 
 // EncodeItem ...

@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"time"
 )
 
 // NoteBlock is a musical block that emits sounds when powered with redstone.
@@ -67,6 +68,11 @@ func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 // BreakInfo ...
 func (n NoteBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(n))
+}
+
+// FuelInfo ...
+func (NoteBlock) FuelInfo() item.FuelInfo {
+	return item.FuelInfo{Duration: time.Second * 15}
 }
 
 // EncodeItem ...

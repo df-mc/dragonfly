@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Wood is a block that has the log's "bark" texture on all six sides. It comes in 8 types: oak, spruce, birch, jungle,
@@ -30,6 +31,16 @@ func (w Wood) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 5, true)
 }
 
+// BreakInfo ...
+func (w Wood) BreakInfo() BreakInfo {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
+}
+
+// FuelInfo ...
+func (Wood) FuelInfo() item.FuelInfo {
+	return item.FuelInfo{Duration: time.Second * 15}
+}
+
 // UseOnBlock ...
 func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(wo, pos, face, w)
@@ -40,11 +51,6 @@ func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.W
 
 	place(wo, pos, w, user, ctx)
 	return placed(ctx)
-}
-
-// BreakInfo ...
-func (w Wood) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
 // Strip ...
