@@ -11,6 +11,16 @@ func (b Bricks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
+// Resistance ...
+func (b Bricks) Resistance() float64 {
+	return 6
+}
+
+// AlwaysExplodeDrop ..
+func (b Bricks) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (Bricks) EncodeItem() (name string, meta int16) {
 	return "minecraft:brick_block", 0

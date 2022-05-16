@@ -51,6 +51,16 @@ func (c CoralBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c))
 }
 
+// Resistance ...
+func (c CoralBlock) Resistance() float64 {
+	return 6
+}
+
+// AlwaysExplodeDrop ..
+func (c CoralBlock) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeBlock ...
 func (c CoralBlock) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:coral_block", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}

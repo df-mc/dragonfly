@@ -21,6 +21,16 @@ func (c Carpet) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 60, true)
 }
 
+// Resistance ...
+func (c Carpet) Resistance() float64 {
+	return 0.1
+}
+
+// AlwaysExplodeDrop ..
+func (c Carpet) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // CanDisplace ...
 func (Carpet) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)

@@ -13,6 +13,16 @@ func (b Bookshelf) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.Book{}, 3), item.NewStack(b, 1)))
 }
 
+// Resistance ...
+func (b Bookshelf) Resistance() float64 {
+	return 1.5
+}
+
+// AlwaysExplodeDrop ..
+func (b Bookshelf) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (Bookshelf) EncodeItem() (name string, meta int16) {
 	return "minecraft:bookshelf", 0

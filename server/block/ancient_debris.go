@@ -16,6 +16,16 @@ func (a AncientDebris) BreakInfo() BreakInfo {
 	}, pickaxeEffective, oneOf(a))
 }
 
+// Resistance ...
+func (a AncientDebris) Resistance() float64 {
+	return 1200
+}
+
+// AlwaysExplodeDrop ..
+func (a AncientDebris) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (AncientDebris) EncodeItem() (name string, meta int16) {
 	return "minecraft:ancient_debris", 0

@@ -10,6 +10,16 @@ func (b BlueIce) BreakInfo() BreakInfo {
 	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b))
 }
 
+// Resistance ...
+func (b BlueIce) Resistance() float64 {
+	return 2.8
+}
+
+// AlwaysExplodeDrop ..
+func (b BlueIce) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // Friction ...
 func (b BlueIce) Friction() float64 {
 	return 0.989

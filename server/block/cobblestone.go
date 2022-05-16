@@ -15,6 +15,16 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
+// Resistance ...
+func (c Cobblestone) Resistance() float64 {
+	return 6
+}
+
+// AlwaysExplodeDrop ..
+func (c Cobblestone) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (c Cobblestone) EncodeItem() (name string, meta int16) {
 	if c.Mossy {

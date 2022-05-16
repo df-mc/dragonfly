@@ -20,6 +20,16 @@ func (d DiamondOre) BreakInfo() BreakInfo {
 	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d)).withXPDropRange(3, 7)
 }
 
+// Resistance ...
+func (d DiamondOre) Resistance() float64 {
+	return 3
+}
+
+// AlwaysExplodeDrop ..
+func (d DiamondOre) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (d DiamondOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + d.Type.Prefix() + "diamond_ore", 0

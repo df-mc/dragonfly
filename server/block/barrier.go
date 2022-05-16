@@ -22,6 +22,16 @@ func (Barrier) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
+// Resistance ...
+func (b Barrier) Resistance() float64 {
+	return 3600000.8
+}
+
+// AlwaysExplodeDrop ..
+func (b Barrier) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (Barrier) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrier", 0

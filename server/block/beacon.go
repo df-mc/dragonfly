@@ -37,6 +37,16 @@ func (b Beacon) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
 }
 
+// Resistance ...
+func (b Beacon) Resistance() float64 {
+	return 3
+}
+
+// AlwaysExplodeDrop ..
+func (b Beacon) AlwaysExplodeDrop() bool {
+	return true
+}
+
 // Activate manages the opening of a beacon by activating it.
 func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {

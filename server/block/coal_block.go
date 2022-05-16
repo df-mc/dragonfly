@@ -22,6 +22,16 @@ func (c CoalBlock) BreakInfo() BreakInfo {
 	}, pickaxeEffective, oneOf(c))
 }
 
+// Resistance ...
+func (c CoalBlock) Resistance() float64 {
+	return 6
+}
+
+// AlwaysExplodeDrop ..
+func (c CoalBlock) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (CoalBlock) EncodeItem() (name string, meta int16) {
 	return "minecraft:coal_block", 0

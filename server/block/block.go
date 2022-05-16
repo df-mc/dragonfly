@@ -207,6 +207,15 @@ type FlammabilityInfo struct {
 	LavaFlammable bool
 }
 
+// BlastResistance is an interface for blocks that has a resistance to explosions
+type BlastResistance interface {
+	// Resistance returns the blast resistance value for the block
+	Resistance() float64
+
+	// AlwaysExplodeDrop specifies if the block can always be dropped when exploded
+	AlwaysExplodeDrop() bool
+}
+
 // newFlammabilityInfo creates a FlammabilityInfo struct with the properties passed.
 func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) FlammabilityInfo {
 	return FlammabilityInfo{

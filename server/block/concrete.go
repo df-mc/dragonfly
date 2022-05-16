@@ -20,6 +20,16 @@ func (c Concrete) BreakInfo() BreakInfo {
 	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
+// Resistance ...
+func (c Concrete) Resistance() float64 {
+	return 1.8
+}
+
+// AlwaysExplodeDrop ...
+func (c Concrete) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (c Concrete) EncodeItem() (name string, meta int16) {
 	return "minecraft:concrete", int16(c.Colour.Uint8())

@@ -28,6 +28,16 @@ func (d Dirt) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d))
 }
 
+// Resistance ...
+func (d Dirt) Resistance() float64 {
+	return 0.5
+}
+
+// AlwaysExplodeDrop ..
+func (d Dirt) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // Till ...
 func (d Dirt) Till() (world.Block, bool) {
 	if d.Coarse {

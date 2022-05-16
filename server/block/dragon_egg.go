@@ -70,6 +70,16 @@ func (d DragonEgg) BreakInfo() BreakInfo {
 	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d))
 }
 
+// Resistance ...
+func (d DragonEgg) Resistance() float64 {
+	return 3
+}
+
+// AlwaysExplodeDrop ..
+func (d DragonEgg) AlwaysExplodeDrop() bool {
+	return true
+}
+
 // EncodeItem ...
 func (DragonEgg) EncodeItem() (name string, meta int16) {
 	return "minecraft:dragon_egg", 0

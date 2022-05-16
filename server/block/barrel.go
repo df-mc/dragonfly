@@ -131,6 +131,16 @@ func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// Resistance ...
+func (b Barrel) Resistance() float64 {
+	return 2.5
+}
+
+// AlwaysExplodeDrop will not always drop the barrel, however, the contents of the barrel will be dropped
+func (b Barrel) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // DecodeNBT ...
 func (b Barrel) DecodeNBT(data map[string]any) any {
 	facing := b.Facing

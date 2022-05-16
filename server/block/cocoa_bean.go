@@ -95,6 +95,16 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 	})
 }
 
+// Resistance ...
+func (c CocoaBean) Resistance() float64 {
+	return 3
+}
+
+// AlwaysExplodeDrop ...
+func (c CocoaBean) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (c CocoaBean) EncodeItem() (name string, meta int16) {
 	return "minecraft:cocoa_beans", 0

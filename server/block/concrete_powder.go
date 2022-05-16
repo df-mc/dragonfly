@@ -39,6 +39,16 @@ func (c ConcretePowder) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(c))
 }
 
+// Resistance ...
+func (c ConcretePowder) Resistance() float64 {
+	return 1.8
+}
+
+// AlwaysExplodeDrop ...
+func (c ConcretePowder) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (c ConcretePowder) EncodeItem() (name string, meta int16) {
 	return "minecraft:concrete_powder", int16(c.Colour.Uint8())

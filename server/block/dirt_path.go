@@ -30,6 +30,16 @@ func (p DirtPath) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
 }
 
+// Resistance ...
+func (p DirtPath) Resistance() float64 {
+	return 0.65
+}
+
+// AlwaysExplodeDrop ..
+func (p DirtPath) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (DirtPath) EncodeItem() (name string, meta int16) {
 	return "minecraft:grass_path", 0

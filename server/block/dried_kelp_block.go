@@ -15,6 +15,16 @@ func (d DriedKelpBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(d))
 }
 
+// Resistance ...
+func (d DriedKelpBlock) Resistance() float64 {
+	return 2.5
+}
+
+// AlwaysExplodeDrop ...
+func (d DriedKelpBlock) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (DriedKelpBlock) EncodeItem() (name string, meta int16) {
 	return "minecraft:dried_kelp_block", 0

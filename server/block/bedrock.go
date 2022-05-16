@@ -16,6 +16,16 @@ func (Bedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:bedrock", 0
 }
 
+// Resistance ...
+func (Bedrock) Resistance() float64 {
+	return 3600000
+}
+
+// AlwaysExplodeDrop ..
+func (Bedrock) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeBlock ...
 func (b Bedrock) EncodeBlock() (name string, properties map[string]any) {
 	//noinspection SpellCheckingInspection

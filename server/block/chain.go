@@ -44,6 +44,16 @@ func (c Chain) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
+// Resistance ...
+func (c Chain) Resistance() float64 {
+	return 6
+}
+
+// AlwaysExplodeDrop ..
+func (c Chain) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (Chain) EncodeItem() (name string, meta int16) {
 	return "minecraft:chain", 0

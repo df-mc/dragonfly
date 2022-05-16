@@ -35,6 +35,16 @@ func (b Basalt) BreakInfo() BreakInfo {
 	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
+// Resistance ...
+func (b Basalt) Resistance() float64 {
+	return 4.2
+}
+
+// AlwaysExplodeDrop ..
+func (b Basalt) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (b Basalt) EncodeItem() (name string, meta int16) {
 	if b.Polished {

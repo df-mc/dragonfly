@@ -11,6 +11,16 @@ func (c Calcite) BreakInfo() BreakInfo {
 	return newBreakInfo(0.75, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
+// Resistance ...
+func (c Calcite) Resistance() float64 {
+	return 0.75
+}
+
+// AlwaysExplodeDrop ..
+func (c Calcite) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (c Calcite) EncodeItem() (name string, meta int16) {
 	return "minecraft:calcite", 0

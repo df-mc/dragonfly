@@ -38,6 +38,16 @@ func (b BoneBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
+// Resistance ...
+func (b BoneBlock) Resistance() float64 {
+	return 2
+}
+
+// AlwaysExplodeDrop ..
+func (b BoneBlock) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // EncodeItem ...
 func (b BoneBlock) EncodeItem() (name string, meta int16) {
 	return "minecraft:bone_block", 0

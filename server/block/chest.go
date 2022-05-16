@@ -145,6 +145,16 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// Resistance ...
+func (c Chest) Resistance() float64 {
+	return 2.5
+}
+
+// AlwaysExplodeDrop will not always drop the chest, however, the contents of the chest will be dropped
+func (c Chest) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing

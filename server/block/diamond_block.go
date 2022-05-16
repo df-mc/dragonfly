@@ -16,6 +16,16 @@ func (d DiamondBlock) BreakInfo() BreakInfo {
 	}, pickaxeEffective, oneOf(d))
 }
 
+// Resistance ...
+func (d DiamondBlock) Resistance() float64 {
+	return 6
+}
+
+// AlwaysExplodeDrop ..
+func (d DiamondBlock) AlwaysExplodeDrop() bool {
+	return false
+}
+
 // PowersBeacon ...
 func (DiamondBlock) PowersBeacon() bool {
 	return true
