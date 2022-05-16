@@ -756,6 +756,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
+	case block.CraftingTable:
+		containerType = 1
 	case block.Anvil:
 		containerType = 5
 	case block.Beacon:

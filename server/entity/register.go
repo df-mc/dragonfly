@@ -13,4 +13,5 @@ func init() {
 	world.RegisterEntity(&SplashPotion{})
 	world.RegisterEntity(&Lightning{})
 	world.RegisterEntity(&Arrow{})
+	world.RegisterEntity(&ExperienceOrb{})
 }

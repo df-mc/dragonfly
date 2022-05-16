@@ -175,7 +175,9 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 	t.w.chunkMu.Unlock()
 
 	for _, pos := range randomBlocks {
-		t.w.Block(pos).(RandomTicker).RandomTick(pos, t.w, t.w.r)
+		if rb, ok := t.w.Block(pos).(RandomTicker); ok {
+			rb.RandomTick(pos, t.w, t.w.r)
+		}
 	}
 	for _, pos := range blockEntities {
 		if tb, ok := t.w.Block(pos).(TickerBlock); ok {

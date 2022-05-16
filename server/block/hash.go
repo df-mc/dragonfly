@@ -35,6 +35,7 @@ const (
 	hashCopperOre
 	hashCoral
 	hashCoralBlock
+	hashCraftingTable
 	hashDeadBush
 	hashDiamondBlock
 	hashDiamondOre
@@ -267,7 +268,11 @@ func (c CoralBlock) Hash() uint64 {
 	return hashCoralBlock | uint64(c.Type.Uint8())<<8 | uint64(boolByte(c.Dead))<<11
 }
 
-func (DeadBush) Hash() uint64 {
+func (CraftingTable) Hash() uint64 {
+	return hashCraftingTable
+}
+
+func (d DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 

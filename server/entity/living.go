@@ -18,6 +18,9 @@ type Living interface {
 	MaxHealth() float64
 	// SetMaxHealth changes the maximum health of the entity to the value passed.
 	SetMaxHealth(v float64)
+	// Dead checks if the entity is considered dead. True is returned if the health of the entity is equal to or
+	// lower than 0.
+	Dead() bool
 	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
 	// immune for half a second after being attacked.
 	AttackImmune() bool

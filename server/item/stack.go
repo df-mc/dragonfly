@@ -224,7 +224,8 @@ func (s Stack) Value(key string) (val any, ok bool) {
 func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
-		if !enchant.t.CompatibleWith(s) {
+		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWith(s) {
+			// Enchantment is not compatible with the item.
 			continue
 		}
 		s.enchantments[reflect.TypeOf(enchant.t)] = enchant

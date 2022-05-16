@@ -74,10 +74,13 @@ type Player struct {
 	// lastTickedWorld holds the world that the player was in, in the last tick.
 	lastTickedWorld *world.World
 
-	speed    atomic.Float64
-	health   *entity.HealthManager
-	effects  *entity.EffectManager
-	immunity atomic.Value[time.Time]
+	speed      atomic.Float64
+	health     *entity.HealthManager
+	experience *entity.ExperienceManager
+	effects    *entity.EffectManager
+
+	lastXPPickup atomic.Value[time.Time]
+	immunity     atomic.Value[time.Time]
 
 	mc *entity.MovementComputer
 
@@ -101,25 +104,26 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:      uuid.New(),
-		offHand:   inventory.New(1, p.broadcastItems),
-		armour:    inventory.NewArmour(p.broadcastArmour),
-		hunger:    newHungerManager(),
-		health:    entity.NewHealthManager(),
-		effects:   entity.NewEffectManager(),
-		gameMode:  *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:         *atomic.NewValue[Handler](NopHandler{}),
-		name:      name,
-		skin:      *atomic.NewValue(skin),
-		speed:     *atomic.NewFloat64(0.1),
-		nameTag:   *atomic.NewValue(name),
-		heldSlot:  atomic.NewUint32(0),
-		locale:    language.BritishEnglish,
-		scale:     *atomic.NewFloat64(1),
-		immunity:  *atomic.NewValue(time.Now()),
-		pos:       *atomic.NewValue(pos),
-		cooldowns: make(map[itemHash]time.Time),
-		mc:        &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		uuid:       uuid.New(),
+		offHand:    inventory.New(1, p.broadcastItems),
+		armour:     inventory.NewArmour(p.broadcastArmour),
+		hunger:     newHungerManager(),
+		health:     entity.NewHealthManager(),
+		experience: entity.NewExperienceManager(),
+		effects:    entity.NewEffectManager(),
+		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:          *atomic.NewValue[Handler](NopHandler{}),
+		name:       name,
+		skin:       *atomic.NewValue(skin),
+		speed:      *atomic.NewFloat64(0.1),
+		nameTag:    *atomic.NewValue(name),
+		heldSlot:   atomic.NewUint32(0),
+		locale:     language.BritishEnglish,
+		scale:      *atomic.NewFloat64(1),
+		immunity:   *atomic.NewValue(time.Now()),
+		pos:        *atomic.NewValue(pos),
+		cooldowns:  make(map[itemHash]time.Time),
+		mc:         &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -751,7 +755,7 @@ func (p *Player) kill(src damage.Source) {
 	p.StopSprinting()
 
 	w := p.World()
-	p.dropItems()
+	p.dropContents()
 
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
@@ -773,9 +777,13 @@ func (p *Player) kill(src damage.Source) {
 	})
 }
 
-// dropItems drops all items in any inventory of the Player on the ground in random directions.
-func (p *Player) dropItems() {
+// dropContents drops all items and experience of the Player on the ground in random directions.
+func (p *Player) dropContents() {
 	w, pos := p.World(), p.Position()
+	for _, orb := range entity.NewExperienceOrbs(pos, int(math.Min(float64(p.experience.Level()*7), 100))) {
+		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+		w.AddEntity(orb)
+	}
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
@@ -784,6 +792,8 @@ func (p *Player) dropItems() {
 	p.inv.Clear()
 	p.armour.Clear()
 	p.offHand.Clear()
+	p.experience.Reset()
+	p.session().SendExperience(p.experience)
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
@@ -1661,6 +1671,16 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	w.SetBlock(pos, nil, nil)
 	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
+	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+		info := breakable.BreakInfo()
+		if diff := info.XPDrops[1] - info.XPDrops[0]; diff > 0 {
+			amount := rand.Intn(diff) + info.XPDrops[0]
+			for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), amount) {
+				orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+				w.AddEntity(orb)
+			}
+		}
+	}
 	for _, drop := range drops {
 		ent := entity.NewItem(drop, pos.Vec3Centre())
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
@@ -1889,6 +1909,72 @@ func (p *Player) Collect(s item.Stack) int {
 	}
 	n, _ := p.Inventory().AddItem(s)
 	return n
+}
+
+// Experience returns the amount of experience the player has.
+func (p *Player) Experience() int {
+	return p.experience.Experience()
+}
+
+// AddExperience adds experience to the player.
+func (p *Player) AddExperience(amount int) int {
+	ctx := event.C()
+	if p.handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
+		return 0
+	}
+	before := p.experience.Level()
+	level, _ := p.experience.Add(amount)
+	if level/5 > before/5 {
+		p.PlaySound(sound.LevelUp{})
+	} else if amount > 0 {
+		p.PlaySound(sound.Experience{})
+	}
+	p.session().SendExperience(p.experience)
+	return amount
+}
+
+// RemoveExperience removes experience from the player.
+func (p *Player) RemoveExperience(amount int) {
+	p.experience.Remove(amount)
+	p.session().SendExperience(p.experience)
+}
+
+// ExperienceLevel returns the experience level of the player.
+func (p *Player) ExperienceLevel() int {
+	return p.experience.Level()
+}
+
+// SetExperienceLevel sets the experience level of the player. The level must have a value between 0 and 2,147,483,647,
+// otherwise the method panics.
+func (p *Player) SetExperienceLevel(level int) {
+	p.experience.SetLevel(level)
+	p.session().SendExperience(p.experience)
+}
+
+// ExperienceProgress returns the experience progress of the player.
+func (p *Player) ExperienceProgress() float64 {
+	return p.experience.Progress()
+}
+
+// SetExperienceProgress sets the experience progress of the player. The progress must have a value between 0.0 and 1.0, otherwise
+// the method panics.
+func (p *Player) SetExperienceProgress(progress float64) {
+	p.experience.SetProgress(progress)
+	p.session().SendExperience(p.experience)
+}
+
+// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
+// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
+// experience collection or if the player was dead or in a game mode that doesn't allow collection.
+func (p *Player) CollectExperience(value int) bool {
+	if p.Dead() || !p.GameMode().AllowsInteraction() {
+		return false
+	}
+	if time.Since(p.lastXPPickup.Load()) < time.Millisecond*100 {
+		return false
+	}
+	p.lastXPPickup.Store(time.Now())
+	return p.AddExperience(value) > 0
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
@@ -2262,7 +2348,7 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
 	}
 	if p.Dead() {
-		p.dropItems()
+		p.dropContents()
 	}
 }
 
@@ -2336,6 +2422,9 @@ func (p *Player) load(data Data) {
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 
+	p.experience.Add(data.Experience)
+	p.session().SendExperience(p.experience)
+
 	p.gameMode.Store(data.GameMode)
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
@@ -2374,6 +2463,7 @@ func (p *Player) Data() Data {
 		Health:          p.Health(),
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
+		Experience:      p.Experience(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
