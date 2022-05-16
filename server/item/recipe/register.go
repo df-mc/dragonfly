@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"golang.org/x/exp/slices"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -63,7 +62,8 @@ func hashItems(items []world.Item) string {
 	var b strings.Builder
 	for _, it := range items {
 		name, meta := it.EncodeItem()
-		b.WriteString(name + strconv.Itoa(int(meta)))
+		//goland:noinspection GoVetIntToStringConversion
+		b.WriteString(name + string(meta))
 	}
 	return b.String()
 }
