@@ -57,7 +57,7 @@ func (e *ExperienceManager) SetLevel(level int) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	_, progress := progressFromExperience(e.experience)
-	e.experience += experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
+	e.experience = experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
 }
 
 // Progress returns the progress towards the next level.
@@ -76,7 +76,7 @@ func (e *ExperienceManager) SetProgress(progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	currentLevel, _ := progressFromExperience(e.experience)
-	e.experience += experienceForLevels(currentLevel) + int(float64(experienceForLevel(currentLevel))*progress)
+	e.experience = experienceForLevels(currentLevel) + int(float64(experienceForLevel(currentLevel))*progress)
 }
 
 // Reset resets the total experience, level, and progress of the manager to zero.
