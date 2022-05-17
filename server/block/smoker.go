@@ -105,8 +105,12 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
+	facing, lit := s.Facing, s.Lit
+
 	//noinspection GoAssignmentToReceiver
-	s = NewSmoker(s.Facing)
+	s = NewSmoker(facing)
+	s.Lit = lit
+
 	s.remainingDuration = time.Duration(nbtconv.Map[int32](data, "BurnTime")) * time.Millisecond * 50
 	s.cookDuration = time.Duration(nbtconv.Map[int32](data, "CookTime")) * time.Millisecond * 50
 	s.maxDuration = time.Duration(nbtconv.Map[int32](data, "MaxTime")) * time.Millisecond * 50

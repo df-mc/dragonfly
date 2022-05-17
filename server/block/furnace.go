@@ -104,8 +104,12 @@ func (f Furnace) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
+	facing, lit := f.Facing, f.Lit
+
 	//noinspection GoAssignmentToReceiver
-	f = NewFurnace(f.Facing)
+	f = NewFurnace(facing)
+	f.Lit = lit
+
 	f.remainingDuration = time.Duration(nbtconv.Map[int32](data, "BurnTime")) * time.Millisecond * 50
 	f.cookDuration = time.Duration(nbtconv.Map[int32](data, "CookTime")) * time.Millisecond * 50
 	f.maxDuration = time.Duration(nbtconv.Map[int32](data, "MaxTime")) * time.Millisecond * 50

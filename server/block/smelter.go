@@ -132,7 +132,7 @@ func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.SmeltInf
 		s.maxDuration, s.remainingDuration, lit = 0, 0, false
 	}
 
-	if s.cookDuration > 0 && s.remainingDuration == 0 {
+	if s.cookDuration > 0 && !lit {
 		s.cookDuration -= time.Millisecond * 100 * time.Duration(speed)
 	}
 
