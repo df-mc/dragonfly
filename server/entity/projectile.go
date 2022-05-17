@@ -25,7 +25,7 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	end := pos.Add(vel)
 	var hit trace.Result
 	var ok bool
-	if mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
+	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
 		hit, ok = trace.Perform(pos, end, w, e.BBox().Grow(1.0), func(e world.Entity) bool {
 			g, ok := e.(interface{ GameMode() world.GameMode })
 			return (ok && !g.GameMode().HasCollision()) || ignored(e)
