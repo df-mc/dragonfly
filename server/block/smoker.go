@@ -5,7 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"time"
 )
 
@@ -32,6 +34,9 @@ func NewSmoker(face cube.Face) Smoker {
 
 // Tick is called to check if the smoker should update and start or stop smelting.
 func (s Smoker) Tick(_ int64, pos cube.Pos, w *world.World) {
+	if s.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
+		w.PlaySound(pos.Vec3Centre(), sound.SmokerCrackle{})
+	}
 	if lit := s.smelter.tickSmelting(2, s.Lit, func(i item.SmeltInfo) bool {
 		return i.Food
 	}); s.Lit != lit {

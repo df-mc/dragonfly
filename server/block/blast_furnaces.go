@@ -5,7 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"time"
 )
 
@@ -32,6 +34,9 @@ func NewBlastFurnace(face cube.Face) BlastFurnace {
 
 // Tick is called to check if the blast furnace should update and start or stop smelting.
 func (b BlastFurnace) Tick(_ int64, pos cube.Pos, w *world.World) {
+	if b.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
+		w.PlaySound(pos.Vec3Centre(), sound.BlastFurnaceCrackle{})
+	}
 	if lit := b.smelter.tickSmelting(2, b.Lit, func(i item.SmeltInfo) bool {
 		return i.Ores
 	}); b.Lit != lit {

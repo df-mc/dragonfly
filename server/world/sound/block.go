@@ -78,6 +78,15 @@ type ItemFrameRemove struct{ sound }
 // ItemFrameRotate is a sound played when an item frame's item is rotated.
 type ItemFrameRotate struct{ sound }
 
+// FurnaceCrackle is a sound played every one to five seconds from a furnace.
+type FurnaceCrackle struct{ sound }
+
+// BlastFurnaceCrackle is a sound played every one to five seconds from a blast furnace.
+type BlastFurnaceCrackle struct{ sound }
+
+// SmokerCrackle is a sound played every one to five seconds from a smoker.
+type SmokerCrackle struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

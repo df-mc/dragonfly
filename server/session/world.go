@@ -557,6 +557,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.FurnaceCrackle:
+		pk.SoundType = packet.SoundEventFurnaceUse
+	case sound.BlastFurnaceCrackle:
+		pk.SoundType = packet.SoundEventBlastFurnaceUse
+	case sound.SmokerCrackle:
+		pk.SoundType = packet.SoundEventSmokerUse
 	case sound.UseSpyglass:
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
