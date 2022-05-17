@@ -2,7 +2,6 @@ package session
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -770,8 +769,6 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		return
 	}
 	s.closeCurrentContainer()
-
-	fmt.Println("opening")
 
 	b := s.c.World().Block(pos)
 	container, ok := b.(block.Container)
