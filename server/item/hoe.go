@@ -78,6 +78,25 @@ func (h Hoe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (h Hoe) SmeltInfo() SmeltInfo {
+	switch h.Tier {
+	case ToolTierIron:
+		return SmeltInfo{
+			Product:    NewStack(IronNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	case ToolTierGold:
+		return SmeltInfo{
+			Product:    NewStack(GoldNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	}
+	return SmeltInfo{}
+}
+
 // FuelInfo ...
 func (h Hoe) FuelInfo() FuelInfo {
 	if h.Tier == ToolTierWood {

@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
-	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"sync"
 	"time"
@@ -83,7 +82,7 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
 // items for the necessary duration.
-func (s *smelter) tickSmelting(w *world.World, pos cube.Pos, speed int) (update bool, schedule bool) {
+func (s *smelter) tickSmelting(speed int, supported func(item.Smelt) bool) (update bool, schedule bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -95,22 +94,20 @@ func (s *smelter) tickSmelting(w *world.World, pos cube.Pos, speed int) (update 
 	fuel, _ := s.inventory.Item(1)
 	product, _ := s.inventory.Item(2)
 
-	var info FuelInfo
-	if f, ok := fuel.Item().(Fuel); ok {
-		info = f.FuelInfo()
+	var inputInfo item.SmeltInfo
+	if i, ok := input.Item().(item.Smelt); ok && supported(i) {
+		inputInfo = i.SmeltInfo()
 	}
 
-	results, _ := recipe.Perform(w.Block(pos), []world.Item{input.Item()})
-	if len(results) == 0 {
-		results = append(results, item.Stack{})
+	var fuelInfo item.FuelInfo
+	if f, ok := fuel.Item().(item.Fuel); ok {
+		fuelInfo = f.FuelInfo()
 	}
 
-	result := results[0] // We only need the first result - this is a smelting recipe.
-
-	canSmelt := input.Count() > 0 && (result.Comparable(product)) && !result.Empty() && product.Count() < product.MaxCount()
-	if s.remainingDuration <= 0 && canSmelt && info.Duration > 0 && fuel.Count() > 0 {
-		s.remainingDuration, s.maxDuration, update = info.Duration, info.Duration, true
-		_ = s.Inventory().SetItem(1, info.Residue)
+	canSmelt := input.Count() > 0 && (inputInfo.Product.Comparable(product)) && !inputInfo.Product.Empty() && product.Count() < product.MaxCount()
+	if s.remainingDuration <= 0 && canSmelt && fuelInfo.Duration > 0 && fuel.Count() > 0 {
+		s.remainingDuration, s.maxDuration, update = fuelInfo.Duration, fuelInfo.Duration, true
+		_ = s.Inventory().SetItem(1, fuelInfo.Residue)
 	}
 
 	if s.remainingDuration > 0 {
@@ -120,7 +117,7 @@ func (s *smelter) tickSmelting(w *world.World, pos cube.Pos, speed int) (update 
 		if canSmelt {
 			s.cookDuration += time.Millisecond * 50
 			if requirement := time.Second * 4 / time.Duration(speed); s.cookDuration >= requirement {
-				product = item.NewStack(result.Item(), product.Count()+1)
+				product = item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count())
 
 				_ = s.inventory.SetItem(2, product)
 				_ = s.inventory.SetItem(0, input.Grow(-1))

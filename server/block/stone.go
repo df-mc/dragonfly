@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/item"
+
 type (
 	// Stone is a block found underground in the world or on mountains.
 	Stone struct {
@@ -48,6 +50,18 @@ func (d Diorite) BreakInfo() BreakInfo {
 // BreakInfo ...
 func (a Andesite) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+}
+
+// SmeltInfo ...
+func (s Stone) SmeltInfo() item.SmeltInfo {
+	if s.Smooth {
+		return item.SmeltInfo{}
+	}
+	return item.SmeltInfo{
+		Product:    item.NewStack(Stone{Smooth: true}, 1),
+		Experience: 0.1,
+		Regular:    true,
+	}
 }
 
 // EncodeItem ...

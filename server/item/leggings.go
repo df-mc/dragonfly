@@ -62,6 +62,25 @@ func (l Leggings) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (l Leggings) SmeltInfo() SmeltInfo {
+	switch l.Tier {
+	case ArmourTierChain, ArmourTierIron:
+		return SmeltInfo{
+			Product:    NewStack(IronNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	case ArmourTierGold:
+		return SmeltInfo{
+			Product:    NewStack(GoldNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	}
+	return SmeltInfo{}
+}
+
 // EncodeItem ...
 func (l Leggings) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Tier.Name + "_leggings", 0

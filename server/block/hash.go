@@ -615,8 +615,8 @@ func (s Stone) Hash() uint64 {
 	return hashStone | uint64(boolByte(s.Smooth))<<8
 }
 
-func (c StoneBricks) Hash() uint64 {
-	return hashStoneBricks | uint64(c.Type.Uint8())<<8
+func (s StoneBricks) Hash() uint64 {
+	return hashStoneBricks | uint64(s.Type.Uint8())<<8
 }
 
 func (g TallGrass) Hash() uint64 {

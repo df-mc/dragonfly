@@ -51,6 +51,25 @@ func (a Axe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (a Axe) SmeltInfo() SmeltInfo {
+	switch a.Tier {
+	case ToolTierIron:
+		return SmeltInfo{
+			Product:    NewStack(IronNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	case ToolTierGold:
+		return SmeltInfo{
+			Product:    NewStack(GoldNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	}
+	return SmeltInfo{}
+}
+
 // FuelInfo ...
 func (a Axe) FuelInfo() FuelInfo {
 	if a.Tier == ToolTierWood {

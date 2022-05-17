@@ -79,6 +79,25 @@ func (s Shovel) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (s Shovel) SmeltInfo() SmeltInfo {
+	switch s.Tier {
+	case ToolTierIron:
+		return SmeltInfo{
+			Product:    NewStack(IronNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	case ToolTierGold:
+		return SmeltInfo{
+			Product:    NewStack(GoldNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	}
+	return SmeltInfo{}
+}
+
 // FuelInfo ...
 func (s Shovel) FuelInfo() FuelInfo {
 	if s.Tier == ToolTierWood {

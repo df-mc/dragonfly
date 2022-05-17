@@ -150,6 +150,15 @@ func (s SeaPickle) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
 }
 
+// SmeltInfo ...
+func (SeaPickle) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(item.Dye{Colour: item.ColourLime()}, 1),
+		Experience: 0.1,
+		Regular:    true,
+	}
+}
+
 // EncodeItem ...
 func (SeaPickle) EncodeItem() (name string, meta int16) {
 	return "minecraft:sea_pickle", 0

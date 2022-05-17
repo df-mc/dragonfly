@@ -37,6 +37,15 @@ func (l Log) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
 }
 
+// SmeltInfo ...
+func (Log) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(item.Charcoal{}, 1),
+		Experience: 0.15,
+		Regular:    true,
+	}
+}
+
 // FuelInfo ...
 func (Log) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{Duration: time.Second * 15}

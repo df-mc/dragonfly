@@ -21,6 +21,15 @@ func (l LapisOre) BreakInfo() BreakInfo {
 	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4), item.NewStack(l, 1))).withXPDropRange(2, 5)
 }
 
+// SmeltInfo ...
+func (LapisOre) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(item.LapisLazuli{}, 1),
+		Experience: 0.2,
+		Ores:       true,
+	}
+}
+
 // EncodeItem ...
 func (l LapisOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Type.Prefix() + "lapis_ore", 0

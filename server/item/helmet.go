@@ -53,6 +53,25 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (h Helmet) SmeltInfo() SmeltInfo {
+	switch h.Tier {
+	case ArmourTierChain, ArmourTierIron:
+		return SmeltInfo{
+			Product:    NewStack(IronNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	case ArmourTierGold:
+		return SmeltInfo{
+			Product:    NewStack(GoldNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	}
+	return SmeltInfo{}
+}
+
 // Helmet ...
 func (h Helmet) Helmet() bool {
 	return true

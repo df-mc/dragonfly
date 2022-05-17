@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -29,6 +30,15 @@ func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 // BreakInfo ...
 func (s Sand) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
+}
+
+// SmeltInfo ...
+func (Sand) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(Glass{}, 1),
+		Experience: 0.1,
+		Regular:    true,
+	}
 }
 
 // EncodeItem ...

@@ -20,6 +20,15 @@ func (e EmeraldOre) BreakInfo() BreakInfo {
 	}, pickaxeEffective, silkTouchOneOf(item.Emerald{}, e)).withXPDropRange(3, 7)
 }
 
+// SmeltInfo ...
+func (EmeraldOre) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(item.Emerald{}, 1),
+		Experience: 1,
+		Ores:       true,
+	}
+}
+
 // EncodeItem ...
 func (e EmeraldOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + e.Type.Prefix() + "emerald_ore", 0

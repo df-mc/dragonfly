@@ -49,6 +49,25 @@ func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (p Pickaxe) SmeltInfo() SmeltInfo {
+	switch p.Tier {
+	case ToolTierIron:
+		return SmeltInfo{
+			Product:    NewStack(IronNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	case ToolTierGold:
+		return SmeltInfo{
+			Product:    NewStack(GoldNugget{}, 1),
+			Experience: 0.1,
+			Regular:    true,
+		}
+	}
+	return SmeltInfo{}
+}
+
 // FuelInfo ...
 func (p Pickaxe) FuelInfo() FuelInfo {
 	if p.Tier == ToolTierWood {

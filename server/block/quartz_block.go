@@ -57,6 +57,18 @@ func (q QuartzPillar) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(q, 1)))
 }
 
+// SmeltInfo ...
+func (q Quartz) SmeltInfo() item.SmeltInfo {
+	if q.Smooth {
+		return item.SmeltInfo{}
+	}
+	return item.SmeltInfo{
+		Product:    item.NewStack(Quartz{Smooth: true}, 1),
+		Experience: 0.1,
+		Regular:    true,
+	}
+}
+
 // EncodeItem ...
 func (q Quartz) EncodeItem() (name string, meta int16) {
 	if q.Smooth {

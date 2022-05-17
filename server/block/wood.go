@@ -36,6 +36,15 @@ func (w Wood) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
+// SmeltInfo ...
+func (Wood) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(item.Charcoal{}, 1),
+		Experience: 0.15,
+		Regular:    true,
+	}
+}
+
 // FuelInfo ...
 func (Wood) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{Duration: time.Second * 15}

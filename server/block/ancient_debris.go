@@ -16,6 +16,15 @@ func (a AncientDebris) BreakInfo() BreakInfo {
 	}, pickaxeEffective, oneOf(a))
 }
 
+// SmeltInfo ...
+func (AncientDebris) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    item.NewStack(item.NetheriteScrap{}, 1),
+		Experience: 2,
+		Ores:       true,
+	}
+}
+
 // EncodeItem ...
 func (AncientDebris) EncodeItem() (name string, meta int16) {
 	return "minecraft:ancient_debris", 0
