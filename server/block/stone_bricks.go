@@ -26,7 +26,6 @@ func (s StoneBricks) SmeltInfo() item.SmeltInfo {
 		return item.SmeltInfo{
 			Product:    item.NewStack(StoneBricks{Type: CrackedStoneBricks()}, 1),
 			Experience: 0.1,
-			Regular:    true,
 		}
 	}
 	return item.SmeltInfo{}

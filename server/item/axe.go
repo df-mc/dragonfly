@@ -57,14 +57,11 @@ func (a Axe) SmeltInfo() SmeltInfo {
 	case ToolTierIron:
 		return SmeltInfo{
 			Product:    NewStack(IronNugget{}, 1),
-			Experience: 0.1,
-			Regular:    true,
-		}
+			Experience: 0.1}
 	case ToolTierGold:
 		return SmeltInfo{
 			Product:    NewStack(GoldNugget{}, 1),
 			Experience: 0.1,
-			Regular:    true,
 		}
 	}
 	return SmeltInfo{}

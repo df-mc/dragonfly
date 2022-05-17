@@ -25,7 +25,6 @@ func (Clay) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{
 		Product:    item.NewStack(Terracotta{}, 1),
 		Experience: 0.35,
-		Regular:    true,
 	}
 }
 

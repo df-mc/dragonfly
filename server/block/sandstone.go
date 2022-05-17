@@ -45,7 +45,6 @@ func (s Sandstone) SmeltInfo() item.SmeltInfo {
 		return item.SmeltInfo{
 			Product:    item.NewStack(Sandstone{Red: s.Red, Type: SmoothSandstone()}, 1),
 			Experience: 0.1,
-			Regular:    true,
 		}
 	}
 	return item.SmeltInfo{}

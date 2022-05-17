@@ -41,7 +41,6 @@ func (Wood) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{
 		Product:    item.NewStack(item.Charcoal{}, 1),
 		Experience: 0.15,
-		Regular:    true,
 	}
 }
 

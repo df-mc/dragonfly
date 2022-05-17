@@ -37,7 +37,6 @@ func (Sand) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{
 		Product:    item.NewStack(Glass{}, 1),
 		Experience: 0.1,
-		Regular:    true,
 	}
 }
 

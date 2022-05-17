@@ -22,7 +22,6 @@ func (Cobblestone) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{
 		Product:    item.NewStack(Stone{}, 1),
 		Experience: 0.1,
-		Regular:    true,
 	}
 }
 

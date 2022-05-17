@@ -31,7 +31,6 @@ func (t StainedTerracotta) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{
 		Product:    item.NewStack(GlazedTerracotta{Colour: t.Colour}, 1),
 		Experience: 0.1,
-		Regular:    true,
 	}
 }
 

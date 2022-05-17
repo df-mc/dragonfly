@@ -8,7 +8,6 @@ func (ClayBall) SmeltInfo() SmeltInfo {
 	return SmeltInfo{
 		Product:    NewStack(Brick{}, 1),
 		Experience: 0.3,
-		Regular:    true,
 	}
 }
 

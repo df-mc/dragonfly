@@ -28,8 +28,6 @@ type SmeltInfo struct {
 	Food bool
 	// Ores returns true if the smelt is ores, for smelters such as blast furnaces or regular furnaces.
 	Ores bool
-	// Regular returns true if the smelt is a regular smelt, for use in regular furnaces only.
-	Regular bool
 }
 
 // FuelInfo is a struct returned by items that implement Fuel. It contains information about the amount of fuel time

@@ -65,7 +65,6 @@ func (q Quartz) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{
 		Product:    item.NewStack(Quartz{Smooth: true}, 1),
 		Experience: 0.1,
-		Regular:    true,
 	}
 }
 

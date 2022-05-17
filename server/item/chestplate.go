@@ -62,13 +62,11 @@ func (c Chestplate) SmeltInfo() SmeltInfo {
 		return SmeltInfo{
 			Product:    NewStack(IronNugget{}, 1),
 			Experience: 0.1,
-			Regular:    true,
 		}
 	case ArmourTierGold:
 		return SmeltInfo{
 			Product:    NewStack(GoldNugget{}, 1),
 			Experience: 0.1,
-			Regular:    true,
 		}
 	}
 	return SmeltInfo{}

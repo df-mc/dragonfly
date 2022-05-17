@@ -28,7 +28,6 @@ func (s Sponge) SmeltInfo() item.SmeltInfo {
 		return item.SmeltInfo{
 			Product:    item.NewStack(Sponge{}, 1),
 			Experience: 0.15,
-			Regular:    true,
 		}
 	}
 	return item.SmeltInfo{}
