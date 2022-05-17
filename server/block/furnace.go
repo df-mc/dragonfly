@@ -95,11 +95,11 @@ func (f Furnace) EncodeNBT() map[string]interface{} {
 	}
 	remaining, maximum, cook := f.Durations()
 	return map[string]interface{}{
-		"BurnTime": int32(remaining.Milliseconds() / 50),
-		"CookTime": int32(cook.Milliseconds() / 50),
-		"MaxTime":  int32(maximum.Milliseconds() / 50),
-		"Items":    nbtconv.InvToNBT(f.inventory),
-		"id":       "Furnace",
+		"BurnTime":      int16(remaining.Milliseconds() / 50),
+		"CookTime":      int16(cook.Milliseconds() / 50),
+		"CookTimeTotal": int16(maximum.Milliseconds() / 50),
+		"Items":         nbtconv.InvToNBT(f.inventory),
+		"id":            "Furnace",
 	}
 }
 
@@ -111,9 +111,9 @@ func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 	f = NewFurnace(facing)
 	f.Lit = lit
 
-	remaining := time.Duration(nbtconv.Map[int32](data, "BurnTime")) * time.Millisecond * 50
-	maximum := time.Duration(nbtconv.Map[int32](data, "MaxTime")) * time.Millisecond * 50
-	cook := time.Duration(nbtconv.Map[int32](data, "CookTime")) * time.Millisecond * 50
+	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
+	maximum := time.Duration(nbtconv.Map[int16](data, "CookTimeTotal")) * time.Millisecond * 50
+	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
 	f.UpdateDurations(remaining, maximum, cook)
 
 	nbtconv.InvFromNBT(f.inventory, nbtconv.Map[[]any](data, "Items"))
