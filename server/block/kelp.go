@@ -17,6 +17,11 @@ type Kelp struct {
 	Age int
 }
 
+// SmeltInfo ...
+func (k Kelp) SmeltInfo() item.SmeltInfo {
+	return item.SmeltInfo{Product: item.NewStack(item.DriedKelp{}, 1), Experience: 0.1, Food: true}
+}
+
 // BoneMeal ...
 func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
 	for y := pos.Y(); y <= w.Range()[1]; y++ {
