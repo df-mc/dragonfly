@@ -13,17 +13,7 @@ type CoalOre struct {
 
 // BreakInfo ...
 func (c CoalOre) BreakInfo() BreakInfo {
-	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.Coal{}, c)).withXPDropRange(0, 2)
-}
-
-// Resistance ...
-func (c CoalOre) Resistance() float64 {
-	return 3
-}
-
-// AlwaysExplodeDrop ..
-func (c CoalOre) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.Coal{}, c)).withXPDropRange(0, 2).withExplosionInfo(3, false)
 }
 
 // EncodeItem ...

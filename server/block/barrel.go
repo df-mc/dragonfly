@@ -123,22 +123,12 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...)).withExplosionInfo(2.5, false)
 }
 
 // FlammabilityInfo ...
 func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
-}
-
-// Resistance ...
-func (b Barrel) Resistance() float64 {
-	return 2.5
-}
-
-// AlwaysExplodeDrop will not always drop the barrel, however, the contents of the barrel will be dropped
-func (b Barrel) AlwaysExplodeDrop() bool {
-	return false
 }
 
 // DecodeNBT ...

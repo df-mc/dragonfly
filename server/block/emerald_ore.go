@@ -17,7 +17,7 @@ type EmeraldOre struct {
 func (e EmeraldOre) BreakInfo() BreakInfo {
 	return newBreakInfo(e.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.Emerald{}, e)).withXPDropRange(3, 7)
+	}, pickaxeEffective, silkTouchOneOf(item.Emerald{}, e)).withXPDropRange(3, 7).withExplosionInfo(3, false)
 }
 
 // EncodeItem ...

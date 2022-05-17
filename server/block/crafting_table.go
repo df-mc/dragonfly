@@ -24,17 +24,7 @@ func (c CraftingTable) EncodeBlock() (name string, properties map[string]interfa
 
 // BreakInfo ...
 func (c CraftingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
-}
-
-// Resistance ...
-func (c CraftingTable) Resistance() float64 {
-	return 2.5
-}
-
-// AlwaysExplodeDrop ..
-func (c CraftingTable) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withExplosionInfo(2.5, false)
 }
 
 // Activate ...

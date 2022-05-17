@@ -35,17 +35,7 @@ func (b BoneBlock) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // BreakInfo ...
 func (b BoneBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
-}
-
-// Resistance ...
-func (b BoneBlock) Resistance() float64 {
-	return 2
-}
-
-// AlwaysExplodeDrop ..
-func (b BoneBlock) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withExplosionInfo(2, false)
 }
 
 // EncodeItem ...

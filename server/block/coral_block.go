@@ -48,17 +48,7 @@ func (c CoralBlock) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 
 // BreakInfo ...
 func (c CoralBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c))
-}
-
-// Resistance ...
-func (c CoralBlock) Resistance() float64 {
-	return 6
-}
-
-// AlwaysExplodeDrop ..
-func (c CoralBlock) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c)).withExplosionInfo(6, false)
 }
 
 // EncodeBlock ...

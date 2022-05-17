@@ -12,17 +12,7 @@ type Cobblestone struct {
 
 // BreakInfo ...
 func (c Cobblestone) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c))
-}
-
-// Resistance ...
-func (c Cobblestone) Resistance() float64 {
-	return 6
-}
-
-// AlwaysExplodeDrop ..
-func (c Cobblestone) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withExplosionInfo(6, false)
 }
 
 // EncodeItem ...

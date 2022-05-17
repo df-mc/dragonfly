@@ -19,17 +19,7 @@ func (c CoalBlock) FlammabilityInfo() FlammabilityInfo {
 func (c CoalBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierWood.HarvestLevel
-	}, pickaxeEffective, oneOf(c))
-}
-
-// Resistance ...
-func (c CoalBlock) Resistance() float64 {
-	return 6
-}
-
-// AlwaysExplodeDrop ..
-func (c CoalBlock) AlwaysExplodeDrop() bool {
-	return false
+	}, pickaxeEffective, oneOf(c)).withExplosionInfo(6, false)
 }
 
 // EncodeItem ...

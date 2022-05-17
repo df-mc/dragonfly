@@ -40,7 +40,7 @@ func (p Pumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 
 // BreakInfo ...
 func (p Pumpkin) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(p))
+	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(p)).withExplosionInfo(1, false)
 }
 
 // Carve ...

@@ -34,17 +34,7 @@ type BeaconSource interface {
 
 // BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
-	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
-}
-
-// Resistance ...
-func (b Beacon) Resistance() float64 {
-	return 3
-}
-
-// AlwaysExplodeDrop ..
-func (b Beacon) AlwaysExplodeDrop() bool {
-	return true
+	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b)).withExplosionInfo(3, true)
 }
 
 // Activate manages the opening of a beacon by activating it.

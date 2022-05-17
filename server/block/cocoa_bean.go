@@ -92,17 +92,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
-	})
-}
-
-// Resistance ...
-func (c CocoaBean) Resistance() float64 {
-	return 3
-}
-
-// AlwaysExplodeDrop ...
-func (c CocoaBean) AlwaysExplodeDrop() bool {
-	return false
+	}).withExplosionInfo(3, false)
 }
 
 // EncodeItem ...

@@ -49,7 +49,7 @@ func (s SandstoneStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s SandstoneStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withExplosionInfo(0.8, false)
 }
 
 // EncodeItem ...

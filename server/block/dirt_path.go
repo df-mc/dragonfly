@@ -27,17 +27,7 @@ func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (p DirtPath) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
-}
-
-// Resistance ...
-func (p DirtPath) Resistance() float64 {
-	return 0.65
-}
-
-// AlwaysExplodeDrop ..
-func (p DirtPath) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p)).withExplosionInfo(0.65, false)
 }
 
 // EncodeItem ...

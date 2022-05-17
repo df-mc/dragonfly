@@ -41,6 +41,14 @@ func (s sandstone) Hardness() float64 {
 	return 0.8
 }
 
+func (s sandstone) Resistance() float64 {
+	switch s {
+	case 3:
+		return 6
+	}
+	return 0.8
+}
+
 // Name ...
 func (s sandstone) Name() string {
 	switch s {

@@ -67,17 +67,7 @@ func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 
 // BreakInfo ...
 func (d DragonEgg) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d))
-}
-
-// Resistance ...
-func (d DragonEgg) Resistance() float64 {
-	return 3
-}
-
-// AlwaysExplodeDrop ..
-func (d DragonEgg) AlwaysExplodeDrop() bool {
-	return true
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withExplosionInfo(3, true)
 }
 
 // EncodeItem ...

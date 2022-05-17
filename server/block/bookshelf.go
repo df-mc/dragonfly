@@ -10,17 +10,7 @@ type Bookshelf struct {
 
 // BreakInfo ...
 func (b Bookshelf) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.Book{}, 3), item.NewStack(b, 1)))
-}
-
-// Resistance ...
-func (b Bookshelf) Resistance() float64 {
-	return 1.5
-}
-
-// AlwaysExplodeDrop ..
-func (b Bookshelf) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(1.5, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.Book{}, 3), item.NewStack(b, 1))).withExplosionInfo(1.5, false)
 }
 
 // EncodeItem ...

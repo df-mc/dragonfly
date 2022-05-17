@@ -14,7 +14,7 @@ type StoneBricks struct {
 
 // BreakInfo ...
 func (c StoneBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withExplosionInfo(6, false)
 }
 
 // EncodeItem ...

@@ -17,17 +17,7 @@ type Concrete struct {
 
 // BreakInfo ...
 func (c Concrete) BreakInfo() BreakInfo {
-	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c))
-}
-
-// Resistance ...
-func (c Concrete) Resistance() float64 {
-	return 1.8
-}
-
-// AlwaysExplodeDrop ...
-func (c Concrete) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withExplosionInfo(1.8, false)
 }
 
 // EncodeItem ...

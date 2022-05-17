@@ -8,17 +8,7 @@ type Calcite struct {
 
 // BreakInfo ...
 func (c Calcite) BreakInfo() BreakInfo {
-	return newBreakInfo(0.75, pickaxeHarvestable, pickaxeEffective, oneOf(c))
-}
-
-// Resistance ...
-func (c Calcite) Resistance() float64 {
-	return 0.75
-}
-
-// AlwaysExplodeDrop ..
-func (c Calcite) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(0.75, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withExplosionInfo(0.75, false)
 }
 
 // EncodeItem ...

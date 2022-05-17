@@ -7,17 +7,7 @@ type BlueIce struct {
 
 // BreakInfo ...
 func (b BlueIce) BreakInfo() BreakInfo {
-	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b))
-}
-
-// Resistance ...
-func (b BlueIce) Resistance() float64 {
-	return 2.8
-}
-
-// AlwaysExplodeDrop ..
-func (b BlueIce) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(2.8, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(b)).withExplosionInfo(2.8, false)
 }
 
 // Friction ...

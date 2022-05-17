@@ -25,17 +25,7 @@ func (d Dirt) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (d Dirt) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d))
-}
-
-// Resistance ...
-func (d Dirt) Resistance() float64 {
-	return 0.5
-}
-
-// AlwaysExplodeDrop ..
-func (d Dirt) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d)).withExplosionInfo(0.5, false)
 }
 
 // Till ...

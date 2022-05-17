@@ -57,7 +57,7 @@ func (s Sign) EncodeItem() (name string, meta int16) {
 
 // BreakInfo ...
 func (s Sign) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(s))
+	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(s)).withExplosionInfo(1, false)
 }
 
 // CanDisplace ...

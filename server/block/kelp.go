@@ -39,7 +39,7 @@ func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // BreakInfo ...
 func (k Kelp) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(k))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(k)).withExplosionInfo(0, false)
 }
 
 // EncodeItem ...

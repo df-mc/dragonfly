@@ -21,16 +21,6 @@ func (c Carpet) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 60, true)
 }
 
-// Resistance ...
-func (c Carpet) Resistance() float64 {
-	return 0.1
-}
-
-// AlwaysExplodeDrop ..
-func (c Carpet) AlwaysExplodeDrop() bool {
-	return false
-}
-
 // CanDisplace ...
 func (Carpet) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)
@@ -44,7 +34,7 @@ func (Carpet) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (c Carpet) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c)).withExplosionInfo(0.1, false)
 }
 
 // EncodeItem ...

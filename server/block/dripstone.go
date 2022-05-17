@@ -8,15 +8,7 @@ type Dripstone struct {
 
 // BreakInfo ...
 func (d Dripstone) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d))
-}
-
-func (d Dripstone) Resistance() float64 {
-	return 1
-}
-
-func (d Dripstone) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withExplosionInfo(1, false)
 }
 
 // EncodeItem ...

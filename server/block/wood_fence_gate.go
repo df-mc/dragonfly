@@ -27,7 +27,7 @@ type WoodFenceGate struct {
 
 // BreakInfo ...
 func (f WoodFenceGate) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f)).withExplosionInfo(3, false)
 }
 
 // FlammabilityInfo ...

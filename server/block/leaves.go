@@ -97,7 +97,7 @@ func (l Leaves) BreakInfo() BreakInfo {
 		}
 		// TODO: Saplings and sticks can drop along with apples
 		return drops
-	})
+	}).withExplosionInfo(0.2, false)
 }
 
 // EncodeItem ...

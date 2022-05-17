@@ -17,17 +17,7 @@ type DiamondOre struct {
 func (d DiamondOre) BreakInfo() BreakInfo {
 	return newBreakInfo(d.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d)).withXPDropRange(3, 7)
-}
-
-// Resistance ...
-func (d DiamondOre) Resistance() float64 {
-	return 3
-}
-
-// AlwaysExplodeDrop ..
-func (d DiamondOre) AlwaysExplodeDrop() bool {
-	return false
+	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d)).withXPDropRange(3, 7).withExplosionInfo(3, false)
 }
 
 // EncodeItem ...

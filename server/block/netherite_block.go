@@ -14,7 +14,7 @@ type NetheriteBlock struct {
 func (n NetheriteBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(50, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(n))
+	}, pickaxeEffective, oneOf(n)).withExplosionInfo(1200, false)
 }
 
 // PowersBeacon ...

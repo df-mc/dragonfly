@@ -85,6 +85,10 @@ type BreakInfo struct {
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
 	// XPDrops is the range of XP a block can drop when broken.
 	XPDrops XPDropRange
+	// BlastResistance is the blast resistance of the block that is used to calculate whether if the block will explode
+	BlastResistance float64
+	// DropOnExplode specifies if the block will always be dropped when exploded
+	DropOnExplode bool
 }
 
 // newBreakInfo creates a BreakInfo struct with the properties passed. The XPDrops field is 0 by default.
@@ -100,6 +104,13 @@ func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective 
 // withXPDropRange sets the XPDropRange field of the BreakInfo struct to the passed value.
 func (b BreakInfo) withXPDropRange(min, max int) BreakInfo {
 	b.XPDrops = XPDropRange{min, max}
+	return b
+}
+
+// withExplosionInfo sets the BlastResistance and DropOnExplode fields of the BreakInfo struct to the passed values.
+func (b BreakInfo) withExplosionInfo(resistance float64, drop bool) BreakInfo {
+	b.BlastResistance = resistance
+	b.DropOnExplode = drop
 	return b
 }
 

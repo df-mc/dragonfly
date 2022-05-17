@@ -26,7 +26,7 @@ func (g Gravel) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(item.Flint{}, 1)}
 		}
 		return []item.Stack{item.NewStack(g, 1)}
-	})
+	}).withExplosionInfo(0.6, false)
 }
 
 // EncodeItem ...

@@ -25,7 +25,7 @@ func (s SoulSand) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (s SoulSand) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s)).withExplosionInfo(0.5, false)
 }
 
 // EncodeItem ...

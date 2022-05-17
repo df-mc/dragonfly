@@ -13,17 +13,7 @@ type DiamondBlock struct {
 func (d DiamondBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, oneOf(d))
-}
-
-// Resistance ...
-func (d DiamondBlock) Resistance() float64 {
-	return 6
-}
-
-// AlwaysExplodeDrop ..
-func (d DiamondBlock) AlwaysExplodeDrop() bool {
-	return false
+	}, pickaxeEffective, oneOf(d)).withExplosionInfo(6, false)
 }
 
 // PowersBeacon ...

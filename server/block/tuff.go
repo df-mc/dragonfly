@@ -8,7 +8,7 @@ type Tuff struct {
 
 // BreakInfo ...
 func (t Tuff) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withExplosionInfo(6, false)
 }
 
 // EncodeItem ...

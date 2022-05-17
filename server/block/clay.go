@@ -17,17 +17,7 @@ func (c Clay) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (c Clay) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchDrop(item.NewStack(item.ClayBall{}, 4), item.NewStack(c, 1)))
-}
-
-// Resistance ...
-func (c Clay) Resistance() float64 {
-	return 0.6
-}
-
-// AlwaysExplodeDrop ..
-func (c Clay) AlwaysExplodeDrop() bool {
-	return false
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchDrop(item.NewStack(item.ClayBall{}, 4), item.NewStack(c, 1))).withExplosionInfo(0.6, false)
 }
 
 // EncodeItem ...

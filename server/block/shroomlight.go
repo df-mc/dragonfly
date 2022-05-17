@@ -12,7 +12,7 @@ func (Shroomlight) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (s Shroomlight) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(s))
+	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(s)).withExplosionInfo(1, false)
 }
 
 // EncodeItem ...

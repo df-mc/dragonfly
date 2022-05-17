@@ -13,17 +13,7 @@ type AncientDebris struct {
 func (a AncientDebris) BreakInfo() BreakInfo {
 	return newBreakInfo(30, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(a))
-}
-
-// Resistance ...
-func (a AncientDebris) Resistance() float64 {
-	return 1200
-}
-
-// AlwaysExplodeDrop ..
-func (a AncientDebris) AlwaysExplodeDrop() bool {
-	return false
+	}, pickaxeEffective, oneOf(a)).withExplosionInfo(1200, false)
 }
 
 // EncodeItem ...
