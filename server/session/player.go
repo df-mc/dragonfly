@@ -98,6 +98,9 @@ const (
 	containerBeacon         = 8
 	containerFullInventory  = 12
 	containerCraftingGrid   = 13
+	containerFurnaceFuel    = 23
+	containerFurnaceResult  = 25
+	containerFurnaceInput   = 24
 	containerHotbar         = 27
 	containerInventory      = 28
 	containerOffHand        = 33
@@ -122,24 +125,26 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		// Armour inventory.
 		return s.armour.Inventory(), true
 	case containerChest:
-		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, chest := b.(block.Chest); chest {
+			if _, chest := s.c.World().Block(s.openedPos.Load()).(block.Chest); chest {
+				return s.openedWindow.Load(), true
+			}
+		}
+	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult:
+		if s.containerOpened.Load() {
+			if _, furnace := s.c.World().Block(s.openedPos.Load()).(block.Furnace); furnace {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, barrel := b.(block.Barrel); barrel {
+			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, beacon := b.(block.Beacon); beacon {
+			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}

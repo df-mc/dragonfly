@@ -117,6 +117,7 @@ func init() {
 	registerAll(allStainedGlassPane())
 	registerAll(allLanterns())
 	registerAll(allFire())
+	registerAll(allFurnaces())
 	registerAll(allPlanks())
 	registerAll(allFence())
 	registerAll(allFenceGates())
@@ -265,6 +266,7 @@ func init() {
 	world.RegisterItem(SandstoneStairs{Red: true})
 	world.RegisterItem(SandstoneStairs{Smooth: true})
 	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
+	world.RegisterItem(Furnace{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})

@@ -54,6 +54,7 @@ const (
 	hashFarmland
 	hashFire
 	hashFlower
+	hashFurnace
 	hashGildedBlackstone
 	hashGlass
 	hashGlassPane
@@ -267,7 +268,7 @@ func (CraftingTable) Hash() uint64 {
 	return hashCraftingTable
 }
 
-func (d DeadBush) Hash() uint64 {
+func (DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 
@@ -341,6 +342,10 @@ func (f Fire) Hash() uint64 {
 
 func (f Flower) Hash() uint64 {
 	return hashFlower | uint64(f.Type.Uint8())<<8
+}
+
+func (f Furnace) Hash() uint64 {
+	return hashFurnace | uint64(f.Facing)<<8 | uint64(boolByte(f.Lit))<<11
 }
 
 func (GildedBlackstone) Hash() uint64 {

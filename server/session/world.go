@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -770,6 +771,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	}
 	s.closeCurrentContainer()
 
+	fmt.Println("opening")
+
 	b := s.c.World().Block(pos)
 	container, ok := b.(block.Container)
 	if ok {
@@ -799,6 +802,12 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
+const (
+	containerTypeFurnace      = 2
+	containerTypeBlastFurnace = 27
+	containerTypeSmoker       = 28
+)
+
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	b.AddViewer(s, s.c.World(), pos)
@@ -810,6 +819,8 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
+	case block.Furnace:
+		containerType = containerTypeFurnace
 	}
 
 	s.writePacket(&packet.ContainerOpen{

@@ -24,7 +24,9 @@ type smelter struct {
 
 // newSmelter initializes a new smelter and returns it.
 func newSmelter() *smelter {
-	s := &smelter{}
+	s := &smelter{
+		viewers: make(map[ContainerViewer]struct{}),
+	}
 	s.inventory = inventory.New(3, func(slot int, item item.Stack) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
@@ -82,7 +84,7 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
 // items for the necessary duration.
-func (s *smelter) tickSmelting(speed int, supported func(item.Smelt) bool) (update bool, schedule bool) {
+func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) bool) (update bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -107,20 +109,22 @@ func (s *smelter) tickSmelting(speed int, supported func(item.Smelt) bool) (upda
 	canSmelt := input.Count() > 0 && (inputInfo.Product.Comparable(product)) && !inputInfo.Product.Empty() && product.Count() < product.MaxCount()
 	if s.remainingDuration <= 0 && canSmelt && fuelInfo.Duration > 0 && fuel.Count() > 0 {
 		s.remainingDuration, s.maxDuration, update = fuelInfo.Duration, fuelInfo.Duration, true
-		_ = s.Inventory().SetItem(1, fuelInfo.Residue)
+		s.mu.Unlock()
+		_ = s.inventory.SetItem(1, fuelInfo.Residue)
+		s.mu.Lock()
 	}
 
 	if s.remainingDuration > 0 {
 		s.remainingDuration -= time.Millisecond * 50
-		update, schedule = true, true
-
 		if canSmelt {
 			s.cookDuration += time.Millisecond * 50
 			if requirement := time.Second * 4 / time.Duration(speed); s.cookDuration >= requirement {
 				product = item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count())
 
+				s.mu.Unlock()
 				_ = s.inventory.SetItem(2, product)
 				_ = s.inventory.SetItem(0, input.Grow(-1))
+				s.mu.Lock()
 				s.cookDuration -= requirement
 			}
 		} else if s.remainingDuration <= 0 {
@@ -128,12 +132,12 @@ func (s *smelter) tickSmelting(speed int, supported func(item.Smelt) bool) (upda
 		} else {
 			s.cookDuration = 0
 		}
-	} else {
+	} else if lit {
 		s.cookDuration, s.maxDuration, s.remainingDuration, update = 0, 0, 0, true
 	}
 
 	for v := range s.viewers {
 		v.ViewFurnaceUpdate(prevCookDuration, s.cookDuration, prevRemainingDuration, s.remainingDuration, prevMaxDuration, s.maxDuration)
 	}
-	return update, schedule
+	return
 }
