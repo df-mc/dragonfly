@@ -132,16 +132,6 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
-		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			_, smoker := b.(block.Smoker)
-			_, furnace := b.(block.Furnace)
-			_, blastFurnace := b.(block.BlastFurnace)
-			if smoker || furnace || blastFurnace {
-				return s.openedWindow.Load(), true
-			}
-		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
 			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
@@ -152,6 +142,16 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
+			}
+		}
+	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			_, smoker := b.(block.Smoker)
+			_, furnace := b.(block.Furnace)
+			_, blastFurnace := b.(block.BlastFurnace)
+			if smoker || furnace || blastFurnace {
+				return s.openedWindow.Load(), true
 			}
 		}
 	}
