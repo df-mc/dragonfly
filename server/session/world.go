@@ -816,8 +816,12 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
-	case block.Smoker:
+	case block.Furnace:
 		containerType = containerTypeFurnace
+	case block.BlastFurnace:
+		containerType = containerTypeBlastFurnace
+	case block.Smoker:
+		containerType = containerTypeSmoker
 	}
 
 	s.writePacket(&packet.ContainerOpen{
