@@ -30,12 +30,11 @@ func NewFurnace(face cube.Face) Furnace {
 }
 
 // Tick is called to check if the furnace should update and start or stop smelting.
-// TODO: Only tick smelting when needed.
 func (f Furnace) Tick(_ int64, pos cube.Pos, w *world.World) {
-	if f.smelter.tickSmelting(1, f.Lit, func(item.Smelt) bool {
+	if lit := f.smelter.tickSmelting(1, f.Lit, func(item.Smelt) bool {
 		return true
-	}) {
-		f.Lit = !f.Lit
+	}); f.Lit != lit {
+		f.Lit = lit
 		w.SetBlock(pos, f, nil)
 	}
 }

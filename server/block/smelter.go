@@ -84,9 +84,8 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
 // items for the necessary duration.
-func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) bool) (update bool) {
+func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) bool) bool {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	prevCookDuration := s.cookDuration
 	prevRemainingDuration := s.remainingDuration
@@ -108,36 +107,36 @@ func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) b
 
 	canSmelt := input.Count() > 0 && (inputInfo.Product.Comparable(product)) && !inputInfo.Product.Empty() && product.Count() < product.MaxCount()
 	if s.remainingDuration <= 0 && canSmelt && fuelInfo.Duration > 0 && fuel.Count() > 0 {
-		s.remainingDuration, s.maxDuration, update = fuelInfo.Duration, fuelInfo.Duration, true
-		s.mu.Unlock()
-		_ = s.inventory.SetItem(1, fuelInfo.Residue)
-		s.mu.Lock()
+		s.remainingDuration, s.maxDuration, lit = fuelInfo.Duration, fuelInfo.Duration, true
+		defer s.inventory.SetItem(1, fuelInfo.Residue)
 	}
 
 	if s.remainingDuration > 0 {
 		s.remainingDuration -= time.Millisecond * 50
 		if canSmelt {
 			s.cookDuration += time.Millisecond * 50
-			if requirement := time.Second * 4 / time.Duration(speed); s.cookDuration >= requirement {
-				product = item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count())
-
-				s.mu.Unlock()
-				_ = s.inventory.SetItem(2, product)
-				_ = s.inventory.SetItem(0, input.Grow(-1))
-				s.mu.Lock()
+			if requirement := time.Second * 10 / time.Duration(speed); s.cookDuration >= requirement {
+				defer s.inventory.SetItem(2, item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count()))
+				defer s.inventory.SetItem(0, input.Grow(-1))
 				s.cookDuration -= requirement
 			}
-		} else if s.remainingDuration <= 0 {
-			s.cookDuration, s.maxDuration, s.remainingDuration = 0, 0, 0
+		} else if s.remainingDuration == 0 {
+			s.maxDuration = 0
 		} else {
 			s.cookDuration = 0
 		}
 	} else if lit {
-		s.cookDuration, s.maxDuration, s.remainingDuration, update = 0, 0, 0, true
+		s.maxDuration, s.remainingDuration, lit = 0, 0, false
+	}
+
+	if s.cookDuration > 0 && s.remainingDuration == 0 {
+		s.cookDuration -= time.Millisecond * 100
 	}
 
 	for v := range s.viewers {
 		v.ViewFurnaceUpdate(prevCookDuration, s.cookDuration, prevRemainingDuration, s.remainingDuration, prevMaxDuration, s.maxDuration)
 	}
-	return
+
+	s.mu.Unlock()
+	return lit
 }
