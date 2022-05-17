@@ -93,20 +93,22 @@ const (
 )
 
 const (
-	containerArmour         = 6
-	containerChest          = 7
-	containerBeacon         = 8
-	containerFullInventory  = 12
-	containerCraftingGrid   = 13
-	containerFurnaceFuel    = 23
-	containerFurnaceResult  = 25
-	containerFurnaceInput   = 24
-	containerHotbar         = 27
-	containerInventory      = 28
-	containerOffHand        = 33
-	containerBarrel         = 57
-	containerCursor         = 58
-	containerCreativeOutput = 59
+	containerArmour            = 6
+	containerChest             = 7
+	containerBeacon            = 8
+	containerFullInventory     = 12
+	containerCraftingGrid      = 13
+	containerFurnaceFuel       = 23
+	containerFurnaceResult     = 25
+	containerFurnaceInput      = 24
+	containerHotbar            = 27
+	containerInventory         = 28
+	containerOffHand           = 33
+	containerBlastFurnaceInput = 44
+	containerSmokerInput       = 45
+	containerBarrel            = 57
+	containerCursor            = 58
+	containerCreativeOutput    = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -130,9 +132,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult:
+	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
 		if s.containerOpened.Load() {
-			if _, furnace := s.c.World().Block(s.openedPos.Load()).(block.Smoker); furnace {
+			b := s.c.World().Block(s.openedPos.Load())
+			_, smoker := b.(block.Smoker)
+			_, furnace := b.(block.Furnace)
+			_, blastFurnace := b.(block.BlastFurnace)
+			if smoker || furnace || blastFurnace {
 				return s.openedWindow.Load(), true
 			}
 		}
