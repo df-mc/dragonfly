@@ -103,6 +103,9 @@ func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) b
 	var fuelInfo item.FuelInfo
 	if f, ok := fuel.Item().(item.Fuel); ok {
 		fuelInfo = f.FuelInfo()
+		if fuelInfo.Residue.Empty() {
+			fuelInfo.Residue = fuel.Grow(-1)
+		}
 	}
 
 	canSmelt := input.Count() > 0 && (inputInfo.Product.Comparable(product)) && !inputInfo.Product.Empty() && product.Count() < product.MaxCount()
