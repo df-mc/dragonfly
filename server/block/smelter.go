@@ -37,25 +37,18 @@ func newSmelter() *smelter {
 	return s
 }
 
-// RemainingDuration returns the remaining time the fuel in the smelter will provide.
-func (s *smelter) RemainingDuration() time.Duration {
+// Durations returns the remaining, maximum, and cook durations of the smelter.
+func (s *smelter) Durations() (time.Duration, time.Duration, time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.remainingDuration
+	return s.remainingDuration, s.maxDuration, s.cookDuration
 }
 
-// MaxDuration is the maximum time the fuel can last.
-func (s *smelter) MaxDuration() time.Duration {
+// UpdateDurations updates the remaining, maximum, and cook durations of the smelter.
+func (s *smelter) UpdateDurations(remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.maxDuration
-}
-
-// CookDuration returns the remaining time the input can be cooked for before consuming more fuel.
-func (s *smelter) CookDuration() time.Duration {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.cookDuration
+	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
 }
 
 // Inventory returns the inventory of the furnace.
@@ -128,7 +121,7 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 		} else {
 			s.cookDuration = 0
 		}
-	} else if lit {
+	} else {
 		s.maxDuration, s.remainingDuration, lit = 0, 0, false
 	}
 

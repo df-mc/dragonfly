@@ -94,10 +94,11 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 		//noinspection GoAssignmentToReceiver
 		s = NewSmoker(s.Facing)
 	}
+	remaining, maximum, cook := s.Durations()
 	return map[string]interface{}{
-		"BurnTime": int32(s.remainingDuration.Milliseconds() / 50),
-		"CookTime": int32(s.cookDuration.Milliseconds() / 50),
-		"MaxTime":  int32(s.maxDuration.Milliseconds() / 50),
+		"BurnTime": int32(remaining.Milliseconds() / 50),
+		"CookTime": int32(cook.Milliseconds() / 50),
+		"MaxTime":  int32(maximum.Milliseconds() / 50),
 		"Items":    nbtconv.InvToNBT(s.inventory),
 		"id":       "Smoker",
 	}
@@ -111,9 +112,11 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	s = NewSmoker(facing)
 	s.Lit = lit
 
-	s.remainingDuration = time.Duration(nbtconv.Map[int32](data, "BurnTime")) * time.Millisecond * 50
-	s.cookDuration = time.Duration(nbtconv.Map[int32](data, "CookTime")) * time.Millisecond * 50
-	s.maxDuration = time.Duration(nbtconv.Map[int32](data, "MaxTime")) * time.Millisecond * 50
+	remaining := time.Duration(nbtconv.Map[int32](data, "BurnTime")) * time.Millisecond * 50
+	maximum := time.Duration(nbtconv.Map[int32](data, "MaxTime")) * time.Millisecond * 50
+	cook := time.Duration(nbtconv.Map[int32](data, "CookTime")) * time.Millisecond * 50
+	s.UpdateDurations(remaining, maximum, cook)
+
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Map[[]any](data, "Items"))
 	return s
 }
