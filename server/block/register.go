@@ -268,7 +268,9 @@ func init() {
 	world.RegisterItem(SandstoneStairs{Red: true})
 	world.RegisterItem(SandstoneStairs{Smooth: true})
 	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
+
 	world.RegisterItem(Smoker{})
+	world.RegisterItem(Furnace{})
 	world.RegisterItem(BlastFurnace{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
