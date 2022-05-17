@@ -99,6 +99,7 @@ func init() {
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
 	registerAll(allBoneBlock())
+	registerAll(allBlastFurnaces())
 	registerAll(allCake())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
@@ -153,6 +154,7 @@ func init() {
 	registerAll(allLadders())
 	registerAll(allSandstoneStairs())
 	registerAll(allSeaPickles())
+	registerAll(allSmokers())
 	registerAll(allWood())
 	registerAll(allChains())
 }
@@ -266,7 +268,8 @@ func init() {
 	world.RegisterItem(SandstoneStairs{Red: true})
 	world.RegisterItem(SandstoneStairs{Smooth: true})
 	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
-	world.RegisterItem(Furnace{})
+	world.RegisterItem(Smoker{})
+	world.RegisterItem(BlastFurnace{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})

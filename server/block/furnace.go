@@ -21,7 +21,7 @@ type Furnace struct {
 	Lit bool
 }
 
-// NewFurnace creates a new initialised furnace. The inventory is properly initialised.
+// NewFurnace creates a new initialised furnace. The smelter is properly initialised.
 func NewFurnace(face cube.Face) Furnace {
 	return Furnace{
 		Facing:  face,
@@ -31,7 +31,7 @@ func NewFurnace(face cube.Face) Furnace {
 
 // Tick is called to check if the furnace should update and start or stop smelting.
 func (f Furnace) Tick(_ int64, pos cube.Pos, w *world.World) {
-	if lit := f.smelter.tickSmelting(1, f.Lit, func(item.Smelt) bool {
+	if lit := f.smelter.tickSmelting(1, f.Lit, func(item.SmeltInfo) bool {
 		return true
 	}); f.Lit != lit {
 		f.Lit = lit

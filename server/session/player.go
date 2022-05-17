@@ -132,7 +132,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		}
 	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult:
 		if s.containerOpened.Load() {
-			if _, furnace := s.c.World().Block(s.openedPos.Load()).(block.Furnace); furnace {
+			if _, furnace := s.c.World().Block(s.openedPos.Load()).(block.Smoker); furnace {
 				return s.openedWindow.Load(), true
 			}
 		}

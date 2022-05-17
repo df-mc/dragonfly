@@ -13,6 +13,7 @@ const (
 	hashBeacon
 	hashBedrock
 	hashBeetrootSeeds
+	hashBlastFurnace
 	hashBlueIce
 	hashBoneBlock
 	hashBookshelf
@@ -114,6 +115,7 @@ const (
 	hashSeaPickle
 	hashShroomlight
 	hashSign
+	hashSmoker
 	hashSnow
 	hashSoulSand
 	hashSoulSoil
@@ -178,6 +180,10 @@ func (b Bedrock) Hash() uint64 {
 
 func (b BeetrootSeeds) Hash() uint64 {
 	return hashBeetrootSeeds | uint64(b.Growth)<<8
+}
+
+func (b BlastFurnace) Hash() uint64 {
+	return hashBlastFurnace | uint64(b.Facing)<<8 | uint64(boolByte(b.Lit))<<11
 }
 
 func (BlueIce) Hash() uint64 {
@@ -582,6 +588,10 @@ func (Shroomlight) Hash() uint64 {
 
 func (s Sign) Hash() uint64 {
 	return hashSign | uint64(s.Wood.Uint8())<<8 | uint64(s.Attach.Uint8())<<11
+}
+
+func (s Smoker) Hash() uint64 {
+	return hashSmoker | uint64(s.Facing)<<8 | uint64(boolByte(s.Lit))<<11
 }
 
 func (Snow) Hash() uint64 {

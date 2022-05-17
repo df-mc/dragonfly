@@ -84,7 +84,7 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
 // items for the necessary duration.
-func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) bool) bool {
+func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.SmeltInfo) bool) bool {
 	s.mu.Lock()
 
 	prevCookDuration := s.cookDuration
@@ -96,7 +96,7 @@ func (s *smelter) tickSmelting(speed int, lit bool, supported func(item.Smelt) b
 	product, _ := s.inventory.Item(2)
 
 	var inputInfo item.SmeltInfo
-	if i, ok := input.Item().(item.Smelt); ok && supported(i) {
+	if i, ok := input.Item().(item.Smelt); ok && supported(i.SmeltInfo()) {
 		inputInfo = i.SmeltInfo()
 	}
 

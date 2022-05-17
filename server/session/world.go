@@ -816,7 +816,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
-	case block.Furnace:
+	case block.Smoker:
 		containerType = containerTypeFurnace
 	}
 
