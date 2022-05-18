@@ -513,7 +513,67 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Slot:        0x2,
 	}, s)
 
-	if _, ok := second.Item().(item.Durable); ok {
+	var costFactor int
+	if !second.Empty() {
+		_, ok := second.Item().(item.EnchantedBook)
+		enchant := ok && len(second.Enchantments()) > 0
+		_, durable := first.Item().(item.Durable)
+		if durable {
+
+		} else {
+			if !enchant && (first.Item() != second.Item() || !durable) {
+				return nil
+			}
+			if durable && !enchant {
+				i := first.MaxDurability() - first.Durability() + (second.Durability() + first.MaxDurability()*12/100)
+				if i < 0 {
+					i = 0
+				}
+				if i < first.MaxDurability()-first.Durability() {
+					result = result.WithDurability(i)
+					costFactor += 2
+				}
+			}
+			var b1, b2 bool
+			var resultEnchantments []item.Enchantment
+			for _, e := range second.Enchantments() {
+				var firstLevel int
+				if firstEnchant, ok := first.Enchantment(e.Type()); ok {
+					firstLevel = firstEnchant.Level()
+				}
+				var resultLevel int
+				if firstLevel == e.Level() {
+					resultLevel = firstLevel + 1
+				} else {
+					resultLevel = max(firstLevel, e.Level())
+				}
+				compatible := e.Type().CompatibleWith(first)
+				if _, ok := first.Item().(item.EnchantedBook); ok {
+					compatible = true
+				}
+				for _, e2 := range first.Enchantments() {
+					if e.Type() != e2.Type() {
+						compatible = false
+						costFactor++
+					}
+				}
+				if !compatible {
+					b2 = true
+				} else {
+					b1 = true
+					if resultLevel > e.Type().MaxLevel() {
+						resultLevel = e.Level()
+					}
+					resultEnchantments = append(resultEnchantments, item.NewEnchantment(e.Type(), resultLevel))
+				}
+			}
+			if b2 && !b1 {
+				return nil
+			}
+		}
+	}
+
+	if !result.Empty() {
 
 	}
 
@@ -530,6 +590,13 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Slot:        50,
 	}, result, s)
 	return nil
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
 }
 
 // validRepair ...
