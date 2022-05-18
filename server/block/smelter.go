@@ -5,6 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
+	"math"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -20,6 +22,7 @@ type smelter struct {
 	remainingDuration time.Duration
 	cookDuration      time.Duration
 	maxDuration       time.Duration
+	experience        int
 }
 
 // newSmelter initializes a new smelter and returns it.
@@ -49,6 +52,20 @@ func (s *smelter) UpdateDurations(remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
+}
+
+// Experience returns the collected experience of the smelter.
+func (s *smelter) Experience() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.experience
+}
+
+// ResetExperience resets the collected experience of the smelter.
+func (s *smelter) ResetExperience() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.experience = 0
 }
 
 // Inventory returns the inventory of the furnace.
@@ -114,7 +131,15 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 			if s.cookDuration >= requirement {
 				defer s.inventory.SetItem(2, item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count()))
 				defer s.inventory.SetItem(0, input.Grow(-1))
+
+				xp := inputInfo.Experience * float64(inputInfo.Product.Count())
+				earned := math.Floor(inputInfo.Experience)
+				if chance := xp - earned; chance > 0 && rand.Float64() < chance {
+					earned++
+				}
+
 				s.cookDuration -= requirement
+				s.experience += int(earned)
 			}
 		} else if s.remainingDuration == 0 {
 			s.maxDuration = 0

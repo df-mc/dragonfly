@@ -99,7 +99,8 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 		"BurnTime":     int16(remaining.Milliseconds() / 50),
 		"CookTime":     int16(cook.Milliseconds() / 50),
 		"BurnDuration": int16(maximum.Milliseconds() / 50),
-		"Items":        nbtconv.InvToNBT(s.inventory),
+		"StoredXPInt":  int16(s.Experience()),
+		"Items":        nbtconv.InvToNBT(s.Inventory()),
 		"id":           "Smoker",
 	}
 }
@@ -117,7 +118,7 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
 	s.UpdateDurations(remaining, maximum, cook)
 
-	nbtconv.InvFromNBT(s.inventory, nbtconv.Map[[]any](data, "Items"))
+	nbtconv.InvFromNBT(s.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return s
 }
 
