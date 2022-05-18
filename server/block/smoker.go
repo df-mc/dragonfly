@@ -71,12 +71,7 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3.5,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(s, 1)),
-	}
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // Activate ...

@@ -71,12 +71,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    3.5,
-		Harvestable: pickaxeHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       simpleDrops(item.NewStack(b, 1)),
-	}
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
 // Activate ...
