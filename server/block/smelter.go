@@ -61,11 +61,11 @@ func (s *smelter) Experience() int {
 	return s.experience
 }
 
-// ResetExperience resets the collected experience of the smelter.
-func (s *smelter) ResetExperience() {
+// SetExperience sets the collected experience of the smelter to the given value.
+func (s *smelter) SetExperience(xp int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.experience = 0
+	s.experience = xp
 }
 
 // Inventory returns the inventory of the furnace.

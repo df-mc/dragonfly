@@ -116,6 +116,7 @@ func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
 	f.UpdateDurations(remaining, maximum, cook)
+	f.SetExperience(int(nbtconv.Map[int16](data, "StoredXPInt")))
 
 	nbtconv.InvFromNBT(f.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return f

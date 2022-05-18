@@ -117,6 +117,7 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
 	s.UpdateDurations(remaining, maximum, cook)
+	s.SetExperience(int(nbtconv.Map[int16](data, "StoredXPInt")))
 
 	nbtconv.InvFromNBT(s.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return s
