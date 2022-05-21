@@ -69,7 +69,7 @@ var hashes = intintmap.New(7000, 0.999)
 func RegisterBlock(b Block) {
 	name, properties := b.EncodeBlock()
 	if _, ok := b.(CustomBlock); ok {
-		registerBlockState(blockState{Name: name, Properties: properties}, false)
+		registerBlockState(blockState{Name: name, Properties: properties})
 	}
 	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
