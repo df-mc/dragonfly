@@ -131,6 +131,9 @@ func registerBlockState(s blockState, order bool) {
 			updatedLightBlocks[id] = chunk.LightBlocks[oldID]
 		}
 		newStateRuntimeIDs[i] = uint32(id)
+		if hash := b.Hash(); hash != math.MaxUint64 {
+			hashes.Put(int64(hash), int64(id))
+		}
 	}
 
 	stateRuntimeIDs = newStateRuntimeIDs
