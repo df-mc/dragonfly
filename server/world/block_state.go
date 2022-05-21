@@ -98,11 +98,14 @@ func registerBlockState(s blockState) {
 
 	newStateRuntimeIDs := make(map[stateHash]uint32, len(stateRuntimeIDs)+1)
 	for id, b := range blocks {
-		if name, _ := b.EncodeBlock(); name == "minecraft:air" {
+		name, properties := b.EncodeBlock()
+		i := stateHash{name: name, properties: hashProperties(properties)}
+
+		oldID := stateRuntimeIDs[i]
+		if oldID == airRID {
 			airRID = uint32(id)
 		}
 
-		oldID := stateRuntimeIDs[h]
 		updatedNBTBlocks[id] = nbtBlocks[oldID]
 		updatedRandomTickBlocks[id] = randomTickBlocks[oldID]
 		updatedLiquidBlocks[id] = liquidBlocks[oldID]
@@ -110,7 +113,7 @@ func registerBlockState(s blockState) {
 		updatedFilteringBlocks[id] = chunk.FilteringBlocks[oldID]
 		updatedLightBlocks[id] = chunk.LightBlocks[oldID]
 
-		newStateRuntimeIDs[h] = uint32(id)
+		newStateRuntimeIDs[i] = uint32(id)
 	}
 
 	nbtBlocks, randomTickBlocks = updatedNBTBlocks, updatedRandomTickBlocks
