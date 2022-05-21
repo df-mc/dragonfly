@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"hash/fnv"
 	"math"
 	"sort"
 	"strings"
@@ -71,19 +72,50 @@ func registerBlockState(s blockState) {
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
-	rid := uint32(len(blocks))
-	if s.Name == "minecraft:air" {
-		airRID = rid
-	}
-	stateRuntimeIDs[h] = rid
-	blocks = append(blocks, unknownBlock{s})
 
-	nbtBlocks = append(nbtBlocks, false)
-	randomTickBlocks = append(randomTickBlocks, false)
-	liquidBlocks = append(liquidBlocks, false)
-	liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
-	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
-	chunk.LightBlocks = append(chunk.LightBlocks, 0)
+	blocks = append(blocks, unknownBlock{s})
+	sort.SliceStable(blocks, func(i, j int) bool {
+		one, _ := blocks[i].EncodeBlock()
+		two, _ := blocks[j].EncodeBlock()
+
+		f := fnv.New64()
+		_, _ = f.Write([]byte(one))
+		hashOne := f.Sum64()
+
+		f = fnv.New64()
+		_, _ = f.Write([]byte(two))
+		hashTwo := f.Sum64()
+
+		return hashOne < hashTwo
+	})
+
+	updatedNBTBlocks := make([]bool, len(nbtBlocks)+1)
+	updatedRandomTickBlocks := make([]bool, len(randomTickBlocks)+1)
+	updatedLiquidBlocks := make([]bool, len(liquidBlocks)+1)
+	updatedLiquidDisplacingBlocks := make([]bool, len(liquidDisplacingBlocks)+1)
+	updatedFilteringBlocks := make([]uint8, len(chunk.FilteringBlocks)+1, 7000)
+	updatedLightBlocks := make([]uint8, len(chunk.LightBlocks)+1, 7000)
+
+	newStateRuntimeIDs := make(map[stateHash]uint32, len(stateRuntimeIDs)+1)
+	for id, b := range blocks {
+		if name, _ := b.EncodeBlock(); name == "minecraft:air" {
+			airRID = uint32(id)
+		}
+
+		oldID := stateRuntimeIDs[h]
+		updatedNBTBlocks[id] = nbtBlocks[oldID]
+		updatedRandomTickBlocks[id] = randomTickBlocks[oldID]
+		updatedLiquidBlocks[id] = liquidBlocks[oldID]
+		updatedLiquidDisplacingBlocks[id] = liquidDisplacingBlocks[oldID]
+		updatedFilteringBlocks[id] = chunk.FilteringBlocks[oldID]
+		updatedLightBlocks[id] = chunk.LightBlocks[oldID]
+
+		newStateRuntimeIDs[h] = uint32(id)
+	}
+
+	nbtBlocks, randomTickBlocks = updatedNBTBlocks, updatedRandomTickBlocks
+	liquidBlocks, liquidDisplacingBlocks = updatedLiquidBlocks, updatedLiquidDisplacingBlocks
+	chunk.FilteringBlocks, chunk.LightBlocks = updatedFilteringBlocks, updatedLightBlocks
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block

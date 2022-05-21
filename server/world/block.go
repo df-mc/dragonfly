@@ -68,19 +68,14 @@ var hashes = intintmap.New(7000, 0.999)
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
 func RegisterBlock(b Block) {
 	name, properties := b.EncodeBlock()
-	h := stateHash{name: name, properties: hashProperties(properties)}
-
-	var rid uint32
 	if _, ok := b.(CustomBlock); ok {
-		rid = uint32(len(stateRuntimeIDs))
 		registerBlockState(blockState{Name: name, Properties: properties})
-	} else {
-		rid, ok = stateRuntimeIDs[h]
-		if !ok {
-			// We assume all blocks must have all their states registered beforehand. Vanilla blocks will have
-			// this done through registering of all states present in the block_states.nbt file.
-			panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
-		}
+	}
+	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
+	if !ok {
+		// We assume all blocks must have all their states registered beforehand. Vanilla blocks will have
+		// this done through registering of all states present in the block_states.nbt file.
+		panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
 	}
 	if _, ok := blocks[rid].(unknownBlock); !ok {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
