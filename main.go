@@ -3,7 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/creative"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -22,13 +27,19 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	world.RegisterBlock(block.PHP{})
+	world.RegisterItem(block.PHP{})
+	creative.RegisterItem(item.NewStack(block.PHP{}, 64))
+
 	srv := server.New(&config, log)
 	srv.CloseOnProgramEnd()
 	if err := srv.Start(); err != nil {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.Inventory().AddItem(item.NewStack(block.PHP{}, 32))
+	}) {
 	}
 }
 
