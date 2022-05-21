@@ -49,7 +49,7 @@ func init() {
 		if err := dec.Decode(&s); err != nil {
 			break
 		}
-		registerBlockState(s)
+		registerBlockState(s, true)
 	}
 
 	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
@@ -67,13 +67,29 @@ func init() {
 
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
-func registerBlockState(s blockState) {
+func registerBlockState(s blockState, existing bool) {
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
 
 	blocks = append(blocks, unknownBlock{s})
+	if existing {
+		rid := uint32(len(blocks))
+		stateRuntimeIDs[h] = rid
+		if h.name == "minecraft:air" {
+			airRID = rid
+		}
+
+		nbtBlocks = append(nbtBlocks, false)
+		randomTickBlocks = append(randomTickBlocks, false)
+		liquidBlocks = append(liquidBlocks, false)
+		liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
+		chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
+		chunk.LightBlocks = append(chunk.LightBlocks, 0)
+		return
+	}
+
 	sort.SliceStable(blocks, func(i, j int) bool {
 		one, _ := blocks[i].EncodeBlock()
 		two, _ := blocks[j].EncodeBlock()
@@ -93,8 +109,8 @@ func registerBlockState(s blockState) {
 	updatedRandomTickBlocks := make([]bool, len(randomTickBlocks)+1)
 	updatedLiquidBlocks := make([]bool, len(liquidBlocks)+1)
 	updatedLiquidDisplacingBlocks := make([]bool, len(liquidDisplacingBlocks)+1)
-	updatedFilteringBlocks := make([]uint8, len(chunk.FilteringBlocks)+1, 7000)
-	updatedLightBlocks := make([]uint8, len(chunk.LightBlocks)+1, 7000)
+	updatedFilteringBlocks := make([]uint8, len(chunk.FilteringBlocks)+1)
+	updatedLightBlocks := make([]uint8, len(chunk.LightBlocks)+1)
 
 	newStateRuntimeIDs := make(map[stateHash]uint32, len(stateRuntimeIDs)+1)
 	for id, b := range blocks {
