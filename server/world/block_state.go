@@ -91,24 +91,38 @@ func registerBlockState(s blockState, order bool) {
 		})
 	}
 
-	updatedNBTBlocks := make([]bool, len(nbtBlocks)+1)
-	updatedRandomTickBlocks := make([]bool, len(randomTickBlocks)+1)
-	updatedLiquidBlocks := make([]bool, len(liquidBlocks)+1)
-	updatedLiquidDisplacingBlocks := make([]bool, len(liquidDisplacingBlocks)+1)
-	updatedFilteringBlocks := make([]uint8, len(chunk.FilteringBlocks)+1)
-	updatedLightBlocks := make([]uint8, len(chunk.LightBlocks)+1)
+	nbtBlocks = append(nbtBlocks, false)
+	randomTickBlocks = append(randomTickBlocks, false)
+	liquidBlocks = append(liquidBlocks, false)
+	liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
+	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
+	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 
-	newStateRuntimeIDs := make(map[stateHash]uint32, len(stateRuntimeIDs)+1)
+	if !order {
+		rid := uint32(len(blocks)) - 1
+		if s.Name == "minecraft:air" {
+			airRID = rid
+		}
+		stateRuntimeIDs[h] = rid
+		return
+	}
+
+	updatedNBTBlocks := make([]bool, len(nbtBlocks))
+	updatedRandomTickBlocks := make([]bool, len(randomTickBlocks))
+	updatedLiquidBlocks := make([]bool, len(liquidBlocks))
+	updatedLiquidDisplacingBlocks := make([]bool, len(liquidDisplacingBlocks))
+	updatedFilteringBlocks := make([]uint8, len(chunk.FilteringBlocks))
+	updatedLightBlocks := make([]uint8, len(chunk.LightBlocks))
+
+	newStateRuntimeIDs := make(map[stateHash]uint32, len(stateRuntimeIDs))
 	for id, b := range blocks {
 		name, properties := b.EncodeBlock()
 		i := stateHash{name: name, properties: hashProperties(properties)}
-		if i.name == "minecraft:air" {
+		if name == "minecraft:air" {
 			airRID = uint32(id)
 		}
 
-		oldID, ok := stateRuntimeIDs[i]
-		updatedFilteringBlocks[id] = 15
-		if ok {
+		if oldID, ok := stateRuntimeIDs[i]; ok {
 			updatedNBTBlocks[id] = nbtBlocks[oldID]
 			updatedRandomTickBlocks[id] = randomTickBlocks[oldID]
 			updatedLiquidBlocks[id] = liquidBlocks[oldID]
@@ -116,10 +130,10 @@ func registerBlockState(s blockState, order bool) {
 			updatedFilteringBlocks[id] = chunk.FilteringBlocks[oldID]
 			updatedLightBlocks[id] = chunk.LightBlocks[oldID]
 		}
-
 		newStateRuntimeIDs[i] = uint32(id)
 	}
 
+	stateRuntimeIDs = newStateRuntimeIDs
 	nbtBlocks, randomTickBlocks = updatedNBTBlocks, updatedRandomTickBlocks
 	liquidBlocks, liquidDisplacingBlocks = updatedLiquidBlocks, updatedLiquidDisplacingBlocks
 	chunk.FilteringBlocks, chunk.LightBlocks = updatedFilteringBlocks, updatedLightBlocks
