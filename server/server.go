@@ -716,7 +716,7 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 		entries = append(entries, protocol.BlockEntry{
 			Name: identifier,
 			Properties: map[string]any{
-				"components": model.Encode(),
+				"components": components,
 			},
 		})
 	}
