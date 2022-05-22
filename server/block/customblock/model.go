@@ -10,7 +10,7 @@ import (
 // Model represents the model of a custom block. It can contain multiple materials applied to different parts of the
 // model, as well as a reference to its geometry.
 type Model struct {
-	materials    map[string]Material
+	materials    map[MaterialTarget]Material
 	geometryName string
 	origin       mgl64.Vec3
 	size         mgl64.Vec3
@@ -30,7 +30,7 @@ func NewModel(geometryName string, origin, size mgl64.Vec3) Model {
 }
 
 // WithMaterial returns a copy of the Model with the provided material.
-func (m Model) WithMaterial(target string, material Material) Model {
+func (m Model) WithMaterial(target MaterialTarget, material Material) Model {
 	m.materials = maps.Clone(m.materials)
 	m.materials[target] = material
 	return m
@@ -38,7 +38,7 @@ func (m Model) WithMaterial(target string, material Material) Model {
 
 // Encode returns the model encoded as a map[string]any.
 func (m Model) Encode() map[string]any {
-	materials := map[string]any{}
+	materials := map[MaterialTarget]any{}
 	for target, material := range m.materials {
 		materials[target] = material.Encode()
 	}
