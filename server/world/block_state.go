@@ -122,6 +122,9 @@ func registerBlockState(s blockState, order bool) {
 	for id, b := range blocks {
 		name, properties := b.EncodeBlock()
 		i := stateHash{name: name, properties: hashProperties(properties)}
+		if name == "minecraft:air" {
+			airRID = uint32(id)
+		}
 
 		if oldID, ok := stateRuntimeIDs[i]; ok {
 			updatedNBTBlocks[id] = nbtBlocks[oldID]
