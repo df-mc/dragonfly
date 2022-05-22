@@ -28,6 +28,21 @@ func MaterialTargetSides() MaterialTarget {
 
 type materialTarget uint8
 
+// Name returns the name of the material target.
+func (m materialTarget) Name() string {
+	switch m {
+	case 0:
+		return "all"
+	case 1:
+		return "up"
+	case 2:
+		return "down"
+	case 3:
+		return "sides"
+	}
+	panic("should never happen")
+}
+
 // String returns the string representation of the material target.
 func (m materialTarget) String() string {
 	switch m {
