@@ -38,9 +38,9 @@ func (m Model) WithMaterial(target MaterialTarget, material Material) Model {
 
 // Encode returns the model encoded as a map[string]any.
 func (m Model) Encode() map[string]any {
-	materials := map[MaterialTarget]any{}
+	materials := map[string]any{}
 	for target, material := range m.materials {
-		materials[target] = material.Encode()
+		materials[target.String()] = material.Encode()
 	}
 	origin := vec64To32(m.origin)
 	size := vec64To32(m.size)
