@@ -31,7 +31,7 @@ type Block interface {
 // client.
 type CustomBlock interface {
 	Block
-	// Name is the name that will be displayed on the block item to all clients.
+	// Name is the name displayed to clients using the block.
 	Name() string
 	// Geometries is the geometries for the block that define the shape of the block.
 	Geometries() customblock.Geometries
