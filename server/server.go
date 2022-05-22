@@ -676,7 +676,7 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 
 		materials := make(map[customblock.MaterialTarget]customblock.Material)
 		for target := range b.Textures() {
-			materials[target] = customblock.NewMaterial(name+"_"+target.Name(), customblock.OpaqueRenderMethod())
+			materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), customblock.OpaqueRenderMethod())
 		}
 
 		geometries := b.Geometries().Geometry
