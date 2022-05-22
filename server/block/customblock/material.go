@@ -12,8 +12,8 @@ type Material struct {
 	ambientOcclusion bool
 }
 
-// NewMaterial returns a new Material with the provided information. It also enabled face dimming and ambient occlusion
-// by default based on the render method.
+// NewMaterial returns a new Material with the provided information. It enables face dimming by default and ambient
+// occlusion based on the render method given.
 func NewMaterial(texture string, method RenderMethod) Material {
 	return Material{
 		faceDimming:      true,
