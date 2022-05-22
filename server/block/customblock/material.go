@@ -1,12 +1,5 @@
 package customblock
 
-const (
-	MaterialTargetAll   = "*"
-	MaterialTargetUp    = "up"
-	MaterialTargetDown  = "down"
-	MaterialTargetSides = "sides"
-)
-
 // Material represents a single material used for rendering part of a custom block.
 type Material struct {
 	// texture is the name of the texture for the material.
@@ -21,12 +14,12 @@ type Material struct {
 
 // NewMaterial returns a new Material with the provided information. It also enabled face dimming and ambient occlusion
 // by default based on the render method.
-func NewMaterial(texture string, renderMethod RenderMethod) Material {
+func NewMaterial(texture string, method RenderMethod) Material {
 	return Material{
-		texture:          texture,
-		renderMethod:     renderMethod,
 		faceDimming:      true,
-		ambientOcclusion: renderMethod.AmbientOcclusion(),
+		texture:          texture,
+		renderMethod:     method,
+		ambientOcclusion: method.AmbientOcclusion(),
 	}
 }
 

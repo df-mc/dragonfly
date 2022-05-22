@@ -38,9 +38,9 @@ func (p PHP) Category() category.Category {
 }
 
 // Textures ...
-func (p PHP) Textures() map[string]image.Image {
-	return map[string]image.Image{
-		customblock.MaterialTargetAll: p.Texture(),
+func (p PHP) Textures() map[customblock.MaterialTarget]image.Image {
+	return map[customblock.MaterialTarget]image.Image{
+		customblock.MaterialTargetAll(): p.Texture(),
 	}
 }
 

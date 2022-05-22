@@ -3,6 +3,7 @@ package packbuilder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world"
 	"image"
 	"image/png"
@@ -30,10 +31,11 @@ func buildBlocks(dir string) (count int, lang []string) {
 
 		name := strings.Split(identifier, ":")[1]
 		for target, texture := range block.Textures() {
-			if target == "*" {
-				target = "all"
+			t := target.String()
+			if target == customblock.MaterialTargetAll() {
+				t = "all"
 			}
-			textureName := fmt.Sprintf("%s_%s", name, target)
+			textureName := fmt.Sprintf("%s_%s", name, t)
 			textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
 			buildBlockTexture(dir, textureName, texture)
 		}
