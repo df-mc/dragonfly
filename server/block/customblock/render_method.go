@@ -13,7 +13,7 @@ func OpaqueRenderMethod() RenderMethod {
 
 // AlphaTestRenderMethod returns the alpha_test rendering method for a material. It does not allow for translucent
 // textures, only textures that are fully opaque or fully transparent, used for blocks such as regular glass. It also
-// disabled ambient occlusion by default.
+// disables ambient occlusion by default.
 func AlphaTestRenderMethod() RenderMethod {
 	return RenderMethod{1}
 }
@@ -54,8 +54,5 @@ func (m renderMethod) String() string {
 
 // AmbientOcclusion returns if ambient occlusion should be enabled by default for a material using this rendering method.
 func (m renderMethod) AmbientOcclusion() bool {
-	if m == 1 || m == 2 {
-		return false
-	}
-	return true
+	return m != 1 && m != 2
 }
