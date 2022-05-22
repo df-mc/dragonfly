@@ -97,6 +97,12 @@ func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective 
 	}
 }
 
+// withXPDropRange sets the XPDropRange field of the BreakInfo struct to the passed value.
+func (b BreakInfo) withXPDropRange(min, max int) BreakInfo {
+	b.XPDrops = XPDropRange{min, max}
+	return b
+}
+
 // XPDropRange holds the min & max XP drop amounts of blocks.
 type XPDropRange [2]int
 

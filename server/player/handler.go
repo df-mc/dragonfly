@@ -101,6 +101,10 @@ type Handler interface {
 	// spawn critical hit particles around the target entity. These particles will not be displayed
 	// if no damage is dealt.
 	HandleAttackEntity(ctx *event.Context, e world.Entity, force, height *float64, critical *bool)
+	// HandleExperienceGain handles the player gaining experience. ctx.Cancel() may be called to cancel
+	// the gain.
+	// The amount is also provided which can be modified.
+	HandleExperienceGain(ctx *event.Context, amount *int)
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *event.Context)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
@@ -160,6 +164,7 @@ func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity)           
 func (NopHandler) HandleItemConsume(*event.Context, item.Stack)                               {}
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int)                           {}
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
+func (NopHandler) HandleExperienceGain(*event.Context, *int)                                  {}
 func (NopHandler) HandlePunchAir(*event.Context)                                              {}
 func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, damage.Source)         {}
 func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source)                        {}
