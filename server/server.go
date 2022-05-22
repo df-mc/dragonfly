@@ -692,24 +692,24 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 
 		components := model.Encode() // TODO: Move this into a location that's more consistent with item components etc.
 		if l, ok := b.(block.LightEmitter); ok {
-			components["minecraft:block_light_emission"] = map[string]any{"value": float64(l.LightEmissionLevel()) / 15}
+			components["minecraft:block_light_emission"] = map[string]any{"value": float32(l.LightEmissionLevel() / 15)}
 		}
 		if d, ok := b.(block.LightDiffuser); ok {
-			components["minecraft:block_light_filter"] = map[string]any{"value": d.LightDiffusionLevel()}
+			components["minecraft:block_light_filter"] = map[string]any{"value": int32(d.LightDiffusionLevel())}
 		}
 		if i, ok := b.(block.Breakable); ok {
 			info := i.BreakInfo()
-			components["minecraft:destroy_time"] = map[string]any{"value": info.Hardness}
+			components["minecraft:destroy_time"] = map[string]any{"value": float32(info.Hardness)}
 			// TODO: Explosion resistance.
 		}
 		if f, ok := b.(block.Frictional); ok {
-			components["minecraft:friction"] = map[string]any{"value": f.Friction()}
+			components["minecraft:friction"] = map[string]any{"value": float32(f.Friction())}
 		}
 		if f, ok := b.(block.Flammable); ok {
 			info := f.FlammabilityInfo()
 			components["minecraft:flammable"] = map[string]any{
-				"flame_odds": info.Encouragement,
-				"burn_odds":  info.Flammability,
+				"flame_odds": int32(info.Encouragement),
+				"burn_odds":  int32(info.Flammability),
 			}
 		}
 
