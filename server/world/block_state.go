@@ -73,8 +73,6 @@ func registerBlockState(s blockState, order bool) {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
 
-	fmt.Println(s, uint32(len(blocks)))
-
 	blocks = append(blocks, unknownBlock{s})
 	if order {
 		sort.Slice(blocks, func(i, j int) bool {
