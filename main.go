@@ -29,7 +29,7 @@ func main() {
 
 	world.RegisterBlock(block.PHP{})
 	world.RegisterItem(block.PHP{})
-	creative.RegisterItem(item.NewStack(block.PHP{}, 64))
+	creative.RegisterItem(item.NewStack(block.PHP{}, 1))
 
 	srv := server.New(&config, log)
 	srv.CloseOnProgramEnd()
