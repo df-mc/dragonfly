@@ -14,6 +14,14 @@ type PHP struct {
 	solid
 }
 
+func (p PHP) LightEmissionLevel() uint8 {
+	return 15
+}
+
+func (p PHP) Friction() float64 {
+	return 0.99
+}
+
 // Name ...
 func (p PHP) Name() string {
 	return "PHP Elephant"

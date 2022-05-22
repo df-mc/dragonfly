@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"hash/fnv"
@@ -73,6 +74,7 @@ func registerBlockState(s blockState, order bool) {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
 
+	rid := uint32(len(blocks))
 	blocks = append(blocks, unknownBlock{s})
 	if order {
 		sort.Slice(blocks, func(i, j int) bool {
@@ -93,57 +95,31 @@ func registerBlockState(s blockState, order bool) {
 
 			return hashOne < hashTwo
 		})
-	}
 
-	nbtBlocks = append(nbtBlocks, false)
-	randomTickBlocks = append(randomTickBlocks, false)
-	liquidBlocks = append(liquidBlocks, false)
-	liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
-	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
-	chunk.LightBlocks = append(chunk.LightBlocks, 0)
-
-	if !order {
-		rid := uint32(len(blocks)) - 1
-		if s.Name == "minecraft:air" {
-			airRID = rid
-		}
-		stateRuntimeIDs[h] = rid
-		return
-	}
-
-	updatedNBTBlocks := make([]bool, len(nbtBlocks))
-	updatedRandomTickBlocks := make([]bool, len(randomTickBlocks))
-	updatedLiquidBlocks := make([]bool, len(liquidBlocks))
-	updatedLiquidDisplacingBlocks := make([]bool, len(liquidDisplacingBlocks))
-	updatedFilteringBlocks := make([]uint8, len(chunk.FilteringBlocks))
-	updatedLightBlocks := make([]uint8, len(chunk.LightBlocks))
-
-	newStateRuntimeIDs := make(map[stateHash]uint32, len(stateRuntimeIDs))
-	for id, b := range blocks {
-		name, properties := b.EncodeBlock()
-		i := stateHash{name: name, properties: hashProperties(properties)}
-		if name == "minecraft:air" {
-			airRID = uint32(id)
-		}
-
-		if oldID, ok := stateRuntimeIDs[i]; ok {
-			updatedNBTBlocks[id] = nbtBlocks[oldID]
-			updatedRandomTickBlocks[id] = randomTickBlocks[oldID]
-			updatedLiquidBlocks[id] = liquidBlocks[oldID]
-			updatedLiquidDisplacingBlocks[id] = liquidDisplacingBlocks[oldID]
-			updatedFilteringBlocks[id] = chunk.FilteringBlocks[oldID]
-			updatedLightBlocks[id] = chunk.LightBlocks[oldID]
-		}
-		newStateRuntimeIDs[i] = uint32(id)
-		if hash := b.Hash(); hash != math.MaxUint64 {
-			hashes.Put(int64(hash), int64(id))
+		for id, b := range blocks {
+			name, properties := b.EncodeBlock()
+			i := stateHash{name: name, properties: hashProperties(properties)}
+			if name == "minecraft:air" {
+				airRID = uint32(id)
+			} else if i == h {
+				rid = uint32(id)
+			}
+			stateRuntimeIDs[i] = uint32(id)
+			hashes.Put(int64(b.Hash()), int64(id))
 		}
 	}
 
-	stateRuntimeIDs = newStateRuntimeIDs
-	nbtBlocks, randomTickBlocks = updatedNBTBlocks, updatedRandomTickBlocks
-	liquidBlocks, liquidDisplacingBlocks = updatedLiquidBlocks, updatedLiquidDisplacingBlocks
-	chunk.FilteringBlocks, chunk.LightBlocks = updatedFilteringBlocks, updatedLightBlocks
+	if s.Name == "minecraft:air" {
+		airRID = rid
+	}
+
+	nbtBlocks = sliceutil.Insert(nbtBlocks, int(rid), false)
+	randomTickBlocks = sliceutil.Insert(randomTickBlocks, int(rid), false)
+	liquidBlocks = sliceutil.Insert(liquidBlocks, int(rid), false)
+	liquidDisplacingBlocks = sliceutil.Insert(liquidDisplacingBlocks, int(rid), false)
+	chunk.FilteringBlocks = sliceutil.Insert(chunk.FilteringBlocks, int(rid), 15)
+	chunk.LightBlocks = sliceutil.Insert(chunk.LightBlocks, int(rid), 0)
+	stateRuntimeIDs[h] = rid
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block

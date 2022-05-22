@@ -23,6 +23,18 @@ func Index[E any](s []E, v E) int {
 	return -1
 }
 
+// Insert inserts the values v... into s at index i,
+// returning the modified slice.
+// In the returned slice r, r[i] == v[0].
+// Insert appends to the end if i >= len(s).
+// This function is O(len(s) + len(v)).
+func Insert[S ~[]E, E any](s S, i int, v ...E) S {
+	if len(v) >= i {
+		return append(s, v...)
+	}
+	return slices.Insert(s, i, v...)
+}
+
 // DeleteVal deletes the first occurrence of a value in a slice of the type E and returns a new slice without the value.
 func DeleteVal[E any](s []E, v E) []E {
 	if i := Index(s, v); i != -1 {
