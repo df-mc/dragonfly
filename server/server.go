@@ -676,23 +676,24 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 
 		materials := make(map[string]customblock.Material)
 		for target := range b.Textures() {
-			t := target.String()
-			if target == customblock.MaterialTargetAll() {
-				t = "all"
-			}
-			materials[target.String()] = customblock.NewMaterial(name+"_"+t, customblock.OpaqueRenderMethod())
+			materials[target.String()] = customblock.NewMaterial(name+"_"+target.Name(), customblock.OpaqueRenderMethod())
 		}
-		geometry := b.Geometries().Geometry[0]
+
+		geometries := b.Geometries().Geometry
+		if len(geometries) == 0 {
+			panic("block needs at least one geometry")
+		}
+
+		geometry := geometries[0]
 		model := customblock.NewModel(geometry.Description.Identifier, geometry.Origin(), geometry.Size())
 		for target, material := range materials {
 			model = model.WithMaterial(target, material)
 		}
-		components := model.Encode()
 
 		entries = append(entries, protocol.BlockEntry{
 			Name: identifier,
 			Properties: map[string]any{
-				"components": components,
+				"components": model.Encode(),
 			},
 		})
 	}
