@@ -73,24 +73,36 @@ func registerBlockState(s blockState, order bool) {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
 
+	fmt.Println(s, uint32(len(blocks)))
+
 	blocks = append(blocks, unknownBlock{s})
 	if order {
-		sort.SliceStable(blocks, func(i, j int) bool {
-			one, _ := blocks[i].EncodeBlock()
-			two, _ := blocks[j].EncodeBlock()
+		sort.Slice(blocks, func(i, j int) bool {
+			nameOne, _ := blocks[i].EncodeBlock()
+			nameTwo, _ := blocks[j].EncodeBlock()
+			if nameOne == nameTwo {
+				// TODO: Compare propertiesOne and propertiesTwo.
+				return false
+			}
 
 			f := fnv.New64()
-			_, _ = f.Write([]byte(one))
+			_, _ = f.Write([]byte(nameOne))
 			hashOne := f.Sum64()
 
 			f = fnv.New64()
-			_, _ = f.Write([]byte(two))
+			_, _ = f.Write([]byte(nameTwo))
 			hashTwo := f.Sum64()
 
 			return hashOne < hashTwo
 		})
 	}
 
+	rid := uint32(len(blocks)) - 1
+	if s.Name == "minecraft:air" {
+		airRID = rid
+	}
+
+	stateRuntimeIDs[h] = rid // This runtime ID will be changed during sorting, anyway. (if we need to sort, that is)
 	nbtBlocks = append(nbtBlocks, false)
 	randomTickBlocks = append(randomTickBlocks, false)
 	liquidBlocks = append(liquidBlocks, false)
@@ -99,11 +111,7 @@ func registerBlockState(s blockState, order bool) {
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 
 	if !order {
-		rid := uint32(len(blocks)) - 1
-		if s.Name == "minecraft:air" {
-			airRID = rid
-		}
-		stateRuntimeIDs[h] = rid
+		// Don't waste time sorting if we already have a sorted list.
 		return
 	}
 
