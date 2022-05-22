@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/category"
 	"image"
 	"image/png"
-	"math"
 	"os"
 )
 
@@ -69,7 +68,10 @@ func (p PHP) EncodeBlock() (string, map[string]any) {
 	return "dragonfly:php", nil
 }
 
+// phpHash ...
+var phpHash = NextHash()
+
 // Hash ...
 func (p PHP) Hash() uint64 {
-	return math.MaxUint64 // TODO
+	return phpHash
 }
