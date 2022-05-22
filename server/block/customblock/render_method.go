@@ -49,7 +49,7 @@ func (m renderMethod) String() string {
 	case 3:
 		return "double_sided"
 	}
-	panic("unknown renderMethod type")
+	panic("should never happen")
 }
 
 // AmbientOcclusion returns if ambient occlusion should be enabled by default for a material using this rendering method.
