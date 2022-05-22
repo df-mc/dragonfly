@@ -95,12 +95,6 @@ func registerBlockState(s blockState, order bool) {
 		})
 	}
 
-	rid := uint32(len(blocks)) - 1
-	if s.Name == "minecraft:air" {
-		airRID = rid
-	}
-
-	stateRuntimeIDs[h] = rid // This runtime ID will be changed during sorting, anyway. (if we need to sort, that is)
 	nbtBlocks = append(nbtBlocks, false)
 	randomTickBlocks = append(randomTickBlocks, false)
 	liquidBlocks = append(liquidBlocks, false)
@@ -109,7 +103,11 @@ func registerBlockState(s blockState, order bool) {
 	chunk.LightBlocks = append(chunk.LightBlocks, 0)
 
 	if !order {
-		// Don't waste time sorting if we already have a sorted list.
+		rid := uint32(len(blocks)) - 1
+		if s.Name == "minecraft:air" {
+			airRID = rid
+		}
+		stateRuntimeIDs[h] = rid
 		return
 	}
 
@@ -124,9 +122,6 @@ func registerBlockState(s blockState, order bool) {
 	for id, b := range blocks {
 		name, properties := b.EncodeBlock()
 		i := stateHash{name: name, properties: hashProperties(properties)}
-		if name == "minecraft:air" {
-			airRID = uint32(id)
-		}
 
 		if oldID, ok := stateRuntimeIDs[i]; ok {
 			updatedNBTBlocks[id] = nbtBlocks[oldID]
