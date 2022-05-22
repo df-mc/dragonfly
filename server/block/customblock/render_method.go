@@ -54,8 +54,5 @@ func (m renderMethod) String() string {
 
 // AmbientOcclusion returns if ambient occlusion should be enabled by default for a material using this rendering method.
 func (m renderMethod) AmbientOcclusion() bool {
-	if m == 1 || m == 2 {
-		return false
-	}
-	return true
+	return m != 1 && m != 2
 }
