@@ -5,8 +5,10 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
 
@@ -16,6 +18,27 @@ type Cactus struct {
 
 	// Age is the groth state of cactus. values from 0 to 15
 	Age int
+}
+
+// UseOnBlock handles makig sure the neighbouring blocks are air.
+func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	_, _, used = firstReplaceable(w, pos, face, c)
+	if !used {
+		return false
+	}
+	_, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus)
+	if !supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) && !ok {
+		return false
+	}
+	for _, face := range cube.HorizontalFaces() {
+		_, ok := w.Block(pos.Side(face)).(Air)
+		if !ok {
+			return false
+		}
+	}
+
+	place(w, pos, c, user, ctx)
+	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
