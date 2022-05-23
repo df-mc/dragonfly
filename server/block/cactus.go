@@ -14,13 +14,13 @@ import (
 
 // Cactus is a naturally occurring block found in deserts
 type Cactus struct {
-	solid
+	transparent
 
-	// Age is the groth state of cactus. values from 0 to 15
+	// Age is the growth state of cactus. Values range from 0 to 15.
 	Age int
 }
 
-// UseOnBlock handles makig sure the neighbouring blocks are air.
+// UseOnBlock handles making sure the neighbouring blocks are air.
 func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
@@ -31,8 +31,7 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 	for _, face := range cube.HorizontalFaces() {
-		_, ok := w.Block(pos.Side(face)).(Air)
-		if !ok {
+		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
 			return false
 		}
 	}
@@ -44,14 +43,14 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 // NeighbourUpdateTick ...
 func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	for _, face := range cube.HorizontalFaces() {
-		_, ok := w.Block(pos.Side(face)).(Air)
-		if !ok {
+		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
 			w.SetBlock(pos, nil, nil)
 			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 			return
 		}
 	}
-	if w.Block(pos.Side(cube.FaceDown)) != c && !supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) {
+	_, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus)
+	if !supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) && !ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 	}
