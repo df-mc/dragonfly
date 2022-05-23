@@ -54,7 +54,7 @@ func buildBlocks(dir string) (count int, lang []string) {
 
 // buildBlockTexture creates a PNG file for the block from the provided image and name and writes it to the pack.
 func buildBlockTexture(dir, name string, img image.Image) {
-	texture, err := os.Create(filepath.Join(dir, "textures/blocks", name+".png"))
+	texture, err := os.Create(filepath.Join(dir, fmt.Sprintf("textures/blocks/%s.png", name)))
 	if err != nil {
 		panic(err)
 	}
