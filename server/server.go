@@ -670,16 +670,19 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 
 // blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
 func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
-	for _, b := range world.CustomBlocks() {
-		identifier, _ := b.EncodeBlock()
-		name := strings.Split(identifier, ":")[1]
+	for identifier, group := range world.CustomBlocks() {
+		if len(group) == 0 {
+			panic(fmt.Sprintf("no custom blocks found for identifier %v", identifier))
+		}
 
+		base := group[0]
+		name := strings.Split(identifier, ":")[1]
 		materials := make(map[customblock.MaterialTarget]customblock.Material)
-		for target := range b.Textures() {
+		for target := range base.Textures() {
 			materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), customblock.OpaqueRenderMethod())
 		}
 
-		geometries := b.Geometries().Geometry
+		geometries := base.Geometries().Geometry
 		if len(geometries) == 0 {
 			panic("block needs at least one geometry")
 		}
@@ -691,28 +694,28 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 		}
 
 		components := model.Encode() // TODO: Move this into a location that's more consistent with item components etc.
-		if l, ok := b.(block.LightEmitter); ok {
+		if l, ok := base.(block.LightEmitter); ok {
 			components["minecraft:block_light_emission"] = map[string]any{"emission": float32(l.LightEmissionLevel() / 15)}
 		}
-		if d, ok := b.(block.LightDiffuser); ok {
+		if d, ok := base.(block.LightDiffuser); ok {
 			components["minecraft:block_light_filter"] = map[string]any{"lightLevel": int32(d.LightDiffusionLevel())}
 		}
-		if i, ok := b.(block.Breakable); ok {
+		if i, ok := base.(block.Breakable); ok {
 			info := i.BreakInfo()
 			components["minecraft:destroy_time"] = map[string]any{"value": float32(info.Hardness)}
 			// TODO: Explosion resistance.
 		}
-		if f, ok := b.(block.Frictional); ok {
+		if f, ok := base.(block.Frictional); ok {
 			components["minecraft:friction"] = map[string]any{"value": float32(f.Friction())}
 		}
-		if f, ok := b.(block.Flammable); ok {
+		if f, ok := base.(block.Flammable); ok {
 			info := f.FlammabilityInfo()
 			components["minecraft:flammable"] = map[string]any{
 				"flame_odds": int32(info.Encouragement),
 				"burn_odds":  int32(info.Flammability),
 			}
 		}
-		if c, ok := b.(world.CustomItem); ok {
+		if c, ok := base.(world.CustomItem); ok {
 			category := c.Category()
 			components["minecraft:creative_category"] = map[string]any{
 				"category": category.Name(),
@@ -720,11 +723,29 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 			}
 		}
 
+		traits := make(map[string][]any)
+		for _, b := range group {
+			_, properties := b.EncodeBlock()
+			for trait, value := range properties {
+				if _, ok := traits[trait]; !ok {
+					traits[trait] = []any{}
+				}
+				traits[trait] = append(traits[trait], value)
+			}
+		}
+
+		data := map[string]any{"components": components}
+		if len(traits) > 0 {
+			enums := make([]map[string]any, 0, len(traits))
+			for trait, values := range traits {
+				enums = append(enums, map[string]any{"enum": values, "name": trait})
+			}
+			data["properties"] = enums
+		}
+
 		entries = append(entries, protocol.BlockEntry{
-			Name: identifier,
-			Properties: map[string]any{
-				"components": components,
-			},
+			Name:       identifier,
+			Properties: data,
 		})
 	}
 	return

@@ -106,7 +106,11 @@ func RegisterBlock(b Block) {
 		liquidDisplacingBlocks[rid] = true
 	}
 	if c, ok := b.(CustomBlock); ok {
-		customBlocks = append(customBlocks, c)
+		if group, ok := customBlocks[name]; ok {
+			group = append(group, c)
+		} else {
+			customBlocks[name] = []CustomBlock{c}
+		}
 	}
 }
 
@@ -154,6 +158,11 @@ func BlockByName(name string, properties map[string]any) (Block, bool) {
 		return nil, false
 	}
 	return blocks[rid], true
+}
+
+// CustomBlocks returns a map of all custom blocks registered with their names as keys.
+func CustomBlocks() map[string][]CustomBlock {
+	return customBlocks
 }
 
 // air returns an air block.
@@ -244,8 +253,4 @@ func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
 // viewers in a world so that they can see these actions.
 type BlockAction interface {
 	BlockAction()
-}
-
-func CustomBlocks() []CustomBlock {
-	return customBlocks
 }

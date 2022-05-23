@@ -24,18 +24,21 @@ func buildBlocks(dir string) (count int, lang []string) {
 	}
 
 	textureData := make(map[string]any)
-	for _, block := range world.CustomBlocks() {
-		identifier, _ := block.EncodeBlock()
-		lang = append(lang, fmt.Sprintf("tile.%s.name=%s", identifier, block.Name()))
+	for identifier, group := range world.CustomBlocks() {
+		if len(group) == 0 {
+			panic(fmt.Sprintf("no custom blocks found for identifier %v", identifier))
+		}
 
+		base := group[0]
 		name := strings.Split(identifier, ":")[1]
-		for target, texture := range block.Textures() {
+		lang = append(lang, fmt.Sprintf("tile.%s.name=%s", identifier, base.Name()))
+		for target, texture := range base.Textures() {
 			textureName := fmt.Sprintf("%s_%s", name, target.Name())
 			textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
 			buildBlockTexture(dir, textureName, texture)
 		}
 
-		buildBlockGeometry(dir, name, block)
+		buildBlockGeometry(dir, name, base)
 		count++
 	}
 
