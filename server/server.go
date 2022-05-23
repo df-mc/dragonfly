@@ -692,7 +692,7 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 
 		components := model.Encode() // TODO: Move this into a location that's more consistent with item components etc.
 		if l, ok := b.(block.LightEmitter); ok {
-			components["minecraft:block_light_emission"] = map[string]any{"value": float32(l.LightEmissionLevel() / 15)}
+			components["minecraft:block_light_emission"] = map[string]any{"emission": float32(l.LightEmissionLevel() / 15)}
 		}
 		if d, ok := b.(block.LightDiffuser); ok {
 			components["minecraft:block_light_filter"] = map[string]any{"value": int32(d.LightDiffusionLevel())}
