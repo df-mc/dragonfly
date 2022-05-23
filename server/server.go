@@ -695,7 +695,7 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 			components["minecraft:block_light_emission"] = map[string]any{"emission": float32(l.LightEmissionLevel() / 15)}
 		}
 		if d, ok := b.(block.LightDiffuser); ok {
-			components["minecraft:block_light_filter"] = map[string]any{"value": int32(d.LightDiffusionLevel())}
+			components["minecraft:block_light_filter"] = map[string]any{"lightLevel": int32(d.LightDiffusionLevel())}
 		}
 		if i, ok := b.(block.Breakable); ok {
 			info := i.BreakInfo()
@@ -710,6 +710,13 @@ func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 			components["minecraft:flammable"] = map[string]any{
 				"flame_odds": int32(info.Encouragement),
 				"burn_odds":  int32(info.Flammability),
+			}
+		}
+		if c, ok := b.(world.CustomItem); ok {
+			category := c.Category()
+			components["minecraft:creative_category"] = map[string]any{
+				"category": category.Name(),
+				"group":    category.String(),
 			}
 		}
 
