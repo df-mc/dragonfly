@@ -22,7 +22,7 @@ type Cactus struct {
 
 // UseOnBlock handles makig sure the neighbouring blocks are air.
 func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	_, _, used = firstReplaceable(w, pos, face, c)
+	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
