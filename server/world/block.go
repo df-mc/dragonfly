@@ -106,11 +106,10 @@ func RegisterBlock(b Block) {
 		liquidDisplacingBlocks[rid] = true
 	}
 	if c, ok := b.(CustomBlock); ok {
-		if group, ok := customBlocks[name]; ok {
-			group = append(group, c)
-		} else {
-			customBlocks[name] = []CustomBlock{c}
+		if _, ok := customBlocks[name]; !ok {
+			customBlocks[name] = []CustomBlock{}
 		}
+		customBlocks[name] = append(customBlocks[name], c)
 	}
 }
 
