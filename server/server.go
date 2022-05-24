@@ -27,7 +27,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -685,15 +684,13 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 
 // blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
 func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
-	blockEntries := make([]protocol.BlockEntry, len(server.blockComponents))
 	for name, properties := range server.blockComponents {
-		pretty.Println(name, properties)
-		blockEntries = append(blockEntries, protocol.BlockEntry{
+		entries = append(entries, protocol.BlockEntry{
 			Name:       name,
 			Properties: properties,
 		})
 	}
-	return blockEntries
+	return
 }
 
 // ashyBiome represents a biome that has any form of ash.
