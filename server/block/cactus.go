@@ -58,15 +58,20 @@ func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // RandomTick ...
 func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	if c.Age < 15 && r.Float64() < 0.01 {
-		abovePos := pos.Add(cube.Pos{0, 1})
+	if c.Age < 15 {
+		c.Age++
+	} else if c.Age == 15 {
+		c.Age = 0
+		_, airAbove := w.Block(pos.Add(cube.Pos{0, 1})).(Air)
+		_, cactusBelow := w.Block(pos.Sub(cube.Pos{0, 1})).(Cactus)
+		_, sand1 := w.Block(pos.Sub(cube.Pos{0, 1})).(Sand)
+		_, sand2 := w.Block(pos.Sub(cube.Pos{0, 2})).(Sand)
 
-		switch w.Block(abovePos).(type) {
-		case Air:
-			c.Age++
-			w.SetBlock(abovePos, Cactus{Age: c.Age}, nil)
+		if airAbove && (sand1 || sand2 && cactusBelow) {
+			w.SetBlock(pos.Add(cube.Pos{0, 1}), Cactus{Age: 0}, nil)
 		}
 	}
+	w.SetBlock(pos, Cactus{Age: c.Age}, nil)
 }
 
 // EntityInside ...
