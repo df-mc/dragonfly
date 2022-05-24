@@ -27,6 +27,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -447,9 +448,11 @@ func (server *Server) makeItemComponents() {
 func (server *Server) makeBlockComponents() {
 	server.blockComponents = make(map[string]map[string]any)
 	for identifier, group := range world.CustomBlocks() {
-		if data, ok := blockinternal.Components(identifier, group); ok {
-			server.blockComponents[identifier] = data
+		data, err := blockinternal.Components(identifier, group)
+		if err != nil {
+			server.log.Fatalf("error creating block components: %v", err)
 		}
+		server.blockComponents[identifier] = data
 	}
 }
 
@@ -691,6 +694,7 @@ func (server *Server) itemComponentEntries() (entries []protocol.ItemComponentEn
 // blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
 func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
 	for name, properties := range server.blockComponents {
+		pretty.Println(properties)
 		entries = append(entries, protocol.BlockEntry{
 			Name:       name,
 			Properties: properties,

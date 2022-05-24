@@ -2,8 +2,13 @@ package block
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/category"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"image"
 	"image/png"
 	"os"
@@ -12,11 +17,19 @@ import (
 // PHP represents the PHP block.
 type PHP struct {
 	solid
+
+	// Facing ...
+	Facing cube.Direction
 }
 
 // Name ...
 func (p PHP) Name() string {
 	return "PHP Elephant"
+}
+
+// Rotation ...
+func (p PHP) Rotation() cube.Direction {
+	return p.Facing
 }
 
 // Geometries ...
@@ -44,6 +57,19 @@ func (p PHP) Textures() map[customblock.MaterialTarget]image.Image {
 	}
 }
 
+// UseOnBlock ...
+func (p PHP) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(w, pos, face, p)
+	if !used {
+		return
+	}
+
+	fmt.Println("a")
+	p.Facing = cube.South
+	place(w, pos, p, user, ctx)
+	return placed(ctx)
+}
+
 // Texture ...
 func (p PHP) Texture() image.Image {
 	texture, err := os.OpenFile("php.png", os.O_RDONLY, os.ModePerm)
@@ -65,7 +91,7 @@ func (p PHP) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (p PHP) EncodeBlock() (string, map[string]any) {
-	return "dragonfly:php", nil
+	return "dragonfly:php", map[string]any{"direction": int32(p.Facing.Face())}
 }
 
 // phpHash ...
@@ -73,5 +99,5 @@ var phpHash = NextHash()
 
 // Hash ...
 func (p PHP) Hash() uint64 {
-	return phpHash
+	return phpHash | uint64(p.Facing)<<8
 }

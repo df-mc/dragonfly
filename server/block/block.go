@@ -77,6 +77,18 @@ type Frictional interface {
 	Friction() float64
 }
 
+// DirectionRotatable represents a custom. block that may be rotated in a specific direction.
+type DirectionRotatable interface {
+	// Rotation returns the direction the block is currently facing.
+	Rotation() cube.Direction
+}
+
+// AxisRotatable represents a block that may be rotated in a specific axis.
+type AxisRotatable interface {
+	// Rotation returns the axis the block is currently facing.
+	Rotation() cube.Axis
+}
+
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 	userPos := user.Position()
 	pos := cube.PosFromVec3(userPos)

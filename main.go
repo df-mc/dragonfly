@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/player"
@@ -27,7 +28,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	world.RegisterBlock(block.PHP{})
+	for _, direction := range cube.Directions() {
+		world.RegisterBlock(block.PHP{Facing: direction})
+	}
 	world.RegisterItem(block.PHP{})
 	creative.RegisterItem(item.NewStack(block.PHP{}, 1))
 
