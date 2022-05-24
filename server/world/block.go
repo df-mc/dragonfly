@@ -33,8 +33,9 @@ type CustomBlock interface {
 	Block
 	// Name is the name displayed to clients using the block.
 	Name() string
-	// Geometries is the geometries for the block that define the shape of the block.
-	Geometries() customblock.Geometries
+	// Geometries is the geometries for the block that define the shape of the block. If false is returned, no custom
+	// geometry will be applied.
+	Geometries() (customblock.Geometries, bool)
 	// Textures is a map of images indexed by their target, used to map textures on to the block.
 	Textures() map[customblock.MaterialTarget]image.Image
 }

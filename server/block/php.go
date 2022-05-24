@@ -1,7 +1,6 @@
 package block
 
 import (
-	"encoding/json"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
@@ -23,7 +22,7 @@ type PHP struct {
 
 // Name ...
 func (p PHP) Name() string {
-	return "PHP Elephant"
+	return "PHP"
 }
 
 // Rotation ...
@@ -32,16 +31,8 @@ func (p PHP) Rotation() cube.Direction {
 }
 
 // Geometries ...
-func (p PHP) Geometries() (geometries customblock.Geometries) {
-	b, err := os.ReadFile("php.geo.json")
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(b, &geometries)
-	if err != nil {
-		panic(err)
-	}
-	return
+func (p PHP) Geometries() (customblock.Geometries, bool) {
+	return customblock.Geometries{}, false
 }
 
 // Category ...

@@ -29,8 +29,10 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 		builder.AddDirectionPermutation(property, cube.East, mgl32.Vec3{0, 90})
 		builder.AddDirectionPermutation(property, cube.West, mgl32.Vec3{0, 270})
 
-		builder.AddComponent("minecraft:on_player_placing", "dragonfly:set_direction")
 		builder.AddEvent("dragonfly:set_direction", "set_block_property", property, "(query.cardinal_facing_2d)")
+		builder.AddComponent("minecraft:on_player_placing", map[string]any{
+			"triggerType": "dragonfly:set_direction",
+		})
 	}
 	if _, ok := base.(block.AxisRotatable); ok {
 		property, ok := builder.Trait(int32(cube.Y), int32(cube.Z), int32(cube.X))
@@ -42,8 +44,10 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 		builder.AddAxisPermutation(property, cube.Z, mgl32.Vec3{90})
 		builder.AddAxisPermutation(property, cube.X, mgl32.Vec3{0, 0, 90})
 
-		builder.AddComponent("minecraft:on_player_placing", "dragonfly:set_axis")
 		builder.AddEvent("dragonfly:set_axis", "set_block_property", property, "math.floor(query.block_face/2)")
+		builder.AddComponent("minecraft:on_player_placing", map[string]any{
+			"triggerType": "dragonfly:set_axis",
+		})
 	}
 	if l, ok := base.(block.LightEmitter); ok {
 		builder.AddComponent("minecraft:block_light_emission", map[string]any{

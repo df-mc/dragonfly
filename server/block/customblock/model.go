@@ -10,22 +10,22 @@ import (
 // Model represents the model of a custom block. It can contain multiple materials applied to different parts of the
 // model, as well as a reference to its geometry.
 type Model struct {
-	materials    map[MaterialTarget]Material
-	geometryName string
-	origin       mgl64.Vec3
-	size         mgl64.Vec3
+	materials  map[MaterialTarget]Material
+	geometries []Geometry
+	origin     mgl64.Vec3
+	size       mgl64.Vec3
 }
 
 // NewModel returns a new Model with the provided information. If the size is larger than 16x16x16, this method will
 // panic since the client does not allow models larger than a single block.
-func NewModel(geometryName string, origin, size mgl64.Vec3) Model {
+func NewModel(geometries []Geometry, origin, size mgl64.Vec3) Model {
 	if size.X() > 16 || size.Y() > 16 || size.Z() > 16 {
 		panic(fmt.Errorf("model size cannot exceed 16x16x16, got %v", size))
 	}
 	return Model{
-		geometryName: geometryName,
-		origin:       origin,
-		size:         size,
+		geometries: geometries,
+		origin:     origin,
+		size:       size,
 	}
 }
 
@@ -44,13 +44,10 @@ func (m Model) Encode() map[string]any {
 	}
 	origin := vec64To32(m.origin)
 	size := vec64To32(m.size)
-	return map[string]any{
+	model := map[string]any{
 		"minecraft:material_instances": map[string]any{
 			"mappings":  map[string]any{},
 			"materials": materials,
-		},
-		"minecraft:geometry": map[string]any{
-			"value": m.geometryName,
 		},
 		"minecraft:pick_collision": map[string]any{
 			"enabled": uint8(1),
@@ -58,6 +55,14 @@ func (m Model) Encode() map[string]any {
 			"size":    size[:],
 		},
 	}
+	if len(m.geometries) > 0 {
+		model["minecraft:geometry"] = map[string]any{
+			"value": m.geometries[0].Description.Identifier,
+		}
+	} else {
+		model["minecraft:unit_cube"] = map[string]any{}
+	}
+	return model
 }
 
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.

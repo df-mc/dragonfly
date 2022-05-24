@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"strings"
@@ -152,13 +153,15 @@ func (builder *ComponentBuilder) applyDefaultComponents(x map[string]any) {
 		materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), customblock.OpaqueRenderMethod())
 	}
 
-	geometries := base.Geometries().Geometry
-	if len(geometries) == 0 {
-		panic("block needs at least one geometry")
+	origin := mgl64.Vec3{-8, 0, -8}
+	size := mgl64.Vec3{16, 16, 16}
+	geometries, ok := base.Geometries()
+	if ok {
+		geo := geometries.Geometry[0]
+		origin, size = geo.Origin(), geo.Size()
 	}
 
-	geometry := geometries[0]
-	model := customblock.NewModel(geometry.Description.Identifier, geometry.Origin(), geometry.Size())
+	model := customblock.NewModel(geometries.Geometry, origin, size)
 	for target, material := range materials {
 		model = model.WithMaterial(target, material)
 	}

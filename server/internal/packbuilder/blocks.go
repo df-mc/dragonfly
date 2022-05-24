@@ -69,12 +69,14 @@ func buildBlockTexture(dir, name string, img image.Image) {
 
 // buildBlockGeometry writes the JSON geometry file from the provided name and block and writes it to the pack.
 func buildBlockGeometry(dir, name string, block world.CustomBlock) {
-	data, err := json.Marshal(block.Geometries())
-	if err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(dir, "models/entity", fmt.Sprintf("%s.geo.json", name)), data, 0666); err != nil {
-		panic(err)
+	if geometries, ok := block.Geometries(); ok {
+		data, err := json.Marshal(geometries)
+		if err != nil {
+			panic(err)
+		}
+		if err := ioutil.WriteFile(filepath.Join(dir, "models/entity", fmt.Sprintf("%s.geo.json", name)), data, 0666); err != nil {
+			panic(err)
+		}
 	}
 }
 
