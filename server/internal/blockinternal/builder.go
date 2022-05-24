@@ -136,6 +136,7 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 		result["properties"] = properties
 	}
 	if len(permutations) > 0 {
+		result["molangVersion"] = int32(0)
 		result["permutations"] = permutations
 	}
 	if len(events) > 0 {
