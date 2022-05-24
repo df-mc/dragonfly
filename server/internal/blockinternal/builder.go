@@ -94,12 +94,6 @@ func (builder *ComponentBuilder) AddPermutation(condition string, components []m
 	})
 }
 
-// Values returns the values of a given trait.
-func (builder *ComponentBuilder) Values(trait string) ([]any, bool) {
-	values, ok := builder.traits[trait]
-	return values, ok
-}
-
 // Trait finds a trait which satisfies all given values.
 func (builder *ComponentBuilder) Trait(desired ...any) (string, bool) {
 	for trait, values := range builder.traits {
