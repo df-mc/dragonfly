@@ -2,7 +2,6 @@ package block
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
@@ -64,8 +63,7 @@ func (p PHP) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 		return
 	}
 
-	fmt.Println("a")
-	p.Facing = cube.South
+	p.Facing = user.Facing().Opposite()
 	place(w, pos, p, user, ctx)
 	return placed(ctx)
 }
