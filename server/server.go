@@ -63,7 +63,8 @@ type Server struct {
 	listeners []Listener
 	a         atomic.Value[Allower]
 
-	resources       []*resource.Pack
+	resources []*resource.Pack
+
 	itemComponents  map[string]map[string]any
 	blockComponents map[string]map[string]any
 
@@ -479,14 +480,7 @@ func (server *Server) finaliseConn(ctx context.Context, conn session.Conn, l Lis
 		return
 	}
 
-	itemComponentEntries := make([]protocol.ItemComponentEntry, len(server.itemComponents))
-	for name, entry := range server.itemComponents {
-		itemComponentEntries = append(itemComponentEntries, protocol.ItemComponentEntry{
-			Name: name,
-			Data: entry,
-		})
-	}
-	_ = conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries})
+	_ = conn.WritePacket(&packet.ItemComponent{Items: server.itemComponentEntries()})
 	if p, ok := server.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
@@ -677,6 +671,18 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 			Name:           name,
 			RuntimeID:      int16(rid),
 			ComponentBased: componentBased,
+		})
+	}
+	return
+}
+
+// itemComponentEntries returns a list of all custom item component entries of the server, ready to be sent in the
+// ItemComponent packet.
+func (server *Server) itemComponentEntries() (entries []protocol.ItemComponentEntry) {
+	for name, entry := range server.itemComponents {
+		entries = append(entries, protocol.ItemComponentEntry{
+			Name: name,
+			Data: entry,
 		})
 	}
 	return
