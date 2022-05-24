@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -27,6 +27,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -63,8 +64,9 @@ type Server struct {
 	listeners []Listener
 	a         atomic.Value[Allower]
 
-	resources      []*resource.Pack
-	itemComponents map[string]map[string]any
+	resources       []*resource.Pack
+	itemComponents  map[string]map[string]any
+	blockComponents map[string]map[string]any
 
 	joinMessage, quitMessage atomic.Value[string]
 
@@ -122,6 +124,9 @@ func New(c *Config, log internal.Logger) *Server {
 
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
+
+	s.makeItemComponents()
+	s.makeBlockComponents()
 
 	s.loadResources(c.Resources.Folder, log)
 	s.checkNetIsolation()
@@ -396,10 +401,9 @@ func (server *Server) running() bool {
 	return server.started.Load()
 }
 
-// startListening starts making the EncodeBlock listener listen, accepting new connections from players.
+// startListening starts making the listener listen, accepting new connections from players.
 func (server *Server) startListening() error {
 	texturePacksRequired := server.c.Resources.Required
-	server.makeItemComponents()
 	if server.c.Resources.AutoBuildPack {
 		if pack, ok := packbuilder.BuildResourcePack(); ok {
 			server.resources = append(server.resources, pack)
@@ -427,13 +431,24 @@ func (server *Server) startListening() error {
 }
 
 // makeItemComponents initializes the server's item components map using the registered custom items. It allows item
-// components to be created only once at startup
+// components to be created only once at startup.
 func (server *Server) makeItemComponents() {
 	server.itemComponents = make(map[string]map[string]any)
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
 		if data, ok := iteminternal.Components(it); ok {
 			server.itemComponents[name] = data
+		}
+	}
+}
+
+// makeBlockComponents initializes the server's block components map using the registered custom blocks. It allows block
+// components to be created only once at startup.
+func (server *Server) makeBlockComponents() {
+	server.blockComponents = make(map[string]map[string]any)
+	for identifier, group := range world.CustomBlocks() {
+		if data, ok := blockinternal.Components(identifier, group); ok {
+			server.blockComponents[identifier] = data
 		}
 	}
 }
@@ -670,85 +685,15 @@ func (server *Server) itemEntries() (entries []protocol.ItemEntry) {
 
 // blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
 func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
-	for identifier, group := range world.CustomBlocks() {
-		if len(group) == 0 {
-			panic(fmt.Sprintf("no custom blocks found for identifier %v", identifier))
-		}
-
-		base := group[0]
-		name := strings.Split(identifier, ":")[1]
-		materials := make(map[customblock.MaterialTarget]customblock.Material)
-		for target := range base.Textures() {
-			materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), customblock.OpaqueRenderMethod())
-		}
-
-		geometries := base.Geometries().Geometry
-		if len(geometries) == 0 {
-			panic("block needs at least one geometry")
-		}
-
-		geometry := geometries[0]
-		model := customblock.NewModel(geometry.Description.Identifier, geometry.Origin(), geometry.Size())
-		for target, material := range materials {
-			model = model.WithMaterial(target, material)
-		}
-
-		components := model.Encode() // TODO: Move this into a location that's more consistent with item components etc.
-		if l, ok := base.(block.LightEmitter); ok {
-			components["minecraft:block_light_emission"] = map[string]any{"emission": float32(l.LightEmissionLevel() / 15)}
-		}
-		if d, ok := base.(block.LightDiffuser); ok {
-			components["minecraft:block_light_filter"] = map[string]any{"lightLevel": int32(d.LightDiffusionLevel())}
-		}
-		if i, ok := base.(block.Breakable); ok {
-			info := i.BreakInfo()
-			components["minecraft:destroy_time"] = map[string]any{"value": float32(info.Hardness)}
-			// TODO: Explosion resistance.
-		}
-		if f, ok := base.(block.Frictional); ok {
-			components["minecraft:friction"] = map[string]any{"value": float32(f.Friction())}
-		}
-		if f, ok := base.(block.Flammable); ok {
-			info := f.FlammabilityInfo()
-			components["minecraft:flammable"] = map[string]any{
-				"flame_odds": int32(info.Encouragement),
-				"burn_odds":  int32(info.Flammability),
-			}
-		}
-		if c, ok := base.(world.CustomItem); ok {
-			category := c.Category()
-			components["minecraft:creative_category"] = map[string]any{
-				"category": category.Name(),
-				"group":    category.String(),
-			}
-		}
-
-		traits := make(map[string][]any)
-		for _, b := range group {
-			_, properties := b.EncodeBlock()
-			for trait, value := range properties {
-				if _, ok := traits[trait]; !ok {
-					traits[trait] = []any{}
-				}
-				traits[trait] = append(traits[trait], value)
-			}
-		}
-
-		data := map[string]any{"components": components}
-		if len(traits) > 0 {
-			enums := make([]map[string]any, 0, len(traits))
-			for trait, values := range traits {
-				enums = append(enums, map[string]any{"enum": values, "name": trait})
-			}
-			data["properties"] = enums
-		}
-
-		entries = append(entries, protocol.BlockEntry{
-			Name:       identifier,
-			Properties: data,
+	blockEntries := make([]protocol.BlockEntry, len(server.blockComponents))
+	for name, properties := range server.blockComponents {
+		pretty.Println(name, properties)
+		blockEntries = append(blockEntries, protocol.BlockEntry{
+			Name:       name,
+			Properties: properties,
 		})
 	}
-	return
+	return blockEntries
 }
 
 // ashyBiome represents a biome that has any form of ash.
