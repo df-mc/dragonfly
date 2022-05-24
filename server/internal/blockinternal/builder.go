@@ -119,7 +119,7 @@ func (builder *ComponentBuilder) Trait(desired ...any) (string, bool) {
 
 // Empty returns if there are no components or block properties in the builder.
 func (builder *ComponentBuilder) Empty() bool {
-	return len(builder.properties) == 0 && len(builder.components) == 0
+	return len(builder.properties) == 0 && len(builder.components) == 0 && len(builder.permutations) == 0 && len(builder.events) == 0
 }
 
 // Construct constructs the final block components map and returns it. It also applies the default properties required
