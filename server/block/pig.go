@@ -48,7 +48,7 @@ func (p Pig) Geometries() (customblock.Geometries, bool) {
 
 // Category ...
 func (p Pig) Category() category.Category {
-	return category.Construction()
+	return category.Nature()
 }
 
 // Textures ...
@@ -94,10 +94,10 @@ func (p Pig) EncodeBlock() (string, map[string]any) {
 	return "dragonfly:pig", map[string]any{"facing_direction": int32(p.Facing.Face())}
 }
 
-// phpHash ...
-var phpHash = NextHash()
+// pigHash ...
+var pigHash = NextHash()
 
 // Hash ...
 func (p Pig) Hash() uint64 {
-	return phpHash | uint64(p.Facing)<<8
+	return pigHash | uint64(p.Facing)<<8
 }
