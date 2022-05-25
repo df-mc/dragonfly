@@ -17,7 +17,6 @@ type ComponentBuilder struct {
 	permutations []map[string]any
 	properties   []map[string]any
 	components   map[string]any
-	events       map[string]any
 
 	identifier string
 	group      []world.CustomBlock
@@ -39,7 +38,6 @@ func NewComponentBuilder(identifier string, group []world.CustomBlock) *Componen
 	return &ComponentBuilder{
 		properties: make([]map[string]any, 0),
 		components: make(map[string]any),
-		events:     make(map[string]any),
 
 		identifier: identifier,
 		traits:     traits,
@@ -57,15 +55,6 @@ func (builder *ComponentBuilder) AddComponent(name string, value any) {
 	builder.components[name] = value
 }
 
-// AddEvent adds an event to the builder.
-func (builder *ComponentBuilder) AddEvent(name, event, property, query string) {
-	builder.events[name] = map[string]any{
-		event: map[string]any{
-			property: query,
-		},
-	}
-}
-
 // AddDirectionPermutation adds a direction rotation permutation to the builder.
 func (builder *ComponentBuilder) AddDirectionPermutation(property string, target cube.Direction, rotation mgl32.Vec3) {
 	builder.AddRotationPermutation(fmt.Sprintf("query.block_property('%s') == %v", property, int32(target.Face())), rotation)
@@ -78,17 +67,17 @@ func (builder *ComponentBuilder) AddAxisPermutation(property string, target cube
 
 // AddRotationPermutation adds a rotation permutation to the builder.
 func (builder *ComponentBuilder) AddRotationPermutation(condition string, rotation mgl32.Vec3) {
-	builder.AddPermutation(condition, []map[string]any{{
+	builder.AddPermutation(condition, map[string]any{
 		"minecraft:rotation": map[string]any{
 			"x": rotation.X(),
 			"y": rotation.Y(),
 			"z": rotation.Z(),
 		},
-	}})
+	})
 }
 
 // AddPermutation adds a permutation to the builder.
-func (builder *ComponentBuilder) AddPermutation(condition string, components []map[string]any) {
+func (builder *ComponentBuilder) AddPermutation(condition string, components map[string]any) {
 	builder.permutations = append(builder.permutations, map[string]any{
 		"condition":  condition,
 		"components": components,
@@ -118,7 +107,6 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 	permutations := slices.Clone(builder.permutations)
 	properties := slices.Clone(builder.properties)
 	components := maps.Clone(builder.components)
-	events := maps.Clone(builder.events)
 	builder.applyDefaultProperties(&properties)
 	builder.applyDefaultComponents(components)
 	result := map[string]any{"components": components}
@@ -128,9 +116,6 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 	if len(permutations) > 0 {
 		result["molangVersion"] = int32(0)
 		result["permutations"] = permutations
-	}
-	if len(events) > 0 {
-		result["events"] = events
 	}
 	return result
 }
@@ -149,8 +134,9 @@ func (builder *ComponentBuilder) applyDefaultComponents(x map[string]any) {
 	base := builder.group[0]
 	name := strings.Split(builder.identifier, ":")[1]
 	materials := make(map[customblock.MaterialTarget]customblock.Material)
-	for target := range base.Textures() {
-		materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), customblock.OpaqueRenderMethod())
+	textures, method := base.Textures()
+	for target := range textures {
+		materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), method)
 	}
 
 	origin := mgl64.Vec3{-8, 0, -8}

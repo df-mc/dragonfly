@@ -29,10 +29,10 @@ func main() {
 	}
 
 	for _, direction := range cube.Directions() {
-		world.RegisterBlock(block.PHP{Facing: direction})
+		world.RegisterBlock(block.Pig{Facing: direction})
 	}
-	world.RegisterItem(block.PHP{})
-	creative.RegisterItem(item.NewStack(block.PHP{}, 1))
+	world.RegisterItem(block.Pig{})
+	creative.RegisterItem(item.NewStack(block.Pig{}, 1))
 
 	srv := server.New(&config, log)
 	srv.CloseOnProgramEnd()
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	for srv.Accept(func(p *player.Player) {
-		p.Inventory().AddItem(item.NewStack(block.PHP{}, 32))
+		p.Inventory().AddItem(item.NewStack(block.Pig{}, 32))
 	}) {
 	}
 }

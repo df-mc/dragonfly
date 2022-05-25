@@ -32,7 +32,8 @@ func buildBlocks(dir string) (count int, lang []string) {
 		base := group[0]
 		name := strings.Split(identifier, ":")[1]
 		lang = append(lang, fmt.Sprintf("tile.%s.name=%s", identifier, base.Name()))
-		for target, texture := range base.Textures() {
+		textures, _ := base.Textures()
+		for target, texture := range textures {
 			textureName := fmt.Sprintf("%s_%s", name, target.Name())
 			textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
 			buildBlockTexture(dir, textureName, texture)
