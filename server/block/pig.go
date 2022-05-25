@@ -32,6 +32,11 @@ func (p Pig) Rotation() cube.Direction {
 	return p.Facing
 }
 
+// FlammabilityInfo ...
+func (p Pig) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(5, 20, true)
+}
+
 // Geometries ...
 func (p Pig) Geometries() (customblock.Geometries, bool) {
 	b, err := os.ReadFile("skull.geo.json")
