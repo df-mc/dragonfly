@@ -29,6 +29,7 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 		builder.AddDirectionPermutation(property, cube.South, mgl32.Vec3{})
 		builder.AddDirectionPermutation(property, cube.West, mgl32.Vec3{0, 270})
 
+		// We don't actually need to define any events to trigger this, but we do need to define a trigger type?
 		builder.AddComponent("minecraft:on_player_placing", map[string]any{
 			"triggerType": "set_direction",
 		})
@@ -43,6 +44,7 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 		builder.AddAxisPermutation(property, cube.Z, mgl32.Vec3{90})
 		builder.AddAxisPermutation(property, cube.X, mgl32.Vec3{0, 0, 90})
 
+		// Refer to comment above.
 		builder.AddComponent("minecraft:on_player_placing", map[string]any{
 			"triggerType": "set_axis",
 		})
