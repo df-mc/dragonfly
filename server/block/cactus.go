@@ -62,13 +62,15 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		c.Age++
 	} else if c.Age == 15 {
 		c.Age = 0
-		_, airAbove := w.Block(pos.Add(cube.Pos{0, 1})).(Air)
-		_, cactusBelow := w.Block(pos.Sub(cube.Pos{0, 1})).(Cactus)
-		_, sand1 := w.Block(pos.Sub(cube.Pos{0, 1})).(Sand)
-		_, sand2 := w.Block(pos.Sub(cube.Pos{0, 2})).(Sand)
-
-		if airAbove && (sand1 || sand2 && cactusBelow) {
-			w.SetBlock(pos.Add(cube.Pos{0, 1}), Cactus{Age: 0}, nil)
+		if supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) {
+			for y := 1; y < 3; y++ {
+				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
+					w.SetBlock(pos.Add(cube.Pos{0, y}), Cactus{Age: 0}, nil)
+					break
+				} else if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Cactus); !ok {
+					break
+				}
+			}
 		}
 	}
 	w.SetBlock(pos, Cactus{Age: c.Age}, nil)
