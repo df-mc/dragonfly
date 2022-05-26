@@ -102,6 +102,15 @@ func (p Pig) EncodeBlock() (string, map[string]any) {
 	return "dragonfly:pig", map[string]any{"direction": int32(p.Facing)}
 }
 
+// Rotation ...
+func (p Pig) Rotation() map[customblock.Condition]mgl64.Vec3 {
+	return map[customblock.Condition]mgl64.Vec3{
+		customblock.PropertyQueryCondition("direction", int(cube.North)): {0, 180, 0},
+		customblock.PropertyQueryCondition("direction", int(cube.West)):  {0, 270, 0},
+		customblock.PropertyQueryCondition("direction", int(cube.East)):  {0, 90, 0},
+	}
+}
+
 // EncodePermutations ...
 func (p Pig) EncodePermutations() (map[string]map[string]any, bool) {
 	return map[string]map[string]any{
