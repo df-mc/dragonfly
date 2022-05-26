@@ -102,13 +102,8 @@ func (p Pig) EncodeBlock() (string, map[string]any) {
 	return "dragonfly:pig", map[string]any{"direction": int32(p.Facing)}
 }
 
-// EncodePlaceTrigger ...
-func (p Pig) EncodePlaceTrigger() string {
-	return "update_direction"
-}
-
 // EncodePermutations ...
-func (p Pig) EncodePermutations() map[string]map[string]any {
+func (p Pig) EncodePermutations() (map[string]map[string]any, bool) {
 	return map[string]map[string]any{
 		"query.block_property('direction') == 0": {
 			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(180), "z": float32(0)},
@@ -119,5 +114,5 @@ func (p Pig) EncodePermutations() map[string]map[string]any {
 		"query.block_property('direction') == 3": {
 			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(90), "z": float32(0)},
 		},
-	}
+	}, true
 }

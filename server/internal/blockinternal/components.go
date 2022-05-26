@@ -16,14 +16,16 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 	base := group[0]
 	builder := NewComponentBuilder(identifier, group)
 	if p, ok := base.(block.Permutatable); ok {
-		for condition, permutation := range p.EncodePermutations() {
+		permutations, placement := p.EncodePermutations()
+		for condition, permutation := range permutations {
 			builder.AddPermutation(condition, permutation)
 		}
-	}
-	if p, ok := base.(block.Placeable); ok {
-		builder.AddComponent("minecraft:on_player_placing", map[string]any{
-			"triggerType": p.EncodePlaceTrigger(),
-		})
+		if placement {
+			// This trigger really does not matter at all, the component just needs to be set.
+			builder.AddComponent("minecraft:on_player_placing", map[string]any{
+				"triggerType": "placement_trigger",
+			})
+		}
 	}
 	if l, ok := base.(block.LightEmitter); ok {
 		builder.AddComponent("minecraft:block_light_emission", map[string]any{

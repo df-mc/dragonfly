@@ -77,17 +77,12 @@ type Frictional interface {
 	Friction() float64
 }
 
-// Placeable represents a block that may be placed by a player, which may also have a trigger.
-type Placeable interface {
-	// EncodePlaceTrigger returns the event name that is triggered when the block is placed by a player.
-	EncodePlaceTrigger() string
-}
-
 // Permutatable represents a block that may have a permutation.
 type Permutatable interface {
-	// EncodePermutations returns the permutations of the block. It returns a map, with a key representing the condition and
-	// the values representing the components of the permutation.
-	EncodePermutations() map[string]map[string]any
+	// EncodePermutations returns the permutations of the block. It returns a map, with a key representing the condition
+	// and the values representing the components of the permutation. If the second bool is true, then the permutations
+	// will be updated as soon as the block is placed client-side.
+	EncodePermutations() (map[string]map[string]any, bool)
 }
 
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
