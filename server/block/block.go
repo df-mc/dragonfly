@@ -4,8 +4,10 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/molang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -77,12 +79,10 @@ type Frictional interface {
 	Friction() float64
 }
 
-// Permutatable represents a block that may have a permutation.
-type Permutatable interface {
-	// EncodePermutations returns the permutations of the block. It returns a map, with a key representing the condition
-	// and the values representing the components of the permutation. If the second bool is true, then the permutations
-	// will be updated as soon as the block is placed client-side.
-	EncodePermutations() (map[string]map[string]any, bool)
+// Rotatable represents a custom block that may be rotated with the given Vec3.
+type Rotatable interface {
+	// Rotation returns a map between molang.Condition and mgl64.Vec3.
+	Rotation() map[molang.Condition]mgl64.Vec3
 }
 
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {

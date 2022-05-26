@@ -55,27 +55,17 @@ func (builder *ComponentBuilder) AddComponent(name string, value any) {
 
 // AddPermutation adds a permutation to the builder.
 func (builder *ComponentBuilder) AddPermutation(condition string, components map[string]any) {
+	if len(builder.permutations) == 0 {
+		// This trigger really does not matter at all, the component just needs to be set for custom block placements to
+		// function as expected client-side, when permutations are applied.
+		builder.AddComponent("minecraft:on_player_placing", map[string]any{
+			"triggerType": "placement_trigger",
+		})
+	}
 	builder.permutations = append(builder.permutations, map[string]any{
 		"condition":  condition,
 		"components": components,
 	})
-}
-
-// Trait finds a trait which satisfies all given values.
-func (builder *ComponentBuilder) Trait(desired ...any) (string, bool) {
-	for trait, values := range builder.traits {
-		if len(values) != len(values) {
-			// Not the same length, can't possibly be a match.
-			continue
-		}
-		for i := range desired {
-			if values[i] != desired[i] {
-				continue
-			}
-		}
-		return trait, true
-	}
-	return "", false
 }
 
 // Construct constructs the final block components map and returns it. It also applies the default properties required

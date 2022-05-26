@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/category"
+	"github.com/df-mc/dragonfly/server/molang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"image"
@@ -103,25 +104,10 @@ func (p Pig) EncodeBlock() (string, map[string]any) {
 }
 
 // Rotation ...
-func (p Pig) Rotation() map[customblock.Condition]mgl64.Vec3 {
-	return map[customblock.Condition]mgl64.Vec3{
-		customblock.PropertyQueryCondition("direction", int(cube.North)): {0, 180, 0},
-		customblock.PropertyQueryCondition("direction", int(cube.West)):  {0, 270, 0},
-		customblock.PropertyQueryCondition("direction", int(cube.East)):  {0, 90, 0},
+func (p Pig) Rotation() map[molang.Condition]mgl64.Vec3 {
+	return map[molang.Condition]mgl64.Vec3{
+		molang.PropertyQueryCondition("direction", int(cube.North)): {0, 180, 0},
+		molang.PropertyQueryCondition("direction", int(cube.West)):  {0, 270, 0},
+		molang.PropertyQueryCondition("direction", int(cube.East)):  {0, 90, 0},
 	}
-}
-
-// EncodePermutations ...
-func (p Pig) EncodePermutations() (map[string]map[string]any, bool) {
-	return map[string]map[string]any{
-		"query.block_property('direction') == 0": {
-			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(180), "z": float32(0)},
-		},
-		"query.block_property('direction') == 2": {
-			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(270), "z": float32(0)},
-		},
-		"query.block_property('direction') == 3": {
-			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(90), "z": float32(0)},
-		},
-	}, true
 }

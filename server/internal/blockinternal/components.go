@@ -15,16 +15,18 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 
 	base := group[0]
 	builder := NewComponentBuilder(identifier, group)
-	if p, ok := base.(block.Permutatable); ok {
-		permutations, placement := p.EncodePermutations()
-		for condition, permutation := range permutations {
-			builder.AddPermutation(condition, permutation)
-		}
-		if placement {
-			// This trigger really does not matter at all, the component just needs to be set.
-			builder.AddComponent("minecraft:on_player_placing", map[string]any{
-				"triggerType": "placement_trigger",
-			})
+	if r, ok := base.(block.Rotatable); ok {
+		for condition, value := range r.Rotation() {
+			encoded := map[string]any{
+				"x": float32(value.X()),
+				"y": float32(value.Y()),
+				"z": float32(value.Z()),
+			}
+			if !condition.Exists() {
+				builder.AddComponent("minecraft:rotation", encoded)
+				continue
+			}
+			builder.AddPermutation(condition.String(), map[string]any{"minecraft:rotation": encoded})
 		}
 	}
 	if l, ok := base.(block.LightEmitter); ok {
