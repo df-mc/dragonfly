@@ -77,16 +77,17 @@ type Frictional interface {
 	Friction() float64
 }
 
-// DirectionRotatable represents a custom. block that may be rotated in a specific direction.
-type DirectionRotatable interface {
-	// Rotation returns the direction the block is currently facing.
-	Rotation() cube.Direction
+// Placeable represents a block that may be placed by a player, which may also have a trigger.
+type Placeable interface {
+	// EncodePlaceTrigger returns the event name that is triggered when the block is placed by a player.
+	EncodePlaceTrigger() string
 }
 
-// AxisRotatable represents a block that may be rotated in a specific axis.
-type AxisRotatable interface {
-	// Rotation returns the axis the block is currently facing.
-	Rotation() cube.Axis
+// Permutatable represents a block that may have a permutation.
+type Permutatable interface {
+	// EncodePermutations returns the permutations of the block. It returns a map, with a key representing the condition and
+	// the values representing the components of the permutation.
+	EncodePermutations() map[string]map[string]any
 }
 
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {

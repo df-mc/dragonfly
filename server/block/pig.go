@@ -27,11 +27,6 @@ func (p Pig) Name() string {
 	return "Pig Head"
 }
 
-// Rotation ...
-func (p Pig) Rotation() cube.Direction {
-	return p.Facing
-}
-
 // FlammabilityInfo ...
 func (p Pig) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
@@ -89,6 +84,14 @@ func (p Pig) Texture() image.Image {
 	return img
 }
 
+// pigHash is the unique hash used for Pig blocks.
+var pigHash = NextHash()
+
+// Hash ...
+func (p Pig) Hash() uint64 {
+	return pigHash | uint64(p.Facing)<<8
+}
+
 // EncodeItem ...
 func (p Pig) EncodeItem() (name string, meta int16) {
 	return "dragonfly:pig", 0
@@ -96,13 +99,25 @@ func (p Pig) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (p Pig) EncodeBlock() (string, map[string]any) {
-	return "dragonfly:pig", map[string]any{"facing_direction": int32(p.Facing.Face())}
+	return "dragonfly:pig", map[string]any{"direction": int32(p.Facing)}
 }
 
-// pigHash ...
-var pigHash = NextHash()
+// EncodePlaceTrigger ...
+func (p Pig) EncodePlaceTrigger() string {
+	return "update_direction"
+}
 
-// Hash ...
-func (p Pig) Hash() uint64 {
-	return pigHash | uint64(p.Facing)<<8
+// EncodePermutations ...
+func (p Pig) EncodePermutations() map[string]map[string]any {
+	return map[string]map[string]any{
+		"query.block_property('direction') == 0": {
+			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(180), "z": float32(0)},
+		},
+		"query.block_property('direction') == 2": {
+			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(270), "z": float32(0)},
+		},
+		"query.block_property('direction') == 3": {
+			"minecraft:rotation": map[string]any{"x": float32(0), "y": float32(90), "z": float32(0)},
+		},
+	}
 }

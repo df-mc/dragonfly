@@ -2,10 +2,8 @@ package blockinternal
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -53,27 +51,6 @@ func (builder *ComponentBuilder) AddProperty(value map[string]any) {
 // AddComponent adds the provided component to the builder.
 func (builder *ComponentBuilder) AddComponent(name string, value any) {
 	builder.components[name] = value
-}
-
-// AddDirectionPermutation adds a direction rotation permutation to the builder.
-func (builder *ComponentBuilder) AddDirectionPermutation(property string, target cube.Direction, rotation mgl32.Vec3) {
-	builder.AddRotationPermutation(fmt.Sprintf("query.block_property('%s') == %v", property, int32(target.Face())), rotation)
-}
-
-// AddAxisPermutation adds a permutation that rotates the block around the axis.
-func (builder *ComponentBuilder) AddAxisPermutation(property string, target cube.Axis, rotation mgl32.Vec3) {
-	builder.AddRotationPermutation(fmt.Sprintf("query.block_property('%s') == %v", property, int32(target)), rotation)
-}
-
-// AddRotationPermutation adds a rotation permutation to the builder.
-func (builder *ComponentBuilder) AddRotationPermutation(condition string, rotation mgl32.Vec3) {
-	builder.AddPermutation(condition, map[string]any{
-		"minecraft:rotation": map[string]any{
-			"x": rotation.X(),
-			"y": rotation.Y(),
-			"z": rotation.Z(),
-		},
-	})
 }
 
 // AddPermutation adds a permutation to the builder.

@@ -1,11 +1,8 @@
 package blockinternal
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Components returns all the components of the given custom block group. If the group; has no components, a nil map
@@ -18,35 +15,14 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 
 	base := group[0]
 	builder := NewComponentBuilder(identifier, group)
-	if _, ok := base.(block.DirectionRotatable); ok {
-		property, ok := builder.Trait(int32(cube.FaceNorth), int32(cube.FaceSouth), int32(cube.FaceEast), int32(cube.FaceWest))
-		if !ok {
-			return nil, fmt.Errorf("implemented rotatable with no direction trait")
+	if p, ok := base.(block.Permutatable); ok {
+		for condition, permutation := range p.EncodePermutations() {
+			builder.AddPermutation(condition, permutation)
 		}
-
-		builder.AddDirectionPermutation(property, cube.North, mgl32.Vec3{0, 180})
-		builder.AddDirectionPermutation(property, cube.East, mgl32.Vec3{0, 90})
-		builder.AddDirectionPermutation(property, cube.South, mgl32.Vec3{})
-		builder.AddDirectionPermutation(property, cube.West, mgl32.Vec3{0, 270})
-
-		// We don't actually need to define any events to trigger this, but we do need to define a trigger type?
-		builder.AddComponent("minecraft:on_player_placing", map[string]any{
-			"triggerType": "set_direction",
-		})
 	}
-	if _, ok := base.(block.AxisRotatable); ok {
-		property, ok := builder.Trait(int32(cube.Y), int32(cube.Z), int32(cube.X))
-		if !ok {
-			return nil, fmt.Errorf("implemented rotatable with no axis trait")
-		}
-
-		builder.AddAxisPermutation(property, cube.Y, mgl32.Vec3{})
-		builder.AddAxisPermutation(property, cube.Z, mgl32.Vec3{90})
-		builder.AddAxisPermutation(property, cube.X, mgl32.Vec3{0, 0, 90})
-
-		// Refer to comment above.
+	if p, ok := base.(block.Placeable); ok {
 		builder.AddComponent("minecraft:on_player_placing", map[string]any{
-			"triggerType": "set_axis",
+			"triggerType": p.EncodePlaceTrigger(),
 		})
 	}
 	if l, ok := base.(block.LightEmitter); ok {
