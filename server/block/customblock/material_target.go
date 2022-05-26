@@ -26,6 +26,26 @@ func MaterialTargetSides() MaterialTarget {
 	return MaterialTarget{3}
 }
 
+// MaterialTargetNorth represents the material target for the north face of the block.
+func MaterialTargetNorth() MaterialTarget {
+	return MaterialTarget{4}
+}
+
+// MaterialTargetEast represents the material target for the east face of the block.
+func MaterialTargetEast() MaterialTarget {
+	return MaterialTarget{5}
+}
+
+// MaterialTargetSouth represents the material target for the south face of the block.
+func MaterialTargetSouth() MaterialTarget {
+	return MaterialTarget{6}
+}
+
+// MaterialTargetWest represents the material target for the west face of the block.
+func MaterialTargetWest() MaterialTarget {
+	return MaterialTarget{7}
+}
+
 type materialTarget uint8
 
 // Name returns the name of the material target.
@@ -39,6 +59,14 @@ func (m materialTarget) Name() string {
 		return "down"
 	case 3:
 		return "sides"
+	case 4:
+		return "north"
+	case 5:
+		return "east"
+	case 6:
+		return "south"
+	case 7:
+		return "west"
 	}
 	panic("should never happen")
 }
@@ -54,6 +82,14 @@ func (m materialTarget) String() string {
 		return "down"
 	case 3:
 		return "sides"
+	case 4:
+		return "north"
+	case 5:
+		return "east"
+	case 6:
+		return "south"
+	case 7:
+		return "west"
 	}
 	panic("should never happen")
 }
