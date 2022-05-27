@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/molang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -41,6 +40,13 @@ type LightEmitter interface {
 	LightEmissionLevel() uint8
 }
 
+// PermutableLightEmitter represents a permutable custom block that emits light when placed.
+type PermutableLightEmitter interface {
+	// LightEmissionLevel returns the light emission level of the block, a number from 0-15 where 15 is the
+	// brightest and 0 means it doesn't emit light at all.
+	LightEmissionLevel() (uint8, bool, map[string]uint8)
+}
+
 // LightDiffuser represents a block that diffuses light. This means that a specific amount of light levels
 // will be subtracted when light passes through the block.
 // Blocks that do not implement LightDiffuser will be assumed to be solid: Light will not be able to pass
@@ -50,6 +56,14 @@ type LightDiffuser interface {
 	// this block. Some blocks, such as leaves, have this behaviour. A diffusion level of 15 means that all
 	// light will be completely blocked when it passes through the block.
 	LightDiffusionLevel() uint8
+}
+
+// PermutableLightDiffuser represents a permutable custom block that diffuses light.
+type PermutableLightDiffuser interface {
+	// LightDiffusionLevel returns the amount of light levels that is subtracted when light passes through
+	// this block. Some blocks, such as leaves, have this behaviour. A diffusion level of 15 means that all
+	// light will be completely blocked when it passes through the block.
+	LightDiffusionLevel() (uint8, bool, map[string]uint8)
 }
 
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
@@ -72,17 +86,29 @@ type EntityInsider interface {
 	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
 }
 
-// Frictional represents a block that may have a custom friction value, friction is used for entity drag when the
+// Frictional represents a block that may have a custom friction value. Friction is used for entity drag when the
 // entity is on ground. If a block does not implement this interface, it should be assumed that its friction is 0.6.
 type Frictional interface {
 	// Friction returns the block's friction value.
 	Friction() float64
 }
 
-// Rotatable represents a custom block that may be rotated with the given Vec3.
+// PermutableFrictional represents a permutable custom block that may have a custom friction value.
+type PermutableFrictional interface {
+	// Friction returns the block's friction value.
+	Friction() (float64, bool, map[string]float64)
+}
+
+// Rotatable represents a custom block that may be rotated.
 type Rotatable interface {
-	// Rotation returns a map between molang.Condition and mgl64.Vec3.
-	Rotation() map[molang.Condition]mgl64.Vec3
+	// Rotation returns the rotation of the block as an mgl64.Vec3.
+	Rotation() mgl64.Vec3
+}
+
+// PermutableRotatable represents a permutable custom block that may be rotated.
+type PermutableRotatable interface {
+	// Rotation returns the rotation of the block as an mgl64.Vec3.
+	Rotation() (mgl64.Vec3, bool, map[string]mgl64.Vec3)
 }
 
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
@@ -203,6 +229,12 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 type Flammable interface {
 	// FlammabilityInfo returns information about a block's behavior involving fire.
 	FlammabilityInfo() FlammabilityInfo
+}
+
+// PermutableFlammable is an interface for permutable custom blocks that can catch on fire.
+type PermutableFlammable interface {
+	// FlammabilityInfo returns information about a block's behavior involving fire.
+	FlammabilityInfo() (FlammabilityInfo, bool, map[string]FlammabilityInfo)
 }
 
 // FlammabilityInfo contains values related to block behaviors involving fire.

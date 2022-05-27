@@ -15,6 +15,12 @@ type Breakable interface {
 	BreakInfo() BreakInfo
 }
 
+// PermutableBreakable represents a permutable custom block that may be broken by a player in survival mode.
+type PermutableBreakable interface {
+	// BreakInfo returns information of the block related to the breaking of it.
+	BreakInfo() (BreakInfo, bool, map[string]BreakInfo)
+}
+
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the
 // item passed.
 func BreakDuration(b world.Block, i item.Stack) time.Duration {

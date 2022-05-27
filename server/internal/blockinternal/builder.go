@@ -12,7 +12,7 @@ import (
 
 // ComponentBuilder represents a builder that can be used to construct a block components map to be sent to a client.
 type ComponentBuilder struct {
-	permutations []map[string]any
+	permutations map[string]map[string]any
 	properties   []map[string]any
 	components   map[string]any
 
@@ -34,8 +34,8 @@ func NewComponentBuilder(identifier string, group []world.CustomBlock) *Componen
 		}
 	}
 	return &ComponentBuilder{
-		properties: make([]map[string]any, 0),
-		components: make(map[string]any),
+		permutations: make(map[string]map[string]any),
+		components:   make(map[string]any),
 
 		identifier: identifier,
 		traits:     traits,
@@ -62,16 +62,18 @@ func (builder *ComponentBuilder) AddPermutation(condition string, components map
 			"triggerType": "placement_trigger",
 		})
 	}
-	builder.permutations = append(builder.permutations, map[string]any{
-		"condition":  condition,
-		"components": components,
-	})
+	if builder.permutations[condition] == nil {
+		builder.permutations[condition] = map[string]any{}
+	}
+	for key, value := range components {
+		builder.permutations[condition][key] = value
+	}
 }
 
 // Construct constructs the final block components map and returns it. It also applies the default properties required
 // for the block to work without modifying the original maps in the builder.
 func (builder *ComponentBuilder) Construct() map[string]any {
-	permutations := slices.Clone(builder.permutations)
+	permutations := maps.Clone(builder.permutations)
 	properties := slices.Clone(builder.properties)
 	components := maps.Clone(builder.components)
 	builder.applyDefaultProperties(&properties)
@@ -82,7 +84,13 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 	}
 	if len(permutations) > 0 {
 		result["molangVersion"] = int32(0)
-		result["permutations"] = permutations
+		result["permutations"] = []map[string]any{}
+		for condition, values := range permutations {
+			result["permutations"] = append(result["permutations"].([]map[string]any), map[string]any{
+				"condition":  condition,
+				"components": values,
+			})
+		}
 	}
 	return result
 }

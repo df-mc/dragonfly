@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/category"
-	"github.com/df-mc/dragonfly/server/molang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"image"
@@ -104,10 +103,10 @@ func (p Pig) EncodeBlock() (string, map[string]any) {
 }
 
 // Rotation ...
-func (p Pig) Rotation() map[molang.Condition]mgl64.Vec3 {
-	return map[molang.Condition]mgl64.Vec3{
-		molang.PropertyQueryCondition("direction", int(cube.North)): {0, 180, 0},
-		molang.PropertyQueryCondition("direction", int(cube.West)):  {0, 270, 0},
-		molang.PropertyQueryCondition("direction", int(cube.East)):  {0, 90, 0},
+func (p Pig) Rotation() (mgl64.Vec3, bool, map[string]mgl64.Vec3) {
+	return mgl64.Vec3{}, false, map[string]mgl64.Vec3{
+		"query.block_property('direction') == 0": {0, 180, 0},
+		"query.block_property('direction') == 2": {0, 270, 0},
+		"query.block_property('direction') == 3": {0, 90, 0},
 	}
 }
