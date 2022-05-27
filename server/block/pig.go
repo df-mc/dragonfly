@@ -27,28 +27,19 @@ func (p Pig) Name() string {
 	return "Pig Head"
 }
 
+// Category ...
+func (p Pig) Category() category.Category {
+	return category.Nature()
+}
+
 // FlammabilityInfo ...
 func (p Pig) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
 }
 
-// Geometries ...
-func (p Pig) Geometries() (customblock.Geometries, bool) {
-	b, err := os.ReadFile("skull.geo.json")
-	if err != nil {
-		panic(err)
-	}
-	var geometry customblock.Geometries
-	err = json.Unmarshal(b, &geometry)
-	if err != nil {
-		panic(err)
-	}
-	return geometry, true
-}
-
-// Category ...
-func (p Pig) Category() category.Category {
-	return category.Nature()
+// BreakInfo ...
+func (p Pig) BreakInfo() BreakInfo {
+	return newBreakInfo(1, alwaysHarvestable, nothingEffective, oneOf(Pig{}))
 }
 
 // Textures ...
@@ -70,6 +61,20 @@ func (p Pig) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 	return placed(ctx)
 }
 
+// Geometries ...
+func (p Pig) Geometries() (customblock.Geometries, bool) {
+	b, err := os.ReadFile("skull.geo.json")
+	if err != nil {
+		panic(err)
+	}
+	var geometry customblock.Geometries
+	err = json.Unmarshal(b, &geometry)
+	if err != nil {
+		panic(err)
+	}
+	return geometry, true
+}
+
 // Texture ...
 func (p Pig) Texture() image.Image {
 	texture, err := os.OpenFile("pig.png", os.O_RDONLY, os.ModePerm)
@@ -84,12 +89,13 @@ func (p Pig) Texture() image.Image {
 	return img
 }
 
-// pigHash is the unique hash used for Pig blocks.
-var pigHash = NextHash()
-
-// Hash ...
-func (p Pig) Hash() uint64 {
-	return pigHash | uint64(p.Facing)<<8
+// Rotation ...
+func (p Pig) Rotation() (mgl64.Vec3, bool, map[string]mgl64.Vec3) {
+	return mgl64.Vec3{}, false, map[string]mgl64.Vec3{
+		"query.block_property('direction') == 0": {0, 180, 0},
+		"query.block_property('direction') == 2": {0, 270, 0},
+		"query.block_property('direction') == 3": {0, 90, 0},
+	}
 }
 
 // EncodeItem ...
@@ -102,11 +108,10 @@ func (p Pig) EncodeBlock() (string, map[string]any) {
 	return "dragonfly:pig", map[string]any{"direction": int32(p.Facing)}
 }
 
-// Rotation ...
-func (p Pig) Rotation() (mgl64.Vec3, bool, map[string]mgl64.Vec3) {
-	return mgl64.Vec3{}, false, map[string]mgl64.Vec3{
-		"query.block_property('direction') == 0": {0, 180, 0},
-		"query.block_property('direction') == 2": {0, 270, 0},
-		"query.block_property('direction') == 3": {0, 90, 0},
-	}
+// pigHash ...
+var pigHash = NextHash()
+
+// Hash ...
+func (p Pig) Hash() uint64 {
+	return pigHash | uint64(p.Facing)<<8
 }
