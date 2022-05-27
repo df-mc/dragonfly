@@ -12,7 +12,7 @@ import (
 	"math/rand"
 )
 
-// Cactus is a naturally occurring block found in deserts
+// Cactus is a plant block that generates naturally in dry areas and causes damage.
 type Cactus struct {
 	transparent
 
