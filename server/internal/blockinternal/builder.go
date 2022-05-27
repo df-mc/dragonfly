@@ -129,4 +129,20 @@ func (builder *ComponentBuilder) applyDefaultComponents(x map[string]any) {
 	for key, value := range model.Encode() {
 		x[key] = value
 	}
+
+	box := map[string]any{
+		"enabled": byte(0x1),
+		"origin": []float32{
+			float32(origin.X()),
+			float32(origin.Y()),
+			float32(origin.Z()),
+		},
+		"size": []float32{
+			float32(size.X()),
+			float32(size.Y()),
+			float32(size.Z()),
+		},
+	}
+	x["minecraft:aim_collision"] = box
+	x["minecraft:block_collision"] = box
 }
