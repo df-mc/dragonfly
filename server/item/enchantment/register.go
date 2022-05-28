@@ -40,5 +40,4 @@ func init() {
 	// TODO: (34) Piercing.
 	// TODO: (35) Quick Charge.
 	// TODO: (36) Soul Speed.
-	// TODO: (37) Swift Sneak.
 }
