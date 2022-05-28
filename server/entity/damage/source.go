@@ -14,6 +14,9 @@ type (
 		AffectedByResistance() bool
 	}
 
+	// SourceCactus is used for damage caused by a Cactus.
+	SourceCactus struct{}
+
 	// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
 	// player.
 	SourceEntityAttack struct {
@@ -62,6 +65,8 @@ type (
 	}
 )
 
+func (SourceCactus) AffectedByResistance() bool              { return true }
+func (SourceCactus) ReducedByArmour() bool                   { return true }
 func (SourceFall) ReducedByArmour() bool                     { return false }
 func (SourceFall) AffectedByResistance() bool                { return true }
 func (SourceLightning) ReducedByArmour() bool                { return true }

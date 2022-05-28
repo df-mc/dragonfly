@@ -17,8 +17,11 @@ type Sand struct {
 
 // SoilFor ...
 func (s Sand) SoilFor(block world.Block) bool {
-	_, ok := block.(DeadBush)
-	return ok
+	switch block.(type) {
+	case Cactus, DeadBush:
+		return true
+	}
+	return false
 }
 
 // NeighbourUpdateTick ...

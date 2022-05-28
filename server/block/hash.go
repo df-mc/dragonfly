@@ -17,6 +17,7 @@ const (
 	hashBoneBlock
 	hashBookshelf
 	hashBricks
+	hashCactus
 	hashCake
 	hashCalcite
 	hashCarpet
@@ -195,6 +196,10 @@ func (Bricks) Hash() uint64 {
 	return hashBricks
 }
 
+func (c Cactus) Hash() uint64 {
+	return hashCactus | uint64(c.Age)<<8
+}
+
 func (c Cake) Hash() uint64 {
 	return hashCake | uint64(c.Bites)<<8
 }
@@ -267,7 +272,7 @@ func (CraftingTable) Hash() uint64 {
 	return hashCraftingTable
 }
 
-func (d DeadBush) Hash() uint64 {
+func (DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 
