@@ -118,6 +118,7 @@ func typeNameOf(i any) string {
 	return "value"
 }
 
+// unwrap returns the underlying reflect.Value of a reflect.Value, assuming it is of the Optional[T] type.
 func unwrap(v reflect.Value) reflect.Value {
 	if _, ok := v.Interface().(optionalT); ok {
 		return v.Field(0)
@@ -125,6 +126,7 @@ func unwrap(v reflect.Value) reflect.Value {
 	return v
 }
 
+// optional checks if the reflect.Value passed implements the optionalT interface.
 func optional(v reflect.Value) bool {
 	_, ok := v.Interface().(optionalT)
 	return ok
