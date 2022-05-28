@@ -10,7 +10,7 @@ type Source interface {
 	// SendCommandOutput sends a command output to the source. The way the output is applied, depends on what
 	// kind of source it is.
 	// SendCommandOutput is called by a Command automatically after being run.
-	SendCommandOutput(output *Output)
+	SendCommandOutput(o *Output)
 	// World returns the world that the Source is in.
 	World() *world.World
 }

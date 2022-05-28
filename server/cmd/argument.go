@@ -72,7 +72,8 @@ type parser struct {
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
 // parsing was not successful, an error is returned.
-func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source Source) (err error) {
+func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source Source) (error, bool) {
+	var err error
 	i := v.Interface()
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
@@ -113,9 +114,9 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
 		// not matter. Make sure to clear the value though.
 		v.Set(reflect.Zero(v.Type()))
-		return nil
+		return nil, false
 	}
-	return err
+	return err, err == nil
 }
 
 // ErrInsufficientArgs is returned by argument parsing functions if it does not have sufficient arguments
@@ -302,7 +303,3 @@ func (p parser) parsePlayer(players []Target, name string) (Target, error) {
 	}
 	return nil, fmt.Errorf("player with name '%v' not found", name)
 }
-
-// Varargs is an argument type that may be used to capture all arguments that follow. This is useful for,
-// for example, messages and names.
-type Varargs string
