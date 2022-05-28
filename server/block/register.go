@@ -94,6 +94,9 @@ func init() {
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(Bookshelf{})
+	world.RegisterBlock(Mud{})
+	world.RegisterBlock(PackedMud{})
+	world.RegisterBlock(MudBricks{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -267,6 +270,9 @@ func init() {
 	world.RegisterItem(SandstoneStairs{Red: true})
 	world.RegisterItem(SandstoneStairs{Smooth: true})
 	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
+	world.RegisterItem(Mud{})
+	world.RegisterItem(PackedMud{})
+	world.RegisterItem(MudBricks{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
