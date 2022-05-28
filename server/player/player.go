@@ -1280,9 +1280,6 @@ func (p *Player) UsingItem() bool {
 	return p.usingItem.Load()
 }
 
-// disabledOpts holds a *world.SetOpts with all options disabled, this is typically used for resending blocks to players.
-var disabledOpts = &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true}
-
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
@@ -1526,8 +1523,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 func (p *Player) FinishBreaking() {
 	pos := p.breakingPos.Load()
 	if !p.breaking.Load() {
-		w := p.World()
-		w.SetBlock(pos, w.Block(pos), disabledOpts)
+		p.resendBlock(pos, p.World())
 		return
 	}
 	p.AbortBreaking()
