@@ -441,7 +441,7 @@ func (l Lava) Hash() uint64 {
 }
 
 func (l Leaves) Hash() uint64 {
-	return hashLeaves | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Persistent))<<11 | uint64(boolByte(l.ShouldUpdate))<<12
+	return hashLeaves | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Persistent))<<12 | uint64(boolByte(l.ShouldUpdate))<<13
 }
 
 func (l Light) Hash() uint64 {
@@ -453,7 +453,7 @@ func (l LitPumpkin) Hash() uint64 {
 }
 
 func (l Log) Hash() uint64 {
-	return hashLog | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Stripped))<<11 | uint64(l.Axis)<<12
+	return hashLog | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Stripped))<<12 | uint64(l.Axis)<<13
 }
 
 func (Melon) Hash() uint64 {
@@ -601,7 +601,7 @@ func (Shroomlight) Hash() uint64 {
 }
 
 func (s Sign) Hash() uint64 {
-	return hashSign | uint64(s.Wood.Uint8())<<8 | uint64(s.Attach.Uint8())<<11
+	return hashSign | uint64(s.Wood.Uint8())<<8 | uint64(s.Attach.Uint8())<<12
 }
 
 func (Snow) Hash() uint64 {
@@ -669,11 +669,11 @@ func (s WheatSeeds) Hash() uint64 {
 }
 
 func (w Wood) Hash() uint64 {
-	return hashWood | uint64(w.Wood.Uint8())<<8 | uint64(boolByte(w.Stripped))<<11 | uint64(w.Axis)<<12
+	return hashWood | uint64(w.Wood.Uint8())<<8 | uint64(boolByte(w.Stripped))<<12 | uint64(w.Axis)<<13
 }
 
 func (d WoodDoor) Hash() uint64 {
-	return hashWoodDoor | uint64(d.Wood.Uint8())<<8 | uint64(d.Facing)<<11 | uint64(boolByte(d.Open))<<13 | uint64(boolByte(d.Top))<<14 | uint64(boolByte(d.Right))<<15
+	return hashWoodDoor | uint64(d.Wood.Uint8())<<8 | uint64(d.Facing)<<12 | uint64(boolByte(d.Open))<<14 | uint64(boolByte(d.Top))<<15 | uint64(boolByte(d.Right))<<16
 }
 
 func (w WoodFence) Hash() uint64 {
@@ -681,19 +681,19 @@ func (w WoodFence) Hash() uint64 {
 }
 
 func (f WoodFenceGate) Hash() uint64 {
-	return hashWoodFenceGate | uint64(f.Wood.Uint8())<<8 | uint64(f.Facing)<<11 | uint64(boolByte(f.Open))<<13 | uint64(boolByte(f.Lowered))<<14
+	return hashWoodFenceGate | uint64(f.Wood.Uint8())<<8 | uint64(f.Facing)<<12 | uint64(boolByte(f.Open))<<14 | uint64(boolByte(f.Lowered))<<15
 }
 
 func (s WoodSlab) Hash() uint64 {
-	return hashWoodSlab | uint64(s.Wood.Uint8())<<8 | uint64(boolByte(s.Top))<<11 | uint64(boolByte(s.Double))<<12
+	return hashWoodSlab | uint64(s.Wood.Uint8())<<8 | uint64(boolByte(s.Top))<<12 | uint64(boolByte(s.Double))<<13
 }
 
 func (s WoodStairs) Hash() uint64 {
-	return hashWoodStairs | uint64(s.Wood.Uint8())<<8 | uint64(boolByte(s.UpsideDown))<<11 | uint64(s.Facing)<<12
+	return hashWoodStairs | uint64(s.Wood.Uint8())<<8 | uint64(boolByte(s.UpsideDown))<<12 | uint64(s.Facing)<<13
 }
 
 func (t WoodTrapdoor) Hash() uint64 {
-	return hashWoodTrapdoor | uint64(t.Wood.Uint8())<<8 | uint64(t.Facing)<<11 | uint64(boolByte(t.Open))<<13 | uint64(boolByte(t.Top))<<14
+	return hashWoodTrapdoor | uint64(t.Wood.Uint8())<<8 | uint64(t.Facing)<<12 | uint64(boolByte(t.Open))<<14 | uint64(boolByte(t.Top))<<15
 }
 
 func (w Wool) Hash() uint64 {
