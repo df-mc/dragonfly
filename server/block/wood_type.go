@@ -83,7 +83,7 @@ func (w wood) Name() string {
 	case 7:
 		return "Warped Wood"
 	case 8:
-		return "Mangrove"
+		return "Mangrove Wood"
 	}
 	panic("unknown wood type")
 }
