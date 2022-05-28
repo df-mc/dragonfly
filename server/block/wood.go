@@ -65,8 +65,12 @@ func (w Wood) EncodeItem() (name string, meta int16) {
 			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", 0
 		}
 		return "minecraft:" + w.Wood.String() + "_hyphae", 0
+	default:
+		if w.Stripped {
+			return "minecraft:stripped_" + w.Wood.String() + "_wood", 0
+		}
+		return "minecraft:" + w.Wood.String() + "_wood", 0
 	}
-	panic("invalid wood type")
 }
 
 // EncodeBlock ...
@@ -80,7 +84,7 @@ func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 		}
 		return "minecraft:" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
 	default:
-		return "minecraft:" + w.Wood.String() + "_wood", nil
+		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String(), "stripped_bit": boolByte(w.Stripped)}
 	}
 }
 
