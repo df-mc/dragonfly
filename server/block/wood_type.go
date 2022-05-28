@@ -46,9 +46,14 @@ func WarpedWood() WoodType {
 	return WoodType{7}
 }
 
+// Mangrove returns mangrove wood material.
+func Mangrove() WoodType {
+	return WoodType{8}
+}
+
 // WoodTypes returns a list of all wood types
 func WoodTypes() []WoodType {
-	return []WoodType{OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood(), CrimsonWood(), WarpedWood()}
+	return []WoodType{OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood(), CrimsonWood(), WarpedWood(), Mangrove()}
 }
 
 type wood uint8
@@ -77,6 +82,8 @@ func (w wood) Name() string {
 		return "Crimson Wood"
 	case 7:
 		return "Warped Wood"
+	case 8:
+		return "Mangrove"
 	}
 	panic("unknown wood type")
 }
@@ -100,6 +107,8 @@ func (w wood) String() string {
 		return "crimson"
 	case 7:
 		return "warped"
+	case 8:
+		return "mangrove"
 	}
 	panic("unknown wood type")
 }

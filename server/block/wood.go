@@ -79,8 +79,9 @@ func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
 		}
 		return "minecraft:" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
+	default:
+		return "minecraft:" + w.Wood.String() + "_wood", nil
 	}
-	panic("invalid wood type")
 }
 
 // allWood returns a list of all possible wood states.
