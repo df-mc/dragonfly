@@ -84,7 +84,10 @@ func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 		}
 		return "minecraft:" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
 	default:
-		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String(), "stripped_bit": boolByte(w.Stripped)}
+		if w.Stripped {
+			return "minecraft:stripped_" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
+		}
+		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String(), "stripped_bit": uint8(0)}
 	}
 }
 
