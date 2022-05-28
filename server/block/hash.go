@@ -84,6 +84,8 @@ const (
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
+	hashMud
+	hashMudBricks
 	hashNetherBrickFence
 	hashNetherBricks
 	hashNetherGoldOre
@@ -95,6 +97,7 @@ const (
 	hashNoteBlock
 	hashObsidian
 	hashPackedIce
+	hashPackedMud
 	hashPlanks
 	hashPodzol
 	hashPotato
@@ -107,6 +110,7 @@ const (
 	hashRawCopperBlock
 	hashRawGoldBlock
 	hashRawIronBlock
+	hashReinforcedDeepslate
 	hashSand
 	hashSandstone
 	hashSandstoneStairs
@@ -464,6 +468,14 @@ func (MossCarpet) Hash() uint64 {
 	return hashMossCarpet
 }
 
+func (Mud) Hash() uint64 {
+	return hashMud
+}
+
+func (MudBricks) Hash() uint64 {
+	return hashMudBricks
+}
+
 func (NetherBrickFence) Hash() uint64 {
 	return hashNetherBrickFence
 }
@@ -506,6 +518,10 @@ func (o Obsidian) Hash() uint64 {
 
 func (PackedIce) Hash() uint64 {
 	return hashPackedIce
+}
+
+func (PackedMud) Hash() uint64 {
+	return hashPackedMud
 }
 
 func (p Planks) Hash() uint64 {
@@ -554,6 +570,10 @@ func (RawGoldBlock) Hash() uint64 {
 
 func (RawIronBlock) Hash() uint64 {
 	return hashRawIronBlock
+}
+
+func (ReinforcedDeepslate) Hash() uint64 {
+	return hashReinforcedDeepslate
 }
 
 func (s Sand) Hash() uint64 {
