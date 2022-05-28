@@ -26,6 +26,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
+	m.setFlag(dataKeyFlags, dataFlagHasCollision)
 	m.setFlag(dataKeyFlags, dataFlagCanClimb)
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
 		m.setFlag(dataKeyFlags, dataFlagSneaking)
@@ -144,6 +145,7 @@ const (
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
+	dataFlagHasCollision      = 47
 	dataFlagAffectedByGravity = 48
 	dataFlagEnchanted         = 51
 	dataFlagSwimming          = 56
