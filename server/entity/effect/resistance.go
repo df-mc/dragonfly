@@ -13,7 +13,7 @@ type Resistance struct {
 
 // Multiplier returns a damage multiplier for the damage source passed.
 func (Resistance) Multiplier(e damage.Source, lvl int) float64 {
-	if !e.AffectedByResistance() {
+	if !e.ReducedByResistance() {
 		return 1
 	}
 	if v := 1 - 0.2*float64(lvl); v >= 0 {
