@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -51,7 +50,7 @@ import (
 // trying to join the server.
 type Server struct {
 	c       Config
-	log     internal.Logger
+	log     Logger
 	name    atomic.Value[string]
 	started atomic.Bool
 
@@ -79,6 +78,15 @@ type Server struct {
 	wg sync.WaitGroup
 }
 
+// Logger is used to report information and errors from a dragonfly Server. Any Logger implementation may be used by
+// passing it to server.New.
+type Logger interface {
+	world.Logger
+	session.Logger
+	Infof(format string, v ...any)
+	Fatalf(format string, v ...any)
+}
+
 func init() {
 	// Seeding the random for things like lightning that need to use RNG.
 	rand.Seed(time.Now().UnixNano())
@@ -90,7 +98,7 @@ func init() {
 // used by calling logrus.New().
 // Note that no two servers should be active at the same time. Doing so anyway will result in unexpected
 // behaviour.
-func New(c *Config, log internal.Logger) *Server {
+func New(c *Config, log Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
@@ -692,7 +700,7 @@ func (server *Server) biomes() map[string]any {
 }
 
 // loadResources loads resource packs from path of specifed directory.
-func (server *Server) loadResources(p string, log internal.Logger) {
+func (server *Server) loadResources(p string, log Logger) {
 	_ = os.Mkdir(p, 0777)
 	resources, err := os.ReadDir(p)
 	if err != nil {
