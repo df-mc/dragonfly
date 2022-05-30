@@ -18,7 +18,7 @@ type QuartzStairs struct {
 	// Facing is the direction that the full side of the stairs is facing.
 	Facing cube.Direction
 
-	// Smooth indicates if its a smooth stairs or not.
+	// Smooth indicates if it's smooth or not.
 	Smooth bool
 }
 

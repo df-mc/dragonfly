@@ -274,7 +274,7 @@ func (CraftingTable) Hash() uint64 {
 	return hashCraftingTable
 }
 
-func (d DeadBush) Hash() uint64 {
+func (DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 
@@ -627,7 +627,7 @@ func (s Stone) Hash() uint64 {
 }
 
 func (s StoneBrickStairs) Hash() uint64 {
-	return hashStoneBrickStairs | uint64(boolByte(s.UpsideDown))<<8 | uint64(s.Facing)<<9
+	return hashStoneBrickStairs | uint64(boolByte(s.Mossy))<<8 | uint64(boolByte(s.UpsideDown))<<9 | uint64(s.Facing)<<10
 }
 
 func (c StoneBricks) Hash() uint64 {

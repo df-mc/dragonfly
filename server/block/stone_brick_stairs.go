@@ -8,10 +8,12 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// StoneBrickStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using end bricks.
+// StoneBrickStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using stone bricks.
 type StoneBrickStairs struct {
 	transparent
 
+	// Mossy specifies if the stairs are mossy.
+	Mossy bool
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part
 	// of the block.
 	UpsideDown bool
@@ -47,11 +49,17 @@ func (s StoneBrickStairs) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (s StoneBrickStairs) EncodeItem() (name string, meta int16) {
+	if s.Mossy {
+		return "minecraft:mossy_stone_brick_stairs", 0
+	}
 	return "minecraft:stone_brick_stairs", 0
 }
 
 // EncodeBlock ...
 func (s StoneBrickStairs) EncodeBlock() (name string, properties map[string]any) {
+	if s.Mossy {
+		return "minecraft:mossy_stone_brick_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+	}
 	return "minecraft:stone_brick_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 }
 
@@ -69,8 +77,10 @@ func (s StoneBrickStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 // allStoneBrickStairs ...
 func allStoneBrickStairs() (stairs []world.Block) {
 	for direction := cube.Direction(0); direction <= 3; direction++ {
-		stairs = append(stairs, StoneBrickStairs{Facing: direction, UpsideDown: true})
-		stairs = append(stairs, StoneBrickStairs{Facing: direction, UpsideDown: false})
+		stairs = append(stairs, StoneBrickStairs{Facing: direction, UpsideDown: true, Mossy: true})
+		stairs = append(stairs, StoneBrickStairs{Facing: direction, UpsideDown: false, Mossy: true})
+		stairs = append(stairs, StoneBrickStairs{Facing: direction, UpsideDown: true, Mossy: false})
+		stairs = append(stairs, StoneBrickStairs{Facing: direction, UpsideDown: false, Mossy: false})
 	}
 	return
 }

@@ -268,6 +268,7 @@ func init() {
 	world.RegisterItem(Snow{})
 	world.RegisterItem(Bookshelf{})
 	world.RegisterItem(Chain{})
+	world.RegisterItem(StoneBrickStairs{Mossy: true})
 	world.RegisterItem(StoneBrickStairs{})
 	world.RegisterItem(SandstoneStairs{})
 	world.RegisterItem(SandstoneStairs{Red: true})
