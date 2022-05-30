@@ -56,8 +56,8 @@ func New(dir string, compression opt.Compression) (*Provider, error) {
 			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
 		p.d.WorldStartCount++
-		p.loadSettings()
 	}
+	p.loadSettings()
 	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: compression,
 		BlockSize:   16 * opt.KiB,
