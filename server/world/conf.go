@@ -82,6 +82,7 @@ func (conf Config) New() *World {
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}
 
+	w.initChunkCache()
 	go w.tickLoop()
 	go w.chunkCacheJanitor()
 	return w
