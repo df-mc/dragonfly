@@ -807,7 +807,7 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) (mgl64.Vec3, bool) {
 	if w == nil {
 		return mgl64.Vec3{}, false
 	}
-	position, err := w.prov.Load().LoadPlayerSpawnPosition(uuid)
+	position, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
 	if err != nil {
 		return mgl64.Vec3{}, false
 	}
@@ -820,7 +820,7 @@ func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos mgl64.Vec3) error {
 	if w == nil {
 		return nil
 	}
-	return w.prov.Load().SavePlayerSpawnPosition(uuid, pos)
+	return w.conf.Provider.SavePlayerSpawnPosition(uuid, pos)
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game
