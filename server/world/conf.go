@@ -73,6 +73,7 @@ func (conf Config) New() *World {
 		scheduledUpdates: make(map[cube.Pos]int64),
 		entities:         make(map[Entity]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
+		chunks:           make(map[ChunkPos]*chunkData),
 		closing:          make(chan struct{}),
 		handler:          *atomic.NewValue[Handler](NopHandler{}),
 		r:                rand.New(conf.RandSource),
@@ -82,7 +83,6 @@ func (conf Config) New() *World {
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}
 
-	w.initChunkCache()
 	go w.tickLoop()
 	go w.chunkCacheJanitor()
 	return w

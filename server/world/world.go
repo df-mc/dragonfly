@@ -1300,13 +1300,6 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	}
 }
 
-// initChunkCache initialises the chunk cache of the world to its default values.
-func (w *World) initChunkCache() {
-	w.chunkMu.Lock()
-	w.chunks = make(map[ChunkPos]*chunkData)
-	w.chunkMu.Unlock()
-}
-
 // chunkCacheJanitor runs until the world is running, cleaning chunks that are no longer in use from the cache.
 func (w *World) chunkCacheJanitor() {
 	t := time.NewTicker(time.Minute * 5)
