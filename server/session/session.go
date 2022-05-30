@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
@@ -28,7 +28,7 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            internal.Logger
+	log            Logger
 	once, connOnce sync.Once
 
 	c        Controllable
@@ -65,9 +65,12 @@ type Session struct {
 
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
+	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
+
+	recipes map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
@@ -109,6 +112,12 @@ type Conn interface {
 	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
+// Logger is used to write debug messages to. These messages are sent whenever handling of a packet of a client fails.
+type Logger interface {
+	Errorf(format string, a ...any)
+	Debugf(format string, a ...any)
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -128,7 +137,7 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -164,6 +173,7 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
+	s.recipes = make(map[uint32]recipe.Recipe)
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = c
 
@@ -196,6 +206,7 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	s.sendRecipes()
 }
 
 // Start makes the session start handling incoming packets from the client.
@@ -295,6 +306,22 @@ func (s *Session) handlePackets() {
 			return
 		}
 	}
+}
+
+// craftingSize gets the crafting size based on the opened container ID.
+func (s *Session) craftingSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// craftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) craftingOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
 }
 
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
@@ -403,12 +430,13 @@ func (s *Session) registerHandlers() {
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
 		packet.IDContainerClose:        &ContainerCloseHandler{},
+		packet.IDCraftingEvent:         nil,
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemFrameDropItem:     nil,
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},

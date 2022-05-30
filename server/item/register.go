@@ -41,6 +41,7 @@ func init() {
 	world.RegisterItem(ClayBall{})
 	world.RegisterItem(NetherQuartz{})
 	world.RegisterItem(Flint{})
+	world.RegisterItem(EnchantedBook{})
 
 	world.RegisterItem(Stick{})
 	world.RegisterItem(MagmaCream{})

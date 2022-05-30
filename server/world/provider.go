@@ -59,8 +59,8 @@ func (NopProvider) LoadBlockNBT(ChunkPos) ([]map[string]any, error) { return nil
 func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any) error   { return nil }
 func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk) error          { return nil }
 func (NopProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error)  { return nil, false, nil }
-func (NopProvider) Close() error                                    { return nil }
 func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (mgl64.Vec3, error) {
 	return mgl64.Vec3{}, nil
 }
 func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, mgl64.Vec3) error { return nil }
+func (NopProvider) Close() error                                    { return nil }

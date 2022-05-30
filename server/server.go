@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -51,7 +50,7 @@ import (
 // trying to join the server.
 type Server struct {
 	c       Config
-	log     internal.Logger
+	log     Logger
 	name    atomic.Value[string]
 	started atomic.Bool
 
@@ -79,6 +78,15 @@ type Server struct {
 	wg sync.WaitGroup
 }
 
+// Logger is used to report information and errors from a dragonfly Server. Any Logger implementation may be used by
+// passing it to server.New.
+type Logger interface {
+	world.Logger
+	session.Logger
+	Infof(format string, v ...any)
+	Fatalf(format string, v ...any)
+}
+
 func init() {
 	// Seeding the random for things like lightning that need to use RNG.
 	rand.Seed(time.Now().UnixNano())
@@ -90,7 +98,7 @@ func init() {
 // used by calling logrus.New().
 // Note that no two servers should be active at the same time. Doing so anyway will result in unexpected
 // behaviour.
-func New(c *Config, log internal.Logger) *Server {
+func New(c *Config, log Logger) *Server {
 	if log == nil {
 		log = logrus.New()
 	}
@@ -107,15 +115,15 @@ func New(c *Config, log internal.Logger) *Server {
 		name:           *atomic.NewValue(c.Server.Name),
 		playerProvider: *atomic.NewValue[player.Provider](player.NopProvider{}),
 		a:              *atomic.NewValue[Allower](allower{}),
+		world:          &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
-	set := new(world.Settings)
-	s.world = s.createWorld(world.Overworld, biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, set)
-	s.nether = s.createWorld(world.Nether, biome.NetherWastes{}, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, set)
-	s.end = s.createWorld(world.End, biome.End{}, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, set)
-
-	s.world.SetPortalDestinations(s.nether, s.end)
-	s.nether.SetPortalDestinations(s.world, s.end)
-	s.end.SetPortalDestinations(s.nether, s.world)
+	p, err := mcdb.New(c.World.Folder, opt.FlateCompression)
+	if err != nil {
+		log.Fatalf("error loading world: %v", err)
+	}
+	*s.world = *s.createWorld(world.Overworld, s.nether, s.end, biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, p)
+	*s.nether = *s.createWorld(world.Nether, s.world, s.end, biome.NetherWastes{}, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, p)
+	*s.end = *s.createWorld(world.End, s.nether, s.world, biome.End{}, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, p)
 
 	s.registerTargetFunc()
 
@@ -306,16 +314,15 @@ func (server *Server) Close() error {
 	}
 
 	server.log.Debugf("Closing worlds...")
-	if err := server.world.Close(); err != nil {
-		server.log.Errorf("Error closing overworld: %v", err)
-	}
 	if err := server.nether.Close(); err != nil {
 		server.log.Errorf("Error closing nether %v", err)
 	}
 	if err := server.end.Close(); err != nil {
 		server.log.Errorf("Error closing end: %v", err)
 	}
-
+	if err := server.world.Close(); err != nil {
+		server.log.Errorf("Error closing overworld: %v", err)
+	}
 	server.log.Debugf("Closing listeners...")
 	server.listenMu.Lock()
 
@@ -559,7 +566,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.
 // The layers passed are used to create a generator.Flat that is used as generator for the world.
-func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers []world.Block, s *world.Settings) *world.World {
+func (server *Server) createWorld(d world.Dimension, nether, end *world.World, biome world.Biome, layers []world.Block, p world.Provider) *world.World {
 	log := server.log
 	if v, ok := log.(interface {
 		WithField(key string, field any) *logrus.Entry
@@ -570,15 +577,14 @@ func (server *Server) createWorld(d world.Dimension, biome world.Biome, layers [
 	}
 	log.Debugf("Loading world...")
 
-	w := world.New(log, d, s)
-
-	p, err := mcdb.New(server.c.World.Folder, d, opt.FlateCompression)
-	if err != nil {
-		log.Fatalf("error loading world: %v", err)
-	}
-	w.Provider(p)
-	w.Generator(generator.NewFlat(biome, layers))
-
+	w := world.Config{
+		Log:               log,
+		Dim:               d,
+		NetherDestination: nether,
+		EndDestination:    end,
+		Provider:          p,
+		Generator:         generator.NewFlat(biome, layers),
+	}.New()
 	log.Infof(`Loaded world "%v".`, w.Name())
 	return w
 }
@@ -694,7 +700,7 @@ func (server *Server) biomes() map[string]any {
 }
 
 // loadResources loads resource packs from path of specifed directory.
-func (server *Server) loadResources(p string, log internal.Logger) {
+func (server *Server) loadResources(p string, log Logger) {
 	_ = os.Mkdir(p, 0777)
 	resources, err := os.ReadDir(p)
 	if err != nil {

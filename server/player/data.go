@@ -31,16 +31,8 @@ type Data struct {
 	// ExhaustionLevel determines how fast the hunger level depletes and is controlled by the kinds
 	// of food the player has eaten. SaturationLevel determines how fast the saturation level depletes.
 	ExhaustionLevel, SaturationLevel float64
-	// XPLevel is the current xp level the player has, XPTotal is the total amount of xp the
-	// player has collected during their lifetime, which is used to display score upon player death.
-	// These are currently not implemented in DF.
-	XPLevel, XPTotal int
-	// XPPercentage is the player's current progress towards the next level.
-	// This is currently not implemented in DF.
-	XPPercentage float64
-	// XPSeed is the random seed used to determine the next enchantment in enchantment tables.
-	// This is currently not implemented in DF.
-	XPSeed int
+	// Experience is the current experience the player has.
+	Experience int
 	// GameMode is the last gamemode the user had, like creative or survival.
 	GameMode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.
