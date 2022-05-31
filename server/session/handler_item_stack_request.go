@@ -597,6 +597,8 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		return nil
 	}
 
+	result = result.WithEnchantments(resultEnchantments...)
+
 	level := s.c.ExperienceLevel()
 	if level < cost {
 		return nil
