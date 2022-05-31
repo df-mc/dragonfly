@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"time"
 )
 
@@ -23,8 +24,18 @@ func (e FireAspect) MaxLevel() int {
 	return 2
 }
 
-// CompatibleWith ...
-func (e FireAspect) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(item.Tool)
+// Rarity ...
+func (e FireAspect) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityRare
+}
+
+// CompatibleWithOther ...
+func (e FireAspect) CompatibleWithOther(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (e FireAspect) CompatibleWithItem(i world.Item) bool {
+	t, ok := i.(item.Tool)
 	return ok && t.ToolType() == item.TypeSword
 }

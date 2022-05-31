@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // AquaAffinity is a helmet enchantment that increases underwater mining speed.
@@ -17,8 +18,18 @@ func (e AquaAffinity) MaxLevel() int {
 	return 1
 }
 
-// CompatibleWith ...
-func (e AquaAffinity) CompatibleWith(s item.Stack) bool {
-	h, ok := s.Item().(item.HelmetType)
+// Rarity ...
+func (e AquaAffinity) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityRare
+}
+
+// CompatibleWithOther ...
+func (e AquaAffinity) CompatibleWithOther(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (e AquaAffinity) CompatibleWithItem(i world.Item) bool {
+	h, ok := i.(item.HelmetType)
 	return ok && h.Helmet()
 }

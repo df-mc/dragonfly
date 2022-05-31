@@ -34,8 +34,18 @@ func (e Unbreaking) MaxLevel() int {
 	return 3
 }
 
-// CompatibleWith ...
-func (e Unbreaking) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Durable)
+// Rarity ...
+func (e Unbreaking) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
+
+// CompatibleWithOther ...
+func (e Unbreaking) CompatibleWithOther(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (e Unbreaking) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Durable)
 	return ok
 }

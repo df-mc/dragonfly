@@ -3,6 +3,7 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // BlastProtection is an armour enchantment that decreases explosion damage.
@@ -18,15 +19,23 @@ func (e BlastProtection) MaxLevel() int {
 	return 4
 }
 
-// CompatibleWith ...
-func (e BlastProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// Rarity ...
+func (e BlastProtection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityRare
+}
 
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	_, prot := s.Enchantment(Protection{})
+// CompatibleWithOther ...
+func (e BlastProtection) CompatibleWithOther(t item.EnchantmentType) bool {
+	_, fireProt := t.(FireProtection)
+	_, projectileProt := t.(ProjectileProtection)
+	_, prot := t.(Protection)
+	return !fireProt && !projectileProt && !prot
+}
 
-	return ok && !fireProt && !projectileProt && !prot
+// CompatibleWithItem ...
+func (e BlastProtection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }
 
 // FireProtection is an armour enchantment that decreases fire damage.
@@ -42,15 +51,23 @@ func (e FireProtection) MaxLevel() int {
 	return 4
 }
 
-// CompatibleWith ...
-func (e FireProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// Rarity ...
+func (e FireProtection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
 
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	_, prot := s.Enchantment(Protection{})
+// CompatibleWithOther ...
+func (e FireProtection) CompatibleWithOther(t item.EnchantmentType) bool {
+	_, blastProt := t.(BlastProtection)
+	_, projectileProt := t.(ProjectileProtection)
+	_, prot := t.(Protection)
+	return !blastProt && !projectileProt && !prot
+}
 
-	return ok && !blastProt && !projectileProt && !prot
+// CompatibleWithItem ...
+func (e FireProtection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }
 
 // ProjectileProtection is an armour enchantment that reduces damage from projectiles.
@@ -66,15 +83,23 @@ func (e ProjectileProtection) MaxLevel() int {
 	return 4
 }
 
-// CompatibleWith ...
-func (e ProjectileProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// Rarity ...
+func (e ProjectileProtection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
 
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, prot := s.Enchantment(Protection{})
+// CompatibleWithOther ...
+func (e ProjectileProtection) CompatibleWithOther(t item.EnchantmentType) bool {
+	_, blastProt := t.(BlastProtection)
+	_, fireProt := t.(FireProtection)
+	_, prot := t.(Protection)
+	return !blastProt && !fireProt && !prot
+}
 
-	return ok && !blastProt && !fireProt && !prot
+// CompatibleWithItem ...
+func (e ProjectileProtection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }
 
 // Protection is an armour enchantment which increases the damage reduction.
@@ -104,13 +129,21 @@ func (e Protection) MaxLevel() int {
 	return 4
 }
 
-// CompatibleWith ...
-func (e Protection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// Rarity ...
+func (e Protection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
+}
 
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
+// CompatibleWithOther ...
+func (e Protection) CompatibleWithOther(t item.EnchantmentType) bool {
+	_, blastProt := t.(BlastProtection)
+	_, fireProt := t.(FireProtection)
+	_, prot := t.(ProjectileProtection)
+	return !blastProt && !fireProt && !prot
+}
 
-	return ok && !blastProt && !fireProt && !projectileProt
+// CompatibleWithItem ...
+func (e Protection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }

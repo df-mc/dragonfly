@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // KnockBack is an enchantment to a sword that increases the sword's knock-back.
@@ -22,8 +23,18 @@ func (e KnockBack) MaxLevel() int {
 	return 2
 }
 
-// CompatibleWith ...
-func (e KnockBack) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(item.Tool)
+// Rarity ...
+func (e KnockBack) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
+
+// CompatibleWithOther ...
+func (e KnockBack) CompatibleWithOther(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (e KnockBack) CompatibleWithItem(i world.Item) bool {
+	t, ok := i.(item.Tool)
 	return ok && t.ToolType() == item.TypeSword
 }

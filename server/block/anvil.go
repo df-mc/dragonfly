@@ -49,6 +49,19 @@ func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	a.fall(a, pos, w)
 }
 
+// Damage ...
+func (a Anvil) Damage() world.Block {
+	switch a.Type {
+	case UndamagedAnvil():
+		a.Type = SlightlyDamagedAnvil()
+	case SlightlyDamagedAnvil():
+		a.Type = VeryDamagedAnvil()
+	case VeryDamagedAnvil():
+		return nil
+	}
+	return a
+}
+
 // EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
 	return "minecraft:anvil", int16(a.Type.Uint8())

@@ -45,6 +45,9 @@ type Controllable interface {
 	SwingArm()
 	PunchAir()
 
+	ExperienceLevel() int
+	SetExperienceLevel(level int)
+
 	Respawn()
 	Dead() bool
 

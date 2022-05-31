@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Efficiency is an enchantment that increases mining speed.
@@ -22,8 +23,18 @@ func (e Efficiency) MaxLevel() int {
 	return 5
 }
 
-// CompatibleWith ...
-func (e Efficiency) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(item.Tool)
+// Rarity ...
+func (e Efficiency) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
+}
+
+// CompatibleWithOther ...
+func (e Efficiency) CompatibleWithOther(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (e Efficiency) CompatibleWithItem(i world.Item) bool {
+	t, ok := i.(item.Tool)
 	return ok && t.ToolType() == item.TypePickaxe
 }

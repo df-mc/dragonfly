@@ -9,10 +9,12 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/exp/slices"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -488,7 +490,8 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		return fmt.Errorf("no anvil container opened")
 	}
 	pos := s.openedPos.Load()
-	anvil, ok := s.c.World().Block(pos).(block.Anvil)
+	w := s.c.World()
+	anvil, ok := w.Block(pos).(block.Anvil)
 	if !ok {
 		return fmt.Errorf("no anvil container opened")
 	}
@@ -496,7 +499,6 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		// Invalid filter string index.
 		return nil
 	}
-	_ = anvil // TODO
 
 	first, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
@@ -506,85 +508,128 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		// First anvil slot is empty, can't result in anything.
 		return nil
 	}
-	result := first.WithCustomName(filterStrings[a.FilterStringIndex])
+	result := first
 
 	second, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilMaterial,
 		Slot:        0x2,
 	}, s)
 
-	var costFactor int
-	if !second.Empty() {
-		_, ok := second.Item().(item.EnchantedBook)
-		enchant := ok && len(second.Enchantments()) > 0
-		_, durable := first.Item().(item.Durable)
-		if durable {
+	var cost, repairCount int
 
+	var resultEnchantments []item.Enchantment
+	if !second.Empty() {
+		_, durable := first.Item().(item.Durable)
+		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
+			d := min(first.Durability(), first.MaxDurability()/4)
+			if d <= 0 {
+				return nil
+			}
+
+			for ; d > 0 && repairCount < second.Count(); repairCount++ {
+				result = result.WithDurability(result.Durability() - d)
+				cost++
+				d = min(result.Durability(), result.MaxDurability()/4)
+			}
 		} else {
+			_, ok := second.Item().(item.EnchantedBook)
+			enchant := ok && len(second.Enchantments()) > 0
 			if !enchant && (first.Item() != second.Item() || !durable) {
 				return nil
 			}
 			if durable && !enchant {
-				i := first.MaxDurability() - first.Durability() + (second.Durability() + first.MaxDurability()*12/100)
-				if i < 0 {
-					i = 0
+				d := first.Durability() + (second.Durability() + first.MaxDurability()*12/100)
+				if d < 0 {
+					d = 0
 				}
-				if i < first.MaxDurability()-first.Durability() {
-					result = result.WithDurability(i)
-					costFactor += 2
+				if d < first.MaxDurability()-first.Durability() {
+					result = result.WithDurability(d)
+					cost += 2
 				}
 			}
-			var b1, b2 bool
-			var resultEnchantments []item.Enchantment
+
 			for _, e := range second.Enchantments() {
-				var firstLevel int
+				firstLevel := 0
 				if firstEnchant, ok := first.Enchantment(e.Type()); ok {
 					firstLevel = firstEnchant.Level()
 				}
-				var resultLevel int
+				resultLevel := max(firstLevel, e.Level())
 				if firstLevel == e.Level() {
 					resultLevel = firstLevel + 1
-				} else {
-					resultLevel = max(firstLevel, e.Level())
 				}
-				compatible := e.Type().CompatibleWith(first)
+				compatible := e.Type().CompatibleWithItem(first.Item())
 				if _, ok := first.Item().(item.EnchantedBook); ok {
 					compatible = true
 				}
 				for _, e2 := range first.Enchantments() {
-					if e.Type() != e2.Type() {
+					if e.Type() != e2.Type() && !e.Type().CompatibleWithOther(e2.Type()) {
 						compatible = false
-						costFactor++
+						cost++
 					}
 				}
-				if !compatible {
-					b2 = true
-				} else {
-					b1 = true
+				if compatible {
 					if resultLevel > e.Type().MaxLevel() {
-						resultLevel = e.Level()
+						resultLevel = e.Type().MaxLevel()
 					}
 					resultEnchantments = append(resultEnchantments, item.NewEnchantment(e.Type(), resultLevel))
+					rarityCost := e.Type().Rarity().ApplyCost
+					if enchant {
+						rarityCost = max(1, rarityCost/2)
+					}
+					cost += rarityCost * resultLevel
+					if first.Count() > 1 {
+						cost = 40
+					}
+				} else {
+					return nil
 				}
-			}
-			if b2 && !b1 {
-				return nil
 			}
 		}
 	}
+	// TODO: Renaming here.
 
-	if !result.Empty() {
+	if cost == 0 {
+		return nil
+	}
 
+	c := s.c.GameMode().CreativeInventory()
+	if cost >= 40 && !c {
+		return nil
+	}
+
+	level := s.c.ExperienceLevel()
+	if level < cost {
+		return nil
+	}
+	s.c.SetExperienceLevel(level - cost)
+
+	if !c && rand.Float64() < 0.12 {
+		damaged := anvil.Damage()
+		if damaged == nil {
+			w.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
+		} else {
+			w.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
+		}
+		w.SetBlock(pos, damaged, nil)
+	} else {
+		w.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
 		Slot:        1,
 	}, item.Stack{}, s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilMaterial,
-		Slot:        2,
-	}, item.Stack{}, s)
+	if repairCount > 0 {
+		h.setItemInSlot(protocol.StackRequestSlotInfo{
+			ContainerID: containerAnvilMaterial,
+			Slot:        2,
+		}, second.Grow(-repairCount), s)
+	} else {
+		h.setItemInSlot(protocol.StackRequestSlotInfo{
+			ContainerID: containerAnvilMaterial,
+			Slot:        2,
+		}, item.Stack{}, s)
+	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerOutput,
 		Slot:        50,
@@ -599,23 +644,11 @@ func max(x, y int) int {
 	return y
 }
 
-// validRepair ...
-func (h *ItemStackRequestHandler) validRepair(first, second item.Stack) (bool, int) {
-	//if it, ok := first.Item().(item.Tool); ok {
-	//	switch it.ToolType() {
-	//	case item.ToolTierWood:
-	//	case item.ToolTierStone:
-	//	case item.ToolTierGold:
-	//	case item.ToolTierIron:
-	//	case item.ToolTierDiamond:
-	//	case item.ToolTierNetherite:
-	//	}
-	//}
-	//var tier item.ToolTier
-	//if it, ok := first.Item().(item.Armour); ok {
-	//
-	//}
-	return false, 0
+func min(x, y int) int {
+	if x > y {
+		return y
+	}
+	return x
 }
 
 // validBeaconEffect checks if the ID passed is a valid beacon effect.
