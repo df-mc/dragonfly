@@ -63,7 +63,7 @@ func (e *ExperienceManager) SetLevel(level int) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	_, progress := progressFromExperience(e.total())
-	e.experience = int(experienceForLevels(level) + experienceForLevel(level)*progress)
+	e.experience = int(experienceForLevels(level) + float64(experienceForLevel(level))*progress)
 }
 
 // Progress returns the progress towards the next level.
@@ -82,7 +82,7 @@ func (e *ExperienceManager) SetProgress(progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	currentLevel, _ := progressFromExperience(e.total())
-	progressExp := experienceForLevel(currentLevel) * progress
+	progressExp := float64(experienceForLevel(currentLevel)) * progress
 	e.experience = int(experienceForLevels(currentLevel) + progressExp)
 	e.d = progressExp - math.Trunc(progressExp)
 }
@@ -126,11 +126,11 @@ func experienceForLevels(level int) float64 {
 }
 
 // experienceForLevel returns the amount experience needed to reach level + 1.
-func experienceForLevel(level int) float64 {
+func experienceForLevel(level int) int {
 	if level <= 15 {
-		return 2*float64(level) + 7
+		return 2*level + 7
 	} else if level <= 30 {
-		return 5*float64(level) - 38
+		return 5*level - 38
 	}
-	return 9*float64(level) - 158
+	return 9*level - 158
 }
