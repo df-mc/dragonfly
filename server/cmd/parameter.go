@@ -121,7 +121,7 @@ func typeNameOf(i any) string {
 // unwrap returns the underlying reflect.Value of a reflect.Value, assuming it is of the Optional[T] type.
 func unwrap(v reflect.Value) reflect.Value {
 	if _, ok := v.Interface().(optionalT); ok {
-		return v.Field(0)
+		return reflect.New(v.Field(0).Type()).Elem()
 	}
 	return v
 }
