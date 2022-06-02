@@ -578,7 +578,7 @@ func (server *Server) createWorld(d world.Dimension, nether, end *world.World, b
 	log.Debugf("Loading world...")
 
 	w := world.Config{
-		Log:               log,
+		ErrorLog:          log,
 		Dim:               d,
 		NetherDestination: nether,
 		EndDestination:    end,
