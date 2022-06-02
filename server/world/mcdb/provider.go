@@ -189,7 +189,7 @@ func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error 
 		if err := p.db.Put(append([]byte("player_"), uuid[:]...), data, nil); err != nil {
 			return err
 		}
-	} else {
+	} else if err != nil {
 		return err
 	}
 	var playerData map[string]string
