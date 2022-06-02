@@ -154,31 +154,27 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, err 
 	if err != nil {
 		return mgl64.Vec3{}, err
 	}
-	buf := bytes.NewBuffer(data)
-	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 	var playerData map[string]string
 
-	if err := dec.Decode(&playerData); err != nil {
+	if err := nbt.Unmarshal(data, &playerData); err != nil {
 		return mgl64.Vec3{}, err
 	}
 	if playerData["MsaID"] != uuid.String() && playerData["ServerId"] == "" {
 		return mgl64.Vec3{}, fmt.Errorf("LoadPlayerSpawn: Invalid data for player %s", uuid.String())
 	}
-	serverDb, err := p.db.Get([]byte("player_server_"+playerData["ServerId"]), nil)
+	serverDb, err := p.db.Get([]byte(playerData["ServerId"]), nil)
 	if err != nil {
 		return mgl64.Vec3{}, err
 	}
 
 	var serverData map[string]any
-	buf2 := bytes.NewBuffer(serverDb)
-	dec2 := nbt.NewDecoderWithEncoding(buf2, nbt.LittleEndian)
-	if err := dec2.Decode(&serverData); err != nil {
+	if err := nbt.Unmarshal(serverDb, &serverData); err != nil {
 		return mgl64.Vec3{}, err
 	}
 
 	x, y, z := serverData["SpawnX"], serverData["SpawnY"], serverData["SpawnZ"]
 	if x == nil && y == nil && z == nil {
-		return mgl64.Vec3{}, fmt.Errorf("LoadPlayerSpawn: player spawn position is 0,0,0")
+		return mgl64.Vec3{}, fmt.Errorf("LoadPlayerSpawn: player spawn position is non-existant")
 	}
 	return mgl64.Vec3{x.(float64), y.(float64), z.(float64)}, nil
 }
@@ -186,37 +182,29 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, err 
 // SavePlayerSpawnPosition saves the player spawn position passed to the level.dat.
 func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error {
 	data, err := p.db.Get(append([]byte("player_"), uuid[:]...), nil)
-	buf := bytes.NewBuffer(data)
 	if errors.Is(err, leveldb.ErrNotFound) {
-		buf = bytes.NewBuffer(nil)
-		err := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(map[string]string{
+		data, err = nbt.Marshal(map[string]string{
 			"MsaID":    uuid.String(),
 			"ServerID": "player_server_" + uuid.String(),
 		})
 		if err != nil {
 			return err
 		}
-		if err := p.db.Put(append([]byte("player_"), uuid[:]...), buf.Bytes(), nil); err != nil {
+		if err := p.db.Put(append([]byte("player_"), uuid[:]...), data, nil); err != nil {
 			return err
 		}
 	} else {
 		return err
 	}
-	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 	var playerData map[string]string
 
-	if err := dec.Decode(&playerData); err != nil {
+	if err := nbt.Unmarshal(data, &playerData); err != nil {
 		return err
 	}
 	if playerData["MsaID"] != uuid.String() && playerData["ServerId"] == "" {
 		return fmt.Errorf("SavePlayerSpawn: Invalid data for player %s", uuid.String())
 	}
-	serverDb, err := p.db.Get([]byte("player_server_"+playerData["ServerId"]), nil)
-	buf2 := bytes.NewBuffer(serverDb)
-	if err != leveldb.ErrNotFound {
-		return err
-	}
-	err = nbt.NewEncoderWithEncoding(buf2, nbt.LittleEndian).Encode(map[string]any{
+	coords, err := nbt.Marshal(map[string]any{
 		"SpawnX": math.Floor(pos.X()),
 		"SpawnY": math.Floor(pos.Y()),
 		"SpawnZ": math.Floor(pos.Z()),
@@ -224,7 +212,7 @@ func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error 
 	if err != nil {
 		return err
 	}
-	if err := p.db.Put([]byte("player_server_"+playerData["ServerId"]), buf2.Bytes(), nil); err != nil {
+	if err := p.db.Put([]byte(playerData["ServerId"]), coords, nil); err != nil {
 		return err
 	}
 	return nil

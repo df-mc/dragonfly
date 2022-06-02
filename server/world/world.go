@@ -808,10 +808,7 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) (mgl64.Vec3, bool) {
 		return mgl64.Vec3{}, false
 	}
 	position, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
-	if err != nil {
-		return mgl64.Vec3{}, false
-	}
-	return position, true
+	return position, err == nil
 }
 
 // SetPlayerSpawn sets the spawn of the player. If The player has a player spawn in the world, the player will
