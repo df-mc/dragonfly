@@ -170,7 +170,7 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, err 
 
 	x, y, z := serverData["SpawnX"], serverData["SpawnY"], serverData["SpawnZ"]
 	if x == nil || y == nil || z == nil {
-		return mgl64.Vec3{}, fmt.Errorf("LoadPlayerSpawn: player spawn position is non-existant")
+		return mgl64.Vec3{}, fmt.Errorf("LoadPlayerSpawn: player spawn position is non-existent")
 	}
 	return mgl64.Vec3{x.(float64), y.(float64), z.(float64)}, nil
 }
