@@ -160,6 +160,7 @@ func init() {
 	registerAll(allSeaPickles())
 	registerAll(allWood())
 	registerAll(allChains())
+	registerAll(allFroglight())
 }
 
 func init() {
@@ -352,6 +353,9 @@ func init() {
 	}
 	for _, t := range NetherBricksTypes() {
 		world.RegisterItem(NetherBricks{Type: t})
+	}
+	for _, t := range FroglightTypes() {
+		world.RegisterItem(Froglight{Type: t})
 	}
 }
 

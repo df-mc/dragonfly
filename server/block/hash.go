@@ -55,6 +55,7 @@ const (
 	hashFarmland
 	hashFire
 	hashFlower
+	hashFroglight
 	hashGildedBlackstone
 	hashGlass
 	hashGlassPane
@@ -351,6 +352,10 @@ func (f Fire) Hash() uint64 {
 
 func (f Flower) Hash() uint64 {
 	return hashFlower | uint64(f.Type.Uint8())<<8
+}
+
+func (f Froglight) Hash() uint64 {
+	return hashFroglight | uint64(f.Type.Uint8())<<8 | uint64(f.Axis)<<10
 }
 
 func (GildedBlackstone) Hash() uint64 {
