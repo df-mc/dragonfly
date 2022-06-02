@@ -98,6 +98,7 @@ func init() {
 	world.RegisterBlock(PackedMud{})
 	world.RegisterBlock(MudBricks{})
 	world.RegisterBlock(ReinforcedDeepslate{})
+	world.RegisterBlock(MuddyMangroveRoots{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -275,6 +276,7 @@ func init() {
 	world.RegisterItem(PackedMud{})
 	world.RegisterItem(MudBricks{})
 	world.RegisterItem(ReinforcedDeepslate{})
+	world.RegisterItem(MuddyMangroveRoots{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
