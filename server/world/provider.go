@@ -11,8 +11,6 @@ import (
 // writing of the world data so that the World may use it.
 type Provider interface {
 	io.Closer
-	// Settings loads the settings for a World and writes them to s.
-	Settings() *Settings
 	// SaveSettings saves the settings of a World.
 	SaveSettings(*Settings)
 
@@ -63,4 +61,4 @@ func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (mgl64.Vec3, error) {
 	return mgl64.Vec3{}, nil
 }
 func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, mgl64.Vec3) error { return nil }
-func (NopProvider) Close() error                                        { return nil }
+func (NopProvider) Close() error                                               { return nil }
