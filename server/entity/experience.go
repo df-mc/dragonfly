@@ -63,7 +63,7 @@ func (e *ExperienceManager) SetLevel(level int) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	_, progress := progressFromExperience(e.total())
-	e.experience = int(experienceForLevels(level) + float64(experienceForLevel(level))*progress)
+	e.experience = experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
 }
 
 // Progress returns the progress towards the next level.
@@ -83,7 +83,7 @@ func (e *ExperienceManager) SetProgress(progress float64) {
 	defer e.mu.Unlock()
 	currentLevel, _ := progressFromExperience(e.total())
 	progressExp := float64(experienceForLevel(currentLevel)) * progress
-	e.experience = int(experienceForLevels(currentLevel) + progressExp)
+	e.experience = experienceForLevels(currentLevel) + int(progressExp)
 	e.d = progressExp - math.Trunc(progressExp)
 }
 
@@ -97,16 +97,16 @@ func (e *ExperienceManager) Reset() {
 // progressFromExperience returns the level and progress from the total experience given.
 func progressFromExperience(experience float64) (level int, progress float64) {
 	var a, b, c float64
-	if experience <= experienceForLevels(16) {
+	if experience <= float64(experienceForLevels(16)) {
 		a, b = 1.0, 6.0
-	} else if experience <= experienceForLevels(31) {
+	} else if experience <= float64(experienceForLevels(31)) {
 		a, b, c = 2.5, -40.5, 360.0
 	} else {
 		a, b, c = 4.5, -162.5, 2220.0
 	}
 
 	var sol float64
-	if d := b*b - 4*a*(c-float64(experience)); d > 0 {
+	if d := b*b - 4*a*(c-experience); d > 0 {
 		s := math.Sqrt(d)
 		sol = math.Max((-b+s)/(2*a), (-b-s)/(2*a))
 	} else if d == 0 {
@@ -116,13 +116,13 @@ func progressFromExperience(experience float64) (level int, progress float64) {
 }
 
 // experienceForLevels calculates the amount of experience needed in total to reach a certain level.
-func experienceForLevels(level int) float64 {
+func experienceForLevels(level int) int {
 	if level <= 16 {
-		return float64(level*level + level*6)
+		return level*level + level*6
 	} else if level <= 31 {
-		return float64(level*level)*2.5 - 40.5*float64(level) + 360
+		return int(float64(level*level)*2.5 - 40.5*float64(level) + 360)
 	}
-	return float64(level*level)*4.5 - 162.5*float64(level) + 2220
+	return int(float64(level*level)*4.5 - 162.5*float64(level) + 2220)
 }
 
 // experienceForLevel returns the amount experience needed to reach level + 1.
