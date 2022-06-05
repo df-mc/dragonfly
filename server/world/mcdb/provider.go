@@ -196,9 +196,9 @@ func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]interface
 
 // SavePlayerSpawnPosition saves the player spawn position passed to the levelDB database.
 func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
-	data, err := p.db.Get([]byte("player_"+id.String()), nil)
+	_, err := p.db.Get([]byte("player_"+id.String()), nil)
 	if errors.Is(err, leveldb.ErrNotFound) {
-		data, err = nbt.MarshalEncoding(playerData{
+		data, err := nbt.MarshalEncoding(playerData{
 			UUID:     id.String(),
 			ServerID: "player_server_" + id.String(),
 		}, nbt.LittleEndian)
@@ -217,7 +217,7 @@ func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	d["SpawnY"] = int32(pos.Y())
 	d["SpawnZ"] = int32(pos.Z())
 
-	data, err = nbt.MarshalEncoding(d, nbt.LittleEndian)
+	data, err := nbt.MarshalEncoding(d, nbt.LittleEndian)
 	if err != nil {
 		panic(err)
 	}
