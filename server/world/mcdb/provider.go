@@ -10,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
-	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -149,37 +148,37 @@ func (p *Provider) SaveSettings(s *world.Settings) {
 }
 
 // LoadPlayerSpawnPosition loads the players spawn position stored in the level.dat from their UUID.
-func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, exists bool, err error) {
+func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos cube.Pos, exists bool, err error) {
 	data, err := p.db.Get(append([]byte("player_"), uuid[:]...), nil)
 	if err != nil {
-		return mgl64.Vec3{}, false, err
+		return cube.Pos{}, false, err
 	}
 
 	var playerData map[string]string
 	if err := nbt.UnmarshalEncoding(data, &playerData, nbt.LittleEndian); err != nil {
-		return mgl64.Vec3{}, false, err
+		return cube.Pos{}, false, err
 	}
 	if playerData["MsaID"] != uuid.String() || playerData["ServerId"] == "" {
-		return mgl64.Vec3{}, false, fmt.Errorf("load player spawn: invalid data for player uuid: %v", uuid.String())
+		return cube.Pos{}, false, fmt.Errorf("load player spawn: invalid data for player uuid: %v", uuid.String())
 	}
 	serverDB, err := p.db.Get([]byte(playerData["ServerId"]), nil)
 	if err != nil {
-		return mgl64.Vec3{}, false, err
+		return cube.Pos{}, false, err
 	}
 
 	var serverData map[string]any
 	if err := nbt.UnmarshalEncoding(serverDB, &serverData, nbt.LittleEndian); err != nil {
-		return mgl64.Vec3{}, false, err
+		return cube.Pos{}, false, err
 	}
 	x, y, z := serverData["SpawnX"], serverData["SpawnY"], serverData["SpawnZ"]
 	if x == nil || y == nil || z == nil {
-		return mgl64.Vec3{}, false, nil
+		return cube.Pos{}, false, nil
 	}
-	return mgl64.Vec3{x.(float64), y.(float64), z.(float64)}, true, nil
+	return cube.Pos{x.(int), y.(int), z.(int)}, true, nil
 }
 
 // SavePlayerSpawnPosition saves the player spawn position passed to the level.dat.
-func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error {
+func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos cube.Pos) error {
 	data, err := p.db.Get(append([]byte("player_"), uuid[:]...), nil)
 	if errors.Is(err, leveldb.ErrNotFound) {
 		data, err = nbt.MarshalEncoding(map[string]string{

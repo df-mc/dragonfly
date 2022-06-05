@@ -803,13 +803,13 @@ func (w *World) SetSpawn(pos cube.Pos) {
 }
 
 // PlayerSpawn returns the location of the player spawn in the world.
-func (w *World) PlayerSpawn(uuid uuid.UUID) (pos mgl64.Vec3) {
+func (w *World) PlayerSpawn(uuid uuid.UUID) (pos cube.Pos) {
 	if w == nil {
-		return mgl64.Vec3{}
+		return cube.Pos{}
 	}
 	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
 	if !exist {
-		pos = w.Spawn().Vec3()
+		pos = w.Spawn()
 	}
 	if err != nil {
 		w.conf.Log(err)
@@ -819,7 +819,7 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) (pos mgl64.Vec3) {
 
 // SetPlayerSpawn sets the spawn of the player. If the player has a player spawn in the world, the player will
 // be teleported to this location on respawn.
-func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos mgl64.Vec3) {
+func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
 	}
