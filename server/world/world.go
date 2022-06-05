@@ -803,7 +803,7 @@ func (w *World) SetSpawn(pos cube.Pos) {
 }
 
 // PlayerSpawn returns the location of the player spawn in the world.
-func (w *World) PlayerSpawn(uuid uuid.UUID) (pos cube.Pos) {
+func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
@@ -812,7 +812,7 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) (pos cube.Pos) {
 		pos = w.Spawn()
 	}
 	if err != nil {
-		w.conf.Log(err)
+		w.conf.Log.Debugf("failed to get player spawn: %v", err)
 	}
 	return pos
 }
@@ -823,7 +823,7 @@ func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	w.conf.Log(w.conf.Provider.SavePlayerSpawnPosition(uuid, pos))
+	w.conf.Log.Debugf("failed to set player spawn: %v", w.conf.Provider.SavePlayerSpawnPosition(uuid, pos))
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game

@@ -174,7 +174,7 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos cube.Pos, exists
 	if x == nil || y == nil || z == nil {
 		return cube.Pos{}, false, nil
 	}
-	return cube.Pos{x.(int), y.(int), z.(int)}, true, nil
+	return cube.Pos{int(x.(int32)), int(y.(int32)), int(z.(int32))}, true, nil
 }
 
 // SavePlayerSpawnPosition saves the player spawn position passed to the level.dat.
@@ -211,9 +211,9 @@ func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos cube.Pos) error {
 	if err := nbt.UnmarshalEncoding(serverDB, &serverData, nbt.LittleEndian); err != nil {
 		return err
 	}
-	serverData["SpawnX"] = pos.X()
-	serverData["SpawnY"] = pos.Y()
-	serverData["SpawnZ"] = pos.Z()
+	serverData["SpawnX"] = int32(pos.X())
+	serverData["SpawnY"] = int32(pos.Y())
+	serverData["SpawnZ"] = int32(pos.Z())
 	coords, err := nbt.MarshalEncoding(serverData, nbt.LittleEndian)
 	if err != nil {
 		return err
