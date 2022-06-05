@@ -150,8 +150,8 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, exis
 	if err != nil {
 		return mgl64.Vec3{}, false, err
 	}
-	var playerData map[string]string
 
+	var playerData map[string]string
 	if err := nbt.UnmarshalEncoding(data, &playerData, nbt.LittleEndian); err != nil {
 		return mgl64.Vec3{}, false, err
 	}
@@ -167,7 +167,6 @@ func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, exis
 	if err := nbt.UnmarshalEncoding(serverDB, &serverData, nbt.LittleEndian); err != nil {
 		return mgl64.Vec3{}, false, err
 	}
-
 	x, y, z := serverData["SpawnX"], serverData["SpawnY"], serverData["SpawnZ"]
 	if x == nil || y == nil || z == nil {
 		return mgl64.Vec3{}, false, nil
@@ -192,15 +191,14 @@ func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error 
 	} else if err != nil {
 		return err
 	}
-	var playerData map[string]string
 
+	var playerData map[string]string
 	if err := nbt.UnmarshalEncoding(data, &playerData, nbt.LittleEndian); err != nil {
 		return err
 	}
 	if playerData["MsaID"] != uuid.String() || playerData["ServerId"] == "" {
 		return fmt.Errorf("save player spawn: invalid data for player: %v", uuid.String())
 	}
-
 	serverDB, err := p.db.Get([]byte(playerData["ServerId"]), nil)
 	if err != nil {
 		return err
