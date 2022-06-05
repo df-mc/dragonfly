@@ -147,79 +147,82 @@ func (p *Provider) SaveSettings(s *world.Settings) {
 	p.saveDifficulty(s.Difficulty)
 }
 
+// playerData holds the fields that indicate where player data is stored for a player with a specific UUID.
+type playerData struct {
+	UUID         string `nbt:"MsaId"`
+	ServerID     string `nbt:"ServerId"`
+	SelfSignedID string `nbt:"SelfSignedId"`
+}
+
 // LoadPlayerSpawnPosition loads the players spawn position stored in the level.dat from their UUID.
-func (p *Provider) LoadPlayerSpawnPosition(uuid uuid.UUID) (pos cube.Pos, exists bool, err error) {
-	data, err := p.db.Get(append([]byte("player_"), uuid[:]...), nil)
-	if err != nil {
-		return cube.Pos{}, false, err
-	}
-
-	var playerData map[string]string
-	if err := nbt.UnmarshalEncoding(data, &playerData, nbt.LittleEndian); err != nil {
-		return cube.Pos{}, false, err
-	}
-	if playerData["MsaID"] != uuid.String() || playerData["ServerId"] == "" {
-		return cube.Pos{}, false, fmt.Errorf("load player spawn: invalid data for player uuid: %v", uuid.String())
-	}
-	serverDB, err := p.db.Get([]byte(playerData["ServerId"]), nil)
-	if err != nil {
-		return cube.Pos{}, false, err
-	}
-
-	var serverData map[string]any
-	if err := nbt.UnmarshalEncoding(serverDB, &serverData, nbt.LittleEndian); err != nil {
-		return cube.Pos{}, false, err
+func (p *Provider) LoadPlayerSpawnPosition(id uuid.UUID) (pos cube.Pos, exists bool, err error) {
+	serverData, _, exists, err := p.loadPlayerData(id)
+	if !exists || err != nil {
+		return cube.Pos{}, exists, err
 	}
 	x, y, z := serverData["SpawnX"], serverData["SpawnY"], serverData["SpawnZ"]
 	if x == nil || y == nil || z == nil {
-		return cube.Pos{}, false, nil
+		return cube.Pos{}, true, fmt.Errorf("error reading spawn fields from server data for player %v", id)
 	}
 	return cube.Pos{int(x.(int32)), int(y.(int32)), int(z.(int32))}, true, nil
 }
 
-// SavePlayerSpawnPosition saves the player spawn position passed to the level.dat.
-func (p Provider) SavePlayerSpawnPosition(uuid uuid.UUID, pos cube.Pos) error {
-	data, err := p.db.Get(append([]byte("player_"), uuid[:]...), nil)
+// loadPlayerData loads the data stored in a LevelDB database for a specific UUID.
+func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]interface{}, key string, exists bool, err error) {
+	data, err := p.db.Get([]byte("player_"+id.String()), nil)
+	if err == leveldb.ErrNotFound {
+		return nil, "", false, nil
+	} else if err != nil {
+		return nil, "", true, fmt.Errorf("error reading player data for uuid %v: %w", id, err)
+	}
+
+	var d playerData
+	if err := nbt.UnmarshalEncoding(data, &d, nbt.LittleEndian); err != nil {
+		return nil, "", true, fmt.Errorf("error decoding player data for uuid %v: %w", id, err)
+	}
+	if d.UUID != id.String() || d.ServerID == "" {
+		return nil, d.ServerID, true, fmt.Errorf("invalid player data for uuid %v: %v", id, d)
+	}
+	serverDB, err := p.db.Get([]byte(d.ServerID), nil)
+	if err != nil {
+		return nil, d.ServerID, true, fmt.Errorf("error reading server data for player %v: %w", id, err)
+	}
+
+	if err := nbt.UnmarshalEncoding(serverDB, &serverData, nbt.LittleEndian); err != nil {
+		return nil, d.ServerID, true, fmt.Errorf("error decoding server data for player %v", id)
+	}
+	return serverData, d.ServerID, true, nil
+}
+
+// SavePlayerSpawnPosition saves the player spawn position passed to the levelDB database.
+func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
+	data, err := p.db.Get([]byte("player_"+id.String()), nil)
 	if errors.Is(err, leveldb.ErrNotFound) {
-		data, err = nbt.MarshalEncoding(map[string]string{
-			"MsaID":    uuid.String(),
-			"ServerID": "player_server_" + uuid.String(),
+		data, err = nbt.MarshalEncoding(playerData{
+			UUID:     id.String(),
+			ServerID: "player_server_" + id.String(),
 		}, nbt.LittleEndian)
 		if err != nil {
-			return err
+			panic(err)
 		}
-		if err := p.db.Put(append([]byte("player_"), uuid[:]...), data, nil); err != nil {
-			return err
+		if err := p.db.Put([]byte("player_"+id.String()), data, nil); err != nil {
+			return fmt.Errorf("error writing player data for id %v: %w", id, err)
 		}
-	} else if err != nil {
-		return err
 	}
-
-	var playerData map[string]string
-	if err := nbt.UnmarshalEncoding(data, &playerData, nbt.LittleEndian); err != nil {
-		return err
-	}
-	if playerData["MsaID"] != uuid.String() || playerData["ServerId"] == "" {
-		return fmt.Errorf("save player spawn: invalid data for player: %v", uuid.String())
-	}
-	serverDB, err := p.db.Get([]byte(playerData["ServerId"]), nil)
+	d, k, _, err := p.loadPlayerData(id)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading server data for player %v: %w", id, err)
 	}
+	d["SpawnX"] = int32(pos.X())
+	d["SpawnY"] = int32(pos.Y())
+	d["SpawnZ"] = int32(pos.Z())
 
-	var serverData map[string]any
-	if err := nbt.UnmarshalEncoding(serverDB, &serverData, nbt.LittleEndian); err != nil {
-		return err
-	}
-	serverData["SpawnX"] = int32(pos.X())
-	serverData["SpawnY"] = int32(pos.Y())
-	serverData["SpawnZ"] = int32(pos.Z())
-	coords, err := nbt.MarshalEncoding(serverData, nbt.LittleEndian)
+	data, err = nbt.MarshalEncoding(d, nbt.LittleEndian)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	if err := p.db.Put([]byte(playerData["ServerId"]), coords, nil); err != nil {
-		return err
+	if err = p.db.Put([]byte(k), data, nil); err != nil {
+		return fmt.Errorf("error writing server data for player %v: %w", id, err)
 	}
 	return nil
 }

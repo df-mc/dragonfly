@@ -802,7 +802,7 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	}
 }
 
-// PlayerSpawn returns the location of the player spawn in the world.
+// PlayerSpawn returns the spawn position of a player with a UUID in this World.
 func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
 	if w == nil {
 		return cube.Pos{}
@@ -817,8 +817,8 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
 	return pos
 }
 
-// SetPlayerSpawn sets the spawn of the player. If the player has a player spawn in the world, the player will
-// be teleported to this location on respawn.
+// SetPlayerSpawn sets the spawn position of a player with a UUID in this World. If the player has a spawn in the world,
+// the player will be teleported to this location on respawn.
 func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
