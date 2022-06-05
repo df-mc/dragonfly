@@ -809,12 +809,9 @@ func (p *Player) Respawn() {
 	p.Extinguish()
 	p.ResetFallDistance()
 
-	switch w.Dimension() {
-	case world.Nether:
-		w, _ = w.PortalDestinations()
-	case world.End:
-		_, w = w.PortalDestinations()
-	}
+	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
+	// always bring us back to the overworld.
+	w = w.PortalDestination(w.Dimension())
 	pos := w.Spawn().Vec3Middle()
 
 	p.handler().HandleRespawn(&pos, &w)

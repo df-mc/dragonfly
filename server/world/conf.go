@@ -16,12 +16,10 @@ type Config struct {
 	// Dim is the Dimension of the World. If set to nil, the World will use Overworld as its dimension. The dimension
 	// set here influences, among others, the sky colour, weather/time and liquid behaviour in that World.
 	Dim Dimension
-	// NetherDestination is the World that an Entity will be moved to if it enters a Nether portal in this World. If set
-	// to nil, entities will not be moved to another World.
-	NetherDestination *World
-	// EndDestination is the World that an Entity will be moved to if it enters an End portal in this World. If set to
-	// nil, entities will not be moved to another World.
-	EndDestination *World
+	// PortalDestination is a function that returns the destination World for a portal of a specific Dimension type. If
+	// set to nil, no portals will function. If the function returns a nil world for a Dimension, only portals of that
+	// specific Dimension type will not function.
+	PortalDestination func(dim Dimension) *World
 	// Provider is the Provider implementation used to read and write World data. If set to nil, the Provider used will
 	// be NopProvider, which does not store any data to disk.
 	Provider Provider

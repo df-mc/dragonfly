@@ -121,9 +121,9 @@ func New(c *Config, log Logger) *Server {
 	if err != nil {
 		log.Fatalf("error loading world: %v", err)
 	}
-	*s.world = *s.createWorld(world.Overworld, s.nether, s.end, biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, p)
-	*s.nether = *s.createWorld(world.Nether, s.world, s.end, biome.NetherWastes{}, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, p)
-	*s.end = *s.createWorld(world.End, s.nether, s.world, biome.End{}, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, p)
+	s.world = s.createWorld(world.Overworld, &s.nether, &s.end, biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}}, p)
+	s.nether = s.createWorld(world.Nether, &s.world, &s.end, biome.NetherWastes{}, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}}, p)
+	s.end = s.createWorld(world.End, &s.nether, &s.world, biome.End{}, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}}, p)
 
 	s.registerTargetFunc()
 
@@ -566,7 +566,7 @@ func (server *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player
 
 // createWorld loads a world of the server with a specific dimension, ending the program if the world could not be loaded.
 // The layers passed are used to create a generator.Flat that is used as generator for the world.
-func (server *Server) createWorld(d world.Dimension, nether, end *world.World, biome world.Biome, layers []world.Block, p world.Provider) *world.World {
+func (server *Server) createWorld(d world.Dimension, nether, end **world.World, biome world.Biome, layers []world.Block, p world.Provider) *world.World {
 	log := server.log
 	if v, ok := log.(interface {
 		WithField(key string, field any) *logrus.Entry
@@ -578,12 +578,18 @@ func (server *Server) createWorld(d world.Dimension, nether, end *world.World, b
 	log.Debugf("Loading world...")
 
 	w := world.Config{
-		Log:               log,
-		Dim:               d,
-		NetherDestination: nether,
-		EndDestination:    end,
-		Provider:          p,
-		Generator:         generator.NewFlat(biome, layers),
+		Log:       log,
+		Dim:       d,
+		Provider:  p,
+		Generator: generator.NewFlat(biome, layers),
+		PortalDestination: func(dim world.Dimension) *world.World {
+			if dim == world.Nether {
+				return *nether
+			} else if dim == world.End {
+				return *end
+			}
+			return nil
+		},
 	}.New()
 	log.Infof(`Loaded world "%v".`, w.Name())
 	return w

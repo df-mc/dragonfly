@@ -934,10 +934,16 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 	return slices.Clone(c.v)
 }
 
-// PortalDestinations returns the destination worlds for nether and end portals respectively. Upon entering portals in
-// this World, entities are moved to the respective destination worlds.
-func (w *World) PortalDestinations() (nether, end *World) {
-	return w.conf.NetherDestination, w.conf.EndDestination
+// PortalDestination returns the destination world for a portal of a specific Dimension. If no destination World could
+// be found, the current World is returned.
+func (w *World) PortalDestination(dim Dimension) *World {
+	if w.conf.PortalDestination == nil {
+		return w
+	}
+	if res := w.conf.PortalDestination(dim); res != nil {
+		return res
+	}
+	return w
 }
 
 // Close closes the world and saves all chunks currently loaded.
