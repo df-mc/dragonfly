@@ -17,7 +17,7 @@ type Provider interface {
 	SaveSettings(*Settings)
 
 	// LoadPlayerSpawnPosition loads the player spawn point if found, otherwise an error will be returned.
-	LoadPlayerSpawnPosition(uuid uuid.UUID) (mgl64.Vec3, error)
+	LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, exists bool, err error)
 	// SavePlayerSpawnPosition saves the player spawn point, in vanilla, this can be done with beds in the overworld
 	// and respawn anchors in the nether.
 	SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error
@@ -59,8 +59,8 @@ func (NopProvider) LoadBlockNBT(ChunkPos) ([]map[string]any, error) { return nil
 func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any) error   { return nil }
 func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk) error          { return nil }
 func (NopProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error)  { return nil, false, nil }
-func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (mgl64.Vec3, error) {
-	return mgl64.Vec3{}, nil
+func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (mgl64.Vec3, bool, error) {
+	return mgl64.Vec3{}, false, nil
 }
 func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, mgl64.Vec3) error { return nil }
 func (NopProvider) Close() error                                        { return nil }
