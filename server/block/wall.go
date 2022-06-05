@@ -73,8 +73,8 @@ func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 }
 
 // UseOnBlock ...
-func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(wo, pos, face, w)
+func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(wo, pos, face, w)
 	if !used {
 		return
 	}
