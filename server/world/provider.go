@@ -18,8 +18,8 @@ type Provider interface {
 
 	// LoadPlayerSpawnPosition loads the player spawn point if found, otherwise an error will be returned.
 	LoadPlayerSpawnPosition(uuid uuid.UUID) (pos mgl64.Vec3, exists bool, err error)
-	// SavePlayerSpawnPosition saves the player spawn point, in vanilla, this can be done with beds in the overworld
-	// and respawn anchors in the nether.
+	// SavePlayerSpawnPosition saves the player spawn point. In vanilla, this can be done with beds in the overworld
+	// or respawn anchors in the nether.
 	SavePlayerSpawnPosition(uuid uuid.UUID, pos mgl64.Vec3) error
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
