@@ -129,17 +129,30 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 		side := wo.Block(sidePos)
 		var connectionType WallConnectionType
 		if side.Model().FaceSolid(sidePos, face.Opposite(), wo) {
-			var tall bool
-			switch above := above.(type) {
-			case Wall:
-				tall = above.ConnectionType(face.Direction()) != NoWallConnection()
-			default:
-				tall = above.Model().FaceSolid(abovePos, cube.FaceDown, wo)
-			}
 			connectionType = ShortWallConnection()
-			if tall {
-				connectionType = TallWallConnection()
+			boxes := above.Model().BBox(abovePos, wo)
+			for _, bb := range boxes {
+				if bb.Min().Y() == 0 {
+					xOverlap := bb.Min().X() <= 0.25 && bb.Max().X() >= 0.75
+					zOverlap := bb.Min().Z() <= 0.25 && bb.Max().Z() >= 0.75
+					var tall bool
+					switch face {
+					case cube.FaceNorth:
+						tall = xOverlap && bb.Max().Z() >= 0.75
+					case cube.FaceEast:
+						tall = bb.Min().X() <= 0.25 && zOverlap
+					case cube.FaceSouth:
+						tall = xOverlap && bb.Min().Z() <= 0.25
+					case cube.FaceWest:
+						tall = bb.Max().X() >= 0.75 && zOverlap
+					}
+					if tall {
+						connectionType = TallWallConnection()
+						break
+					}
+				}
 			}
+
 		}
 		if w.ConnectionType(face.Direction()) != connectionType {
 			updated = true
