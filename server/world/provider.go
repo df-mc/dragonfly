@@ -11,8 +11,8 @@ import (
 // writing of the world data so that the World may use it.
 type Provider interface {
 	io.Closer
-	// Settings loads the settings for a World and writes them to s.
-	Settings(s *Settings)
+	// Settings loads the settings for a World and returns them.
+	Settings() *Settings
 	// SaveSettings saves the settings of a World.
 	SaveSettings(*Settings)
 
@@ -51,14 +51,14 @@ var _ Provider = (*NopProvider)(nil)
 // dynamically, instead of reading and writing data, and otherwise returns empty values.
 type NopProvider struct{}
 
-func (NopProvider) Settings(*Settings)                              {}
-func (NopProvider) SaveSettings(*Settings)                          {}
-func (NopProvider) LoadEntities(ChunkPos) ([]SaveableEntity, error) { return nil, nil }
-func (NopProvider) SaveEntities(ChunkPos, []SaveableEntity) error   { return nil }
-func (NopProvider) LoadBlockNBT(ChunkPos) ([]map[string]any, error) { return nil, nil }
-func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any) error   { return nil }
-func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk) error          { return nil }
-func (NopProvider) LoadChunk(ChunkPos) (*chunk.Chunk, bool, error)  { return nil, false, nil }
+func (NopProvider) Settings() *Settings                                        { return defaultSettings() }
+func (NopProvider) SaveSettings(*Settings)                                     {}
+func (NopProvider) LoadEntities(ChunkPos, Dimension) ([]SaveableEntity, error) { return nil, nil }
+func (NopProvider) SaveEntities(ChunkPos, []SaveableEntity, Dimension) error   { return nil }
+func (NopProvider) LoadBlockNBT(ChunkPos, Dimension) ([]map[string]any, error) { return nil, nil }
+func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any, Dimension) error   { return nil }
+func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk, Dimension) error          { return nil }
+func (NopProvider) LoadChunk(ChunkPos, Dimension) (*chunk.Chunk, bool, error)  { return nil, false, nil }
 func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (mgl64.Vec3, bool, error) {
 	return mgl64.Vec3{}, false, nil
 }
