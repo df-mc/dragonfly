@@ -812,7 +812,7 @@ func (p *Player) Respawn() {
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
 	// always bring us back to the overworld.
 	w = w.PortalDestination(w.Dimension())
-	pos := w.Spawn().Vec3Middle()
+	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
 	p.handler().HandleRespawn(&pos, &w)
 
