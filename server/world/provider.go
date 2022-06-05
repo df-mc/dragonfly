@@ -1,7 +1,9 @@
 package world
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/google/uuid"
 	"io"
 )
 
@@ -14,6 +16,11 @@ type Provider interface {
 	// SaveSettings saves the settings of a World.
 	SaveSettings(*Settings)
 
+	// LoadPlayerSpawnPosition loads the player spawn point if found, otherwise an error will be returned.
+	LoadPlayerSpawnPosition(uuid uuid.UUID) (pos cube.Pos, exists bool, err error)
+	// SavePlayerSpawnPosition saves the player spawn point. In vanilla, this can be done with beds in the overworld
+	// or respawn anchors in the nether.
+	SavePlayerSpawnPosition(uuid uuid.UUID, pos cube.Pos) error
 	// LoadChunk attempts to load a chunk from the chunk position passed. If successful, a non-nil chunk is
 	// returned and exists is true and err nil. If no chunk was saved at the chunk position passed, the chunk
 	// returned is nil, and so is the error. If the chunk did exist, but if the data was invalid, nil is
@@ -52,4 +59,8 @@ func (NopProvider) LoadBlockNBT(ChunkPos, Dimension) ([]map[string]any, error) {
 func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any, Dimension) error   { return nil }
 func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk, Dimension) error          { return nil }
 func (NopProvider) LoadChunk(ChunkPos, Dimension) (*chunk.Chunk, bool, error)  { return nil, false, nil }
-func (NopProvider) Close() error                                               { return nil }
+func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
+	return cube.Pos{}, false, nil
+}
+func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, cube.Pos) error { return nil }
+func (NopProvider) Close() error                                      { return nil }

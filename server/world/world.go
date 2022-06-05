@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"math/rand"
@@ -798,6 +799,32 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	viewers, _ := w.allViewers()
 	for _, viewer := range viewers {
 		viewer.ViewWorldSpawn(pos)
+	}
+}
+
+// PlayerSpawn returns the location of the player spawn in the world.
+func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
+	if w == nil {
+		return cube.Pos{}
+	}
+	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
+	if !exist {
+		pos = w.Spawn()
+	}
+	if err != nil {
+		w.conf.Log.Errorf("failed to get player spawn: %v", err)
+	}
+	return pos
+}
+
+// SetPlayerSpawn sets the spawn of the player. If the player has a player spawn in the world, the player will
+// be teleported to this location on respawn.
+func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
+	if w == nil {
+		return
+	}
+	if err := w.conf.Provider.SavePlayerSpawnPosition(uuid, pos); err != nil {
+		w.conf.Log.Errorf("failed to set player spawn: %v", err)
 	}
 }
 
