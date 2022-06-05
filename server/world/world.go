@@ -803,20 +803,27 @@ func (w *World) SetSpawn(pos cube.Pos) {
 }
 
 // PlayerSpawn returns the location of the player spawn in the world.
-func (w *World) PlayerSpawn(uuid uuid.UUID) (mgl64.Vec3, bool, error) {
+func (w *World) PlayerSpawn(uuid uuid.UUID) (pos mgl64.Vec3) {
 	if w == nil {
-		return mgl64.Vec3{}, false, nil
+		return mgl64.Vec3{}
 	}
-	return w.conf.Provider.LoadPlayerSpawnPosition(uuid)
+	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
+	if !exist {
+		pos = w.Spawn().Vec3()
+	}
+	if err != nil {
+		w.conf.Log(err)
+	}
+	return pos
 }
 
 // SetPlayerSpawn sets the spawn of the player. If the player has a player spawn in the world, the player will
 // be teleported to this location on respawn.
-func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos mgl64.Vec3) error {
+func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos mgl64.Vec3) {
 	if w == nil {
-		return nil
+		return
 	}
-	return w.conf.Provider.SavePlayerSpawnPosition(uuid, pos)
+	w.conf.Log(w.conf.Provider.SavePlayerSpawnPosition(uuid, pos))
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game
