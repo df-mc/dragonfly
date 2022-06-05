@@ -158,6 +158,7 @@ func init() {
 	registerAll(allSeaPickles())
 	registerAll(allWood())
 	registerAll(allChains())
+	registerAll(allWalls())
 }
 
 func init() {
@@ -351,6 +352,9 @@ func init() {
 	}
 	for _, t := range NetherBricksTypes() {
 		world.RegisterItem(NetherBricks{Type: t})
+	}
+	for _, t := range WallTypes() {
+		world.RegisterItem(Wall{Type: t})
 	}
 }
 
