@@ -44,8 +44,13 @@ func (w Wall) EncodeBlock() (string, map[string]any) {
 
 // Model ...
 func (w Wall) Model() world.BlockModel {
-	//TODO implement me
-	return model.Solid{}
+	return model.Wall{
+		NorthConnection: w.NorthConnection != NoWallConnection(),
+		EastConnection:  w.EastConnection != NoWallConnection(),
+		SouthConnection: w.SouthConnection != NoWallConnection(),
+		WestConnection:  w.WestConnection != NoWallConnection(),
+		Post:            w.Post,
+	}
 }
 
 // BreakInfo ...
