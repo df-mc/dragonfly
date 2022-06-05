@@ -808,11 +808,12 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
 		return cube.Pos{}
 	}
 	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
-	if !exist {
-		return w.Spawn()
-	}
 	if err != nil {
 		w.conf.Log.Errorf("failed to get player spawn: %v", err)
+		return w.Spawn()
+	}
+	if !exist {
+		return w.Spawn()
 	}
 	return pos
 }
