@@ -211,16 +211,16 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(boolByte(" + s + "))", 1
 	case "int":
 		return "uint64(" + s + ")", 8
-	case "Attachment", "WallType":
+	case "Attachment":
 		if _, ok := directives["facing_only"]; ok {
 			log.Println("Found directive: 'facing_only'")
 			return "uint64(" + s + ".FaceUint8())", 3
 		}
 		return "uint64(" + s + ".Uint8())", 5
-	case "FlowerType", "DoubleFlowerType", "Colour":
+	case "FlowerType", "DoubleFlowerType", "Colour", "StoneWallType":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
-	case "WoodType", "CoralType":
+	case "WoodType", "CoralType", "WallType":
 		return "uint64(" + s + ".Uint8())", 3
 	case "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "WallConnectionType":
 		return "uint64(" + s + ".Uint8())", 2

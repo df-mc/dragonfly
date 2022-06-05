@@ -127,6 +127,7 @@ const (
 	hashStone
 	hashStoneBrickStairs
 	hashStoneBricks
+	hashStoneWall
 	hashTallGrass
 	hashTerracotta
 	hashTorch
@@ -640,6 +641,10 @@ func (c StoneBricks) Hash() uint64 {
 	return hashStoneBricks | uint64(c.Type.Uint8())<<8
 }
 
+func (w StoneWall) Hash() uint64 {
+	return hashStoneWall | uint64(w.Type.Uint8())<<8 | uint64(w.NorthConnection.Uint8())<<12 | uint64(w.EastConnection.Uint8())<<14 | uint64(w.SouthConnection.Uint8())<<16 | uint64(w.WestConnection.Uint8())<<18 | uint64(boolByte(w.Post))<<20
+}
+
 func (g TallGrass) Hash() uint64 {
 	return hashTallGrass | uint64(g.Type.Uint8())<<8
 }
@@ -657,7 +662,7 @@ func (Tuff) Hash() uint64 {
 }
 
 func (w Wall) Hash() uint64 {
-	return hashWall | uint64(w.Type.Uint8())<<8 | uint64(w.NorthConnection.Uint8())<<13 | uint64(w.EastConnection.Uint8())<<15 | uint64(w.SouthConnection.Uint8())<<17 | uint64(w.WestConnection.Uint8())<<19 | uint64(boolByte(w.Post))<<21
+	return hashWall | uint64(w.Type.Uint8())<<8 | uint64(w.NorthConnection.Uint8())<<11 | uint64(w.EastConnection.Uint8())<<13 | uint64(w.SouthConnection.Uint8())<<15 | uint64(w.WestConnection.Uint8())<<17 | uint64(boolByte(w.Post))<<19
 }
 
 func (w Water) Hash() uint64 {

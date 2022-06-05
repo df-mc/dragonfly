@@ -8,8 +8,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-type Wall struct {
-	Type            WallType
+type StoneWall struct {
+	Type            StoneWallType
 	NorthConnection WallConnectionType
 	EastConnection  WallConnectionType
 	SouthConnection WallConnectionType
@@ -18,13 +18,14 @@ type Wall struct {
 }
 
 // EncodeItem ...
-func (w Wall) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + w.Type.String() + "_wall", 0
+func (w StoneWall) EncodeItem() (name string, meta int16) {
+	return "minecraft:cobblestone_wall", int16(w.Type.Uint8())
 }
 
 // EncodeBlock ...
-func (w Wall) EncodeBlock() (string, map[string]any) {
-	return "minecraft:" + w.Type.String() + "_wall", map[string]any{
+func (w StoneWall) EncodeBlock() (string, map[string]any) {
+	return "minecraft:cobblestone_wall", map[string]any{
+		"wall_block_type":            w.Type.String(),
 		"wall_connection_type_north": w.NorthConnection.String(),
 		"wall_connection_type_east":  w.EastConnection.String(),
 		"wall_connection_type_south": w.SouthConnection.String(),
@@ -34,7 +35,7 @@ func (w Wall) EncodeBlock() (string, map[string]any) {
 }
 
 // Model ...
-func (w Wall) Model() world.BlockModel {
+func (w StoneWall) Model() world.BlockModel {
 	return model.Wall{
 		NorthConnection: w.NorthConnection != NoWallConnection(),
 		EastConnection:  w.EastConnection != NoWallConnection(),
@@ -45,17 +46,21 @@ func (w Wall) Model() world.BlockModel {
 }
 
 // BreakInfo ...
-func (w Wall) BreakInfo() BreakInfo {
-	hardness := 2.0
+func (w StoneWall) BreakInfo() BreakInfo {
+	hardness := 1.5
 	switch w.Type {
-	case PolishedDeepslateWall(), DeepslateBrickWall(), DeepslateTileWall(), CobbledDeepslateWall():
-		hardness = 3.5
+	case SandstoneWall(), RedSandstoneWall():
+		hardness = 0.8
+	case BrickWall(), MossyCobblestoneWall(), RedNetherBrickWall():
+		hardness = 2.0
+	case EndBrickWall():
+		hardness = 3.0
 	}
 	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w))
 }
 
 // NeighbourUpdateTick ...
-func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
+func (w StoneWall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 	w, updated := w.calculateState(wo, pos)
 	if updated {
 		wo.SetBlock(pos, w, nil)
@@ -63,7 +68,7 @@ func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 }
 
 // UseOnBlock ...
-func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (w StoneWall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(wo, pos, face, w)
 	if !used {
 		return
@@ -74,18 +79,18 @@ func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.W
 }
 
 // CanDisplace ...
-func (Wall) CanDisplace(b world.Liquid) bool {
+func (StoneWall) CanDisplace(b world.Liquid) bool {
 	_, water := b.(Water)
 	return water
 }
 
 // SideClosed ...
-func (Wall) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (StoneWall) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // ConnectionType returns the connection type of the wall in the given direction.
-func (w Wall) ConnectionType(direction cube.Direction) WallConnectionType {
+func (w StoneWall) ConnectionType(direction cube.Direction) WallConnectionType {
 	switch direction {
 	case cube.North:
 		return w.NorthConnection
@@ -100,7 +105,7 @@ func (w Wall) ConnectionType(direction cube.Direction) WallConnectionType {
 }
 
 // WithConnectionType returns the wall with the given connection type in the given direction.
-func (w Wall) WithConnectionType(direction cube.Direction, connection WallConnectionType) Wall {
+func (w StoneWall) WithConnectionType(direction cube.Direction, connection WallConnectionType) StoneWall {
 	switch direction {
 	case cube.North:
 		w.NorthConnection = connection
@@ -116,7 +121,7 @@ func (w Wall) WithConnectionType(direction cube.Direction, connection WallConnec
 
 // calculateState returns the wall with the correct state based on walls around it. If any of the connections have been
 // updated then the wall and true are returned.
-func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
+func (w StoneWall) calculateState(wo *world.World, pos cube.Pos) (StoneWall, bool) {
 	var updated bool
 	abovePos := pos.Add(cube.Pos{0, 1, 0})
 	above := wo.Block(abovePos)
@@ -196,21 +201,21 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 	return w, updated
 }
 
-// allWalls returns a list of all wall types.
-func allWalls() (walls []world.Block) {
-	for _, w := range WallTypes() {
+// allStoneWalls returns a list of all cobblestone wall types.
+func allStoneWalls() (walls []world.Block) {
+	for _, w := range StoneWallTypes() {
 		for _, north := range WallConnectionTypes() {
 			for _, east := range WallConnectionTypes() {
 				for _, south := range WallConnectionTypes() {
 					for _, west := range WallConnectionTypes() {
-						walls = append(walls, Wall{Type: w,
+						walls = append(walls, StoneWall{Type: w,
 							NorthConnection: north,
 							EastConnection:  east,
 							SouthConnection: south,
 							WestConnection:  west,
 							Post:            false,
 						})
-						walls = append(walls, Wall{Type: w,
+						walls = append(walls, StoneWall{Type: w,
 							NorthConnection: north,
 							EastConnection:  east,
 							SouthConnection: south,
