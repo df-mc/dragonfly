@@ -294,7 +294,7 @@ func (srv *Server) QuitMessage(a ...any) {
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (srv *Server) Close() error {
 	if !srv.running() {
-		panic("srv not yet running")
+		panic("server not yet running")
 	}
 
 	srv.log.Infof("Server shutting down...")
@@ -529,7 +529,7 @@ func (srv *Server) checkNetIsolation() {
 		return
 	}
 	const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
-	srv.log.Infof("You are currently unable to join the srv on this machine. Run %v in an admin PowerShell session to be able to.\n", loopbackExemptCmd)
+	srv.log.Infof("You are currently unable to join the server on this machine. Run %v in an admin PowerShell session to be able to.\n", loopbackExemptCmd)
 }
 
 // handleSessionClose handles the closing of a session. It removes the player of the session from the server.
