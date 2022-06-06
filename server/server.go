@@ -577,7 +577,7 @@ func (server *Server) createWorld(d world.Dimension, nether, end **world.World, 
 	}
 	log.Debugf("Loading world...")
 
-	w := world.Config{
+	conf := world.Config{
 		Log:       log,
 		Dim:       d,
 		Provider:  p,
@@ -590,7 +590,11 @@ func (server *Server) createWorld(d world.Dimension, nether, end **world.World, 
 			}
 			return nil
 		},
-	}.New()
+	}
+	if f := server.c.WorldConfig; f != nil {
+		conf = f(conf)
+	}
+	w := conf.New()
 	log.Infof(`Loaded world "%v".`, w.Name())
 	return w
 }
