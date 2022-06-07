@@ -1087,6 +1087,7 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 	} else if !previous.Visible() {
 		p.SetVisible()
 	}
+	p.updateState()
 }
 
 // GameMode returns the current game mode assigned to the player. If not changed, the game mode returned will
