@@ -47,6 +47,14 @@ func (s *Session) SendJukeboxPopup(message string) {
 	})
 }
 
+// SendToast ...
+func (s *Session) SendToast(title, message string) {
+	s.writePacket(&packet.ToastRequest{
+		Title:   title,
+		Message: message,
+	})
+}
+
 // SendScoreboard ...
 func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	if s == Nop {

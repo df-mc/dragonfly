@@ -444,6 +444,7 @@ func (s *Session) registerHandlers() {
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},
+		packet.IDRequestAbility:        nil,
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},

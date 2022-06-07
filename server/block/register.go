@@ -94,6 +94,11 @@ func init() {
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(Bookshelf{})
+	world.RegisterBlock(Mud{})
+	world.RegisterBlock(PackedMud{})
+	world.RegisterBlock(MudBricks{})
+	world.RegisterBlock(ReinforcedDeepslate{})
+	world.RegisterBlock(MuddyMangroveRoots{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -158,6 +163,7 @@ func init() {
 	registerAll(allSeaPickles())
 	registerAll(allWood())
 	registerAll(allChains())
+	registerAll(allFroglight())
 }
 
 func init() {
@@ -276,6 +282,11 @@ func init() {
 	world.RegisterItem(SandstoneStairs{Red: true})
 	world.RegisterItem(SandstoneStairs{Smooth: true})
 	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
+	world.RegisterItem(Mud{})
+	world.RegisterItem(PackedMud{})
+	world.RegisterItem(MudBricks{})
+	world.RegisterItem(ReinforcedDeepslate{})
+	world.RegisterItem(MuddyMangroveRoots{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
@@ -351,6 +362,9 @@ func init() {
 	}
 	for _, t := range NetherBricksTypes() {
 		world.RegisterItem(NetherBricks{Type: t})
+	}
+	for _, t := range FroglightTypes() {
+		world.RegisterItem(Froglight{Type: t})
 	}
 }
 

@@ -246,6 +246,12 @@ func (p *Player) SendJukeboxPopup(a ...any) {
 	p.session().SendJukeboxPopup(format(a))
 }
 
+// SendToast sends a toast to the player. This toast is shown at the top of the screen, similar to achievements or pack
+// loading.
+func (p *Player) SendToast(title, message string) {
+	p.session().SendToast(title, message)
+}
+
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)

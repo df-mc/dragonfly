@@ -131,25 +131,10 @@ func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // EncodeItem ...
 func (d WoodDoor) EncodeItem() (name string, meta int16) {
-	switch d.Wood {
-	case OakWood():
+	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", 0
-	case SpruceWood():
-		return "minecraft:spruce_door", 0
-	case BirchWood():
-		return "minecraft:birch_door", 0
-	case JungleWood():
-		return "minecraft:jungle_door", 0
-	case AcaciaWood():
-		return "minecraft:acacia_door", 0
-	case DarkOakWood():
-		return "minecraft:dark_oak_door", 0
-	case CrimsonWood():
-		return "minecraft:crimson_door", 0
-	case WarpedWood():
-		return "minecraft:warped_door", 0
 	}
-	panic("invalid wood type")
+	return "minecraft:" + d.Wood.String() + "_door", 0
 }
 
 // EncodeBlock ...
@@ -164,12 +149,10 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
 		direction = 0
 	}
 
-	switch d.Wood {
-	case OakWood():
+	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	default:
-		return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
+	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allDoors returns a list of all door types
