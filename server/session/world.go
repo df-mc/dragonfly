@@ -1,8 +1,6 @@
 package session
 
 import (
-	"bytes"
-	"github.com/cespare/xxhash"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -10,156 +8,15 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math/rand"
 )
-
-// ViewSubChunks ...
-func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
-	w := s.c.World()
-	r := w.Range()
-
-	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
-	transaction := make(map[uint64]struct{})
-	for _, offset := range offsets {
-		ch, ok := s.chunkLoader.Chunk(world.ChunkPos{
-			center.X() + int32(offset[0]),
-			center.Z() + int32(offset[2]),
-		})
-		if !ok {
-			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
-			continue
-		}
-
-		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
-		if ind < 0 || ind >= int16(len(ch.Sub())) {
-			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
-			continue
-		}
-
-		chunkMap := ch.HeightMap()
-		subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
-		higher, lower := true, true
-		for x := uint8(0); x < 16; x++ {
-			for z := uint8(0); z < 16; z++ {
-				y, i := chunkMap.At(x, z), (uint16(x)<<4)|uint16(z)
-				otherInd := ch.SubIndex(y)
-				if otherInd > ind {
-					subMap[i], lower = 16, false
-				} else if otherInd < ind {
-					subMap[i], higher = -1, false
-				} else {
-					subMap[i], lower, higher = int8(y-ch.SubY(otherInd)), false, false
-				}
-			}
-		}
-		if higher {
-			subMapType, subMap = protocol.HeightMapDataTooHigh, nil
-		} else if lower {
-			subMapType, subMap = protocol.HeightMapDataTooLow, nil
-		}
-
-		sub := ch.Sub()[ind]
-		if sub.Empty() {
-			entries = append(entries, protocol.SubChunkEntry{
-				Result:        protocol.SubChunkResultSuccessAllAir,
-				HeightMapType: subMapType,
-				HeightMapData: subMap,
-				Offset:        offset,
-			})
-			continue
-		}
-
-		serialisedSubChunk := chunk.EncodeSubChunk(ch.Chunk, chunk.NetworkEncoding, int(ind))
-
-		var blockEntityBuf bytes.Buffer
-		enc := nbt.NewEncoderWithEncoding(&blockEntityBuf, nbt.NetworkLittleEndian)
-		for pos, b := range ch.BlockEntities() {
-			if n, ok := b.(world.NBTer); ok && ch.SubIndex(int16(pos.Y())) == ind {
-				d := n.EncodeNBT()
-				d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-				_ = enc.Encode(d)
-			}
-		}
-
-		entry := protocol.SubChunkEntry{
-			Result:        protocol.SubChunkResultSuccess,
-			RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
-			HeightMapType: subMapType,
-			HeightMapData: subMap,
-			Offset:        offset,
-		}
-		if s.conn.ClientCacheEnabled() {
-			hash := xxhash.Sum64(serialisedSubChunk)
-			if !s.trackBlob(hash, serialisedSubChunk) {
-				// Failed to track blob, so just stop here.
-				return
-			}
-
-			transaction[hash] = struct{}{}
-
-			entry.BlobHash = hash
-			entry.RawPayload = blockEntityBuf.Bytes()
-		}
-		entries = append(entries, entry)
-	}
-	if s.conn.ClientCacheEnabled() {
-		s.openChunkTransactions = append(s.openChunkTransactions, transaction)
-	}
-	s.writePacket(&packet.SubChunk{
-		Dimension:       int32(w.Dimension().EncodeDimension()),
-		Position:        protocol.SubChunkPos(center),
-		CacheEnabled:    s.conn.ClientCacheEnabled(),
-		SubChunkEntries: entries,
-	})
-}
-
-// ViewChunk ...
-func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
-	biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
-	if !s.conn.ClientCacheEnabled() {
-		s.writePacket(&packet.LevelChunk{
-			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
-			Position:            protocol.ChunkPos(pos),
-			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
-			RawPayload:          biomes,
-		})
-		return
-	}
-
-	if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
-		s.writePacket(&packet.LevelChunk{
-			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
-			Position:            protocol.ChunkPos(pos),
-			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
-			BlobHashes:          []uint64{hash},
-			CacheEnabled:        true,
-		})
-	}
-}
-
-// trackBlob attempts to track the given blob. If the player has too many pending blobs, it returns false.
-func (s *Session) trackBlob(hash uint64, blob []byte) bool {
-	s.blobMu.Lock()
-	defer s.blobMu.Unlock()
-
-	if l := len(s.blobs); l > 4096 {
-		s.blobMu.Unlock()
-		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), l)
-		_ = s.c.Close()
-		return false
-	}
-	s.blobs[hash] = blob
-	return true
-}
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
