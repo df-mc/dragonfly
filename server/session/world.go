@@ -71,7 +71,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				Skin:           skinToProtocol(v.Skin()),
 			}}})
 		}
-		pk := &packet.AddPlayer{
+		s.writePacket(&packet.AddPlayer{
 			UUID:            v.UUID(),
 			Username:        v.Name(),
 			EntityUniqueID:  int64(runtimeID),
@@ -80,11 +80,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
-		}
-		if !v.GameMode().Visible() {
-			pk.GameType = packet.GameTypeSpectator
-		}
-		s.writePacket(pk)
+		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
 				UUID: v.UUID(),
@@ -594,13 +590,6 @@ func (s *Session) ViewEntityState(e world.Entity) {
 		EntityRuntimeID: s.entityRuntimeID(e),
 		EntityMetadata:  s.parseEntityMetadata(e),
 	})
-	if v, ok := e.(Controllable); ok {
-		pk := &packet.UpdatePlayerGameType{PlayerUniqueID: int64(s.entityRuntimeID(e))}
-		if !v.GameMode().Visible() {
-			pk.GameType = packet.GameTypeSpectator
-		}
-		s.writePacket(pk)
-	}
 }
 
 // OpenBlockContainer ...
