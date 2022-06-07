@@ -262,9 +262,9 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
-		if !mode.HasCollision() {
-			id = packet.GameTypeSpectator
-		}
+	}
+	if !mode.Visible() && !mode.HasCollision() {
+		id = packet.GameTypeSpectator
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 	s.writePacket(&packet.AdventureSettings{
