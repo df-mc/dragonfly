@@ -129,6 +129,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 		s.writePacket(&packet.LevelChunk{
 			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
 			Position:            protocol.ChunkPos(pos),
+			SubChunkCount:       uint32(len(c.Sub())),
 			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
 			RawPayload:          biomes,
 		})
@@ -139,6 +140,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk) {
 		s.writePacket(&packet.LevelChunk{
 			SubChunkRequestMode: protocol.SubChunkRequestModeLimited,
 			Position:            protocol.ChunkPos(pos),
+			SubChunkCount:       uint32(len(c.Sub())),
 			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
 			BlobHashes:          []uint64{hash},
 			CacheEnabled:        true,
