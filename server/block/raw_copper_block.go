@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // RawCopperBlock is a raw metal block equivalent to nine raw copper.
@@ -12,8 +12,8 @@ type RawCopperBlock struct {
 
 // BreakInfo ...
 func (r RawCopperBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(5, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierStone.HarvestLevel
+	return newBreakInfo(5, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, oneOf(r))
 }
 
@@ -23,6 +23,6 @@ func (RawCopperBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (RawCopperBlock) EncodeBlock() (string, map[string]interface{}) {
+func (RawCopperBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:raw_copper_block", nil
 }

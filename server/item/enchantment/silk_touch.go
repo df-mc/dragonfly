@@ -2,11 +2,10 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
 // SilkTouch is an enchantment that allows many blocks to drop themselves instead of their usual items when mined.
-type SilkTouch struct{ enchantment }
+type SilkTouch struct{}
 
 // Name ...
 func (e SilkTouch) Name() string {
@@ -18,14 +17,9 @@ func (e SilkTouch) MaxLevel() int {
 	return 1
 }
 
-// WithLevel ...
-func (e SilkTouch) WithLevel(level int) item.Enchantment {
-	return SilkTouch{e.withLevel(level, e)}
-}
-
 // CompatibleWith ...
 func (e SilkTouch) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(tool.Tool)
+	t, ok := s.Item().(item.Tool)
 	//TODO: Fortune
-	return ok && (t.ToolType() != tool.TypeSword && t.ToolType() != tool.TypeNone)
+	return ok && (t.ToolType() != item.TypeSword && t.ToolType() != item.TypeNone)
 }

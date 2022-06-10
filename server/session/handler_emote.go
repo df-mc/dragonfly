@@ -16,7 +16,7 @@ func (h *EmoteHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.Emote)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID
+		return errSelfRuntimeID
 	}
 	if time.Since(h.LastEmote) < time.Second {
 		return nil

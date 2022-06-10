@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -43,9 +42,9 @@ func (li *Lightning) World() *world.World {
 	return w
 }
 
-// AABB ...
-func (Lightning) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{})
+// BBox ...
+func (Lightning) BBox() cube.BBox {
+	return cube.Box(0, 0, 0, 0, 0, 0)
 }
 
 // Close closes the lighting.
@@ -90,7 +89,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		w.PlaySound(pos, sound.Thunder{})
 		w.PlaySound(pos, sound.Explosion{})
 
-		bb := li.AABB().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
+		bb := li.BBox().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
@@ -120,18 +119,18 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 }
 
 // DecodeNBT does nothing.
-func (li *Lightning) DecodeNBT(map[string]interface{}) interface{} {
+func (li *Lightning) DecodeNBT(map[string]any) any {
 	return nil
 }
 
 // EncodeNBT does nothing.
-func (li *Lightning) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{}
+func (li *Lightning) EncodeNBT() map[string]any {
+	return map[string]any{}
 }
 
 // fire returns a fire block.
 func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
 	if !ok {
 		panic("could not find fire block")
 	}

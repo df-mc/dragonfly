@@ -2,9 +2,8 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -142,9 +141,9 @@ func (a *Arrow) VanishOnPickup() {
 	a.obtainArrowOnPickup = false
 }
 
-// AABB ...
-func (a *Arrow) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (a *Arrow) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
@@ -161,12 +160,12 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		return
 	}
 
-	if pos, ok := a.CollisionPos(); ok {
-		aabbs := w.Block(pos).Model().AABB(pos, w)
-		aabb := a.AABB().Translate(a.Position())
-		for _, bb := range aabbs {
-			if aabb.IntersectsWith(bb.Translate(pos.Vec3()).Grow(0.05)) {
-				a.mu.Lock()
+	a.mu.Lock()
+	if a.collided {
+		boxs := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
+		box := a.BBox().Translate(a.pos)
+		for _, bb := range boxs {
+			if box.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
 				if a.ageCollided > 5 && !a.disallowPickup {
 					a.checkNearby(w)
 				}
@@ -177,7 +176,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		}
 	}
 
-	a.mu.Lock()
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.collisionPos, a.collided = cube.Pos{}, false
@@ -242,19 +240,19 @@ func (a *Arrow) Owner() world.Entity {
 }
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
-func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
+func (a *Arrow) DecodeNBT(data map[string]any) any {
 	arr := a.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
 		nil,
 		false, // Vanilla doesn't save this value, so we don't either.
-		nbtconv.MapByte(data, "player") == 1,
-		nbtconv.MapByte(data, "isCreative") == 1,
-		potion.From(nbtconv.MapInt32(data, "auxValue")-1),
+		nbtconv.Map[byte](data, "player") == 1,
+		nbtconv.Map[byte](data, "isCreative") == 1,
+		potion.From(nbtconv.Map[int32](data, "auxValue")-1),
 	).(*Arrow)
-	arr.baseDamage = float64(nbtconv.MapFloat32(data, "Damage"))
+	arr.baseDamage = float64(nbtconv.Map[float32](data, "Damage"))
 	if _, ok := data["StuckToBlockPos"]; ok {
 		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
 		arr.collided = true
@@ -263,9 +261,9 @@ func (a *Arrow) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
-func (a *Arrow) EncodeNBT() map[string]interface{} {
+func (a *Arrow) EncodeNBT() map[string]any {
 	yaw, pitch := a.Rotation()
-	nbt := map[string]interface{}{
+	nbt := map[string]any{
 		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
 		"Yaw":        yaw,
 		"Pitch":      pitch,
@@ -284,12 +282,12 @@ func (a *Arrow) EncodeNBT() map[string]interface{} {
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
 // picked up.
 func (a *Arrow) checkNearby(w *world.World) {
-	grown := a.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
+	grown := a.BBox().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
 	ignore := func(e world.Entity) bool {
 		return e == a
 	}
-	for _, e := range w.EntitiesWithin(a.AABB().Translate(a.pos).Grow(2), ignore) {
-		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
+	for _, e := range w.EntitiesWithin(a.BBox().Translate(a.pos).Grow(2), ignore) {
+		if e.BBox().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				if a.obtainArrowOnPickup {
 					// A collector was within range to pick up the entity.

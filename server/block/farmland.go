@@ -30,7 +30,7 @@ func (f Farmland) SoilFor(block world.Block) bool {
 // NeighbourUpdateTick ...
 func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if solid := w.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, w); solid {
-		w.SetBlock(pos, Dirt{})
+		w.SetBlock(pos, Dirt{}, nil)
 	}
 }
 
@@ -39,16 +39,16 @@ func (f Farmland) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if !f.hydrated(pos, w) {
 		if f.Hydration > 0 {
 			f.Hydration--
-			w.PlaceBlock(pos, f)
+			w.SetBlock(pos, f, nil)
 		} else {
 			blockAbove := w.Block(pos.Side(cube.FaceUp))
 			if _, cropAbove := blockAbove.(Crop); !cropAbove {
-				w.PlaceBlock(pos, Dirt{})
+				w.SetBlock(pos, Dirt{}, nil)
 			}
 		}
 	} else {
 		f.Hydration = 7
-		w.PlaceBlock(pos, f)
+		w.SetBlock(pos, f, nil)
 	}
 }
 
@@ -73,7 +73,7 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity) {
 	if living, ok := e.(entity.Living); ok {
 		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
-			w.PlaceBlock(pos, Dirt{})
+			w.SetBlock(pos, Dirt{}, nil)
 		}
 	}
 }
@@ -92,8 +92,8 @@ func (f Farmland) BreakInfo() BreakInfo {
 }
 
 // EncodeBlock ...
-func (f Farmland) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:farmland", map[string]interface{}{"moisturized_amount": int32(f.Hydration)}
+func (f Farmland) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:farmland", map[string]any{"moisturized_amount": int32(f.Hydration)}
 }
 
 // EncodeItem ...

@@ -33,6 +33,6 @@ func (Podzol) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Podzol) EncodeBlock() (string, map[string]interface{}) {
+func (Podzol) EncodeBlock() (string, map[string]any) {
 	return "minecraft:podzol", nil
 }

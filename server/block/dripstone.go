@@ -17,6 +17,6 @@ func (d Dripstone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d Dripstone) EncodeBlock() (string, map[string]interface{}) {
+func (d Dripstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:dripstone_block", nil
 }

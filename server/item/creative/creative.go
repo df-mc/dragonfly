@@ -3,6 +3,7 @@ package creative
 import (
 	_ "embed"
 	"encoding/base64"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	// The following three imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all items are registered before the creative items are registered
 	// in the init function in this package.
@@ -36,16 +37,16 @@ type creativeItemEntry struct {
 	Meta  int16  `nbt:"meta"`
 	NBT   string `nbt:"nbt"`
 	Block struct {
-		Name       string                 `nbt:"name"`
-		Properties map[string]interface{} `nbt:"states"`
-		Version    int32                  `nbt:"version"`
+		Name       string         `nbt:"name"`
+		Properties map[string]any `nbt:"states"`
+		Version    int32          `nbt:"version"`
 	} `nbt:"block"`
 }
 
 // init initialises the creative items, registering all creative items that have also been registered as
 // normal items and are present in vanilla.
 func init() {
-	var temp map[string]interface{}
+	var temp map[string]any
 
 	var m []creativeItemEntry
 	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {
@@ -77,15 +78,34 @@ func init() {
 			}
 		}
 
+		nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
+		if err := nbt.Unmarshal(nbtData, &temp); err != nil {
+			panic(err)
+		}
 		if n, ok := it.(world.NBTer); ok {
-			nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
-			if err := nbt.Unmarshal(nbtData, &temp); err != nil {
-				panic(err)
-			}
-			if len(temp) != 0 {
+			if len(temp) > 0 {
 				it = n.DecodeNBT(temp).(world.Item)
 			}
 		}
-		RegisterItem(item.NewStack(it, 1))
+
+		st := item.NewStack(it, 1)
+		if len(temp) > 0 {
+			var invalid bool
+			for _, e := range nbtconv.Map[[]any](temp, "ench") {
+				if v, ok := e.(map[string]any); ok {
+					t, ok := item.EnchantmentByID(int(nbtconv.Map[int16](v, "id")))
+					if !ok {
+						invalid = true
+						break
+					}
+					st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Map[int16](v, "lvl"))))
+				}
+			}
+			if invalid {
+				// Invalid enchantment, skip this item.
+				continue
+			}
+		}
+		RegisterItem(st)
 	}
 }

@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -64,9 +63,9 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
 		if findLog(pos, w, &[]cube.Pos{}, 0) {
 			l.ShouldUpdate = false
-			w.PlaceBlock(pos, l)
+			w.SetBlock(pos, l, nil)
 		} else {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 		}
 	}
 }
@@ -75,7 +74,7 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Persistent && !l.ShouldUpdate {
 		l.ShouldUpdate = true
-		w.PlaceBlock(pos, l)
+		w.SetBlock(pos, l, nil)
 	}
 }
 
@@ -86,10 +85,10 @@ func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypeShears || t.ToolType() == tool.TypeHoe
-	}, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == tool.TypeShears || hasSilkTouch(enchantments) {
+	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
+		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeHoe
+	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
 		var drops []item.Stack
@@ -108,8 +107,9 @@ func (l Leaves) EncodeItem() (name string, meta int16) {
 		return "minecraft:leaves", int16(l.Wood.Uint8())
 	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", int16(l.Wood.Uint8() - 4)
+	default:
+		return "minecraft:" + l.Wood.String() + "_leaves", 0
 	}
-	panic("invalid wood type")
 }
 
 // LightDiffusionLevel ...
@@ -129,14 +129,15 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 }
 
 // EncodeBlock ...
-func (l Leaves) EncodeBlock() (name string, properties map[string]interface{}) {
+func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
 	switch l.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-		return "minecraft:leaves", map[string]interface{}{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+		return "minecraft:leaves", map[string]any{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	case AcaciaWood(), DarkOakWood():
-		return "minecraft:leaves2", map[string]interface{}{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+		return "minecraft:leaves2", map[string]any{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+	default:
+		return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	}
-	panic("invalid wood type")
 }
 
 // allLogs returns a list of all possible leaves states.

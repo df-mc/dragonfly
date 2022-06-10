@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,12 +8,12 @@ import (
 // their drops.
 type Pickaxe struct {
 	// Tier is the tier of the pickaxe.
-	Tier tool.Tier
+	Tier ToolTier
 }
 
 // ToolType returns the type for pickaxes.
-func (p Pickaxe) ToolType() tool.Type {
-	return tool.TypePickaxe
+func (p Pickaxe) ToolType() ToolType {
+	return TypePickaxe
 }
 
 // HarvestLevel returns the level that this pickaxe is able to harvest. If a block has a harvest level above

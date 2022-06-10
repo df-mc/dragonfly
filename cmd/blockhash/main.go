@@ -13,6 +13,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -152,7 +153,17 @@ func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 				if !fieldName.IsExported() {
 					continue
 				}
-				str, v := b.ftype(name, recvName+"."+fieldName.Name, field.Type)
+				directives := make(map[string]string)
+				if field.Doc != nil {
+					for _, d := range field.Doc.List {
+						const k = "//blockhash:"
+						if index := strings.Index(d.Text, k); index != -1 {
+							dir := strings.Split(d.Text[index+len(k):], " ")
+							directives[dir[0]] = strings.Join(dir[1:], " ")
+						}
+					}
+				}
+				str, v := b.ftype(name, recvName+"."+fieldName.Name, field.Type, directives)
 				if v == 0 {
 					// Assume this field is not used in the hash.
 					continue
@@ -182,7 +193,7 @@ func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 	log.Println("Assuming int size of 8 bits at most for all int fields: Make sure this is valid for all blocks.")
 }
 
-func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
+func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[string]string) (string, int) {
 	var name string
 	switch t := expr.(type) {
 	case *ast.BasicLit:
@@ -201,13 +212,17 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr) (string, int) {
 	case "int":
 		return "uint64(" + s + ")", 8
 	case "Attachment":
+		if _, ok := directives["facing_only"]; ok {
+			log.Println("Found directive: 'facing_only'")
+			return "uint64(" + s + ".FaceUint8())", 3
+		}
 		return "uint64(" + s + ".Uint8())", 5
-	case "FlowerType", "DoubleFlowerType", "Colour":
+	case "WoodType", "FlowerType", "DoubleFlowerType", "Colour":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
-	case "WoodType", "CoralType":
+	case "CoralType":
 		return "uint64(" + s + ".Uint8())", 3
-	case "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType":
+	case "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "FroglightType":
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "GrassType":
 		return "uint64(" + s + ".Uint8())", 1

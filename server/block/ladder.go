@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -20,7 +21,8 @@ type Ladder struct {
 // NeighbourUpdateTick ...
 func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(l.Facing.Opposite().Face())).(LightDiffuser); ok {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
 	}
 }
 
@@ -81,8 +83,8 @@ func (l Ladder) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l Ladder) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:ladder", map[string]interface{}{"facing_direction": int32(l.Facing + 2)}
+func (l Ladder) EncodeBlock() (string, map[string]any) {
+	return "minecraft:ladder", map[string]any{"facing_direction": int32(l.Facing + 2)}
 }
 
 // Model ...

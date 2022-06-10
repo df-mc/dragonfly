@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 )
 
 // GoldOre is a rare mineral block found underground.
@@ -16,8 +15,8 @@ type GoldOre struct {
 
 // BreakInfo ...
 func (g GoldOre) BreakInfo() BreakInfo {
-	return newBreakInfo(g.Type.Hardness(), func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierIron.HarvestLevel
+	return newBreakInfo(g.Type.Hardness(), func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
 	}, pickaxeEffective, silkTouchOneOf(item.RawGold{}, g))
 }
 
@@ -27,6 +26,6 @@ func (g GoldOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g GoldOre) EncodeBlock() (string, map[string]interface{}) {
+func (g GoldOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + g.Type.Prefix() + "gold_ore", nil
 }

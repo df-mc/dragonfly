@@ -1,7 +1,7 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/item"
 )
 
 // AncientDebris is a rare ore found within The Nether.
@@ -11,8 +11,8 @@ type AncientDebris struct {
 
 // BreakInfo ...
 func (a AncientDebris) BreakInfo() BreakInfo {
-	return newBreakInfo(30, func(t tool.Tool) bool {
-		return t.ToolType() == tool.TypePickaxe && t.HarvestLevel() >= tool.TierDiamond.HarvestLevel
+	return newBreakInfo(30, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
 	}, pickaxeEffective, oneOf(a))
 }
 
@@ -22,6 +22,6 @@ func (AncientDebris) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (AncientDebris) EncodeBlock() (string, map[string]interface{}) {
+func (AncientDebris) EncodeBlock() (string, map[string]any) {
 	return "minecraft:ancient_debris", nil
 }

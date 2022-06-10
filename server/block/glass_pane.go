@@ -34,6 +34,6 @@ func (GlassPane) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (GlassPane) EncodeBlock() (string, map[string]interface{}) {
+func (GlassPane) EncodeBlock() (string, map[string]any) {
 	return "minecraft:glass_pane", nil
 }

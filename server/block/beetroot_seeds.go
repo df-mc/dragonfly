@@ -3,8 +3,8 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -27,7 +27,7 @@ func (b BeetrootSeeds) BoneMeal(pos cube.Pos, w *world.World) bool {
 	}
 	if rand.Float64() < 0.75 {
 		b.Growth++
-		w.PlaceBlock(pos, b)
+		w.SetBlock(pos, b, nil)
 		return true
 	}
 	return false
@@ -50,7 +50,7 @@ func (b BeetrootSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 
 // BreakInfo ...
 func (b BeetrootSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if b.Growth < 7 {
 			return []item.Stack{item.NewStack(b, 1)}
 		}
@@ -66,16 +66,17 @@ func (b BeetrootSeeds) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (b BeetrootSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if w.Light(pos) < 8 {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 	} else if b.Growth < 7 && r.Intn(3) > 0 && r.Float64() <= b.CalculateGrowthChance(pos, w) {
 		b.Growth++
-		w.PlaceBlock(pos, b)
+		w.SetBlock(pos, b, nil)
 	}
 }
 
 // EncodeBlock ...
-func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:beetroot", map[string]interface{}{"growth": int32(b.Growth)}
+func (b BeetrootSeeds) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:beetroot", map[string]any{"growth": int32(b.Growth)}
 }
 
 // allBeetroot ...

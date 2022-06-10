@@ -45,7 +45,7 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 		return false
 	}
 	f.Facing = user.Facing()
-	//TODO: Set Lowered if placed next to wall block
+	// TODO: Set Lowered if placed next to wall block.
 
 	place(w, pos, f, user, ctx)
 	return placed(ctx)
@@ -57,7 +57,7 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u ite
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
 	}
-	w.PlaceBlock(pos, f)
+	w.SetBlock(pos, f, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 	return true
 }
@@ -82,7 +82,7 @@ func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interface{}) {
+func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]any) {
 	direction := 2
 	switch f.Facing {
 	case cube.South:
@@ -92,13 +92,10 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interfa
 	case cube.East:
 		direction = 3
 	}
-
-	switch f.Wood {
-	case OakWood():
-		return "minecraft:fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	default:
-		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
+	if f.Wood == OakWood() {
+		return "minecraft:fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	}
+	return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 }
 
 // Model ...

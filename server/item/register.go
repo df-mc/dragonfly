@@ -1,22 +1,20 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/armour"
 	"github.com/df-mc/dragonfly/server/item/potion"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 //noinspection SpellCheckingInspection
 func init() {
-	for _, t := range tool.Tiers() {
+	for _, t := range ToolTiers() {
 		world.RegisterItem(Pickaxe{Tier: t})
 		world.RegisterItem(Axe{Tier: t})
 		world.RegisterItem(Shovel{Tier: t})
 		world.RegisterItem(Sword{Tier: t})
 		world.RegisterItem(Hoe{Tier: t})
 	}
-	for _, t := range armour.Tiers() {
+	for _, t := range ArmourTiers() {
 		world.RegisterItem(Helmet{Tier: t})
 		world.RegisterItem(Chestplate{Tier: t})
 		world.RegisterItem(Leggings{Tier: t})
@@ -43,6 +41,7 @@ func init() {
 	world.RegisterItem(ClayBall{})
 	world.RegisterItem(NetherQuartz{})
 	world.RegisterItem(Flint{})
+	world.RegisterItem(EnchantedBook{})
 
 	world.RegisterItem(Stick{})
 	world.RegisterItem(MagmaCream{})
@@ -83,6 +82,7 @@ func init() {
 	world.RegisterItem(Pufferfish{})
 	world.RegisterItem(Clock{})
 	world.RegisterItem(Compass{})
+	world.RegisterItem(Spyglass{})
 
 	world.RegisterItem(CopperIngot{})
 	world.RegisterItem(RawCopper{})
@@ -149,4 +149,6 @@ func init() {
 	}
 	world.RegisterItem(TropicalFish{})
 	world.RegisterItem(AmethystShard{})
+	world.RegisterItem(DiscFragment{})
+	world.RegisterItem(EchoShard{})
 }

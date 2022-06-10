@@ -26,6 +26,6 @@ func (c Clay) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Clay) EncodeBlock() (name string, properties map[string]interface{}) {
+func (c Clay) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:clay", nil
 }

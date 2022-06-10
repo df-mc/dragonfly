@@ -46,6 +46,19 @@ type Usable interface {
 	Use(w *world.World, user User, ctx *UseContext) bool
 }
 
+// Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
+// non-vanilla items.
+type Throwable interface {
+	// SwingAnimation returns true if the client should cause the player's arm to swing when the item is thrown.
+	SwingAnimation() bool
+}
+
+// OffHand represents an item that can be held in the off hand.
+type OffHand interface {
+	// OffHand returns true if the item can be held in the off hand.
+	OffHand() bool
+}
+
 // Consumable represents an item that may be consumed by a player. If an item implements this interface, a player
 // may use and hold the item to consume it.
 type Consumable interface {
@@ -78,6 +91,27 @@ type Consumer interface {
 // time to be consumed.
 const DefaultConsumeDuration = (time.Second * 161) / 100
 
+// Drinkable represents a custom item that can be drunk. It is used to make the client show the correct drinking
+// animation when a player is using an item. This will only have an effect on non-vanilla items.
+type Drinkable interface {
+	// Drinkable returns if the item can be drunk or not.
+	Drinkable() bool
+}
+
+// Glinted represents a custom item that can have a permanent enchantment glint, this glint is purely cosmetic and
+// will show regardless of whether it is actually enchanted. An example of this is the enchanted golden apple.
+type Glinted interface {
+	// Glinted returns whether the item has an enchantment glint.
+	Glinted() bool
+}
+
+// HandEquipped represents an item that can be 'hand equipped'. This means the item will show up in third person like
+// a tool, sword or stick would, giving them a different orientation in the hand and making them slightly bigger.
+type HandEquipped interface {
+	// HandEquipped returns whether the item is hand equipped.
+	HandEquipped() bool
+}
+
 // Weapon is an item that may be used as a weapon. It has an attack damage which may be different to the 2
 // damage that attacking with an empty hand deals.
 type Weapon interface {
@@ -95,7 +129,7 @@ type Cooldown interface {
 // name displayed in their interface.
 type nameable interface {
 	// WithName returns the block itself, except with a custom name applied to it.
-	WithName(a ...interface{}) world.Item
+	WithName(a ...any) world.Item
 }
 
 // Releaser represents an entity that can release items, such as bows.
