@@ -486,16 +486,15 @@ func (p *Player) fall(distance float64) {
 		w   = p.World()
 		pos = cube.PosFromVec3(p.Position())
 		b   = w.Block(pos)
-		dmg = distance - 3
 	)
 	if len(b.Model().BBox(pos, w)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p)
+		h.EntityLand(pos, w, p, &distance)
 	}
-
+	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
 		dmg -= float64(boost.Level())
 	}

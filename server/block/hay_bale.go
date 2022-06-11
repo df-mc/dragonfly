@@ -22,6 +22,13 @@ func (HayBale) Instrument() sound.Instrument {
 	return sound.Banjo()
 }
 
+// EntityLand ...
+func (h HayBale) EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64) {
+	if _, ok := e.(fallDistanceEntity); ok {
+		*distance = *distance * 0.2
+	}
+}
+
 // UseOnBlock ...
 func (h HayBale) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, h)
