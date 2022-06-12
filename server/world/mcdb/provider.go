@@ -29,7 +29,7 @@ type Provider struct {
 }
 
 // chunkVersion is the current version of chunks.
-const chunkVersion = 27
+const chunkVersion = 40
 
 // New creates a new provider reading and writing from/to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
@@ -75,13 +75,12 @@ func New(dir string, compression opt.Compression) (*Provider, error) {
 func (p *Provider) initDefaultLevelDat() {
 	p.d.DoDayLightCycle = true
 	p.d.DoWeatherCycle = true
-	p.d.BaseGameVersion = protocol.CurrentVersion
 	p.d.NetworkVersion = protocol.CurrentProtocol
 	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
 	p.d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
 	p.d.LevelName = "World"
 	p.d.GameType = 1
-	p.d.StorageVersion = 8
+	p.d.StorageVersion = 9
 	p.d.Generator = 1
 	p.d.Abilities.WalkSpeed = 0.1
 	p.d.PVP = true
@@ -91,14 +90,25 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.FireDamage = true
 	p.d.DrowningDamage = true
 	p.d.CommandsEnabled = true
-	p.d.MultiPlayerGame = true
-	p.d.SpawnY = math.MaxInt32
 	p.d.Difficulty = 2
 	p.d.DoWeatherCycle = true
 	p.d.RainLevel = 1.0
 	p.d.LightningLevel = 1.0
 	p.d.ServerChunkTickRange = 6
 	p.d.NetherScale = 8
+	p.d.InventoryVersion = protocol.CurrentVersion
+	p.d.SpawnY = math.MaxInt16
+	p.d.BaseGameVersion = "*"
+	p.d.MaxCommandChainLength = math.MaxUint16
+	p.d.ShowBorderEffect = true
+	p.d.SpawnRadius = 5
+	p.d.MultiPlayerGameIntent = true
+	p.d.MultiPlayerGame = true
+	p.d.FreezeDamage = 1
+	p.d.Abilities.FlySpeed = 0.05
+	p.d.Abilities.WalkSpeed = 0.1
+	p.d.RandomSeed = time.Now().Unix()
+	p.d.StorageVersion = 9
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
