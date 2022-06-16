@@ -10,7 +10,7 @@ import (
 
 // Data is a struct that contains all the data of that player to be passed on to the Provider and saved.
 type Data struct {
-	// UUID is the player's unique identifier for their account
+	// UUID is the player's unique identifier for their account.
 	UUID uuid.UUID
 	// Username is the last username the player joined with.
 	Username string
@@ -41,8 +41,7 @@ type Data struct {
 	Effects []effect.Effect
 	// FireTicks is the amount of ticks the player will be on fire for.
 	FireTicks int64
-	// FallDistance is the distance the player has currently been falling.
-	// This is used to calculate fall damage.
+	// FallDistance is the distance the player has currently been falling. This is used to calculate fall damage.
 	FallDistance float64
 	// Dimension is the ID of the dimension that the player was last in. The player is added to the correct world based
 	// on this number.
