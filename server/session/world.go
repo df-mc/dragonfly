@@ -48,7 +48,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 	yaw, pitch := e.Rotation()
 
-	metadata := map[uint32]any{}
+	metadata := s.parseEntityMetadata(e)
 
 	id := e.EncodeEntity()
 	switch v := e.(type) {
@@ -57,7 +57,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 		sessionMu.Lock()
 		for _, s := range sessions {
-			if uuid.MustParse(s.conn.IdentityData().Identity) == v.UUID() {
+			if s.c.UUID() == v.UUID() {
 				actualPlayer = true
 				break
 			}
@@ -97,9 +97,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 		})
 		return
 	case *entity.FallingBlock:
-		metadata = map[uint32]any{dataKeyVariant: int32(world.BlockRuntimeID(v.Block()))}
+		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
 	case *entity.Text:
-		metadata = map[uint32]any{dataKeyVariant: int32(world.BlockRuntimeID(block.Air{}))}
+		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
 		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
 	}
 
