@@ -2416,10 +2416,12 @@ func (p *Player) load(data Data) {
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
+	p.session().SendHealth(p.health)
 
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
+	p.sendFood()
 
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)

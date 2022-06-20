@@ -79,6 +79,8 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 	e.mu.Lock()
 	m, result := e.c.TickMovement(e, e.pos, e.vel, e.yaw, e.pitch, e.ignores)
 	e.pos, e.vel, e.yaw, e.pitch = m.pos, m.vel, m.yaw, m.pitch
+
+	owner := e.owner
 	e.mu.Unlock()
 
 	e.age++
@@ -92,13 +94,13 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 	if result != nil {
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: e, Owner: e.Owner()}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: e, Owner: owner}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
 		}
 
-		if owner := e.Owner(); owner != nil {
+		if owner != nil {
 			if user, ok := owner.(teleporter); ok {
 				w.PlaySound(user.Position(), sound.Teleport{})
 
