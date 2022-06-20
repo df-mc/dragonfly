@@ -53,7 +53,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 		overloads := make([]protocol.CommandOverload, len(params))
 		for i, params := range params {
 			for _, paramInfo := range params {
-				t, enum := valueToParamType(paramInfo.Value, s.c)
+				t, enum := valueToParamType(paramInfo, s.c)
 				t |= protocol.CommandArgValid
 
 				opt := byte(0)
@@ -85,8 +85,8 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 
 // valueToParamType finds the command argument type of the value passed and returns it, in addition to creating
 // an enum if applicable.
-func valueToParamType(i any, source cmd.Source) (t uint32, enum protocol.CommandEnum) {
-	switch i.(type) {
+func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum protocol.CommandEnum) {
+	switch i.Value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return protocol.CommandArgTypeInt, enum
 	case float32, float64:
@@ -104,14 +104,13 @@ func valueToParamType(i any, source cmd.Source) (t uint32, enum protocol.Command
 		}
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
-	}
-	if sub, ok := i.(cmd.SubCommand); ok {
+	case cmd.SubCommand:
 		return 0, protocol.CommandEnum{
-			Type:    "SubCommand" + sub.SubName(),
-			Options: []string{sub.SubName()},
+			Type:    "SubCommand" + i.Name,
+			Options: []string{i.Name},
 		}
 	}
-	if enum, ok := i.(cmd.Enum); ok {
+	if enum, ok := i.Value.(cmd.Enum); ok {
 		return 0, protocol.CommandEnum{
 			Type:    enum.Type(),
 			Options: enum.Options(source),
