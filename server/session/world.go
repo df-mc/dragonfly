@@ -47,7 +47,6 @@ func (s *Session) ViewEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	yaw, pitch := e.Rotation()
-
 	metadata := s.parseEntityMetadata(e)
 
 	id := e.EncodeEntity()
@@ -77,6 +76,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
 			Position:        vec64To32(e.Position()),
+			EntityMetadata:  metadata,
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
