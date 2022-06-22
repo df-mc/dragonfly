@@ -28,7 +28,11 @@ func (s *Session) entityHidden(e world.Entity) bool {
 
 // ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
-	if s.entityRuntimeID(e) == selfEntityRuntimeID || s.entityHidden(e) {
+	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+		s.ViewEntityState(e)
+		return
+	}
+	if s.entityHidden(e) {
 		return
 	}
 	var runtimeID uint64
