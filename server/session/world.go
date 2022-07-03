@@ -77,7 +77,6 @@ func (s *Session) ViewEntity(e world.Entity) {
 		s.writePacket(&packet.AddPlayer{
 			UUID:            v.UUID(),
 			Username:        v.Name(),
-			EntityUniqueID:  int64(runtimeID),
 			EntityRuntimeID: runtimeID,
 			Position:        vec64To32(e.Position()),
 			EntityMetadata:  metadata,
