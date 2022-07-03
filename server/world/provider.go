@@ -48,10 +48,19 @@ type Provider interface {
 var _ Provider = (*NopProvider)(nil)
 
 // NopProvider implements a Provider that does not perform any disk I/O. It generates values on the run and
-// dynamically, instead of reading and writing data, and otherwise returns empty values.
-type NopProvider struct{}
+// dynamically, instead of reading and writing data, and otherwise returns empty values. A Settings struct can be passed
+// to initialize a world with specific settings. Since Settings is a pointer, using the same NopProvider for multiple
+// worlds means those worlds will share the same settings.
+type NopProvider struct {
+	Set *Settings
+}
 
-func (NopProvider) Settings() *Settings                                        { return defaultSettings() }
+func (n NopProvider) Settings() *Settings {
+	if n.Set == nil {
+		return defaultSettings()
+	}
+	return n.Set
+}
 func (NopProvider) SaveSettings(*Settings)                                     {}
 func (NopProvider) LoadEntities(ChunkPos, Dimension) ([]SaveableEntity, error) { return nil, nil }
 func (NopProvider) SaveEntities(ChunkPos, []SaveableEntity, Dimension) error   { return nil }
