@@ -30,7 +30,7 @@ type Viewer interface {
 	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
-	ViewChunk(pos ChunkPos, c *chunk.Chunk)
+	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]Block)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
 	ViewTime(t int)
@@ -77,7 +77,7 @@ func (NopViewer) HideEntity(Entity)                                             
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                         {}
 func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                         {}
-func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk)                              {}
+func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk, map[cube.Pos]Block)          {}
 func (NopViewer) ViewTime(int)                                                  {}
 func (NopViewer) ViewEntityItems(Entity)                                        {}
 func (NopViewer) ViewEntityArmour(Entity)                                       {}

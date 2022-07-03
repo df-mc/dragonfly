@@ -94,6 +94,11 @@ func init() {
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(Bookshelf{})
+	world.RegisterBlock(Mud{})
+	world.RegisterBlock(PackedMud{})
+	world.RegisterBlock(MudBricks{})
+	world.RegisterBlock(ReinforcedDeepslate{})
+	world.RegisterBlock(MuddyMangroveRoots{})
 
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -101,11 +106,13 @@ func init() {
 	registerAll(allBoneBlock())
 	registerAll(allBlastFurnaces())
 	registerAll(allCake())
+	registerAll(allCactus())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allChests())
 	registerAll(allConcrete())
 	registerAll(allConcretePowder())
+	registerAll(allCobblestoneStairs())
 	registerAll(allCocoaBeans())
 	registerAll(allCoral())
 	registerAll(allCoralBlocks())
@@ -140,6 +147,7 @@ func init() {
 	registerAll(allPotato())
 	registerAll(allWheat())
 	registerAll(allQuartz())
+	registerAll(allQuartzStairs())
 	registerAll(allNetherWart())
 	registerAll(allNetherBricks())
 	registerAll(allTallGrass())
@@ -153,10 +161,12 @@ func init() {
 	registerAll(allLight())
 	registerAll(allLadders())
 	registerAll(allSandstoneStairs())
+	registerAll(allStoneBrickStairs())
 	registerAll(allSeaPickles())
 	registerAll(allSmokers())
 	registerAll(allWood())
 	registerAll(allChains())
+	registerAll(allFroglight())
 }
 
 func init() {
@@ -174,9 +184,12 @@ func init() {
 	world.RegisterItem(Dirt{})
 	world.RegisterItem(Dirt{Coarse: true})
 	world.RegisterItem(Cobblestone{})
+	world.RegisterItem(Cactus{})
 	world.RegisterItem(Bedrock{})
 	world.RegisterItem(Kelp{})
 	world.RegisterItem(Chest{})
+	world.RegisterItem(CobblestoneStairs{Mossy: true})
+	world.RegisterItem(CobblestoneStairs{})
 	world.RegisterItem(Cobblestone{Mossy: true})
 	world.RegisterItem(CraftingTable{})
 	world.RegisterItem(Obsidian{})
@@ -203,6 +216,8 @@ func init() {
 	world.RegisterItem(ChiseledQuartz{})
 	world.RegisterItem(QuartzPillar{})
 	world.RegisterItem(QuartzBricks{})
+	world.RegisterItem(QuartzStairs{})
+	world.RegisterItem(QuartzStairs{Smooth: true})
 	world.RegisterItem(GlassPane{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(NetherBrickFence{})
@@ -264,10 +279,17 @@ func init() {
 	world.RegisterItem(Snow{})
 	world.RegisterItem(Bookshelf{})
 	world.RegisterItem(Chain{})
+	world.RegisterItem(StoneBrickStairs{Mossy: true})
+	world.RegisterItem(StoneBrickStairs{})
 	world.RegisterItem(SandstoneStairs{})
 	world.RegisterItem(SandstoneStairs{Red: true})
 	world.RegisterItem(SandstoneStairs{Smooth: true})
 	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
+	world.RegisterItem(Mud{})
+	world.RegisterItem(PackedMud{})
+	world.RegisterItem(MudBricks{})
+	world.RegisterItem(ReinforcedDeepslate{})
+	world.RegisterItem(MuddyMangroveRoots{})
 
 	world.RegisterItem(Smoker{})
 	world.RegisterItem(Furnace{})
@@ -347,6 +369,9 @@ func init() {
 	}
 	for _, t := range NetherBricksTypes() {
 		world.RegisterItem(NetherBricks{Type: t})
+	}
+	for _, t := range FroglightTypes() {
+		world.RegisterItem(Froglight{Type: t})
 	}
 }
 

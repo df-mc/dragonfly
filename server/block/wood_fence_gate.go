@@ -98,13 +98,10 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]any) {
 	case cube.East:
 		direction = 3
 	}
-
-	switch f.Wood {
-	case OakWood():
+	if f.Wood == OakWood() {
 		return "minecraft:fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	default:
-		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	}
+	return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 }
 
 // Model ...

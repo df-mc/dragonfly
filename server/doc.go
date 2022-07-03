@@ -7,6 +7,6 @@
 //   for srv.Accept(nil) {
 //	 }
 //
-// `Server.Accept()` blocks until a new player connects to the server and spawns in the default world and calls the
-// function passed to it once this happens. If `Server.Accept()` returns an error, this means the server was closed.
+// `Server.Accept()` blocks until a new player connects to the server and spawns in the default world, and calls the
+// function passed to it once this happens. If `Server.Accept()` returns false, this means the server was closed.
 package server

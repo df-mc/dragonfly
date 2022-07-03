@@ -54,6 +54,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.setFlag(dataKeyFlags, dataFlagCritical)
 	}
+	if g, ok := e.(gameMode); ok && g.GameMode().HasCollision() {
+		m.setFlag(dataKeyFlags, dataFlagHasCollision)
+	}
 	if o, ok := e.(orb); ok {
 		m[dataKeyExperienceValue] = int32(o.Experience())
 	}
@@ -144,6 +147,7 @@ const (
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
+	dataFlagHasCollision      = 47
 	dataFlagAffectedByGravity = 48
 	dataFlagEnchanted         = 51
 	dataFlagSwimming          = 56
@@ -215,4 +219,8 @@ type arrow interface {
 
 type orb interface {
 	Experience() int
+}
+
+type gameMode interface {
+	GameMode() world.GameMode
 }

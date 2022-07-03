@@ -93,12 +93,10 @@ func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]any) {
-	switch t.Wood {
-	case OakWood():
+	if t.Wood == OakWood() {
 		return "minecraft:trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	default:
-		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	}
+	return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 }
 
 // allTrapdoors returns a list of all trapdoor types

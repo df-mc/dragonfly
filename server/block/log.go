@@ -77,15 +77,16 @@ func (l Log) EncodeItem() (name string, meta int16) {
 			return "minecraft:log2", int16(l.Wood.Uint8()) - 4
 		case CrimsonWood(), WarpedWood():
 			return "minecraft:" + l.Wood.String() + "_stem", 0
+		default:
+			return "minecraft:" + l.Wood.String() + "_log", 0
 		}
 	}
 	switch l.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:stripped_" + l.Wood.String() + "_log", 0
 	case CrimsonWood(), WarpedWood():
 		return "minecraft:stripped_" + l.Wood.String() + "_stem", 0
+	default:
+		return "minecraft:stripped_" + l.Wood.String() + "_log", 0
 	}
-	panic("invalid wood type")
 }
 
 // EncodeBlock ...
@@ -98,15 +99,16 @@ func (l Log) EncodeBlock() (name string, properties map[string]any) {
 			return "minecraft:log2", map[string]any{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
 		case CrimsonWood(), WarpedWood():
 			return "minecraft:" + l.Wood.String() + "_stem", map[string]any{"pillar_axis": l.Axis.String()}
+		default:
+			return "minecraft:" + l.Wood.String() + "_log", map[string]any{"pillar_axis": l.Axis.String()}
 		}
 	}
 	switch l.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:stripped_" + l.Wood.String() + "_log", map[string]any{"pillar_axis": l.Axis.String()}
 	case CrimsonWood(), WarpedWood():
 		return "minecraft:stripped_" + l.Wood.String() + "_stem", map[string]any{"pillar_axis": l.Axis.String()}
+	default:
+		return "minecraft:stripped_" + l.Wood.String() + "_log", map[string]any{"pillar_axis": l.Axis.String()}
 	}
-	panic("invalid wood type")
 }
 
 // allLogs returns a list of all possible log states.

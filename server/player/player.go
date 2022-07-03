@@ -246,6 +246,12 @@ func (p *Player) SendJukeboxPopup(a ...any) {
 	p.session().SendJukeboxPopup(format(a))
 }
 
+// SendToast sends a toast to the player. This toast is shown at the top of the screen, similar to achievements or pack
+// loading.
+func (p *Player) SendToast(title, message string) {
+	p.session().SendToast(title, message)
+}
+
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
 	p.fallDistance.Store(0)
@@ -809,13 +815,10 @@ func (p *Player) Respawn() {
 	p.Extinguish()
 	p.ResetFallDistance()
 
-	switch w.Dimension() {
-	case world.Nether:
-		w, _ = w.PortalDestinations()
-	case world.End:
-		_, w = w.PortalDestinations()
-	}
-	pos := w.Spawn().Vec3Middle()
+	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
+	// always bring us back to the overworld.
+	w = w.PortalDestination(w.Dimension())
+	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
 	p.handler().HandleRespawn(&pos, &w)
 
@@ -1280,9 +1283,6 @@ func (p *Player) UsingItem() bool {
 	return p.usingItem.Load()
 }
 
-// disabledOpts holds a *world.SetOpts with all options disabled, this is typically used for resending blocks to players.
-var disabledOpts = &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true}
-
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
@@ -1526,8 +1526,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 func (p *Player) FinishBreaking() {
 	pos := p.breakingPos.Load()
 	if !p.breaking.Load() {
-		w := p.World()
-		w.SetBlock(pos, w.Block(pos), disabledOpts)
+		p.resendBlock(pos, p.World())
 		return
 	}
 	p.AbortBreaking()
@@ -2417,10 +2416,12 @@ func (p *Player) load(data Data) {
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
+	p.session().SendHealth(p.health)
 
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
+	p.sendFood()
 
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)

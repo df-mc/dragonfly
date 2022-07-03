@@ -9,10 +9,13 @@ type (
 		// ReducedByArmour checks if the source of damage may be reduced if the receiver of the damage is wearing
 		// armour.
 		ReducedByArmour() bool
-		// AffectedByResistance specifies if the Source is affected by the resistance effect. If false, damage dealt
+		// ReducedByResistance specifies if the Source is affected by the resistance effect. If false, damage dealt
 		// to an entity with this source will not be lowered if the entity has the resistance effect.
-		AffectedByResistance() bool
+		ReducedByResistance() bool
 	}
+
+	// SourceCactus is used for damage caused by a Cactus.
+	SourceCactus struct{}
 
 	// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
 	// player.
@@ -20,6 +23,7 @@ type (
 		// Attacker holds the attacking entity. The entity may be a player or any other entity.
 		Attacker world.Entity
 	}
+
 	// SourceStarvation is used for damage caused by a completely depleted food bar.
 	SourceStarvation struct{}
 
@@ -62,27 +66,29 @@ type (
 	}
 )
 
-func (SourceFall) ReducedByArmour() bool                     { return false }
-func (SourceFall) AffectedByResistance() bool                { return true }
-func (SourceLightning) ReducedByArmour() bool                { return true }
-func (SourceLightning) AffectedByResistance() bool           { return true }
-func (SourceEntityAttack) ReducedByArmour() bool             { return true }
-func (SourceEntityAttack) AffectedByResistance() bool        { return true }
-func (SourceStarvation) ReducedByArmour() bool               { return false }
-func (SourceStarvation) AffectedByResistance() bool          { return false }
-func (SourceInstantDamageEffect) ReducedByArmour() bool      { return false }
-func (SourceInstantDamageEffect) AffectedByResistance() bool { return true }
-func (SourceVoid) AffectedByResistance() bool                { return false }
-func (SourceVoid) ReducedByArmour() bool                     { return false }
-func (SourcePoisonEffect) AffectedByResistance() bool        { return true }
-func (SourcePoisonEffect) ReducedByArmour() bool             { return false }
-func (SourceWitherEffect) AffectedByResistance() bool        { return true }
-func (SourceWitherEffect) ReducedByArmour() bool             { return false }
-func (SourceFire) AffectedByResistance() bool                { return true }
-func (SourceFire) ReducedByArmour() bool                     { return true }
-func (SourceFireTick) AffectedByResistance() bool            { return true }
-func (SourceFireTick) ReducedByArmour() bool                 { return false }
-func (SourceLava) AffectedByResistance() bool                { return true }
-func (SourceLava) ReducedByArmour() bool                     { return true }
-func (SourceProjectile) AffectedByResistance() bool          { return true }
-func (SourceProjectile) ReducedByArmour() bool               { return true }
+func (SourceCactus) ReducedByResistance() bool              { return true }
+func (SourceCactus) ReducedByArmour() bool                  { return true }
+func (SourceFall) ReducedByArmour() bool                    { return false }
+func (SourceFall) ReducedByResistance() bool                { return true }
+func (SourceLightning) ReducedByArmour() bool               { return true }
+func (SourceLightning) ReducedByResistance() bool           { return true }
+func (SourceEntityAttack) ReducedByArmour() bool            { return true }
+func (SourceEntityAttack) ReducedByResistance() bool        { return true }
+func (SourceStarvation) ReducedByArmour() bool              { return false }
+func (SourceStarvation) ReducedByResistance() bool          { return false }
+func (SourceInstantDamageEffect) ReducedByArmour() bool     { return false }
+func (SourceInstantDamageEffect) ReducedByResistance() bool { return true }
+func (SourceVoid) ReducedByResistance() bool                { return false }
+func (SourceVoid) ReducedByArmour() bool                    { return false }
+func (SourcePoisonEffect) ReducedByResistance() bool        { return true }
+func (SourcePoisonEffect) ReducedByArmour() bool            { return false }
+func (SourceWitherEffect) ReducedByResistance() bool        { return true }
+func (SourceWitherEffect) ReducedByArmour() bool            { return false }
+func (SourceFire) ReducedByResistance() bool                { return true }
+func (SourceFire) ReducedByArmour() bool                    { return true }
+func (SourceFireTick) ReducedByResistance() bool            { return true }
+func (SourceFireTick) ReducedByArmour() bool                { return false }
+func (SourceLava) ReducedByResistance() bool                { return true }
+func (SourceLava) ReducedByArmour() bool                    { return true }
+func (SourceProjectile) ReducedByResistance() bool          { return true }
+func (SourceProjectile) ReducedByArmour() bool              { return true }
