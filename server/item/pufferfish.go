@@ -15,8 +15,8 @@ type Pufferfish struct {
 func (p Pufferfish) Consume(_ *world.World, c Consumer) Stack {
 	c.Saturate(1, 0.2)
 	c.AddEffect(effect.New(effect.Hunger{}, 3, 15*time.Second))
-	c.AddEffect(effect.New(effect.Poison{}, 4, time.Minute))
-	c.AddEffect(effect.New(effect.Nausea{}, 1, 15*time.Second))
+	c.AddEffect(effect.New(effect.Poison{}, 2, time.Minute))
+	c.AddEffect(effect.New(effect.Nausea{}, 2, 15*time.Second))
 	return Stack{}
 }
 
