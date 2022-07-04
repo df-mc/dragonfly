@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
@@ -147,7 +148,7 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 
 	h.setItemInSlot(from, i.Grow(-int(count)), s)
 	h.setItemInSlot(to, dest.Grow(int(count)), s)
-
+	h.collectRewards(invA, s)
 	return nil
 }
 
@@ -173,21 +174,22 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
-
+	h.collectRewards(invA, s)
+	h.collectRewards(invB, s)
 	return nil
 }
 
-// call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
-// the event.Context was cancelled either before or after the call.
-func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
-	if ctx.Cancelled() {
-		return fmt.Errorf("action was cancelled")
+// collectRewards checks if the source inventory has rewards for the player, for example, experience rewards when
+// smelting. If it does, it will drop the rewards at the player's location.
+func (h *ItemStackRequestHandler) collectRewards(inv *inventory.Inventory, s *Session) {
+	w := s.c.World()
+	if inv == s.openedWindow.Load() && s.containerOpened.Load() {
+		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
+			for _, e := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
+				w.AddEntity(e)
+			}
+		}
 	}
-	f(ctx, slot, it)
-	if ctx.Cancelled() {
-		return fmt.Errorf("action was cancelled")
-	}
-	return nil
 }
 
 // handleCraft handles the CraftRecipe request action.
@@ -677,4 +679,17 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 		}
 	}
 	h.changes = map[byte]map[byte]changeInfo{}
+}
+
+// call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
+// the event.Context was cancelled either before or after the call.
+func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	f(ctx, slot, it)
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	return nil
 }

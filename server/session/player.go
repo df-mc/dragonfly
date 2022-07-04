@@ -111,6 +111,20 @@ const (
 	containerCreativeOutput    = 59
 )
 
+// smelter is an interface representing a block used to smelt items.
+type smelter interface {
+	// Durations returns the remaining, maximum, and cook durations of the smelter.
+	Durations() (time.Duration, time.Duration, time.Duration)
+	// UpdateDurations updates the remaining, maximum, and cook durations of the smelter.
+	UpdateDurations(remaining, max, cook time.Duration)
+	// Experience returns the collected experience of the smelter.
+	Experience() int
+	// SetExperience sets the collected experience of the smelter to the given value.
+	SetExperience(xp int)
+	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
+	ResetExperience() int
+}
+
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
@@ -126,6 +140,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerArmour:
 		// Armour inventory.
 		return s.armour.Inventory(), true
+	case containerBeacon:
+		if s.containerOpened.Load() {
+			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
+				return s.ui, true
+			}
+		}
 	case containerChest:
 		if s.containerOpened.Load() {
 			if _, chest := s.c.World().Block(s.openedPos.Load()).(block.Chest); chest {
@@ -138,19 +158,9 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBeacon:
-		if s.containerOpened.Load() {
-			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
-				return s.ui, true
-			}
-		}
 	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			_, smoker := b.(block.Smoker)
-			_, furnace := b.(block.Furnace)
-			_, blastFurnace := b.(block.BlastFurnace)
-			if smoker || furnace || blastFurnace {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true
 			}
 		}
