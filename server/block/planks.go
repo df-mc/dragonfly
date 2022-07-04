@@ -32,19 +32,18 @@ func (p Planks) EncodeItem() (name string, meta int16) {
 	switch p.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		return "minecraft:planks", int16(p.Wood.Uint8())
-	case CrimsonWood(), WarpedWood():
+	default:
 		return "minecraft:" + p.Wood.String() + "_planks", 0
 	}
-	panic("invalid wood type")
 }
 
 // EncodeBlock ...
 func (p Planks) EncodeBlock() (name string, properties map[string]any) {
 	switch p.Wood {
-	case CrimsonWood(), WarpedWood():
-		return "minecraft:" + p.Wood.String() + "_planks", nil
-	default:
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		return "minecraft:planks", map[string]any{"wood_type": p.Wood.String()}
+	default:
+		return "minecraft:" + p.Wood.String() + "_planks", nil
 	}
 }
 

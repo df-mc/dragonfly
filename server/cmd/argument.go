@@ -72,7 +72,8 @@ type parser struct {
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
 // parsing was not successful, an error is returned.
-func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source Source) (err error) {
+func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name string, source Source) (error, bool) {
+	var err error
 	i := v.Interface()
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
@@ -91,6 +92,8 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 		err = p.varargs(line, v)
 	case []Target:
 		err = p.targets(line, v)
+	case SubCommand:
+		err = p.sub(line, name)
 	default:
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
@@ -98,10 +101,6 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 		}
 		if enum, ok := i.(Enum); ok {
 			err = p.enum(line, v, enum, source)
-			break
-		}
-		if sub, ok := i.(SubCommand); ok {
-			err = p.sub(line, sub)
 			break
 		}
 		panic(fmt.Sprintf("non-command parameter type %T in command structure", i))
@@ -113,9 +112,9 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
 		// not matter. Make sure to clear the value though.
 		v.Set(reflect.Zero(v.Type()))
-		return nil
+		return nil, false
 	}
-	return err
+	return err, err == nil
 }
 
 // ErrInsufficientArgs is returned by argument parsing functions if it does not have sufficient arguments
@@ -208,15 +207,15 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 }
 
 // sub reads verifies a SubCommand against the next argument.
-func (p parser) sub(line *Line, v SubCommand) error {
+func (p parser) sub(line *Line, name string) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
 	}
-	if strings.EqualFold(v.SubName(), arg) {
+	if strings.EqualFold(name, arg) {
 		return nil
 	}
-	return fmt.Errorf(`invalid argument "%v" for sub command "%v"`, arg, v.SubName())
+	return fmt.Errorf(`invalid argument "%v" for sub command "%v"`, arg, name)
 }
 
 // vec3 ...
@@ -302,7 +301,3 @@ func (p parser) parsePlayer(players []Target, name string) (Target, error) {
 	}
 	return nil, fmt.Errorf("player with name '%v' not found", name)
 }
-
-// Varargs is an argument type that may be used to capture all arguments that follow. This is useful for,
-// for example, messages and names.
-type Varargs string
