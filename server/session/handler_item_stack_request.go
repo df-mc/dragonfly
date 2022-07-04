@@ -10,10 +10,12 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/exp/slices"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -185,8 +187,9 @@ func (h *ItemStackRequestHandler) collectRewards(inv *inventory.Inventory, s *Se
 	w := s.c.World()
 	if inv == s.openedWindow.Load() && s.containerOpened.Load() {
 		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
-			for _, e := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
-				w.AddEntity(e)
+			for _, o := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
+				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+				w.AddEntity(o)
 			}
 		}
 	}
