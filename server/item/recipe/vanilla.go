@@ -1,7 +1,7 @@
 package recipe
 
 import (
-	// Insure all blocks and items are registered before trying to load vanilla recipes.
+	// Ensure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
 	_ "github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
