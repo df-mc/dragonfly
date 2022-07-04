@@ -598,7 +598,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	return math.Max(dmg, 0)
 }
 
-// SetAbsorption sets the Absorption health of a player. This extra health shows as golden hearts and do not
+// SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
 // actually increase the maximum health. Once the hearts are lost, they will not regenerate.
 // Nothing happens if a negative number is passed.
 func (p *Player) SetAbsorption(health float64) {
@@ -607,7 +607,7 @@ func (p *Player) SetAbsorption(health float64) {
 	p.session().SendAbsorption(health)
 }
 
-// Absorption returns the Absorption health that the player has.
+// Absorption returns the absorption health that the player has.
 func (p *Player) Absorption() float64 {
 	return p.absorptionHealth.Load()
 }
