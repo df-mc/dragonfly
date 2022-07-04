@@ -25,10 +25,14 @@ type smelter struct {
 	experience        int
 }
 
-// newSmelter initializes a new smelter and returns it.
-func newSmelter() *smelter {
+// newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
+func newSmelter(remaining, max, cook time.Duration, experience int) *smelter {
 	s := &smelter{
-		viewers: make(map[ContainerViewer]struct{}),
+		viewers:           make(map[ContainerViewer]struct{}),
+		experience:        experience,
+		remainingDuration: remaining,
+		cookDuration:      cook,
+		maxDuration:       max,
 	}
 	s.inventory = inventory.New(3, func(slot int, item item.Stack) {
 		s.mu.Lock()

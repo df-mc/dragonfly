@@ -24,10 +24,11 @@ type Furnace struct {
 }
 
 // NewFurnace creates a new initialised furnace. The smelter is properly initialised.
-func NewFurnace(face cube.Face) Furnace {
+func NewFurnace(face cube.Face, lit bool, remaining, max, cook time.Duration, xp int) Furnace {
 	return Furnace{
 		Facing:  face,
-		smelter: newSmelter(),
+		Lit:     lit,
+		smelter: newSmelter(remaining, max, cook, xp),
 	}
 }
 
@@ -64,7 +65,7 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 		return false
 	}
 
-	place(w, pos, NewFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewFurnace(user.Facing().Face().Opposite(), false, 0, 0, 0, 0), user, ctx)
 	return placed(ctx)
 }
 
@@ -86,7 +87,7 @@ func (f Furnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User
 func (f Furnace) EncodeNBT() map[string]interface{} {
 	if f.smelter == nil {
 		//noinspection GoAssignmentToReceiver
-		f = NewFurnace(f.Facing)
+		f = NewFurnace(f.Facing, false, 0, 0, 0, 0)
 	}
 	remaining, maximum, cook := f.Durations()
 	return map[string]interface{}{
@@ -101,18 +102,12 @@ func (f Furnace) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
-	facing, lit := f.Facing, f.Lit
-
-	//noinspection GoAssignmentToReceiver
-	f = NewFurnace(facing)
-	f.Lit = lit
-
 	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
-	f.UpdateDurations(remaining, maximum, cook)
-	f.SetExperience(int(nbtconv.Map[int16](data, "StoredXPInt")))
 
+	//noinspection GoAssignmentToReceiver
+	f = NewFurnace(f.Facing, f.Lit, remaining, maximum, cook, int(nbtconv.Map[int16](data, "StoredXPInt")))
 	nbtconv.InvFromNBT(f.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return f
 }

@@ -25,10 +25,11 @@ type Smoker struct {
 }
 
 // NewSmoker creates a new initialised smoker. The smelter is properly initialised.
-func NewSmoker(face cube.Face) Smoker {
+func NewSmoker(face cube.Face, lit bool, remaining, max, cook time.Duration, xp int) Smoker {
 	return Smoker{
 		Facing:  face,
-		smelter: newSmelter(),
+		Lit:     lit,
+		smelter: newSmelter(remaining, max, cook, xp),
 	}
 }
 
@@ -65,7 +66,7 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	place(w, pos, NewSmoker(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewSmoker(user.Facing().Face().Opposite(), false, 0, 0, 0, 0), user, ctx)
 	return placed(ctx)
 }
 
@@ -87,7 +88,7 @@ func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 func (s Smoker) EncodeNBT() map[string]interface{} {
 	if s.smelter == nil {
 		//noinspection GoAssignmentToReceiver
-		s = NewSmoker(s.Facing)
+		s = NewSmoker(s.Facing, false, 0, 0, 0, 0)
 	}
 	remaining, maximum, cook := s.Durations()
 	return map[string]interface{}{
@@ -102,18 +103,12 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
-	facing, lit := s.Facing, s.Lit
-
-	//noinspection GoAssignmentToReceiver
-	s = NewSmoker(facing)
-	s.Lit = lit
-
 	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
-	s.UpdateDurations(remaining, maximum, cook)
-	s.SetExperience(int(nbtconv.Map[int16](data, "StoredXPInt")))
 
+	//noinspection GoAssignmentToReceiver
+	s = NewSmoker(s.Facing, s.Lit, remaining, maximum, cook, int(nbtconv.Map[int16](data, "StoredXPInt")))
 	nbtconv.InvFromNBT(s.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return s
 }

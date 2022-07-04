@@ -25,10 +25,11 @@ type BlastFurnace struct {
 }
 
 // NewBlastFurnace creates a new initialised blast furnace. The smelter is properly initialised.
-func NewBlastFurnace(face cube.Face) BlastFurnace {
+func NewBlastFurnace(face cube.Face, lit bool, remaining, max, cook time.Duration, xp int) BlastFurnace {
 	return BlastFurnace{
 		Facing:  face,
-		smelter: newSmelter(),
+		Lit:     lit,
+		smelter: newSmelter(remaining, max, cook, xp),
 	}
 }
 
@@ -65,7 +66,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewBlastFurnace(user.Facing().Face().Opposite(), false, 0, 0, 0, 0), user, ctx)
 	return placed(ctx)
 }
 
@@ -87,7 +88,7 @@ func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item
 func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 	if b.smelter == nil {
 		//noinspection GoAssignmentToReceiver
-		b = NewBlastFurnace(b.Facing)
+		b = NewBlastFurnace(b.Facing, false, 0, 0, 0, 0)
 	}
 	remaining, maximum, cook := b.Durations()
 	return map[string]interface{}{
@@ -102,18 +103,12 @@ func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
-	facing, lit := b.Facing, b.Lit
-
-	//noinspection GoAssignmentToReceiver
-	b = NewBlastFurnace(facing)
-	b.Lit = lit
-
 	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
-	b.UpdateDurations(remaining, maximum, cook)
-	b.SetExperience(int(nbtconv.Map[int16](data, "StoredXPInt")))
 
+	//noinspection GoAssignmentToReceiver
+	b = NewBlastFurnace(b.Facing, b.Lit, remaining, maximum, cook, int(nbtconv.Map[int16](data, "StoredXPInt")))
 	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return b
 }
