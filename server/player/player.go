@@ -529,7 +529,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	totalDamage := p.FinalDamageFrom(dmg, source)
 	damageLeft := totalDamage
 
-	if a := p.absorption(); a > 0 {
+	if a := p.Absorption(); a > 0 {
 		if damageLeft > a {
 			damageLeft -= a
 			p.SetAbsorption(0)
@@ -607,8 +607,8 @@ func (p *Player) SetAbsorption(health float64) {
 	p.session().SendAbsorption(health)
 }
 
-// absorption returns the absorption health that the player has.
-func (p *Player) absorption() float64 {
+// Absorption returns the absorption health that the player has.
+func (p *Player) Absorption() float64 {
 	return p.absorptionHealth.Load()
 }
 
