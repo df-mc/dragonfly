@@ -57,7 +57,7 @@ func (a Anvil) Damage() world.Block {
 	case SlightlyDamagedAnvil():
 		a.Type = VeryDamagedAnvil()
 	case VeryDamagedAnvil():
-		return nil
+		return Air{}
 	}
 	return a
 }
