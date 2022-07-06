@@ -20,7 +20,7 @@ func (e Sharpness) Name() string {
 
 // MaxLevel ...
 func (e Sharpness) MaxLevel() int {
-	return 4
+	return 5
 }
 
 // Rarity ...
