@@ -439,9 +439,17 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 	case sound.BlockPlace:
 		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(world.BlockRuntimeID(so.Block))
 	case sound.AnvilUse:
-		pk.SoundType = packet.LevelEventSoundAnvilUsed
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundAnvilUsed,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.AnvilBreak:
-		pk.SoundType = packet.LevelEventSoundAnvilBroken
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundAnvilBroken,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.ChestClose:
 		pk.SoundType = packet.SoundEventChestClosed
 	case sound.ChestOpen:

@@ -516,7 +516,6 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}, s)
 
 	var cost, repairCount int
-
 	var resultEnchantments []item.Enchantment
 	if !second.Empty() {
 		_, durable := first.Item().(item.Durable)
@@ -586,24 +585,37 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			}
 		}
 	}
-	// TODO: Renaming here.
+
+	newName := filterStrings[int(a.FilterStringIndex)]
+	existingName := item.DisplayName(first.Item(), s.c.Locale())
+	if customName := first.CustomName(); len(customName) > 0 {
+		existingName = customName
+	}
+
+	if existingName != newName {
+		result = result.WithCustomName(newName)
+		cost += 1
+	}
+	result = result.WithEnchantments(resultEnchantments...)
 
 	if cost == 0 {
+		// No action was performed.
 		return nil
 	}
 
 	c := s.c.GameMode().CreativeInventory()
 	if cost >= 40 && !c {
+		// Impossible repair/rename.
 		return nil
 	}
-
-	result = result.WithEnchantments(resultEnchantments...)
 
 	level := s.c.ExperienceLevel()
-	if level < cost {
+	if level < cost && !c {
+		// Not enough experience.
 		return nil
+	} else if !c {
+		s.c.SetExperienceLevel(level - cost)
 	}
-	s.c.SetExperienceLevel(level - cost)
 
 	if !c && rand.Float64() < 0.12 {
 		damaged := anvil.Damage()

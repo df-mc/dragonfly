@@ -195,8 +195,15 @@ func (d defaultFood) ConsumeDuration() time.Duration {
 }
 
 // DisplayName returns the display name of the item as shown in game in the language passed.
-func DisplayName(item world.Item, locale language.Tag) (string, bool) {
-	return lang.DisplayName(item, locale)
+func DisplayName(item world.Item, locale language.Tag) string {
+	if c, ok := item.(world.CustomItem); ok {
+		return c.Name()
+	}
+	name, ok := lang.DisplayName(item, locale)
+	if !ok {
+		panic("should never happen")
+	}
+	return name
 }
 
 // directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
