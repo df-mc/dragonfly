@@ -102,7 +102,7 @@ func (c CocoaBean) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c CocoaBean) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:cocoa", map[string]any{"age": int32(c.Age), "direction": int32(c.Facing.Horizontal())}
+	return "minecraft:cocoa", map[string]any{"age": int32(c.Age), "direction": int32(horizontalDirection(c.Facing))}
 }
 
 // Model ...

@@ -634,7 +634,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	if !c && rand.Float64() < 0.12 {
-		damaged := anvil.Damage()
+		damaged := anvil.Break()
 		if _, ok := damaged.(block.Air); ok {
 			w.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
 		} else {
@@ -667,6 +667,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	return nil
 }
 
+// max returns the max of two integers.
 func max(x, y int) int {
 	if x > y {
 		return x
@@ -674,6 +675,7 @@ func max(x, y int) int {
 	return y
 }
 
+// min returns the min of two integers.
 func min(x, y int) int {
 	if x > y {
 		return y

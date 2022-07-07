@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -49,8 +50,14 @@ func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	a.fall(a, pos, w)
 }
 
-// Damage ...
-func (a Anvil) Damage() world.Block {
+// Damage returns the damage per block fallen of the anvil and the maximum damage the anvil can deal.
+func (a Anvil) Damage() (damagePerBlock, maxDamage float64) {
+	return 2, 40
+}
+
+// Break breaks the anvil and moves it to the next damage stage. If the anvil is at the last damage stage, it will be
+// destroyed.
+func (a Anvil) Break() world.Block {
 	switch a.Type {
 	case UndamagedAnvil():
 		a.Type = SlightlyDamagedAnvil()
@@ -62,6 +69,11 @@ func (a Anvil) Damage() world.Block {
 	return a
 }
 
+// Landed is called when a falling anvil hits the ground, used to, for example, play a sound.
+func (a Anvil) Landed(w *world.World, pos cube.Pos) {
+	w.PlaySound(pos.Vec3Centre(), sound.AnvilLand{})
+}
+
 // EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
 	return "minecraft:anvil", int16(a.Type.Uint8())
@@ -71,7 +83,7 @@ func (a Anvil) EncodeItem() (name string, meta int16) {
 func (a Anvil) EncodeBlock() (string, map[string]any) {
 	return "minecraft:anvil", map[string]any{
 		"damage":    a.Type.String(),
-		"direction": int32(a.Facing.Horizontal()),
+		"direction": int32(horizontalDirection(a.Facing)),
 	}
 }
 
