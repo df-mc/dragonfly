@@ -16,15 +16,15 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no anvil container opened")
 	}
-	pos := s.openedPos.Load()
+
 	w := s.c.World()
+	pos := s.openedPos.Load()
 	anvil, ok := w.Block(pos).(block.Anvil)
 	if !ok {
 		return fmt.Errorf("no anvil container opened")
 	}
 	if len(filterStrings) < int(a.FilterStringIndex) {
-		// Invalid filter string index.
-		return nil
+		return fmt.Errorf("filter string index %v is out of bounds", a.FilterStringIndex)
 	}
 
 	first, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
@@ -32,16 +32,15 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Slot:        1,
 	}, s)
 	if first.Empty() {
-		// First anvil slot is empty, can't result in anything.
-		return nil
+		return fmt.Errorf("no item in first input slot")
 	}
-	result := first
 
 	second, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilMaterial,
 		Slot:        0x2,
 	}, s)
 
+	result := first
 	cost := first.RepairCost()
 	if !second.Empty() {
 		cost += second.RepairCost()
