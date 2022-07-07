@@ -521,7 +521,6 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	var repairCount int
-	var resultEnchantments []item.Enchantment
 	if !second.Empty() {
 		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
 			d := min(first.MaxDurability()-first.Durability(), first.MaxDurability()/4)
@@ -592,7 +591,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 					rarityCost = max(1, rarityCost/2)
 				}
 
-				resultEnchantments = append(resultEnchantments, item.NewEnchantment(t, resultLevel))
+				result = result.WithEnchantments(item.NewEnchantment(t, resultLevel))
 				cost += rarityCost * resultLevel
 				if first.Count() > 1 {
 					cost = 40
@@ -610,12 +609,10 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if customName := first.CustomName(); len(customName) > 0 {
 		existingName = customName
 	}
-
 	if existingName != newName {
 		result = result.WithCustomName(newName)
 		cost += 1
 	}
-	result = result.WithEnchantments(resultEnchantments...)
 
 	if cost == 0 {
 		// No action was performed.
