@@ -515,7 +515,12 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Slot:        0x2,
 	}, s)
 
-	var cost, repairCount int
+	cost := first.RepairCost()
+	if !second.Empty() {
+		cost += second.RepairCost()
+	}
+
+	var repairCount int
 	var resultEnchantments []item.Enchantment
 	if !second.Empty() {
 		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
@@ -607,6 +612,17 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if cost >= 40 && !c {
 		// Impossible repair/rename.
 		return nil
+	}
+
+	if !result.Empty() {
+		i := result.RepairCost()
+		if !second.Empty() && i < second.RepairCost() {
+			i = second.RepairCost()
+		}
+		if cost != 1 {
+			i = i*2 + 1
+		}
+		result.WithRepairCost(i)
 	}
 
 	level := s.c.ExperienceLevel()
