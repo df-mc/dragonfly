@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -27,7 +26,7 @@ func (s Sand) SoilFor(block world.Block) bool {
 
 // NeighbourUpdateTick ...
 func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	s.fall(pos, w, entity.NewFallingBlock(s, pos.Vec3Middle()))
+	s.fall(s, pos, w)
 }
 
 // BreakInfo ...

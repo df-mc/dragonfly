@@ -17,13 +17,8 @@ import (
 type FallingBlock struct {
 	transform
 
-	block world.Block
-
+	block        world.Block
 	fallDistance atomic.Float64
-
-	damagePerDistance float64
-	damageMax         float64
-	damages           bool
 
 	c *MovementComputer
 }
@@ -62,21 +57,29 @@ func (f *FallingBlock) Block() world.Block {
 	return f.block
 }
 
+// FallDistance ...
+func (f *FallingBlock) FallDistance() float64 {
+	return f.fallDistance.Load()
+}
+
+// SetFallDistance ...
+func (f *FallingBlock) SetFallDistance(distance float64) {
+	f.fallDistance.Store(distance)
+}
+
 // damageable ...
 type damageable interface {
-	Damage() world.Block
+	Damage() (damagePerBlock, maxDamage float64)
+}
+
+// breakable ...
+type breakable interface {
+	Break() world.Block
 }
 
 // landable ...
 type landable interface {
 	Landed(w *world.World, pos cube.Pos)
-}
-
-// SetDamage ...
-func (f *FallingBlock) SetDamage(damagePerDistance, damageMax float64) {
-	f.damagePerDistance = damagePerDistance
-	f.damageMax = damageMax
-	f.damages = true
 }
 
 // Tick ...
@@ -101,18 +104,15 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	}
 
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {
-		if f.damages {
-			fallDist := math.Ceil(f.fallDistance.Load() - 1.0)
-			if fallDist > 0 {
-				force := math.Min(math.Floor(fallDist*f.damagePerDistance), f.damageMax)
-
+		if d, ok := f.block.(damageable); ok {
+			damagePerBlock, maxDamage := d.Damage()
+			if dist := math.Ceil(f.fallDistance.Load() - 1.0); dist > 0 {
+				force := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
 				for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(0.05), f.ignores) {
-					l := e.(Living)
-					l.Hurt(force, damage.SourceDamagingBlock{Block: f.block})
+					e.(Living).Hurt(force, damage.SourceDamagingBlock{Block: f.block})
 				}
-
-				if d, ok := f.block.(damageable); ok && force > 0.0 && rand.Float64() < 0.05+fallDist*0.05 {
-					f.block = d.Damage()
+				if b, ok := f.block.(breakable); ok && force > 0.0 && rand.Float64() < 0.05+dist*0.05 {
+					f.block = b.Break()
 				}
 			}
 		}
@@ -134,8 +134,6 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	}
 }
 
-// TODO: Contain values for damaging in NBT.
-
 // DecodeNBT decodes the relevant data from the entity NBT passed and returns a new FallingBlock entity.
 func (f *FallingBlock) DecodeNBT(data map[string]any) any {
 	b := nbtconv.MapBlock(data, "FallingBlock")
@@ -143,6 +141,7 @@ func (f *FallingBlock) DecodeNBT(data map[string]any) any {
 		return nil
 	}
 	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
+	n.SetFallDistance(nbtconv.Map[float64](data, "FallDistance"))
 	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
 	return n
 }
@@ -151,6 +150,7 @@ func (f *FallingBlock) DecodeNBT(data map[string]any) any {
 func (f *FallingBlock) EncodeNBT() map[string]any {
 	return map[string]any{
 		"UniqueID":     -rand.Int63(),
+		"FallDistance": f.FallDistance(),
 		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
 		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),
 		"FallingBlock": nbtconv.WriteBlock(f.block),

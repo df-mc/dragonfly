@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
@@ -17,7 +16,7 @@ type Gravel struct {
 
 // NeighbourUpdateTick ...
 func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	g.fall(pos, w, entity.NewFallingBlock(g, pos.Vec3Middle()))
+	g.fall(g, pos, w)
 }
 
 // BreakInfo ...

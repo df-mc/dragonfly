@@ -618,7 +618,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	if !c && rand.Float64() < 0.12 {
-		damaged := anvil.Damage()
+		damaged := anvil.Break()
 		if _, ok := damaged.(block.Air); ok {
 			w.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
 		} else {

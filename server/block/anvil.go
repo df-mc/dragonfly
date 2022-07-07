@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -48,14 +47,17 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // NeighbourUpdateTick ...
 func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	f := entity.NewFallingBlock(a, pos.Vec3Middle())
-	f.SetDamage(2.0, 40)
-	a.fall(pos, w, f)
+	a.fall(a, pos, w)
 }
 
-// Damage damages the anvil and moves it to the next damage stage. If the anvil is at the last damage stage, it will be
+// Damage returns the damage per block fallen of the anvil and the maximum damage the anvil can deal.
+func (a Anvil) Damage() (damagePerBlock, maxDamage float64) {
+	return 2, 40
+}
+
+// Break breaks the anvil and moves it to the next damage stage. If the anvil is at the last damage stage, it will be
 // destroyed.
-func (a Anvil) Damage() world.Block {
+func (a Anvil) Break() world.Block {
 	switch a.Type {
 	case UndamagedAnvil():
 		a.Type = SlightlyDamagedAnvil()
