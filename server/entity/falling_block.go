@@ -109,7 +109,7 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 			if dist := math.Ceil(f.fallDistance.Load() - 1.0); dist > 0 {
 				force := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
 				for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(0.05), f.ignores) {
-					e.(Living).Hurt(force, damage.SourceDamagingBlock{Block: f.block})
+					e.(Living).Hurt(force, damage.SourceBlock{Block: f.block})
 				}
 				if b, ok := f.block.(breakable); ok && force > 0.0 && rand.Float64() < 0.05+dist*0.05 {
 					f.block = b.Break()

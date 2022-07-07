@@ -14,9 +14,6 @@ type (
 		ReducedByResistance() bool
 	}
 
-	// SourceCactus is used for damage caused by a Cactus.
-	SourceCactus struct{}
-
 	// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
 	// player.
 	SourceEntityAttack struct {
@@ -65,15 +62,13 @@ type (
 		Projectile, Owner world.Entity
 	}
 
-	// SourceDamagingBlock is used for damage caused by a damaging block, such as an anvil.
-	SourceDamagingBlock struct {
+	// SourceBlock is used for damage caused by a block, such as an anvil.
+	SourceBlock struct {
 		// Block is the block that caused the damage.
 		Block world.Block
 	}
 )
 
-func (SourceCactus) ReducedByResistance() bool              { return true }
-func (SourceCactus) ReducedByArmour() bool                  { return true }
 func (SourceFall) ReducedByArmour() bool                    { return false }
 func (SourceFall) ReducedByResistance() bool                { return true }
 func (SourceLightning) ReducedByArmour() bool               { return true }
@@ -98,5 +93,5 @@ func (SourceLava) ReducedByResistance() bool                { return true }
 func (SourceLava) ReducedByArmour() bool                    { return true }
 func (SourceProjectile) ReducedByResistance() bool          { return true }
 func (SourceProjectile) ReducedByArmour() bool              { return true }
-func (SourceDamagingBlock) ReducedByResistance() bool       { return true }
-func (SourceDamagingBlock) ReducedByArmour() bool           { return true }
+func (SourceBlock) ReducedByResistance() bool               { return true }
+func (SourceBlock) ReducedByArmour() bool                   { return true }
