@@ -15,6 +15,11 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
+// Cobblestone ...
+func (c Cobblestone) Cobblestone() bool {
+	return true
+}
+
 // EncodeItem ...
 func (c Cobblestone) EncodeItem() (name string, meta int16) {
 	if c.Mossy {

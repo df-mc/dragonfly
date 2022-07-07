@@ -518,26 +518,25 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	var cost, repairCount int
 	var resultEnchantments []item.Enchantment
 	if !second.Empty() {
-		_, durable := first.Item().(item.Durable)
 		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
-			d := min(first.Durability(), first.MaxDurability()/4)
+			d := min(first.MaxDurability()-first.Durability(), first.MaxDurability()/4)
 			if d <= 0 {
 				return nil
 			}
 
-			for ; d > 0 && repairCount < second.Count(); repairCount++ {
-				result = result.WithDurability(result.Durability() - d)
+			for ; d > 0 && repairCount < second.Count(); repairCount, d = repairCount+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
+				result = result.WithDurability(result.Durability() + d)
 				cost++
-				d = min(result.Durability(), result.MaxDurability()/4)
 			}
 		} else {
 			_, ok := second.Item().(item.EnchantedBook)
 			enchant := ok && len(second.Enchantments()) > 0
+			_, durable := first.Item().(item.Durable)
 			if !enchant && (first.Item() != second.Item() || !durable) {
 				return nil
 			}
 			if durable && !enchant {
-				d := first.Durability() + (second.Durability() + first.MaxDurability()*12/100)
+				d := first.MaxDurability() - (first.Durability() + (second.Durability() + first.MaxDurability()*12/100))
 				if d < 0 {
 					d = 0
 				}
@@ -548,30 +547,31 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			}
 
 			for _, e := range second.Enchantments() {
+				t := e.Type()
 				firstLevel := 0
-				if firstEnchant, ok := first.Enchantment(e.Type()); ok {
+				if firstEnchant, ok := first.Enchantment(t); ok {
 					firstLevel = firstEnchant.Level()
 				}
 				resultLevel := max(firstLevel, e.Level())
 				if firstLevel == e.Level() {
 					resultLevel = firstLevel + 1
 				}
-				compatible := e.Type().CompatibleWithItem(first.Item())
+				compatible := t.CompatibleWithItem(first.Item())
 				if _, ok := first.Item().(item.EnchantedBook); ok {
 					compatible = true
 				}
 				for _, e2 := range first.Enchantments() {
-					if e.Type() != e2.Type() && !e.Type().CompatibleWithOther(e2.Type()) {
+					if t != e2.Type() && !t.CompatibleWithOther(e2.Type()) {
 						compatible = false
 						cost++
 					}
 				}
 				if compatible {
-					if resultLevel > e.Type().MaxLevel() {
-						resultLevel = e.Type().MaxLevel()
+					if resultLevel > t.MaxLevel() {
+						resultLevel = t.MaxLevel()
 					}
-					resultEnchantments = append(resultEnchantments, item.NewEnchantment(e.Type(), resultLevel))
-					rarityCost := e.Type().Rarity().ApplyCost
+					resultEnchantments = append(resultEnchantments, item.NewEnchantment(t, resultLevel))
+					rarityCost := t.Rarity().ApplyCost
 					if enchant {
 						rarityCost = max(1, rarityCost/2)
 					}

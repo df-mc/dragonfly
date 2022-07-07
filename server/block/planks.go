@@ -27,6 +27,11 @@ func (p Planks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p))
 }
 
+// Planks ...
+func (p Planks) Planks() bool {
+	return true
+}
+
 // EncodeItem ...
 func (p Planks) EncodeItem() (name string, meta int16) {
 	switch p.Wood {
