@@ -32,8 +32,8 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		return
 	}
 
-	t := float64(ticks) / 20
-	force := math.Min((t*t+t*2)/3, 1)
+	d := float64(ticks) / 20
+	force := math.Min((d*d+d*2)/3, 1)
 	if force < 0.1 {
 		return
 	}
@@ -44,17 +44,13 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		_, ok := stack.Item().(Arrow)
 		return ok
 	}); ok {
-		arr := arrow.Item().(Arrow)
-		tip = arr.Tip
-
+		tip = arrow.Item().(Arrow).Tip
 		if !creative {
 			ctx.DamageItem(1)
 			ctx.Consume(arrow.Grow(-arrow.Count() + 1))
 		}
-	} else {
-		if !creative {
-			return
-		}
+	} else if !creative {
+		return
 	}
 
 	rYaw, rPitch := releaser.Rotation()
@@ -71,10 +67,11 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	if p, ok := proj.(interface {
 		New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity
 	}); ok {
-		releaser.PlaySound(sound.BowShoot{})
 		player := releaser.EncodeEntity() == "minecraft:player"
-		a := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, releaser, force >= 1, !player, !creative, tip)
-		releaser.World().AddEntity(a)
+		arrow := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, releaser, force >= 1, !player, !creative, tip)
+
+		releaser.PlaySound(sound.BowShoot{})
+		releaser.World().AddEntity(arrow)
 	}
 }
 

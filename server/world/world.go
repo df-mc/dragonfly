@@ -1174,6 +1174,9 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 
 	data := newChunkData(c)
 	data.e = e
+	if o, ok := w.chunks[pos]; ok {
+		data.v = o.v
+	}
 	w.chunks[pos] = data
 }
 
