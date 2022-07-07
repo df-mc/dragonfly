@@ -19,21 +19,6 @@ func (d Direction) Face() Face {
 	return Face(d + 2)
 }
 
-// Horizontal returns the horizontal direction of the current one.
-func (d Direction) Horizontal() Direction {
-	switch d {
-	case South:
-		return North
-	case West:
-		return South
-	case North:
-		return West
-	case East:
-		return East
-	}
-	panic("invalid direction")
-}
-
 // Opposite returns Direction opposite to the current one.
 func (d Direction) Opposite() Direction {
 	switch d {

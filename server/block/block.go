@@ -141,6 +141,22 @@ func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *ite
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 }
 
+// horizontalDirection returns the horizontal direction of the given direction. This is a legacy type still used in
+// various blocks.
+func horizontalDirection(d cube.Direction) cube.Direction {
+	switch d {
+	case cube.South:
+		return cube.North
+	case cube.West:
+		return cube.South
+	case cube.North:
+		return cube.West
+	case cube.East:
+		return cube.East
+	}
+	panic("invalid direction")
+}
+
 // placed checks if an item was placed with the use context passed.
 func placed(ctx *item.UseContext) bool {
 	return ctx.CountSub > 0

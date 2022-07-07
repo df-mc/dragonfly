@@ -83,7 +83,7 @@ func (a Anvil) EncodeItem() (name string, meta int16) {
 func (a Anvil) EncodeBlock() (string, map[string]any) {
 	return "minecraft:anvil", map[string]any{
 		"damage":    a.Type.String(),
-		"direction": int32(a.Facing.Horizontal()),
+		"direction": int32(horizontalDirection(a.Facing)),
 	}
 }
 
