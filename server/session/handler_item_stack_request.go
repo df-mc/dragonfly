@@ -633,7 +633,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		if cost != 1 {
 			i = i*2 + 1
 		}
-		result.WithRepairCost(i)
+		result = result.WithRepairCost(i)
 	}
 
 	level := s.c.ExperienceLevel()

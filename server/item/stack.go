@@ -346,7 +346,7 @@ func (s Stack) String() string {
 	if s.item == nil {
 		return fmt.Sprintf("Stack<nil> x%v", s.count)
 	}
-	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v') x%v", s.item, s.item, s.customName, s.lore, s.count)
+	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, repairCost=%v) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.repairCost, s.count)
 }
 
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
