@@ -339,11 +339,16 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticlesTeleport,
 			Position:  vec64To32(pos),
 		})
-	case particle.Flame:
+	case particle.ColouredFlame:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 56,
 			Position:  vec64To32(pos),
 			EventData: nbtconv.Int32FromRGBA(pa.Colour),
+		})
+	case particle.Flame:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 8,
+			Position:  vec64To32(pos),
 		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
