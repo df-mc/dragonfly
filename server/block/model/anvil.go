@@ -13,7 +13,7 @@ type Anvil struct {
 
 // BBox ...
 func (a Anvil) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{full.Stretch(a.Facing.RotateLeft().Face().Axis(), -(1 / 8))}
+	return []cube.BBox{full.Stretch(a.Facing.RotateLeft().Face().Axis(), -0.125)}
 }
 
 // FaceSolid ...
