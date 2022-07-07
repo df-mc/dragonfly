@@ -266,15 +266,16 @@ func (s Stack) Enchantments() []Enchantment {
 	return e
 }
 
-// WithRepairCost ...
+// RepairCost returns the number of experience levels to add to the base level cost when repairing, combining, or
+// renaming this item with an anvil.
+func (s Stack) RepairCost() int {
+	return s.repairCost
+}
+
+// WithRepairCost returns the current Stack with the repair cost set to the passed value.
 func (s Stack) WithRepairCost(repairCost int) Stack {
 	s.repairCost = repairCost
 	return s
-}
-
-// RepairCost ...
-func (s Stack) RepairCost() int {
-	return s.repairCost
 }
 
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as

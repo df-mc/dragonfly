@@ -15,7 +15,7 @@ func ReadItem(data map[string]any, s *item.Stack) item.Stack {
 		s = &a
 	}
 	readDamage(data, s, disk)
-	readRepairCost(data, s, disk)
+	readRepairCost(data, s)
 	readDisplay(data, s)
 	readEnchantments(data, s)
 	readDragonflyData(data, s)
@@ -58,11 +58,7 @@ func readDamage(m map[string]any, s *item.Stack, disk bool) {
 }
 
 // readRepairCost ...
-func readRepairCost(m map[string]any, s *item.Stack, disk bool) {
-	if disk {
-		*s = s.WithRepairCost(int(Map[int16](m, "RepairCost")))
-		return
-	}
+func readRepairCost(m map[string]any, s *item.Stack) {
 	*s = s.WithRepairCost(int(Map[int32](m, "RepairCost")))
 }
 

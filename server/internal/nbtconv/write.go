@@ -21,7 +21,7 @@ func WriteItem(s item.Stack, disk bool) map[string]any {
 		writeItemStack(m, s)
 	}
 	writeDamage(m, s, disk)
-	writeRepairCost(m, s, disk)
+	writeRepairCost(m, s)
 	writeDisplay(m, s)
 	writeEnchantments(m, s)
 	writeDragonflyData(m, s)
@@ -132,14 +132,8 @@ func writeDamage(m map[string]any, s item.Stack, disk bool) {
 }
 
 // writeRepairCost ...
-func writeRepairCost(m map[string]any, s item.Stack, disk bool) {
-	if v, ok := m["RepairCost"]; !ok || v.(int16) == 0 {
-		if _, ok := s.Item().(item.Repairable); ok {
-			if disk {
-				m["RepairCost"] = int16(s.RepairCost())
-			} else {
-				m["RepairCost"] = int32(s.RepairCost())
-			}
-		}
+func writeRepairCost(m map[string]any, s item.Stack) {
+	if _, ok := s.Item().(item.Repairable); ok {
+		m["RepairCost"] = int32(s.RepairCost())
 	}
 }
