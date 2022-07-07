@@ -70,6 +70,7 @@ func ArmourTiers() []ArmourTier {
 	return []ArmourTier{ArmourTierLeather, ArmourTierGold, ArmourTierChain, ArmourTierIron, ArmourTierDiamond, ArmourTierNetherite}
 }
 
+// armourTierRepairable returns true if the ArmourTier passed is repairable.
 func armourTierRepairable(tier ArmourTier) func(Stack) bool {
 	return func(stack Stack) bool {
 		var ok bool

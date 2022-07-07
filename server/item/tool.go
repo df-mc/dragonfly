@@ -87,25 +87,31 @@ func (n ToolNone) HarvestLevel() int { return 0 }
 // BaseMiningEfficiency ...
 func (n ToolNone) BaseMiningEfficiency(world.Block) float64 { return 1 }
 
+// toolTierRepairable returns true if the ToolTier passed is repairable.
 func toolTierRepairable(tier ToolTier) func(Stack) bool {
 	return func(stack Stack) bool {
-		var ok bool
 		switch tier {
 		case ToolTierWood:
-			if planks, ok2 := stack.Item().(interface{ Planks() bool }); ok2 {
-				ok = planks.Planks()
+			if planks, ok := stack.Item().(interface{ Planks() bool }); ok {
+				return planks.Planks()
 			}
 		case ToolTierStone:
-			if cobblestone, ok2 := stack.Item().(interface{ Cobblestone() bool }); ok2 {
-				ok = cobblestone.Cobblestone()
+			if cobblestone, ok := stack.Item().(interface{ Cobblestone() bool }); ok {
+				return cobblestone.Cobblestone()
 			}
+		case ToolTierGold:
+			_, ok := stack.Item().(GoldIngot)
+			return ok
 		case ToolTierIron:
-			_, ok = stack.Item().(IronIngot)
+			_, ok := stack.Item().(IronIngot)
+			return ok
 		case ToolTierDiamond:
-			_, ok = stack.Item().(Diamond)
+			_, ok := stack.Item().(Diamond)
+			return ok
 		case ToolTierNetherite:
-			_, ok = stack.Item().(NetheriteIngot)
+			_, ok := stack.Item().(NetheriteIngot)
+			return ok
 		}
-		return ok
+		return false
 	}
 }
