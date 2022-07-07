@@ -133,7 +133,7 @@ func writeDamage(m map[string]any, s item.Stack, disk bool) {
 
 // writeRepairCost ...
 func writeRepairCost(m map[string]any, s item.Stack) {
-	if _, ok := s.Item().(item.Repairable); ok {
+	if _, ok := s.Item().(item.Repairable); ok && s.RepairCost() > 0 {
 		m["RepairCost"] = int32(s.RepairCost())
 	}
 }
