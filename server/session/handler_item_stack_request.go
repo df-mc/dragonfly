@@ -529,9 +529,10 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				cost++
 			}
 		} else {
-			_, ok := second.Item().(item.EnchantedBook)
-			enchant := ok && len(second.Enchantments()) > 0
+			_, book := second.Item().(item.EnchantedBook)
 			_, durable := first.Item().(item.Durable)
+
+			enchant := book && len(second.Enchantments()) > 0
 			if !enchant && (first.Item() != second.Item() || !durable) {
 				return nil
 			}
@@ -546,42 +547,55 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				}
 			}
 
+			var hasCompatible, hasIncompatible bool
 			for _, e := range second.Enchantments() {
 				t := e.Type()
-				firstLevel := 0
+
+				var firstLevel int
 				if firstEnchant, ok := first.Enchantment(t); ok {
 					firstLevel = firstEnchant.Level()
 				}
+
 				resultLevel := max(firstLevel, e.Level())
 				if firstLevel == e.Level() {
 					resultLevel = firstLevel + 1
 				}
+
 				compatible := t.CompatibleWithItem(first.Item())
 				if _, ok := first.Item().(item.EnchantedBook); ok {
 					compatible = true
 				}
+
 				for _, e2 := range first.Enchantments() {
 					if t != e2.Type() && !t.CompatibleWithOther(e2.Type()) {
 						compatible = false
 						cost++
 					}
 				}
-				if compatible {
-					if resultLevel > t.MaxLevel() {
-						resultLevel = t.MaxLevel()
-					}
-					resultEnchantments = append(resultEnchantments, item.NewEnchantment(t, resultLevel))
-					rarityCost := t.Rarity().ApplyCost
-					if enchant {
-						rarityCost = max(1, rarityCost/2)
-					}
-					cost += rarityCost * resultLevel
-					if first.Count() > 1 {
-						cost = 40
-					}
-				} else {
-					return nil
+
+				if !compatible {
+					hasIncompatible = true
+					continue
 				}
+				hasCompatible = true
+
+				if resultLevel > t.MaxLevel() {
+					resultLevel = t.MaxLevel()
+				}
+				rarityCost := t.Rarity().ApplyCost
+				if enchant {
+					rarityCost = max(1, rarityCost/2)
+				}
+
+				resultEnchantments = append(resultEnchantments, item.NewEnchantment(t, resultLevel))
+				cost += rarityCost * resultLevel
+				if first.Count() > 1 {
+					cost = 40
+				}
+			}
+			if hasIncompatible && !hasCompatible {
+				// We have no compatible enchantments, but we have incompatible ones.
+				return nil
 			}
 		}
 	}
