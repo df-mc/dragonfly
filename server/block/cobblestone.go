@@ -17,7 +17,7 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 
 // Cobblestone ...
 func (c Cobblestone) Cobblestone() bool {
-	return true
+	return !c.Mossy
 }
 
 // EncodeItem ...
