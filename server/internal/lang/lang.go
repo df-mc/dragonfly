@@ -25,9 +25,9 @@ func DisplayName(item world.Item, locale language.Tag) (string, bool) {
 	id, meta := item.EncodeItem()
 	h := itemHash{name: id, meta: meta}
 
-	if _, ok := names[locale]; !ok && load(locale) != nil {
-		// Language not supported, default to british english.
-		return names[language.BritishEnglish][h], false
+	if _, ok := names[locale]; !ok && !load(locale) {
+		// Language not supported, default to American English.
+		return names[language.AmericanEnglish][h], false
 	}
 
 	name, ok := names[locale][h]
@@ -35,10 +35,10 @@ func DisplayName(item world.Item, locale language.Tag) (string, bool) {
 }
 
 // load loads the locale for the item display names.
-func load(locale language.Tag) error {
+func load(locale language.Tag) bool {
 	b, err := namesFS.ReadFile("names/" + locale.String() + ".json")
 	if err != nil {
-		return err
+		return false
 	}
 
 	var entries []struct {
@@ -48,7 +48,7 @@ func load(locale language.Tag) error {
 	}
 	err = json.Unmarshal(b, &entries)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	names[locale] = make(map[itemHash]string, len(entries))
@@ -56,5 +56,5 @@ func load(locale language.Tag) error {
 		h := itemHash{name: entry.ID, meta: entry.Meta}
 		names[locale][h] = entry.Name
 	}
-	return nil
+	return true
 }
