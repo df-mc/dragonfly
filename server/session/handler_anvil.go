@@ -168,8 +168,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 	level := s.c.ExperienceLevel()
 	if level < cost && !c {
-		// Not enough experience.
-		return nil
+		return fmt.Errorf("not enough experience")
 	} else if !c {
 		s.c.SetExperienceLevel(level - cost)
 	}
