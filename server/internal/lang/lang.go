@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/df-mc/dragonfly/server/world"
 	"golang.org/x/text/language"
-	"strings"
 )
 
 // itemHash is a combination of an item's name and metadata. It is used as a key in hash maps.
@@ -23,7 +22,7 @@ var (
 
 // DisplayName returns the display name of the item as shown in game in the language passed.
 func DisplayName(item world.Item, locale language.Tag) (string, bool) {
-	if _, ok := names[locale]; !ok {
+	if _, ok := names[locale]; !ok && load(locale) != nil {
 		// Language not supported.
 		return "", false
 	}
@@ -35,39 +34,26 @@ func DisplayName(item world.Item, locale language.Tag) (string, bool) {
 	return name, ok
 }
 
-// init ...
-func init() {
-	localizations, err := namesFS.ReadDir("names")
+func load(locale language.Tag) error {
+	b, err := namesFS.ReadFile("names/" + locale.String() + ".json")
 	if err != nil {
-		panic(err)
+		return err
 	}
-	for _, locale := range localizations {
-		if locale.IsDir() {
-			continue
-		}
-		tag, err := language.Parse(strings.Replace(strings.TrimSuffix(locale.Name(), ".json"), "_", "-", 1))
-		if err != nil {
-			panic(err)
-		}
-		b, err := namesFS.ReadFile("names/" + locale.Name())
-		if err != nil {
-			panic(err)
-		}
 
-		var entries []struct {
-			ID   string `json:"id"`
-			Meta int16  `json:"meta,omitempty"`
-			Name string `json:"name"`
-		}
-		err = json.Unmarshal(b, &entries)
-		if err != nil {
-			panic(err)
-		}
-
-		names[tag] = make(map[itemHash]string, len(entries))
-		for _, entry := range entries {
-			h := itemHash{name: entry.ID, meta: entry.Meta}
-			names[tag][h] = entry.Name
-		}
+	var entries []struct {
+		ID   string `json:"id"`
+		Meta int16  `json:"meta,omitempty"`
+		Name string `json:"name"`
 	}
+	err = json.Unmarshal(b, &entries)
+	if err != nil {
+		return err
+	}
+
+	names[locale] = make(map[itemHash]string, len(entries))
+	for _, entry := range entries {
+		h := itemHash{name: entry.ID, meta: entry.Meta}
+		names[locale][h] = entry.Name
+	}
+	return nil
 }
