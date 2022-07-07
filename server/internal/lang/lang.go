@@ -22,18 +22,20 @@ var (
 
 // DisplayName returns the display name of the item as shown in game in the language passed.
 func DisplayName(item world.Item, locale language.Tag) (string, bool) {
-	if _, ok := names[locale]; !ok && load(locale) != nil {
-		// Language not supported.
-		return "", false
-	}
-
 	id, meta := item.EncodeItem()
 	h := itemHash{name: id, meta: meta}
+
+	if _, ok := names[locale]; !ok && load(locale) != nil {
+		// Language not supported, default to english.
+		name, _ := names[language.English][h]
+		return name, false
+	}
 
 	name, ok := names[locale][h]
 	return name, ok
 }
 
+// load loads the locale for the item display names.
 func load(locale language.Tag) error {
 	b, err := namesFS.ReadFile("names/" + locale.String() + ".json")
 	if err != nil {
