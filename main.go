@@ -3,7 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -28,7 +33,18 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.SetGameMode(world.GameModeSurvival)
+		p.AddExperience(10000)
+
+		inv := p.Inventory()
+		inv.Clear()
+		inv.AddItem(item.NewStack(item.Shovel{Tier: item.ToolTierNetherite}, 1).WithDurability(15))
+		inv.AddItem(item.NewStack(item.EnchantedBook{}, 1).WithEnchantments(item.NewEnchantment(enchantment.Efficiency{}, 5)))
+		inv.AddItem(item.NewStack(block.Dirt{}, 64))
+		inv.AddItem(item.NewStack(block.Anvil{}, 64))
+		inv.AddItem(item.NewStack(item.NetheriteIngot{}, 64))
+	}) {
 	}
 }
 
