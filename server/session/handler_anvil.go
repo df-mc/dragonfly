@@ -34,18 +34,19 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if first.Empty() {
 		return fmt.Errorf("no item in first input slot")
 	}
+	result := first
 
 	second, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilMaterial,
 		Slot:        0x2,
 	}, s)
 
-	result := first
-	cost := first.RepairCost()
+	j := first.RepairCost()
 	if !second.Empty() {
-		cost += second.RepairCost()
+		j += second.RepairCost()
 	}
 
+	var i, k int
 	var repairCount int
 	if !second.Empty() {
 		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
@@ -56,7 +57,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 			for ; d > 0 && repairCount < second.Count(); repairCount, d = repairCount+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
 				result = result.WithDurability(result.Durability() + d)
-				cost++
+				i++
 			}
 		} else {
 			_, book := second.Item().(item.EnchantedBook)
@@ -73,7 +74,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				}
 				if d < first.MaxDurability()-first.Durability() {
 					result = result.WithDurability(d)
-					cost += 2
+					i += 2
 				}
 			}
 
@@ -99,7 +100,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				for _, e2 := range first.Enchantments() {
 					if t != e2.Type() && !t.CompatibleWithOther(e2.Type()) {
 						compatible = false
-						cost++
+						i++
 					}
 				}
 
@@ -118,9 +119,9 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				}
 
 				result = result.WithEnchantments(item.NewEnchantment(t, resultLevel))
-				cost += rarityCost * resultLevel
+				i += rarityCost * resultLevel
 				if first.Count() > 1 {
-					cost = 40
+					i = 40
 				}
 			}
 			if hasIncompatible && !hasCompatible {
@@ -136,30 +137,34 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		existingName = customName
 	}
 	if existingName != newName {
+		k = 1
+		i += k
 		result = result.WithCustomName(newName)
-		cost += 1
 	}
 
-	if cost == 0 {
-		// No action was performed.
-		return nil
+	cost := i + j
+	if cost <= 0 {
+		return fmt.Errorf("no action was taken")
+	}
+
+	if k == i && k > 0 && cost >= 40 {
+		cost = 39
 	}
 
 	c := s.c.GameMode().CreativeInventory()
 	if cost >= 40 && !c {
-		// Impossible repair/rename.
-		return nil
+		return fmt.Errorf("impossible cost")
 	}
 
 	if !result.Empty() {
-		i := result.RepairCost()
-		if !second.Empty() && i < second.RepairCost() {
-			i = second.RepairCost()
+		k2 := result.RepairCost()
+		if !second.Empty() && k2 < second.RepairCost() {
+			k2 = second.RepairCost()
 		}
-		if cost != 1 {
-			i = i*2 + 1
+		if k != i || k == 0 {
+			k2 = k2*2 + 1
 		}
-		result = result.WithRepairCost(i)
+		result = result.WithRepairCost(k2)
 	}
 
 	level := s.c.ExperienceLevel()
