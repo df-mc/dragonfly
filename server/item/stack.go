@@ -24,6 +24,8 @@ type Stack struct {
 
 	damage int
 
+	repairCost int
+
 	data map[string]any
 
 	enchantments map[reflect.Type]Enchantment
@@ -264,6 +266,17 @@ func (s Stack) Enchantments() []Enchantment {
 	return e
 }
 
+// WithRepairCost ...
+func (s Stack) WithRepairCost(repairCost int) Stack {
+	s.repairCost = repairCost
+	return s
+}
+
+// RepairCost ...
+func (s Stack) RepairCost() int {
+	return s.repairCost
+}
+
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
 // many items in it as possible to fit in the stack, according to a max count of either 64 or otherwise as
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of
@@ -303,7 +316,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage || s.customName != s2.customName {
+	if name != name2 || meta != meta2 || s.damage != s2.damage || s.repairCost != s2.repairCost || s.customName != s2.customName {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
