@@ -36,5 +36,5 @@ func (e Efficiency) CompatibleWithOther(item.EnchantmentType) bool {
 // CompatibleWithItem ...
 func (e Efficiency) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
-	return ok && (t.ToolType() == item.TypeAxe || t.ToolType() == item.TypePickaxe)
+	return ok && (t.ToolType() == item.TypeAxe || t.ToolType() == item.TypePickaxe || t.ToolType() == item.TypeShovel)
 }
