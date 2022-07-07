@@ -124,7 +124,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 					i = 40
 				}
 			}
-			if hasIncompatible && !hasCompatible {
+			if i == 0 && hasIncompatible && !hasCompatible {
 				return fmt.Errorf("no compatible enchantments but have incompatible ones")
 			}
 		}
