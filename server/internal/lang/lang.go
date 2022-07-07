@@ -27,8 +27,7 @@ func DisplayName(item world.Item, locale language.Tag) (string, bool) {
 
 	if _, ok := names[locale]; !ok && load(locale) != nil {
 		// Language not supported, default to british english.
-		name, _ := names[language.BritishEnglish][h]
-		return name, false
+		return names[language.BritishEnglish][h], false
 	}
 
 	name, ok := names[locale][h]
