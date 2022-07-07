@@ -52,7 +52,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
 			d := min(first.MaxDurability()-first.Durability(), first.MaxDurability()/4)
 			if d <= 0 {
-				return nil
+				return fmt.Errorf("first item is already fully repaired")
 			}
 
 			for ; d > 0 && repairCount < second.Count(); repairCount, d = repairCount+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
@@ -65,7 +65,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 			enchant := book && len(second.Enchantments()) > 0
 			if !enchant && (first.Item() != second.Item() || !durable) {
-				return nil
+				return fmt.Errorf("first item is not repairable or second item is not an enchanted book")
 			}
 			if durable && !enchant {
 				d := first.MaxDurability() - (first.Durability() + (second.Durability() + first.MaxDurability()*12/100))
@@ -125,8 +125,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				}
 			}
 			if hasIncompatible && !hasCompatible {
-				// We have no compatible enchantments, but we have incompatible ones.
-				return nil
+				return fmt.Errorf("no compatible enchantments but have incompatible ones")
 			}
 		}
 	}
