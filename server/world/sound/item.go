@@ -50,9 +50,3 @@ type UseSpyglass struct{ sound }
 
 // StopUsingSpyglass is a sound played when a player stops using a spyglass.
 type StopUsingSpyglass struct{ sound }
-
-// GhastWarning is a sound played when a ghast is ready to attack.
-type GhastWarning struct{ sound }
-
-// GhastShoot is a sound played when a ghast shoots a fire charge.
-type GhastShoot struct{ sound }
