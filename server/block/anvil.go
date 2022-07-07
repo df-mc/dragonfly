@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -11,7 +12,6 @@ import (
 // Anvil is a block that allows players to repair items, rename items, and combine enchantments.
 type Anvil struct {
 	gravityAffected
-	solid
 	transparent
 
 	// Type is the type of anvil.
@@ -20,13 +20,18 @@ type Anvil struct {
 	Facing cube.Direction
 }
 
+// Model ...
+func (a Anvil) Model() world.BlockModel {
+	return model.Anvil{Facing: a.Facing}
+}
+
 // BreakInfo ...
 func (a Anvil) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
 }
 
 // Activate ...
-func (a Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -51,7 +56,7 @@ func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // Damage returns the damage per block fallen of the anvil and the maximum damage the anvil can deal.
-func (a Anvil) Damage() (damagePerBlock, maxDamage float64) {
+func (Anvil) Damage() (damagePerBlock, maxDamage float64) {
 	return 2, 40
 }
 
@@ -70,7 +75,7 @@ func (a Anvil) Break() world.Block {
 }
 
 // Landed is called when a falling anvil hits the ground, used to, for example, play a sound.
-func (a Anvil) Landed(w *world.World, pos cube.Pos) {
+func (Anvil) Landed(w *world.World, pos cube.Pos) {
 	w.PlaySound(pos.Vec3Centre(), sound.AnvilLand{})
 }
 
