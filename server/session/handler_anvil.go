@@ -9,7 +9,8 @@ import (
 	"math/rand"
 )
 
-// handleCraftRecipeOptional ...
+// handleCraftRecipeOptional handles the CraftRecipeOptional request action, sent when taking a result from an anvil
+// menu. It also contains information such as the new name of the item and the multi-recipe network ID.
 func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) error {
 	// First check if there actually is an anvil opened.
 	if !s.containerOpened.Load() {
