@@ -180,14 +180,12 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 }
 
 // fall spawns a falling block entity at the given position.
-func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
+func (g gravityAffected) fall(pos cube.Pos, w *world.World, f *entity.FallingBlock) {
 	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
 		w.SetBlock(pos, nil, nil)
-
-		e := entity.NewFallingBlock(b, pos.Vec3Middle())
-		w.AddEntity(e)
+		w.AddEntity(f)
 	}
 }
 

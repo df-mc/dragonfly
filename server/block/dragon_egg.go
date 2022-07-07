@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/entity"
 	"math/rand"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -18,7 +19,7 @@ type DragonEgg struct {
 
 // NeighbourUpdateTick ...
 func (d DragonEgg) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	d.fall(d, pos, w)
+	d.fall(pos, w, entity.NewFallingBlock(d, pos.Vec3Middle()))
 }
 
 // CanDisplace ...

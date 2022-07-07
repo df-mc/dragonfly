@@ -30,6 +30,9 @@ type GlassBreak struct{ sound }
 // them turns into a solid block.
 type Fizz struct{ sound }
 
+// AnvilLand is played when an anvil lands on the ground.
+type AnvilLand struct{ sound }
+
 // AnvilUse is played when an anvil is used.
 type AnvilUse struct{ sound }
 

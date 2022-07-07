@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -31,7 +32,7 @@ func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 			return
 		}
 	}
-	c.fall(c, pos, w)
+	c.fall(pos, w, entity.NewFallingBlock(c, pos.Vec3Middle()))
 }
 
 // BreakInfo ...

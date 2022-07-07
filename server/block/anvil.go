@@ -2,8 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -46,10 +48,13 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // NeighbourUpdateTick ...
 func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	a.fall(a, pos, w)
+	f := entity.NewFallingBlock(a, pos.Vec3Middle())
+	f.SetDamage(2.0, 40)
+	a.fall(pos, w, f)
 }
 
-// Damage ...
+// Damage damages the anvil and moves it to the next damage stage. If the anvil is at the last damage stage, it will be
+// destroyed.
 func (a Anvil) Damage() world.Block {
 	switch a.Type {
 	case UndamagedAnvil():
@@ -60,6 +65,11 @@ func (a Anvil) Damage() world.Block {
 		return Air{}
 	}
 	return a
+}
+
+// Landed is called when a falling anvil hits the ground, used to, for example, play a sound.
+func (a Anvil) Landed(w *world.World, pos cube.Pos) {
+	w.PlaySound(pos.Vec3Centre(), sound.AnvilLand{})
 }
 
 // EncodeItem ...

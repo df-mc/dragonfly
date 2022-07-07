@@ -64,6 +64,12 @@ type (
 		// respectively.
 		Projectile, Owner world.Entity
 	}
+
+	// SourceDamagingBlock is used for damage caused by a damaging block, such as an anvil.
+	SourceDamagingBlock struct {
+		// Block is the block that caused the damage.
+		Block world.Block
+	}
 )
 
 func (SourceCactus) ReducedByResistance() bool              { return true }
@@ -92,3 +98,5 @@ func (SourceLava) ReducedByResistance() bool                { return true }
 func (SourceLava) ReducedByArmour() bool                    { return true }
 func (SourceProjectile) ReducedByResistance() bool          { return true }
 func (SourceProjectile) ReducedByArmour() bool              { return true }
+func (SourceDamagingBlock) ReducedByResistance() bool       { return true }
+func (SourceDamagingBlock) ReducedByArmour() bool           { return true }
