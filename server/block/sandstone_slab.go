@@ -12,12 +12,8 @@ import (
 type SandstoneSlab struct {
 	transparent
 
-	// Smooth will specify if the sandstone block should be smooth sandstone slab or normal sandstone slab.
-	Smooth bool
-
-	// Cut specifies if the sandstone type is cut or not. When set to true, the sandstone slab type will represent its
-	// cut variant, for example cut sandstone slab.
-	Cut bool
+	// Type is the type of sandstone of the block.
+	Type SandstoneType
 
 	// Red specifies if the sandstone type is red or not. When set to true, the sandstone slab type will represent its
 	// red variant, for example red sandstone slab.
@@ -35,8 +31,8 @@ type SandstoneSlab struct {
 func (s SandstoneSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	clickedBlock := w.Block(pos)
 	if clickedSlab, ok := clickedBlock.(SandstoneSlab); ok && !s.Double {
-		if (face == cube.FaceUp && !clickedSlab.Double && clickedSlab.Red == s.Red && !clickedSlab.Top) ||
-			(face == cube.FaceDown && !clickedSlab.Double && clickedSlab.Red == s.Red && clickedSlab.Top) {
+		if (face == cube.FaceUp && !clickedSlab.Double && clickedSlab.Type == s.Type && clickedSlab.Red == s.Red && !clickedSlab.Top) ||
+			(face == cube.FaceDown && !clickedSlab.Double && clickedSlab.Type == s.Type && clickedSlab.Red == s.Red && clickedSlab.Top) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
 
@@ -47,7 +43,7 @@ func (s SandstoneSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.V
 	if sideSlab, ok := w.Block(pos.Side(face)).(SandstoneSlab); ok && !replaceableWith(w, pos, s) && !s.Double {
 		// The block on the side of the one clicked was a slab and the block clicked was not replaceableWith, so
 		// the slab on the side must've been half and may now be filled if the stone types are the same.
-		if !sideSlab.Double && sideSlab.Red == s.Red {
+		if !sideSlab.Double && sideSlab.Type == s.Type && sideSlab.Red == s.Red {
 			sideSlab.Double = true
 
 			place(w, pos.Side(face), sideSlab, user, ctx)
@@ -73,7 +69,7 @@ func (s SandstoneSlab) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s SandstoneSlab) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(s.Type.Hardness(), alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if s.Double {
 			s.Double = false
 			// If the slab is double, it should drop two single slabs.
@@ -90,13 +86,13 @@ func (s SandstoneSlab) EncodeItem() (name string, meta int16) {
 		prefix = "minecraft:double_stone_block_slab"
 	}
 
-	if s.Cut {
+	if s.Type.Cut() {
 		if s.Red {
 			return prefix + "4", 1
 		}
 		return prefix + "4", 0
 	}
-	if s.Smooth {
+	if s.Type.Smooth() {
 		if s.Red {
 			return prefix + "3", 1
 		}
@@ -115,13 +111,13 @@ func (s SandstoneSlab) EncodeBlock() (name string, properties map[string]any) {
 		prefix = "minecraft:double_stone_block_slab"
 	}
 
-	if s.Cut {
+	if s.Type.Cut() {
 		if s.Red {
 			return prefix + "4", map[string]any{"top_slot_bit": s.Top, "stone_slab_type_4": "cut_red_sandstone"}
 		}
 		return prefix + "4", map[string]any{"top_slot_bit": s.Top, "stone_slab_type_4": "cut_sandstone"}
 	}
-	if s.Smooth {
+	if s.Type.Smooth() {
 		if s.Red {
 			return prefix + "3", map[string]any{"top_slot_bit": s.Top, "stone_slab_type_3": "smooth_red_sandstone"}
 		}
@@ -146,33 +142,18 @@ func (s SandstoneSlab) SideClosed(pos, side cube.Pos, w *world.World) bool {
 }
 
 // allSandstoneSlab ...
-func allSandstoneSlab() (slabs []world.Block) {
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Cut: true, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Cut: true, Smooth: false, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Cut: false, Smooth: true, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Cut: false, Smooth: true, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Cut: false, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Cut: false, Smooth: false, Red: false})
-
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Cut: true, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Cut: true, Smooth: false, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Cut: false, Smooth: true, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Cut: false, Smooth: true, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Cut: false, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Cut: false, Smooth: false, Red: false})
-
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Cut: true, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Cut: true, Smooth: false, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Cut: false, Smooth: true, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Cut: false, Smooth: true, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Cut: false, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Cut: false, Smooth: false, Red: false})
-
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Cut: true, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Cut: true, Smooth: false, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Cut: false, Smooth: true, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Cut: false, Smooth: true, Red: false})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Cut: false, Smooth: false, Red: true})
-	slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Cut: false, Smooth: false, Red: false})
+func allSandstoneSlabs() (slabs []world.Block) {
+	f := func(red bool) {
+		for _, t := range SandstoneTypes() {
+			if t.SlabAble() {
+				slabs = append(slabs, SandstoneSlab{Double: false, Top: false, Type: t, Red: red})
+				slabs = append(slabs, SandstoneSlab{Double: false, Top: true, Type: t, Red: red})
+				slabs = append(slabs, SandstoneSlab{Double: true, Top: false, Type: t, Red: red})
+				slabs = append(slabs, SandstoneSlab{Double: true, Top: true, Type: t, Red: red})
+			}
+		}
+	}
+	f(true)
+	f(false)
 	return
 }

@@ -147,7 +147,7 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allQuartz())
 	registerAll(allQuartzStairs())
-	registerAll(allSandstoneSlab())
+	registerAll(allSandstoneSlabs())
 	registerAll(allSandstoneStairs())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
@@ -267,26 +267,6 @@ func init() {
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
 	world.RegisterItem(ReinforcedDeepslate{})
-	world.RegisterItem(SandstoneSlab{Cut: true})
-	world.RegisterItem(SandstoneSlab{Double: true, Cut: true})
-	world.RegisterItem(SandstoneSlab{Double: true, Red: true, Cut: true})
-	world.RegisterItem(SandstoneSlab{Double: true, Red: true, Smooth: true})
-	world.RegisterItem(SandstoneSlab{Double: true, Red: true})
-	world.RegisterItem(SandstoneSlab{Double: true, Smooth: true})
-	world.RegisterItem(SandstoneSlab{Double: true})
-	world.RegisterItem(SandstoneSlab{Red: true, Cut: true})
-	world.RegisterItem(SandstoneSlab{Red: true, Smooth: true})
-	world.RegisterItem(SandstoneSlab{Red: true})
-	world.RegisterItem(SandstoneSlab{Smooth: true})
-	world.RegisterItem(SandstoneSlab{})
-	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
-	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
-	world.RegisterItem(SandstoneStairs{Red: true})
-	world.RegisterItem(SandstoneStairs{Red: true})
-	world.RegisterItem(SandstoneStairs{Smooth: true})
-	world.RegisterItem(SandstoneStairs{Smooth: true})
-	world.RegisterItem(SandstoneStairs{})
-	world.RegisterItem(SandstoneStairs{})
 	world.RegisterItem(Sand{Red: true})
 	world.RegisterItem(Sand{})
 	world.RegisterItem(SeaLantern{})
@@ -317,8 +297,17 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem(c.(world.Item))
 	}
-	for _, s := range allSandstones() {
-		world.RegisterItem(s.(world.Item))
+	for _, t := range SandstoneTypes() {
+		world.RegisterItem(Sandstone{Type: t, Red: true})
+		world.RegisterItem(Sandstone{Type: t})
+		if t.SlabAble() {
+			world.RegisterItem(SandstoneSlab{Type: t, Red: true})
+			world.RegisterItem(SandstoneSlab{Type: t})
+		}
+		if t.StairAble() {
+			world.RegisterItem(SandstoneStairs{Type: t, Red: true})
+			world.RegisterItem(SandstoneStairs{Type: t})
+		}
 	}
 	for _, s := range allStoneBricks() {
 		world.RegisterItem(s.(world.Item))

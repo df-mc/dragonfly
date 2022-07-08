@@ -71,6 +71,26 @@ func (s sandstone) String() string {
 	panic("unknown sandstone type")
 }
 
+// Smooth varient
+func (s sandstone) Smooth() bool {
+	return s == 3
+}
+
+// Cut varient
+func (s sandstone) Cut() bool {
+	return s == 1
+}
+
+// Can be a Slab
+func (s sandstone) SlabAble() bool {
+	return s != 2
+}
+
+// Can be a Stairs
+func (s sandstone) StairAble() bool {
+	return s == 0 || s == 3
+}
+
 // SandstoneTypes ...
 func SandstoneTypes() []SandstoneType {
 	return []SandstoneType{NormalSandstone(), CutSandstone(), ChiseledSandstone(), SmoothSandstone()}
