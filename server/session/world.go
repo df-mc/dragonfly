@@ -86,7 +86,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Layers: []protocol.AbilityLayer{ // TODO: Make use of everything that this system supports.
 				{
 					Type:      protocol.AbilityLayerTypeBase,
-					Abilities: protocol.AbilityAbilityCount - 1,
+					Abilities: protocol.AbilityCount - 1,
 					Values:    protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs,
 					FlySpeed:  0.05,
 					WalkSpeed: 0.1,
