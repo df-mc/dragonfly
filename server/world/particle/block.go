@@ -8,15 +8,12 @@ import (
 	"image/color"
 )
 
-// ColouredFlame is a flame particle that can have any colour specified with the Colour field.
-type ColouredFlame struct {
+// Flame is a particle shown around torches. It can have any colour specified with the Colour field. If the colour is not specified, it will default to the normal flame particle.
+type Flame struct {
 	particle
 	// Colour is the colour of the Flame particle.
 	Colour color.RGBA
 }
-
-// Flame is the flame particle shown around torches.
-type Flame struct{ particle }
 
 // BlockBreak is a particle sent when a block is broken. It represents a bunch of particles that are textured
 // like the block that the particle holds.
