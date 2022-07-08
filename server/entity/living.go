@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Living represents an entity that is alive and that has health. It is able to take damage and will die upon
@@ -52,4 +53,12 @@ type Living interface {
 	Speed() float64
 	// SetSpeed sets the speed of an entity to a new value.
 	SetSpeed(float64)
+	// SetOnFire sets the entity on fire for a given duration.
+	SetOnFire(time.Duration)
+	// OnFireDuration returns how long the entity is on fire for.
+	OnFireDuration() time.Duration
+	// Extinguish resets the entity's fire time, extinguishing it from the fire.
+	Extinguish()
+	// FireProof checks if the entity is on fireproof which can be true if it has the fire resistance effect.
+	FireProof() bool
 }
