@@ -88,8 +88,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 					Type:      protocol.AbilityLayerTypeBase,
 					Abilities: protocol.AbilityCount - 1,
 					Values:    protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs,
-					FlySpeed:  0.05,
-					WalkSpeed: 0.1,
+					FlySpeed:  protocol.AbilityBaseFlySpeed,
+					WalkSpeed: protocol.AbilityBaseWalkSpeed,
 				},
 			},
 		})
