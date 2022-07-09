@@ -6,136 +6,50 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// BlastProtection is an armour enchantment that decreases explosion damage.
-type BlastProtection struct{}
-
-// Name ...
-func (e BlastProtection) Name() string {
-	return "Blast Protection"
-}
-
-// MaxLevel ...
-func (e BlastProtection) MaxLevel() int {
-	return 4
-}
-
-// Rarity ...
-func (e BlastProtection) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityRare
-}
-
-// CompatibleWithOther ...
-func (e BlastProtection) CompatibleWithOther(t item.EnchantmentType) bool {
-	_, fireProt := t.(FireProtection)
-	_, projectileProt := t.(ProjectileProtection)
-	_, prot := t.(Protection)
-	return !fireProt && !projectileProt && !prot
-}
-
-// CompatibleWithItem ...
-func (e BlastProtection) CompatibleWithItem(i world.Item) bool {
-	_, ok := i.(item.Armour)
-	return ok
-}
-
-// FireProtection is an armour enchantment that decreases fire damage.
-type FireProtection struct{}
-
-// Name ...
-func (e FireProtection) Name() string {
-	return "Fire Protection"
-}
-
-// MaxLevel ...
-func (e FireProtection) MaxLevel() int {
-	return 4
-}
-
-// Rarity ...
-func (e FireProtection) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityUncommon
-}
-
-// CompatibleWithOther ...
-func (e FireProtection) CompatibleWithOther(t item.EnchantmentType) bool {
-	_, blastProt := t.(BlastProtection)
-	_, projectileProt := t.(ProjectileProtection)
-	_, prot := t.(Protection)
-	return !blastProt && !projectileProt && !prot
-}
-
-// CompatibleWithItem ...
-func (e FireProtection) CompatibleWithItem(i world.Item) bool {
-	_, ok := i.(item.Armour)
-	return ok
-}
-
-// ProjectileProtection is an armour enchantment that reduces damage from projectiles.
-type ProjectileProtection struct{}
-
-// Name ...
-func (e ProjectileProtection) Name() string {
-	return "Projectile Protection"
-}
-
-// MaxLevel ...
-func (e ProjectileProtection) MaxLevel() int {
-	return 4
-}
-
-// Rarity ...
-func (e ProjectileProtection) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityUncommon
-}
-
-// CompatibleWithOther ...
-func (e ProjectileProtection) CompatibleWithOther(t item.EnchantmentType) bool {
-	_, blastProt := t.(BlastProtection)
-	_, fireProt := t.(FireProtection)
-	_, prot := t.(Protection)
-	return !blastProt && !fireProt && !prot
-}
-
-// CompatibleWithItem ...
-func (e ProjectileProtection) CompatibleWithItem(i world.Item) bool {
-	_, ok := i.(item.Armour)
-	return ok
-}
-
 // Protection is an armour enchantment which increases the damage reduction.
 type Protection struct{}
 
+// Name ...
+func (Protection) Name() string {
+	return "Protection"
+}
+
+// MaxLevel ...
+func (Protection) MaxLevel() int {
+	return 4
+}
+
+// MinCost ...
+func (Protection) MinCost(level int) int {
+	return 1 + (level-1)*11
+}
+
+// MaxCost ...
+func (p Protection) MaxCost(level int) int {
+	return p.MinCost(level) + 20
+}
+
+// Rarity ...
+func (Protection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
+}
+
 // Affects ...
-func (e Protection) Affects(src damage.Source) bool {
+func (Protection) Affects(src damage.Source) bool {
 	_, ok := src.(damage.SourceEntityAttack)
 	return ok || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
 }
 
 // Multiplier returns the damage multiplier of protection.
-func (e Protection) Multiplier(lvl int) float64 {
+func (Protection) Multiplier(lvl int) float64 {
 	if lvl > 20 {
 		lvl = 20
 	}
 	return 1 - float64(lvl)/25
 }
 
-// Name ...
-func (e Protection) Name() string {
-	return "Protection"
-}
-
-// MaxLevel ...
-func (e Protection) MaxLevel() int {
-	return 4
-}
-
-// Rarity ...
-func (e Protection) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityCommon
-}
-
 // CompatibleWithOther ...
-func (e Protection) CompatibleWithOther(t item.EnchantmentType) bool {
+func (Protection) CompatibleWithOther(t item.EnchantmentType) bool {
 	_, blastProt := t.(BlastProtection)
 	_, fireProt := t.(FireProtection)
 	_, prot := t.(ProjectileProtection)
@@ -143,7 +57,7 @@ func (e Protection) CompatibleWithOther(t item.EnchantmentType) bool {
 }
 
 // CompatibleWithItem ...
-func (e Protection) CompatibleWithItem(i world.Item) bool {
+func (Protection) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok
 }

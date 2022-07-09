@@ -9,32 +9,42 @@ import (
 type Sharpness struct{}
 
 // Addend returns the additional damage when attacking with sharpness.
-func (e Sharpness) Addend(level int) float64 {
+func (Sharpness) Addend(level int) float64 {
 	return float64(level) * 1.25
 }
 
 // Name ...
-func (e Sharpness) Name() string {
+func (Sharpness) Name() string {
 	return "Sharpness"
 }
 
 // MaxLevel ...
-func (e Sharpness) MaxLevel() int {
+func (Sharpness) MaxLevel() int {
 	return 5
 }
 
+// MinCost ...
+func (Sharpness) MinCost(level int) int {
+	return 1 + (level-1)*11
+}
+
+// MaxCost ...
+func (s Sharpness) MaxCost(level int) int {
+	return s.MinCost(level) + 20
+}
+
 // Rarity ...
-func (e Sharpness) Rarity() item.EnchantmentRarity {
+func (Sharpness) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
 // CompatibleWithOther ...
-func (e Sharpness) CompatibleWithOther(item.EnchantmentType) bool {
+func (Sharpness) CompatibleWithOther(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (e Sharpness) CompatibleWithItem(i world.Item) bool {
+func (Sharpness) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && (t.ToolType() == item.TypeSword || t.ToolType() == item.TypeAxe)
 }

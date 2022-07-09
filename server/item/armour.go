@@ -2,17 +2,17 @@ package item
 
 var (
 	// ArmourTierLeather is the ArmourTier of leather armour.
-	ArmourTierLeather = ArmourTier{BaseDurability: 55, Name: "leather"}
+	ArmourTierLeather = ArmourTier{BaseDurability: 55, EnchantmentValue: 15, Name: "leather"}
 	// ArmourTierGold is the ArmourTier of gold armour.
-	ArmourTierGold = ArmourTier{BaseDurability: 77, Name: "golden"}
+	ArmourTierGold = ArmourTier{BaseDurability: 77, EnchantmentValue: 25, Name: "golden"}
 	// ArmourTierChain is the ArmourTier of chain armour.
-	ArmourTierChain = ArmourTier{BaseDurability: 166, Name: "chainmail"}
+	ArmourTierChain = ArmourTier{BaseDurability: 166, EnchantmentValue: 12, Name: "chainmail"}
 	// ArmourTierIron is the ArmourTier of iron armour.
-	ArmourTierIron = ArmourTier{BaseDurability: 165, Name: "iron"}
+	ArmourTierIron = ArmourTier{BaseDurability: 165, EnchantmentValue: 9, Name: "iron"}
 	// ArmourTierDiamond is the ArmourTier of diamond armour.
-	ArmourTierDiamond = ArmourTier{BaseDurability: 363, Toughness: 2, Name: "diamond"}
+	ArmourTierDiamond = ArmourTier{BaseDurability: 363, Toughness: 2, EnchantmentValue: 10, Name: "diamond"}
 	// ArmourTierNetherite is the ArmourTier of netherite armour.
-	ArmourTierNetherite = ArmourTier{BaseDurability: 408, Toughness: 3, KnockBackResistance: 0.1, Name: "netherite"}
+	ArmourTierNetherite = ArmourTier{BaseDurability: 408, Toughness: 3, KnockBackResistance: 0.1, EnchantmentValue: 15, Name: "netherite"}
 )
 
 type (
@@ -40,6 +40,9 @@ type (
 		// KnockBackResistance is a number from 0-1 that decides the amount of knock back force that is resisted
 		// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
 		KnockBackResistance float64
+		// EnchantmentValue is the enchantment value of the armour used when selecting pseudo-random enchantments for
+		// enchanting tables.
+		EnchantmentValue int
 		// Name is the name of the tier.
 		Name string
 	}

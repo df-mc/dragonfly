@@ -38,6 +38,11 @@ func (p Pickaxe) AttackDamage() float64 {
 	return p.Tier.BaseAttackDamage + 1
 }
 
+// EnchantmentValue ...
+func (p Pickaxe) EnchantmentValue() int {
+	return p.Tier.EnchantmentValue
+}
+
 // DurabilityInfo ...
 func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{

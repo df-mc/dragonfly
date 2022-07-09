@@ -82,7 +82,7 @@ type Player struct {
 	lastXPPickup atomic.Value[time.Time]
 	immunity     atomic.Value[time.Time]
 
-	enchantSeed atomic.Uint64
+	enchantSeed atomic.Int64
 
 	mc *entity.MovementComputer
 
@@ -124,7 +124,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		scale:       *atomic.NewFloat64(1),
 		immunity:    *atomic.NewValue(time.Now()),
 		pos:         *atomic.NewValue(pos),
-		enchantSeed: *atomic.NewUint64(rand.Uint64()),
+		enchantSeed: *atomic.NewInt64(rand.Int63()),
 		cooldowns:   make(map[itemHash]time.Time),
 		mc:          &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
@@ -1919,7 +1919,7 @@ func (p *Player) Experience() int {
 }
 
 // EnchantmentSeed is a seed used to calculate random enchantments with enchantment tables.
-func (p *Player) EnchantmentSeed() uint64 {
+func (p *Player) EnchantmentSeed() int64 {
 	return p.enchantSeed.Load()
 }
 

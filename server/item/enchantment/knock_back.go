@@ -9,32 +9,42 @@ import (
 type KnockBack struct{}
 
 // Force returns the increase in knock-back force from the enchantment.
-func (e KnockBack) Force(lvl int) float64 {
+func (KnockBack) Force(lvl int) float64 {
 	return float64(lvl) / 2
 }
 
 // Name ...
-func (e KnockBack) Name() string {
+func (KnockBack) Name() string {
 	return "Knockback"
 }
 
 // MaxLevel ...
-func (e KnockBack) MaxLevel() int {
+func (KnockBack) MaxLevel() int {
 	return 2
 }
 
+// MinCost ...
+func (KnockBack) MinCost(level int) int {
+	return 5 + (level-1)*20
+}
+
+// MaxCost ...
+func (k KnockBack) MaxCost(level int) int {
+	return k.MinCost(level) + 50
+}
+
 // Rarity ...
-func (e KnockBack) Rarity() item.EnchantmentRarity {
+func (KnockBack) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
 // CompatibleWithOther ...
-func (e KnockBack) CompatibleWithOther(item.EnchantmentType) bool {
+func (KnockBack) CompatibleWithOther(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (e KnockBack) CompatibleWithItem(i world.Item) bool {
+func (KnockBack) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && t.ToolType() == item.TypeSword
 }

@@ -9,32 +9,42 @@ import (
 type FeatherFalling struct{}
 
 // Multiplier returns the damage multiplier of feather falling.
-func (e FeatherFalling) Multiplier(lvl int) float64 {
+func (FeatherFalling) Multiplier(lvl int) float64 {
 	return 1 - 0.12*float64(lvl)
 }
 
 // Name ...
-func (e FeatherFalling) Name() string {
+func (FeatherFalling) Name() string {
 	return "Feather Falling"
 }
 
 // Rarity ...
-func (e FeatherFalling) Rarity() item.EnchantmentRarity {
+func (FeatherFalling) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
 // MaxLevel ...
-func (e FeatherFalling) MaxLevel() int {
+func (FeatherFalling) MaxLevel() int {
 	return 4
 }
 
+// MinCost ...
+func (FeatherFalling) MinCost(level int) int {
+	return 5 + (level-1)*6
+}
+
+// MaxCost ...
+func (f FeatherFalling) MaxCost(level int) int {
+	return f.MinCost(level) + 10
+}
+
 // CompatibleWithOther ...
-func (e FeatherFalling) CompatibleWithOther(item.EnchantmentType) bool {
+func (FeatherFalling) CompatibleWithOther(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (e FeatherFalling) CompatibleWithItem(i world.Item) bool {
+func (FeatherFalling) CompatibleWithItem(i world.Item) bool {
 	b, ok := i.(item.BootsType)
 	return ok && b.Boots()
 }

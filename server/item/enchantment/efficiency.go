@@ -9,32 +9,42 @@ import (
 type Efficiency struct{}
 
 // Addend returns the mining speed addend from efficiency.
-func (e Efficiency) Addend(level int) float64 {
+func (Efficiency) Addend(level int) float64 {
 	return float64(level*level + 1)
 }
 
 // Name ...
-func (e Efficiency) Name() string {
+func (Efficiency) Name() string {
 	return "Efficiency"
 }
 
 // MaxLevel ...
-func (e Efficiency) MaxLevel() int {
+func (Efficiency) MaxLevel() int {
 	return 5
 }
 
+// MinCost ...
+func (Efficiency) MinCost(level int) int {
+	return 1 + 10*(level-1)
+}
+
+// MaxCost ...
+func (e Efficiency) MaxCost(level int) int {
+	return e.MinCost(level) + 50
+}
+
 // Rarity ...
-func (e Efficiency) Rarity() item.EnchantmentRarity {
+func (Efficiency) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
 // CompatibleWithOther ...
-func (e Efficiency) CompatibleWithOther(item.EnchantmentType) bool {
+func (Efficiency) CompatibleWithOther(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (e Efficiency) CompatibleWithItem(i world.Item) bool {
+func (Efficiency) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && (t.ToolType() != item.TypeSword && t.ToolType() != item.TypeNone)
 }

@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"golang.org/x/exp/maps"
 	"reflect"
 )
 
@@ -39,6 +40,10 @@ type EnchantmentType interface {
 	Name() string
 	// MaxLevel returns the maximum level the enchantment should be able to have.
 	MaxLevel() int
+	// MinCost returns the minimum cost the enchantment may inhibit.
+	MinCost(level int) int
+	// MaxCost returns the maximum cost the enchantment may inhibit.
+	MaxCost(level int) int
 	// Rarity returns the enchantment's rarity.
 	Rarity() EnchantmentRarity
 	// CompatibleWithOther is called when an enchantment is added to an item. It can be used to check if
@@ -47,6 +52,12 @@ type EnchantmentType interface {
 	// CompatibleWithItem is also called when an enchantment is added to an item. It can be used to check if
 	// the enchantment is compatible with the item type.
 	CompatibleWithItem(i world.Item) bool
+}
+
+// Enchantable is an interface that can be implemented by items that can be enchanted through an enchanting table.
+type Enchantable interface {
+	// EnchantmentValue returns the value the item may inhibit on possible enchantments.
+	EnchantmentValue() int
 }
 
 // RegisterEnchantment registers an enchantment with the ID passed. Once registered, enchantments may be received
@@ -73,4 +84,9 @@ func EnchantmentByID(id int) (EnchantmentType, bool) {
 func EnchantmentID(e EnchantmentType) (int, bool) {
 	id, ok := enchantmentIds[reflect.TypeOf(e)]
 	return id, ok
+}
+
+// Enchantments returns a slice of all registered enchantments.
+func Enchantments() []EnchantmentType {
+	return maps.Values(enchantments)
 }

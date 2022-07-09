@@ -68,6 +68,11 @@ func (s Shovel) BaseMiningEfficiency(world.Block) float64 {
 	return s.Tier.BaseMiningEfficiency
 }
 
+// EnchantmentValue ...
+func (s Shovel) EnchantmentValue() int {
+	return s.Tier.EnchantmentValue
+}
+
 // DurabilityInfo ...
 func (s Shovel) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{

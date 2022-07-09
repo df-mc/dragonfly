@@ -113,7 +113,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				if resultLevel > t.MaxLevel() {
 					resultLevel = t.MaxLevel()
 				}
-				rarityCost := t.Rarity().ApplyCost
+				rarityCost := t.Rarity().Cost
 				if enchant {
 					rarityCost = max(1, rarityCost/2)
 				}

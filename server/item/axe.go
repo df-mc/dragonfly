@@ -70,6 +70,11 @@ func (a Axe) BaseMiningEfficiency(world.Block) float64 {
 	return a.Tier.BaseMiningEfficiency
 }
 
+// EnchantmentValue ...
+func (a Axe) EnchantmentValue() int {
+	return a.Tier.EnchantmentValue
+}
+
 // RepairableBy ...
 func (a Axe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(a.Tier)(i)

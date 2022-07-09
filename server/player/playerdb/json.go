@@ -66,7 +66,7 @@ type jsonData struct {
 	Hunger                           int
 	FoodTick                         int
 	ExhaustionLevel, SaturationLevel float64
-	EnchantmentSeed                  uint64
+	EnchantmentSeed                  int64
 	Experience                       int
 	GameMode                         uint8
 	Inventory                        jsonInventoryData
