@@ -99,6 +99,7 @@ func init() {
 	world.RegisterBlock(MudBricks{})
 	world.RegisterBlock(ReinforcedDeepslate{})
 	world.RegisterBlock(MuddyMangroveRoots{})
+	world.RegisterBlock(EnchantingTable{})
 
 	registerAll(allAnvils())
 	registerAll(allBarrels())

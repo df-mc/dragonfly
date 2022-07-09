@@ -638,6 +638,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	switch b.(type) {
 	case block.CraftingTable:
 		containerType = 1
+	case block.EnchantingTable:
+		containerType = 3
 	case block.Anvil:
 		containerType = 5
 	case block.Beacon:

@@ -82,6 +82,8 @@ type Player struct {
 	lastXPPickup atomic.Value[time.Time]
 	immunity     atomic.Value[time.Time]
 
+	enchantSeed atomic.Uint64
+
 	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
@@ -104,26 +106,27 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:          *atomic.NewValue[Handler](NopHandler{}),
-		name:       name,
-		skin:       *atomic.NewValue(skin),
-		speed:      *atomic.NewFloat64(0.1),
-		nameTag:    *atomic.NewValue(name),
-		heldSlot:   atomic.NewUint32(0),
-		locale:     language.BritishEnglish,
-		scale:      *atomic.NewFloat64(1),
-		immunity:   *atomic.NewValue(time.Now()),
-		pos:        *atomic.NewValue(pos),
-		cooldowns:  make(map[itemHash]time.Time),
-		mc:         &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		uuid:        uuid.New(),
+		offHand:     inventory.New(1, p.broadcastItems),
+		armour:      inventory.NewArmour(p.broadcastArmour),
+		hunger:      newHungerManager(),
+		health:      entity.NewHealthManager(),
+		experience:  entity.NewExperienceManager(),
+		effects:     entity.NewEffectManager(),
+		gameMode:    *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:           *atomic.NewValue[Handler](NopHandler{}),
+		name:        name,
+		skin:        *atomic.NewValue(skin),
+		speed:       *atomic.NewFloat64(0.1),
+		nameTag:     *atomic.NewValue(name),
+		heldSlot:    atomic.NewUint32(0),
+		locale:      language.BritishEnglish,
+		scale:       *atomic.NewFloat64(1),
+		immunity:    *atomic.NewValue(time.Now()),
+		pos:         *atomic.NewValue(pos),
+		enchantSeed: *atomic.NewUint64(rand.Uint64()),
+		cooldowns:   make(map[itemHash]time.Time),
+		mc:          &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -1915,6 +1918,11 @@ func (p *Player) Experience() int {
 	return p.experience.Experience()
 }
 
+// EnchantmentSeed is a seed used to calculate random enchantments with enchantment tables.
+func (p *Player) EnchantmentSeed() uint64 {
+	return p.enchantSeed.Load()
+}
+
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
 	ctx := event.C()
@@ -2426,6 +2434,8 @@ func (p *Player) load(data Data) {
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)
 
+	p.enchantSeed.Store(data.EnchantmentSeed)
+
 	p.gameMode.Store(data.GameMode)
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
@@ -2465,6 +2475,7 @@ func (p *Player) Data() Data {
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
 		Experience:      p.Experience(),
+		EnchantmentSeed: p.EnchantmentSeed(),
 		FoodTick:        p.hunger.foodTick,
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,

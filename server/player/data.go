@@ -31,6 +31,8 @@ type Data struct {
 	// ExhaustionLevel determines how fast the hunger level depletes and is controlled by the kinds
 	// of food the player has eaten. SaturationLevel determines how fast the saturation level depletes.
 	ExhaustionLevel, SaturationLevel float64
+	// EnchantmentSeed is the seed used to generate the enchantments from enchantment tables.
+	EnchantmentSeed uint64
 	// Experience is the current experience the player has.
 	Experience int
 	// GameMode is the last gamemode the user had, like creative or survival.
