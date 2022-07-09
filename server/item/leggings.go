@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"image/color"
 )
 
 // Leggings are a defensive item that may be equipped in the leggings armour slot. They come in several tiers,
@@ -10,8 +9,6 @@ import (
 type Leggings struct {
 	// Tier is the tier of the leggings.
 	Tier ArmourTier
-	// Colour is the dyed colour of the leggings, this only functions for leather armour.
-	Colour color.RGBA
 }
 
 // Use handles the auto-equipping of leggings in an armour slot by using the item.
