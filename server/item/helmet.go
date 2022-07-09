@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Helmet is a defensive item that may be worn in the head slot. It comes in several tiers, each with
@@ -9,6 +10,8 @@ import (
 type Helmet struct {
 	// Tier is the tier of the armour.
 	Tier ArmourTier
+	// Colour is the dyed colour of the helmet, this only functions for leather armour.
+	Colour color.RGBA
 }
 
 // Use handles the using of a helmet to auto-equip it in an armour slot.

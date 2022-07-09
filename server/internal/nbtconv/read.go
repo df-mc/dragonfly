@@ -17,6 +17,7 @@ func ReadItem(data map[string]any, s *item.Stack) item.Stack {
 	readDamage(data, s, disk)
 	readDisplay(data, s)
 	readEnchantments(data, s)
+	readCustomColour(data, s)
 	readDragonflyData(data, s)
 	return *s
 }
@@ -90,6 +91,27 @@ func readDisplay(m map[string]any, s *item.Stack) {
 			}
 			*s = s.WithLore(loreLines...)
 		}
+	}
+}
+
+// readCustomColour reads the custom colour field present in the NBT of leather armour.
+func readCustomColour(m map[string]any, s *item.Stack) {
+	if colour, ok := m["customColor"].(int32); ok {
+		var a world.Item
+		if b, ok := s.Item().(item.Boots); ok {
+			b.Colour = RGBAFromInt32(colour)
+			a = b
+		} else if l, ok := s.Item().(item.Leggings); ok {
+			l.Colour = RGBAFromInt32(colour)
+			a = l
+		} else if c, ok := s.Item().(item.Chestplate); ok {
+			c.Colour = RGBAFromInt32(colour)
+			a = c
+		} else if h, ok := s.Item().(item.Helmet); ok {
+			h.Colour = RGBAFromInt32(colour)
+			a = h
+		}
+		*s = item.NewStack(a, s.Count()).WithCustomName(s.CustomName()).WithEnchantments(s.Enchantments()...).WithDurability(s.Durability()).WithLore(s.Lore()...)
 	}
 }
 

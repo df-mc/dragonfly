@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Chestplate is a defensive item that may be equipped in the chestplate slot. Generally, chestplates provide
@@ -9,6 +10,8 @@ import (
 type Chestplate struct {
 	// Tier is the tier of the chestplate.
 	Tier ArmourTier
+	// Colour is the dyed colour of the chestplate, this only functions for leather armour.
+	Colour color.RGBA
 }
 
 // Use handles the using of a chestplate to auto-equip it in the designated armour slot.

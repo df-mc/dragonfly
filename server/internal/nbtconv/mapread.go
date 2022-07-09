@@ -82,6 +82,7 @@ func MapItem(x map[string]any, k string) item.Stack {
 		readDamage(m, &s, true)
 		readEnchantments(m, &s)
 		readDisplay(m, &s)
+		readCustomColour(m, &s)
 		readDragonflyData(m, &s)
 		return s
 	}

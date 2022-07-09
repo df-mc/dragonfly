@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Boots are a defensive item that may be equipped in the boots armour slot. They come in several tiers, like
@@ -9,6 +10,8 @@ import (
 type Boots struct {
 	// Tier is the tier of the boots.
 	Tier ArmourTier
+	// Colour is the dyed colour of the boots, this only functions for leather armour.
+	Colour color.RGBA
 }
 
 // Use handles the auto-equipping of boots in the armour slot when using it.

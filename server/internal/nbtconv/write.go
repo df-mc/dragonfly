@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"image/color"
 	"sort"
 )
 
@@ -23,6 +24,7 @@ func WriteItem(s item.Stack, disk bool) map[string]any {
 	writeDamage(m, s, disk)
 	writeDisplay(m, s)
 	writeEnchantments(m, s)
+	writeCustomColour(m, s)
 	writeDragonflyData(m, s)
 	return m
 }
@@ -127,5 +129,22 @@ func writeDamage(m map[string]any, s item.Stack, disk bool) {
 				m["Damage"] = int32(s.MaxDurability() - s.Durability())
 			}
 		}
+	}
+}
+
+// writeCustomColour writes the dyed colour of leather armour to a map for NBT encoding.
+func writeCustomColour(m map[string]any, s item.Stack) {
+	if a, ok := s.Item().(item.Armour); ok {
+		var colour color.RGBA
+		if l, ok := a.(item.Boots); ok && l.Tier == item.ArmourTierLeather {
+			colour = l.Colour
+		} else if l, ok := a.(item.Chestplate); ok && l.Tier == item.ArmourTierLeather {
+			colour = l.Colour
+		} else if l, ok := a.(item.Leggings); ok && l.Tier == item.ArmourTierLeather {
+			colour = l.Colour
+		} else if l, ok := a.(item.Helmet); ok && l.Tier == item.ArmourTierLeather {
+			colour = l.Colour
+		}
+		m["customColor"] = Int32FromRGBA(colour)
 	}
 }
