@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"image/color"
 	"math/rand"
 )
 
@@ -340,10 +341,17 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.Flame:
+		if pa.Colour != (color.RGBA{}) {
+			s.writePacket(&packet.LevelEvent{
+				EventType: packet.LevelEventParticleLegacyEvent | 56,
+				Position:  vec64To32(pos),
+				EventData: nbtconv.Int32FromRGBA(pa.Colour),
+			})
+			return
+		}
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 56,
+			EventType: packet.LevelEventParticleLegacyEvent | 8,
 			Position:  vec64To32(pos),
-			EventData: nbtconv.Int32FromRGBA(pa.Colour),
 		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{

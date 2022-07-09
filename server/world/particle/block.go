@@ -8,7 +8,7 @@ import (
 	"image/color"
 )
 
-// Flame is a particle shown around torches. It can have any colour specified with the Colour field.
+// Flame is a particle shown around torches. It can have any colour specified with the Colour field. If the colour is not specified, it will default to the normal flame particle.
 type Flame struct {
 	particle
 	// Colour is the colour of the Flame particle.
