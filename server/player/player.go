@@ -1923,6 +1923,11 @@ func (p *Player) EnchantmentSeed() int64 {
 	return p.enchantSeed.Load()
 }
 
+// ResetEnchantmentSeed resets the enchantment seed to a new random value.
+func (p *Player) ResetEnchantmentSeed() {
+	p.enchantSeed.Store(rand.Int63())
+}
+
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
 	ctx := event.C()
