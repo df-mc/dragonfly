@@ -27,7 +27,7 @@ func (h Helmet) MaxCount() int {
 
 // DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
-	switch h.Tier {
+	switch h.Tier.(type) {
 	case ArmourTierLeather:
 		return 1
 	case ArmourTierGold, ArmourTierChain, ArmourTierIron:
@@ -40,18 +40,18 @@ func (h Helmet) DefencePoints() float64 {
 
 // KnockBackResistance ...
 func (h Helmet) KnockBackResistance() float64 {
-	return h.Tier.KnockBackResistance
+	return h.Tier.KnockBackResistance()
 }
 
 // Toughness ...
 func (h Helmet) Toughness() float64 {
-	return h.Tier.Toughness
+	return h.Tier.Toughness()
 }
 
 // DurabilityInfo ...
 func (h Helmet) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability: int(h.Tier.BaseDurability),
+		MaxDurability: int(h.Tier.BaseDurability()),
 		BrokenItem:    simpleItem(Stack{}),
 	}
 }
@@ -63,5 +63,23 @@ func (h Helmet) Helmet() bool {
 
 // EncodeItem ...
 func (h Helmet) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + h.Tier.Name + "_helmet", 0
+	return "minecraft:" + h.Tier.Name() + "_helmet", 0
+}
+
+// DecodeNBT ...
+func (h Helmet) DecodeNBT(data map[string]any) any {
+	if t, ok := h.Tier.(ArmourTierLeather); ok {
+		if v, ok := data["customColor"].(int32); ok {
+			t.Colour = rgbaFromInt32(v)
+		}
+	}
+	return h
+}
+
+// EncodeNBT ...
+func (h Helmet) EncodeNBT() map[string]any {
+	if t, ok := h.Tier.(ArmourTierLeather); ok {
+		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+	}
+	return nil
 }

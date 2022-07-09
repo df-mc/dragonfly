@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"image/color"
 )
 
 // Chestplate is a defensive item that may be equipped in the chestplate slot. Generally, chestplates provide
@@ -10,8 +9,6 @@ import (
 type Chestplate struct {
 	// Tier is the tier of the chestplate.
 	Tier ArmourTier
-	// Colour is the dyed colour of the chestplate, this only functions for leather armour.
-	Colour color.RGBA
 }
 
 // Use handles the using of a chestplate to auto-equip it in the designated armour slot.
@@ -27,7 +24,7 @@ func (c Chestplate) MaxCount() int {
 
 // DefencePoints ...
 func (c Chestplate) DefencePoints() float64 {
-	switch c.Tier {
+	switch c.Tier.(type) {
 	case ArmourTierLeather:
 		return 3
 	case ArmourTierGold, ArmourTierChain:
@@ -42,18 +39,18 @@ func (c Chestplate) DefencePoints() float64 {
 
 // Toughness ...
 func (c Chestplate) Toughness() float64 {
-	return c.Tier.Toughness
+	return c.Tier.Toughness()
 }
 
 // KnockBackResistance ...
 func (c Chestplate) KnockBackResistance() float64 {
-	return c.Tier.KnockBackResistance
+	return c.Tier.KnockBackResistance()
 }
 
 // DurabilityInfo ...
 func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability: int(c.Tier.BaseDurability + c.Tier.BaseDurability/2.2),
+		MaxDurability: int(c.Tier.BaseDurability() + c.Tier.BaseDurability()/2.2),
 		BrokenItem:    simpleItem(Stack{}),
 	}
 }
@@ -65,5 +62,23 @@ func (c Chestplate) Chestplate() bool {
 
 // EncodeItem ...
 func (c Chestplate) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + c.Tier.Name + "_chestplate", 0
+	return "minecraft:" + c.Tier.Name() + "_chestplate", 0
+}
+
+// DecodeNBT ...
+func (c Chestplate) DecodeNBT(data map[string]any) any {
+	if t, ok := c.Tier.(ArmourTierLeather); ok {
+		if v, ok := data["customColor"].(int32); ok {
+			t.Colour = rgbaFromInt32(v)
+		}
+	}
+	return c
+}
+
+// EncodeNBT ...
+func (c Chestplate) EncodeNBT() map[string]any {
+	if t, ok := c.Tier.(ArmourTierLeather); ok {
+		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+	}
+	return nil
 }
