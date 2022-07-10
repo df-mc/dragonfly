@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -21,10 +20,18 @@ type velocityEntity interface {
 	SetVelocity(v mgl64.Vec3)
 }
 
+// sneakingEntity is an entity that can sneak. This is typically just players.
+type sneakingEntity interface {
+	// Sneaking returns whether the entity is sneaking.
+	Sneaking() bool
+}
+
 // EntityLand ...
 func (SlimeBlock) EntityLand(_ cube.Pos, _ *world.World, e world.Entity) {
-	if p, ok := e.(*player.Player); ok && p.Sneaking() {
-		p.ResetFallDistance()
+	if e, ok := e.(fallDistanceEntity); ok {
+		if s, ok := e.(sneakingEntity); ok && s.Sneaking() {
+			e.ResetFallDistance()
+		}
 	}
 	if e, ok := e.(velocityEntity); ok {
 		v := e.Velocity()
