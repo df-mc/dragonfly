@@ -45,6 +45,9 @@ type Living interface {
 	AddEffect(e effect.Effect)
 	// RemoveEffect removes any effect that might currently be active on the entity.
 	RemoveEffect(e effect.Type)
+	// Effect returns the effect instance and true if the Player has the effect. If not found, it will return an empty
+	// effect instance and false.
+	Effect(e effect.Type) (effect.Effect, bool)
 	// Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
 	// expired when returned.
 	Effects() []effect.Effect
