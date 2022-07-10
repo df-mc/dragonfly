@@ -24,6 +24,7 @@ var enchantNames = []string{
 	"sandertv",
 	"t 14 raptor",
 	"da pig guy",
+	"potatoe train yt",
 }
 
 const (
@@ -35,7 +36,7 @@ const (
 
 // handleEnchant handles the enchantment of an item using the CraftRecipe stack request action.
 func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
-	if a.RecipeNetworkID < 0 || a.RecipeNetworkID > 2 {
+	if a.RecipeNetworkID > 2 {
 		return fmt.Errorf("invalid recipe network id: %d", a.RecipeNetworkID)
 	}
 
