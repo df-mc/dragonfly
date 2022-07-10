@@ -9,8 +9,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-// NoteBlock is a musical block that emits sounds when powered with redstone.
-type NoteBlock struct {
+// Note is a musical block that emits sounds when powered with redstone.
+type Note struct {
 	solid
 	bass
 
@@ -19,13 +19,13 @@ type NoteBlock struct {
 }
 
 // playNote ...
-func (n NoteBlock) playNote(pos cube.Pos, w *world.World) {
+func (n Note) playNote(pos cube.Pos, w *world.World) {
 	w.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, w), Pitch: n.Pitch})
 	w.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
 // updateInstrument ...
-func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
+func (n Note) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(interface {
 		Instrument() sound.Instrument
 	}); ok {
@@ -35,18 +35,18 @@ func (n NoteBlock) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 }
 
 // DecodeNBT ...
-func (n NoteBlock) DecodeNBT(data map[string]any) any {
+func (n Note) DecodeNBT(data map[string]any) any {
 	n.Pitch = int(nbtconv.Map[byte](data, "note"))
 	return n
 }
 
 // EncodeNBT ...
-func (n NoteBlock) EncodeNBT() map[string]any {
+func (n Note) EncodeNBT() map[string]any {
 	return map[string]any{"note": byte(n.Pitch)}
 }
 
 // Punch ...
-func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
+func (n Note) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return
 	}
@@ -54,7 +54,7 @@ func (n NoteBlock) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User)
 }
 
 // Activate ...
-func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}
@@ -65,16 +65,16 @@ func (n NoteBlock) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Us
 }
 
 // BreakInfo ...
-func (n NoteBlock) BreakInfo() BreakInfo {
+func (n Note) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(n))
 }
 
 // EncodeItem ...
-func (n NoteBlock) EncodeItem() (name string, meta int16) {
+func (n Note) EncodeItem() (name string, meta int16) {
 	return "minecraft:noteblock", 0
 }
 
 // EncodeBlock ...
-func (n NoteBlock) EncodeBlock() (name string, properties map[string]any) {
+func (n Note) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:noteblock", nil
 }
