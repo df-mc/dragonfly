@@ -68,21 +68,19 @@ func (f *FallManager) OnGround() bool {
 
 // UpdateFallState is called to update the entities falling state.
 func (f *FallManager) UpdateFallState(distanceThisTick float64) {
-	fallDistance := f.fallDistance
 	f.mu.Lock()
+	fallDistance := f.fallDistance
+	f.mu.Unlock()
 	if f.OnGround() {
 		if fallDistance > 0 {
 			f.fall(fallDistance)
-			f.mu.Unlock()
 			f.ResetFallDistance()
-		} else {
-			f.mu.Unlock()
 		}
 	} else if distanceThisTick < fallDistance {
+		f.mu.Lock()
 		f.fallDistance -= distanceThisTick
 		f.mu.Unlock()
 	} else {
-		f.mu.Unlock()
 		f.ResetFallDistance()
 	}
 }
