@@ -140,9 +140,8 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 				expected, has = expected.Grow(-removal), has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
-					ContainerID:    id,
-					Slot:           byte(slot),
-					StackNetworkID: item_id(has),
+					ContainerID: id,
+					Slot:        byte(slot),
 				}, has, s)
 				if expected.Empty() {
 					// Consumed this item, so go to the next one.
@@ -164,9 +163,8 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingGrid,
-		Slot:           craftingResult,
-		StackNetworkID: item_id(output[0]),
+		ContainerID: containerCraftingGrid,
+		Slot:        craftingResult,
 	}, output[0], s)
 	return nil
 }
@@ -184,9 +182,8 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	it = it.Grow(it.MaxCount() - 1)
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerOutput,
-		Slot:           craftingResult,
-		StackNetworkID: item_id(it),
+		ContainerID: containerOutput,
+		Slot:        craftingResult,
 	}, it, s)
 	return nil
 }
