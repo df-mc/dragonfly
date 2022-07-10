@@ -1803,7 +1803,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 
 	p.checkBlockCollisions(w)
-	p.fall.CheckOnGround(w)
+	p.onGround.Store(p.checkOnGround(w))
 
 	p.fall.UpdateFallState(deltaPos[1])
 
@@ -2008,7 +2008,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 
 	p.checkBlockCollisions(w)
-	p.fall.CheckOnGround(w)
+	p.onGround.Store(p.checkOnGround(w))
 
 	p.tickFood(w)
 	p.effects.Tick(p)
@@ -2121,6 +2121,29 @@ func (p *Player) checkBlockCollisions(w *world.World) {
 	}
 }
 
+// checkOnGround checks if the player is currently considered to be on the ground.
+func (p *Player) checkOnGround(w *world.World) bool {
+	box := p.BBox().Translate(p.Position())
+
+	b := box.Grow(1)
+
+	min, max := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
+	for x := min[0]; x <= max[0]; x++ {
+		for z := min[2]; z <= max[2]; z++ {
+			for y := min[1]; y < max[1]; y++ {
+				pos := cube.Pos{x, y, z}
+				boxList := w.Block(pos).Model().BBox(pos, w)
+				for _, bb := range boxList {
+					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(box) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 // BBox returns the axis aligned bounding box of the player.
 func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
@@ -2151,7 +2174,7 @@ func (p *Player) OnGround() bool {
 	if p.session() == session.Nop {
 		return p.mc.OnGround()
 	}
-	return p.fall.OnGround()
+	return p.onGround.Load()
 }
 
 // EyeHeight returns the eye height of the player: 1.62, or 0.52 if the player is swimming.

@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"sync"
 )
@@ -15,7 +14,6 @@ type FallManager struct {
 	mu           sync.Mutex
 	e            fallEntity
 	fallDistance float64
-	onGround     bool
 }
 
 // fallEntity is an entity that can fall.
@@ -56,22 +54,12 @@ func (f *FallManager) ResetFallDistance() {
 	f.fallDistance = 0
 }
 
-// OnGround returns whether the entity is currently considered to be on the ground.
-func (f *FallManager) OnGround() bool {
-	if false { // todo: if f.e is a player
-		f.mu.Lock()
-		defer f.mu.Unlock()
-		return f.onGround
-	}
-	return f.e.OnGround()
-}
-
 // UpdateFallState is called to update the entities falling state.
 func (f *FallManager) UpdateFallState(distanceThisTick float64) {
 	f.mu.Lock()
 	fallDistance := f.fallDistance
 	f.mu.Unlock()
-	if f.OnGround() {
+	if f.e.OnGround() {
 		if fallDistance > 0 {
 			f.fall(fallDistance)
 			f.ResetFallDistance()
@@ -110,33 +98,4 @@ func (f *FallManager) fall(distance float64) {
 		}
 		p.Hurt(math.Ceil(dmg), damage.SourceFall{})
 	}
-}
-
-// CheckOnGround checks if the entity is currently considered to be on the ground.
-func (f *FallManager) CheckOnGround(w *world.World) bool {
-	box := f.e.BBox().Translate(f.e.Position())
-
-	b := box.Grow(1)
-
-	min, max := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
-	for x := min[0]; x <= max[0]; x++ {
-		for z := min[2]; z <= max[2]; z++ {
-			for y := min[1]; y < max[1]; y++ {
-				pos := cube.Pos{x, y, z}
-				boxList := w.Block(pos).Model().BBox(pos, w)
-				for _, bb := range boxList {
-					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(box) {
-						f.mu.Lock()
-						f.onGround = true
-						f.mu.Unlock()
-						return true
-					}
-				}
-			}
-		}
-	}
-	f.mu.Lock()
-	f.onGround = false
-	f.mu.Unlock()
-	return false
 }
