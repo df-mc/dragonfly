@@ -29,7 +29,7 @@ type sneakingEntity interface {
 // EntityLand ...
 func (SlimeBlock) EntityLand(_ cube.Pos, _ *world.World, e world.Entity) {
 	if e, ok := e.(fallDistanceEntity); ok {
-		if s, ok := e.(sneakingEntity); ok && s.Sneaking() {
+		if s, ok := e.(sneakingEntity); !ok || !s.Sneaking() {
 			e.ResetFallDistance()
 		}
 	}
