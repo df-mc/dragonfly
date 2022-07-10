@@ -34,7 +34,7 @@ func (AquaAffinity) Rarity() item.EnchantmentRarity {
 }
 
 // CompatibleWithEnchantment ...
-func (e AquaAffinity) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (AquaAffinity) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

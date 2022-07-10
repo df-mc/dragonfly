@@ -48,8 +48,8 @@ func (Protection) Multiplier(lvl int) float64 {
 	return 1 - float64(lvl)/25
 }
 
-// CompatibleWithOther ...
-func (Protection) CompatibleWithOther(t item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (Protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	_, blastProt := t.(BlastProtection)
 	_, fireProt := t.(FireProtection)
 	_, prot := t.(ProjectileProtection)

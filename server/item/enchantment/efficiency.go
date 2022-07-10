@@ -39,7 +39,7 @@ func (Efficiency) Rarity() item.EnchantmentRarity {
 }
 
 // CompatibleWithEnchantment ...
-func (e Efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (Efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

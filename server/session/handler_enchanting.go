@@ -198,7 +198,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 	for random.Intn(50) <= useLevel {
 		lastEnchant := selectedEnchants[len(selectedEnchants)-1]
 		if availableEnchants = sliceutil.Filter(availableEnchants, func(enchant item.Enchantment) bool {
-			return lastEnchant.Type().CompatibleWithOther(enchant.Type())
+			return lastEnchant.Type().CompatibleWithEnchantment(enchant.Type())
 		}); len(availableEnchants) == 0 {
 			// We've exhausted all available enchantments.
 			break
@@ -265,11 +265,11 @@ func searchBookshelves(w *world.World, pos cube.Pos) int {
 func weightedRandomEnchantment(rs *rand.Rand, enchants []item.Enchantment) item.Enchantment {
 	var totalWeight int
 	for _, e := range enchants {
-		totalWeight += e.Type().Rarity().Weight
+		totalWeight += e.Type().Rarity().Weight()
 	}
 	r := rs.Intn(totalWeight)
 	for _, e := range enchants {
-		r -= e.Type().Rarity().Weight
+		r -= e.Type().Rarity().Weight()
 		if r < 0 {
 			return e
 		}
