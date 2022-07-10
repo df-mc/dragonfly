@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -13,8 +14,13 @@ type SlimeBlock struct {
 
 // EntityLand ...
 func (SlimeBlock) EntityLand(_ cube.Pos, _ *world.World, e world.Entity) {
-	if fallEntity, ok := e.(fallDistanceEntity); ok {
-		fallEntity.ResetFallDistance()
+	if e, ok := e.(fallDistanceEntity); ok {
+		e.ResetFallDistance()
+	}
+	if e, ok := e.(*entity.Item); ok {
+		v := e.Velocity()
+		v[1] *= -1
+		e.SetVelocity(v)
 	}
 }
 
