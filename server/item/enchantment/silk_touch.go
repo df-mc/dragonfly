@@ -24,7 +24,7 @@ func (SilkTouch) MinCost(int) int {
 }
 
 // MaxCost ...
-func (s SilkTouch) MaxCost(int) int {
+func (SilkTouch) MaxCost(int) int {
 	return 65
 }
 
