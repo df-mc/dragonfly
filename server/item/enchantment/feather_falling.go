@@ -35,7 +35,7 @@ func (FeatherFalling) MinCost(level int) int {
 
 // MaxCost ...
 func (f FeatherFalling) MaxCost(level int) int {
-	return f.MinCost(level) + 10
+	return f.MinCost(level) + 6
 }
 
 // CompatibleWithOther ...
