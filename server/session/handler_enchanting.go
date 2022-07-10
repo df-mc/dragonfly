@@ -44,6 +44,9 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 	if err != nil {
 		return err
 	}
+	if input.Count() > 1 {
+		return fmt.Errorf("enchanting tables only accept one item at a time")
+	}
 
 	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), s.openedPos.Load(), input)
 	if len(allEnchants) == 0 {
@@ -118,7 +121,7 @@ func (s *Session) sendEnchantmentOptions(w *world.World, pos cube.Pos, stack ite
 			RecipeNetworkID: uint32(i),
 			Enchantments: protocol.ItemEnchantments{
 				Slot:         int32(i),
-				Enchantments: [3][]protocol.EnchantmentInstance{enchants, enchants, enchants},
+				Enchantments: [3][]protocol.EnchantmentInstance{nil, enchants, nil},
 			},
 		})
 	}
