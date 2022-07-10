@@ -24,6 +24,17 @@ func (e EnchantingTable) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e))
 }
 
+// CanDisplace ...
+func (EnchantingTable) CanDisplace(l world.Liquid) bool {
+	_, water := l.(Water)
+	return water
+}
+
+// SideClosed ...
+func (EnchantingTable) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
+}
+
 // LightEmissionLevel ...
 func (EnchantingTable) LightEmissionLevel() uint8 {
 	return 7
