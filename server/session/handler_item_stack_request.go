@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -80,6 +81,12 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.BeaconPaymentStackRequestAction:
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
+			if s.containerOpened.Load() {
+				if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
+					err = h.handleEnchant(a, s)
+					break
+				}
+			}
 			err = h.handleCraft(a, s)
 		case *protocol.AutoCraftRecipeStackRequestAction:
 			err = h.handleAutoCraft(a, s)
@@ -357,6 +364,11 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	sl := int(slot.Slot)
 	if inv == s.offHand {
 		sl = 0
+	}
+
+	// TODO: this is horribly horribly horribly hacky pls remember to change this
+	if slot.ContainerID == containerEnchantingTableInput {
+		s.sendEnchantmentOptions(s.c.World(), s.openedPos.Load(), i)
 	}
 
 	before, _ := inv.Item(sl)

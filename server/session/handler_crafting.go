@@ -53,9 +53,8 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
-				ContainerID:    containerCraftingGrid,
-				Slot:           byte(slot),
-				StackNetworkID: item_id(st),
+				ContainerID: containerCraftingGrid,
+				Slot:        byte(slot),
 			}, st, s)
 			break
 		}
@@ -66,9 +65,8 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 
 	output := craft.Output()
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingGrid,
-		Slot:           craftingGridResult,
-		StackNetworkID: item_id(output[0]),
+		ContainerID: containerCraftingGrid,
+		Slot:        craftingResult,
 	}, output[0], s)
 	return nil
 }
@@ -165,7 +163,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID:    containerCraftingGrid,
-		Slot:           craftingGridResult,
+		Slot:           craftingResult,
 		StackNetworkID: item_id(output[0]),
 	}, output[0], s)
 	return nil

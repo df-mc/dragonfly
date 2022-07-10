@@ -89,23 +89,25 @@ const (
 	craftingGridSizeLarge   = 9
 	craftingGridSmallOffset = 28
 	craftingGridLargeOffset = 32
-	craftingGridResult      = 50
+	craftingResult          = 50
 )
 
 const (
-	containerAnvilInput    = 0
-	containerAnvilMaterial = 1
-	containerArmour        = 6
-	containerChest         = 7
-	containerBeacon        = 8
-	containerFullInventory = 12
-	containerCraftingGrid  = 13
-	containerHotbar        = 27
-	containerInventory     = 28
-	containerOffHand       = 33
-	containerBarrel        = 57
-	containerCursor        = 58
-	containerOutput        = 59
+	containerAnvilInput           = 0
+	containerAnvilMaterial        = 1
+	containerArmour               = 6
+	containerChest                = 7
+	containerBeacon               = 8
+	containerFullInventory        = 12
+	containerCraftingGrid         = 13
+	containerEnchantingTableInput = 21
+	containerEnchantingTableLapis = 22
+	containerHotbar               = 27
+	containerInventory            = 28
+	containerOffHand              = 33
+	containerBarrel               = 57
+	containerCursor               = 58
+	containerOutput               = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -149,6 +151,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, anvil := b.(block.Anvil); anvil {
+				return s.ui, true
+			}
+		}
+	case containerEnchantingTableInput, containerEnchantingTableLapis:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, enchantingTable := b.(block.EnchantingTable); enchantingTable {
 				return s.ui, true
 			}
 		}

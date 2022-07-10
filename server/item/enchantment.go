@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"golang.org/x/exp/maps"
 	"reflect"
 )
 
@@ -63,19 +62,21 @@ type Enchantable interface {
 // RegisterEnchantment registers an enchantment with the ID passed. Once registered, enchantments may be received
 // by instantiating an EnchantmentType struct (e.g. enchantment.Protection{})
 func RegisterEnchantment(id int, enchantment EnchantmentType) {
-	enchantments[id] = enchantment
+	enchantmentsMap[id] = enchantment
 	enchantmentIds[reflect.TypeOf(enchantment)] = id
+	enchantments = append(enchantments, enchantment)
 }
 
 var (
-	enchantments   = map[int]EnchantmentType{}
-	enchantmentIds = map[reflect.Type]int{}
+	enchantments    []EnchantmentType
+	enchantmentsMap = map[int]EnchantmentType{}
+	enchantmentIds  = map[reflect.Type]int{}
 )
 
 // EnchantmentByID attempts to return an enchantment by the ID it was registered with. If found, the enchantment found
 // is returned and the bool true.
 func EnchantmentByID(id int) (EnchantmentType, bool) {
-	e, ok := enchantments[id]
+	e, ok := enchantmentsMap[id]
 	return e, ok
 }
 
@@ -88,5 +89,5 @@ func EnchantmentID(e EnchantmentType) (int, bool) {
 
 // Enchantments returns a slice of all registered enchantments.
 func Enchantments() []EnchantmentType {
-	return maps.Values(enchantments)
+	return enchantments
 }

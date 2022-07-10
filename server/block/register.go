@@ -289,6 +289,7 @@ func init() {
 	world.RegisterItem(MudBricks{})
 	world.RegisterItem(ReinforcedDeepslate{})
 	world.RegisterItem(MuddyMangroveRoots{})
+	world.RegisterItem(EnchantingTable{})
 
 	world.RegisterItem(item.Bucket{Content: Water{}})
 	world.RegisterItem(item.Bucket{Content: Lava{}})
