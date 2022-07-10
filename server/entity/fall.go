@@ -75,6 +75,7 @@ func (f *FallManager) UpdateFallState(distanceThisTick float64) {
 		}
 	} else if distanceThisTick < fallDistance {
 		f.fallDistance -= distanceThisTick
+		f.mu.Unlock()
 	} else {
 		f.mu.Unlock()
 		f.ResetFallDistance()
