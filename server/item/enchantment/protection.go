@@ -26,7 +26,7 @@ func (Protection) MinCost(level int) int {
 
 // MaxCost ...
 func (p Protection) MaxCost(level int) int {
-	return p.MinCost(level) + 20
+	return p.MinCost(level) + 11
 }
 
 // Rarity ...

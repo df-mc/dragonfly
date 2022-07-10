@@ -25,7 +25,7 @@ func (BlastProtection) MinCost(level int) int {
 
 // MaxCost ...
 func (b BlastProtection) MaxCost(level int) int {
-	return b.MinCost(level) + 12
+	return b.MinCost(level) + 8
 }
 
 // Rarity ...

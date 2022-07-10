@@ -25,7 +25,7 @@ func (FireProtection) MinCost(level int) int {
 
 // MaxCost ...
 func (f FireProtection) MaxCost(level int) int {
-	return f.MinCost(level) + 12
+	return f.MinCost(level) + 8
 }
 
 // Rarity ...

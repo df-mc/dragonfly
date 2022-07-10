@@ -48,7 +48,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 		return fmt.Errorf("enchanting tables only accept one item at a time")
 	}
 
-	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), s.openedPos.Load(), input)
+	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), S.openedPos.Load(), input)
 	if len(allEnchants) == 0 {
 		return fmt.Errorf("can't enchant non-enchantable item")
 	}
@@ -121,7 +121,7 @@ func (s *Session) sendEnchantmentOptions(w *world.World, pos cube.Pos, stack ite
 			RecipeNetworkID: uint32(i),
 			Enchantments: protocol.ItemEnchantments{
 				Slot:         int32(i),
-				Enchantments: [3][]protocol.EnchantmentInstance{nil, enchants, nil},
+				Enchantments: [3][]protocol.EnchantmentInstance{1: enchants},
 			},
 		})
 	}
@@ -189,30 +189,22 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 
 	selectedEnchants := make([]item.Enchantment, 0, len(availableEnchants))
 
-	firstEnchant := weightedRandomEnchantment(random, availableEnchants)
-	selectedEnchants = append(selectedEnchants, firstEnchant)
+	enchant := weightedRandomEnchantment(random, availableEnchants)
+	selectedEnchants = append(selectedEnchants, enchant)
 
-	ind := sliceutil.Index(availableEnchants, firstEnchant)
+	ind := sliceutil.Index(availableEnchants, enchant)
 	availableEnchants = slices.Delete(availableEnchants, ind, ind+1)
 
 	for random.Intn(50) <= useLevel {
 		lastEnchant := selectedEnchants[len(selectedEnchants)-1]
-		filteredEnchants := make([]item.Enchantment, 0, len(availableEnchants))
-		for _, enchant := range availableEnchants {
-			if !lastEnchant.Type().CompatibleWithOther(enchant.Type()) {
-				// The last enchantment is not compatible with the current enchantment, so remove the current enchantment.
-				continue
-			}
-			filteredEnchants = append(filteredEnchants, enchant)
-		}
-
-		availableEnchants = filteredEnchants
-		if len(availableEnchants) == 0 {
+		if availableEnchants = sliceutil.Filter(availableEnchants, func(enchant item.Enchantment) bool {
+			return lastEnchant.Type().CompatibleWithOther(enchant.Type())
+		}); len(availableEnchants) == 0 {
 			// We've exhausted all available enchantments.
 			break
 		}
 
-		enchant := weightedRandomEnchantment(random, availableEnchants)
+		enchant = weightedRandomEnchantment(random, availableEnchants)
 		selectedEnchants = append(selectedEnchants, enchant)
 
 		ind = sliceutil.Index(availableEnchants, enchant)
