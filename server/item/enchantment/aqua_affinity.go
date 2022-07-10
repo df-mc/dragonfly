@@ -19,12 +19,12 @@ func (AquaAffinity) MaxLevel() int {
 }
 
 // MinCost ...
-func (e AquaAffinity) MinCost(int) int {
+func (AquaAffinity) MinCost(int) int {
 	return 1
 }
 
 // MaxCost ...
-func (e AquaAffinity) MaxCost(int) int {
+func (AquaAffinity) MaxCost(int) int {
 	return 41
 }
 
