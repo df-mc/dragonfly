@@ -62,13 +62,8 @@ func (f *FallingBlock) FallDistance() float64 {
 	return f.fallDistance.Load()
 }
 
-// SetFallDistance ...
-func (f *FallingBlock) SetFallDistance(distance float64) {
-	f.fallDistance.Store(distance)
-}
-
-// damageable ...
-type damageable interface {
+// damager ...
+type damager interface {
 	Damage() (damagePerBlock, maxDamage float64)
 }
 
@@ -104,7 +99,7 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	}
 
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {
-		if d, ok := f.block.(damageable); ok {
+		if d, ok := f.block.(damager); ok {
 			damagePerBlock, maxDamage := d.Damage()
 			if dist := math.Ceil(f.fallDistance.Load() - 1.0); dist > 0 {
 				force := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
@@ -141,8 +136,8 @@ func (f *FallingBlock) DecodeNBT(data map[string]any) any {
 		return nil
 	}
 	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
-	n.SetFallDistance(nbtconv.Map[float64](data, "FallDistance"))
 	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	n.fallDistance.Store(nbtconv.Map[float64](data, "FallDistance"))
 	return n
 }
 

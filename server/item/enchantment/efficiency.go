@@ -38,8 +38,8 @@ func (Efficiency) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
-// CompatibleWithOther ...
-func (Efficiency) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e Efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

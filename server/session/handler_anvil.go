@@ -11,7 +11,7 @@ import (
 
 // handleCraftRecipeOptional handles the CraftRecipeOptional request action, sent when taking a result from an anvil
 // menu. It also contains information such as the new name of the item and the multi-recipe network ID.
-func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) error {
+func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) (err error) {
 	// First check if there actually is an anvil opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no anvil container opened")
@@ -27,145 +27,97 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		return fmt.Errorf("filter string index %v is out of bounds", a.FilterStringIndex)
 	}
 
-	first, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
+	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
-		Slot:        1,
+		Slot:        0x1,
 	}, s)
-	if first.Empty() {
-		return fmt.Errorf("no item in first input slot")
+	if input.Empty() {
+		return fmt.Errorf("no item in input input slot")
 	}
-	result := first
-
-	second, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
+	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilMaterial,
 		Slot:        0x2,
 	}, s)
+	result := input
 
-	j := first.RepairCost()
-	if !second.Empty() {
-		j += second.RepairCost()
+	// The sum of the input's repair cost as well as the material's repair cost.
+	repairCost := input.RepairCost()
+	if !material.Empty() {
+		repairCost += material.RepairCost()
 	}
 
-	var i, k int
-	var repairCount int
-	if !second.Empty() {
-		if repairable, ok := first.Item().(item.Repairable); ok && repairable.RepairableBy(second) {
-			d := min(first.MaxDurability()-first.Durability(), first.MaxDurability()/4)
-			if d <= 0 {
-				return fmt.Errorf("first item is already fully repaired")
-			}
-
-			for ; d > 0 && repairCount < second.Count(); repairCount, d = repairCount+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
-				result = result.WithDurability(result.Durability() + d)
-				i++
+	// The material input may be empty (if the player is only renaming, for example).
+	var actionCost, renameCost, repairCount int
+	if !material.Empty() {
+		// First check if we are trying to repair the item with a material.
+		if repairable, ok := input.Item().(item.Repairable); ok && repairable.RepairableBy(material) {
+			result, actionCost, repairCount, err = repairWithMaterial(input, material, result)
+			if err != nil {
+				return err
 			}
 		} else {
-			_, book := second.Item().(item.EnchantedBook)
-			_, durable := first.Item().(item.Durable)
+			_, book := material.Item().(item.EnchantedBook)
+			_, durable := input.Item().(item.Durable)
 
-			enchant := book && len(second.Enchantments()) > 0
-			if !enchant && (first.Item() != second.Item() || !durable) {
-				return fmt.Errorf("first item is not repairable or second item is not an enchanted book")
-			}
-			if durable && !enchant {
-				d := first.MaxDurability() - (first.Durability() + (second.Durability() + first.MaxDurability()*12/100))
-				if d < 0 {
-					d = 0
-				}
-				if d < first.MaxDurability()-first.Durability() {
-					result = result.WithDurability(d)
-					i += 2
-				}
+			// Ensure that the input item is repairable, or the material item is an enchanted book. If not, this is an
+			// invalid scenario, and we should return an error.
+			enchantedBook := book && len(material.Enchantments()) > 0
+			if !enchantedBook && (input.Item() != material.Item() || !durable) {
+				return fmt.Errorf("input item is not repairable/same type or material item is not an enchanted book")
 			}
 
+			// If the material is another durable item, we just need to increase the durability of the result by the
+			// material's durability at 12%.
+			if durable && !enchantedBook {
+				result, actionCost = repairWithDurable(input, material, result)
+			}
+
+			// Merge enchantments on the material item onto the result item.
 			var hasCompatible, hasIncompatible bool
-			for _, e := range second.Enchantments() {
-				t := e.Type()
+			result, hasCompatible, hasIncompatible, actionCost = mergeEnchantments(input, material, result, actionCost, enchantedBook)
 
-				var firstLevel int
-				if firstEnchant, ok := first.Enchantment(t); ok {
-					firstLevel = firstEnchant.Level()
-				}
-
-				resultLevel := max(firstLevel, e.Level())
-				if firstLevel == e.Level() {
-					resultLevel = firstLevel + 1
-				}
-
-				compatible := t.CompatibleWithItem(first.Item())
-				if _, ok := first.Item().(item.EnchantedBook); ok {
-					compatible = true
-				}
-
-				for _, e2 := range first.Enchantments() {
-					if t != e2.Type() && !t.CompatibleWithOther(e2.Type()) {
-						compatible = false
-						i++
-					}
-				}
-
-				if !compatible {
-					hasIncompatible = true
-					continue
-				}
-				hasCompatible = true
-
-				if resultLevel > t.MaxLevel() {
-					resultLevel = t.MaxLevel()
-				}
-				rarityCost := t.Rarity().Cost
-				if enchant {
-					rarityCost = max(1, rarityCost/2)
-				}
-
-				result = result.WithEnchantments(item.NewEnchantment(t, resultLevel))
-				i += rarityCost * resultLevel
-				if first.Count() > 1 {
-					i = 40
-				}
-			}
-			if i == 0 && hasIncompatible && !hasCompatible {
+			// If we don't have any compatible enchantments and the input item isn't durable, then this is an invalid
+			// scenario, and we should return an error.
+			if !durable && hasIncompatible && !hasCompatible {
 				return fmt.Errorf("no compatible enchantments but have incompatible ones")
 			}
 		}
 	}
 
+	// First get the new name and the existing name. The existing name is either the custom name if it exists, or the
+	// item's display name in-game, which is locale dependent.
 	newName := filterStrings[int(a.FilterStringIndex)]
-	existingName := item.DisplayName(first.Item(), s.c.Locale())
-	if customName := first.CustomName(); len(customName) > 0 {
+	existingName := item.DisplayName(input.Item(), s.c.Locale())
+	if customName := input.CustomName(); len(customName) > 0 {
 		existingName = customName
 	}
+
+	// If our existing name isn't the same as the new name, then something changed,  and we should update the custom
+	// name of the item.
 	if existingName != newName {
-		k = 1
-		i += k
+		renameCost = 1
+		actionCost += renameCost
 		result = result.WithCustomName(newName)
 	}
 
-	cost := i + j
+	// Calculate the total cost. (repair cost + action cost)
+	cost := actionCost + repairCost
 	if cost <= 0 {
 		return fmt.Errorf("no action was taken")
 	}
 
-	if k == i && k > 0 && cost >= 40 {
+	// If our only action was renaming, the cost should never exceed 40.
+	if renameCost == actionCost && renameCost > 0 && cost >= 40 {
 		cost = 39
 	}
 
+	// We can bypass the "impossible cost" limit if we're in creative mode.
 	c := s.c.GameMode().CreativeInventory()
 	if cost >= 40 && !c {
 		return fmt.Errorf("impossible cost")
 	}
 
-	if !result.Empty() {
-		k2 := result.RepairCost()
-		if !second.Empty() && k2 < second.RepairCost() {
-			k2 = second.RepairCost()
-		}
-		if k != i || k == 0 {
-			k2 = k2*2 + 1
-		}
-		result = result.WithRepairCost(k2)
-	}
-
+	// Ensure we have enough levels (or if we're in creative mode, ignore the cost) to perform the action.
 	level := s.c.ExperienceLevel()
 	if level < cost && !c {
 		return fmt.Errorf("not enough experience")
@@ -173,6 +125,20 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		s.c.SetExperienceLevel(level - cost)
 	}
 
+	// If we had a result item, we need to calculate the new repair cost and update it on the item.
+	if !result.Empty() {
+		updatedRepairCost := result.RepairCost()
+		if !material.Empty() && updatedRepairCost < material.RepairCost() {
+			updatedRepairCost = material.RepairCost()
+		}
+		if renameCost != actionCost || renameCost == 0 {
+			updatedRepairCost = updatedRepairCost*2 + 1
+		}
+		result = result.WithRepairCost(updatedRepairCost)
+	}
+
+	// If we're in creative mode, we have a 12% chance of the anvil degrading down one state. If that is the case, we
+	// need to play the related sound and update the block state. Otherwise, we play a regular anvil use sound.
 	if !c && rand.Float64() < 0.12 {
 		damaged := anvil.Break()
 		if _, ok := damaged.(block.Air); ok {
@@ -187,24 +153,126 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
-		Slot:        1,
+		Slot:        0x1,
 	}, item.Stack{}, s)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			ContainerID: containerAnvilMaterial,
-			Slot:        2,
-		}, second.Grow(-repairCount), s)
+			Slot:        0x2,
+		}, material.Grow(-repairCount), s)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			ContainerID: containerAnvilMaterial,
-			Slot:        2,
+			Slot:        0x2,
 		}, item.Stack{}, s)
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerOutput,
-		Slot:        50,
+		Slot:        craftingResult,
 	}, result, s)
 	return nil
+}
+
+// repairWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
+// stack, the cost, and the repaired items count.
+func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
+	// Calculate the durability delta using the maximum durability and the current durability.
+	delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
+	if delta <= 0 {
+		return item.Stack{}, 0, 0, fmt.Errorf("input item is already fully repaired")
+	}
+
+	// While the durability delta is more than zero and the repaired count is under the material count, increase
+	// the durability of the result by the durability delta.
+	var cost, count int
+	for ; delta > 0 && count < material.Count(); count, delta = count+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
+		result = result.WithDurability(result.Durability() + delta)
+		cost++
+	}
+	return result, cost, count, nil
+}
+
+// repairWithDurable is a helper function that repairs an item with another durable item stack.
+func repairWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
+	durability := input.MaxDurability() - (input.Durability() + (durable.Durability() + input.MaxDurability()*12/100))
+	if durability < 0 {
+		durability = 0
+	}
+
+	// Ensure the durability increase is less than the input's current damage.
+	var cost int
+	if durability < input.MaxDurability()-input.Durability() {
+		result = result.WithDurability(durability)
+		cost += 2
+	}
+	return result, cost
+}
+
+// mergeEnchantments merges the enchantments of the material item stack onto the result item stack and returns the result
+// item stack, booleans indicating whether the enchantments had any compatible or incompatible enchantments, and the cost.
+func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack, cost int, enchantedBook bool) (item.Stack, bool, bool, int) {
+	var hasCompatible, hasIncompatible bool
+	for _, enchant := range material.Enchantments() {
+		// First ensure that the enchantment type is compatible with the input item.
+		enchantType := enchant.Type()
+		compatible := enchantType.CompatibleWithItem(input.Item())
+		if _, ok := input.Item().(item.EnchantedBook); ok {
+			compatible = true
+		}
+
+		// Then ensure that each input enchantment is compatible with this material enchantment.
+		for _, otherEnchant := range input.Enchantments() {
+			otherType := otherEnchant.Type()
+			if enchantType != otherType && !enchantType.CompatibleWithEnchantment(otherType) {
+				compatible = false
+				cost++
+			}
+		}
+
+		// Skip the enchantment if it isn't compatible with enchantments on the input item.
+		if !compatible {
+			hasIncompatible = true
+			continue
+		}
+		hasCompatible = true
+
+		// First check if we have an enchantment of the same type on the input item. If so, record it's level.
+		var firstLevel int
+		if firstEnchant, ok := input.Enchantment(enchantType); ok {
+			firstLevel = firstEnchant.Level()
+		}
+
+		// Then calculate the result level by getting the maximum of the first level and this enchantment's
+		// level. If the first level is equal to the enchantment's level, increase the result level by one.
+		resultLevel := max(firstLevel, enchant.Level())
+		if firstLevel == enchant.Level() {
+			resultLevel = firstLevel + 1
+		}
+
+		// If the result level is greater than the enchantment's maximum level, set it to the maximum level
+		// instead.
+		if resultLevel > enchantType.MaxLevel() {
+			resultLevel = enchantType.MaxLevel()
+		}
+
+		// Now calculate the rarity cost. This is just the application cost of the rarity, however if the
+		// material is an enchanted book, then the rarity cost gets halved. If the new rarity cost is under one,
+		// it is set to one.
+		rarityCost := enchantType.Rarity().Cost()
+		if enchantedBook {
+			rarityCost = max(1, rarityCost/2)
+		}
+
+		// Update the result item with the new enchantment.
+		result = result.WithEnchantments(item.NewEnchantment(enchantType, resultLevel))
+
+		// Update the action cost appropriately.
+		cost += rarityCost * resultLevel
+		if input.Count() > 1 {
+			cost = 40
+		}
+	}
+	return result, hasCompatible, hasIncompatible, cost
 }
 
 // max returns the max of two integers.

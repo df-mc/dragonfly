@@ -35,8 +35,8 @@ func (Unbreaking) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// CompatibleWithOther ...
-func (Unbreaking) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e Unbreaking) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

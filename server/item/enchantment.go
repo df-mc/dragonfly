@@ -45,9 +45,9 @@ type EnchantmentType interface {
 	MaxCost(level int) int
 	// Rarity returns the enchantment's rarity.
 	Rarity() EnchantmentRarity
-	// CompatibleWithOther is called when an enchantment is added to an item. It can be used to check if
+	// CompatibleWithEnchantment is called when an enchantment is added to an item. It can be used to check if
 	// the enchantment is compatible with other enchantments.
-	CompatibleWithOther(t EnchantmentType) bool
+	CompatibleWithEnchantment(t EnchantmentType) bool
 	// CompatibleWithItem is also called when an enchantment is added to an item. It can be used to check if
 	// the enchantment is compatible with the item type.
 	CompatibleWithItem(i world.Item) bool

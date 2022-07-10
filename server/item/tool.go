@@ -95,12 +95,12 @@ func toolTierRepairable(tier ToolTier) func(Stack) bool {
 	return func(stack Stack) bool {
 		switch tier {
 		case ToolTierWood:
-			if planks, ok := stack.Item().(interface{ Planks() bool }); ok {
-				return planks.Planks()
+			if planks, ok := stack.Item().(interface{ RepairsWoodTools() bool }); ok {
+				return planks.RepairsWoodTools()
 			}
 		case ToolTierStone:
-			if cobblestone, ok := stack.Item().(interface{ Cobblestone() bool }); ok {
-				return cobblestone.Cobblestone()
+			if cobblestone, ok := stack.Item().(interface{ RepairsStoneTools() bool }); ok {
+				return cobblestone.RepairsStoneTools()
 			}
 		case ToolTierGold:
 			_, ok := stack.Item().(GoldIngot)

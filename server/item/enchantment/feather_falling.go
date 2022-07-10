@@ -38,8 +38,8 @@ func (f FeatherFalling) MaxCost(level int) int {
 	return f.MinCost(level) + 6
 }
 
-// CompatibleWithOther ...
-func (FeatherFalling) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (FeatherFalling) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

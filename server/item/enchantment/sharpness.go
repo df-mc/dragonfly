@@ -38,8 +38,8 @@ func (Sharpness) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
-// CompatibleWithOther ...
-func (Sharpness) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (Sharpness) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

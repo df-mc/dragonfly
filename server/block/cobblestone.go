@@ -15,8 +15,8 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
-// Cobblestone ...
-func (c Cobblestone) Cobblestone() bool {
+// RepairsStoneTools ...
+func (c Cobblestone) RepairsStoneTools() bool {
 	return !c.Mossy
 }
 
