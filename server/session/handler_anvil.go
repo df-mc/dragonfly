@@ -11,7 +11,7 @@ import (
 
 // handleCraftRecipeOptional handles the CraftRecipeOptional request action, sent when taking a result from an anvil
 // menu. It also contains information such as the new name of the item and the multi-recipe network ID.
-func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) error {
+func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) (err error) {
 	// First check if there actually is an anvil opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no anvil container opened")
@@ -51,17 +51,9 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !material.Empty() {
 		// First check if we are trying to repair the item with a material.
 		if repairable, ok := input.Item().(item.Repairable); ok && repairable.RepairableBy(material) {
-			// Calculate the durability delta using the maximum durability and the current durability.
-			delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
-			if delta <= 0 {
-				return fmt.Errorf("input item is already fully repaired")
-			}
-
-			// While the durability delta is more than zero and the repaired count is under the material count, increase
-			// the durability of the result by the durability delta.
-			for ; delta > 0 && repairCount < material.Count(); repairCount, delta = repairCount+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
-				result = result.WithDurability(result.Durability() + delta)
-				actionCost++
+			result, actionCost, repairCount, err = repairWithMaterial(input, material, result)
+			if err != nil {
+				return err
 			}
 		} else {
 			_, book := material.Item().(item.EnchantedBook)
@@ -71,86 +63,18 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			// invalid scenario, and we should return an error.
 			enchantedBook := book && len(material.Enchantments()) > 0
 			if !enchantedBook && (input.Item() != material.Item() || !durable) {
-				return fmt.Errorf("input item is not repairable or material item is not an enchanted book")
+				return fmt.Errorf("input item is not repairable/same type or material item is not an enchanted book")
 			}
 
 			// If the material is another durable item, we just need to increase the durability of the result by the
 			// material's durability at 12%.
 			if durable && !enchantedBook {
-				durability := input.MaxDurability() - (input.Durability() + (material.Durability() + input.MaxDurability()*12/100))
-				if durability < 0 {
-					durability = 0
-				}
-
-				// Ensure the durability increase is less than the input's current damage.
-				if durability < input.MaxDurability()-input.Durability() {
-					result = result.WithDurability(durability)
-					actionCost += 2
-				}
+				result, actionCost = repairWithDurable(input, material, result)
 			}
 
 			// Merge enchantments on the material item onto the result item.
 			var hasCompatible, hasIncompatible bool
-			for _, enchant := range material.Enchantments() {
-				// First ensure that the enchantment type is compatible with the input item.
-				enchantType := enchant.Type()
-				compatible := enchantType.CompatibleWithItem(input.Item())
-				if _, ok := input.Item().(item.EnchantedBook); ok {
-					compatible = true
-				}
-
-				// Then ensure that each input enchantment is compatible with this material enchantment.
-				for _, otherEnchant := range input.Enchantments() {
-					otherType := otherEnchant.Type()
-					if enchantType != otherType && !enchantType.CompatibleWithEnchantment(otherType) {
-						compatible = false
-						actionCost++
-					}
-				}
-
-				// Skip the enchantment if it isn't compatible with enchantments on the input item.
-				if !compatible {
-					hasIncompatible = true
-					continue
-				}
-				hasCompatible = true
-
-				// First check if we have an enchantment of the same type on the input item. If so, record it's level.
-				var firstLevel int
-				if firstEnchant, ok := input.Enchantment(enchantType); ok {
-					firstLevel = firstEnchant.Level()
-				}
-
-				// Then calculate the result level by getting the maximum of the first level and this enchantment's
-				// level. If the first level is equal to the enchantment's level, increase the result level by one.
-				resultLevel := max(firstLevel, enchant.Level())
-				if firstLevel == enchant.Level() {
-					resultLevel = firstLevel + 1
-				}
-
-				// If the result level is greater than the enchantment's maximum level, set it to the maximum level
-				// instead.
-				if resultLevel > enchantType.MaxLevel() {
-					resultLevel = enchantType.MaxLevel()
-				}
-
-				// Now calculate the rarity cost. This is just the application cost of the rarity, however if the
-				// material is an enchanted book, then the rarity cost gets halved. If the new rarity cost is under one,
-				// it is set to one.
-				rarityCost := enchantType.Rarity().Cost()
-				if enchantedBook {
-					rarityCost = max(1, rarityCost/2)
-				}
-
-				// Update the result item with the new enchantment.
-				result = result.WithEnchantments(item.NewEnchantment(enchantType, resultLevel))
-
-				// Update the action cost appropriately.
-				actionCost += rarityCost * resultLevel
-				if input.Count() > 1 {
-					actionCost = 40
-				}
-			}
+			result, hasCompatible, hasIncompatible, actionCost = mergeEnchantments(input, material, result, actionCost, enchantedBook)
 
 			// If we don't have any compatible enchantments and the input item isn't durable, then this is an invalid
 			// scenario, and we should return an error.
@@ -247,6 +171,108 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Slot:        craftingResult,
 	}, result, s)
 	return nil
+}
+
+// repairWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
+// stack, the cost, and the repaired items count.
+func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
+	// Calculate the durability delta using the maximum durability and the current durability.
+	delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
+	if delta <= 0 {
+		return item.Stack{}, 0, 0, fmt.Errorf("input item is already fully repaired")
+	}
+
+	// While the durability delta is more than zero and the repaired count is under the material count, increase
+	// the durability of the result by the durability delta.
+	var cost, count int
+	for ; delta > 0 && count < material.Count(); count, delta = count+1, min(result.MaxDurability()-result.Durability(), result.MaxDurability()/4) {
+		result = result.WithDurability(result.Durability() + delta)
+		cost++
+	}
+	return result, cost, count, nil
+}
+
+// repairWithDurable is a helper function that repairs an item with another durable item stack.
+func repairWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
+	durability := input.MaxDurability() - (input.Durability() + (durable.Durability() + input.MaxDurability()*12/100))
+	if durability < 0 {
+		durability = 0
+	}
+
+	// Ensure the durability increase is less than the input's current damage.
+	var cost int
+	if durability < input.MaxDurability()-input.Durability() {
+		result = result.WithDurability(durability)
+		cost += 2
+	}
+	return result, cost
+}
+
+// mergeEnchantments merges the enchantments of the material item stack onto the result item stack and returns the result
+// item stack, booleans indicating whether the enchantments had any compatible or incompatible enchantments, and the cost.
+func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack, cost int, enchantedBook bool) (item.Stack, bool, bool, int) {
+	var hasCompatible, hasIncompatible bool
+	for _, enchant := range material.Enchantments() {
+		// First ensure that the enchantment type is compatible with the input item.
+		enchantType := enchant.Type()
+		compatible := enchantType.CompatibleWithItem(input.Item())
+		if _, ok := input.Item().(item.EnchantedBook); ok {
+			compatible = true
+		}
+
+		// Then ensure that each input enchantment is compatible with this material enchantment.
+		for _, otherEnchant := range input.Enchantments() {
+			otherType := otherEnchant.Type()
+			if enchantType != otherType && !enchantType.CompatibleWithEnchantment(otherType) {
+				compatible = false
+				cost++
+			}
+		}
+
+		// Skip the enchantment if it isn't compatible with enchantments on the input item.
+		if !compatible {
+			hasIncompatible = true
+			continue
+		}
+		hasCompatible = true
+
+		// First check if we have an enchantment of the same type on the input item. If so, record it's level.
+		var firstLevel int
+		if firstEnchant, ok := input.Enchantment(enchantType); ok {
+			firstLevel = firstEnchant.Level()
+		}
+
+		// Then calculate the result level by getting the maximum of the first level and this enchantment's
+		// level. If the first level is equal to the enchantment's level, increase the result level by one.
+		resultLevel := max(firstLevel, enchant.Level())
+		if firstLevel == enchant.Level() {
+			resultLevel = firstLevel + 1
+		}
+
+		// If the result level is greater than the enchantment's maximum level, set it to the maximum level
+		// instead.
+		if resultLevel > enchantType.MaxLevel() {
+			resultLevel = enchantType.MaxLevel()
+		}
+
+		// Now calculate the rarity cost. This is just the application cost of the rarity, however if the
+		// material is an enchanted book, then the rarity cost gets halved. If the new rarity cost is under one,
+		// it is set to one.
+		rarityCost := enchantType.Rarity().Cost()
+		if enchantedBook {
+			rarityCost = max(1, rarityCost/2)
+		}
+
+		// Update the result item with the new enchantment.
+		result = result.WithEnchantments(item.NewEnchantment(enchantType, resultLevel))
+
+		// Update the action cost appropriately.
+		cost += rarityCost * resultLevel
+		if input.Count() > 1 {
+			cost = 40
+		}
+	}
+	return result, hasCompatible, hasIncompatible, cost
 }
 
 // max returns the max of two integers.
