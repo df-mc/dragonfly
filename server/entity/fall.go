@@ -58,6 +58,11 @@ func (f *FallManager) ResetFallDistance() {
 
 // OnGround returns whether the entity is currently considered to be on the ground.
 func (f *FallManager) OnGround() bool {
+	if false { // todo: if f.e is a player
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		return f.onGround
+	}
 	return f.e.OnGround()
 }
 
