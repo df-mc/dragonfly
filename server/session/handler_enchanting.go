@@ -48,7 +48,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 		return fmt.Errorf("enchanting tables only accept one item at a time")
 	}
 
-	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), S.openedPos.Load(), input)
+	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), s.openedPos.Load(), input)
 	if len(allEnchants) == 0 {
 		return fmt.Errorf("can't enchant non-enchantable item")
 	}
