@@ -14,11 +14,9 @@ type SlimeBlock struct {
 
 // velocityEntity is an entity that has velocity.
 type velocityEntity interface {
-	// Velocity returns the current velocity of the entity. The values in the Vec3 returned represent the speed on
-	// that axis in blocks/tick.
+	// Velocity returns the current velocity of the entity.
 	Velocity() mgl64.Vec3
-	// SetVelocity sets the velocity of the entity. The values in the Vec3 passed represent the speed on
-	// that axis in blocks/tick.
+	// SetVelocity sets the velocity of the entity.
 	SetVelocity(v mgl64.Vec3)
 }
 
