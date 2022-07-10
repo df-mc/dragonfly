@@ -29,7 +29,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 	first, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
-		Slot:        1,
+		Slot:        0x1,
 	}, s)
 	if first.Empty() {
 		return fmt.Errorf("no item in first input slot")
@@ -98,7 +98,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				}
 
 				for _, e2 := range first.Enchantments() {
-					if t != e2.Type() && !t.CompatibleWithOther(e2.Type()) {
+					if t != e2.Type() && !t.CompatibleWithEnchantment(e2.Type()) {
 						compatible = false
 						i++
 					}
@@ -187,22 +187,22 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
-		Slot:        1,
+		Slot:        0x1,
 	}, item.Stack{}, s)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			ContainerID: containerAnvilMaterial,
-			Slot:        2,
+			Slot:        0x2,
 		}, second.Grow(-repairCount), s)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			ContainerID: containerAnvilMaterial,
-			Slot:        2,
+			Slot:        0x2,
 		}, item.Stack{}, s)
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerOutput,
-		Slot:        50,
+		Slot:        craftingResult,
 	}, result, s)
 	return nil
 }

@@ -28,8 +28,8 @@ func (e FeatherFalling) MaxLevel() int {
 	return 4
 }
 
-// CompatibleWithOther ...
-func (e FeatherFalling) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e FeatherFalling) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

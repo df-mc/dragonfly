@@ -28,8 +28,8 @@ func (e KnockBack) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// CompatibleWithOther ...
-func (e KnockBack) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e KnockBack) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

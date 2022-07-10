@@ -29,8 +29,8 @@ func (e FireAspect) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
-// CompatibleWithOther ...
-func (e FireAspect) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e FireAspect) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 

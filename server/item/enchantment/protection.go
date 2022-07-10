@@ -24,8 +24,8 @@ func (e BlastProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
-// CompatibleWithOther ...
-func (e BlastProtection) CompatibleWithOther(t item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e BlastProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	_, fireProt := t.(FireProtection)
 	_, projectileProt := t.(ProjectileProtection)
 	_, prot := t.(Protection)
@@ -56,8 +56,8 @@ func (e FireProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// CompatibleWithOther ...
-func (e FireProtection) CompatibleWithOther(t item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e FireProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	_, blastProt := t.(BlastProtection)
 	_, projectileProt := t.(ProjectileProtection)
 	_, prot := t.(Protection)
@@ -88,8 +88,8 @@ func (e ProjectileProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// CompatibleWithOther ...
-func (e ProjectileProtection) CompatibleWithOther(t item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e ProjectileProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	_, blastProt := t.(BlastProtection)
 	_, fireProt := t.(FireProtection)
 	_, prot := t.(Protection)
@@ -134,8 +134,8 @@ func (e Protection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
-// CompatibleWithOther ...
-func (e Protection) CompatibleWithOther(t item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e Protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	_, blastProt := t.(BlastProtection)
 	_, fireProt := t.(FireProtection)
 	_, prot := t.(ProjectileProtection)

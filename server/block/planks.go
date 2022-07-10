@@ -27,8 +27,8 @@ func (p Planks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p))
 }
 
-// Planks ...
-func (p Planks) Planks() bool {
+// RepairsWoodTools ...
+func (p Planks) RepairsWoodTools() bool {
 	return true
 }
 

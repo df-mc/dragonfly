@@ -23,8 +23,8 @@ func (e SilkTouch) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
-// CompatibleWithOther ...
-func (e SilkTouch) CompatibleWithOther(item.EnchantmentType) bool {
+// CompatibleWithEnchantment ...
+func (e SilkTouch) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	// TODO: Fortune.
 	return true
 }
