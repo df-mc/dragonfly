@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -22,8 +23,8 @@ type velocityEntity interface {
 
 // EntityLand ...
 func (SlimeBlock) EntityLand(_ cube.Pos, _ *world.World, e world.Entity) {
-	if e, ok := e.(fallDistanceEntity); ok {
-		e.ResetFallDistance()
+	if p, ok := e.(*player.Player); ok && p.Sneaking() {
+		p.ResetFallDistance()
 	}
 	if e, ok := e.(velocityEntity); ok {
 		v := e.Velocity()
