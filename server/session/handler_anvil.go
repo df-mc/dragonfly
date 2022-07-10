@@ -137,7 +137,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 				// Now calculate the rarity cost. This is just the application cost of the rarity, however if the
 				// material is an enchanted book, then the rarity cost gets halved. If the new rarity cost is under one,
 				// it is set to one.
-				rarityCost := enchantType.Rarity().Cost
+				rarityCost := enchantType.Rarity().Cost()
 				if enchantedBook {
 					rarityCost = max(1, rarityCost/2)
 				}
