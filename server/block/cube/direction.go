@@ -4,13 +4,13 @@ package cube
 type Direction int
 
 const (
-	// North represents the north direction.
+	// North represents the north direction, towards the negative Z.
 	North Direction = iota
-	// South represents the south direction.
+	// South represents the south direction, towards the positive Z.
 	South
-	// West represents the west direction.
+	// West represents the west direction, towards the negative X.
 	West
-	// East represents the east direction.
+	// East represents the east direction, towards the positive X.
 	East
 )
 

@@ -26,6 +26,6 @@ func (GildedBlackstone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (GildedBlackstone) EncodeBlock() (string, map[string]interface{}) {
+func (GildedBlackstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:gilded_blackstone", nil
 }

@@ -16,11 +16,9 @@ type LapisOre struct {
 
 // BreakInfo ...
 func (l LapisOre) BreakInfo() BreakInfo {
-	i := newBreakInfo(l.Type.Hardness(), func(t item.Tool) bool {
+	return newBreakInfo(l.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4), item.NewStack(l, 1)))
-	i.XPDrops = XPDropRange{2, 5}
-	return i
+	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.LapisLazuli{}, rand.Intn(5)+4), item.NewStack(l, 1))).withXPDropRange(2, 5)
 }
 
 // EncodeItem ...
@@ -29,6 +27,6 @@ func (l LapisOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l LapisOre) EncodeBlock() (string, map[string]interface{}) {
+func (l LapisOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + l.Type.Prefix() + "lapis_ore", nil
 }

@@ -3,13 +3,15 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
+	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/exp/slices"
 	"math"
 	"time"
 )
@@ -19,7 +21,7 @@ import (
 type ItemStackRequestHandler struct {
 	currentRequest  int32
 	changes         map[byte]map[byte]changeInfo
-	responseChanges map[int32]map[byte]map[byte]responseChange
+	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
 	current         time.Time
 	ignoreDestroy   bool
 }
@@ -82,11 +84,15 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleDrop(a, s)
 		case *protocol.BeaconPaymentStackRequestAction:
 			err = h.handleBeaconPayment(a, s)
+		case *protocol.CraftRecipeStackRequestAction:
+			err = h.handleCraft(a, s)
+		case *protocol.AutoCraftRecipeStackRequestAction:
+			err = h.handleAutoCraft(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
 			err = h.handleMineBlock(a, s)
-		case *protocol.CraftResultsDeprecatedStackRequestAction:
+		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
 			return fmt.Errorf("unhandled stack request action %#v", action)
@@ -174,17 +180,175 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
 // the event.Context was cancelled either before or after the call.
 func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
-	var err error
-	ctx.Stop(func() {
-		err = fmt.Errorf("action was cancelled")
-	})
-	ctx.Continue(func() {
-		f(ctx, slot, it)
-		ctx.Stop(func() {
-			err = fmt.Errorf("action was cancelled")
-		})
-	})
-	return err
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	f(ctx, slot, it)
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+	return nil
+}
+
+// handleCraft handles the CraftRecipe request action.
+func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+	craft, ok := s.recipes[a.RecipeNetworkID]
+	if !ok {
+		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
+	}
+	_, shaped := craft.(recipe.Shaped)
+	_, shapeless := craft.(recipe.Shapeless)
+	if !shaped && !shapeless {
+		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	}
+
+	size := s.craftingSize()
+	offset := s.craftingOffset()
+	consumed := make([]bool, size)
+	for _, expected := range craft.Input() {
+		var processed bool
+		for slot := offset; slot < offset+size; slot++ {
+			if consumed[slot-offset] {
+				// We've already consumed this slot, skip it.
+				continue
+			}
+			has, _ := s.ui.Item(int(slot))
+			_, variants := expected.Value("variants")
+			if has.Empty() != expected.Empty() || has.Count() < expected.Count() {
+				// We can't process this item, as it's not a part of the recipe.
+				continue
+			}
+			if !variants && !has.Comparable(expected) {
+				// Not the same item without accounting for variants.
+				continue
+			}
+			if variants {
+				nameOne, _ := has.Item().EncodeItem()
+				nameTwo, _ := expected.Item().EncodeItem()
+				if nameOne != nameTwo {
+					// Not the same item even when accounting for variants.
+					continue
+				}
+			}
+			processed, consumed[slot-offset] = true, true
+			st := has.Grow(-expected.Count())
+			h.setItemInSlot(protocol.StackRequestSlotInfo{
+				ContainerID:    containerCraftingGrid,
+				Slot:           byte(slot),
+				StackNetworkID: item_id(st),
+			}, st, s)
+			break
+		}
+		if !processed {
+			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
+		}
+	}
+
+	output := craft.Output()
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID:    containerCraftingGrid,
+		Slot:           craftingGridResult,
+		StackNetworkID: item_id(output[0]),
+	}, output[0], s)
+	return nil
+}
+
+// handleAutoCraft handles the AutoCraftRecipe request action.
+func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session) error {
+	craft, ok := s.recipes[a.RecipeNetworkID]
+	if !ok {
+		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
+	}
+	_, shaped := craft.(recipe.Shaped)
+	_, shapeless := craft.(recipe.Shapeless)
+	if !shaped && !shapeless {
+		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	}
+
+	input := make([]item.Stack, 0, len(craft.Input()))
+	for _, i := range craft.Input() {
+		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
+	}
+
+	expectancies := make([]item.Stack, 0, len(input))
+	for _, i := range input {
+		if i.Empty() {
+			// We don't actually need this item - it's empty, so avoid putting it in our expectancies.
+			continue
+		}
+
+		_, variants := i.Value("variants")
+		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
+			if variants {
+				nameOne, _ := st.Item().EncodeItem()
+				nameTwo, _ := i.Item().EncodeItem()
+				return nameOne == nameTwo
+			}
+			return st.Comparable(i)
+		}); ind >= 0 {
+			i = i.Grow(expectancies[ind].Count())
+			expectancies = slices.Delete(expectancies, ind, ind+1)
+		}
+		expectancies = append(expectancies, i)
+	}
+
+	for _, expected := range expectancies {
+		_, variants := expected.Value("variants")
+		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
+			for slot, has := range inv.Slots() {
+				if has.Empty() {
+					// We don't have this item, skip it.
+					continue
+				}
+				if !variants && !has.Comparable(expected) {
+					// Not the same item without accounting for variants.
+					continue
+				}
+				if variants {
+					nameOne, _ := has.Item().EncodeItem()
+					nameTwo, _ := expected.Item().EncodeItem()
+					if nameOne != nameTwo {
+						// Not the same item even when accounting for variants.
+						continue
+					}
+				}
+
+				remaining, removal := expected.Count(), has.Count()
+				if remaining < removal {
+					removal = remaining
+				}
+
+				expected, has = expected.Grow(-removal), has.Grow(-removal)
+				h.setItemInSlot(protocol.StackRequestSlotInfo{
+					ContainerID:    id,
+					Slot:           byte(slot),
+					StackNetworkID: item_id(has),
+				}, has, s)
+				if expected.Empty() {
+					// Consumed this item, so go to the next one.
+					break
+				}
+			}
+			if expected.Empty() {
+				// Consumed this item, so go to the next one.
+				break
+			}
+		}
+		if !expected.Empty() {
+			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
+		}
+	}
+
+	output := make([]item.Stack, 0, len(craft.Output()))
+	for _, o := range craft.Output() {
+		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
+	}
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID:    containerCraftingGrid,
+		Slot:           craftingGridResult,
+		StackNetworkID: item_id(output[0]),
+	}, output[0], s)
+	return nil
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -239,8 +403,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	}
 
 	inv, _ := s.invByID(int32(a.Source.ContainerID))
-	ctx := event.C()
-	if err := call(ctx, int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
 		return err
 	}
 
@@ -260,7 +423,7 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no beacon container opened")
 	}
-	pos := s.openedPos.Load().(cube.Pos)
+	pos := s.openedPos.Load()
 	beacon, ok := s.c.World().Block(pos).(block.Beacon)
 	if !ok {
 		return fmt.Errorf("no beacon container opened")
@@ -287,7 +450,7 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if sOk {
 		beacon.Secondary = secondary.(effect.LastingType)
 	}
-	s.c.World().SetBlock(pos, beacon)
+	s.c.World().SetBlock(pos, beacon, nil)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
 	// could just not send it.
@@ -345,16 +508,19 @@ func (h *ItemStackRequestHandler) verifySlots(s *Session, slots ...protocol.Stac
 
 // verifySlot checks if the slot passed by the client is the same as that expected by the server.
 func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo, s *Session) error {
-	h.tryAcknowledgeChanges(slot)
+	if err := h.tryAcknowledgeChanges(s, slot); err != nil {
+		return err
+	}
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
 	}
+	inv, _ := s.invByID(int32(slot.ContainerID))
 
 	i, err := h.itemInSlot(slot, s)
 	if err != nil {
 		return err
 	}
-	clientID, err := h.resolveID(slot)
+	clientID, err := h.resolveID(inv, slot)
 	if err != nil {
 		return err
 	}
@@ -369,7 +535,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 // resolveID resolves the stack network ID in the slot passed. If it is negative, it points to an earlier
 // request, in which case it will look it up in the changes of an earlier response to a request to find the
 // actual stack network ID in the slot. If it is positive, the ID will be returned again.
-func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) (int32, error) {
+func (h *ItemStackRequestHandler) resolveID(inv *inventory.Inventory, slot protocol.StackRequestSlotInfo) (int32, error) {
 	if slot.StackNetworkID >= 0 {
 		return slot.StackNetworkID, nil
 	}
@@ -377,7 +543,7 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v, but request could not be found", slot.StackNetworkID)
 	}
-	changes, ok := containerChanges[slot.ContainerID]
+	changes, ok := containerChanges[inv]
 	if !ok {
 		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.ContainerID)
 	}
@@ -391,37 +557,43 @@ func (h *ItemStackRequestHandler) resolveID(slot protocol.StackRequestSlotInfo) 
 // tryAcknowledgeChanges iterates through all cached response changes and checks if the stack request slot
 // info passed from the client has the right stack network ID in any of the stored slots. If this is the case,
 // that entry is removed, so that the maps are cleaned up eventually.
-func (h *ItemStackRequestHandler) tryAcknowledgeChanges(slot protocol.StackRequestSlotInfo) {
+func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protocol.StackRequestSlotInfo) error {
+	inv, ok := s.invByID(int32(slot.ContainerID))
+	if !ok {
+		return fmt.Errorf("could not find container with id %v", slot.ContainerID)
+	}
+
 	for requestID, containerChanges := range h.responseChanges {
-		for containerID, changes := range containerChanges {
+		for newInv, changes := range containerChanges {
 			for slotIndex, val := range changes {
-				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && slot.ContainerID == containerID) || h.current.Sub(val.timestamp) > time.Second*5 {
+				if (slot.Slot == slotIndex && slot.StackNetworkID >= 0 && newInv == inv) || h.current.Sub(val.timestamp) > time.Second*5 {
 					delete(changes, slotIndex)
 				}
 			}
 			if len(changes) == 0 {
-				delete(containerChanges, containerID)
+				delete(containerChanges, newInv)
 			}
 		}
 		if len(containerChanges) == 0 {
 			delete(h.responseChanges, requestID)
 		}
 	}
+	return nil
 }
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
 func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session) (item.Stack, error) {
-	inventory, ok := s.invByID(int32(slot.ContainerID))
+	inv, ok := s.invByID(int32(slot.ContainerID))
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
 	}
 
 	sl := int(slot.Slot)
-	if inventory == s.offHand {
+	if inv == s.offHand {
 		sl = 0
 	}
 
-	i, err := inventory.Item(sl)
+	i, err := inv.Item(sl)
 	if err != nil {
 		return i, err
 	}
@@ -457,12 +629,12 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	}
 
 	if h.responseChanges[h.currentRequest] == nil {
-		h.responseChanges[h.currentRequest] = map[byte]map[byte]responseChange{}
+		h.responseChanges[h.currentRequest] = map[*inventory.Inventory]map[byte]responseChange{}
 	}
-	if h.responseChanges[h.currentRequest][slot.ContainerID] == nil {
-		h.responseChanges[h.currentRequest][slot.ContainerID] = map[byte]responseChange{}
+	if h.responseChanges[h.currentRequest][inv] == nil {
+		h.responseChanges[h.currentRequest][inv] = map[byte]responseChange{}
 	}
-	h.responseChanges[h.currentRequest][slot.ContainerID][slot.Slot] = responseChange{
+	h.responseChanges[h.currentRequest][inv][slot.Slot] = responseChange{
 		id:        respSlot.StackNetworkID,
 		timestamp: h.current,
 	}

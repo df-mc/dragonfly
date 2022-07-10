@@ -23,6 +23,6 @@ func (RawIronBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (RawIronBlock) EncodeBlock() (string, map[string]interface{}) {
+func (RawIronBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:raw_iron_block", nil
 }

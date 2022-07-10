@@ -37,6 +37,11 @@ func (c Chestplate) DefencePoints() float64 {
 	panic("invalid chestplate tier")
 }
 
+// Toughness ...
+func (c Chestplate) Toughness() float64 {
+	return c.Tier.Toughness
+}
+
 // KnockBackResistance ...
 func (c Chestplate) KnockBackResistance() float64 {
 	return c.Tier.KnockBackResistance

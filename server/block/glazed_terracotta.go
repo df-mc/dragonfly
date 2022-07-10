@@ -29,8 +29,8 @@ func (t GlazedTerracotta) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:" + t.Colour.String() + "_glazed_terracotta", map[string]interface{}{"facing_direction": int32(2 + t.Facing)}
+func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:" + t.Colour.String() + "_glazed_terracotta", map[string]any{"facing_direction": int32(2 + t.Facing)}
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.

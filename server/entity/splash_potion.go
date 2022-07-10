@@ -2,9 +2,8 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
@@ -58,9 +57,9 @@ func (s *SplashPotion) EncodeEntity() string {
 	return "minecraft:splash_potion"
 }
 
-// AABB ...
-func (s *SplashPotion) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (s *SplashPotion) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
@@ -97,7 +96,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		aabb := s.AABB().Translate(m.pos)
+		box := s.BBox().Translate(m.pos)
 
 		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
 		if effects := s.t.Effects(); len(effects) > 0 {
@@ -108,13 +107,13 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 				return !living || entity == s
 			}
 
-			for _, e := range w.EntitiesWithin(aabb.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
+			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
 				pos := e.Position()
-				if !e.AABB().Translate(pos).IntersectsWith(aabb.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
+				if !e.BBox().Translate(pos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 					continue
 				}
 
-				dist := world.Distance(pos, m.pos)
+				dist := pos.Sub(m.pos).Len()
 				if dist > 4 {
 					continue
 				}
@@ -138,17 +137,17 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 					splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
 				}
 			}
-		} else if s.t.Equals(potion.Water()) {
+		} else if s.t == potion.Water() {
 			switch result := result.(type) {
 			case trace.BlockResult:
 				pos := result.BlockPosition().Side(result.Face())
 				if w.Block(pos) == fire() {
-					w.SetBlock(pos, air())
+					w.SetBlock(pos, air(), nil)
 				}
 
 				for _, f := range cube.HorizontalFaces() {
 					if h := pos.Side(f); w.Block(h) == fire() {
-						w.SetBlock(h, air())
+						w.SetBlock(h, air(), nil)
 					}
 				}
 			case trace.EntityResult:
@@ -192,20 +191,20 @@ func (s *SplashPotion) Own(owner world.Entity) {
 }
 
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
-func (s *SplashPotion) DecodeNBT(data map[string]interface{}) interface{} {
+func (s *SplashPotion) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		potion.From(nbtconv.MapInt32(data, "PotionId")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		potion.From(nbtconv.Map[int32](data, "PotionId")),
 	)
 }
 
 // EncodeNBT encodes the SplashPotion entity's properties as a map and returns it.
-func (s *SplashPotion) EncodeNBT() map[string]interface{} {
+func (s *SplashPotion) EncodeNBT() map[string]any {
 	yaw, pitch := s.Rotation()
-	return map[string]interface{}{
+	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Yaw":      yaw,
 		"Pitch":    pitch,
@@ -217,7 +216,7 @@ func (s *SplashPotion) EncodeNBT() map[string]interface{} {
 
 // air returns an air block.
 func air() world.Block {
-	f, ok := world.BlockByName("minecraft:air", map[string]interface{}{})
+	f, ok := world.BlockByName("minecraft:air", map[string]any{})
 	if !ok {
 		panic("could not find air block")
 	}

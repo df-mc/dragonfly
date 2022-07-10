@@ -30,6 +30,6 @@ func (PackedIce) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (PackedIce) EncodeBlock() (string, map[string]interface{}) {
+func (PackedIce) EncodeBlock() (string, map[string]any) {
 	return "minecraft:packed_ice", nil
 }

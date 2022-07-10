@@ -1,13 +1,14 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
@@ -18,7 +19,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
-	"go.uber.org/atomic"
 	"io"
 	"net"
 	"sync"
@@ -28,7 +28,7 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            internal.Logger
+	log            Logger
 	once, connOnce sync.Once
 
 	c        Controllable
@@ -39,15 +39,13 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	currentScoreboard atomic.String
-	currentLines      atomic.Value
+	currentScoreboard atomic.Value[string]
+	currentLines      atomic.Value[[]string]
 
-	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
-	teleportMu  sync.Mutex
-	teleportPos *mgl64.Vec3
+	teleportPos atomic.Value[*mgl64.Vec3]
 
 	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
@@ -67,15 +65,19 @@ type Session struct {
 
 	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
-	openedWindow, openedPos        atomic.Value
+	openedContainerID              atomic.Uint32
+	openedWindow                   atomic.Value[*inventory.Inventory]
+	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
+
+	recipes map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage *atomic.String
+	joinMessage, quitMessage *atomic.Value[string]
 
 	closeBackground chan struct{}
 }
@@ -110,6 +112,12 @@ type Conn interface {
 	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
+// Logger is used to write debug messages to. These messages are sent whenever handling of a packet of a client fails.
+type Logger interface {
+	Errorf(format string, a ...any)
+	Debugf(format string, a ...any)
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -121,15 +129,15 @@ var sessionMu sync.Mutex
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
 
-// ErrSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
+// errSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
 // must therefore always be 1.
-var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
+var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
 
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
-// Session.Start().
-func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.String) *Session {
+// Session.Spawn().
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -137,7 +145,6 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 	}
 
 	s := &Session{
-		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(51, nil),
@@ -154,22 +161,19 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
+		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
-	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(cube.Pos{})
-	s.currentScoreboard.Store("")
-	s.currentLines.Store([]string{})
 
 	s.registerHandlers()
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
-// the session in the world.
+// Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
+func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
+	s.recipes = make(map[uint32]recipe.Recipe)
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = c
 
@@ -185,7 +189,7 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	s.initPlayerList()
 
-	w.AddEntity(c)
+	world_add(c, w)
 	s.c.SetGameMode(gm)
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
@@ -202,8 +206,18 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	s.sendRecipes()
+}
 
+// Start makes the session start handling incoming packets from the client.
+func (s *Session) Start() {
+	s.c.World().AddEntity(s.c)
 	go s.handlePackets()
+}
+
+// Controllable returns the Controllable entity that the Session controls.
+func (s *Session) Controllable() Controllable {
+	return s.c
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
@@ -294,6 +308,22 @@ func (s *Session) handlePackets() {
 	}
 }
 
+// craftingSize gets the crafting size based on the opened container ID.
+func (s *Session) craftingSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// craftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) craftingOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
+}
+
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
@@ -333,27 +363,23 @@ func (s *Session) background() {
 func (s *Session) sendChunks() {
 	const maxChunkTransactions = 8
 
-	s.blobMu.Lock()
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
 		s.handleWorldSwitch(w)
 	}
 
+	s.blobMu.Lock()
 	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 	s.blobMu.Unlock()
 	if toLoad > 4 {
 		toLoad = 4
 	}
-	if err := s.chunkLoader.Load(toLoad); err != nil {
-		// The world was closed. This should generally never happen, and if it does, we can assume the
-		// world was closed.
-		s.log.Debugf("error loading chunk: %v", err)
-		return
-	}
+	s.chunkLoader.Load(toLoad)
 }
 
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
+		s.blobMu.Lock()
 		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
 		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
 		for h, blob := range s.blobs {
@@ -363,12 +389,14 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
+		s.blobMu.Unlock()
 	}
 
 	if w.Dimension() != s.chunkLoader.World().Dimension() {
 		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
 		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 	}
+	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }
 
@@ -394,7 +422,7 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:            nil,
-		packet.IDAdventureSettings:     &AdventureSettingsHandler{},
+		packet.IDAdventureSettings:     nil, // Deprecated, the client still sends this though.
 		packet.IDAnimate:               nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
@@ -402,11 +430,13 @@ func (s *Session) registerHandlers() {
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
 		packet.IDContainerClose:        &ContainerCloseHandler{},
+		packet.IDCraftingEvent:         nil,
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
+		packet.IDItemFrameDropItem:     nil,
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
@@ -414,11 +444,12 @@ func (s *Session) registerHandlers() {
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},
+		packet.IDRequestAbility:        &RequestAbilityHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
+		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
-		packet.IDItemFrameDropItem:     nil,
 	}
 }
 
@@ -439,7 +470,9 @@ func (s *Session) initPlayerList() {
 		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
 		// currently open to the player list of the new session.
 		session.addToPlayerList(s)
-		s.addToPlayerList(session)
+		if s != session {
+			s.addToPlayerList(session)
+		}
 	}
 	sessionMu.Unlock()
 }
@@ -448,15 +481,11 @@ func (s *Session) initPlayerList() {
 // other sessions.
 func (s *Session) closePlayerList() {
 	sessionMu.Lock()
-	n := make([]*Session, 0, len(sessions)-1)
 	for _, session := range sessions {
-		if session != s {
-			n = append(n, session)
-		}
 		// Remove the player of the session from the player list of all other sessions.
 		session.removeFromPlayerList(s)
 	}
-	sessions = n
+	sessions = sliceutil.DeleteVal(sessions, s)
 	sessionMu.Unlock()
 }
 
@@ -474,7 +503,7 @@ func (s *Session) sendAvailableEntities() {
 		id := entity.EncodeEntity()
 		entityData = append(entityData, actorIdentifier{ID: id})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]interface{}{"idlist": entityData})
+	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": entityData})
 	if err != nil {
 		panic(fmt.Errorf("failed to serialize entity data: %v", err))
 	}

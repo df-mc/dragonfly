@@ -82,7 +82,8 @@ type Protection struct{}
 
 // Affects ...
 func (e Protection) Affects(src damage.Source) bool {
-	return src == damage.SourceEntityAttack{} || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
+	_, ok := src.(damage.SourceEntityAttack)
+	return ok || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
 }
 
 // Multiplier returns the damage multiplier of protection.

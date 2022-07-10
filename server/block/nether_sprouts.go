@@ -17,7 +17,7 @@ type NetherSprouts struct {
 // NeighbourUpdateTick ...
 func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(n, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos) //TODO: Nylium & mycelium
+		w.SetBlock(pos, nil, nil) //TODO: Nylium & mycelium
 	}
 }
 
@@ -58,6 +58,6 @@ func (n NetherSprouts) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NetherSprouts) EncodeBlock() (string, map[string]interface{}) {
+func (n NetherSprouts) EncodeBlock() (string, map[string]any) {
 	return "minecraft:nether_sprouts", nil
 }

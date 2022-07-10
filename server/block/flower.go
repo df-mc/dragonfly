@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -53,7 +54,7 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 				flowerType = Dandelion()
 			}
 		}
-		w.PlaceBlock(p, Flower{Type: flowerType})
+		w.SetBlock(p, Flower{Type: flowerType}, nil)
 		success = true
 	}
 	return
@@ -62,7 +63,8 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 // NeighbourUpdateTick ...
 func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
 	}
 }
 
@@ -106,13 +108,13 @@ func (f Flower) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (f Flower) EncodeBlock() (string, map[string]interface{}) {
+func (f Flower) EncodeBlock() (string, map[string]any) {
 	if f.Type == Dandelion() {
 		return "minecraft:yellow_flower", nil
 	} else if f.Type == WitherRose() {
 		return "minecraft:wither_rose", nil
 	}
-	return "minecraft:red_flower", map[string]interface{}{"flower_type": f.Type.String()}
+	return "minecraft:red_flower", map[string]any{"flower_type": f.Type.String()}
 }
 
 // allFlowers ...

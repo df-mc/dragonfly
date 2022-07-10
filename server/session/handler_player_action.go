@@ -20,7 +20,7 @@ func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 // handlePlayerAction handles an action performed by a player, found in packet.PlayerAction and packet.PlayerAuthInput.
 func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) error {
 	if entityRuntimeID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID
+		return errSelfRuntimeID
 	}
 	switch action {
 	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
@@ -51,6 +51,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 			return nil
 		}
 		s.c.ContinueBreaking(cube.Face(face))
+	case protocol.PlayerActionStartItemUseOn, protocol.PlayerActionStopItemUseOn:
+		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:

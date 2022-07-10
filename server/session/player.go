@@ -3,14 +3,15 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -18,9 +19,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"go.uber.org/atomic"
 	"math"
 	"net"
+	"strings"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -51,7 +52,7 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
-	pos := s.openedPos.Load().(cube.Pos)
+	pos := s.openedPos.Load()
 	if container, ok := s.c.World().Block(pos).(block.Container); ok {
 		container.RemoveViewer(s, s.c.World(), pos)
 	}
@@ -66,6 +67,11 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	})
 }
 
+// sendRecipes sends the current crafting recipes to the session.
+func (s *Session) sendRecipes() {
+	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+}
+
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
@@ -77,6 +83,14 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	}
 	s.writePacket(pk)
 }
+
+const (
+	craftingGridSizeSmall   = 4
+	craftingGridSizeLarge   = 9
+	craftingGridSmallOffset = 28
+	craftingGridLargeOffset = 32
+	craftingGridResult      = 50
+)
 
 const (
 	containerArmour         = 6
@@ -110,21 +124,21 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerChest:
 		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, barrel := b.(block.Barrel); barrel {
-				return s.openedWindow.Load().(*inventory.Inventory), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load().(cube.Pos))
+			b := s.c.World().Block(s.openedPos.Load())
 			if _, beacon := b.(block.Beacon); beacon {
 				return s.ui, true
 			}
@@ -219,6 +233,9 @@ func (s *Session) Transfer(ip net.IP, port int) {
 // SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
 func (s *Session) SendGameMode(mode world.GameMode) {
+	if s == Nop {
+		return
+	}
 	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
 	if mode.AllowsFlying() {
 		flags |= packet.AdventureFlagAllowFlight
@@ -228,6 +245,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	}
 	if !mode.HasCollision() {
 		flags |= packet.AdventureFlagNoClip
+		defer s.c.StartFlying()
 		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
 		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
 		s.ViewEntityTeleport(s.c, s.c.Position())
@@ -242,9 +260,11 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	} else {
 		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
 	}
-	// Creative or spectator players both use the same game type over the network.
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		id = packet.GameTypeCreative
+	}
+	if !mode.Visible() && !mode.HasCollision() {
+		id = packet.GameTypeSpectator
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
 	s.writePacket(&packet.AdventureSettings{
@@ -391,7 +411,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:      s.Model,
 		PersonaSkin:       s.Persona,
 		CapeID:            uuid.New().String(),
-		FullSkinID:        uuid.New().String(),
+		FullID:            uuid.New().String(),
 		Animations:        animations,
 		Trusted:           true,
 	}
@@ -522,6 +542,65 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	return nil
 }
 
+// SendExperience sends the experience level and progress from the given experience manager to the player.
+func (s *Session) SendExperience(e *entity.ExperienceManager) {
+	level, progress := e.Level(), e.Progress()
+	s.writePacket(&packet.UpdateAttributes{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Attributes: []protocol.Attribute{
+			{
+				Name:  "minecraft:player.level",
+				Value: float32(level),
+				Max:   float32(math.MaxInt32),
+			},
+			{
+				Name:  "minecraft:player.experience",
+				Value: float32(progress),
+				Max:   1,
+			},
+		},
+	})
+}
+
+// protocolRecipes returns all recipes as protocol recipes.
+func (s *Session) protocolRecipes() []protocol.Recipe {
+	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
+		networkID := uint32(index) + 1
+		s.recipes[networkID] = i
+
+		blockName := "crafting_table"
+		if b := i.Block(); b != nil {
+			blockName, _ = b.EncodeBlock()
+			blockName = strings.Split(blockName, ":")[1]
+		}
+
+		switch i := i.(type) {
+		case recipe.Shapeless:
+			recipes = append(recipes, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           blockName,
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Shaped:
+			recipes = append(recipes, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Width:           int32(i.Shape().Width()),
+				Height:          int32(i.Shape().Height()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           blockName,
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	return recipes
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -529,10 +608,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID, ok = world.BlockRuntimeID(b)
-		if !ok {
-			panic("should never happen")
-		}
+		blockRuntimeID = world.BlockRuntimeID(b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -549,31 +625,18 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	}
 }
 
-// instanceFromItem converts an item.Stack to its network ItemInstance representation.
-func instanceFromItem(it item.Stack) protocol.ItemInstance {
-	return protocol.ItemInstance{
-		StackNetworkID: item_id(it),
-		Stack:          stackFromItem(it),
-	}
-}
-
 // stackToItem converts a network ItemStack representation back to an item.Stack.
 func stackToItem(it protocol.ItemStack) item.Stack {
-	var t world.Item
-	var ok bool
-
-	if it.BlockRuntimeID != 0 {
-		var b world.Block
+	t, ok := world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
+	if !ok {
+		t = block.Air{}
+	}
+	if it.BlockRuntimeID > 0 {
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
 		// return air anyway.
-		b, _ = world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
+		b, _ := world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
-			t = block.Air{}
-		}
-	} else {
-		t, ok = world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
-		if !ok {
 			t = block.Air{}
 		}
 	}
@@ -585,18 +648,63 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	return nbtconv.ReadItem(it.NBTData, &s)
 }
 
+// instanceFromItem converts an item.Stack to its network ItemInstance representation.
+func instanceFromItem(it item.Stack) protocol.ItemInstance {
+	return protocol.ItemInstance{
+		StackNetworkID: item_id(it),
+		Stack:          stackFromItem(it),
+	}
+}
+
+// stacksToRecipeStacks converts a list of item.Stacks to their protocol representation with damage stripped for recipes.
+func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
+	items := make([]protocol.ItemStack, 0, len(inputs))
+	for _, i := range inputs {
+		items = append(items, deleteDamage(stackFromItem(i)))
+	}
+	return items
+}
+
+// stacksToIngredientItems converts a list of item.Stacks to recipe ingredient items used over the network.
+func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientItem {
+	items := make([]protocol.RecipeIngredientItem, 0, len(inputs))
+	for _, i := range inputs {
+		if i.Empty() {
+			items = append(items, protocol.RecipeIngredientItem{})
+			continue
+		}
+		rid, meta, ok := world.ItemRuntimeID(i.Item())
+		if !ok {
+			panic("should never happen")
+		}
+		if _, ok = i.Value("variants"); ok {
+			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
+		}
+		items = append(items, protocol.RecipeIngredientItem{
+			NetworkID:     rid,
+			MetadataValue: int32(meta),
+			Count:         int32(i.Count()),
+		})
+	}
+	return items
+}
+
 // creativeItems returns all creative inventory items as protocol item stacks.
 func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
 	for index, i := range creative.Items() {
-		v := stackFromItem(i)
-		delete(v.NBTData, "Damage")
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  v,
+			Item:                  deleteDamage(stackFromItem(i)),
 		})
 	}
 	return it
+}
+
+// deleteDamage strips the damage from a protocol item.
+func deleteDamage(st protocol.ItemStack) protocol.ItemStack {
+	delete(st.NBTData, "Damage")
+	return st
 }
 
 // protocolToSkin converts protocol.Skin to skin.Skin.
@@ -614,7 +722,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
 	s.Cape.Pix = sk.CapeData
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err = json.Unmarshal(sk.SkinGeometry, &m); err != nil {
 		return skin.Skin{}, fmt.Errorf("SkinGeometry was not a valid JSON string: %v", err)
 	}
@@ -651,3 +759,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 //noinspection ALL
 func item_id(s item.Stack) int32
+
+//go:linkname world_add github.com/df-mc/dragonfly/server/world.add
+//noinspection ALL
+func world_add(e world.Entity, w *world.World)

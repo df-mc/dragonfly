@@ -33,6 +33,6 @@ func (GoldBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (GoldBlock) EncodeBlock() (string, map[string]interface{}) {
+func (GoldBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:gold_block", nil
 }

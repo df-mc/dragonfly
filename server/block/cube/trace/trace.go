@@ -2,7 +2,6 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
@@ -11,10 +10,11 @@ import (
 // A function 'f' is passed which is called for each voxel, if f returns false, the function will return.
 // TraverseBlocks panics if the start and end positions are the same.
 func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
-	dir := end.Sub(start).Normalize()
-	if dir.LenSqr() <= 0.0 {
+	dir := end.Sub(start)
+	if mgl64.FloatEqual(dir.LenSqr(), 0) {
 		panic("start and end points are the same, giving a zero direction vector")
 	}
+	dir = dir.Normalize()
 
 	b := cube.PosFromVec3(start)
 
@@ -24,7 +24,7 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 
 	delta := safeDivideVec3(step, dir)
 
-	r := world.Distance(start, end)
+	r := start.Sub(end).Len()
 	for {
 		if !f(b) {
 			return

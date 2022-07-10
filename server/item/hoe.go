@@ -25,7 +25,7 @@ func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 				// Tilled land can only be created if air is above the grass block.
 				return false
 			}
-			w.PlaceBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 			ctx.DamageItem(1)
 			return true

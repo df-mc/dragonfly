@@ -15,7 +15,7 @@ func init() {
 	item.RegisterEnchantment(9, Sharpness{})
 	// TODO: (10) Smite. (Requires undead mobs)
 	// TODO: (11) Bane of Arthropods. (Requires arthropod mobs)
-	// TODO: (12) Knockback.
+	item.RegisterEnchantment(12, KnockBack{})
 	item.RegisterEnchantment(13, FireAspect{})
 	// TODO: (14) Looting.
 	item.RegisterEnchantment(15, Efficiency{})
@@ -40,4 +40,5 @@ func init() {
 	// TODO: (34) Piercing.
 	// TODO: (35) Quick Charge.
 	// TODO: (36) Soul Speed.
+	// TODO: (37) Swift Sneak.
 }

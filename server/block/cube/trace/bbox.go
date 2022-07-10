@@ -2,38 +2,37 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
 
-// AABBResult is the result of a basic ray trace collision with a bounding box.
-type AABBResult struct {
-	bb   physics.AABB
+// BBoxResult is the result of a basic ray trace collision with a bounding box.
+type BBoxResult struct {
+	bb   cube.BBox
 	pos  mgl64.Vec3
 	face cube.Face
 }
 
-// AABB ...
-func (r AABBResult) AABB() physics.AABB {
+// BBox ...
+func (r BBoxResult) BBox() cube.BBox {
 	return r.bb
 }
 
 // Position ...
-func (r AABBResult) Position() mgl64.Vec3 {
+func (r BBoxResult) Position() mgl64.Vec3 {
 	return r.pos
 }
 
 // Face ...
-func (r AABBResult) Face() cube.Face {
+func (r BBoxResult) Face() cube.Face {
 	return r.face
 }
 
-// AABBIntercept performs a ray trace and calculates the point on the AABB's edge nearest to the start position that the ray trace
+// BBoxIntercept performs a ray trace and calculates the point on the BBox's edge nearest to the start position that the ray trace
 // collided with.
-// AABBIntercept returns a AABBResult with the colliding vector closest to the start position, if no colliding point was found,
-// a zero AABBResult is returned and ok is false.
-func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, ok bool) {
+// BBoxIntercept returns a BBoxResult with the colliding vector closest to the start position, if no colliding point was found,
+// a zero BBoxResult is returned and ok is false.
+func BBoxIntercept(bb cube.BBox, start, end mgl64.Vec3) (result BBoxResult, ok bool) {
 	min, max := bb.Min(), bb.Max()
 	v1 := vec3OnLineWithX(start, end, min[0])
 	v2 := vec3OnLineWithX(start, end, max[0])
@@ -97,7 +96,7 @@ func AABBIntercept(bb physics.AABB, start, end mgl64.Vec3) (result AABBResult, o
 		f = cube.FaceSouth
 	}
 
-	return AABBResult{bb: bb, pos: *vec, face: f}, true
+	return BBoxResult{bb: bb, pos: *vec, face: f}, true
 }
 
 // vec3OnLineWithX returns an mgl64.Vec3 on the line between mgl64.Vec3 a and b with an X value passed. If no such vec3
