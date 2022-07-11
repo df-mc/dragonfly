@@ -237,6 +237,7 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 		hasCompatible = true
 
 		resultLevel := enchant.Level()
+		levelCost := resultLevel
 		// Check if we have an enchantment of the same type on the input item.
 		if firstEnchant, ok := input.Enchantment(enchantType); ok {
 			// Skip the enchantment if the level is higher on the input item than the material item or if the level
@@ -248,6 +249,7 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 				// If the input level is equal to the material level, increase the result level by one.
 				resultLevel++
 			}
+			levelCost = resultLevel - firstEnchant.Level()
 		}
 
 		// Now calculate the rarity cost. This is just the application cost of the rarity, however if the
@@ -262,7 +264,7 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 		result = result.WithEnchantments(item.NewEnchantment(enchantType, resultLevel))
 
 		// Update the action cost appropriately.
-		cost += rarityCost * resultLevel
+		cost += rarityCost * levelCost
 		if input.Count() > 1 {
 			cost = 40
 		}

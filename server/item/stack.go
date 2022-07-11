@@ -274,10 +274,6 @@ func (s Stack) RepairCost() int {
 
 // WithRepairCost returns the current Stack with the repair cost set to the passed value.
 func (s Stack) WithRepairCost(repairCost int) Stack {
-	if _, ok := s.Item().(Repairable); !ok {
-		// Not a repairable item.
-		return s
-	}
 	s.repairCost = repairCost
 	return s
 }
