@@ -24,7 +24,7 @@ type Stack struct {
 
 	damage int
 
-	repairCost int
+	anvilCost int
 
 	data map[string]any
 
@@ -269,19 +269,22 @@ func (s Stack) Enchantments() []Enchantment {
 	return e
 }
 
-// RepairCost returns the number of experience levels to add to the base level cost when repairing, combining, or
+// AnvilCost returns the number of experience levels to add to the base level cost when repairing, combining, or
 // renaming this item with an anvil.
-func (s Stack) RepairCost() int {
-	return s.repairCost
+func (s Stack) AnvilCost() int {
+	return s.anvilCost
 }
 
-// WithRepairCost returns the current Stack with the repair cost set to the passed value.
-func (s Stack) WithRepairCost(repairCost int) Stack {
-	if _, ok := s.Item().(Repairable); !ok {
-		// Not a repairable item.
+// WithAnvilCost returns the current Stack with the anvil cost set to the passed value.
+func (s Stack) WithAnvilCost(anvilCost int) Stack {
+	i := s.Item()
+	_, repairable := i.(Repairable)
+	_, enchantedBook := i.(EnchantedBook)
+	if !repairable && !enchantedBook {
+		// This item can't have a repair cost.
 		return s
 	}
-	s.repairCost = repairCost
+	s.anvilCost = anvilCost
 	return s
 }
 
@@ -324,7 +327,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage || s.repairCost != s2.repairCost || s.customName != s2.customName {
+	if name != name2 || meta != meta2 || s.damage != s2.damage || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
@@ -353,7 +356,7 @@ func (s Stack) String() string {
 	if s.item == nil {
 		return fmt.Sprintf("Stack<nil> x%v", s.count)
 	}
-	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, repairCost=%v) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.repairCost, s.count)
+	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, anvilCost=%v) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.anvilCost, s.count)
 }
 
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:

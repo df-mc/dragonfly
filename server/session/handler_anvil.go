@@ -40,10 +40,10 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}, s)
 	result := input
 
-	// The sum of the input's repair cost as well as the material's repair cost.
-	repairCost := input.RepairCost()
+	// The sum of the input's anvil cost as well as the material's anvil cost.
+	anvilCost := input.AnvilCost()
 	if !material.Empty() {
-		repairCost += material.RepairCost()
+		anvilCost += material.AnvilCost()
 	}
 
 	// The material input may be empty (if the player is only renaming, for example).
@@ -92,7 +92,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		existingName = customName
 	}
 
-	// If our existing name isn't the same as the new name, then something changed,  and we should update the custom
+	// If our existing name isn't the same as the new name, then something changed, and we should update the custom
 	// name of the item.
 	if existingName != newName {
 		renameCost = 1
@@ -100,8 +100,8 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		result = result.WithCustomName(newName)
 	}
 
-	// Calculate the total cost. (repair cost + action cost)
-	cost := actionCost + repairCost
+	// Calculate the total cost. (action cost + anvil cost)
+	cost := actionCost + anvilCost
 	if cost <= 0 {
 		return fmt.Errorf("no action was taken")
 	}
@@ -125,19 +125,19 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		s.c.SetExperienceLevel(level - cost)
 	}
 
-	// If we had a result item, we need to calculate the new repair cost and update it on the item.
+	// If we had a result item, we need to calculate the new anvil cost and update it on the item.
 	if !result.Empty() {
-		updatedRepairCost := result.RepairCost()
-		if !material.Empty() && updatedRepairCost < material.RepairCost() {
-			updatedRepairCost = material.RepairCost()
+		updatedAnvilCost := result.AnvilCost()
+		if !material.Empty() && updatedAnvilCost < material.AnvilCost() {
+			updatedAnvilCost = material.AnvilCost()
 		}
 		if renameCost != actionCost || renameCost == 0 {
-			updatedRepairCost = updatedRepairCost*2 + 1
+			updatedAnvilCost = updatedAnvilCost*2 + 1
 		}
-		result = result.WithRepairCost(updatedRepairCost)
+		result = result.WithAnvilCost(updatedAnvilCost)
 	}
 
-	// If we're in creative mode, we have a 12% chance of the anvil degrading down one state. If that is the case, we
+	// If we're not in creative mode, we have a 12% chance of the anvil degrading down one state. If that is the case, we
 	// need to play the related sound and update the block state. Otherwise, we play a regular anvil use sound.
 	if !c && rand.Float64() < 0.12 {
 		damaged := anvil.Break()
@@ -220,10 +220,10 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 			compatible = true
 		}
 
-		// Then ensure that each input enchantment is compatible with this material enchantment.
+		// Then ensure that each input enchantment is compatible with this material enchantment. If one is not compatible,
+		// increase the cost by one.
 		for _, otherEnchant := range input.Enchantments() {
-			otherType := otherEnchant.Type()
-			if enchantType != otherType && !enchantType.CompatibleWithEnchantment(otherType) {
+			if otherType := otherEnchant.Type(); enchantType != otherType && !enchantType.CompatibleWithEnchantment(otherType) {
 				compatible = false
 				cost++
 			}
@@ -236,23 +236,22 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 		}
 		hasCompatible = true
 
-		// First check if we have an enchantment of the same type on the input item. If so, record it's level.
-		var firstLevel int
-		if firstEnchant, ok := input.Enchantment(enchantType); ok {
-			firstLevel = firstEnchant.Level()
-		}
+		resultLevel := enchant.Level()
+		levelCost := resultLevel
 
-		// Then calculate the result level by getting the maximum of the first level and this enchantment's
-		// level. If the first level is equal to the enchantment's level, increase the result level by one.
-		resultLevel := max(firstLevel, enchant.Level())
-		if firstLevel == enchant.Level() {
-			resultLevel = firstLevel + 1
-		}
-
-		// If the result level is greater than the enchantment's maximum level, set it to the maximum level
-		// instead.
-		if resultLevel > enchantType.MaxLevel() {
-			resultLevel = enchantType.MaxLevel()
+		// Check if we have an enchantment of the same type on the input item.
+		if existingEnchant, ok := input.Enchantment(enchantType); ok {
+			if existingEnchant.Level() > resultLevel || (existingEnchant.Level() == resultLevel && resultLevel == enchantType.MaxLevel()) {
+				// The result level is either lower than the existing enchantment's level or is higher than the maximum
+				// level, so skip this enchantment.
+				hasIncompatible = true
+				continue
+			} else if existingEnchant.Level() == resultLevel {
+				// If the input level is equal to the material level, increase the result level by one.
+				resultLevel++
+			}
+			// Update the level cost. (result level - existing level)
+			levelCost = resultLevel - existingEnchant.Level()
 		}
 
 		// Now calculate the rarity cost. This is just the application cost of the rarity, however if the
@@ -266,8 +265,8 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 		// Update the result item with the new enchantment.
 		result = result.WithEnchantments(item.NewEnchantment(enchantType, resultLevel))
 
-		// Update the action cost appropriately.
-		cost += rarityCost * resultLevel
+		// Update the cost appropriately.
+		cost += rarityCost * levelCost
 		if input.Count() > 1 {
 			cost = 40
 		}
