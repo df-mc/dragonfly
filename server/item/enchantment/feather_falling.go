@@ -8,22 +8,22 @@ import (
 type FeatherFalling struct{}
 
 // Multiplier returns the damage multiplier of feather falling.
-func (e FeatherFalling) Multiplier(lvl int) float64 {
+func (FeatherFalling) Multiplier(lvl int) float64 {
 	return 1 - 0.12*float64(lvl)
 }
 
 // Name ...
-func (e FeatherFalling) Name() string {
+func (FeatherFalling) Name() string {
 	return "Feather Falling"
 }
 
 // MaxLevel ...
-func (e FeatherFalling) MaxLevel() int {
+func (FeatherFalling) MaxLevel() int {
 	return 4
 }
 
 // CompatibleWith ...
-func (e FeatherFalling) CompatibleWith(s item.Stack) bool {
+func (FeatherFalling) CompatibleWith(s item.Stack) bool {
 	b, ok := s.Item().(item.BootsType)
 	return ok && b.Boots()
 }

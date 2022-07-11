@@ -8,17 +8,17 @@ import (
 type AquaAffinity struct{}
 
 // Name ...
-func (e AquaAffinity) Name() string {
+func (AquaAffinity) Name() string {
 	return "Aqua Affinity"
 }
 
 // MaxLevel ...
-func (e AquaAffinity) MaxLevel() int {
+func (AquaAffinity) MaxLevel() int {
 	return 1
 }
 
 // CompatibleWith ...
-func (e AquaAffinity) CompatibleWith(s item.Stack) bool {
+func (AquaAffinity) CompatibleWith(s item.Stack) bool {
 	h, ok := s.Item().(item.HelmetType)
 	return ok && h.Helmet()
 }
