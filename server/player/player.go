@@ -1990,21 +1990,21 @@ func (p *Player) CollectExperience(value int) bool {
 		}
 	}
 	if length := len(mendingItems); length > 0 {
-		if repairItem := mendingItems[rand.Intn(length)]; repairItem.Durability() < repairItem.MaxDurability() {
-			repairAmount := math.Min(float64(repairItem.MaxDurability()-repairItem.Durability()), float64(value*2))
-			repairItem = repairItem.WithDurability(repairItem.Durability() + int(repairAmount))
+		if foundItem := mendingItems[rand.Intn(length)]; foundItem.Durability() < foundItem.MaxDurability() {
+			repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(value*2))
+			repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
 			if repairAmount >= 2 {
 				// Mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
 				// then no experience is removed.
 				value -= int(math.Ceil(repairAmount / 2))
 			}
-			//				if($k === $mainHandIndex){
-			//					$this->entity->getInventory()->setItemInHand($repairItem);
-			//				}elseif($k === $offHandIndex){
-			//					$this->entity->getOffHandInventory()->setItem(0, $repairItem);
-			//				}else{
-			//					$this->entity->getArmorInventory()->setItem($k, $repairItem);
-			//				}
+			if offHand.Equal(foundItem) {
+				p.SetHeldItems(held, repairedItem)
+			} else if held.Equal(foundItem) {
+				p.SetHeldItems(repairedItem, offHand)
+			} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
+				_ = p.Armour().Inventory().SetItem(slot, repairedItem)
+			}
 		}
 	}
 
