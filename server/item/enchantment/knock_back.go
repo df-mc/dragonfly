@@ -24,8 +24,8 @@ func (KnockBack) Rarity() item.EnchantmentRarity {
 }
 
 // Force returns the increase in knock-back force from the enchantment.
-func (KnockBack) Force(lvl int) float64 {
-	return float64(lvl) / 2
+func (KnockBack) Force(level int) float64 {
+	return float64(level) / 2
 }
 
 // CompatibleWithEnchantment ...

@@ -24,6 +24,11 @@ func (Respiration) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
+// Chance returns the chance of the enchantment blocking the air supply from ticking.
+func (Respiration) Chance(level int) float64 {
+	return 1.0 / float64(level+1)
+}
+
 // CompatibleWithEnchantment ...
 func (Respiration) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true

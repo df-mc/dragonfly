@@ -25,8 +25,8 @@ func (FireAspect) Rarity() item.EnchantmentRarity {
 }
 
 // Duration returns how long the fire from fire aspect will last.
-func (FireAspect) Duration(lvl int) time.Duration {
-	return time.Second * 4 * time.Duration(lvl)
+func (FireAspect) Duration(level int) time.Duration {
+	return time.Second * 4 * time.Duration(level)
 }
 
 // CompatibleWithEnchantment ...

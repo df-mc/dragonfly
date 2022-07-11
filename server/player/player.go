@@ -2158,7 +2158,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply(w *world.World) {
 	if !p.canBreathe(w) {
-		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration{}); ok && rand.Float64() <= (1.0/float64(r.Level()+1)) {
+		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration{}); ok && rand.Float64() <= (enchantment.Respiration{}).Chance(r.Level()) {
 			// Respiration grants a chance to avoid drowning damage every tick.
 			return
 		}
