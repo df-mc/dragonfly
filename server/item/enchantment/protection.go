@@ -36,24 +36,26 @@ func (Protection) Rarity() item.EnchantmentRarity {
 
 // Affects ...
 func (Protection) Affects(src damage.Source) bool {
-	_, ok := src.(damage.SourceEntityAttack)
-	return ok || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
+	_, projectile := src.(damage.SourceProjectile)
+	_, attack := src.(damage.SourceEntityAttack)
+	_, fireTick := src.(damage.SourceFireTick)
+	_, fall := src.(damage.SourceFall)
+	_, fire := src.(damage.SourceFire)
+	_, lava := src.(damage.SourceLava)
+	return projectile || attack || fireTick || fall || fire || lava
 }
 
-// Multiplier returns the damage multiplier of protection.
-func (Protection) Multiplier(lvl int) float64 {
-	if lvl > 20 {
-		lvl = 20
-	}
-	return 1 - float64(lvl)/25
+// Modifier returns the base protection modifier for the enchantment.
+func (Protection) Modifier() float64 {
+	return 0.75
 }
 
 // CompatibleWithEnchantment ...
 func (Protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	_, blastProt := t.(BlastProtection)
-	_, fireProt := t.(FireProtection)
-	_, prot := t.(ProjectileProtection)
-	return !blastProt && !fireProt && !prot
+	// TODO: Ensure that the armour does not have blast protection.
+	_, fireProtection := t.(FireProtection)
+	_, projectileProtection := t.(ProjectileProtection)
+	return !fireProtection && !projectileProtection
 }
 
 // CompatibleWithItem ...

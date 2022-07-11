@@ -18,6 +18,16 @@ func (DepthStrider) MaxLevel() int {
 	return 3
 }
 
+// MinCost ...
+func (DepthStrider) MinCost(level int) int {
+	return level * 10
+}
+
+// MaxCost ...
+func (d DepthStrider) MaxCost(level int) int {
+	return d.MinCost(level) + 15
+}
+
 // Rarity ...
 func (DepthStrider) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

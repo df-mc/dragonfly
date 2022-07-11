@@ -8,11 +8,6 @@ import (
 // Sharpness is an enchantment applied to a sword or axe that increases melee damage.
 type Sharpness struct{}
 
-// Addend returns the additional damage when attacking with sharpness.
-func (Sharpness) Addend(level int) float64 {
-	return float64(level) * 1.25
-}
-
 // Name ...
 func (Sharpness) Name() string {
 	return "Sharpness"
@@ -36,6 +31,11 @@ func (s Sharpness) MaxCost(level int) int {
 // Rarity ...
 func (Sharpness) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
+}
+
+// Addend returns the additional damage when attacking with sharpness.
+func (Sharpness) Addend(level int) float64 {
+	return float64(level) * 1.25
 }
 
 // CompatibleWithEnchantment ...

@@ -18,11 +18,6 @@ func (Efficiency) MaxLevel() int {
 	return 5
 }
 
-// Rarity ...
-func (Efficiency) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityCommon
-}
-
 // MinCost ...
 func (Efficiency) MinCost(level int) int {
 	return 1 + 10*(level-1)
@@ -31,6 +26,11 @@ func (Efficiency) MinCost(level int) int {
 // MaxCost ...
 func (e Efficiency) MaxCost(level int) int {
 	return e.MinCost(level) + 50
+}
+
+// Rarity ...
+func (Efficiency) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
 }
 
 // Addend returns the mining speed addend from efficiency.
