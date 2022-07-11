@@ -92,7 +92,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		existingName = customName
 	}
 
-	// If our existing name isn't the same as the new name, then something changed,  and we should update the custom
+	// If our existing name isn't the same as the new name, then something changed, and we should update the custom
 	// name of the item.
 	if existingName != newName {
 		renameCost = 1
