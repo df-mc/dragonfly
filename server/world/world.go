@@ -641,6 +641,7 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
+
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 

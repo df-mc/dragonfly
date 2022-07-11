@@ -79,7 +79,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // EntityInside ...
 func (c Cactus) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
-		l.Hurt(0.5, damage.SourceCactus{})
+		l.Hurt(0.5, damage.SourceBlock{Block: c})
 	}
 }
 

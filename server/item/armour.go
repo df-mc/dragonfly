@@ -107,3 +107,23 @@ func (ArmourTierNetherite) Name() string                 { return "netherite" }
 func ArmourTiers() []ArmourTier {
 	return []ArmourTier{ArmourTierLeather{}, ArmourTierGold{}, ArmourTierChain{}, ArmourTierIron{}, ArmourTierDiamond{}, ArmourTierNetherite{}}
 }
+
+// armourTierRepairable returns true if the ArmourTier passed is repairable.
+func armourTierRepairable(tier ArmourTier) func(Stack) bool {
+	return func(stack Stack) bool {
+		var ok bool
+		switch tier {
+		case ArmourTierLeather:
+			_, ok = stack.Item().(Leather)
+		case ArmourTierGold:
+			_, ok = stack.Item().(GoldIngot)
+		case ArmourTierChain, ArmourTierIron:
+			_, ok = stack.Item().(IronIngot)
+		case ArmourTierDiamond:
+			_, ok = stack.Item().(Diamond)
+		case ArmourTierNetherite:
+			_, ok = stack.Item().(NetheriteIngot)
+		}
+		return ok
+	}
+}
