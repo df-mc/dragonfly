@@ -7,8 +7,8 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
 	"golang.org/x/text/language"
+	"image/color"
 	"math"
 	"time"
 )
