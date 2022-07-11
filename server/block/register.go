@@ -101,6 +101,7 @@ func init() {
 		world.RegisterBlock(LapisOre{Type: ore})
 	}
 
+	registerAll(allAnvils())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -305,6 +306,9 @@ func init() {
 	}
 	for _, s := range allStoneBricks() {
 		world.RegisterItem(s.(world.Item))
+	}
+	for _, t := range AnvilTypes() {
+		world.RegisterItem(Anvil{Type: t})
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Carpet{Colour: c})

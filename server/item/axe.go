@@ -70,6 +70,11 @@ func (a Axe) BaseMiningEfficiency(world.Block) float64 {
 	return a.Tier.BaseMiningEfficiency
 }
 
+// RepairableBy ...
+func (a Axe) RepairableBy(i Stack) bool {
+	return toolTierRepairable(a.Tier)(i)
+}
+
 // EncodeItem ...
 func (a Axe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + a.Tier.Name + "_axe", 0

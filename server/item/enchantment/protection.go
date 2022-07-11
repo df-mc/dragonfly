@@ -3,6 +3,7 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Protection is an armour enchantment which increases the damage reduction.
@@ -16,6 +17,11 @@ func (Protection) Name() string {
 // MaxLevel ...
 func (Protection) MaxLevel() int {
 	return 4
+}
+
+// Rarity ...
+func (Protection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
 }
 
 // Affects ...
@@ -34,11 +40,16 @@ func (Protection) Modifier() float64 {
 	return 0.75
 }
 
-// CompatibleWith ...
-func (Protection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// CompatibleWithEnchantment ...
+func (Protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	// TODO: Ensure that the armour does not have blast protection.
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	return ok && !fireProt && !projectileProt
+	_, fireProt := t.(FireProtection)
+	_, projectileProt := t.(ProjectileProtection)
+	return !fireProt && !projectileProt
+}
+
+// CompatibleWithItem ...
+func (Protection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }
