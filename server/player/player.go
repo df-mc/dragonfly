@@ -545,11 +545,11 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		p.Exhaust(0.1)
 
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
-		damageToAttacker := 0
+		var damageToAttacker int
 		thornsArmour := make([]item.Stack, 0, 4)
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
-				thornsDamage := 0
+				var thornsDamage int
 				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Intn(99) < e.Level()*15 {
 					thornsArmour = append(thornsArmour, it)
 					thornsDamage = 1
