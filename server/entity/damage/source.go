@@ -74,8 +74,8 @@ type (
 	SourceThorns struct {
 		// Owner holds the entity wearing the thorns armour.
 		Owner world.Entity
-  }
-  
+	}
+
 	// SourceBlock is used for damage caused by a block, such as an anvil.
 	SourceBlock struct {
 		// Block is the block that caused the damage.
