@@ -70,7 +70,7 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	breathing         atomic.Bool
+	breathing         bool
 	airSupplyTicks    atomic.Int64
 	maxAirSupplyTicks atomic.Int64
 
@@ -2166,12 +2166,12 @@ func (p *Player) tickAirSupply(w *world.World) {
 			}
 		}
 
-		p.breathing.Store(false)
+		p.breathing = false
 		p.updateState()
-	} else if max := p.maxAirSupplyTicks.Load(); !p.breathing.Load() && p.airSupplyTicks.Load() < max {
+	} else if max := p.maxAirSupplyTicks.Load(); !p.breathing && p.airSupplyTicks.Load() < max {
 		p.airSupplyTicks.Add(5)
 		if p.airSupplyTicks.Load() >= max {
-			p.breathing.Store(true)
+			p.breathing = true
 			p.airSupplyTicks.Store(max)
 		}
 		p.updateState()
