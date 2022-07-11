@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -30,6 +31,9 @@ type Arrow struct {
 
 	owner world.Entity
 	tip   potion.Potion
+
+	fireTicks  int64
+	punchLevel int
 
 	disallowPickup, obtainArrowOnPickup bool
 
@@ -141,6 +145,35 @@ func (a *Arrow) VanishOnPickup() {
 	a.obtainArrowOnPickup = false
 }
 
+// FireProof ...
+func (a *Arrow) FireProof() bool {
+	return false
+}
+
+// OnFireDuration ...
+func (a *Arrow) OnFireDuration() time.Duration {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return time.Duration(a.fireTicks) * time.Second / 20
+}
+
+// SetOnFire ...
+func (a *Arrow) SetOnFire(duration time.Duration) {
+	a.mu.Lock()
+	a.fireTicks = int64(duration.Seconds() * 20)
+	pos := a.pos
+	a.mu.Unlock()
+
+	for _, v := range a.World().Viewers(pos) {
+		v.ViewEntityState(a)
+	}
+}
+
+// Extinguish ...
+func (a *Arrow) Extinguish() {
+	a.SetOnFire(0)
+}
+
 // BBox ...
 func (a *Arrow) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
@@ -176,6 +209,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		}
 	}
 
+	pastVel := a.vel
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.collisionPos, a.collided = cube.Pos{}, false
@@ -191,9 +225,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		a.setCritical(false)
-		w.PlaySound(m.pos, sound.ArrowHit{})
-
 		if res, ok := result.(trace.BlockResult); ok {
 			a.mu.Lock()
 			a.collisionPos, a.collided = res.BlockPosition(), true
@@ -204,14 +235,28 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
-				living.Hurt(a.damage(), damage.SourceProjectile{Projectile: a, Owner: a.owner})
+				living.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)
 				}
+				if flammable, ok := living.(Flammable); ok && a.OnFireDuration() > 0 {
+					flammable.SetOnFire(time.Second * 5)
+				}
+				if a.punchLevel > 0 {
+					horizontalVel := pastVel
+					horizontalVel[1] = 0
+					if speed := horizontalVel.Len(); speed > 0 {
+						multiplier := (enchantment.Punch{}).Multiplier(a.punchLevel, speed)
+						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
+					}
+				}
 			}
 			a.close = true
 		}
+
+		a.setCritical(false)
+		w.PlaySound(m.pos, sound.ArrowHit{})
 	}
 }
 
@@ -222,14 +267,27 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 }
 
 // New creates and returns an Arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the Arrow
-// by itself.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity {
+// by itself. The second return value is true if an Arrow should be consumed.
+func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion, utility item.Stack) (world.Entity, bool) {
 	arrow := NewTippedArrow(pos, yaw, pitch, owner, tip)
 	arrow.vel = vel
 	arrow.disallowPickup = disallowPickup
 	arrow.obtainArrowOnPickup = obtainArrowOnPickup
 	arrow.setCritical(critical)
-	return arrow
+	if _, ok := utility.Enchantment(enchantment.Flame{}); ok {
+		arrow.fireTicks = int64((enchantment.Flame{}).Duration().Seconds() * 20)
+	}
+	if p, ok := utility.Enchantment(enchantment.Power{}); ok {
+		arrow.baseDamage += (enchantment.Power{}).Damage(p.Level())
+	}
+	if p, ok := utility.Enchantment(enchantment.Punch{}); ok {
+		arrow.punchLevel = p.Level()
+	}
+	_, avoidConsumption := utility.Enchantment(enchantment.Infinity{})
+	if avoidConsumption {
+		arrow.obtainArrowOnPickup = false
+	}
+	return arrow, !avoidConsumption
 }
 
 // Owner returns the world.Entity that fired the Arrow, or nil if it did not have any.
@@ -241,18 +299,13 @@ func (a *Arrow) Owner() world.Entity {
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
 func (a *Arrow) DecodeNBT(data map[string]any) any {
-	arr := a.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.Map[float32](data, "Pitch")),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		nil,
-		false, // Vanilla doesn't save this value, so we don't either.
-		nbtconv.Map[byte](data, "player") == 1,
-		nbtconv.Map[byte](data, "isCreative") == 1,
-		potion.From(nbtconv.Map[int32](data, "auxValue")-1),
-	).(*Arrow)
+	arr := NewTippedArrow(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
+	arr.vel = nbtconv.MapVec3(data, "Motion")
+	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
+	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
 	arr.baseDamage = float64(nbtconv.Map[float32](data, "Damage"))
+	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
+	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
 	if _, ok := data["StuckToBlockPos"]; ok {
 		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
 		arr.collided = true
@@ -263,20 +316,23 @@ func (a *Arrow) DecodeNBT(data map[string]any) any {
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
 func (a *Arrow) EncodeNBT() map[string]any {
 	yaw, pitch := a.Rotation()
-	nbt := map[string]any{
-		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":        yaw,
-		"Pitch":      pitch,
-		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":     a.BaseDamage(),
-		"auxValue":   int32(a.tip.Uint8() + 1),
-		"player":     boolByte(!a.disallowPickup),
-		"isCreative": boolByte(!a.obtainArrowOnPickup),
+	data := map[string]any{
+		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":          yaw,
+		"Pitch":        pitch,
+		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"Damage":       a.BaseDamage(),
+		"Fire":         int16(a.OnFireDuration() * 20),
+		"enchantPunch": byte(a.punchLevel),
+		"auxValue":     int32(a.tip.Uint8() + 1),
+		"player":       boolByte(!a.disallowPickup),
+		"isCreative":   boolByte(!a.obtainArrowOnPickup),
 	}
+	// TODO: Save critical flag if Minecraft ever saves it?
 	if collisionPos, ok := a.CollisionPos(); ok {
-		nbt["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
+		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
 	}
-	return nbt
+	return data
 }
 
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
@@ -304,8 +360,8 @@ func (a *Arrow) checkNearby(w *world.World) {
 }
 
 // damage returns the full damage the arrow should deal, accounting for the velocity.
-func (a *Arrow) damage() float64 {
-	base := math.Ceil(a.Velocity().Len() * a.BaseDamage())
+func (a *Arrow) damage(vel mgl64.Vec3) float64 {
+	base := math.Ceil(vel.Len() * a.BaseDamage())
 	if a.Critical() {
 		return base + float64(rand.Intn(int(base/2+1)))
 	}

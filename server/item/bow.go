@@ -27,6 +27,7 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 
 // Release ...
 func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
+	creative := releaser.GameMode().CreativeInventory()
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
 		return
@@ -38,18 +39,12 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		return
 	}
 
-	var tip potion.Potion
-	creative := releaser.GameMode().CreativeInventory()
-	if arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
+	var arrow Stack
+	var ok bool
+	if arrow, ok = ctx.FirstFunc(func(stack Stack) bool {
 		_, ok := stack.Item().(Arrow)
 		return ok
-	}); ok {
-		tip = arrow.Item().(Arrow).Tip
-		if !creative {
-			ctx.DamageItem(1)
-			ctx.Consume(arrow.Grow(-arrow.Count() + 1))
-		}
-	} else if !creative {
+	}); !ok && !creative {
 		return
 	}
 
@@ -65,13 +60,20 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	}
 
 	if p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity
+		New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion, utility Stack) (world.Entity, bool)
 	}); ok {
+		held, _ := releaser.HeldItems()
+		tip := arrow.Item().(Arrow).Tip
 		player := releaser.EncodeEntity() == "minecraft:player"
-		arrow := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, releaser, force >= 1, !player, !creative, tip)
+		projectile, consume := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, releaser, force >= 1, !player, !creative, tip, held)
+
+		ctx.DamageItem(1)
+		if consume {
+			ctx.Consume(arrow.Grow(-arrow.Count() + 1))
+		}
 
 		releaser.PlaySound(sound.BowShoot{})
-		releaser.World().AddEntity(arrow)
+		releaser.World().AddEntity(projectile)
 	}
 }
 
