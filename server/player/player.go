@@ -2061,14 +2061,16 @@ func (p *Player) CollectExperience(value int) bool {
 			} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
 				_ = p.Armour().Inventory().SetItem(slot, repairedItem)
 			}
-			p.lastXPPickup.Store(time.Now())
-			p.PlaySound(sound.Experience{})
-			return true
 		}
 	}
 
 	p.lastXPPickup.Store(time.Now())
-	return p.AddExperience(value) > 0
+	if value > 0 {
+		return p.AddExperience(value) > 0
+	}
+
+	p.PlaySound(sound.Experience{})
+	return true
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
