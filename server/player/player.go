@@ -596,7 +596,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		m = 20
 	}
 
-	dmg -= -dmg * (m * 0.04)
+	dmg -= -dmg * m * 0.04
 	return math.Max(dmg, 0)
 }
 
@@ -2092,6 +2092,9 @@ func (p *Player) Tick(w *world.World, current int64) {
 	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
+	if !p.AttackImmune() && p.insideOfSolid(w) {
+		p.Hurt(1, damage.SourceSuffocation{})
+	}
 
 	if p.OnFireDuration() > 0 {
 		p.fireTicks.Sub(1)
@@ -2130,6 +2133,29 @@ func (p *Player) Tick(w *world.World, current int64) {
 	} else {
 		p.vel.Store(mgl64.Vec3{})
 	}
+}
+
+// insideOfSolid returns true if the player is inside a solid block.
+func (p *Player) insideOfSolid(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+
+	_, solid := b.Model().(model.Solid)
+	if !solid {
+		// Not solid.
+		return false
+	}
+	d, diffuses := b.(block.LightDiffuser)
+	if diffuses && d.LightDiffusionLevel() == 0 {
+		// Transparent.
+		return false
+	}
+	for _, blockBox := range b.Model().BBox(pos, w) {
+		if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
+			return true
+		}
+	}
+	return false
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it

@@ -30,6 +30,9 @@ type (
 	// SourceVoid is used for damage caused by an entity being in the void.
 	SourceVoid struct{}
 
+	// SourceSuffocation is used for damage caused by an entity suffocating in a block.
+	SourceSuffocation struct{}
+
 	// SourcePoisonEffect is used for damage caused by an effect.Poison or effect.FatalPoison applied to an
 	// entity.
 	SourcePoisonEffect struct {
@@ -81,6 +84,8 @@ func (SourceInstantDamageEffect) ReducedByArmour() bool     { return false }
 func (SourceInstantDamageEffect) ReducedByResistance() bool { return true }
 func (SourceVoid) ReducedByResistance() bool                { return false }
 func (SourceVoid) ReducedByArmour() bool                    { return false }
+func (SourceSuffocation) ReducedByResistance() bool         { return false }
+func (SourceSuffocation) ReducedByArmour() bool             { return false }
 func (SourcePoisonEffect) ReducedByResistance() bool        { return true }
 func (SourcePoisonEffect) ReducedByArmour() bool            { return false }
 func (SourceWitherEffect) ReducedByResistance() bool        { return true }
