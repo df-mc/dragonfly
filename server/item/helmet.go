@@ -53,6 +53,11 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (h Helmet) RepairableBy(i Stack) bool {
+	return armourTierRepairable(h.Tier)(i)
+}
+
 // Helmet ...
 func (h Helmet) Helmet() bool {
 	return true

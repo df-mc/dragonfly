@@ -36,8 +36,12 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sw, ok := e.(swimmer); ok && sw.Swimming() {
 		m.setFlag(dataKeyFlags, dataFlagSwimming)
 	}
-	if b, ok := e.(breather); ok && b.Breathing() {
-		m.setFlag(dataKeyFlags, dataFlagBreathing)
+	if b, ok := e.(breather); ok {
+		m[dataKeyAir] = int16(b.AirSupply().Milliseconds() / 50)
+		m[dataKeyMaxAir] = int16(b.MaxAirSupply().Milliseconds() / 50)
+		if b.Breathing() {
+			m.setFlag(dataKeyFlags, dataFlagBreathing)
+		}
 	}
 	if i, ok := e.(invisible); ok && i.Invisible() {
 		m.setFlag(dataKeyFlags, dataFlagInvisible)
@@ -127,6 +131,7 @@ const (
 	dataKeyCustomDisplay     = 18
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
+	dataKeyMaxAir            = 42
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
 	dataKeyAlwaysShowNameTag = 81
@@ -167,6 +172,8 @@ type swimmer interface {
 
 type breather interface {
 	Breathing() bool
+	AirSupply() time.Duration
+	MaxAirSupply() time.Duration
 }
 
 type immobile interface {
