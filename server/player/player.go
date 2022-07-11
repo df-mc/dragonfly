@@ -70,9 +70,9 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
-	breathing      atomic.Bool
-	breathTicks    atomic.Int64
-	maxBreathTicks atomic.Int64
+	breathing         atomic.Bool
+	airSupplyTicks    atomic.Int64
+	maxAirSupplyTicks atomic.Int64
 
 	cooldownMu sync.Mutex
 	cooldowns  map[itemHash]time.Time
@@ -109,29 +109,29 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:           uuid.New(),
-		offHand:        inventory.New(1, p.broadcastItems),
-		armour:         inventory.NewArmour(p.broadcastArmour),
-		hunger:         newHungerManager(),
-		health:         entity.NewHealthManager(),
-		experience:     entity.NewExperienceManager(),
-		effects:        entity.NewEffectManager(),
-		gameMode:       *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:              *atomic.NewValue[Handler](NopHandler{}),
-		name:           name,
-		skin:           *atomic.NewValue(skin),
-		speed:          *atomic.NewFloat64(0.1),
-		nameTag:        *atomic.NewValue(name),
-		heldSlot:       atomic.NewUint32(0),
-		locale:         language.BritishEnglish,
-		breathing:      *atomic.NewBool(true),
-		breathTicks:    *atomic.NewInt64(300),
-		maxBreathTicks: *atomic.NewInt64(300),
-		scale:          *atomic.NewFloat64(1),
-		immunity:       *atomic.NewValue(time.Now()),
-		pos:            *atomic.NewValue(pos),
-		cooldowns:      make(map[itemHash]time.Time),
-		mc:             &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		uuid:              uuid.New(),
+		offHand:           inventory.New(1, p.broadcastItems),
+		armour:            inventory.NewArmour(p.broadcastArmour),
+		hunger:            newHungerManager(),
+		health:            entity.NewHealthManager(),
+		experience:        entity.NewExperienceManager(),
+		effects:           entity.NewEffectManager(),
+		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:                 *atomic.NewValue[Handler](NopHandler{}),
+		name:              name,
+		skin:              *atomic.NewValue(skin),
+		speed:             *atomic.NewFloat64(0.1),
+		nameTag:           *atomic.NewValue(name),
+		heldSlot:          atomic.NewUint32(0),
+		locale:            language.BritishEnglish,
+		breathing:         *atomic.NewBool(true),
+		airSupplyTicks:    *atomic.NewInt64(300),
+		maxAirSupplyTicks: *atomic.NewInt64(300),
+		scale:             *atomic.NewFloat64(1),
+		immunity:          *atomic.NewValue(time.Now()),
+		pos:               *atomic.NewValue(pos),
+		cooldowns:         make(map[itemHash]time.Time),
+		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -2159,8 +2159,8 @@ func (p *Player) Tick(w *world.World, current int64) {
 func (p *Player) tickAirSupply(w *world.World) {
 	if !p.canBreathe(w) {
 		// TODO: Respiration.
-		if ticks := p.breathTicks.Dec(); ticks <= -20 {
-			p.breathTicks.Store(0)
+		if ticks := p.airSupplyTicks.Dec(); ticks <= -20 {
+			p.airSupplyTicks.Store(0)
 			if !p.AttackImmune() {
 				p.Hurt(2, damage.SourceDrowning{})
 			}
@@ -2168,11 +2168,11 @@ func (p *Player) tickAirSupply(w *world.World) {
 
 		p.breathing.Store(false)
 		p.updateState()
-	} else if max := p.maxBreathTicks.Load(); !p.breathing.Load() && p.breathTicks.Load() < max {
-		p.breathTicks.Add(5)
-		if p.breathTicks.Load() >= max {
+	} else if max := p.maxAirSupplyTicks.Load(); !p.breathing.Load() && p.airSupplyTicks.Load() < max {
+		p.airSupplyTicks.Add(5)
+		if p.airSupplyTicks.Load() >= max {
 			p.breathing.Store(true)
-			p.breathTicks.Store(max)
+			p.airSupplyTicks.Store(max)
 		}
 		p.updateState()
 	}
@@ -2219,23 +2219,23 @@ func (p *Player) starve(w *world.World) {
 
 // AirSupply returns the player's remaining air supply.
 func (p *Player) AirSupply() time.Duration {
-	return time.Duration(p.breathTicks.Load()) * time.Second / 20
+	return time.Duration(p.airSupplyTicks.Load()) * time.Second / 20
 }
 
 // SetAirSupply sets the player's remaining air supply.
 func (p *Player) SetAirSupply(duration time.Duration) {
-	p.breathTicks.Store(duration.Milliseconds() / 50)
+	p.airSupplyTicks.Store(duration.Milliseconds() / 50)
 	p.updateState()
 }
 
 // MaxAirSupply returns the player's maximum air supply.
 func (p *Player) MaxAirSupply() time.Duration {
-	return time.Duration(p.maxBreathTicks.Load()) * time.Second / 20
+	return time.Duration(p.maxAirSupplyTicks.Load()) * time.Second / 20
 }
 
 // SetMaxAirSupply sets the player's maximum air supply.
 func (p *Player) SetMaxAirSupply(duration time.Duration) {
-	p.maxBreathTicks.Store(duration.Milliseconds() / 50)
+	p.maxAirSupplyTicks.Store(duration.Milliseconds() / 50)
 	p.updateState()
 }
 
@@ -2578,6 +2578,9 @@ func (p *Player) load(data Data) {
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 	p.sendFood()
 
+	p.airSupplyTicks.Store(data.AirSupply)
+	p.maxAirSupplyTicks.Store(data.MaxAirSupply)
+
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)
 
@@ -2621,6 +2624,8 @@ func (p *Player) Data() Data {
 		Hunger:          p.hunger.foodLevel,
 		Experience:      p.Experience(),
 		FoodTick:        p.hunger.foodTick,
+		AirSupply:       p.airSupplyTicks.Load(),
+		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
 		GameMode:        p.GameMode(),
