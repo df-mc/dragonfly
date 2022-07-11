@@ -93,7 +93,7 @@ func RegisterBlock(b Block) {
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
-// If the runtime ID cannot be found because the BLock wasn't registered, BlockRuntimeID will panic.
+// If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
 func BlockRuntimeID(b Block) uint32 {
 	if b == nil {
 		return airRID
