@@ -24,6 +24,11 @@ func (SoulSpeed) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
+// Undiscoverable returns true if the enchantment can't be discovered through an enchanting table.
+func (SoulSpeed) Undiscoverable() bool {
+	return true
+}
+
 // CompatibleWithEnchantment ...
 func (SoulSpeed) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
