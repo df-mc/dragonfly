@@ -3,9 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
@@ -31,12 +28,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(func(p *player.Player) {
-		inv := p.Inventory()
-		inv.Clear()
-		inv.AddItem(item.NewStack(item.Bucket{Content: block.Water{}}, 2))
-		inv.AddItem(item.NewStack(block.Dirt{}, 64))
-	}) {
+	for srv.Accept(nil) {
 	}
 }
 
