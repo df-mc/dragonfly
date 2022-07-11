@@ -112,7 +112,7 @@ func ArmourTiers() []ArmourTier {
 func armourTierRepairable(tier ArmourTier) func(Stack) bool {
 	return func(stack Stack) bool {
 		var ok bool
-		switch tier {
+		switch tier.(type) {
 		case ArmourTierLeather:
 			_, ok = stack.Item().(Leather)
 		case ArmourTierGold:
