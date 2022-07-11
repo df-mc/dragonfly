@@ -588,17 +588,50 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-	t := 0
+
+	f := p.enchantmentProtectionFactor(src)
+	if f > 25 {
+		f = 25
+	}
+	m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
+	if m > 20 {
+		m = 20
+	}
+
+	dmg *= m * 0.04
+	return math.Max(dmg, 0)
+}
+
+// protectionEnchantment represents an enchantment that can protect the player from damage.
+type protectionEnchantment interface {
+	Affects(damage.Source) bool
+	Modifier() float64
+}
+
+// enchantmentProtectionFactor returns the combined enchantment protection factor the player inhibits spanning each
+// armour piece.
+func (p *Player) enchantmentProtectionFactor(src damage.Source) (f int) {
 	for _, it := range p.armour.Items() {
-		if p, ok := it.Enchantment(enchantment.Protection{}); ok && (enchantment.Protection{}).Affects(src) {
-			t += p.Level() + 1
+		for _, e := range it.Enchantments() {
+			if p, ok := e.Type().(protectionEnchantment); ok && p.Affects(src) {
+				lvl := e.Level()
+				f += int(math.Floor(float64(6+lvl*lvl) * p.Modifier() / 3))
+			}
 		}
 	}
-	dmg *= (enchantment.Protection{}).Multiplier(t)
-	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
-		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
+	return f
+}
+
+// highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
+func (p *Player) highestArmourEnchantmentLevel(enchant item.EnchantmentType) (t int) {
+	for _, it := range p.armour.Items() {
+		if e, ok := it.Enchantment(enchant); ok {
+			if e.Level() > t {
+				t = e.Level()
+			}
+		}
 	}
-	return math.Max(dmg, 0)
+	return t
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -1038,7 +1071,11 @@ func (p *Player) OnFireDuration() time.Duration {
 
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
-	p.fireTicks.Store(int64(duration.Seconds() * 20))
+	ticks := int64(duration.Seconds() * 20)
+	if level := p.highestArmourEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
+		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
+	}
+	p.fireTicks.Store(ticks)
 	p.updateState()
 }
 

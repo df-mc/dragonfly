@@ -8,11 +8,6 @@ import (
 // Efficiency is an enchantment that increases mining speed.
 type Efficiency struct{}
 
-// Addend returns the mining speed addend from efficiency.
-func (Efficiency) Addend(level int) float64 {
-	return float64(level*level + 1)
-}
-
 // Name ...
 func (Efficiency) Name() string {
 	return "Efficiency"
@@ -36,6 +31,11 @@ func (e Efficiency) MaxCost(level int) int {
 // Rarity ...
 func (Efficiency) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
+}
+
+// Addend returns the mining speed addend from efficiency.
+func (Efficiency) Addend(level int) float64 {
+	return float64(level*level + 1)
 }
 
 // CompatibleWithEnchantment ...

@@ -35,17 +35,6 @@ func (Unbreaking) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// CompatibleWithEnchantment ...
-func (Unbreaking) CompatibleWithEnchantment(item.EnchantmentType) bool {
-	return true
-}
-
-// CompatibleWithItem ...
-func (Unbreaking) CompatibleWithItem(i world.Item) bool {
-	_, ok := i.(item.Durable)
-	return ok
-}
-
 // Reduce returns the amount of damage that should be reduced with unbreaking.
 func (Unbreaking) Reduce(it world.Item, level, amount int) int {
 	after := amount
@@ -56,4 +45,15 @@ func (Unbreaking) Reduce(it world.Item, level, amount int) int {
 		}
 	}
 	return after
+}
+
+// CompatibleWithEnchantment ...
+func (Unbreaking) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (Unbreaking) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Durable)
+	return ok
 }
