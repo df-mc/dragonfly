@@ -575,7 +575,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 					attacker = s.Owner
 				}
 				if l, ok := attacker.(entity.Living); ok {
-					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: l})
+					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
 				}
 			}
 		}

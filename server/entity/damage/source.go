@@ -1,7 +1,6 @@
 package damage
 
 import (
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -71,7 +70,7 @@ type (
 	// SourceThorns is used for damage caused by thorns.
 	SourceThorns struct {
 		// Owner holds the entity wearing the thorns armour.
-		Owner entity.Living
+		Owner world.Entity
 	}
 )
 
