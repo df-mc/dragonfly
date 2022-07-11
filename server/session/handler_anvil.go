@@ -250,7 +250,7 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 				// If the input level is equal to the material level, increase the result level by one.
 				resultLevel++
 			}
-			// Update the level cost (result level - existing level).
+			// Update the level cost. (result level - existing level)
 			levelCost = resultLevel - existingEnchant.Level()
 		}
 
