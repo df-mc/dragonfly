@@ -590,7 +590,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if f > 25 {
 		f = 25
 	}
-	m := float64(f) * (float64(rand.Intn(100-50)+50) / 100.0)
+	m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
 	if m > 20 {
 		m = 20
 	}
