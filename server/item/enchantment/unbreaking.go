@@ -20,6 +20,11 @@ func (Unbreaking) MaxLevel() int {
 	return 3
 }
 
+// Rarity ...
+func (Unbreaking) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
+
 // Reduce returns the amount of damage that should be reduced with unbreaking.
 func (Unbreaking) Reduce(it world.Item, level, amount int) int {
 	after := amount
@@ -32,8 +37,13 @@ func (Unbreaking) Reduce(it world.Item, level, amount int) int {
 	return after
 }
 
-// CompatibleWith ...
-func (Unbreaking) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Durable)
+// CompatibleWithEnchantment ...
+func (Unbreaking) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (Unbreaking) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Durable)
 	return ok
 }
