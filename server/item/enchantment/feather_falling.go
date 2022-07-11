@@ -19,11 +19,6 @@ func (FeatherFalling) MaxLevel() int {
 	return 4
 }
 
-// Rarity ...
-func (FeatherFalling) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityUncommon
-}
-
 // MinCost ...
 func (FeatherFalling) MinCost(level int) int {
 	return 5 + (level-1)*6
@@ -32,6 +27,11 @@ func (FeatherFalling) MinCost(level int) int {
 // MaxCost ...
 func (f FeatherFalling) MaxCost(level int) int {
 	return f.MinCost(level) + 6
+}
+
+// Rarity ...
+func (FeatherFalling) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
 }
 
 // Affects ...

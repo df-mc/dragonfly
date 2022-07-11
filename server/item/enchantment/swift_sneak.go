@@ -19,6 +19,16 @@ func (SwiftSneak) MaxLevel() int {
 	return 3
 }
 
+// MinCost ...
+func (SwiftSneak) MinCost(level int) int {
+	return level * 25
+}
+
+// MaxCost ...
+func (s SwiftSneak) MaxCost(level int) int {
+	return s.MinCost(level) + 50
+}
+
 // Rarity ...
 func (SwiftSneak) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
