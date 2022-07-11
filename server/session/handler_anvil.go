@@ -194,14 +194,14 @@ func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack
 
 // repairWithDurable is a helper function that repairs an item with another durable item stack.
 func repairWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
-	durability := input.MaxDurability() - (input.Durability() + (durable.Durability() + input.MaxDurability()*12/100))
-	if durability < 0 {
-		durability = 0
+	durability := input.Durability() + durable.Durability() + input.MaxDurability()*12/100
+	if durability > input.MaxDurability() {
+		durability = input.MaxDurability()
 	}
 
-	// Ensure the durability increase is less than the input's current damage.
+	// Ensure the durability is higher than the input's current durability.
 	var cost int
-	if durability < input.MaxDurability()-input.Durability() {
+	if durability > input.Durability() {
 		result = result.WithDurability(durability)
 		cost += 2
 	}
