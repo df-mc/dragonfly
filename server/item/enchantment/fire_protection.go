@@ -3,6 +3,7 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // FireProtection is an armour enchantment that decreases fire damage.
@@ -18,6 +19,11 @@ func (FireProtection) MaxLevel() int {
 	return 4
 }
 
+// Rarity ...
+func (FireProtection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
+
 // Affects ...
 func (FireProtection) Affects(src damage.Source) bool {
 	_, fire := src.(damage.SourceFire)
@@ -30,11 +36,16 @@ func (FireProtection) Modifier() float64 {
 	return 1.25
 }
 
-// CompatibleWith ...
-func (FireProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// CompatibleWithEnchantment ...
+func (p FireProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	// TODO: Ensure that the armour does not have blast protection.
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	_, prot := s.Enchantment(Protection{})
-	return ok && !projectileProt && !prot
+	_, projectileProtection := t.(ProjectileProtection)
+	_, protection := t.(Protection)
+	return !projectileProtection && !protection
+}
+
+// CompatibleWithItem ...
+func (FireProtection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }

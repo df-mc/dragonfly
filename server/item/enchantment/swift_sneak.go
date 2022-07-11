@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // SwiftSneak is a non-renewable enchantment that can be applied to leggings and allows the player to walk more quickly
@@ -18,8 +19,18 @@ func (SwiftSneak) MaxLevel() int {
 	return 3
 }
 
-// CompatibleWith ...
-func (SwiftSneak) CompatibleWith(s item.Stack) bool {
-	b, ok := s.Item().(item.LeggingsType)
+// Rarity ...
+func (SwiftSneak) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityVeryRare
+}
+
+// CompatibleWithEnchantment ...
+func (SwiftSneak) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (SwiftSneak) CompatibleWithItem(i world.Item) bool {
+	b, ok := i.(item.LeggingsType)
 	return ok && b.Leggings()
 }

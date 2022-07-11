@@ -3,6 +3,7 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // ProjectileProtection is an armour enchantment that reduces damage from projectiles.
@@ -18,6 +19,11 @@ func (ProjectileProtection) MaxLevel() int {
 	return 4
 }
 
+// Rarity ...
+func (ProjectileProtection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityUncommon
+}
+
 // Affects ...
 func (ProjectileProtection) Affects(src damage.Source) bool {
 	_, projectile := src.(damage.SourceProjectile)
@@ -29,11 +35,16 @@ func (ProjectileProtection) Modifier() float64 {
 	return 1.5
 }
 
-// CompatibleWith ...
-func (ProjectileProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// CompatibleWithEnchantment ...
+func (ProjectileProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	// TODO: Ensure that the armour does not have blast protection.
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, prot := s.Enchantment(Protection{})
-	return ok && !fireProt && !prot
+	_, fireProtection := t.(FireProtection)
+	_, protection := t.(Protection)
+	return !fireProtection && !protection
+}
+
+// CompatibleWithItem ...
+func (ProjectileProtection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }
