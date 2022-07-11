@@ -1974,7 +1974,7 @@ func (p *Player) CollectExperience(value int) bool {
 	}
 
 	mendingItems := make([]item.Stack, 0, 6)
-	offHand, held := p.HeldItems()
+	held, offHand := p.HeldItems()
 	if _, ok := offHand.Enchantment(enchantment.Mending{}); ok && offHand.Durability() < offHand.MaxDurability() {
 		mendingItems = append(mendingItems, offHand)
 	}
