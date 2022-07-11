@@ -70,6 +70,10 @@ type Player struct {
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
+	breathing      atomic.Bool
+	breathTicks    atomic.Int64
+	maxBreathTicks atomic.Int64
+
 	cooldownMu sync.Mutex
 	cooldowns  map[itemHash]time.Time
 	// lastTickedWorld holds the world that the player was in, in the last tick.
@@ -105,26 +109,29 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:          *atomic.NewValue[Handler](NopHandler{}),
-		name:       name,
-		skin:       *atomic.NewValue(skin),
-		speed:      *atomic.NewFloat64(0.1),
-		nameTag:    *atomic.NewValue(name),
-		heldSlot:   atomic.NewUint32(0),
-		locale:     language.BritishEnglish,
-		scale:      *atomic.NewFloat64(1),
-		immunity:   *atomic.NewValue(time.Now()),
-		pos:        *atomic.NewValue(pos),
-		cooldowns:  make(map[itemHash]time.Time),
-		mc:         &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		uuid:           uuid.New(),
+		offHand:        inventory.New(1, p.broadcastItems),
+		armour:         inventory.NewArmour(p.broadcastArmour),
+		hunger:         newHungerManager(),
+		health:         entity.NewHealthManager(),
+		experience:     entity.NewExperienceManager(),
+		effects:        entity.NewEffectManager(),
+		gameMode:       *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:              *atomic.NewValue[Handler](NopHandler{}),
+		name:           name,
+		skin:           *atomic.NewValue(skin),
+		speed:          *atomic.NewFloat64(0.1),
+		nameTag:        *atomic.NewValue(name),
+		heldSlot:       atomic.NewUint32(0),
+		locale:         language.BritishEnglish,
+		breathing:      *atomic.NewBool(true),
+		breathTicks:    *atomic.NewInt64(300),
+		maxBreathTicks: *atomic.NewInt64(300),
+		scale:          *atomic.NewFloat64(1),
+		immunity:       *atomic.NewValue(time.Now()),
+		pos:            *atomic.NewValue(pos),
+		cooldowns:      make(map[itemHash]time.Time),
+		mc:             &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -516,9 +523,12 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
-	if _, ok := p.Effect(effect.FireResistance{}); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+
+	fireSource := source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}
+	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
 		return 0, false
 	}
+
 	immunity := time.Second / 2
 	ctx := event.C()
 	if p.Handler().HandleHurt(ctx, &dmg, &immunity, source); ctx.Cancelled() {
@@ -527,6 +537,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if dmg < 0 {
 		return 0, true
 	}
+
 	totalDamage := p.FinalDamageFrom(dmg, source)
 	damageLeft := totalDamage
 
@@ -553,9 +564,17 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		}
 	}
 
+	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
+	if fireSource {
+		w.PlaySound(pos, sound.Burning{})
+	}
+	if _, ok := source.(damage.SourceDrowning); ok {
+		w.PlaySound(pos, sound.Drowning{})
+	}
+
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
 		p.kill(source)
@@ -1540,8 +1559,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	_, ok := w.Liquid(cube.PosFromVec3(entity.EyePosition(p)))
-	if _, ok2 := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); ok && !ok2 {
+	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); p.insideOfWater(w) && !ok {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -2087,8 +2105,10 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.checkBlockCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
 
-	p.tickFood(w)
 	p.effects.Tick(p)
+
+	p.tickFood(w)
+	p.tickAirSupply(w)
 	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
 	}
@@ -2135,27 +2155,27 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 }
 
-// insideOfSolid returns true if the player is inside a solid block.
-func (p *Player) insideOfSolid(w *world.World) bool {
-	pos := cube.PosFromVec3(entity.EyePosition(p))
-	b, box := w.Block(pos), p.BBox().Translate(p.Position())
-
-	_, solid := b.Model().(model.Solid)
-	if !solid {
-		// Not solid.
-		return false
-	}
-	d, diffuses := b.(block.LightDiffuser)
-	if diffuses && d.LightDiffusionLevel() == 0 {
-		// Transparent.
-		return false
-	}
-	for _, blockBox := range b.Model().BBox(pos, w) {
-		if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
-			return true
+// tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
+func (p *Player) tickAirSupply(w *world.World) {
+	if !p.canBreathe(w) {
+		// TODO: Respiration.
+		if ticks := p.breathTicks.Dec(); ticks <= -20 {
+			p.breathTicks.Store(0)
+			if !p.AttackImmune() {
+				p.Hurt(2, damage.SourceDrowning{})
+			}
 		}
+
+		p.breathing.Store(false)
+		p.updateState()
+	} else if max := p.maxBreathTicks.Load(); !p.breathing.Load() && p.breathTicks.Load() < max {
+		p.breathTicks.Add(5)
+		if p.breathTicks.Load() >= max {
+			p.breathing.Store(true)
+			p.breathTicks.Store(max)
+		}
+		p.updateState()
 	}
-	return false
 }
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
@@ -2195,6 +2215,77 @@ func (p *Player) starve(w *world.World) {
 	if p.Health() > w.Difficulty().StarvationHealthLimit() {
 		p.Hurt(1, damage.SourceStarvation{})
 	}
+}
+
+// AirSupply returns the player's remaining air supply.
+func (p *Player) AirSupply() time.Duration {
+	return time.Duration(p.breathTicks.Load()) * time.Second / 20
+}
+
+// SetAirSupply sets the player's remaining air supply.
+func (p *Player) SetAirSupply(duration time.Duration) {
+	p.breathTicks.Store(duration.Milliseconds() / 50)
+	p.updateState()
+}
+
+// MaxAirSupply returns the player's maximum air supply.
+func (p *Player) MaxAirSupply() time.Duration {
+	return time.Duration(p.maxBreathTicks.Load()) * time.Second / 20
+}
+
+// SetMaxAirSupply sets the player's maximum air supply.
+func (p *Player) SetMaxAirSupply(duration time.Duration) {
+	p.maxBreathTicks.Store(duration.Milliseconds() / 50)
+	p.updateState()
+}
+
+// canBreathe returns true if the player can currently breathe.
+func (p *Player) canBreathe(w *world.World) bool {
+	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
+	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
+	return waterBreathing || conduitPower || !p.insideOfWater(w)
+}
+
+// breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
+// the player's eye height.
+const breathingDistanceBelowEyes = 0.11111111
+
+// insideOfWater returns true if the player is currently underwater.
+func (p *Player) insideOfWater(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	if l, ok := w.Liquid(pos); ok {
+		if _, ok := l.(block.Water); ok {
+			d := float64(l.SpreadDecay()) + 1
+			if l.LiquidFalling() {
+				d = 1
+			}
+			return p.Position().Y() < (pos.Side(cube.FaceUp).Vec3().Y())-(d/9-breathingDistanceBelowEyes)
+		}
+	}
+	return false
+}
+
+// insideOfSolid returns true if the player is inside a solid block.
+func (p *Player) insideOfSolid(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+
+	_, solid := b.Model().(model.Solid)
+	if !solid {
+		// Not solid.
+		return false
+	}
+	d, diffuses := b.(block.LightDiffuser)
+	if diffuses && d.LightDiffusionLevel() == 0 {
+		// Transparent.
+		return false
+	}
+	for _, blockBox := range b.Model().BBox(pos, w) {
+		if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
+			return true
+		}
+	}
+	return false
 }
 
 // checkCollisions checks the player's block collisions.

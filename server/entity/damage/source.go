@@ -33,6 +33,9 @@ type (
 	// SourceSuffocation is used for damage caused by an entity suffocating in a block.
 	SourceSuffocation struct{}
 
+	// SourceDrowning is used for damage caused by an entity drowning in water.
+	SourceDrowning struct{}
+
 	// SourcePoisonEffect is used for damage caused by an effect.Poison or effect.FatalPoison applied to an
 	// entity.
 	SourcePoisonEffect struct {
@@ -86,6 +89,8 @@ func (SourceVoid) ReducedByResistance() bool                { return false }
 func (SourceVoid) ReducedByArmour() bool                    { return false }
 func (SourceSuffocation) ReducedByResistance() bool         { return false }
 func (SourceSuffocation) ReducedByArmour() bool             { return false }
+func (SourceDrowning) ReducedByResistance() bool            { return false }
+func (SourceDrowning) ReducedByArmour() bool                { return false }
 func (SourcePoisonEffect) ReducedByResistance() bool        { return true }
 func (SourcePoisonEffect) ReducedByArmour() bool            { return false }
 func (SourceWitherEffect) ReducedByResistance() bool        { return true }
