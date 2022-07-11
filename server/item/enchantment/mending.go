@@ -17,9 +17,20 @@ func (Mending) MaxLevel() int {
 	return 1
 }
 
-// CompatibleWith ...
-func (Mending) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Durable)
+// Rarity ...
+func (Mending) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityRare
+}
+
+// CompatibleWithEnchantment ...
+func (Mending) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	//_, infinity := s.Enchantment(Infinity{}) todo: infinity
-	return ok // && !infinity
+	// return !infinty
+	return true
+}
+
+// CompatibleWithItem ...
+func (Mending) CompatibleWithItem(s item.Stack) bool {
+	_, ok := s.Item().(item.Durable)
+	return ok
 }
