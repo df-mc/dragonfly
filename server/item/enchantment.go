@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 )
 
@@ -52,22 +53,30 @@ type EnchantmentType interface {
 	CompatibleWithItem(i world.Item) bool
 }
 
+// Enchantable is an interface that can be implemented by items that can be enchanted through an enchanting table.
+type Enchantable interface {
+	// EnchantmentValue returns the value the item may inhibit on possible enchantments.
+	EnchantmentValue() int
+}
+
 // RegisterEnchantment registers an enchantment with the ID passed. Once registered, enchantments may be received
 // by instantiating an EnchantmentType struct (e.g. enchantment.Protection{})
 func RegisterEnchantment(id int, enchantment EnchantmentType) {
-	enchantments[id] = enchantment
+	enchantmentsMap[id] = enchantment
 	enchantmentIds[reflect.TypeOf(enchantment)] = id
+	enchantments = append(enchantments, enchantment)
 }
 
 var (
-	enchantments   = map[int]EnchantmentType{}
-	enchantmentIds = map[reflect.Type]int{}
+	enchantments    []EnchantmentType
+	enchantmentsMap = map[int]EnchantmentType{}
+	enchantmentIds  = map[reflect.Type]int{}
 )
 
 // EnchantmentByID attempts to return an enchantment by the ID it was registered with. If found, the enchantment found
 // is returned and the bool true.
 func EnchantmentByID(id int) (EnchantmentType, bool) {
-	e, ok := enchantments[id]
+	e, ok := enchantmentsMap[id]
 	return e, ok
 }
 
@@ -76,4 +85,9 @@ func EnchantmentByID(id int) (EnchantmentType, bool) {
 func EnchantmentID(e EnchantmentType) (int, bool) {
 	id, ok := enchantmentIds[reflect.TypeOf(e)]
 	return id, ok
+}
+
+// Enchantments returns a slice of all registered enchantments.
+func Enchantments() []EnchantmentType {
+	return enchantments
 }

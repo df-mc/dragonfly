@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"golang.org/x/text/language"
 )
 
 // Controllable represents an entity that may be controlled by a Session. Generally, Controllable is
