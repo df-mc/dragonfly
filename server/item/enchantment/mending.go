@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Mending is an enchantment that repairs the item when experience orbs are collected.
@@ -23,14 +24,14 @@ func (Mending) Rarity() item.EnchantmentRarity {
 }
 
 // CompatibleWithEnchantment ...
-func (Mending) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	//_, infinity := s.Enchantment(Infinity{}) todo: infinity
+func (Mending) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	//_, infinity := t.(Infinity) todo: infinity
 	// return !infinty
 	return true
 }
 
 // CompatibleWithItem ...
-func (Mending) CompatibleWithItem(s item.Stack) bool {
-	_, ok := s.Item().(item.Durable)
+func (Mending) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Durable)
 	return ok
 }
