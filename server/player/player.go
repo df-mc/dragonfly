@@ -545,9 +545,38 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		p.Exhaust(0.1)
 
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
+		damageToAttacker := 0
+		thornsArmour := make([]item.Stack, 0, 4)
 		for slot, it := range p.armour.Slots() {
+			thornsArmour = append(thornsArmour, it)
 			if _, ok := it.Item().(item.Durable); ok {
-				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
+				thornsDamage := 0
+				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Intn(99) < e.Level()*15 {
+					thornsDamage = 1
+					if e.Level() > 10 {
+						damageToAttacker += e.Level() - 10
+					} else {
+						damageToAttacker += 1 + rand.Intn(3)
+					}
+				}
+				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour+thornsDamage))
+			}
+		}
+		if length := len(thornsArmour); length > 0 {
+			slot := rand.Intn(length)
+			it := thornsArmour[slot]
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, 2))
+
+			if damageToAttacker > 0 {
+				var attacker world.Entity
+				if s, ok := source.(damage.SourceEntityAttack); ok {
+					attacker = s.Attacker
+				} else if s, ok := source.(damage.SourceProjectile); ok {
+					attacker = s.Owner
+				}
+				if l, ok := attacker.(entity.Living); ok {
+					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: l})
+				}
 			}
 		}
 	}

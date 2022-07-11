@@ -1,6 +1,9 @@
 package damage
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/world"
+)
 
 type (
 	// Source represents the source of the damage dealt to an entity. This source may be passed to the Hurt()
@@ -64,6 +67,12 @@ type (
 		// respectively.
 		Projectile, Owner world.Entity
 	}
+
+	// SourceThorns is used for damage caused by thorns.
+	SourceThorns struct {
+		// Owner holds the entity wearing the thorns armour.
+		Owner entity.Living
+	}
 )
 
 func (SourceCactus) ReducedByResistance() bool              { return true }
@@ -92,3 +101,5 @@ func (SourceLava) ReducedByResistance() bool                { return true }
 func (SourceLava) ReducedByArmour() bool                    { return true }
 func (SourceProjectile) ReducedByResistance() bool          { return true }
 func (SourceProjectile) ReducedByArmour() bool              { return true }
+func (SourceThorns) ReducedByResistance() bool              { return true }
+func (SourceThorns) ReducedByArmour() bool                  { return false }
