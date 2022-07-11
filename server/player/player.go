@@ -124,7 +124,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		nameTag:           *atomic.NewValue(name),
 		heldSlot:          atomic.NewUint32(0),
 		locale:            language.BritishEnglish,
-		breathing:         *atomic.NewBool(true),
+		breathing:         true,
 		airSupplyTicks:    *atomic.NewInt64(300),
 		maxAirSupplyTicks: *atomic.NewInt64(300),
 		scale:             *atomic.NewFloat64(1),
@@ -2158,14 +2158,17 @@ func (p *Player) Tick(w *world.World, current int64) {
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply(w *world.World) {
 	if !p.canBreathe(w) {
-		// TODO: Respiration.
+		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration{}); ok && rand.Float64() <= (1.0/float64(r.Level()+1)) {
+			// Respiration grants a chance to avoid drowning damage every tick.
+			return
+		}
+
 		if ticks := p.airSupplyTicks.Dec(); ticks <= -20 {
 			p.airSupplyTicks.Store(0)
 			if !p.AttackImmune() {
 				p.Hurt(2, damage.SourceDrowning{})
 			}
 		}
-
 		p.breathing = false
 		p.updateState()
 	} else if max := p.maxAirSupplyTicks.Load(); !p.breathing && p.airSupplyTicks.Load() < max {
