@@ -277,8 +277,8 @@ func (s Stack) WithAnvilCost(anvilCost int) Stack {
 	i := s.Item()
 	_, repairable := i.(Repairable)
 	_, enchantedBook := i.(EnchantedBook)
-	if !repairable || !enchantedBook {
-		// Not a repairable item.
+	if !repairable && !enchantedBook {
+		// This item can't have a repair cost.
 		return s
 	}
 	s.anvilCost = anvilCost
