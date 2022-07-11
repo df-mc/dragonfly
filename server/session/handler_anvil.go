@@ -137,7 +137,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		result = result.WithRepairCost(updatedRepairCost)
 	}
 
-	// If we're in creative mode, we have a 12% chance of the anvil degrading down one state. If that is the case, we
+	// If we're not in creative mode, we have a 12% chance of the anvil degrading down one state. If that is the case, we
 	// need to play the related sound and update the block state. Otherwise, we play a regular anvil use sound.
 	if !c && rand.Float64() < 0.12 {
 		damaged := anvil.Break()
