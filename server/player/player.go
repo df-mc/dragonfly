@@ -2005,6 +2005,9 @@ func (p *Player) CollectExperience(value int) bool {
 			} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
 				_ = p.Armour().Inventory().SetItem(slot, repairedItem)
 			}
+			p.lastXPPickup.Store(time.Now())
+			p.PlaySound(sound.Experience{})
+			return true
 		}
 	}
 
