@@ -48,6 +48,11 @@ func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (p Pickaxe) RepairableBy(i Stack) bool {
+	return toolTierRepairable(p.Tier)(i)
+}
+
 // EncodeItem ...
 func (p Pickaxe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + p.Tier.Name + "_pickaxe", 0

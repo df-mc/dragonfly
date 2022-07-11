@@ -4,29 +4,29 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 )
 
-// DiamondBlock is a block which can only be gained by crafting it.
-type DiamondBlock struct {
+// Diamond is a block which can only be gained by crafting it.
+type Diamond struct {
 	solid
 }
 
 // BreakInfo ...
-func (d DiamondBlock) BreakInfo() BreakInfo {
+func (d Diamond) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
 	}, pickaxeEffective, oneOf(d))
 }
 
 // PowersBeacon ...
-func (DiamondBlock) PowersBeacon() bool {
+func (Diamond) PowersBeacon() bool {
 	return true
 }
 
 // EncodeItem ...
-func (DiamondBlock) EncodeItem() (name string, meta int16) {
+func (Diamond) EncodeItem() (name string, meta int16) {
 	return "minecraft:diamond_block", 0
 }
 
 // EncodeBlock ...
-func (DiamondBlock) EncodeBlock() (string, map[string]any) {
+func (Diamond) EncodeBlock() (string, map[string]any) {
 	return "minecraft:diamond_block", nil
 }
