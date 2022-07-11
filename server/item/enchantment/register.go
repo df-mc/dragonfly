@@ -6,7 +6,7 @@ func init() {
 	item.RegisterEnchantment(0, Protection{})
 	item.RegisterEnchantment(1, FireProtection{})
 	item.RegisterEnchantment(2, FeatherFalling{})
-	item.RegisterEnchantment(3, BlastProtection{})
+	// TODO: (3) Blast Protection.
 	item.RegisterEnchantment(4, ProjectileProtection{})
 	// TODO: (5) Thorns.
 	// TODO: (6) Respiration.
