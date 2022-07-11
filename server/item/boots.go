@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Boots are a defensive item that may be equipped in the boots armour slot. They come in several tiers, like
@@ -68,6 +69,7 @@ func (b Boots) DecodeNBT(data map[string]any) any {
 	if t, ok := b.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
 			t.Colour = rgbaFromInt32(v)
+			b.Tier = t
 		}
 	}
 	return b
@@ -75,7 +77,7 @@ func (b Boots) DecodeNBT(data map[string]any) any {
 
 // EncodeNBT ...
 func (b Boots) EncodeNBT() map[string]any {
-	if t, ok := b.Tier.(ArmourTierLeather); ok {
+	if t, ok := b.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
 		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
 	}
 	return nil

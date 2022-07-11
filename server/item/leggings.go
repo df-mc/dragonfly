@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Leggings are a defensive item that may be equipped in the leggings armour slot. They come in several tiers,
@@ -72,6 +73,7 @@ func (l Leggings) DecodeNBT(data map[string]any) any {
 	if t, ok := l.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
 			t.Colour = rgbaFromInt32(v)
+			l.Tier = t
 		}
 	}
 	return l
@@ -79,7 +81,7 @@ func (l Leggings) DecodeNBT(data map[string]any) any {
 
 // EncodeNBT ...
 func (l Leggings) EncodeNBT() map[string]any {
-	if t, ok := l.Tier.(ArmourTierLeather); ok {
+	if t, ok := l.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
 		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
 	}
 	return nil
