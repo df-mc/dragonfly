@@ -16,9 +16,6 @@ type (
 		ReducedByResistance() bool
 	}
 
-	// SourceCactus is used for damage caused by a Cactus.
-	SourceCactus struct{}
-
 	// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
 	// player.
 	SourceEntityAttack struct {
@@ -34,6 +31,12 @@ type (
 
 	// SourceVoid is used for damage caused by an entity being in the void.
 	SourceVoid struct{}
+
+	// SourceSuffocation is used for damage caused by an entity suffocating in a block.
+	SourceSuffocation struct{}
+
+	// SourceDrowning is used for damage caused by an entity drowning in water.
+	SourceDrowning struct{}
 
 	// SourcePoisonEffect is used for damage caused by an effect.Poison or effect.FatalPoison applied to an
 	// entity.
@@ -71,11 +74,15 @@ type (
 	SourceThorns struct {
 		// Owner holds the entity wearing the thorns armour.
 		Owner world.Entity
+  }
+  
+	// SourceBlock is used for damage caused by a block, such as an anvil.
+	SourceBlock struct {
+		// Block is the block that caused the damage.
+		Block world.Block
 	}
 )
 
-func (SourceCactus) ReducedByResistance() bool              { return true }
-func (SourceCactus) ReducedByArmour() bool                  { return true }
 func (SourceFall) ReducedByArmour() bool                    { return false }
 func (SourceFall) ReducedByResistance() bool                { return true }
 func (SourceLightning) ReducedByArmour() bool               { return true }
@@ -88,6 +95,10 @@ func (SourceInstantDamageEffect) ReducedByArmour() bool     { return false }
 func (SourceInstantDamageEffect) ReducedByResistance() bool { return true }
 func (SourceVoid) ReducedByResistance() bool                { return false }
 func (SourceVoid) ReducedByArmour() bool                    { return false }
+func (SourceSuffocation) ReducedByResistance() bool         { return false }
+func (SourceSuffocation) ReducedByArmour() bool             { return false }
+func (SourceDrowning) ReducedByResistance() bool            { return false }
+func (SourceDrowning) ReducedByArmour() bool                { return false }
 func (SourcePoisonEffect) ReducedByResistance() bool        { return true }
 func (SourcePoisonEffect) ReducedByArmour() bool            { return false }
 func (SourceWitherEffect) ReducedByResistance() bool        { return true }
@@ -102,3 +113,5 @@ func (SourceProjectile) ReducedByResistance() bool          { return true }
 func (SourceProjectile) ReducedByArmour() bool              { return true }
 func (SourceThorns) ReducedByResistance() bool              { return true }
 func (SourceThorns) ReducedByArmour() bool                  { return false }
+func (SourceBlock) ReducedByResistance() bool               { return true }
+func (SourceBlock) ReducedByArmour() bool                   { return true }
