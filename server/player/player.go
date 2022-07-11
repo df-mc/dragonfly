@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -595,7 +596,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		m = 20
 	}
 
-	dmg *= m * 0.04
+	dmg -= -dmg * (m * 0.04)
 	return math.Max(dmg, 0)
 }
 
