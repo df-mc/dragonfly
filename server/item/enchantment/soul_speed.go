@@ -34,6 +34,11 @@ func (SoulSpeed) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
+// Treasure ...
+func (SoulSpeed) Treasure() bool {
+	return true
+}
+
 // CompatibleWithEnchantment ...
 func (SoulSpeed) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true

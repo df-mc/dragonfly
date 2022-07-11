@@ -39,6 +39,11 @@ func (SwiftSneak) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
+// Treasure ...
+func (SwiftSneak) Treasure() bool {
+	return true
+}
+
 // CompatibleWithItem ...
 func (SwiftSneak) CompatibleWithItem(i world.Item) bool {
 	b, ok := i.(item.LeggingsType)

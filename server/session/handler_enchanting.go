@@ -162,6 +162,12 @@ func (s *Session) determineAvailableEnchantments(w *world.World, pos cube.Pos, s
 		}
 }
 
+// treasureEnchantment represents an enchantment that may be a treasure enchantment.
+type treasureEnchantment interface {
+	item.EnchantmentType
+	Treasure() bool
+}
+
 // createEnchantments creates a list of enchantments for the given item stack and returns them.
 func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) []item.Enchantment {
 	it := stack.Item()
@@ -174,6 +180,10 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 	availableEnchants := make([]item.Enchantment, 0, len(item.Enchantments()))
 	for _, enchant := range item.Enchantments() {
 		if book || enchant.CompatibleWithItem(it) {
+			if t, ok := enchant.(treasureEnchantment); ok && t.Treasure() {
+				// Treasure enchantments are not allowed to be used in enchantment tables.
+				continue
+			}
 			for i := enchant.MaxLevel(); i > 0; i-- {
 				if useLevel >= enchant.MinCost(i) && useLevel <= enchant.MaxCost(i) {
 					availableEnchants = append(availableEnchants, item.NewEnchantment(enchant, i))
