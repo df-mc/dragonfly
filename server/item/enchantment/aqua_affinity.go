@@ -9,27 +9,27 @@ import (
 type AquaAffinity struct{}
 
 // Name ...
-func (e AquaAffinity) Name() string {
+func (AquaAffinity) Name() string {
 	return "Aqua Affinity"
 }
 
 // MaxLevel ...
-func (e AquaAffinity) MaxLevel() int {
+func (AquaAffinity) MaxLevel() int {
 	return 1
 }
 
 // Rarity ...
-func (e AquaAffinity) Rarity() item.EnchantmentRarity {
+func (AquaAffinity) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // CompatibleWithEnchantment ...
-func (e AquaAffinity) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (AquaAffinity) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (e AquaAffinity) CompatibleWithItem(i world.Item) bool {
+func (AquaAffinity) CompatibleWithItem(i world.Item) bool {
 	h, ok := i.(item.HelmetType)
 	return ok && h.Helmet()
 }

@@ -8,33 +8,33 @@ import (
 // KnockBack is an enchantment to a sword that increases the sword's knock-back.
 type KnockBack struct{}
 
-// Force returns the increase in knock-back force from the enchantment.
-func (e KnockBack) Force(lvl int) float64 {
-	return float64(lvl) / 2
-}
-
 // Name ...
-func (e KnockBack) Name() string {
+func (KnockBack) Name() string {
 	return "Knockback"
 }
 
 // MaxLevel ...
-func (e KnockBack) MaxLevel() int {
+func (KnockBack) MaxLevel() int {
 	return 2
 }
 
 // Rarity ...
-func (e KnockBack) Rarity() item.EnchantmentRarity {
+func (KnockBack) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
+// Force returns the increase in knock-back force from the enchantment.
+func (KnockBack) Force(lvl int) float64 {
+	return float64(lvl) / 2
+}
+
 // CompatibleWithEnchantment ...
-func (e KnockBack) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (KnockBack) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (e KnockBack) CompatibleWithItem(i world.Item) bool {
+func (KnockBack) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && t.ToolType() == item.TypeSword
 }

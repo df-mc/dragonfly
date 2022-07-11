@@ -9,28 +9,28 @@ import (
 type SilkTouch struct{}
 
 // Name ...
-func (e SilkTouch) Name() string {
+func (SilkTouch) Name() string {
 	return "Silk Touch"
 }
 
 // MaxLevel ...
-func (e SilkTouch) MaxLevel() int {
+func (SilkTouch) MaxLevel() int {
 	return 1
 }
 
 // Rarity ...
-func (e SilkTouch) Rarity() item.EnchantmentRarity {
+func (SilkTouch) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // CompatibleWithEnchantment ...
-func (e SilkTouch) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (SilkTouch) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	// TODO: Fortune.
 	return true
 }
 
 // CompatibleWithItem ...
-func (e SilkTouch) CompatibleWithItem(i world.Item) bool {
+func (SilkTouch) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && (t.ToolType() != item.TypeSword && t.ToolType() != item.TypeNone)
 }
