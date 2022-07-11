@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Thorns is an enchantment that inflicts damage on attackers.
@@ -17,8 +18,18 @@ func (Thorns) MaxLevel() int {
 	return 3
 }
 
-// CompatibleWith ...
-func (Thorns) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// Rarity ...
+func (Thorns) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityVeryRare
+}
+
+// CompatibleWithEnchantment ...
+func (Thorns) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (Thorns) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
 	return ok
 }
