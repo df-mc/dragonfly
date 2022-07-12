@@ -60,12 +60,41 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	}
 
 	if p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion, utility Stack) (world.Entity, bool)
+		New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity
 	}); ok {
-		held, _ := releaser.HeldItems()
 		tip := arrow.Item().(Arrow).Tip
-		player := releaser.EncodeEntity() == "minecraft:player"
-		projectile, consume := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, releaser, force >= 1, !player, !creative, tip, held)
+		held, _ := releaser.HeldItems()
+
+		damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), true
+		for _, enchant := range held.Enchantments() {
+			if f, ok := enchant.Type().(interface {
+				BurnDuration() time.Duration
+			}); ok {
+				burnDuration = f.BurnDuration()
+			}
+			if _, ok := enchant.Type().(interface {
+				PunchMultiplier(level int, horizontalSpeed float64) float64
+			}); ok {
+				punchLevel = enchant.Level()
+			}
+			if p, ok := enchant.Type().(interface {
+				PowerDamage(level int) float64
+			}); ok {
+				damage += p.PowerDamage(enchant.Level())
+			}
+			if i, ok := enchant.Type().(interface {
+				ConsumesArrows() bool
+			}); ok && !i.ConsumesArrows() {
+				consume = false
+			}
+		}
+
+		projectile := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
+		if f, ok := projectile.(interface {
+			SetOnFire(duration time.Duration)
+		}); ok {
+			f.SetOnFire(burnDuration)
+		}
 
 		ctx.DamageItem(1)
 		if consume {

@@ -17,8 +17,8 @@ func (Punch) MaxLevel() int {
 	return 2
 }
 
-// Multiplier returns the knock-back multiplier for the level and horizontal speed.
-func (Punch) Multiplier(level int, horizontalSpeed float64) float64 {
+// PunchMultiplier returns the punch multiplier for the level and horizontal speed.
+func (Punch) PunchMultiplier(level int, horizontalSpeed float64) float64 {
 	return float64(level) * 0.6 / horizontalSpeed
 }
 

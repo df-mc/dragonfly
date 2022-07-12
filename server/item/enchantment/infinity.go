@@ -17,6 +17,11 @@ func (Infinity) MaxLevel() int {
 	return 1
 }
 
+// ConsumesArrows always returns false.
+func (Infinity) ConsumesArrows() bool {
+	return false
+}
+
 // CompatibleWith ...
 func (Infinity) CompatibleWith(s item.Stack) bool {
 	_, ok := s.Item().(item.Bow)

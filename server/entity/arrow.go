@@ -42,17 +42,17 @@ type Arrow struct {
 
 // NewArrow creates a new Arrow and returns it. It is equivalent to calling NewTippedArrow with `potion.Potion{}` as
 // tip.
-func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Arrow {
-	return NewTippedArrow(pos, yaw, pitch, owner, potion.Potion{})
+func NewArrow(pos mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity) *Arrow {
+	return NewTippedArrow(pos, yaw, pitch, damage, owner, potion.Potion{})
 }
 
 // NewTippedArrow creates a new Arrow with a potion effect added to an entity when hit. The Arrow's base damage may be
 // changed by calling Arrow.SetBaseDamage. It is 2.0 by default.
-func NewTippedArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, tip potion.Potion) *Arrow {
+func NewTippedArrow(pos mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, tip potion.Potion) *Arrow {
 	a := &Arrow{
 		yaw:                 yaw,
 		pitch:               pitch,
-		baseDamage:          2.0,
+		baseDamage:          damage,
 		obtainArrowOnPickup: true,
 		owner:               owner,
 		tip:                 tip,
@@ -114,13 +114,6 @@ func (a *Arrow) BaseDamage() float64 {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.baseDamage
-}
-
-// SetBaseDamage sets the base damage the arrow will deal, before accounting for velocity.
-func (a *Arrow) SetBaseDamage(baseDamage float64) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.baseDamage = baseDamage
 }
 
 // Tip returns the potion effect at the tip of the arrow, applied on impact to an entity. This also causes the arrow
@@ -247,7 +240,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 					horizontalVel := pastVel
 					horizontalVel[1] = 0
 					if speed := horizontalVel.Len(); speed > 0 {
-						multiplier := (enchantment.Punch{}).Multiplier(a.punchLevel, speed)
+						multiplier := (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
 						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
 					}
 				}
@@ -268,26 +261,14 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 
 // New creates and returns an Arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the Arrow
 // by itself. The second return value is true if an Arrow should be consumed.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion, utility item.Stack) (world.Entity, bool) {
-	arrow := NewTippedArrow(pos, yaw, pitch, owner, tip)
+func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity {
+	arrow := NewTippedArrow(pos, yaw, pitch, damage, owner, tip)
 	arrow.vel = vel
+	arrow.punchLevel = punchLevel
 	arrow.disallowPickup = disallowPickup
 	arrow.obtainArrowOnPickup = obtainArrowOnPickup
 	arrow.setCritical(critical)
-	if _, ok := utility.Enchantment(enchantment.Flame{}); ok {
-		arrow.fireTicks = int64((enchantment.Flame{}).Duration().Seconds() * 20)
-	}
-	if p, ok := utility.Enchantment(enchantment.Power{}); ok {
-		arrow.baseDamage += (enchantment.Power{}).Damage(p.Level())
-	}
-	if p, ok := utility.Enchantment(enchantment.Punch{}); ok {
-		arrow.punchLevel = p.Level()
-	}
-	_, avoidConsumption := utility.Enchantment(enchantment.Infinity{})
-	if avoidConsumption {
-		arrow.obtainArrowOnPickup = false
-	}
-	return arrow, !avoidConsumption
+	return arrow
 }
 
 // Owner returns the world.Entity that fired the Arrow, or nil if it did not have any.
@@ -299,11 +280,10 @@ func (a *Arrow) Owner() world.Entity {
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
 func (a *Arrow) DecodeNBT(data map[string]any) any {
-	arr := NewTippedArrow(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
+	arr := NewTippedArrow(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
 	arr.vel = nbtconv.MapVec3(data, "Motion")
 	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
 	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
-	arr.baseDamage = float64(nbtconv.Map[float32](data, "Damage"))
 	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
 	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
 	if _, ok := data["StuckToBlockPos"]; ok {

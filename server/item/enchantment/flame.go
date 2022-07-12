@@ -18,8 +18,8 @@ func (Flame) MaxLevel() int {
 	return 1
 }
 
-// Duration always returns a hundred seconds, no matter the level.
-func (Flame) Duration() time.Duration {
+// BurnDuration always returns a hundred seconds, no matter the level.
+func (Flame) BurnDuration() time.Duration {
 	return time.Second * 100
 }
 

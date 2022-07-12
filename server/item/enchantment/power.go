@@ -17,8 +17,8 @@ func (Power) MaxLevel() int {
 	return 5
 }
 
-// Damage returns the extra base damage dealt by the enchantment and level.
-func (Power) Damage(level int) float64 {
+// PowerDamage returns the extra base damage dealt by the enchantment and level.
+func (Power) PowerDamage(level int) float64 {
 	return (float64(level) + 1) / 2
 }
 
