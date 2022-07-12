@@ -68,6 +68,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashHayBale
 	hashHoneycomb
 	hashInvisibleBedrock
 	hashIron
@@ -108,6 +109,7 @@ const (
 	hashPrismarine
 	hashPumpkin
 	hashPumpkinSeeds
+	hashPurpur
 	hashQuartz
 	hashQuartzBricks
 	hashQuartzPillar
@@ -411,6 +413,10 @@ func (Gravel) Hash() uint64 {
 	return hashGravel
 }
 
+func (h HayBale) Hash() uint64 {
+	return hashHayBale | uint64(h.Axis)<<8
+}
+
 func (Honeycomb) Hash() uint64 {
 	return hashHoneycomb
 }
@@ -523,6 +529,10 @@ func (n NetherWart) Hash() uint64 {
 	return hashNetherWart | uint64(n.Age)<<8
 }
 
+func (n NetherWartBlock) Hash() uint64 {
+	return hashNetherWartBlock | uint64(boolByte(n.Warped))<<8
+}
+
 func (Netherite) Hash() uint64 {
 	return hashNetherite
 }
@@ -569,6 +579,10 @@ func (p Pumpkin) Hash() uint64 {
 
 func (p PumpkinSeeds) Hash() uint64 {
 	return hashPumpkinSeeds | uint64(p.Growth)<<8 | uint64(p.Direction)<<16
+}
+
+func (p Purpur) Hash() uint64 {
+	return hashPurpur | uint64(boolByte(p.Pillar))<<8 | uint64(p.Axis)<<9
 }
 
 func (q Quartz) Hash() uint64 {
