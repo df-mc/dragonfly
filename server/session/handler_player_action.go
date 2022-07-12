@@ -27,9 +27,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// Don't do anything for these actions.
 	case protocol.PlayerActionDimensionChangeDone:
 		if s.switchingWorld.CAS(true, false) {
-			s.writePacket(&packet.ChangeDimension{Dimension: int32(s.c.World().Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
-			s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 			s.chunkLoader.Reset()
+			s.changeDimension(int32(s.c.World().Dimension().EncodeDimension()), true)
 		}
 	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)

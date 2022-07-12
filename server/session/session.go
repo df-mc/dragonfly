@@ -394,15 +394,22 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	pos, dim := vec64To32(s.c.Position().Add(entityOffset(s.c))), int32(w.Dimension().EncodeDimension())
-	if w.Dimension() == s.chunkLoader.World().Dimension() {
+	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	if same {
 		dim = (dim + 1) % 3
 		s.switchingWorld.Store(true)
 	}
-	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: pos})
-	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
+}
+
+// changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
+// immediately.
+func (s *Session) changeDimension(dim int32, silent bool) {
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.writePacket(&packet.StopSound{StopAll: silent})
+	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
