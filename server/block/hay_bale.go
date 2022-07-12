@@ -23,9 +23,9 @@ func (HayBale) Instrument() sound.Instrument {
 }
 
 // EntityLand ...
-func (h HayBale) EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64) {
+func (h HayBale) EntityLand(_ cube.Pos, _ *world.World, e world.Entity, distance *float64) {
 	if _, ok := e.(fallDistanceEntity); ok {
-		*distance = *distance * 0.2
+		*distance *= 0.2
 	}
 }
 

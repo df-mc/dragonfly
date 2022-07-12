@@ -97,6 +97,7 @@ const (
 	hashNetherQuartzOre
 	hashNetherSprouts
 	hashNetherWart
+	hashNetherWartBlock
 	hashNetherite
 	hashNetherrack
 	hashNote
@@ -110,6 +111,7 @@ const (
 	hashPumpkin
 	hashPumpkinSeeds
 	hashPurpur
+	hashPurpurPillar
 	hashQuartz
 	hashQuartzBricks
 	hashQuartzPillar
@@ -581,8 +583,12 @@ func (p PumpkinSeeds) Hash() uint64 {
 	return hashPumpkinSeeds | uint64(p.Growth)<<8 | uint64(p.Direction)<<16
 }
 
-func (p Purpur) Hash() uint64 {
-	return hashPurpur | uint64(boolByte(p.Pillar))<<8 | uint64(p.Axis)<<9
+func (Purpur) Hash() uint64 {
+	return hashPurpur
+}
+
+func (p PurpurPillar) Hash() uint64 {
+	return hashPurpurPillar | uint64(p.Axis)<<8
 }
 
 func (q Quartz) Hash() uint64 {
