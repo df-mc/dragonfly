@@ -147,7 +147,7 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 
 	h.setItemInSlot(from, i.Grow(-int(count)), s)
 	h.setItemInSlot(to, dest.Grow(int(count)), s)
-	h.collectRewards(invA, s)
+	h.collectRewards(s, invA, int(from.Slot))
 	return nil
 }
 
@@ -173,16 +173,16 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
-	h.collectRewards(invA, s)
-	h.collectRewards(invB, s)
+	h.collectRewards(s, invA, int(a.Source.Slot))
+	h.collectRewards(s, invA, int(a.Destination.Slot))
 	return nil
 }
 
 // collectRewards checks if the source inventory has rewards for the player, for example, experience rewards when
 // smelting. If it does, it will drop the rewards at the player's location.
-func (h *ItemStackRequestHandler) collectRewards(inv *inventory.Inventory, s *Session) {
+func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inventory, slot int) {
 	w := s.c.World()
-	if inv == s.openedWindow.Load() && s.containerOpened.Load() {
+	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
 		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
 			for _, o := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
 				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
