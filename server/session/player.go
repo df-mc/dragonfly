@@ -113,14 +113,6 @@ const (
 
 // smelter is an interface representing a block used to smelt items.
 type smelter interface {
-	// Durations returns the remaining, maximum, and cook durations of the smelter.
-	Durations() (time.Duration, time.Duration, time.Duration)
-	// UpdateDurations updates the remaining, maximum, and cook durations of the smelter.
-	UpdateDurations(remaining, max, cook time.Duration)
-	// Experience returns the collected experience of the smelter.
-	Experience() int
-	// SetExperience sets the collected experience of the smelter to the given value.
-	SetExperience(xp int)
 	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
 	ResetExperience() int
 }

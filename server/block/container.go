@@ -31,10 +31,6 @@ type Container interface {
 
 // XPContainer represents a block that may contain XP, such as smelters.
 type XPContainer interface {
-	// Experience returns the amount of XP the container has.
-	Experience() int
-	// SetExperience sets the amount of XP the container has.
-	SetExperience(int)
 	// ResetExperience resets the amount of XP the container has to zero, returning the amount of XP that was reset.
 	ResetExperience() int
 }

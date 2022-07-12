@@ -12,7 +12,8 @@ import (
 )
 
 // BlastFurnace is a block that smelts ores, raw metals, iron and gold armor and tools, similar to a furnace, but at
-// twice the speed. It also serves as an armorer's job site block.
+// twice the speed. It also serves as an armorer's job site block. BlastFurnace must be created using NewBlastFurnace
+// so that it is properly initialised.
 type BlastFurnace struct {
 	solid
 	bassDrum
@@ -25,11 +26,10 @@ type BlastFurnace struct {
 }
 
 // NewBlastFurnace creates a new initialised blast furnace. The smelter is properly initialised.
-func NewBlastFurnace(face cube.Face, lit bool, remaining, max, cook time.Duration, xp int) BlastFurnace {
+func NewBlastFurnace(face cube.Face) BlastFurnace {
 	return BlastFurnace{
 		Facing:  face,
-		Lit:     lit,
-		smelter: newSmelter(remaining, max, cook, xp),
+		smelter: newSmelter(),
 	}
 }
 
@@ -66,7 +66,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Facing().Face().Opposite(), false, 0, 0, 0, 0), user, ctx)
+	place(w, pos, NewBlastFurnace(user.Facing().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
@@ -88,7 +88,7 @@ func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item
 func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 	if b.smelter == nil {
 		//noinspection GoAssignmentToReceiver
-		b = NewBlastFurnace(b.Facing, false, 0, 0, 0, 0)
+		b = NewBlastFurnace(b.Facing)
 	}
 	remaining, maximum, cook := b.Durations()
 	return map[string]interface{}{
@@ -107,8 +107,14 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
 
+	xp := int(nbtconv.Map[int16](data, "StoredXPInt"))
+	lit := b.Lit
+
 	//noinspection GoAssignmentToReceiver
-	b = NewBlastFurnace(b.Facing, b.Lit, remaining, maximum, cook, int(nbtconv.Map[int16](data, "StoredXPInt")))
+	b = NewBlastFurnace(b.Facing)
+	b.Lit = lit
+	b.SetExperience(xp)
+	b.SetDurations(remaining, maximum, cook)
 	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return b
 }

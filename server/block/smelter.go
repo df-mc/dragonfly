@@ -26,14 +26,8 @@ type smelter struct {
 }
 
 // newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
-func newSmelter(remaining, max, cook time.Duration, experience int) *smelter {
-	s := &smelter{
-		viewers:           make(map[ContainerViewer]struct{}),
-		experience:        experience,
-		remainingDuration: remaining,
-		cookDuration:      cook,
-		maxDuration:       max,
-	}
+func newSmelter() *smelter {
+	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
 	s.inventory = inventory.New(3, func(slot int, item item.Stack) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
@@ -44,18 +38,25 @@ func newSmelter(remaining, max, cook time.Duration, experience int) *smelter {
 	return s
 }
 
-// Durations returns the remaining, maximum, and cook durations of the smelter.
-func (s *smelter) Durations() (time.Duration, time.Duration, time.Duration) {
+// SetExperience sets the collected experience of the smelter to the given value.
+func (s *smelter) SetExperience(xp int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.remainingDuration, s.maxDuration, s.cookDuration
+	s.experience = xp
 }
 
-// UpdateDurations updates the remaining, maximum, and cook durations of the smelter.
-func (s *smelter) UpdateDurations(remaining, max, cook time.Duration) {
+// SetDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
+func (s *smelter) SetDurations(remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
+}
+
+// Durations returns the remaining, maximum, and cook durations of the smelter.
+func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.remainingDuration, s.maxDuration, s.cookDuration
 }
 
 // Experience returns the collected experience of the smelter.
@@ -63,13 +64,6 @@ func (s *smelter) Experience() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.experience
-}
-
-// SetExperience sets the collected experience of the smelter to the given value.
-func (s *smelter) SetExperience(xp int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.experience = xp
 }
 
 // ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
