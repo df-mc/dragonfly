@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/rogpeppe/go-internal v1.3.0
-	github.com/sandertv/gophertunnel v1.21.2-0.20220708033935-bfc525e9949a
+	github.com/sandertv/gophertunnel v1.22.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/exp v0.0.0-20220328175248-053ad81199eb
 	golang.org/x/text v0.3.7
