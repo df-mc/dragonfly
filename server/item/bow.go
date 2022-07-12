@@ -67,32 +67,22 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 
 		damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), true
 		for _, enchant := range held.Enchantments() {
-			if f, ok := enchant.Type().(interface {
-				BurnDuration() time.Duration
-			}); ok {
+			if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
 				burnDuration = f.BurnDuration()
 			}
-			if _, ok := enchant.Type().(interface {
-				PunchMultiplier(level int, horizontalSpeed float64) float64
-			}); ok {
+			if _, ok := enchant.Type().(interface{ PunchMultiplier(int, float64) float64 }); ok {
 				punchLevel = enchant.Level()
 			}
-			if p, ok := enchant.Type().(interface {
-				PowerDamage(level int) float64
-			}); ok {
+			if p, ok := enchant.Type().(interface{ PowerDamage(int) float64 }); ok {
 				damage += p.PowerDamage(enchant.Level())
 			}
-			if i, ok := enchant.Type().(interface {
-				ConsumesArrows() bool
-			}); ok && !i.ConsumesArrows() {
+			if i, ok := enchant.Type().(interface{ ConsumesArrows() bool }); ok && !i.ConsumesArrows() {
 				consume = false
 			}
 		}
 
 		projectile := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
-		if f, ok := projectile.(interface {
-			SetOnFire(duration time.Duration)
-		}); ok {
+		if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
 			f.SetOnFire(burnDuration)
 		}
 
