@@ -124,6 +124,12 @@ func (l *Loader) Close() error {
 	return nil
 }
 
+// Reset clears all chunks loaded by the Loader and repopulates the loading queue so that they can all be loaded again.
+func (l *Loader) Reset() {
+	l.reset()
+	l.populateLoadQueue()
+}
+
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
 func (l *Loader) reset() {
 	for pos := range l.loaded {

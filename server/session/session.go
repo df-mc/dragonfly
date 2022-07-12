@@ -79,6 +79,8 @@ type Session struct {
 
 	joinMessage, quitMessage *atomic.Value[string]
 
+	switchingWorld atomic.Bool
+
 	closeBackground chan struct{}
 }
 
@@ -392,10 +394,13 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	if w.Dimension() != s.chunkLoader.World().Dimension() {
-		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
-		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	pos, dim := vec64To32(s.c.Position().Add(entityOffset(s.c))), int32(w.Dimension().EncodeDimension())
+	if w.Dimension() == s.chunkLoader.World().Dimension() {
+		dim = (dim + 1) % 3
+		s.switchingWorld.Store(true)
 	}
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: pos})
+	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }

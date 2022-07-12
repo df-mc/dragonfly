@@ -23,8 +23,14 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		return errSelfRuntimeID
 	}
 	switch action {
-	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
+	case protocol.PlayerActionRespawn:
 		// Don't do anything for these actions.
+	case protocol.PlayerActionDimensionChangeDone:
+		if s.switchingWorld.CAS(true, false) {
+			s.writePacket(&packet.ChangeDimension{Dimension: int32(s.c.World().Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+			s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+			s.chunkLoader.Reset()
+		}
 	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
