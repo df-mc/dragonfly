@@ -73,22 +73,22 @@ func (s sandstone) String() string {
 
 // Smooth varient
 func (s sandstone) Smooth() bool {
-	return s == 3
+	return s == SmoothSandstone().sandstone
 }
 
 // Cut varient
 func (s sandstone) Cut() bool {
-	return s == 1
+	return s == CutSandstone().sandstone
 }
 
-// Can be a Slab
+// SlabAble checks if a slab with this type can exist.
 func (s sandstone) SlabAble() bool {
-	return s != 2
+	return s != ChiseledSandstone().sandstone
 }
 
-// Can be a Stairs
+// StairAble checks if a stair with this type can exist.
 func (s sandstone) StairAble() bool {
-	return s == 0 || s == 3
+	return s == NormalSandstone().sandstone || s == SmoothSandstone().sandstone
 }
 
 // SandstoneTypes ...
