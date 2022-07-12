@@ -71,7 +71,7 @@ func (n Note) BreakInfo() BreakInfo {
 }
 
 // FuelInfo ...
-func (NoteBlock) FuelInfo() item.FuelInfo {
+func (Note) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{Duration: time.Second * 15}
 }
 
