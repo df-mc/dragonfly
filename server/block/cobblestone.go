@@ -25,6 +25,11 @@ func (Cobblestone) SmeltInfo() item.SmeltInfo {
 	}
 }
 
+// RepairsStoneTools ...
+func (c Cobblestone) RepairsStoneTools() bool {
+	return !c.Mossy
+}
+
 // EncodeItem ...
 func (c Cobblestone) EncodeItem() (name string, meta int16) {
 	if c.Mossy {

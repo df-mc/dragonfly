@@ -47,6 +47,11 @@ func (b Boots) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
+// RepairableBy ...
+func (b Boots) RepairableBy(i Stack) bool {
+	return armourTierRepairable(b.Tier)(i)
+}
+
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
 	switch b.Tier {

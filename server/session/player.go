@@ -89,10 +89,12 @@ const (
 	craftingGridSizeLarge   = 9
 	craftingGridSmallOffset = 28
 	craftingGridLargeOffset = 32
-	craftingGridResult      = 50
+	craftingResult          = 50
 )
 
 const (
+	containerAnvilInput        = 0
+	containerAnvilMaterial     = 1
 	containerArmour            = 6
 	containerChest             = 7
 	containerBeacon            = 8
@@ -108,7 +110,7 @@ const (
 	containerSmokerInput       = 45
 	containerBarrel            = 57
 	containerCursor            = 58
-	containerCreativeOutput    = 59
+	containerOutput            = 59
 )
 
 // smelter is an interface representing a block used to smelt items.
@@ -121,7 +123,7 @@ type smelter interface {
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerCreativeOutput, containerCursor:
+	case containerCraftingGrid, containerOutput, containerCursor:
 		// UI inventory.
 		return s.ui, true
 	case containerHotbar, containerInventory, containerFullInventory:
@@ -135,6 +137,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerBeacon:
 		if s.containerOpened.Load() {
 			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
+				return s.ui, true
+			}
+		}
+	case containerAnvilInput, containerAnvilMaterial:
+		if s.containerOpened.Load() {
+			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}

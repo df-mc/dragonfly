@@ -49,6 +49,11 @@ func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (p Pickaxe) RepairableBy(i Stack) bool {
+	return toolTierRepairable(p.Tier)(i)
+}
+
 // SmeltInfo ...
 func (p Pickaxe) SmeltInfo() SmeltInfo {
 	switch p.Tier {

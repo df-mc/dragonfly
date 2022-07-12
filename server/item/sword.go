@@ -73,6 +73,11 @@ func (s Sword) FuelInfo() FuelInfo {
 	return FuelInfo{}
 }
 
+// RepairableBy ...
+func (s Sword) RepairableBy(i Stack) bool {
+	return toolTierRepairable(s.Tier)(i)
+}
+
 // EncodeItem ...
 func (s Sword) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Tier.Name + "_sword", 0

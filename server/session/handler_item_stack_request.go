@@ -2,18 +2,13 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
-	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"golang.org/x/exp/slices"
 	"math"
 	"math/rand"
 	"time"
@@ -91,6 +86,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleCraft(a, s)
 		case *protocol.AutoCraftRecipeStackRequestAction:
 			err = h.handleAutoCraft(a, s)
+		case *protocol.CraftRecipeOptionalStackRequestAction:
+			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
@@ -195,187 +192,6 @@ func (h *ItemStackRequestHandler) collectRewards(inv *inventory.Inventory, s *Se
 	}
 }
 
-// handleCraft handles the CraftRecipe request action.
-func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
-	craft, ok := s.recipes[a.RecipeNetworkID]
-	if !ok {
-		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
-	}
-	_, shaped := craft.(recipe.Shaped)
-	_, shapeless := craft.(recipe.Shapeless)
-	if !shaped && !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
-	}
-
-	size := s.craftingSize()
-	offset := s.craftingOffset()
-	consumed := make([]bool, size)
-	for _, expected := range craft.Input() {
-		var processed bool
-		for slot := offset; slot < offset+size; slot++ {
-			if consumed[slot-offset] {
-				// We've already consumed this slot, skip it.
-				continue
-			}
-			has, _ := s.ui.Item(int(slot))
-			_, variants := expected.Value("variants")
-			if has.Empty() != expected.Empty() || has.Count() < expected.Count() {
-				// We can't process this item, as it's not a part of the recipe.
-				continue
-			}
-			if !variants && !has.Comparable(expected) {
-				// Not the same item without accounting for variants.
-				continue
-			}
-			if variants {
-				nameOne, _ := has.Item().EncodeItem()
-				nameTwo, _ := expected.Item().EncodeItem()
-				if nameOne != nameTwo {
-					// Not the same item even when accounting for variants.
-					continue
-				}
-			}
-			processed, consumed[slot-offset] = true, true
-			st := has.Grow(-expected.Count())
-			h.setItemInSlot(protocol.StackRequestSlotInfo{
-				ContainerID:    containerCraftingGrid,
-				Slot:           byte(slot),
-				StackNetworkID: item_id(st),
-			}, st, s)
-			break
-		}
-		if !processed {
-			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
-		}
-	}
-
-	output := craft.Output()
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingGrid,
-		Slot:           craftingGridResult,
-		StackNetworkID: item_id(output[0]),
-	}, output[0], s)
-	return nil
-}
-
-// handleAutoCraft handles the AutoCraftRecipe request action.
-func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session) error {
-	craft, ok := s.recipes[a.RecipeNetworkID]
-	if !ok {
-		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
-	}
-	_, shaped := craft.(recipe.Shaped)
-	_, shapeless := craft.(recipe.Shapeless)
-	if !shaped && !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
-	}
-
-	input := make([]item.Stack, 0, len(craft.Input()))
-	for _, i := range craft.Input() {
-		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
-	}
-
-	expectancies := make([]item.Stack, 0, len(input))
-	for _, i := range input {
-		if i.Empty() {
-			// We don't actually need this item - it's empty, so avoid putting it in our expectancies.
-			continue
-		}
-
-		_, variants := i.Value("variants")
-		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
-			if variants {
-				nameOne, _ := st.Item().EncodeItem()
-				nameTwo, _ := i.Item().EncodeItem()
-				return nameOne == nameTwo
-			}
-			return st.Comparable(i)
-		}); ind >= 0 {
-			i = i.Grow(expectancies[ind].Count())
-			expectancies = slices.Delete(expectancies, ind, ind+1)
-		}
-		expectancies = append(expectancies, i)
-	}
-
-	for _, expected := range expectancies {
-		_, variants := expected.Value("variants")
-		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
-			for slot, has := range inv.Slots() {
-				if has.Empty() {
-					// We don't have this item, skip it.
-					continue
-				}
-				if !variants && !has.Comparable(expected) {
-					// Not the same item without accounting for variants.
-					continue
-				}
-				if variants {
-					nameOne, _ := has.Item().EncodeItem()
-					nameTwo, _ := expected.Item().EncodeItem()
-					if nameOne != nameTwo {
-						// Not the same item even when accounting for variants.
-						continue
-					}
-				}
-
-				remaining, removal := expected.Count(), has.Count()
-				if remaining < removal {
-					removal = remaining
-				}
-
-				expected, has = expected.Grow(-removal), has.Grow(-removal)
-				h.setItemInSlot(protocol.StackRequestSlotInfo{
-					ContainerID:    id,
-					Slot:           byte(slot),
-					StackNetworkID: item_id(has),
-				}, has, s)
-				if expected.Empty() {
-					// Consumed this item, so go to the next one.
-					break
-				}
-			}
-			if expected.Empty() {
-				// Consumed this item, so go to the next one.
-				break
-			}
-		}
-		if !expected.Empty() {
-			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
-		}
-	}
-
-	output := make([]item.Stack, 0, len(craft.Output()))
-	for _, o := range craft.Output() {
-		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
-	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCraftingGrid,
-		Slot:           craftingGridResult,
-		StackNetworkID: item_id(output[0]),
-	}, output[0], s)
-	return nil
-}
-
-// handleCreativeCraft handles the CreativeCraft request action.
-func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeStackRequestAction, s *Session) error {
-	if !s.c.GameMode().CreativeInventory() {
-		return fmt.Errorf("can only craft creative items in gamemode creative/spectator")
-	}
-	index := a.CreativeItemNetworkID - 1
-	if int(index) >= len(creative.Items()) {
-		return fmt.Errorf("creative item with network ID %v does not exist", index)
-	}
-	it := creative.Items()[index]
-	it = it.Grow(it.MaxCount() - 1)
-
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID:    containerCreativeOutput,
-		Slot:           50,
-		StackNetworkID: item_id(it),
-	}, it, s)
-	return nil
-}
-
 // handleDestroy handles the destroying of an item by moving it into the creative inventory.
 func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestAction, s *Session) error {
 	if h.ignoreDestroy {
@@ -417,54 +233,6 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	return nil
 }
 
-// handleBeaconPayment handles the selection of effects in a beacon and the removal of the item used to pay
-// for those effects.
-func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
-	slot := protocol.StackRequestSlotInfo{
-		ContainerID: containerBeacon,
-		Slot:        0x1b,
-	}
-	// First check if there actually is a beacon opened.
-	if !s.containerOpened.Load() {
-		return fmt.Errorf("no beacon container opened")
-	}
-	pos := s.openedPos.Load()
-	beacon, ok := s.c.World().Block(pos).(block.Beacon)
-	if !ok {
-		return fmt.Errorf("no beacon container opened")
-	}
-
-	// Check if the item present in the beacon slot is valid.
-	payment, _ := h.itemInSlot(slot, s)
-	if payable, ok := payment.Item().(item.BeaconPayment); !ok || !payable.PayableForBeacon() {
-		return fmt.Errorf("item %#v in beacon slot cannot be used as payment", payment)
-	}
-
-	// Check if the effects are valid and allowed for the beacon's level.
-	if !h.validBeaconEffect(a.PrimaryEffect, beacon) {
-		return fmt.Errorf("primary effect selected is not allowed: %v for level %v", a.PrimaryEffect, beacon.Level())
-	} else if !h.validBeaconEffect(a.SecondaryEffect, beacon) || (beacon.Level() < 4 && a.SecondaryEffect != 0) {
-		return fmt.Errorf("secondary effect selected is not allowed: %v for level %v", a.SecondaryEffect, beacon.Level())
-	}
-
-	primary, pOk := effect.ByID(int(a.PrimaryEffect))
-	secondary, sOk := effect.ByID(int(a.SecondaryEffect))
-	if pOk {
-		beacon.Primary = primary.(effect.LastingType)
-	}
-	if sOk {
-		beacon.Secondary = secondary.(effect.LastingType)
-	}
-	s.c.World().SetBlock(pos, beacon, nil)
-
-	// The client will send a Destroy action after this action, but we can't rely on that because the client
-	// could just not send it.
-	// We just ignore the next Destroy action and set the item to air here.
-	h.setItemInSlot(slot, item.NewStack(block.Air{}, 0), s)
-	h.ignoreDestroy = true
-	return nil
-}
-
 // handleMineBlock handles the action associated with a block being mined by the player. This seems to be a workaround
 // by Mojang to deal with the durability changes client-side.
 func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequestAction, s *Session) error {
@@ -480,25 +248,7 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 	// Update the slots through ItemStackResponses, don't actually do anything special with this action.
 	i, _ := h.itemInSlot(slot, s)
 	h.setItemInSlot(slot, i, s)
-
 	return nil
-}
-
-// validBeaconEffect checks if the ID passed is a valid beacon effect.
-func (h *ItemStackRequestHandler) validBeaconEffect(id int32, beacon block.Beacon) bool {
-	switch id {
-	case 1, 3:
-		return beacon.Level() >= 1
-	case 8, 11:
-		return beacon.Level() >= 2
-	case 5:
-		return beacon.Level() >= 3
-	case 10:
-		return beacon.Level() >= 4
-	case 0:
-		return true
-	}
-	return false
 }
 
 // verifySlots verifies a list of slots passed.

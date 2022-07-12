@@ -29,6 +29,11 @@ func (p Planks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p))
 }
 
+// RepairsWoodTools ...
+func (p Planks) RepairsWoodTools() bool {
+	return true
+}
+
 // FuelInfo ...
 func (Planks) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{Duration: time.Second * 15}

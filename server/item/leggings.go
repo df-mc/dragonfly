@@ -62,6 +62,11 @@ func (l Leggings) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (l Leggings) RepairableBy(i Stack) bool {
+	return armourTierRepairable(l.Tier)(i)
+}
+
 // SmeltInfo ...
 func (l Leggings) SmeltInfo() SmeltInfo {
 	switch l.Tier {
