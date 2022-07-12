@@ -3,11 +3,17 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"runtime/pprof"
+	"time"
 )
 
 func main() {
@@ -28,8 +34,38 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(nil) {
+	go func() {
+		time.Sleep(5 * time.Second)
+
+		f, err := os.Create("mem.pprof")
+		if err != nil {
+			panic(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+
+		fmt.Println("done")
+	}()
+
+	for srv.Accept(func(p *player.Player) {
+		p.SetGameMode(world.GameModeSurvival)
+		p.Handle(h{p: p})
+	}) {
 	}
+}
+
+type h struct {
+	player.NopHandler
+
+	p *player.Player
+}
+
+func (h h) HandleChat(*event.Context, *string) {
+	explosion.Config{
+		World: h.p.World(),
+		Pos:   h.p.Position(),
+		Size:  4,
+	}.Do()
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.

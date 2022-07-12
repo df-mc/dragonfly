@@ -11,6 +11,10 @@ type Bedrock struct {
 	InfiniteBurning bool
 }
 
+func (Bedrock) BlastResistance() float64 {
+	return 3600000
+}
+
 // EncodeItem ...
 func (Bedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:bedrock", 0

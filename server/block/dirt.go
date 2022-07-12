@@ -14,6 +14,10 @@ type Dirt struct {
 	Coarse bool
 }
 
+func (Dirt) BlastResistance() float64 {
+	return 0.5
+}
+
 // SoilFor ...
 func (d Dirt) SoilFor(block world.Block) bool {
 	switch block.(type) {

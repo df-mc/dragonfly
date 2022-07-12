@@ -11,6 +11,10 @@ type Grass struct {
 	solid
 }
 
+func (Grass) BlastResistance() float64 {
+	return 0.6
+}
+
 // plantSelection are the plants that are picked from when a bone meal is attempted.
 // TODO: Base plant selection on current biome.
 var plantSelection = []world.Block{
