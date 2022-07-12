@@ -64,10 +64,13 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	if p, ok := proj.(interface {
 		New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity
 	}); ok {
-		tip := arrow.Item().(Arrow).Tip
-		held, _ := releaser.HeldItems()
+		var tip potion.Potion
+		if !arrow.Empty() {
+			tip = arrow.Item().(Arrow).Tip
+		}
 
-		damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), true
+		held, _ := releaser.HeldItems()
+		damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
 		for _, enchant := range held.Enchantments() {
 			if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
 				burnDuration = f.BurnDuration()
