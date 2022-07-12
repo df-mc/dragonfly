@@ -30,21 +30,23 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	creative := releaser.GameMode().CreativeInventory()
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
+		// The player must hold the bow for at least three ticks.
 		return
 	}
 
 	d := float64(ticks) / 20
 	force := math.Min((d*d+d*2)/3, 1)
 	if force < 0.1 {
+		// The force must be at least 0.1.
 		return
 	}
 
-	var arrow Stack
-	var ok bool
-	if arrow, ok = ctx.FirstFunc(func(stack Stack) bool {
+	arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
 		_, ok := stack.Item().(Arrow)
 		return ok
-	}); !ok && !creative {
+	})
+	if !ok && !creative {
+		// No arrows in inventory and not in creative mode.
 		return
 	}
 
