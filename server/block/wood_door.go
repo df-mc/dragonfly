@@ -50,7 +50,7 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		}
 		return
 	}
-	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
+	if full, _, _ := w.Block(pos.Side(cube.FaceDown)).Model().SupportType(cube.FaceUp).Supports(); !full {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
@@ -70,7 +70,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
+	if full, _, _ := w.Block(below).Model().SupportType(cube.FaceUp).Supports(); !full {
 		return false
 	}
 	d.Facing = user.Facing()

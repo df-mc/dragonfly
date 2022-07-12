@@ -28,7 +28,7 @@ func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if !used {
 		return false
 	}
-	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
+	if _, center, _ := w.Block(pos.Side(cube.FaceDown)).Model().SupportType(cube.FaceUp).Supports(); !center {
 		return false
 	}
 	if liquid, ok := w.Liquid(pos); ok {
@@ -61,7 +61,7 @@ func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // NeighbourUpdateTick ...
 func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
+	if _, center, _ := w.Block(pos.Side(cube.FaceDown)).Model().SupportType(cube.FaceUp).Supports(); !center {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		return

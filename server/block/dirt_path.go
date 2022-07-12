@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -19,7 +20,7 @@ func (p DirtPath) Till() (world.Block, bool) {
 // NeighbourUpdateTick handles the turning from dirt path into dirt if a block is placed on top of it.
 func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	up := pos.Add(cube.Pos{0, 1})
-	if w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
+	if (w.Block(up).Model() != model.Empty{}) {
 		// A block with a solid side at the bottom was placed onto this one.
 		w.SetBlock(pos, Dirt{}, nil)
 	}

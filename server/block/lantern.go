@@ -27,12 +27,12 @@ func (l Lantern) Model() world.BlockModel {
 func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if l.Hanging {
 		up := pos.Side(cube.FaceUp)
-		if _, ok := w.Block(up).(Chain); !ok && !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
+		if _, center, _ := w.Block(up).Model().SupportType(cube.FaceDown).Supports(); !center {
 			w.SetBlock(pos, nil, nil)
 		}
 	} else {
 		down := pos.Side(cube.FaceDown)
-		if !w.Block(down).Model().FaceSolid(down, cube.FaceUp, w) {
+		if _, center, _ := w.Block(down).Model().SupportType(cube.FaceUp).Supports(); !center {
 			w.SetBlock(pos, nil, nil)
 		}
 	}
@@ -50,14 +50,14 @@ func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 		return false
 	}
 	if face == cube.FaceDown {
-		upPos := pos.Side(cube.FaceUp)
-		if _, ok := w.Block(upPos).(Chain); !ok && !w.Block(upPos).Model().FaceSolid(upPos, cube.FaceDown, w) {
+		up := pos.Side(cube.FaceUp)
+		if _, center, _ := w.Block(up).Model().SupportType(cube.FaceDown).Supports(); !center {
 			face = cube.FaceUp
 		}
 	}
 	if face != cube.FaceDown {
-		downPos := pos.Side(cube.FaceDown)
-		if !w.Block(downPos).Model().FaceSolid(downPos, cube.FaceUp, w) {
+		down := pos.Side(cube.FaceDown)
+		if _, center, _ := w.Block(down).Model().SupportType(cube.FaceUp).Supports(); !center {
 			return false
 		}
 	}
