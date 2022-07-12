@@ -71,16 +71,6 @@ func (s sandstone) String() string {
 	panic("unknown sandstone type")
 }
 
-// Smooth varient
-func (s sandstone) Smooth() bool {
-	return s == SmoothSandstone().sandstone
-}
-
-// Cut varient
-func (s sandstone) Cut() bool {
-	return s == CutSandstone().sandstone
-}
-
 // SlabAble checks if a slab with this type can exist.
 func (s sandstone) SlabAble() bool {
 	return s != ChiseledSandstone().sandstone
