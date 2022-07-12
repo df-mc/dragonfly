@@ -65,6 +65,8 @@ func init() {
 	world.RegisterBlock(NetherSprouts{})
 	world.RegisterBlock(Netherite{})
 	world.RegisterBlock(Netherrack{})
+	world.RegisterBlock(NetherWartBlock{})
+	world.RegisterBlock(NetherWartBlock{Warped: true})
 	world.RegisterBlock(Note{})
 	world.RegisterBlock(Obsidian{Crying: true})
 	world.RegisterBlock(Obsidian{})
@@ -101,6 +103,7 @@ func init() {
 		world.RegisterBlock(LapisOre{Type: ore})
 	}
 
+	registerAll(allAnvils())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -128,6 +131,7 @@ func init() {
 	registerAll(allFlowers())
 	registerAll(allFroglight())
 	registerAll(allGlazedTerracotta())
+	registerAll(allHayBales())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
 	registerAll(allLadders())
@@ -145,8 +149,10 @@ func init() {
 	registerAll(allPrismarine())
 	registerAll(allPumpkinStems())
 	registerAll(allPumpkins())
+	registerAll(allPurpurs())
 	registerAll(allQuartz())
 	registerAll(allQuartzStairs())
+	registerAll(allSandstoneSlabs())
 	registerAll(allSandstoneStairs())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
@@ -223,6 +229,7 @@ func init() {
 	world.RegisterItem(Granite{})
 	world.RegisterItem(Grass{})
 	world.RegisterItem(Gravel{})
+	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(IronBars{})
@@ -246,6 +253,8 @@ func init() {
 	world.RegisterItem(NetherWart{})
 	world.RegisterItem(Netherite{})
 	world.RegisterItem(Netherrack{})
+	world.RegisterItem(NetherWartBlock{})
+	world.RegisterItem(NetherWartBlock{Warped: true})
 	world.RegisterItem(Note{Pitch: 24})
 	world.RegisterItem(Obsidian{Crying: true})
 	world.RegisterItem(Obsidian{})
@@ -256,6 +265,8 @@ func init() {
 	world.RegisterItem(PumpkinSeeds{})
 	world.RegisterItem(Pumpkin{Carved: true})
 	world.RegisterItem(Pumpkin{})
+	world.RegisterItem(Purpur{})
+	world.RegisterItem(PurpurPillar{})
 	world.RegisterItem(QuartzBricks{})
 	world.RegisterItem(QuartzPillar{})
 	world.RegisterItem(QuartzStairs{Smooth: true})
@@ -266,10 +277,6 @@ func init() {
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
 	world.RegisterItem(ReinforcedDeepslate{})
-	world.RegisterItem(SandstoneStairs{Red: true, Smooth: true})
-	world.RegisterItem(SandstoneStairs{Red: true})
-	world.RegisterItem(SandstoneStairs{Smooth: true})
-	world.RegisterItem(SandstoneStairs{})
 	world.RegisterItem(Sand{Red: true})
 	world.RegisterItem(Sand{})
 	world.RegisterItem(SeaLantern{})
@@ -300,11 +307,23 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem(c.(world.Item))
 	}
-	for _, s := range allSandstones() {
-		world.RegisterItem(s.(world.Item))
+	for _, t := range SandstoneTypes() {
+		world.RegisterItem(Sandstone{Type: t, Red: true})
+		world.RegisterItem(Sandstone{Type: t})
+		if t.SlabAble() {
+			world.RegisterItem(SandstoneSlab{Type: t, Red: true})
+			world.RegisterItem(SandstoneSlab{Type: t})
+		}
+		if t.StairAble() {
+			world.RegisterItem(SandstoneStairs{Type: t, Red: true})
+			world.RegisterItem(SandstoneStairs{Type: t})
+		}
 	}
 	for _, s := range allStoneBricks() {
 		world.RegisterItem(s.(world.Item))
+	}
+	for _, t := range AnvilTypes() {
+		world.RegisterItem(Anvil{Type: t})
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Carpet{Colour: c})

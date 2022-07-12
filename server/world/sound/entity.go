@@ -9,6 +9,12 @@ type Attack struct {
 	sound
 }
 
+// Drowning is a sound played when an entity is drowning in water.
+type Drowning struct{ sound }
+
+// Burning is a sound played when an entity is on fire.
+type Burning struct{ sound }
+
 // Burp is a sound played when a player finishes eating an item.
 type Burp struct{ sound }
 

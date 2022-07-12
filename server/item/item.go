@@ -1,10 +1,14 @@
 package item
 
 import (
+	"encoding/binary"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"golang.org/x/text/language"
+	"image/color"
 	"math"
 	"time"
 )
@@ -192,6 +196,19 @@ func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
 }
 
+// DisplayName returns the display name of the item as shown in game in the language passed. It panics if an unknown
+// item is passed in.
+func DisplayName(item world.Item, locale language.Tag) string {
+	if c, ok := item.(world.CustomItem); ok {
+		return c.Name()
+	}
+	name, ok := lang.DisplayName(item, locale)
+	if !ok {
+		panic("should never happen")
+	}
+	return name
+}
+
 // directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
 // returned is always 1.
 func directionVector(e world.Entity) mgl64.Vec3 {
@@ -214,4 +231,22 @@ func eyePosition(e world.Entity) mgl64.Vec3 {
 		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
 	}
 	return pos
+}
+
+// Int32FromRGBA converts a color.RGBA into an int32. These int32s are present in things such as signs and dyed leather armour.
+func int32FromRGBA(x color.RGBA) int32 {
+	if x.R == 0 && x.G == 0 && x.B == 0 {
+		// Default to black colour. The default (0x000000) is a transparent colour. Text with this colour will not show
+		// up on the sign.
+		return int32(-0x1000000)
+	}
+	return int32(binary.BigEndian.Uint32([]byte{x.A, x.R, x.G, x.B}))
+}
+
+// rgbaFromInt32 converts an int32 into a color.RGBA. These int32s are present in things such as signs and dyed leather armour.
+func rgbaFromInt32(x int32) color.RGBA {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, uint32(x))
+
+	return color.RGBA{A: b[0], R: b[1], G: b[2], B: b[3]}
 }

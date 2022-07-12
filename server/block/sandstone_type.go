@@ -71,6 +71,16 @@ func (s sandstone) String() string {
 	panic("unknown sandstone type")
 }
 
+// SlabAble checks if a slab with this type can exist.
+func (s sandstone) SlabAble() bool {
+	return s != ChiseledSandstone().sandstone
+}
+
+// StairAble checks if a stair with this type can exist.
+func (s sandstone) StairAble() bool {
+	return s == NormalSandstone().sandstone || s == SmoothSandstone().sandstone
+}
+
 // SandstoneTypes ...
 func SandstoneTypes() []SandstoneType {
 	return []SandstoneType{NormalSandstone(), CutSandstone(), ChiseledSandstone(), SmoothSandstone()}

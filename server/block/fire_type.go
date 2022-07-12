@@ -33,6 +33,17 @@ func (f fire) LightLevel() uint8 {
 	panic("unknown fire type")
 }
 
+// Damage returns the amount of damage taken by entities inside the fire.
+func (f fire) Damage() float64 {
+	switch f {
+	case 0:
+		return 1
+	case 1:
+		return 2
+	}
+	panic("unknown fire type")
+}
+
 // Name ...
 func (f fire) Name() string {
 	switch f {

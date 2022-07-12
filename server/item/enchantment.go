@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 )
 
@@ -38,9 +39,14 @@ type EnchantmentType interface {
 	Name() string
 	// MaxLevel returns the maximum level the enchantment should be able to have.
 	MaxLevel() int
-	// CompatibleWith is called when an enchantment is added to an item. It can be used to check if
-	// the enchantment is compatible with the item stack based on the item type, current enchantments etc.
-	CompatibleWith(s Stack) bool
+	// Rarity returns the enchantment's rarity.
+	Rarity() EnchantmentRarity
+	// CompatibleWithEnchantment is called when an enchantment is added to an item. It can be used to check if
+	// the enchantment is compatible with other enchantments.
+	CompatibleWithEnchantment(t EnchantmentType) bool
+	// CompatibleWithItem is also called when an enchantment is added to an item. It can be used to check if
+	// the enchantment is compatible with the item type.
+	CompatibleWithItem(i world.Item) bool
 }
 
 // RegisterEnchantment registers an enchantment with the ID passed. Once registered, enchantments may be received
