@@ -54,7 +54,7 @@ func (s SandstoneStairs) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (s SandstoneStairs) EncodeItem() (name string, meta int16) {
-	if s.Type.Smooth() {
+	if s.Type == SmoothSandstone() {
 		if s.Red {
 			return "minecraft:smooth_red_sandstone_stairs", 0
 		}
@@ -68,7 +68,7 @@ func (s SandstoneStairs) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (s SandstoneStairs) EncodeBlock() (name string, properties map[string]any) {
-	if s.Type.Smooth() {
+	if s.Type == SmoothSandstone() {
 		if s.Red {
 			return "minecraft:smooth_red_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 		}
