@@ -63,8 +63,8 @@ type Session struct {
 
 	breakingPos cube.Pos
 
-	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
+	openedWindowID                 atomic.Uint32
 	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
@@ -424,6 +424,7 @@ func (s *Session) registerHandlers() {
 		packet.IDActorEvent:            nil,
 		packet.IDAdventureSettings:     nil, // Deprecated, the client still sends this though.
 		packet.IDAnimate:               nil,
+		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
@@ -433,6 +434,7 @@ func (s *Session) registerHandlers() {
 		packet.IDCraftingEvent:         nil,
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
+		packet.IDFilterText:            nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemFrameDropItem:     nil,

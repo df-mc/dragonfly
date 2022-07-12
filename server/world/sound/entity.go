@@ -9,6 +9,12 @@ type Attack struct {
 	sound
 }
 
+// Drowning is a sound played when an entity is drowning in water.
+type Drowning struct{ sound }
+
+// Burning is a sound played when an entity is on fire.
+type Burning struct{ sound }
+
 // Burp is a sound played when a player finishes eating an item.
 type Burp struct{ sound }
 
@@ -26,3 +32,9 @@ type LevelUp struct{ sound }
 
 // Experience is a sound played whenever a player picks up an XP orb.
 type Experience struct{ sound }
+
+// GhastWarning is a sound played when a ghast is ready to attack.
+type GhastWarning struct{ sound }
+
+// GhastShoot is a sound played when a ghast shoots a fire charge.
+type GhastShoot struct{ sound }

@@ -641,6 +641,7 @@ func (w *World) AddEntity(e Entity) {
 	if w == nil {
 		return
 	}
+
 	// Remove the Entity from any previous World it might be in.
 	e.World().RemoveEntity(e)
 
@@ -1174,6 +1175,9 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 
 	data := newChunkData(c)
 	data.e = e
+	if o, ok := w.chunks[pos]; ok {
+		data.v = o.v
+	}
 	w.chunks[pos] = data
 }
 

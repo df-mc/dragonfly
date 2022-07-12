@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -55,7 +56,7 @@ type Player struct {
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
 	s atomic.Value[*session.Session]
-	// h holds the current handler of the player. It may be changed at any time by calling the Handle method.
+	// h holds the current Handler of the player. It may be changed at any time by calling the Handle method.
 	h atomic.Value[Handler]
 
 	inv, offHand *inventory.Inventory
@@ -68,6 +69,10 @@ type Player struct {
 
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
+
+	breathing         bool
+	airSupplyTicks    atomic.Int64
+	maxAirSupplyTicks atomic.Int64
 
 	cooldownMu sync.Mutex
 	cooldowns  map[itemHash]time.Time
@@ -104,26 +109,29 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:          *atomic.NewValue[Handler](NopHandler{}),
-		name:       name,
-		skin:       *atomic.NewValue(skin),
-		speed:      *atomic.NewFloat64(0.1),
-		nameTag:    *atomic.NewValue(name),
-		heldSlot:   atomic.NewUint32(0),
-		locale:     language.BritishEnglish,
-		scale:      *atomic.NewFloat64(1),
-		immunity:   *atomic.NewValue(time.Now()),
-		pos:        *atomic.NewValue(pos),
-		cooldowns:  make(map[itemHash]time.Time),
-		mc:         &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		uuid:              uuid.New(),
+		offHand:           inventory.New(1, p.broadcastItems),
+		armour:            inventory.NewArmour(p.broadcastArmour),
+		hunger:            newHungerManager(),
+		health:            entity.NewHealthManager(),
+		experience:        entity.NewExperienceManager(),
+		effects:           entity.NewEffectManager(),
+		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:                 *atomic.NewValue[Handler](NopHandler{}),
+		name:              name,
+		skin:              *atomic.NewValue(skin),
+		speed:             *atomic.NewFloat64(0.1),
+		nameTag:           *atomic.NewValue(name),
+		heldSlot:          atomic.NewUint32(0),
+		locale:            language.BritishEnglish,
+		breathing:         true,
+		airSupplyTicks:    *atomic.NewInt64(300),
+		maxAirSupplyTicks: *atomic.NewInt64(300),
+		scale:             *atomic.NewFloat64(1),
+		immunity:          *atomic.NewValue(time.Now()),
+		pos:               *atomic.NewValue(pos),
+		cooldowns:         make(map[itemHash]time.Time),
+		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -190,7 +198,7 @@ func (p *Player) SetSkin(skin skin.Skin) {
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandleSkinChange(ctx, &skin); ctx.Cancelled() {
+	if p.Handler().HandleSkinChange(ctx, &skin); ctx.Cancelled() {
 		p.session().ViewSkin(p)
 		return
 	}
@@ -205,9 +213,9 @@ func (p *Player) Locale() language.Tag {
 	return p.locale
 }
 
-// Handle changes the current handler of the player. As a result, events called by the player will call
+// Handle changes the current Handler of the player. As a result, events called by the player will call
 // handlers of the Handler passed.
-// Handle sets the player's handler to NopHandler if nil is passed.
+// Handle sets the player's Handler to NopHandler if nil is passed.
 func (p *Player) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
@@ -310,7 +318,7 @@ func (p *Player) RemoveBossBar() {
 func (p *Player) Chat(msg ...any) {
 	message := format(msg)
 	ctx := event.C()
-	if p.handler().HandleChat(ctx, &message); ctx.Cancelled() {
+	if p.Handler().HandleChat(ctx, &message); ctx.Cancelled() {
 		return
 	}
 	_, _ = fmt.Fprintf(chat.Global, "<%v> %v\n", p.name, message)
@@ -332,7 +340,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
+	if p.Handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
 		return
 	}
 	command.Execute(strings.Join(args[1:], " "), p)
@@ -347,7 +355,7 @@ func (p *Player) Transfer(address string) error {
 	}
 
 	ctx := event.C()
-	if p.handler().HandleTransfer(ctx, addr); ctx.Cancelled() {
+	if p.Handler().HandleTransfer(ctx, addr); ctx.Cancelled() {
 		return nil
 	}
 	p.session().Transfer(addr.IP, addr.Port)
@@ -459,7 +467,7 @@ func (p *Player) Heal(health float64, source healing.Source) {
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandleHeal(ctx, &health, source); ctx.Cancelled() {
+	if p.Handler().HandleHeal(ctx, &health, source); ctx.Cancelled() {
 		return
 	}
 	p.addHealth(health)
@@ -515,21 +523,25 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
-	if _, ok := p.Effect(effect.FireResistance{}); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+
+	fireSource := source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}
+	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
 		return 0, false
 	}
+
 	immunity := time.Second / 2
 	ctx := event.C()
-	if p.handler().HandleHurt(ctx, &dmg, &immunity, source); ctx.Cancelled() {
+	if p.Handler().HandleHurt(ctx, &dmg, &immunity, source); ctx.Cancelled() {
 		return 0, false
 	}
 	if dmg < 0 {
 		return 0, true
 	}
+
 	totalDamage := p.FinalDamageFrom(dmg, source)
 	damageLeft := totalDamage
 
-	if a := p.absorption(); a > 0 {
+	if a := p.Absorption(); a > 0 {
 		if damageLeft > a {
 			damageLeft -= a
 			p.SetAbsorption(0)
@@ -552,9 +564,17 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		}
 	}
 
+	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
+	if fireSource {
+		w.PlaySound(pos, sound.Burning{})
+	}
+	if _, ok := source.(damage.SourceDrowning); ok {
+		w.PlaySound(pos, sound.Drowning{})
+	}
+
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
 		p.kill(source)
@@ -585,17 +605,50 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-	t := 0
+
+	f := p.enchantmentProtectionFactor(src)
+	if f > 25 {
+		f = 25
+	}
+	m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
+	if m > 20 {
+		m = 20
+	}
+
+	dmg -= -dmg * m * 0.04
+	return math.Max(dmg, 0)
+}
+
+// protectionEnchantment represents an enchantment that can protect the player from damage.
+type protectionEnchantment interface {
+	Affects(damage.Source) bool
+	Modifier() float64
+}
+
+// enchantmentProtectionFactor returns the combined enchantment protection factor the player inhibits spanning each
+// armour piece.
+func (p *Player) enchantmentProtectionFactor(src damage.Source) (f int) {
 	for _, it := range p.armour.Items() {
-		if p, ok := it.Enchantment(enchantment.Protection{}); ok && (enchantment.Protection{}).Affects(src) {
-			t += p.Level() + 1
+		for _, e := range it.Enchantments() {
+			if p, ok := e.Type().(protectionEnchantment); ok && p.Affects(src) {
+				lvl := e.Level()
+				f += int(math.Floor(float64(6+lvl*lvl) * p.Modifier() / 3))
+			}
 		}
 	}
-	dmg *= (enchantment.Protection{}).Multiplier(t)
-	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
-		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
+	return f
+}
+
+// highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
+func (p *Player) highestArmourEnchantmentLevel(enchant item.EnchantmentType) (t int) {
+	for _, it := range p.armour.Items() {
+		if e, ok := it.Enchantment(enchant); ok {
+			if e.Level() > t {
+				t = e.Level()
+			}
+		}
 	}
-	return math.Max(dmg, 0)
+	return t
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -607,8 +660,8 @@ func (p *Player) SetAbsorption(health float64) {
 	p.session().SendAbsorption(health)
 }
 
-// absorption returns the absorption health that the player has.
-func (p *Player) absorption() float64 {
+// Absorption returns the absorption health that the player has.
+func (p *Player) Absorption() float64 {
 	return p.absorptionHealth.Load()
 }
 
@@ -730,7 +783,7 @@ func (p *Player) Exhaust(points float64) {
 		p.hunger.SetFood(before)
 
 		ctx := event.C()
-		if p.handler().HandleFoodLoss(ctx, before, after); ctx.Cancelled() {
+		if p.Handler().HandleFoodLoss(ctx, before, after); ctx.Cancelled() {
 			return
 		}
 		p.hunger.SetFood(after)
@@ -756,7 +809,7 @@ func (p *Player) kill(src damage.Source) {
 
 	p.addHealth(-p.MaxHealth())
 
-	p.handler().HandleDeath(src)
+	p.Handler().HandleDeath(src)
 	p.StopSneaking()
 	p.StopSprinting()
 
@@ -820,7 +873,7 @@ func (p *Player) Respawn() {
 	w = w.PortalDestination(w.Dimension())
 	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
-	p.handler().HandleRespawn(&pos, &w)
+	p.Handler().HandleRespawn(&pos, &w)
 
 	w.AddEntity(p)
 	p.Teleport(pos)
@@ -837,7 +890,7 @@ func (p *Player) StartSprinting() {
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandleToggleSprint(ctx, true); ctx.Cancelled() {
+	if p.Handler().HandleToggleSprint(ctx, true); ctx.Cancelled() {
 		return
 	}
 	if !p.sprinting.CAS(false, true) {
@@ -857,7 +910,7 @@ func (p *Player) Sprinting() bool {
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
 func (p *Player) StopSprinting() {
 	ctx := event.C()
-	if p.handler().HandleToggleSprint(ctx, false); ctx.Cancelled() {
+	if p.Handler().HandleToggleSprint(ctx, false); ctx.Cancelled() {
 		return
 	}
 	if !p.sprinting.CAS(true, false) {
@@ -873,7 +926,7 @@ func (p *Player) StopSprinting() {
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
 	ctx := event.C()
-	if p.handler().HandleToggleSneak(ctx, true); ctx.Cancelled() {
+	if p.Handler().HandleToggleSneak(ctx, true); ctx.Cancelled() {
 		return
 	}
 	if !p.sneaking.CAS(false, true) {
@@ -894,7 +947,7 @@ func (p *Player) Sneaking() bool {
 // will not do anything.
 func (p *Player) StopSneaking() {
 	ctx := event.C()
-	if p.handler().HandleToggleSneak(ctx, false); ctx.Cancelled() {
+	if p.Handler().HandleToggleSneak(ctx, false); ctx.Cancelled() {
 		return
 	}
 	if !p.sneaking.CAS(true, false) {
@@ -955,7 +1008,7 @@ func (p *Player) Jump() {
 		return
 	}
 
-	p.handler().HandleJump()
+	p.Handler().HandleJump()
 	if p.OnGround() {
 		jumpVel := 0.42
 		if e, ok := p.Effect(effect.JumpBoost{}); ok {
@@ -1035,7 +1088,11 @@ func (p *Player) OnFireDuration() time.Duration {
 
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
-	p.fireTicks.Store(int64(duration.Seconds() * 20))
+	ticks := int64(duration.Seconds() * 20)
+	if level := p.highestArmourEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
+		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
+	}
+	p.fireTicks.Store(ticks)
 	p.updateState()
 }
 
@@ -1157,7 +1214,7 @@ func (p *Player) UseItem() {
 	if p.HasCooldown(i.Item()) {
 		return
 	}
-	if p.handler().HandleItemUse(ctx); ctx.Cancelled() {
+	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
 	i, left = p.HeldItems()
@@ -1207,7 +1264,7 @@ func (p *Player) UseItem() {
 		}
 
 		ctx = event.C()
-		if p.handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
+		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
 			// Consuming was cancelled, but the client will continue consuming the next item.
 			p.usingSince.Store(time.Now().UnixNano())
 			return
@@ -1297,7 +1354,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandleItemUseOnBlock(ctx, pos, face, clickPos); ctx.Cancelled() {
+	if p.Handler().HandleItemUseOnBlock(ctx, pos, face, clickPos); ctx.Cancelled() {
 		p.resendBlocks(pos, w, face)
 		return
 	}
@@ -1353,7 +1410,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandleItemUseOnEntity(ctx, e); ctx.Cancelled() {
+	if p.Handler().HandleItemUseOnEntity(ctx, e); ctx.Cancelled() {
 		return
 	}
 	i, left := p.HeldItems()
@@ -1387,7 +1444,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	)
 
 	ctx := event.C()
-	if p.handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
+	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
 		return
 	}
 	p.SwingArm()
@@ -1474,7 +1531,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.breakingPos.Store(pos)
 
 	ctx := event.C()
-	if p.handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
+	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
 		return
 	}
 	if punchable, ok := w.Block(pos).(block.Punchable); ok {
@@ -1502,8 +1559,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	_, ok := w.Liquid(cube.PosFromVec3(entity.EyePosition(p)))
-	if _, ok2 := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); ok && !ok2 {
+	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); p.insideOfWater(w) && !ok {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -1603,7 +1659,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	}
 
 	ctx := event.C()
-	if p.handler().HandleBlockPlace(ctx, pos, b); ctx.Cancelled() {
+	if p.Handler().HandleBlockPlace(ctx, pos, b); ctx.Cancelled() {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
@@ -1660,7 +1716,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	drops := p.drops(held, b)
 
 	ctx := event.C()
-	if p.handler().HandleBlockBreak(ctx, pos, &drops); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, &drops); ctx.Cancelled() {
 		p.resendBlocks(pos, w)
 		return
 	}
@@ -1747,7 +1803,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C()
-	if p.handler().HandleBlockPick(ctx, pos, b); ctx.Cancelled() {
+	if p.Handler().HandleBlockPick(ctx, pos, b); ctx.Cancelled() {
 		return
 	}
 	_, offhand := p.HeldItems()
@@ -1779,13 +1835,13 @@ func (p *Player) PickBlock(pos cube.Pos) {
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
 	ctx := event.C()
-	if p.handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
+	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
 	p.teleport(pos)
 }
 
-// teleport teleports the player to a target position in the world. It does not call the handler of the
+// teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
 	for _, v := range p.viewers() {
@@ -1817,7 +1873,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		res, resYaw, resPitch = pos.Add(deltaPos), yaw + deltaYaw, pitch + deltaPitch
 	)
 	ctx := event.C()
-	if p.handler().HandleMove(ctx, res, resYaw, resPitch); ctx.Cancelled() {
+	if p.Handler().HandleMove(ctx, res, resYaw, resPitch); ctx.Cancelled() {
 		if p.session() != session.Nop && pos.ApproxEqual(p.Position()) {
 			// The position of the player was changed and the event cancelled. This means we still need to notify the
 			// player of this movement change.
@@ -1903,7 +1959,7 @@ func (p *Player) Collect(s item.Stack) int {
 		return 0
 	}
 	ctx := event.C()
-	if p.handler().HandleItemPickup(ctx, s); ctx.Cancelled() {
+	if p.Handler().HandleItemPickup(ctx, s); ctx.Cancelled() {
 		return 0
 	}
 	n, _ := p.Inventory().AddItem(s)
@@ -1918,7 +1974,7 @@ func (p *Player) Experience() int {
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
 	ctx := event.C()
-	if p.handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
+	if p.Handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
 		return 0
 	}
 	before := p.experience.Level()
@@ -1987,7 +2043,7 @@ func (p *Player) Drop(s item.Stack) int {
 	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
-	if p.handler().HandleItemDrop(ctx, e); ctx.Cancelled() {
+	if p.Handler().HandleItemDrop(ctx, e); ctx.Cancelled() {
 		return 0
 	}
 	p.World().AddEntity(e)
@@ -2036,7 +2092,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 		return
 	}
 	if p.lastTickedWorld != w {
-		p.handler().HandleChangeWorld(p.lastTickedWorld, w)
+		p.Handler().HandleChangeWorld(p.lastTickedWorld, w)
 	}
 	p.lastTickedWorld = w
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
@@ -2049,10 +2105,15 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.checkBlockCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
 
-	p.tickFood(w)
 	p.effects.Tick(p)
+
+	p.tickFood(w)
+	p.tickAirSupply(w)
 	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
+	}
+	if !p.AttackImmune() && p.insideOfSolid(w) {
+		p.Hurt(1, damage.SourceSuffocation{})
 	}
 
 	if p.OnFireDuration() > 0 {
@@ -2094,6 +2155,32 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 }
 
+// tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
+func (p *Player) tickAirSupply(w *world.World) {
+	if !p.canBreathe(w) {
+		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration{}); ok && rand.Float64() <= (enchantment.Respiration{}).Chance(r.Level()) {
+			// Respiration grants a chance to avoid drowning damage every tick.
+			return
+		}
+
+		if ticks := p.airSupplyTicks.Dec(); ticks <= -20 {
+			p.airSupplyTicks.Store(0)
+			if !p.AttackImmune() {
+				p.Hurt(2, damage.SourceDrowning{})
+			}
+		}
+		p.breathing = false
+		p.updateState()
+	} else if max := p.maxAirSupplyTicks.Load(); !p.breathing && p.airSupplyTicks.Load() < max {
+		p.airSupplyTicks.Add(5)
+		if p.airSupplyTicks.Load() >= max {
+			p.breathing = true
+			p.airSupplyTicks.Store(max)
+		}
+		p.updateState()
+	}
+}
+
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
 func (p *Player) tickFood(w *world.World) {
@@ -2131,6 +2218,77 @@ func (p *Player) starve(w *world.World) {
 	if p.Health() > w.Difficulty().StarvationHealthLimit() {
 		p.Hurt(1, damage.SourceStarvation{})
 	}
+}
+
+// AirSupply returns the player's remaining air supply.
+func (p *Player) AirSupply() time.Duration {
+	return time.Duration(p.airSupplyTicks.Load()) * time.Second / 20
+}
+
+// SetAirSupply sets the player's remaining air supply.
+func (p *Player) SetAirSupply(duration time.Duration) {
+	p.airSupplyTicks.Store(duration.Milliseconds() / 50)
+	p.updateState()
+}
+
+// MaxAirSupply returns the player's maximum air supply.
+func (p *Player) MaxAirSupply() time.Duration {
+	return time.Duration(p.maxAirSupplyTicks.Load()) * time.Second / 20
+}
+
+// SetMaxAirSupply sets the player's maximum air supply.
+func (p *Player) SetMaxAirSupply(duration time.Duration) {
+	p.maxAirSupplyTicks.Store(duration.Milliseconds() / 50)
+	p.updateState()
+}
+
+// canBreathe returns true if the player can currently breathe.
+func (p *Player) canBreathe(w *world.World) bool {
+	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
+	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
+	return waterBreathing || conduitPower || !p.insideOfWater(w)
+}
+
+// breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
+// the player's eye height.
+const breathingDistanceBelowEyes = 0.11111111
+
+// insideOfWater returns true if the player is currently underwater.
+func (p *Player) insideOfWater(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	if l, ok := w.Liquid(pos); ok {
+		if _, ok := l.(block.Water); ok {
+			d := float64(l.SpreadDecay()) + 1
+			if l.LiquidFalling() {
+				d = 1
+			}
+			return p.Position().Y() < (pos.Side(cube.FaceUp).Vec3().Y())-(d/9-breathingDistanceBelowEyes)
+		}
+	}
+	return false
+}
+
+// insideOfSolid returns true if the player is inside a solid block.
+func (p *Player) insideOfSolid(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+
+	_, solid := b.Model().(model.Solid)
+	if !solid {
+		// Not solid.
+		return false
+	}
+	d, diffuses := b.(block.LightDiffuser)
+	if diffuses && d.LightDiffusionLevel() == 0 {
+		// Transparent.
+		return false
+	}
+	for _, blockBox := range b.Model().BBox(pos, w) {
+		if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
+			return true
+		}
+	}
+	return false
 }
 
 // checkCollisions checks the player's block collisions.
@@ -2249,7 +2407,7 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 	}
 
 	ctx := event.C()
-	if p.handler().HandleSignEdit(ctx, sign.Text, text); ctx.Cancelled() {
+	if p.Handler().HandleSignEdit(ctx, sign.Text, text); ctx.Cancelled() {
 		return nil
 	}
 	sign.Text = text
@@ -2290,7 +2448,7 @@ func (p *Player) PunchAir() {
 		return
 	}
 	ctx := event.C()
-	if p.handler().HandlePunchAir(ctx); ctx.Cancelled() {
+	if p.Handler().HandlePunchAir(ctx); ctx.Cancelled() {
 		return
 	}
 	p.SwingArm()
@@ -2310,7 +2468,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 		return s
 	}
 	ctx := event.C()
-	if p.handler().HandleItemDamage(ctx, s, d); ctx.Cancelled() {
+	if p.Handler().HandleItemDamage(ctx, s, d); ctx.Cancelled() {
 		return s
 	}
 	if e, ok := s.Enchantment(enchantment.Unbreaking{}); ok {
@@ -2423,6 +2581,9 @@ func (p *Player) load(data Data) {
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 	p.sendFood()
 
+	p.airSupplyTicks.Store(data.AirSupply)
+	p.maxAirSupplyTicks.Store(data.MaxAirSupply)
+
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)
 
@@ -2466,6 +2627,8 @@ func (p *Player) Data() Data {
 		Hunger:          p.hunger.foodLevel,
 		Experience:      p.Experience(),
 		FoodTick:        p.hunger.foodTick,
+		AirSupply:       p.airSupplyTicks.Load(),
+		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
 		GameMode:        p.GameMode(),
@@ -2533,8 +2696,8 @@ func (p *Player) useContext() *item.UseContext {
 	}
 }
 
-// handler returns the Handler of the player.
-func (p *Player) handler() Handler {
+// Handler returns the Handler of the player.
+func (p *Player) Handler() Handler {
 	return p.h.Load()
 }
 
