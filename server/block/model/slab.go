@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -11,6 +12,21 @@ type Slab struct {
 	// Double and Top specify if the Slab is a double slab and if it's in the top slot respectively. If Double is true,
 	// the BBox returned is always a full block.
 	Double, Top bool
+}
+
+// SupportType ...
+func (s Slab) SupportType(face cube.Face) support.Type {
+	if s.Double {
+		return support.Full{}
+	}
+	if s.Top {
+		if face == cube.FaceUp {
+			return support.Full{}
+		}
+	} else if face == cube.FaceDown {
+		return support.Full{}
+	}
+	return support.None{}
 }
 
 // BBox returns either a physics.BBox spanning a full block or a half block in the top/bottom part of the block,

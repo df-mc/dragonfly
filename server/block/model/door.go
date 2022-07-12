@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -14,6 +15,11 @@ type Door struct {
 	Open bool
 	// Right specifies the attachment side of the door and, with that, the direction it opens in.
 	Right bool
+}
+
+// SupportType ...
+func (Door) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox returns a physics.BBox that depends on if the Door is open, what direction it is facing and whether it is

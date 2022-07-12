@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,6 +10,11 @@ import (
 type Ladder struct {
 	// Facing is the side opposite to the block the Ladder is currently attached to.
 	Facing cube.Direction
+}
+
+// SupportType ...
+func (Ladder) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox returns one physics.BBox that depends on the facing direction of the Ladder.

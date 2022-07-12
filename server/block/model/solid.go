@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -11,6 +12,11 @@ type Solid struct{}
 
 // full is a BBox that occupies a full block.
 var full = cube.Box(0, 0, 0, 1, 1, 1)
+
+// SupportType ...
+func (Solid) SupportType(cube.Face) support.Type {
+	return support.Full{}
+}
 
 // BBox returns a physics.BBox spanning a full block.
 func (Solid) BBox(cube.Pos, *world.World) []cube.BBox {

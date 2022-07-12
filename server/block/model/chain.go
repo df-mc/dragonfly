@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,6 +10,14 @@ import (
 type Chain struct {
 	// Axis is the axis which the chain faces.
 	Axis cube.Axis
+}
+
+// SupportType ...
+func (Chain) SupportType(face cube.Face) support.Type {
+	if face == cube.FaceDown {
+		return support.Center{}
+	}
+	return support.None{}
 }
 
 // BBox ...

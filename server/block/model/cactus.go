@@ -2,11 +2,17 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Cactus is the model for a Cactus. It is just barely not a full block, having a slightly reduced width and depth.
 type Cactus struct{}
+
+// SupportType ...
+func (Cactus) SupportType(cube.Face) support.Type {
+	return support.None{}
+}
 
 // BBox returns a physics.BBox that is slightly smaller than a full block.
 func (Cactus) BBox(cube.Pos, *world.World) []cube.BBox {

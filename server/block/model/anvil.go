@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,6 +10,11 @@ import (
 type Anvil struct {
 	// Facing is the direction that the anvil is facing.
 	Facing cube.Direction
+}
+
+// SupportType ...
+func (Anvil) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox ...

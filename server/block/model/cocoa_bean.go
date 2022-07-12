@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -12,6 +13,11 @@ type CocoaBean struct {
 	// Age is the age of the CocoaBean. The age influences the size of the CocoaBean. The maximum age value of a cocoa
 	// bean is 3.
 	Age int
+}
+
+// SupportType ...
+func (CocoaBean) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox returns a single physics.BBox whose size depends on the age of the CocoaBean.

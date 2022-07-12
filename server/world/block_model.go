@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 )
 
 // BlockModel represents the model of a block. These models specify the ways a block can be collided with and
@@ -12,17 +13,24 @@ type BlockModel interface {
 	// FaceSolid checks if a specific face of a block at the position in a world passed is solid. Blocks may
 	// be attached to these faces.
 	FaceSolid(pos cube.Pos, face cube.Face, w *World) bool
+	// SupportType returns the block support type for the given block face.
+	SupportType(face cube.Face) support.Type
 }
 
 // unknownModel is the model used for unknown blocks. It is the equivalent of a fully solid model.
 type unknownModel struct{}
 
+// SupportType ...
+func (unknownModel) SupportType(cube.Face) support.Type {
+	return support.Full{}
+}
+
 // BBox ...
-func (u unknownModel) BBox(cube.Pos, *World) []cube.BBox {
+func (unknownModel) BBox(cube.Pos, *World) []cube.BBox {
 	return []cube.BBox{cube.Box(0, 0, 0, 1, 1, 1)}
 }
 
 // FaceSolid ...
-func (u unknownModel) FaceSolid(cube.Pos, cube.Face, *World) bool {
+func (unknownModel) FaceSolid(cube.Pos, cube.Face, *World) bool {
 	return true
 }

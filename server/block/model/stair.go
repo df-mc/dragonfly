@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -14,6 +15,18 @@ type Stair struct {
 	// UpsideDown turns the Stair upside-down, meaning the full side of the Stair is turned to the top side of the
 	// block.
 	UpsideDown bool
+}
+
+// SupportType ...
+func (s Stair) SupportType(face cube.Face) support.Type {
+	if s.UpsideDown {
+		if face == cube.FaceUp {
+			return support.Full{}
+		}
+	} else if face == cube.FaceDown || s.Facing.Face() == face {
+		return support.Full{}
+	}
+	return support.None{}
 }
 
 // BBox returns a slice of physics.BBox depending on if the Stair is upside down and which direction it is facing.

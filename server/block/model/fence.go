@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -11,6 +12,14 @@ type Fence struct {
 	// Wood specifies if the Fence is made from wood. This field is used to check if two fences are able to attach to
 	// each other.
 	Wood bool
+}
+
+// SupportType ...
+func (Fence) SupportType(face cube.Face) support.Type {
+	if face.Axis() == cube.Y {
+		return support.Full{}
+	}
+	return support.None{}
 }
 
 // BBox returns multiple physics.BBox depending on how many connections it has with the surrounding blocks.

@@ -2,12 +2,18 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Chest is the model of a chest. It is just barely not a full block, having a slightly reduced with on all
 // axes.
 type Chest struct{}
+
+// SupportType ...
+func (Chest) SupportType(cube.Face) support.Type {
+	return support.None{}
+}
 
 // BBox returns a physics.BBox that is slightly smaller than a full block.
 func (Chest) BBox(cube.Pos, *world.World) []cube.BBox {

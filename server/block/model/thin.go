@@ -2,12 +2,21 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Thin is a model for thin, partial blocks such as a glass pane or an iron bar. It changes its bounding box depending
 // on solid faces next to it.
 type Thin struct{}
+
+// SupportType ...
+func (Thin) SupportType(face cube.Face) support.Type {
+	if face.Axis() == cube.Y {
+		return support.Center{}
+	}
+	return support.None{}
+}
 
 // BBox returns a slice of physics.BBox that depends on the blocks surrounding the Thin block. Thin blocks can connect
 // to any other Thin block, wall or solid faces of other blocks.

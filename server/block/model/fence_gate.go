@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -12,6 +13,11 @@ type FenceGate struct {
 	Facing cube.Direction
 	// Open specifies if the FenceGate is open. In this case, BBox returns an empty slice.
 	Open bool
+}
+
+// SupportType ...
+func (FenceGate) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox returns up to one physics.BBox depending on the facing direction of the FenceGate and whether it is open.

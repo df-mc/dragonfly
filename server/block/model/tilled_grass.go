@@ -2,11 +2,17 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // TilledGrass is a model used for grass that has been tilled in some way, such as dirt paths and farmland.
 type TilledGrass struct{}
+
+// SupportType ...
+func (TilledGrass) SupportType(cube.Face) support.Type {
+	return support.Full{}
+}
 
 // BBox returns a physics.BBox that spans an entire block.
 func (TilledGrass) BBox(cube.Pos, *world.World) []cube.BBox {

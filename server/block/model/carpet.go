@@ -2,11 +2,17 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Carpet is a model for carpet-like extremely thin blocks.
 type Carpet struct{}
+
+// SupportType ...
+func (Carpet) SupportType(cube.Face) support.Type {
+	return support.None{}
+}
 
 // BBox returns a flat BBox with a width of 0.0625.
 func (Carpet) BBox(cube.Pos, *world.World) []cube.BBox {

@@ -45,7 +45,8 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if _, ok := w.Block(pos).(world.Liquid); ok {
 		return false
 	}
-	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {
+	full, center, _ := w.Block(pos.Side(face.Opposite())).Model().SupportType(face).Supports()
+	if !full && (!center || face != cube.FaceDown) {
 		found := false
 		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceWest, cube.FaceNorth, cube.FaceEast, cube.FaceDown} {
 			if w.Block(pos.Side(i)).Model().FaceSolid(pos.Side(i), i.Opposite(), w) {
@@ -66,7 +67,8 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // NeighbourUpdateTick ...
 func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
+	full, center, _ := w.Block(pos.Side(t.Facing)).Model().SupportType(t.Facing.Opposite()).Supports()
+	if !full && (!center || t.Facing.Opposite() != cube.FaceDown) {
 		w.SetBlock(pos, nil, nil)
 	}
 }

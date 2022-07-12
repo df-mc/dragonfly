@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -13,6 +14,17 @@ type Trapdoor struct {
 	Facing cube.Direction
 	// Open and Top specify if the Trapdoor is opened and if it's in the top or bottom part of a block respectively.
 	Open, Top bool
+}
+
+func (t Trapdoor) SupportType(face cube.Face) support.Type {
+	if t.Top {
+		if face == cube.FaceUp && !t.Open {
+			return support.Full{}
+		}
+	} else if face == cube.FaceDown && !t.Open {
+		return support.Full{}
+	}
+	return support.None{}
 }
 
 // BBox returns a physics.BBox that depends on the facing direction of the Trapdoor and whether it is open and in the

@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -9,6 +10,11 @@ import (
 type Lantern struct {
 	// Hanging specifies if the lantern is hanging from a block or if it's placed on the ground.
 	Hanging bool
+}
+
+// SupportType ...
+func (Lantern) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox returns a physics.BBox attached to either the ceiling or to the ground.

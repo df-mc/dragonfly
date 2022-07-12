@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/support"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -10,6 +11,11 @@ type Cake struct {
 	// Bites is the amount of bites that were taken from the cake. A cake can have up to 7 bites taken from it, before
 	// being consumed entirely.
 	Bites int
+}
+
+// SupportType ...
+func (Cake) SupportType(cube.Face) support.Type {
+	return support.None{}
 }
 
 // BBox returns an BBox with a size that depends on the amount of bites taken.
