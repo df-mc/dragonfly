@@ -86,13 +86,12 @@ func (s SandstoneSlab) EncodeItem() (name string, meta int16) {
 		prefix = "minecraft:double_stone_block_slab"
 	}
 
-	if s.Type.Cut() {
+	if s.Type == CutSandstone() {
 		if s.Red {
 			return prefix + "4", 1
 		}
 		return prefix + "4", 0
-	}
-	if s.Type.Smooth() {
+	} else if s.Type == SmoothSandstone() {
 		if s.Red {
 			return prefix + "3", 1
 		}
@@ -111,13 +110,12 @@ func (s SandstoneSlab) EncodeBlock() (name string, properties map[string]any) {
 		prefix = "minecraft:double_stone_block_slab"
 	}
 
-	if s.Type.Cut() {
+	if s.Type == CutSandstone() {
 		if s.Red {
 			return prefix + "4", map[string]any{"top_slot_bit": s.Top, "stone_slab_type_4": "cut_red_sandstone"}
 		}
 		return prefix + "4", map[string]any{"top_slot_bit": s.Top, "stone_slab_type_4": "cut_sandstone"}
-	}
-	if s.Type.Smooth() {
+	} else if s.Type == SmoothSandstone() {
 		if s.Red {
 			return prefix + "3", map[string]any{"top_slot_bit": s.Top, "stone_slab_type_3": "smooth_red_sandstone"}
 		}
