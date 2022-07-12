@@ -143,12 +143,11 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
-		leaves = append(leaves, Leaves{Wood: OakWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: SpruceWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: BirchWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: JungleWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: AcaciaWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: DarkOakWood(), Persistent: persistent, ShouldUpdate: update})
+		for _, w := range WoodTypes() {
+			if w != CrimsonWood() && w != WarpedWood() {
+				leaves = append(leaves, Leaves{Wood: w, Persistent: persistent, ShouldUpdate: update})
+			}
+		}
 	}
 	f(true, true)
 	f(true, false)

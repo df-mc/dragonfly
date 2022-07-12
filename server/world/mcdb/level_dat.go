@@ -115,7 +115,7 @@ type data struct {
 	UseMSAGamerTagsOnly            bool           `nbt:"useMsaGamertagsOnly"`
 	WorldStartCount                int64          `nbt:"worldStartCount"`
 	Experiments                    map[string]any `nbt:"experiments"`
-	FreezeDamage                   uint8          `nbt:"freezedamage"`
+	FreezeDamage                   bool           `nbt:"freezedamage"`
 	WorldPolicies                  map[string]any `nbt:"world_policies"`
 	WorldVersion                   int32          `nbt:"WorldVersion"`
 	RespawnBlocksExplode           bool           `nbt:"respawnblocksexplode"`

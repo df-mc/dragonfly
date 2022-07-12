@@ -4,27 +4,27 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-// HoneycombBlock is a decorative blocks crafted from honeycombs.
-type HoneycombBlock struct {
+// Honeycomb is a decorative blocks crafted from honeycombs.
+type Honeycomb struct {
 	solid
 }
 
 // Instrument ...
-func (h HoneycombBlock) Instrument() sound.Instrument {
+func (h Honeycomb) Instrument() sound.Instrument {
 	return sound.Flute()
 }
 
 // BreakInfo ...
-func (h HoneycombBlock) BreakInfo() BreakInfo {
+func (h Honeycomb) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(h))
 }
 
 // EncodeItem ...
-func (HoneycombBlock) EncodeItem() (name string, meta int16) {
+func (Honeycomb) EncodeItem() (name string, meta int16) {
 	return "minecraft:honeycomb_block", 0
 }
 
 // EncodeBlock ...
-func (HoneycombBlock) EncodeBlock() (string, map[string]any) {
+func (Honeycomb) EncodeBlock() (string, map[string]any) {
 	return "minecraft:honeycomb_block", nil
 }

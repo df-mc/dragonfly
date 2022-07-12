@@ -14,9 +14,9 @@ import (
 // below) have their values copied but retained.
 // A Runnable may have exported fields only of the following types:
 // int8, int16, int32, int64, int, uint8, uint16, uint32, uint64, uint,
-// float32, float64, string, bool, mgl64.Vec3, Varargs, []Target, Optional[T] (to make a parameter optional),
-// or a type that implements the cmd.Parameter, cmd.Enum or cmd.SubCommand interface. cmd.Enum implementations
-// must be of the type string.
+// float32, float64, string, bool, mgl64.Vec3, Varargs, []Target, cmd.SubCommand, Optional[T] (to make a parameter
+// optional), or a type that implements the cmd.Parameter or cmd.Enum interface. cmd.Enum implementations must be of the
+// type string.
 // Fields in the Runnable struct may have `cmd:` struct tag to specify the name and suffix of a parameter as such:
 //   type T struct {
 //       Param int `cmd:"name,suffix"`
@@ -251,7 +251,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			val = reflect.New(field.Field(0).Type()).Elem()
 		}
 
-		err, success := parser.parseArgument(arguments, val, opt, source)
+		err, success := parser.parseArgument(arguments, val, opt, name(t), source)
 		if err != nil {
 			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
 			return arguments, err
@@ -277,9 +277,13 @@ func parseUsage(commandName string, command reflect.Value) string {
 	for _, t := range exportedFields(command) {
 		field := command.FieldByName(t.Name)
 
-		typeName := typeNameOf(field.Interface())
+		typeName := typeNameOf(field.Interface(), name(t))
 		if _, ok := field.Interface().(optionalT); ok {
-			typeName = typeNameOf(reflect.New(field.Field(0).Type()).Elem().Interface())
+			typeName = typeNameOf(reflect.New(field.Field(0).Type()).Elem().Interface(), name(t))
+		}
+		if _, ok := field.Interface().(SubCommand); ok {
+			parts = append(parts, typeName)
+			continue
 		}
 		if optional(field) {
 			parts = append(parts, "["+name(t)+": "+typeName+"]"+suffix(t))

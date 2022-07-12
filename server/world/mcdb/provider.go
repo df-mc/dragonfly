@@ -29,7 +29,7 @@ type Provider struct {
 }
 
 // chunkVersion is the current version of chunks.
-const chunkVersion = 27
+const chunkVersion = 40
 
 // New creates a new provider reading and writing from/to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
@@ -73,32 +73,74 @@ func New(dir string, compression opt.Compression) (*Provider, error) {
 
 // initDefaultLevelDat initialises a default level.dat file.
 func (p *Provider) initDefaultLevelDat() {
-	p.d.DoDayLightCycle = true
-	p.d.DoWeatherCycle = true
-	p.d.BaseGameVersion = protocol.CurrentVersion
-	p.d.NetworkVersion = protocol.CurrentProtocol
-	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
-	p.d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
-	p.d.LevelName = "World"
-	p.d.GameType = 1
-	p.d.StorageVersion = 8
-	p.d.Generator = 1
+	p.d.Abilities.AttackMobs = true
+	p.d.Abilities.AttackPlayers = true
+	p.d.Abilities.Build = true
+	p.d.Abilities.DoorsAndSwitches = true
+	p.d.Abilities.FlySpeed = 0.05
+	p.d.Abilities.Mine = true
+	p.d.Abilities.OpenContainers = true
+	p.d.Abilities.PlayerPermissionsLevel = 1
 	p.d.Abilities.WalkSpeed = 0.1
-	p.d.PVP = true
-	p.d.WorldStartCount = 1
-	p.d.RandomTickSpeed = 1
+	p.d.BaseGameVersion = "*"
+	p.d.CommandBlockOutput = true
+	p.d.CommandBlocksEnabled = true
+	p.d.CommandsEnabled = true
+	p.d.Difficulty = 2
+	p.d.DoDayLightCycle = true
+	p.d.DoEntityDrops = true
+	p.d.DoFireTick = true
+	p.d.DoInsomnia = true
+	p.d.DoMobLoot = true
+	p.d.DoMobSpawning = true
+	p.d.DoTileDrops = true
+	p.d.DoWeatherCycle = true
+	p.d.DrowningDamage = true
 	p.d.FallDamage = true
 	p.d.FireDamage = true
-	p.d.DrowningDamage = true
-	p.d.CommandsEnabled = true
-	p.d.MultiPlayerGame = true
-	p.d.SpawnY = math.MaxInt32
-	p.d.Difficulty = 2
-	p.d.DoWeatherCycle = true
-	p.d.RainLevel = 1.0
+	p.d.FreezeDamage = true
+	p.d.FunctionCommandLimit = 10000
+	p.d.GameType = 1
+	p.d.Generator = 1
+	p.d.HasBeenLoadedInCreative = true
+	p.d.InventoryVersion = protocol.CurrentVersion
+	p.d.LANBroadcast = true
+	p.d.LANBroadcastIntent = true
+	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
+	p.d.LevelName = "My World"
 	p.d.LightningLevel = 1.0
-	p.d.ServerChunkTickRange = 6
+	p.d.LimitedWorldDepth = 16
+	p.d.LimitedWorldOriginY = math.MaxInt16
+	p.d.LimitedWorldWidth = 16
+	p.d.MaxCommandChainLength = math.MaxUint16
+	p.d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
+	p.d.MobGriefing = true
+	p.d.MultiPlayerGame = true
+	p.d.MultiPlayerGameIntent = true
+	p.d.NaturalRegeneration = true
 	p.d.NetherScale = 8
+	p.d.NetworkVersion = protocol.CurrentProtocol
+	p.d.PVP = true
+	p.d.Platform = 2
+	p.d.PlatformBroadcastIntent = 3
+	p.d.RainLevel = 1.0
+	p.d.RandomSeed = time.Now().Unix()
+	p.d.RandomTickSpeed = 1
+	p.d.RespawnBlocksExplode = true
+	p.d.SendCommandFeedback = true
+	p.d.ServerChunkTickRange = 6
+	p.d.ShowBorderEffect = true
+	p.d.ShowDeathMessages = true
+	p.d.ShowTags = true
+	p.d.SpawnMobs = true
+	p.d.SpawnRadius = 5
+	p.d.SpawnRadius = 5
+	p.d.SpawnY = math.MaxInt16
+	p.d.StorageVersion = 9
+	p.d.TNTExplodes = true
+	p.d.WorldStartCount = 1
+	p.d.WorldVersion = 1
+	p.d.XBLBroadcastIntent = 3
 }
 
 // Settings returns the world.Settings of the world loaded by the Provider.
@@ -130,6 +172,7 @@ func (p *Provider) loadSettings() {
 func (p *Provider) SaveSettings(s *world.Settings) {
 	p.d.LevelName = s.Name
 	p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
+	p.d.LimitedWorldOriginX, p.d.LimitedWorldOriginY, p.d.LimitedWorldOriginZ = p.d.SpawnX, p.d.SpawnY, p.d.SpawnZ
 	p.d.Time = s.Time
 	p.d.DoDayLightCycle = s.TimeCycle
 	p.d.DoWeatherCycle = s.WeatherCycle

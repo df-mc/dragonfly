@@ -55,6 +55,11 @@ func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (c Chestplate) RepairableBy(i Stack) bool {
+	return armourTierRepairable(c.Tier)(i)
+}
+
 // Chestplate ...
 func (c Chestplate) Chestplate() bool {
 	return true

@@ -77,6 +77,11 @@ func (h Hoe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (h Hoe) RepairableBy(i Stack) bool {
+	return toolTierRepairable(h.Tier)(i)
+}
+
 // EncodeItem ...
 func (h Hoe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + h.Tier.Name + "_hoe", 0
