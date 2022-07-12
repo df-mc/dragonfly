@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Power is a bow enchantment which increases arrow damage.
@@ -17,13 +18,23 @@ func (Power) MaxLevel() int {
 	return 5
 }
 
+// Rarity ...
+func (Power) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
+}
+
 // PowerDamage returns the extra base damage dealt by the enchantment and level.
 func (Power) PowerDamage(level int) float64 {
 	return (float64(level) + 1) / 2
 }
 
-// CompatibleWith ...
-func (Power) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Bow)
+// CompatibleWithEnchantment ...
+func (Power) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (Power) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Bow)
 	return ok
 }

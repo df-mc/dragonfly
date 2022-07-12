@@ -2,6 +2,7 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"time"
 )
 
@@ -18,13 +19,23 @@ func (Flame) MaxLevel() int {
 	return 1
 }
 
+// Rarity ...
+func (Flame) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityRare
+}
+
 // BurnDuration always returns a hundred seconds, no matter the level.
 func (Flame) BurnDuration() time.Duration {
 	return time.Second * 100
 }
 
-// CompatibleWith ...
-func (Flame) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Bow)
+// CompatibleWithEnchantment ...
+func (Flame) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (Flame) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Bow)
 	return ok
 }
