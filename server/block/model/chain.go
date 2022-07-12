@@ -14,7 +14,7 @@ type Chain struct {
 
 // SupportType ...
 func (Chain) SupportType(face cube.Face) support.Type {
-	if face == cube.FaceDown {
+	if face.Axis() == cube.Y {
 		return support.Center{}
 	}
 	return support.None{}

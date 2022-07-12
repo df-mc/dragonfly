@@ -17,7 +17,7 @@ type Fence struct {
 // SupportType ...
 func (Fence) SupportType(face cube.Face) support.Type {
 	if face.Axis() == cube.Y {
-		return support.Full{}
+		return support.Center{}
 	}
 	return support.None{}
 }
