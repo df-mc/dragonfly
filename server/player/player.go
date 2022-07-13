@@ -1989,7 +1989,7 @@ func (p *Player) AddExperience(amount int) int {
 
 // RemoveExperience removes experience from the player.
 func (p *Player) RemoveExperience(amount int) {
-	p.experience.Remove(amount)
+	p.experience.Add(-amount)
 	p.session().SendExperience(p.experience)
 }
 
