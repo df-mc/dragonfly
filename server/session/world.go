@@ -704,15 +704,16 @@ func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
 	containerType, containerID := uint8(0), uint32(0)
 	switch inv.Size() {
 	case 5:
-		invBlock, _ = world.BlockByName("minecraft:hopper", map[string]any{})
+		invBlock, _ = world.BlockByName("minecraft:hopper", map[string]any{"facing_direction": int32(0), "toggle_bit": uint8(0)})
 		blockID, containerType, containerID = "Hopper", containerTypeHopper, containerChest
 	case 9:
-		invBlock, _ = world.BlockByName("minecraft:dispenser", map[string]any{})
+		invBlock, _ = world.BlockByName("minecraft:dispenser", map[string]any{"facing_direction": int32(0), "triggered_bit": uint8(0)})
 		blockID, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
 	case 27, 54:
 		invBlock = block.Chest{}
 		blockID, containerType, containerID = "Chest", containerTypeChest, containerChest
 	default:
+		// TODO: Validate sizes inside the fake inventory wrapper itself?
 		panic(fmt.Errorf("cannot create fake inventory of size %d", inv.Size()))
 	}
 
