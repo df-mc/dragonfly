@@ -61,7 +61,7 @@ type Replaceable interface {
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
-	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64)
 }
 
 // EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
