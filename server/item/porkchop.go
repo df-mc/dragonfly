@@ -25,11 +25,7 @@ func (p Porkchop) SmeltInfo() SmeltInfo {
 	if p.Cooked {
 		return SmeltInfo{}
 	}
-	return SmeltInfo{
-		Product:    NewStack(Porkchop{Cooked: true}, 1),
-		Experience: 0.35,
-		Food:       true,
-	}
+	return newFoodSmeltInfo(NewStack(Porkchop{Cooked: true}, 1), 0.35)
 }
 
 // EncodeItem ...

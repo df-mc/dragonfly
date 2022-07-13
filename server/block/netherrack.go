@@ -24,10 +24,7 @@ func (n Netherrack) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (Netherrack) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.NetherBrick{}, 1),
-		Experience: 0.1,
-	}
+	return newSmeltInfo(item.NewStack(item.NetherBrick{}, 1), 0.1)
 }
 
 // EncodeItem ...

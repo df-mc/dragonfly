@@ -17,7 +17,7 @@ type Potato struct {
 
 // SmeltInfo ...
 func (p Potato) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{Product: item.NewStack(item.BakedPotato{}, 1), Experience: 0.35, Food: true}
+	return newFoodSmeltInfo(item.NewStack(item.BakedPotato{}, 1), 0.35)
 }
 
 // SameCrop ...

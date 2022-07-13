@@ -57,10 +57,7 @@ func (s Stone) SmeltInfo() item.SmeltInfo {
 	if s.Smooth {
 		return item.SmeltInfo{}
 	}
-	return item.SmeltInfo{
-		Product:    item.NewStack(Stone{Smooth: true}, 1),
-		Experience: 0.1,
-	}
+	return newSmeltInfo(item.NewStack(Stone{Smooth: true}, 1), 0.1)
 }
 
 // EncodeItem ...

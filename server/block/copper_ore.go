@@ -23,11 +23,7 @@ func (c CopperOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (CopperOre) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.CopperIngot{}, 1),
-		Experience: 0.7,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.CopperIngot{}, 1), 0.7)
 }
 
 // EncodeItem ...

@@ -25,11 +25,7 @@ func (c Cod) SmeltInfo() SmeltInfo {
 	if c.Cooked {
 		return SmeltInfo{}
 	}
-	return SmeltInfo{
-		Product:    NewStack(Cod{Cooked: true}, 1),
-		Experience: 0.35,
-		Food:       true,
-	}
+	return newFoodSmeltInfo(NewStack(Cod{Cooked: true}, 1), 0.35)
 }
 
 // EncodeItem ...

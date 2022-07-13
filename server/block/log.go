@@ -39,10 +39,7 @@ func (l Log) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (Log) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.Charcoal{}, 1),
-		Experience: 0.15,
-	}
+	return newSmeltInfo(item.NewStack(item.Charcoal{}, 1), 0.15)
 }
 
 // FuelInfo ...

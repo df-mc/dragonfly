@@ -42,10 +42,7 @@ func (s Sandstone) EncodeBlock() (string, map[string]any) {
 // SmeltInfo ...
 func (s Sandstone) SmeltInfo() item.SmeltInfo {
 	if s.Type == NormalSandstone() {
-		return item.SmeltInfo{
-			Product:    item.NewStack(Sandstone{Red: s.Red, Type: SmoothSandstone()}, 1),
-			Experience: 0.1,
-		}
+		return newSmeltInfo(item.NewStack(Sandstone{Red: s.Red, Type: SmoothSandstone()}, 1), 0.1)
 	}
 	return item.SmeltInfo{}
 }

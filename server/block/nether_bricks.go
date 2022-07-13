@@ -23,10 +23,7 @@ func (n NetherBricks) BreakInfo() BreakInfo {
 // SmeltInfo ...
 func (n NetherBricks) SmeltInfo() item.SmeltInfo {
 	if n.Type == NormalNetherBricks() {
-		return item.SmeltInfo{
-			Product:    item.NewStack(NetherBricks{Type: CrackedNetherBricks()}, 1),
-			Experience: 0.1,
-		}
+		return newSmeltInfo(item.NewStack(NetherBricks{Type: CrackedNetherBricks()}, 1), 0.1)
 	}
 	return item.SmeltInfo{}
 }

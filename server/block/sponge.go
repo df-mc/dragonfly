@@ -25,10 +25,7 @@ func (s Sponge) BreakInfo() BreakInfo {
 // SmeltInfo ...
 func (s Sponge) SmeltInfo() item.SmeltInfo {
 	if s.Wet {
-		return item.SmeltInfo{
-			Product:    item.NewStack(Sponge{}, 1),
-			Experience: 0.15,
-		}
+		return newSmeltInfo(item.NewStack(Sponge{}, 1), 0.15)
 	}
 	return item.SmeltInfo{}
 }

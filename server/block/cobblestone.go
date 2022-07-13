@@ -19,10 +19,7 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (Cobblestone) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(Stone{}, 1),
-		Experience: 0.1,
-	}
+	return newSmeltInfo(item.NewStack(Stone{}, 1), 0.1)
 }
 
 // RepairsStoneTools ...

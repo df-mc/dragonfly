@@ -23,11 +23,7 @@ func (l LapisOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (LapisOre) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.LapisLazuli{}, 1),
-		Experience: 0.2,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.LapisLazuli{}, 1), 0.2)
 }
 
 // EncodeItem ...

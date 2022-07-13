@@ -38,10 +38,7 @@ func (w Wood) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (Wood) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.Charcoal{}, 1),
-		Experience: 0.15,
-	}
+	return newSmeltInfo(item.NewStack(item.Charcoal{}, 1), 0.15)
 }
 
 // FuelInfo ...

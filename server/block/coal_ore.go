@@ -18,11 +18,7 @@ func (c CoalOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (CoalOre) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.Coal{}, 1),
-		Experience: 0.1,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.Coal{}, 1), 0.1)
 }
 
 // EncodeItem ...

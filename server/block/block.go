@@ -261,3 +261,29 @@ type bassDrum struct{}
 func (bassDrum) Instrument() sound.Instrument {
 	return sound.BassDrum()
 }
+
+// newSmeltInfo returns a new SmeltInfo with the given values.
+func newSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+	}
+}
+
+// newFoodSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a smelter.
+func newFoodSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Food:       true,
+	}
+}
+
+// newOreSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a blast furnace.
+func newOreSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Ores:       true,
+	}
+}

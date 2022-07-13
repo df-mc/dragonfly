@@ -15,11 +15,7 @@ func (q NetherQuartzOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (NetherQuartzOre) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.NetherQuartz{}, 1),
-		Experience: 0.2,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.NetherQuartz{}, 1), 0.2)
 }
 
 // EncodeItem ...
