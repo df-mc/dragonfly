@@ -134,18 +134,18 @@ func (w StoneWall) calculateState(wo *world.World, pos cube.Pos) (StoneWall, boo
 			boxes := above.Model().BBox(abovePos, wo)
 			for _, bb := range boxes {
 				if bb.Min().Y() == 0 {
-					xOverlap := bb.Min().X() <= 0.25 && bb.Max().X() >= 0.75
-					zOverlap := bb.Min().Z() <= 0.25 && bb.Max().Z() >= 0.75
+					xOverlap := bb.Min().X() < 0.75 && bb.Max().X() > 0.25
+					zOverlap := bb.Min().Z() < 0.75 && bb.Max().Z() > 0.25
 					var tall bool
 					switch face {
 					case cube.FaceNorth:
-						tall = xOverlap && bb.Max().Z() >= 0.75
+						tall = xOverlap && bb.Min().Z() < 0.25
 					case cube.FaceEast:
-						tall = bb.Min().X() <= 0.25 && zOverlap
+						tall = bb.Max().X() > 0.75 && zOverlap
 					case cube.FaceSouth:
-						tall = xOverlap && bb.Min().Z() <= 0.25
+						tall = xOverlap && bb.Max().Z() > 0.75
 					case cube.FaceWest:
-						tall = bb.Max().X() >= 0.75 && zOverlap
+						tall = bb.Min().X() < 0.25 && zOverlap
 					}
 					if tall {
 						connectionType = TallWallConnection()
