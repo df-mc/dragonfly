@@ -696,38 +696,37 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
-// ViewFakeInventory ...
+// ViewInventory ...
 // TODO: Proper double-chest fake inventory support, cleanup.
-func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
-	var blockID string
-	var invBlock world.Block
+func (s *Session) ViewInventory(name string, inv *inventory.Inventory) {
+	var id string
+	var b world.Block
 	containerType, containerID := uint8(0), uint32(0)
 	switch inv.Size() {
-	case 5:
-		invBlock, _ = world.BlockByName("minecraft:hopper", map[string]any{"facing_direction": int32(0), "toggle_bit": uint8(0)})
-		blockID, containerType, containerID = "Hopper", containerTypeHopper, containerChest
-	case 9:
-		invBlock, _ = world.BlockByName("minecraft:dispenser", map[string]any{"facing_direction": int32(0), "triggered_bit": uint8(0)})
-		blockID, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
-	case 27, 54:
-		invBlock = block.Chest{}
-		blockID, containerType, containerID = "Chest", containerTypeChest, containerChest
+	case inventory.HopperSize:
+		b, _ = world.BlockByName("minecraft:hopper", map[string]any{"facing_direction": int32(0), "toggle_bit": uint8(0)})
+		id, containerType, containerID = "Hopper", containerTypeHopper, containerChest
+	case inventory.DispenserSize:
+		b, _ = world.BlockByName("minecraft:dispenser", map[string]any{"facing_direction": int32(0), "triggered_bit": uint8(0)})
+		id, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
+	case inventory.ChestSize, inventory.DoubleChestSize:
+		b = block.Chest{}
+		id, containerType, containerID = "Chest", containerTypeChest, containerChest
 	default:
-		// TODO: Validate sizes inside the fake inventory wrapper itself?
 		panic(fmt.Errorf("cannot create fake inventory of size %d", inv.Size()))
 	}
 
 	pos := cube.PosFromVec3(entity.DirectionVector(s.c).Mul(-2).Add(s.c.Position()))
 
-	s.ViewBlockUpdate(pos, invBlock, 0)
+	s.ViewBlockUpdate(pos, b, 0)
 	s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), block.Air{}, 0)
 
 	blockPos := blockPosToProtocol(pos)
 	s.writePacket(&packet.BlockActorData{
 		Position: blockPos,
 		NBTData: map[string]interface{}{
-			"CustomName": inv.Name(),
-			"id":         blockID,
+			"CustomName": name,
+			"id":         id,
 			"x":          blockPos.X(),
 			"y":          blockPos.Y(),
 			"z":          blockPos.Z(),
@@ -736,21 +735,20 @@ func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
 
 	time.AfterFunc(time.Millisecond*50, func() {
 		s.openedPos.Store(pos)
-		s.openedWindow.Store(inv.Inventory)
+		s.openedWindow.Store(inv)
 
 		nextID := s.nextWindowID()
 		s.fakeInventoryOpen.Store(inv)
 		s.containerOpened.Store(true)
 		s.openedContainerID.Store(containerID)
 
-		inv.AddViewer(s)
 		s.writePacket(&packet.ContainerOpen{
 			WindowID:                nextID,
 			ContainerPosition:       blockPos,
 			ContainerType:           containerType,
 			ContainerEntityUniqueID: -1,
 		})
-		s.sendInv(inv.Inventory, uint32(nextID))
+		s.sendInv(inv, uint32(nextID))
 	})
 }
 

@@ -2373,10 +2373,9 @@ func (p *Player) OnGround() bool {
 	return p.onGround.Load()
 }
 
-// ShowFakeInventory shows a fake inventory to the given player. The type of inventory is determined by the size of the
-// inventory. A custom name may be applied to the fake inventory, which the player may see in the inventory GUI.
-func (p *Player) ShowFakeInventory(inv *inventory.FakeInventory) {
-	p.session().ViewFakeInventory(inv)
+// ShowInventory shows an inventory to the given player. The type of inventory is determined by the size of the inventory.
+func (p *Player) ShowInventory(name string, inv *inventory.Inventory) {
+	p.session().ViewInventory(name, inv)
 }
 
 // EyeHeight returns the eye height of the player: 1.62, or 0.52 if the player is swimming.
