@@ -33,7 +33,7 @@ func (b Boots) DurabilityInfo() DurabilityInfo {
 
 // SmeltInfo ...
 func (b Boots) SmeltInfo() SmeltInfo {
-	switch b.Tier {
+	switch b.Tier.(type) {
 	case ArmourTierIron, ArmourTierChain:
 		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ArmourTierGold:

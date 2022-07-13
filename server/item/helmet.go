@@ -56,7 +56,7 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 
 // SmeltInfo ...
 func (h Helmet) SmeltInfo() SmeltInfo {
-	switch h.Tier {
+	switch h.Tier.(type) {
 	case ArmourTierIron, ArmourTierChain:
 		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ArmourTierGold:
