@@ -17,6 +17,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"image/color"
 	"math/rand"
+	"time"
 )
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
@@ -555,7 +556,7 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
-	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	blockPos := blockPosToProtocol(pos)
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,
 		NewBlockRuntimeID: world.BlockRuntimeID(b),
@@ -683,6 +684,57 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		ContainerEntityUniqueID: -1,
 	})
+}
+
+func (s *Session) ShowInventory(inv *inventory.Inventory) {
+	var bl world.Block
+	switch inv.Size() {
+	case 5:
+		bl, _ = world.BlockByName("minecraft:hopper", map[string]any{})
+	case 9:
+		bl, _ = world.BlockByName("minecraft:dispenser", map[string]any{})
+	case 27, 54:
+		bl = block.Chest{}
+	default:
+		panic("invalid size")
+	}
+
+	pos := cube.PosFromVec3(entity.DirectionVector(s.c).Mul(-2).Add(s.c.Position()))
+	s.ViewBlockUpdate(pos, bl, 0)
+	s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), block.Air{}, 0)
+
+	blockPos := blockPosToProtocol(pos)
+	data := createFakeInventoryNBT(inv, pos)
+	data["x"], data["y"], data["z"] = blockPos.X(), blockPos.Y(), blockPos.Z()
+	s.writePacket(&packet.BlockActorData{
+		Position: blockPos,
+		NBTData:  data,
+	})
+
+	time.AfterFunc(time.Millisecond*50, func() {
+		nextID := s.nextWindowID()
+		s.openedPos.Store(pos)
+		s.openedWindow.Store(inv)
+		s.fakeInventoryOpen.Store(inv)
+		s.containerOpened.Store(true)
+		s.openedContainerID.Store(containerChest)
+		s.writePacket(&packet.ContainerOpen{
+			WindowID:                nextID,
+			ContainerPosition:       blockPos,
+			ContainerType:           0,
+			ContainerEntityUniqueID: -1,
+		})
+		s.sendInv(inv, uint32(nextID))
+	})
+}
+
+func createFakeInventoryNBT(inv *inventory.Inventory, pos cube.Pos) map[string]interface{} {
+	m := map[string]interface{}{"CustomName": "pp"}
+	switch inv.Size() {
+	case 27, 54:
+		m["id"] = "Chest"
+	}
+	return m
 }
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
@@ -826,6 +878,12 @@ func (s *Session) closeWindow() {
 	s.openedContainerID.Store(0)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
+	if s.fakeInventoryOpen.Load() != nil {
+		pos := s.openedPos.Load()
+		w := s.c.World()
+		s.ViewBlockUpdate(pos, w.Block(pos), 0)
+		s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), w.Block(pos.Add(cube.Pos{0, 1})), 0)
+	}
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.
@@ -845,6 +903,11 @@ func (s *Session) entityFromRuntimeID(id uint64) (world.Entity, bool) {
 	e, ok := s.entities[id]
 	s.entityMutex.RUnlock()
 	return e, ok
+}
+
+// blockPosToProtocl converts a cube.Pos to a protocol.BlockPos.
+func blockPosToProtocol(pos cube.Pos) protocol.BlockPos {
+	return protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 }
 
 // vec32To64 converts a mgl32.Vec3 to a mgl64.Vec3.

@@ -63,12 +63,12 @@ type Session struct {
 
 	breakingPos cube.Pos
 
-	inTransaction, containerOpened atomic.Bool
-	openedWindowID                 atomic.Uint32
-	openedContainerID              atomic.Uint32
-	openedWindow                   atomic.Value[*inventory.Inventory]
-	openedPos                      atomic.Value[cube.Pos]
-	swingingArm                    atomic.Bool
+	inTransaction, containerOpened  atomic.Bool
+	openedWindowID                  atomic.Uint32
+	openedContainerID               atomic.Uint32
+	openedWindow, fakeInventoryOpen atomic.Value[*inventory.Inventory]
+	openedPos                       atomic.Value[cube.Pos]
+	swingingArm                     atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
 
@@ -183,7 +183,7 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 	spawn := w.Spawn()
 	s.chunkLoader.Move(spawn.Vec3Middle())
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(spawn[0]), int32(spawn[1]), int32(spawn[2])},
+		Position: blockPosToProtocol(spawn),
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 

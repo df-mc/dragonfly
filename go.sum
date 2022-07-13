@@ -147,8 +147,6 @@ github.com/rogpeppe/go-internal v1.3.0 h1:RR9dF3JtopPvtkroDZuVD7qquD0bnHlKSqaQhg
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/sandertv/go-raknet v1.10.9 h1:1a8ntIenpDBue3IsUdhJhxTznGt8Qeaan7HtQKi0hBs=
 github.com/sandertv/go-raknet v1.10.9/go.mod h1:Gx+WgZBMQ0V2UoouGoJ8Wj6CDrMBQ4SB2F/ggpl5/+Y=
-github.com/sandertv/gophertunnel v1.21.2-0.20220708033935-bfc525e9949a h1:jGj8ZRNHFva3mqfp6KQCWD3+qC5ljbk9m+wxq8NwByE=
-github.com/sandertv/gophertunnel v1.21.2-0.20220708033935-bfc525e9949a/go.mod h1:pghfqVLRdd6m8oR4ZKj918lyCuSIhC1uHEyGgj2fUzE=
 github.com/sandertv/gophertunnel v1.22.0 h1:JC825dXCUUQfARUd5ZB607s3G8LucYrbgIYyb9LQSoA=
 github.com/sandertv/gophertunnel v1.22.0/go.mod h1:pghfqVLRdd6m8oR4ZKj918lyCuSIhC1uHEyGgj2fUzE=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
