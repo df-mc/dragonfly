@@ -36,8 +36,12 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sw, ok := e.(swimmer); ok && sw.Swimming() {
 		m.setFlag(dataKeyFlags, dataFlagSwimming)
 	}
-	if b, ok := e.(breather); ok && b.Breathing() {
-		m.setFlag(dataKeyFlags, dataFlagBreathing)
+	if b, ok := e.(breather); ok {
+		m[dataKeyAir] = int16(b.AirSupply().Milliseconds() / 50)
+		m[dataKeyMaxAir] = int16(b.MaxAirSupply().Milliseconds() / 50)
+		if b.Breathing() {
+			m.setFlag(dataKeyFlags, dataFlagBreathing)
+		}
 	}
 	if i, ok := e.(invisible); ok && i.Invisible() {
 		m.setFlag(dataKeyFlags, dataFlagInvisible)
@@ -53,6 +57,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.setFlag(dataKeyFlags, dataFlagCritical)
+	}
+	if g, ok := e.(gameMode); ok && g.GameMode().HasCollision() {
+		m.setFlag(dataKeyFlags, dataFlagHasCollision)
 	}
 	if o, ok := e.(orb); ok {
 		m[dataKeyExperienceValue] = int32(o.Experience())
@@ -124,6 +131,7 @@ const (
 	dataKeyCustomDisplay     = 18
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
+	dataKeyMaxAir            = 42
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
 	dataKeyAlwaysShowNameTag = 81
@@ -144,6 +152,7 @@ const (
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
+	dataFlagHasCollision      = 47
 	dataFlagAffectedByGravity = 48
 	dataFlagEnchanted         = 51
 	dataFlagSwimming          = 56
@@ -163,6 +172,8 @@ type swimmer interface {
 
 type breather interface {
 	Breathing() bool
+	AirSupply() time.Duration
+	MaxAirSupply() time.Duration
 }
 
 type immobile interface {
@@ -215,4 +226,8 @@ type arrow interface {
 
 type orb interface {
 	Experience() int
+}
+
+type gameMode interface {
+	GameMode() world.GameMode
 }

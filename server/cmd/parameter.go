@@ -40,13 +40,9 @@ type Enum interface {
 }
 
 // SubCommand represents a subcommand that may be added as a static value that must be written. Adding
-// multiple Runnable implementations to the command in New with different SubCommand implementations as the
+// multiple Runnable implementations to the command in New with different SubCommand fields as the
 // first parameter allows for commands with subcommands.
-type SubCommand interface {
-	// SubName returns the value that must be entered by the user when executing the subcommand, such as
-	// 'kill' for a command such as /entity kill <target>.
-	SubName() string
-}
+type SubCommand struct{}
 
 // Varargs is an argument type that may be used to capture all arguments that follow. This is useful for,
 // for example, messages and names.
@@ -87,7 +83,7 @@ type optionalT interface {
 
 // typeNameOf returns a readable type name for the interface value passed. If none could be found, 'value'
 // is returned.
-func typeNameOf(i any) string {
+func typeNameOf(i any, name string) string {
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
 		return "int"
@@ -105,15 +101,14 @@ func typeNameOf(i any) string {
 		return "x y z"
 	case []Target:
 		return "target"
+	case SubCommand:
+		return name
 	}
 	if param, ok := i.(Parameter); ok {
 		return param.Type()
 	}
 	if enum, ok := i.(Enum); ok {
 		return enum.Type()
-	}
-	if sub, ok := i.(SubCommand); ok {
-		return sub.SubName()
 	}
 	return "value"
 }

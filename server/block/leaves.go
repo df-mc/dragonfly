@@ -107,8 +107,9 @@ func (l Leaves) EncodeItem() (name string, meta int16) {
 		return "minecraft:leaves", int16(l.Wood.Uint8())
 	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", int16(l.Wood.Uint8() - 4)
+	default:
+		return "minecraft:" + l.Wood.String() + "_leaves", 0
 	}
-	panic("invalid wood type")
 }
 
 // LightDiffusionLevel ...
@@ -134,19 +135,19 @@ func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
 		return "minecraft:leaves", map[string]any{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	case AcaciaWood(), DarkOakWood():
 		return "minecraft:leaves2", map[string]any{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+	default:
+		return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 	}
-	panic("invalid wood type")
 }
 
 // allLogs returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
-		leaves = append(leaves, Leaves{Wood: OakWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: SpruceWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: BirchWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: JungleWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: AcaciaWood(), Persistent: persistent, ShouldUpdate: update})
-		leaves = append(leaves, Leaves{Wood: DarkOakWood(), Persistent: persistent, ShouldUpdate: update})
+		for _, w := range WoodTypes() {
+			if w != CrimsonWood() && w != WarpedWood() {
+				leaves = append(leaves, Leaves{Wood: w, Persistent: persistent, ShouldUpdate: update})
+			}
+		}
 	}
 	f(true, true)
 	f(true, false)

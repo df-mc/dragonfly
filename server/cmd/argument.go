@@ -72,7 +72,7 @@ type parser struct {
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
 // parsing was not successful, an error is returned.
-func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source Source) (error, bool) {
+func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name string, source Source) (error, bool) {
 	var err error
 	i := v.Interface()
 	switch i.(type) {
@@ -92,6 +92,8 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 		err = p.varargs(line, v)
 	case []Target:
 		err = p.targets(line, v)
+	case SubCommand:
+		err = p.sub(line, name)
 	default:
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
@@ -99,10 +101,6 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, source
 		}
 		if enum, ok := i.(Enum); ok {
 			err = p.enum(line, v, enum, source)
-			break
-		}
-		if sub, ok := i.(SubCommand); ok {
-			err = p.sub(line, sub)
 			break
 		}
 		panic(fmt.Sprintf("non-command parameter type %T in command structure", i))
@@ -209,15 +207,15 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 }
 
 // sub reads verifies a SubCommand against the next argument.
-func (p parser) sub(line *Line, v SubCommand) error {
+func (p parser) sub(line *Line, name string) error {
 	arg, ok := line.Next()
 	if !ok {
 		return ErrInsufficientArgs
 	}
-	if strings.EqualFold(v.SubName(), arg) {
+	if strings.EqualFold(name, arg) {
 		return nil
 	}
-	return fmt.Errorf(`invalid argument "%v" for sub command "%v"`, arg, v.SubName())
+	return fmt.Errorf(`invalid argument "%v" for sub command "%v"`, arg, name)
 }
 
 // vec3 ...

@@ -92,7 +92,7 @@ func (l *Loader) Load(n int) {
 		pos := l.loadQueue[0]
 		c := l.w.chunk(pos)
 
-		l.viewer.ViewChunk(pos, c.Chunk)
+		l.viewer.ViewChunk(pos, c.Chunk, c.e)
 		l.w.addViewer(c, l)
 
 		l.loaded[pos] = c
@@ -122,6 +122,15 @@ func (l *Loader) Close() error {
 	l.closed = true
 	l.viewer = nil
 	return nil
+}
+
+// Reset clears all chunks loaded by the Loader and repopulates the loading queue so that they can all be loaded again.
+func (l *Loader) Reset() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.reset()
+	l.populateLoadQueue()
 }
 
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
