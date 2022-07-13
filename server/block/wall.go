@@ -9,12 +9,18 @@ import (
 )
 
 type Wall struct {
-	Type            WallType
+	// Type is the type of material of the wall.
+	Type WallType
+	// NorthConnection is the type of connection in the north direction of the post.
 	NorthConnection WallConnectionType
-	EastConnection  WallConnectionType
+	// EastConnection is the type of connection in the east direction of the post.
+	EastConnection WallConnectionType
+	// SouthConnection is the type of connection in the south direction of the post.
 	SouthConnection WallConnectionType
-	WestConnection  WallConnectionType
-	Post            bool
+	// WestConnection is the type of connection in the west direction of the post.
+	WestConnection WallConnectionType
+	// Post is if the wall is extended to the full height of a block or not.
+	Post bool
 }
 
 // EncodeItem ...
@@ -36,10 +42,10 @@ func (w Wall) EncodeBlock() (string, map[string]any) {
 // Model ...
 func (w Wall) Model() world.BlockModel {
 	return model.Wall{
-		NorthConnection: w.NorthConnection != NoWallConnection(),
-		EastConnection:  w.EastConnection != NoWallConnection(),
-		SouthConnection: w.SouthConnection != NoWallConnection(),
-		WestConnection:  w.WestConnection != NoWallConnection(),
+		NorthConnection: w.NorthConnection.String(),
+		EastConnection:  w.EastConnection.String(),
+		SouthConnection: w.SouthConnection.String(),
+		WestConnection:  w.WestConnection.String(),
 		Post:            w.Post,
 	}
 }

@@ -8,13 +8,20 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// StoneWall is a block similar to fences that prevents players from jumping over and is thinner than the usual block.
 type StoneWall struct {
-	Type            StoneWallType
+	// Type is the type of stone of the wall.
+	Type StoneWallType
+	// NorthConnection is the type of connection in the north direction of the post.
 	NorthConnection WallConnectionType
-	EastConnection  WallConnectionType
+	// EastConnection is the type of connection in the east direction of the post.
+	EastConnection WallConnectionType
+	// SouthConnection is the type of connection in the south direction of the post.
 	SouthConnection WallConnectionType
-	WestConnection  WallConnectionType
-	Post            bool
+	// WestConnection is the type of connection in the west direction of the post.
+	WestConnection WallConnectionType
+	// Post is if the wall is extended to the full height of a block or not.
+	Post bool
 }
 
 // EncodeItem ...
@@ -37,10 +44,10 @@ func (w StoneWall) EncodeBlock() (string, map[string]any) {
 // Model ...
 func (w StoneWall) Model() world.BlockModel {
 	return model.Wall{
-		NorthConnection: w.NorthConnection != NoWallConnection(),
-		EastConnection:  w.EastConnection != NoWallConnection(),
-		SouthConnection: w.SouthConnection != NoWallConnection(),
-		WestConnection:  w.WestConnection != NoWallConnection(),
+		NorthConnection: w.NorthConnection.String(),
+		EastConnection:  w.EastConnection.String(),
+		SouthConnection: w.SouthConnection.String(),
+		WestConnection:  w.WestConnection.String(),
 		Post:            w.Post,
 	}
 }
