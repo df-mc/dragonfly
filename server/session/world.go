@@ -696,22 +696,29 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
+var (
+	// hopperBlockType is the block type used for displaying hopper inventories to sessions.
+	hopperBlockType, _ = world.BlockByName("minecraft:hopper", map[string]any{"facing_direction": int32(0), "toggle_bit": uint8(0)})
+	// dispenserBlockType is the block type used for displaying dispenser inventories to sessions.
+	dispenserBlockType, _ = world.BlockByName("minecraft:dispenser", map[string]any{"facing_direction": int32(0), "triggered_bit": uint8(0)})
+	// chestBlockType is the block type used for displaying chest inventories to sessions.
+	chestBlockType = block.Chest{}
+)
+
 // ViewInventory ...
 // TODO: Proper double-chest fake inventory support, cleanup.
 func (s *Session) ViewInventory(name string, inv *inventory.Inventory) {
 	var id string
 	var b world.Block
-	containerType, containerID := uint8(0), uint32(0)
+	var containerID uint32
+	var containerType uint8
 	switch inv.Size() {
 	case inventory.HopperSize:
-		b, _ = world.BlockByName("minecraft:hopper", map[string]any{"facing_direction": int32(0), "toggle_bit": uint8(0)})
-		id, containerType, containerID = "Hopper", containerTypeHopper, containerChest
+		id, b, containerType, containerID = "Hopper", hopperBlockType, containerTypeHopper, containerChest
 	case inventory.DispenserSize:
-		b, _ = world.BlockByName("minecraft:dispenser", map[string]any{"facing_direction": int32(0), "triggered_bit": uint8(0)})
-		id, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
+		id, b, containerType, containerID = "Dispenser", dispenserBlockType, containerTypeDispenser, containerChest
 	case inventory.ChestSize, inventory.DoubleChestSize:
-		b = block.Chest{}
-		id, containerType, containerID = "Chest", containerTypeChest, containerChest
+		id, b, containerType, containerID = "Chest", chestBlockType, containerTypeChest, containerChest
 	default:
 		panic(fmt.Errorf("cannot create fake inventory of size %d", inv.Size()))
 	}
