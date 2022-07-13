@@ -17,7 +17,7 @@ type FakeInventory struct {
 }
 
 // NewFakeInventory creates a new FakeInventory with the given size and name.
-func NewFakeInventory(size int, name string) *FakeInventory {
+func NewFakeInventory(name string, size int) *FakeInventory {
 	m := new(sync.RWMutex)
 	v := make(map[Viewer]struct{}, 1)
 	return &FakeInventory{

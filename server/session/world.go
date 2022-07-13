@@ -650,6 +650,15 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	})
 }
 
+const (
+	containerTypeChest = iota
+	containerTypeCraftingTable
+	containerTypeAnvil     = 5
+	containerTypeDispenser = 6
+	containerTypeHopper    = 8
+	containerTypeBeacon    = 13
+)
+
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	if s.containerOpened.Load() && s.openedPos.Load() == pos {
@@ -672,11 +681,11 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	var containerType byte
 	switch b.(type) {
 	case block.CraftingTable:
-		containerType = 1
+		containerType = containerTypeCraftingTable
 	case block.Anvil:
-		containerType = 5
+		containerType = containerTypeAnvil
 	case block.Beacon:
-		containerType = 13
+		containerType = containerTypeBeacon
 	}
 	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{
@@ -688,16 +697,21 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 }
 
 // ViewFakeInventory ...
+// TODO: Proper double-chest fake inventory support, cleanup.
 func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
+	var blockID string
 	var invBlock world.Block
 	containerType, containerID := uint8(0), uint32(0)
 	switch inv.Size() {
 	case 5:
 		invBlock, _ = world.BlockByName("minecraft:hopper", map[string]any{})
+		blockID, containerType, containerID = "Hopper", containerTypeHopper, containerChest
 	case 9:
 		invBlock, _ = world.BlockByName("minecraft:dispenser", map[string]any{})
+		blockID, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
 	case 27, 54:
-		containerID, invBlock = containerChest, block.Chest{}
+		invBlock = block.Chest{}
+		blockID, containerType, containerID = "Chest", containerTypeChest, containerChest
 	default:
 		panic(fmt.Errorf("cannot create fake inventory of size %d", inv.Size()))
 	}
@@ -708,11 +722,15 @@ func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
 	s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), block.Air{}, 0)
 
 	blockPos := blockPosToProtocol(pos)
-	data := createFakeInventoryNBT(inv, pos)
-	data["x"], data["y"], data["z"] = blockPos.X(), blockPos.Y(), blockPos.Z()
 	s.writePacket(&packet.BlockActorData{
 		Position: blockPos,
-		NBTData:  data,
+		NBTData: map[string]interface{}{
+			"CustomName": inv.Name(),
+			"id":         blockID,
+			"x":          blockPos.X(),
+			"y":          blockPos.Y(),
+			"z":          blockPos.Z(),
+		},
 	})
 
 	time.AfterFunc(time.Millisecond*50, func() {
@@ -733,15 +751,6 @@ func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
 		})
 		s.sendInv(inv.Inventory, uint32(nextID))
 	})
-}
-
-func createFakeInventoryNBT(inv *inventory.FakeInventory, pos cube.Pos) map[string]interface{} {
-	m := map[string]interface{}{"CustomName": inv.Name()}
-	switch inv.Size() {
-	case 27, 54:
-		m["id"] = "Chest"
-	}
-	return m
 }
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
