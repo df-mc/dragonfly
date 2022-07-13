@@ -63,12 +63,13 @@ type Session struct {
 
 	breakingPos cube.Pos
 
-	inTransaction, containerOpened  atomic.Bool
-	openedWindowID                  atomic.Uint32
-	openedContainerID               atomic.Uint32
-	openedWindow, fakeInventoryOpen atomic.Value[*inventory.Inventory]
-	openedPos                       atomic.Value[cube.Pos]
-	swingingArm                     atomic.Bool
+	inTransaction, containerOpened atomic.Bool
+	openedWindowID                 atomic.Uint32
+	openedContainerID              atomic.Uint32
+	openedWindow                   atomic.Value[*inventory.Inventory]
+	fakeInventoryOpen              atomic.Value[*inventory.FakeInventory]
+	openedPos                      atomic.Value[cube.Pos]
+	swingingArm                    atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
 

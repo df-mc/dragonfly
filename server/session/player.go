@@ -111,8 +111,9 @@ const (
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
-	if fakeInv := s.fakeInventoryOpen.Load(); fakeInv != nil && int32(s.openedContainerID.Load()) == id {
-		return fakeInv, true
+	if inv := s.fakeInventoryOpen.Load(); inv != nil && int32(s.openedContainerID.Load()) == id {
+		// We have a fake inventory open with the same container ID, so return that.
+		return inv.Inventory, true
 	}
 	switch id {
 	case containerCraftingGrid, containerOutput, containerCursor:

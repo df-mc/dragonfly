@@ -23,6 +23,13 @@ type Inventory struct {
 	canAdd func(s item.Stack, slot int) bool
 }
 
+// Viewer represents a viewer that is able to view an inventory.
+type Viewer interface {
+	// ViewSlotChange views a change of a single slot in the inventory, in which the item was changed to the
+	// new item passed.
+	ViewSlotChange(slot int, newItem item.Stack)
+}
+
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
 var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Size()")

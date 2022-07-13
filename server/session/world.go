@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -686,21 +687,24 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
-func (s *Session) ShowInventory(inv *inventory.Inventory) {
-	var bl world.Block
+// ViewFakeInventory ...
+func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
+	var invBlock world.Block
+	containerType, containerID := uint8(0), uint32(0)
 	switch inv.Size() {
 	case 5:
-		bl, _ = world.BlockByName("minecraft:hopper", map[string]any{})
+		invBlock, _ = world.BlockByName("minecraft:hopper", map[string]any{})
 	case 9:
-		bl, _ = world.BlockByName("minecraft:dispenser", map[string]any{})
+		invBlock, _ = world.BlockByName("minecraft:dispenser", map[string]any{})
 	case 27, 54:
-		bl = block.Chest{}
+		containerID, invBlock = containerChest, block.Chest{}
 	default:
-		panic("invalid size")
+		panic(fmt.Errorf("cannot create fake inventory of size %d", inv.Size()))
 	}
 
 	pos := cube.PosFromVec3(entity.DirectionVector(s.c).Mul(-2).Add(s.c.Position()))
-	s.ViewBlockUpdate(pos, bl, 0)
+
+	s.ViewBlockUpdate(pos, invBlock, 0)
 	s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), block.Air{}, 0)
 
 	blockPos := blockPosToProtocol(pos)
@@ -712,24 +716,27 @@ func (s *Session) ShowInventory(inv *inventory.Inventory) {
 	})
 
 	time.AfterFunc(time.Millisecond*50, func() {
-		nextID := s.nextWindowID()
 		s.openedPos.Store(pos)
-		s.openedWindow.Store(inv)
+		s.openedWindow.Store(inv.Inventory)
+
+		nextID := s.nextWindowID()
 		s.fakeInventoryOpen.Store(inv)
 		s.containerOpened.Store(true)
-		s.openedContainerID.Store(containerChest)
+		s.openedContainerID.Store(containerID)
+
+		inv.AddViewer(s)
 		s.writePacket(&packet.ContainerOpen{
 			WindowID:                nextID,
 			ContainerPosition:       blockPos,
-			ContainerType:           0,
+			ContainerType:           containerType,
 			ContainerEntityUniqueID: -1,
 		})
-		s.sendInv(inv, uint32(nextID))
+		s.sendInv(inv.Inventory, uint32(nextID))
 	})
 }
 
-func createFakeInventoryNBT(inv *inventory.Inventory, pos cube.Pos) map[string]interface{} {
-	m := map[string]interface{}{"CustomName": "pp"}
+func createFakeInventoryNBT(inv *inventory.FakeInventory, pos cube.Pos) map[string]interface{} {
+	m := map[string]interface{}{"CustomName": inv.Name()}
 	switch inv.Size() {
 	case 27, 54:
 		m["id"] = "Chest"
@@ -878,9 +885,11 @@ func (s *Session) closeWindow() {
 	s.openedContainerID.Store(0)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
-	if s.fakeInventoryOpen.Load() != nil {
+	if inv := s.fakeInventoryOpen.Load(); inv != nil {
 		pos := s.openedPos.Load()
 		w := s.c.World()
+
+		inv.RemoveViewer(s)
 		s.ViewBlockUpdate(pos, w.Block(pos), 0)
 		s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), w.Block(pos.Add(cube.Pos{0, 1})), 0)
 	}
