@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -699,27 +698,26 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 // ViewFakeInventory ...
 // TODO: Proper double-chest fake inventory support, cleanup.
 func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
-	var blockID string
-	var invBlock world.Block
-	containerType, containerID := uint8(0), uint32(0)
-	switch inv.Size() {
-	case 5:
-		invBlock, _ = world.BlockByName("minecraft:hopper", map[string]any{"facing_direction": int32(0), "toggle_bit": uint8(0)})
-		blockID, containerType, containerID = "Hopper", containerTypeHopper, containerChest
-	case 9:
-		invBlock, _ = world.BlockByName("minecraft:dispenser", map[string]any{"facing_direction": int32(0), "triggered_bit": uint8(0)})
-		blockID, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
-	case 27, 54:
-		invBlock = block.Chest{}
-		blockID, containerType, containerID = "Chest", containerTypeChest, containerChest
+	t := inv.Type()
+	b := t.Block()
+
+	var id string
+	var containerID uint32
+	var containerType uint8
+	switch t {
+	case inventory.HopperFakeInventory():
+		id, containerType, containerID = "Hopper", containerTypeHopper, containerChest
+	case inventory.DispenserFakeInventory():
+		id, containerType, containerID = "Dispenser", containerTypeDispenser, containerChest
+	case inventory.ChestFakeInventory(), inventory.DoubleChestFakeInventory():
+		id, containerType, containerID = "Chest", containerTypeChest, containerChest
 	default:
-		// TODO: Validate sizes inside the fake inventory wrapper itself?
-		panic(fmt.Errorf("cannot create fake inventory of size %d", inv.Size()))
+		panic("should never happen")
 	}
 
 	pos := cube.PosFromVec3(entity.DirectionVector(s.c).Mul(-2).Add(s.c.Position()))
 
-	s.ViewBlockUpdate(pos, invBlock, 0)
+	s.ViewBlockUpdate(pos, b, 0)
 	s.ViewBlockUpdate(pos.Add(cube.Pos{0, 1}), block.Air{}, 0)
 
 	blockPos := blockPosToProtocol(pos)
@@ -727,7 +725,7 @@ func (s *Session) ViewFakeInventory(inv *inventory.FakeInventory) {
 		Position: blockPos,
 		NBTData: map[string]interface{}{
 			"CustomName": inv.Name(),
-			"id":         blockID,
+			"id":         id,
 			"x":          blockPos.X(),
 			"y":          blockPos.Y(),
 			"z":          blockPos.Z(),

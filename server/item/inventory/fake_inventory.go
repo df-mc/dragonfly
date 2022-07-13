@@ -10,18 +10,19 @@ import (
 type FakeInventory struct {
 	*Inventory
 
-	name string
+	customName    string
+	inventoryType FakeInventoryType
 
 	viewerMu *sync.RWMutex
 	viewers  map[Viewer]struct{}
 }
 
 // NewFakeInventory creates a new FakeInventory with the given size and name.
-func NewFakeInventory(name string, size int) *FakeInventory {
+func NewFakeInventory(name string, inventoryType FakeInventoryType) *FakeInventory {
 	m := new(sync.RWMutex)
 	v := make(map[Viewer]struct{}, 1)
 	return &FakeInventory{
-		Inventory: New(size, func(slot int, item item.Stack) {
+		Inventory: New(inventoryType.Size(), func(slot int, item item.Stack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
@@ -29,7 +30,8 @@ func NewFakeInventory(name string, size int) *FakeInventory {
 			}
 		}),
 
-		name: name,
+		customName:    name,
+		inventoryType: inventoryType,
 
 		viewerMu: m,
 		viewers:  v,
@@ -38,7 +40,12 @@ func NewFakeInventory(name string, size int) *FakeInventory {
 
 // Name returns the name of the fake inventory.
 func (f *FakeInventory) Name() string {
-	return f.name
+	return f.customName
+}
+
+// Type returns the type of the fake inventory.
+func (f *FakeInventory) Type() FakeInventoryType {
+	return f.inventoryType
 }
 
 // AddViewer adds a viewer to the fake inventory, so that it is updated whenever the inventory is changed.
