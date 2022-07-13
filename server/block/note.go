@@ -72,7 +72,7 @@ func (n Note) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (Note) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

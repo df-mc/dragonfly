@@ -7,7 +7,7 @@ type Stick struct{}
 
 // FuelInfo ...
 func (Stick) FuelInfo() FuelInfo {
-	return FuelInfo{Duration: time.Second * 5}
+	return newFuelInfo(time.Second * 5)
 }
 
 // EncodeItem ...

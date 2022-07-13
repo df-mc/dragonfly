@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -286,4 +287,9 @@ func newOreSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
 		Experience: experience,
 		Ores:       true,
 	}
+}
+
+// newFuelInfo returns a new FuelInfo with the given values.
+func newFuelInfo(duration time.Duration) item.FuelInfo {
+	return item.FuelInfo{Duration: duration}
 }

@@ -64,3 +64,14 @@ type FuelInfo struct {
 	// Residue is the resulting item from burning the fuel in a smelter.
 	Residue Stack
 }
+
+// WithResidue returns a new FuelInfo with a residue.
+func (f FuelInfo) WithResidue(residue Stack) FuelInfo {
+	f.Residue = residue
+	return f
+}
+
+// newFuelInfo returns a new FuelInfo with the given values.
+func newFuelInfo(duration time.Duration) FuelInfo {
+	return FuelInfo{Duration: duration}
+}

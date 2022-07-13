@@ -7,7 +7,7 @@ type Coal struct{}
 
 // FuelInfo ...
 func (Coal) FuelInfo() FuelInfo {
-	return FuelInfo{Duration: time.Second * 80}
+	return newFuelInfo(time.Second * 80)
 }
 
 // EncodeItem ...

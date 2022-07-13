@@ -41,7 +41,7 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (WoodFenceGate) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // UseOnBlock ...

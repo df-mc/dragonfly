@@ -43,7 +43,7 @@ func (Wood) SmeltInfo() item.SmeltInfo {
 
 // FuelInfo ...
 func (Wood) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // UseOnBlock ...

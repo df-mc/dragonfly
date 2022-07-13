@@ -28,11 +28,11 @@ func (b Bucket) Empty() bool {
 }
 
 // FuelInfo ...
-func (Bucket) FuelInfo() FuelInfo {
-	return FuelInfo{
-		Duration: time.Second * 1000,
-		Residue:  NewStack(Bucket{}, 1),
+func (b Bucket) FuelInfo() FuelInfo {
+	if b.Content.LiquidType() == "lava" {
+		return newFuelInfo(time.Second * 1000).WithResidue(NewStack(Bucket{}, 1))
 	}
+	return FuelInfo{}
 }
 
 // UseOnBlock handles the bucket filling and emptying logic.

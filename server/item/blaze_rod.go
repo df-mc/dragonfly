@@ -7,7 +7,7 @@ type BlazeRod struct{}
 
 // FuelInfo ...
 func (BlazeRod) FuelInfo() FuelInfo {
-	return FuelInfo{Duration: time.Second * 120}
+	return newFuelInfo(time.Second * 120)
 }
 
 // EncodeItem ...

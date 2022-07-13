@@ -68,7 +68,7 @@ func (p Pickaxe) SmeltInfo() SmeltInfo {
 // FuelInfo ...
 func (p Pickaxe) FuelInfo() FuelInfo {
 	if p.Tier == ToolTierWood {
-		return FuelInfo{Duration: time.Second * 10}
+		return newFuelInfo(time.Second * 10)
 	}
 	return FuelInfo{}
 }

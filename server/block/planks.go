@@ -36,7 +36,7 @@ func (p Planks) RepairsWoodTools() bool {
 
 // FuelInfo ...
 func (Planks) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

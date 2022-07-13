@@ -23,7 +23,7 @@ func (Coal) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (Coal) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 800}
+	return newFuelInfo(time.Second * 800)
 }
 
 // EncodeItem ...

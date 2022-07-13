@@ -62,7 +62,7 @@ func (s Sword) SmeltInfo() SmeltInfo {
 // FuelInfo ...
 func (s Sword) FuelInfo() FuelInfo {
 	if s.Tier == ToolTierWood {
-		return FuelInfo{Duration: time.Second * 10}
+		return newFuelInfo(time.Second * 10)
 	}
 	return FuelInfo{}
 }

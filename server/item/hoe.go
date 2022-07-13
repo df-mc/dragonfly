@@ -92,7 +92,7 @@ func (h Hoe) SmeltInfo() SmeltInfo {
 // FuelInfo ...
 func (h Hoe) FuelInfo() FuelInfo {
 	if h.Tier == ToolTierWood {
-		return FuelInfo{Duration: time.Second * 10}
+		return newFuelInfo(time.Second * 10)
 	}
 	return FuelInfo{}
 }

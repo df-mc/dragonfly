@@ -53,7 +53,7 @@ func (s Sign) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (Sign) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 10}
+	return newFuelInfo(time.Second * 10)
 }
 
 // EncodeItem ...

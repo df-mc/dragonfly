@@ -44,7 +44,7 @@ func (Log) SmeltInfo() item.SmeltInfo {
 
 // FuelInfo ...
 func (Log) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // UseOnBlock handles the rotational placing of logs.

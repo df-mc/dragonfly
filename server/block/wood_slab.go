@@ -86,7 +86,7 @@ func (s WoodSlab) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (WoodSlab) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.
