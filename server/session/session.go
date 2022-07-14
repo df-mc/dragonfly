@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -144,10 +146,11 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *at
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
 
-	s := &Session{
+	s := &Session{}
+	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(51, nil),
+		ui:                     inventory.New(51, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
@@ -452,6 +455,18 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+	}
+}
+
+// handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
+// in the future.
+func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+	if slot == enchantingInputSlot && s.containerOpened.Load() {
+		pos := s.openedPos.Load()
+		b := s.c.World().Block(pos)
+		if _, enchanting := b.(block.EnchantingTable); enchanting {
+			s.sendEnchantmentOptions(s.c.World(), pos, item)
+		}
 	}
 }
 

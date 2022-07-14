@@ -157,7 +157,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerEnchantingTableInput, containerEnchantingTableLapis:
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
-			if _, enchantingTable := b.(block.EnchantingTable); enchantingTable {
+			if _, enchanting := b.(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}

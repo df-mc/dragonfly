@@ -366,11 +366,6 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 		sl = 0
 	}
 
-	// TODO: this is horribly horribly horribly hacky pls remember to change this
-	if slot.ContainerID == containerEnchantingTableInput {
-		s.sendEnchantmentOptions(s.c.World(), s.openedPos.Load(), i)
-	}
-
 	before, _ := inv.Item(sl)
 	_ = inv.SetItem(sl, i)
 
