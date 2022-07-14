@@ -1,7 +1,9 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 )
 
 // Dirt is a block found abundantly in most biomes under a layer of grass blocks at the top of the normal
@@ -12,10 +14,6 @@ type Dirt struct {
 	// Coarse specifies if the dirt should be off the coarse dirt variant. Grass blocks won't spread on
 	// the block if set to true.
 	Coarse bool
-}
-
-func (Dirt) BlastResistance() float64 {
-	return 0.5
 }
 
 // SoilFor ...
@@ -43,6 +41,16 @@ func (d Dirt) Till() (world.Block, bool) {
 // Shovel ...
 func (d Dirt) Shovel() (world.Block, bool) {
 	return DirtPath{}, true
+}
+
+// BlastResistance ...
+func (Dirt) BlastResistance() float64 {
+	return 0.5
+}
+
+// Explode ...
+func (d Dirt) Explode(pos cube.Pos, c explosion.Config) {
+	explodable{b: d.BreakInfo()}.Explode(pos, c)
 }
 
 // EncodeItem ...

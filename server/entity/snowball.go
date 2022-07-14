@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -110,6 +111,11 @@ func (s *Snowball) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 	snow := NewSnowball(pos, yaw, pitch, nil)
 	snow.vel = vel
 	return snow
+}
+
+// Explode ...
+func (s *Snowball) Explode(c explosion.Config, impact float64) {
+	s.SetVelocity(s.Position().Sub(c.Pos).Normalize().Mul(impact))
 }
 
 // Owner ...

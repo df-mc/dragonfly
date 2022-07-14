@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -174,6 +175,11 @@ func (s *SplashPotion) New(pos, vel mgl64.Vec3, yaw, pitch float64, t potion.Pot
 	splash := NewSplashPotion(pos, yaw, pitch, nil, t)
 	splash.vel = vel
 	return splash
+}
+
+// Explode ...
+func (s *SplashPotion) Explode(c explosion.Config, impact float64) {
+	s.SetVelocity(s.Position().Sub(c.Pos).Normalize().Mul(impact))
 }
 
 // Owner ...

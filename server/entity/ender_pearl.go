@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -129,6 +130,11 @@ func (e *EnderPearl) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 	pearl := NewEnderPearl(pos, yaw, pitch, nil)
 	pearl.vel = vel
 	return pearl
+}
+
+// Explode ...
+func (e *EnderPearl) Explode(c explosion.Config, impact float64) {
+	e.SetVelocity(e.Position().Sub(c.Pos).Normalize().Mul(impact))
 }
 
 // Owner ...

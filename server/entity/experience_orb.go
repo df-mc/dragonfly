@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/slices"
 	"math"
@@ -134,6 +135,11 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 			_ = e.Close()
 		}
 	}
+}
+
+// Explode ...
+func (e *ExperienceOrb) Explode(explosion.Config, float64) {
+	_ = e.Close()
 }
 
 // DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.

@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
@@ -163,6 +164,11 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	// Create a new item entity and shrink it by the amount of items that the collector collected.
 	w.AddEntity(NewItem(it.i.Grow(-n), pos))
 
+	_ = it.Close()
+}
+
+// Explode ...
+func (it *Item) Explode(explosion.Config, float64) {
 	_ = it.Close()
 }
 

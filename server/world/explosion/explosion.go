@@ -1,14 +1,9 @@
 package explosion
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
-	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand"
@@ -30,43 +25,24 @@ func init() {
 	}
 }
 
-type (
-	BlockFunc  func(c Config, pos cube.Pos)
-	EntityFunc func(c Config, e world.Entity)
-)
+type ExplodableEntity interface {
+	Explode(c Config, impact float64)
+}
 
-var (
-	DefaultBlockFunc BlockFunc = func(c Config, pos cube.Pos) {
-		// TODO
-		c.World.SetBlock(pos, nil, nil)
-	}
-	DefaultEntityFunc EntityFunc = func(c Config, e world.Entity) {
-		// TODO: Account for item entities etc.
-		living, ok := e.(entity.Living)
-		if !ok {
-			return
-		}
-		pos := e.Position()
-		diff := pos.Sub(c.Pos)
-
-		impact := (1 - diff.Len()) * exposure(c.Pos, e)
-
-		dmg := math.Floor(((impact*impact+impact)/2)*8*c.Size*2 + 1)
-
-		living.Hurt(dmg, damage.SourceExplosion{})
-		living.KnockBack(c.Pos, impact, diff.Normalize().Mul(impact)[0])
-	}
-)
+type ExplodableBlock interface {
+	BlastResistance() float64
+	Explode(pos cube.Pos, c Config)
+}
 
 type Config struct {
 	World *world.World
 	Pos   mgl64.Vec3
 	Size  float64
 	Rand  rand.Source
-	// TODO: Fire spawning
+	Fire  bool
 
-	BlockFunc  BlockFunc
-	EntityFunc EntityFunc
+	Sound    world.Sound
+	Particle world.Particle
 }
 
 func (c Config) Do() {
@@ -74,12 +50,6 @@ func (c Config) Do() {
 		c.Rand = rand.NewSource(time.Now().UnixNano())
 	}
 	r := rand.New(c.Rand)
-	if c.BlockFunc == nil {
-		c.BlockFunc = DefaultBlockFunc
-	}
-	if c.EntityFunc == nil {
-		c.EntityFunc = DefaultEntityFunc
-	}
 	d := c.Size * 2
 	bb := cube.Box(
 		math.Floor(c.Pos[0]-d-1),
@@ -91,22 +61,25 @@ func (c Config) Do() {
 	)
 
 	for _, e := range c.World.EntitiesWithin(bb.Grow(2), nil) {
-		entityPos := e.Position()
-		if !e.BBox().Translate(entityPos).IntersectsWith(bb) {
+		pos := e.Position()
+		if !e.BBox().Translate(pos).IntersectsWith(bb) {
 			continue
 		}
-		if entityPos.Sub(c.Pos).Len() <= d {
-			c.EntityFunc(c, e)
+		dist := pos.Sub(c.Pos).Len()
+		if dist > d {
+			continue
+		}
+		if explodable, ok := e.(ExplodableEntity); ok {
+			explodable.Explode(c, (1-dist/d)*exposure(c.Pos, e))
 		}
 	}
 
-	var affectedBlocks []cube.Pos
+	var affectedBlocks = make([]cube.Pos, 0, 32)
 	for _, ray := range rays {
 		pos := c.Pos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			bl := c.World.Block(current)
-			if r, ok := bl.(interface{ BlastResistance() float64 }); ok {
+			if r, ok := c.World.Block(current).(interface{ BlastResistance() float64 }); ok {
 				if blastForce -= (r.BlastResistance() + 0.3) * 0.3; blastForce > 0 {
 					affectedBlocks = append(affectedBlocks, current)
 				}
@@ -115,11 +88,45 @@ func (c Config) Do() {
 		}
 	}
 	for _, pos := range affectedBlocks {
-		c.BlockFunc(c, pos)
+		if explodable, ok := c.World.Block(pos).(ExplodableBlock); ok {
+			explodable.Explode(pos, c)
+		}
+	}
+	if c.Fire {
+		f := fire()
+		for _, pos := range affectedBlocks {
+			if rand.Intn(3) == 0 {
+				if c.World.Block(pos) == air() {
+					c.World.SetBlock(pos, f, nil)
+				}
+			}
+		}
 	}
 
-	c.World.AddParticle(c.Pos, particle.HugeExplosion{})
-	c.World.PlaySound(c.Pos, sound.Explosion{})
+	if c.Particle != nil {
+		c.World.AddParticle(c.Pos, c.Particle)
+	}
+	if c.Sound != nil {
+		c.World.PlaySound(c.Pos, c.Sound)
+	}
+}
+
+// fire returns a fire block.
+func fire() world.Block {
+	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
+	if !ok {
+		panic("could not find fire block")
+	}
+	return f
+}
+
+// air returns a air block.
+func air() world.Block {
+	f, ok := world.BlockByName("minecraft:air", map[string]any{})
+	if !ok {
+		panic("could not find air block")
+	}
+	return f
 }
 
 // TODO
@@ -149,9 +156,9 @@ func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 				}
 				var collides bool
 				trace.TraverseBlocks(dck2, origin, func(pos cube.Pos) (con bool) {
-					_, ok := w.Block(pos).(block.Air)
-					collides = !ok
-					return ok
+					air := w.Block(pos) == air()
+					collides = !air
+					return air
 				})
 				if collides {
 					integer14++

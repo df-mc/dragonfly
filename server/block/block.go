@@ -5,7 +5,10 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -202,6 +205,21 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 	if air || liquid {
 		w.SetBlock(pos, nil, nil)
 		w.AddEntity(entity.NewFallingBlock(b, pos.Vec3Middle()))
+	}
+}
+
+type explodable struct {
+	b BreakInfo
+}
+
+func (e explodable) Explode(pos cube.Pos, c explosion.Config) {
+	c.World.SetBlock(pos, nil, nil)
+	if 1/c.Size > rand.Float64() {
+		for _, drop := range e.b.Drops(item.ToolNone{}, nil) {
+			it := entity.NewItem(drop, pos.Vec3Centre())
+			it.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 1, 0.2, rand.Float64()*0.2 - 1})
+			c.World.AddEntity(entity.NewItem(drop, pos.Vec3Centre()))
+		}
 	}
 }
 

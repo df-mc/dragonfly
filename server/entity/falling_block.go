@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand"
@@ -127,6 +128,11 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 
 		_ = f.Close()
 	}
+}
+
+// Explode ...
+func (f *FallingBlock) Explode(explosion.Config, float64) {
+	_ = f.Close()
 }
 
 // DecodeNBT decodes the relevant data from the entity NBT passed and returns a new FallingBlock entity.
