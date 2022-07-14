@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -80,6 +81,12 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.BeaconPaymentStackRequestAction:
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
+			if s.containerOpened.Load() {
+				if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
+					err = h.handleSmithing(a, s)
+					break
+				}
+			}
 			err = h.handleCraft(a, s)
 		case *protocol.AutoCraftRecipeStackRequestAction:
 			err = h.handleAutoCraft(a, s)
