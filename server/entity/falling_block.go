@@ -3,12 +3,12 @@ package entity
 import (
 	"fmt"
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand"
@@ -130,8 +130,14 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	}
 }
 
+// New creates and returns an FallingBlock with the world.Block and position provided. It doesn't spawn the FallingBlock
+// by itself.
+func (f *FallingBlock) New(bl world.Block, pos mgl64.Vec3) world.Entity {
+	return NewFallingBlock(bl, pos)
+}
+
 // Explode ...
-func (f *FallingBlock) Explode(explosion.Config, float64) {
+func (f *FallingBlock) Explode(block.ExplosionConfig, float64) {
 	_ = f.Close()
 }
 

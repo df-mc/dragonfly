@@ -1,10 +1,10 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/slices"
 	"math"
@@ -138,7 +138,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 }
 
 // Explode ...
-func (e *ExperienceOrb) Explode(explosion.Config, float64) {
+func (e *ExperienceOrb) Explode(block.ExplosionConfig, float64) {
 	_ = e.Close()
 }
 

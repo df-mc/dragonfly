@@ -1,13 +1,13 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -178,7 +178,7 @@ func (s *SplashPotion) New(pos, vel mgl64.Vec3, yaw, pitch float64, t potion.Pot
 }
 
 // Explode ...
-func (s *SplashPotion) Explode(c explosion.Config, impact float64) {
+func (s *SplashPotion) Explode(c block.ExplosionConfig, impact float64) {
 	s.SetVelocity(s.Position().Sub(c.Pos).Normalize().Mul(impact))
 }
 

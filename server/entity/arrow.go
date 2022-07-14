@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -8,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -234,7 +234,7 @@ func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity,
 }
 
 // Explode ...
-func (a *Arrow) Explode(c explosion.Config, impact float64) {
+func (a *Arrow) Explode(c block.ExplosionConfig, impact float64) {
 	a.SetVelocity(a.Position().Sub(c.Pos).Normalize().Mul(impact))
 }
 

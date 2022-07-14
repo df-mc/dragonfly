@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/explosion"
 	"math/rand"
 )
 
@@ -42,16 +41,6 @@ func (g Grass) SoilFor(block world.Block) bool {
 		return true
 	}
 	return false
-}
-
-// BlastResistance ...
-func (g Grass) BlastResistance() float64 {
-	return 0.6
-}
-
-// Explode ...
-func (g Grass) Explode(pos cube.Pos, c explosion.Config) {
-	explodable{b: g.BreakInfo()}.Explode(pos, c)
 }
 
 // RandomTick handles the ticking of grass, which may or may not result in the spreading of grass onto dirt.
@@ -103,7 +92,7 @@ func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
+	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g)).withBlastResistance(0.6)
 }
 
 // EncodeItem ...

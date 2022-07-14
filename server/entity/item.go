@@ -2,11 +2,11 @@ package entity
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/explosion"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
@@ -167,8 +167,16 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	_ = it.Close()
 }
 
+// New creates and returns an Item with the item.Stack, position, and velocity provided. It doesn't spawn the Item
+// by itself.
+func (it *Item) New(stack item.Stack, pos, vel mgl64.Vec3) world.Entity {
+	itemEntity := NewItem(stack, pos)
+	itemEntity.vel = vel
+	return itemEntity
+}
+
 // Explode ...
-func (it *Item) Explode(explosion.Config, float64) {
+func (it *Item) Explode(block.ExplosionConfig, float64) {
 	_ = it.Close()
 }
 

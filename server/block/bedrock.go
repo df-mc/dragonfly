@@ -1,10 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world/explosion"
-)
-
 // Bedrock is a block that is indestructible in survival.
 type Bedrock struct {
 	solid
@@ -16,13 +11,10 @@ type Bedrock struct {
 	InfiniteBurning bool
 }
 
-// BlastResistance ...
-func (Bedrock) BlastResistance() float64 {
-	return 3600000
+// BreakInfo ...
+func (b Bedrock) BreakInfo() BreakInfo {
+	return newBreakInfo(-1, neverHarvestable, nothingEffective, simpleDrops()).withBlastResistance(0.6)
 }
-
-// Explode ...
-func (b Bedrock) Explode(cube.Pos, explosion.Config) {}
 
 // EncodeItem ...
 func (Bedrock) EncodeItem() (name string, meta int16) {
