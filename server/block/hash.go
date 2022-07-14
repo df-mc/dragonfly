@@ -361,7 +361,7 @@ func (EndStone) Hash() uint64 {
 }
 
 func (c EnderChest) Hash() uint64 {
-	return hashEnderChest | uint64(c.Facing)<<7
+	return hashEnderChest | uint64(c.Facing)<<8
 }
 
 func (f Farmland) Hash() uint64 {
