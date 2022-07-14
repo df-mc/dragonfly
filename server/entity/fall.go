@@ -1,19 +1,18 @@
 package entity
 
 import (
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
-	"sync"
 )
 
 // FallManager handles entities that can fall.
 type FallManager struct {
-	mu           sync.Mutex
 	e            fallEntity
-	fallDistance float64
+	fallDistance atomic.Float64
 }
 
 // fallEntity is an entity that can fall.
@@ -35,39 +34,29 @@ func NewFallManager(e fallEntity) *FallManager {
 
 // SetFallDistance sets the fall distance of the entity.
 func (f *FallManager) SetFallDistance(distance float64) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.fallDistance = distance
+	f.fallDistance.Store(distance)
 }
 
 // FallDistance returns the entity's fall distance.
 func (f *FallManager) FallDistance() float64 {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.fallDistance
+	return f.fallDistance.Load()
 }
 
 // ResetFallDistance resets the player's fall distance.
 func (f *FallManager) ResetFallDistance() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.fallDistance = 0
+	f.fallDistance.Store(0)
 }
 
 // UpdateFallState is called to update the entities falling state.
 func (f *FallManager) UpdateFallState(distanceThisTick float64) {
-	f.mu.Lock()
-	fallDistance := f.fallDistance
-	f.mu.Unlock()
+	fallDistance := f.fallDistance.Load()
 	if f.e.OnGround() {
 		if fallDistance > 0 {
 			f.fall(fallDistance)
 			f.ResetFallDistance()
 		}
 	} else if distanceThisTick < fallDistance {
-		f.mu.Lock()
-		f.fallDistance -= distanceThisTick
-		f.mu.Unlock()
+		f.fallDistance.Sub(distanceThisTick)
 	} else {
 		f.ResetFallDistance()
 	}
