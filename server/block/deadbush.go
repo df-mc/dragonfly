@@ -3,8 +3,8 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -19,7 +19,8 @@ type DeadBush struct {
 // NeighbourUpdateTick ...
 func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 
@@ -50,7 +51,7 @@ func (d DeadBush) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // HasLiquidDrops ...
 func (d DeadBush) HasLiquidDrops() bool {
-	return false
+	return true
 }
 
 // FlammabilityInfo ...
@@ -60,11 +61,14 @@ func (d DeadBush) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DeadBush) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == tool.TypeShears {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
-		return []item.Stack{item.NewStack(item.Stick{}, rand.Intn(3))}
+		if amount := rand.Intn(3); amount != 0 {
+			return []item.Stack{item.NewStack(item.Stick{}, amount)}
+		}
+		return nil
 	})
 }
 
@@ -74,6 +78,6 @@ func (d DeadBush) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DeadBush) EncodeBlock() (string, map[string]interface{}) {
+func (d DeadBush) EncodeBlock() (string, map[string]any) {
 	return "minecraft:deadbush", nil
 }

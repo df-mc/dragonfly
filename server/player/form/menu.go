@@ -16,7 +16,7 @@ type Menu struct {
 
 // NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
 // title passed is formatted following the rules of fmt.Sprintln.
-func NewMenu(submittable MenuSubmittable, title ...interface{}) Menu {
+func NewMenu(submittable MenuSubmittable, title ...any) Menu {
 	t := reflect.TypeOf(submittable)
 	if t.Kind() != reflect.Struct {
 		panic("submittable must be struct")
@@ -28,7 +28,7 @@ func NewMenu(submittable MenuSubmittable, title ...interface{}) Menu {
 
 // MarshalJSON ...
 func (m Menu) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+	return json.Marshal(map[string]any{
 		"type":    "form",
 		"title":   m.title,
 		"content": m.body,
@@ -38,7 +38,7 @@ func (m Menu) MarshalJSON() ([]byte, error) {
 
 // WithBody creates a copy of the Menu form and changes its body to the body passed, after which the new Menu
 // form is returned. The text is formatted following the rules of fmt.Sprintln.
-func (m Menu) WithBody(body ...interface{}) Menu {
+func (m Menu) WithBody(body ...any) Menu {
 	m.body = format(body)
 	return m
 }
@@ -66,7 +66,7 @@ func (m Menu) Buttons() []Button {
 	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
 	v.Set(reflect.ValueOf(m.submittable))
 
-	var buttons []Button
+	buttons := make([]Button, 0)
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if !field.CanSet() {
@@ -104,7 +104,8 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
 func (m Menu) verify() {
-	v := reflect.ValueOf(m.submittable)
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
 			continue

@@ -12,8 +12,8 @@ import (
 type SandstoneStairs struct {
 	transparent
 
-	// Smooth will specify if the sandstone block should be smooth sandstone stairs or normal sandstone stairs.
-	Smooth bool
+	// Type is the type of sandstone of the block.
+	Type SandstoneType
 
 	// Red specifies if the sandstone type is red or not. When set to true, the sandstone stairs type will represent its
 	// red variant, for example red sandstone stairs.
@@ -49,12 +49,12 @@ func (s SandstoneStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s SandstoneStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	return newBreakInfo(s.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // EncodeItem ...
 func (s SandstoneStairs) EncodeItem() (name string, meta int16) {
-	if s.Smooth {
+	if s.Type == SmoothSandstone() {
 		if s.Red {
 			return "minecraft:smooth_red_sandstone_stairs", 0
 		}
@@ -67,17 +67,17 @@ func (s SandstoneStairs) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s SandstoneStairs) EncodeBlock() (name string, properties map[string]interface{}) {
-	if s.Smooth {
+func (s SandstoneStairs) EncodeBlock() (name string, properties map[string]any) {
+	if s.Type == SmoothSandstone() {
 		if s.Red {
-			return "minecraft:smooth_red_sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+			return "minecraft:smooth_red_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 		}
-		return "minecraft:smooth_sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+		return "minecraft:smooth_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	if s.Red {
-		return "minecraft:red_sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+		return "minecraft:red_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
-	return "minecraft:sandstone_stairs", map[string]interface{}{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+	return "minecraft:sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 
 }
 
@@ -94,15 +94,15 @@ func (s SandstoneStairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
 
 // allSandstoneStairs ...
 func allSandstoneStairs() (stairs []world.Block) {
-	f := func(upsideDown bool) {
-		for direction := cube.Direction(0); direction <= 3; direction++ {
-			stairs = append(stairs, SandstoneStairs{Facing: direction, Smooth: true, Red: false, UpsideDown: upsideDown})
-			stairs = append(stairs, SandstoneStairs{Facing: direction, Smooth: true, Red: true, UpsideDown: upsideDown})
-			stairs = append(stairs, SandstoneStairs{Facing: direction, Smooth: false, Red: true, UpsideDown: upsideDown})
-			stairs = append(stairs, SandstoneStairs{Facing: direction, Smooth: false, Red: false, UpsideDown: upsideDown})
+	for _, t := range SandstoneTypes() {
+		if t.StairAble() {
+			for direction := cube.Direction(0); direction <= 3; direction++ {
+				stairs = append(stairs, SandstoneStairs{Type: t, Facing: direction, UpsideDown: true})
+				stairs = append(stairs, SandstoneStairs{Type: t, Facing: direction, UpsideDown: false})
+				stairs = append(stairs, SandstoneStairs{Type: t, Facing: direction, UpsideDown: true, Red: true})
+				stairs = append(stairs, SandstoneStairs{Type: t, Facing: direction, UpsideDown: false, Red: true})
+			}
 		}
 	}
-	f(false)
-	f(true)
 	return
 }

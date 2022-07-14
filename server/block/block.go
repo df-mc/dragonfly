@@ -2,13 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/google/uuid"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -16,7 +13,14 @@ import (
 type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User)
+	// Activate returns a bool indicating if activating the block was used successfully.
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
+}
+
+// Pickable represents a block that may give a different item then the block itself when picked.
+type Pickable interface {
+	// Pick returns the item that is picked when the block is picked.
+	Pick() item.Stack
 }
 
 // Punchable represents a block that may be punched by a viewer of the world. When punched, the block
@@ -46,11 +50,6 @@ type LightDiffuser interface {
 	LightDiffusionLevel() uint8
 }
 
-// SignEditor represents something that can edit a sign, typically players.
-type SignEditor interface {
-	UUID() uuid.UUID
-}
-
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {
@@ -58,23 +57,16 @@ type Replaceable interface {
 	ReplaceableBy(b world.Block) bool
 }
 
-// BeaconSource represents a block which is capable of contributing to powering a beacon pyramid.
-type BeaconSource interface {
-	// PowersBeacon returns a bool which indicates whether this block can contribute to powering up a
-	// beacon pyramid.
-	PowersBeacon() bool
-}
-
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
-	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64)
 }
 
-// EntityInsider represents a block that reacts to an entity going inside of its 1x1x1 axis
+// EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
 // aligned bounding box.
 type EntityInsider interface {
-	// EntityInside is called when an entity goes inside of the block's 1x1x1 axis aligned bounding box.
+	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
 	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
 }
 
@@ -83,15 +75,6 @@ type EntityInsider interface {
 type Frictional interface {
 	// Friction returns the block's friction value.
 	Friction() float64
-}
-
-// beaconAffected represents an entity that can be powered by a beacon. Only players will implement this.
-type beaconAffected interface {
-	// AddEffect adds a specific effect to the entity that implements this interface.
-	AddEffect(e effect.Effect)
-
-	// BeaconAffected returns whether this entity can be powered by a beacon.
-	BeaconAffected() bool
 }
 
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
@@ -121,7 +104,7 @@ func abs(x int) int {
 
 // replaceableWith checks if the block at the position passed is replaceable with the block passed.
 func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
-	if pos.OutOfBounds() {
+	if pos.OutOfBounds(w.Range()) {
 		return false
 	}
 	b := w.Block(pos)
@@ -154,8 +137,24 @@ func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *ite
 		placer.PlaceBlock(pos, b, ctx)
 		return
 	}
-	w.PlaceBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
+}
+
+// horizontalDirection returns the horizontal direction of the given direction. This is a legacy type still used in
+// various blocks.
+func horizontalDirection(d cube.Direction) cube.Direction {
+	switch d {
+	case cube.South:
+		return cube.North
+	case cube.West:
+		return cube.South
+	case cube.North:
+		return cube.West
+	case cube.East:
+		return cube.East
+	}
+	panic("invalid direction")
 }
 
 // placed checks if an item was placed with the use context passed.
@@ -201,16 +200,14 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
-		w.BreakBlockWithoutParticles(pos)
-
-		e := entity.NewFallingBlock(b, pos.Vec3Middle())
-		w.AddEntity(e)
+		w.SetBlock(pos, nil, nil)
+		w.AddEntity(entity.NewFallingBlock(b, pos.Vec3Middle()))
 	}
 }
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlammabilityInfo returns information about a blocks behavior involving fire.
+	// FlammabilityInfo returns information about a block's behavior involving fire.
 	FlammabilityInfo() FlammabilityInfo
 }
 
@@ -233,66 +230,34 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 	}
 }
 
-// FallDistanceEntity is an entity that has a fall distance.
-type FallDistanceEntity interface {
-	// ResetFallDistance resets the entities fall distance.
-	ResetFallDistance()
-	// FallDistance returns the entities fall distance.
-	FallDistance() float64
-}
-
-// InstrumentBlock represents a block that creates a note block sound other than the piano.
-type InstrumentBlock interface {
-	// Instrument returns the instrument used.
-	Instrument() instrument.Instrument
-}
-
 // bass is a struct that may be embedded for blocks that create a bass sound.
 type bass struct{}
 
 // Instrument ...
-func (bass) Instrument() instrument.Instrument {
-	return instrument.Bass()
+func (bass) Instrument() sound.Instrument {
+	return sound.Bass()
 }
 
 // snare is a struct that may be embedded for blocks that create a snare drum sound.
 type snare struct{}
 
 // Instrument ...
-func (snare) Instrument() instrument.Instrument {
-	return instrument.Snare()
+func (snare) Instrument() sound.Instrument {
+	return sound.Snare()
 }
 
 // clicksAndSticks is a struct that may be embedded for blocks that create a clicks and sticks sound.
 type clicksAndSticks struct{}
 
 // Instrument ...
-func (clicksAndSticks) Instrument() instrument.Instrument {
-	return instrument.ClicksAndSticks()
+func (clicksAndSticks) Instrument() sound.Instrument {
+	return sound.ClicksAndSticks()
 }
 
 // bassDrum is a struct that may be embedded for blocks that create a bass drum sound.
 type bassDrum struct{}
 
 // Instrument ...
-func (bassDrum) Instrument() instrument.Instrument {
-	return instrument.BassDrum()
-}
-
-// effectHolder represents an entity that can obtain effects.
-type effectHolder interface {
-	// AddEffect ...
-	AddEffect(effect.Effect)
-}
-
-// supportsVegetation checks if the vegetation can exist on the block.
-func supportsVegetation(vegetation, block world.Block) bool {
-	soil, ok := block.(Soil)
-	return ok && soil.SoilFor(vegetation)
-}
-
-// Soil represents a block that can support vegetation.
-type Soil interface {
-	// SoilFor returns whether the vegetation can exist on the block.
-	SoilFor(world.Block) bool
+func (bassDrum) Instrument() sound.Instrument {
+	return sound.BassDrum()
 }

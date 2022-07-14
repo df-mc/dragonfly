@@ -10,22 +10,22 @@ type Output struct {
 }
 
 // Errorf formats an error message and adds it to the command output.
-func (o *Output) Errorf(format string, a ...interface{}) {
+func (o *Output) Errorf(format string, a ...any) {
 	o.errors = append(o.errors, fmt.Errorf(format, a...))
 }
 
 // Error formats an error message and adds it to the command output.
-func (o *Output) Error(a ...interface{}) {
+func (o *Output) Error(a ...any) {
 	o.errors = append(o.errors, fmt.Errorf(fmt.Sprint(a...)))
 }
 
 // Printf formats a (success) message and adds it to the command output.
-func (o *Output) Printf(format string, a ...interface{}) {
+func (o *Output) Printf(format string, a ...any) {
 	o.messages = append(o.messages, fmt.Sprintf(format, a...))
 }
 
 // Print formats a (success) message and adds it to the command output.
-func (o *Output) Print(a ...interface{}) {
+func (o *Output) Print(a ...any) {
 	o.messages = append(o.messages, fmt.Sprint(a...))
 }
 
@@ -40,7 +40,7 @@ func (o *Output) ErrorCount() int {
 	return len(o.errors)
 }
 
-// Messages returns a list of all messages added to the command output. The amount of messages set depends
+// Messages returns a list of all messages added to the command output. The amount of messages present depends
 // on the command called.
 func (o *Output) Messages() []string {
 	return o.messages

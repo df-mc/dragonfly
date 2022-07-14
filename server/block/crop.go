@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -31,9 +30,9 @@ type crop struct {
 func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		b := w.Block(pos)
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 		if breakable, ok := b.(Breakable); ok {
-			for _, drop := range breakable.BreakInfo().Drops(tool.None{}, []item.Enchantment{}) {
+			for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, []item.Enchantment{}) {
 				itemEntity := entity.NewItem(drop, pos.Vec3Centre())
 				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 				w.AddEntity(itemEntity)

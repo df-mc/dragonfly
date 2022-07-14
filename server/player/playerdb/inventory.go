@@ -69,7 +69,7 @@ func encodeItem(item item.Stack) []byte {
 }
 
 func decodeItem(data []byte) item.Stack {
-	var itemNBT map[string]interface{}
+	var itemNBT map[string]any
 	decoder := nbt.NewDecoderWithEncoding(bytes.NewBuffer(data), nbt.LittleEndian)
 	err := decoder.Decode(&itemNBT)
 	if err != nil {

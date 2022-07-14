@@ -1,7 +1,6 @@
 package sound
 
 import (
-	"github.com/df-mc/dragonfly/server/block/instrument"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -24,9 +23,21 @@ type BlockBreaking struct {
 	sound
 }
 
+// GlassBreak is a sound played when a glass block or item is broken.
+type GlassBreak struct{ sound }
+
 // Fizz is a sound sent when a lava block and a water block interact with each other in a way that one of
 // them turns into a solid block.
 type Fizz struct{ sound }
+
+// AnvilLand is played when an anvil lands on the ground.
+type AnvilLand struct{ sound }
+
+// AnvilUse is played when an anvil is used.
+type AnvilUse struct{ sound }
+
+// AnvilBreak is played when an anvil is broken.
+type AnvilBreak struct{ sound }
 
 // ChestOpen is played when a chest is opened.
 type ChestOpen struct{ sound }
@@ -62,10 +73,19 @@ type FireExtinguish struct{ sound }
 type Note struct {
 	sound
 	// Instrument is the instrument of the note block.
-	Instrument instrument.Instrument
+	Instrument Instrument
 	// Pitch is the pitch of the note.
 	Pitch int
 }
+
+// ItemFrameAdd is a sound played when an item is added to an item frame.
+type ItemFrameAdd struct{ sound }
+
+// ItemFrameRemove is a sound played when an item is removed from an item frame.
+type ItemFrameRemove struct{ sound }
+
+// ItemFrameRotate is a sound played when an item frame's item is rotated.
+type ItemFrameRotate struct{ sound }
 
 // sound implements the world.Sound interface.
 type sound struct{}

@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Target represents the target of a command. A single Target or a []Target may be used as command parameter
+// Target represents the target of a command. A []Target may be used as command parameter
 // types to allow passing targets to the command.
 type Target interface {
 	// Name returns a name of the Target. Note that this name needs not to be and is not unique for a Target.

@@ -3,9 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -75,7 +73,7 @@ func (s WoodSlab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 
 // BreakInfo ...
 func (s WoodSlab) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if s.Double {
 			s.Double = false
 			// If the slab is double, it should drop two single slabs.
@@ -93,17 +91,6 @@ func (s WoodSlab) LightDiffusionLevel() uint8 {
 	return 0
 }
 
-// AABB ...
-func (s WoodSlab) AABB(cube.Pos, *world.World) []physics.AABB {
-	if s.Double {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1})}
-	}
-	if s.Top {
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{0, 0.5, 0}, mgl64.Vec3{1, 1, 1})}
-	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 0.5, 1})}
-}
-
 // EncodeItem ...
 func (s WoodSlab) EncodeItem() (name string, meta int16) {
 	switch s.Wood {
@@ -112,32 +99,30 @@ func (s WoodSlab) EncodeItem() (name string, meta int16) {
 			return "minecraft:double_wooden_slab", int16(s.Wood.Uint8())
 		}
 		return "minecraft:wooden_slab", int16(s.Wood.Uint8())
-	case CrimsonWood():
+	default:
 		if s.Double {
-			return "minecraft:crimson_double_slab", 0
+			return "minecraft:" + s.Wood.String() + "_double_slab", 0
 		}
-		return "minecraft:crimson_slab", 0
-	case WarpedWood():
-		if s.Double {
-			return "minecraft:warped_double_slab", 0
-		}
-		return "minecraft:warped_slab", 0
+		return "minecraft:" + s.Wood.String() + "_slab", 0
 	}
-	panic("invalid wood type")
 }
 
 // EncodeBlock ...
-func (s WoodSlab) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s WoodSlab) EncodeBlock() (name string, properties map[string]any) {
 	if s.Double {
-		if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
-			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]interface{}{"top_slot_bit": s.Top}
+		switch s.Wood {
+		case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+			return "minecraft:double_wooden_slab", map[string]any{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+		default:
+			return "minecraft:" + s.Wood.String() + "_double_slab", map[string]any{"top_slot_bit": s.Top}
 		}
-		return "minecraft:double_wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 	}
-	if s.Wood == CrimsonWood() || s.Wood == WarpedWood() {
-		return "minecraft:" + s.Wood.String() + "_slab", map[string]interface{}{"top_slot_bit": s.Top}
+	switch s.Wood {
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+		return "minecraft:wooden_slab", map[string]any{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
+	default:
+		return "minecraft:" + s.Wood.String() + "_slab", map[string]any{"top_slot_bit": s.Top}
 	}
-	return "minecraft:wooden_slab", map[string]interface{}{"top_slot_bit": s.Top, "wood_type": s.Wood.String()}
 }
 
 // CanDisplace ...

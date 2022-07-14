@@ -3,8 +3,8 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -26,14 +26,14 @@ func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g TallGrass) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t tool.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == tool.TypeShears || hasSilkTouch(enchantments) {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(g, 1)}
 		}
 		if rand.Float32() > 0.57 {
 			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
 		}
-		return []item.Stack{}
+		return nil
 	})
 }
 
@@ -41,8 +41,8 @@ func (g TallGrass) BreakInfo() BreakInfo {
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 	upper := DoubleTallGrass{Type: g.Type, UpperPart: true}
 	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-		w.SetBlock(pos, DoubleTallGrass{Type: g.Type})
-		w.SetBlock(pos.Side(cube.FaceUp), upper)
+		w.SetBlock(pos, DoubleTallGrass{Type: g.Type}, nil)
+		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
 	}
 	return false
@@ -51,7 +51,8 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 // NeighbourUpdateTick ...
 func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
 	}
 }
 
@@ -80,12 +81,12 @@ func (g TallGrass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g TallGrass) EncodeBlock() (name string, properties map[string]interface{}) {
+func (g TallGrass) EncodeBlock() (name string, properties map[string]any) {
 	switch g.Type {
 	case NormalGrass():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "tall"}
 	case Fern():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "fern"}
 	}
 	panic("should never happen")
 }
@@ -96,4 +97,16 @@ func allTallGrass() (grasses []world.Block) {
 		grasses = append(grasses, TallGrass{Type: g})
 	}
 	return
+}
+
+// supportsVegetation checks if the vegetation can exist on the block.
+func supportsVegetation(vegetation, block world.Block) bool {
+	soil, ok := block.(Soil)
+	return ok && soil.SoilFor(vegetation)
+}
+
+// Soil represents a block that can support vegetation.
+type Soil interface {
+	// SoilFor returns whether the vegetation can exist on the block.
+	SoilFor(world.Block) bool
 }

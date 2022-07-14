@@ -3,7 +3,10 @@ package item
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 	"reflect"
+	"sort"
 	"strings"
 	"sync/atomic"
 )
@@ -21,7 +24,9 @@ type Stack struct {
 
 	damage int
 
-	data map[string]interface{}
+	anvilCost int
+
+	data map[string]any
 
 	enchantments map[reflect.Type]Enchantment
 }
@@ -67,7 +72,7 @@ func (s Stack) Grow(n int) Stack {
 
 // Durability returns the current durability of the item stack. If the item is not one that implements the
 // Durable interface, BaseDurability will always return -1.
-// The closer the durability returned is to 0, the closer the item is to breaking.
+// The closer the durability returned is to 0, the closer the item is to being broken.
 func (s Stack) Durability() int {
 	if durable, ok := s.Item().(Durable); ok {
 		return durable.DurabilityInfo().MaxDurability - s.damage
@@ -112,7 +117,7 @@ func (s Stack) Damage(d int) Stack {
 
 // WithDurability returns a new item stack with the durability passed. If the item does not implement the
 // Durable interface, WithDurability returns the original stack.
-// The closer the durability d is to 0, the closer the item is to breaking. If a durability of 0 is passed,
+// The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,
 // a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
 // maximum durability, the stack returned will have the maximum durability.
 func (s Stack) WithDurability(d int) Stack {
@@ -149,7 +154,7 @@ func (s Stack) Item() world.Item {
 	return s.item
 }
 
-// AttackDamage returns the attack damage of the stack. By default, the value returned is 2.0. If the item
+// AttackDamage returns the attack damage to the stack. By default, the value returned is 1.0. If the item
 // held implements the item.Weapon interface, this damage may be different.
 func (s Stack) AttackDamage() float64 {
 	if weapon, ok := s.Item().(Weapon); ok {
@@ -159,12 +164,12 @@ func (s Stack) AttackDamage() float64 {
 		// The tooltip displayed in-game is therefore not exactly correct.
 		return weapon.AttackDamage() + 1
 	}
-	return 2.0
+	return 1.0
 }
 
 // WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
 // according to the rules of fmt.Sprintln.
-func (s Stack) WithCustomName(a ...interface{}) Stack {
+func (s Stack) WithCustomName(a ...any) Stack {
 	s.customName = format(a)
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)
@@ -199,8 +204,8 @@ func (s Stack) Lore() []string {
 //
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
-func (s Stack) WithValue(key string, val interface{}) Stack {
-	s.data = copyMap(s.data)
+func (s Stack) WithValue(key string, val any) Stack {
+	s.data = maps.Clone(s.data)
 	if val != nil {
 		s.data[key] = val
 	} else {
@@ -211,43 +216,73 @@ func (s Stack) WithValue(key string, val interface{}) Stack {
 
 // Value attempts to return a value set to the Stack using Stack.WithValue(). If a value is found by the key
 // passed, it is returned and ok is true. If not found, the value returned is nil and ok is false.
-func (s Stack) Value(key string) (val interface{}, ok bool) {
+func (s Stack) Value(key string) (val any, ok bool) {
 	val, ok = s.data[key]
 	return val, ok
 }
 
-// WithEnchantment returns the current stack with the passed enchantment. If the enchantment is not compatible
-// with the item stack, it will not be applied and will return the original stack.
-func (s Stack) WithEnchantment(ench Enchantment) Stack {
-	if !ench.CompatibleWith(s) {
-		return s
+// WithEnchantments returns the current stack with the passed enchantments. If an enchantment is not compatible
+// with the item stack, it will not be applied.
+func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
+	s.enchantments = copyEnchantments(s.enchantments)
+	for _, enchant := range enchants {
+		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {
+			// Enchantment is not compatible with the item.
+			continue
+		}
+		s.enchantments[reflect.TypeOf(enchant.t)] = enchant
 	}
-	s.enchantments = copyEnchantments(s.enchantments)
-	s.enchantments[reflect.TypeOf(ench)] = ench
 	return s
 }
 
-// WithoutEnchantment returns the current stack but with the passed enchantment removed.
-func (s Stack) WithoutEnchantment(enchant Enchantment) Stack {
+// WithoutEnchantments returns the current stack but with the passed enchantments removed.
+func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
-	delete(s.enchantments, reflect.TypeOf(enchant))
+	for _, enchant := range enchants {
+		delete(s.enchantments, reflect.TypeOf(enchant))
+	}
 	return s
 }
 
-// Enchantment attempts to return an enchantment set to the Stack using Stack.WithEnchantment(). If an enchantment
-// is found, the enchantment and the bool true is returned.
-func (s Stack) Enchantment(enchant Enchantment) (Enchantment, bool) {
+// Enchantment attempts to return an Enchantment set to the Stack using Stack.WithEnchantment(). If an Enchantment
+// is found by the EnchantmentType, the enchantment and the bool true is returned.
+func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
 	ench, ok := s.enchantments[reflect.TypeOf(enchant)]
 	return ench, ok
 }
 
-// Enchantments returns an array of all Enchantments on the item.
+// Enchantments returns an array of all Enchantments on the item. Enchantments returns the enchantments of a Stack in a
+// deterministic order.
 func (s Stack) Enchantments() []Enchantment {
 	e := make([]Enchantment, 0, len(s.enchantments))
 	for _, ench := range s.enchantments {
 		e = append(e, ench)
 	}
+	sort.Slice(e, func(i, j int) bool {
+		id1, _ := EnchantmentID(e[i].t)
+		id2, _ := EnchantmentID(e[j].t)
+		return id1 < id2
+	})
 	return e
+}
+
+// AnvilCost returns the number of experience levels to add to the base level cost when repairing, combining, or
+// renaming this item with an anvil.
+func (s Stack) AnvilCost() int {
+	return s.anvilCost
+}
+
+// WithAnvilCost returns the current Stack with the anvil cost set to the passed value.
+func (s Stack) WithAnvilCost(anvilCost int) Stack {
+	i := s.Item()
+	_, repairable := i.(Repairable)
+	_, enchantedBook := i.(EnchantedBook)
+	if !repairable && !enchantedBook {
+		// This item can't have a repair cost.
+		return s
+	}
+	s.anvilCost = anvilCost
+	return s
 }
 
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
@@ -256,12 +291,12 @@ func (s Stack) Enchantments() []Enchantment {
 // both stacks together don't exceed the max count.
 // If the two stacks are not comparable, AddStack will return both the original stack and the stack passed.
 func (s Stack) AddStack(s2 Stack) (a, b Stack) {
-	if !s.Comparable(s2) {
-		// The items are not comparable and thus cannot be stacked together.
-		return s, s2
-	}
 	if s.Count() >= s.MaxCount() {
 		// No more items could be added to the original stack.
+		return s, s2
+	}
+	if !s.Comparable(s2) {
+		// The items are not comparable and thus cannot be stacked together.
 		return s, s2
 	}
 	diff := s.MaxCount() - s.Count()
@@ -289,16 +324,14 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage {
+	if name != name2 || meta != meta2 || s.damage != s2.damage || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
 		return false
 	}
-	if s.customName != s2.customName || len(s.lore) != len(s2.lore) || len(s.enchantments) != len(s2.enchantments) {
+	for !slices.Equal(s.lore, s2.lore) {
 		return false
 	}
-	for i := range s.lore {
-		if s.lore[i] != s2.lore[i] {
-			return false
-		}
+	if len(s.enchantments) != len(s2.enchantments) {
+		return false
 	}
 	for i := range s.enchantments {
 		if s.enchantments[i] != s2.enchantments[i] {
@@ -310,10 +343,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 	}
 	if nbt, ok := s.Item().(world.NBTer); ok {
 		nbt2, ok := s2.Item().(world.NBTer)
-		if !ok {
-			return false
-		}
-		return reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
+		return ok && reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
 	}
 	return true
 }
@@ -323,13 +353,13 @@ func (s Stack) String() string {
 	if s.item == nil {
 		return fmt.Sprintf("Stack<nil> x%v", s.count)
 	}
-	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v') x%v", s.item, s.item, s.customName, s.lore, s.count)
+	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, anvilCost=%v) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.anvilCost, s.count)
 }
 
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
-func (s Stack) Values() map[string]interface{} {
-	return copyMap(s.data)
+func (s Stack) Values() map[string]any {
+	return maps.Clone(s.data)
 }
 
 // stackID is a counter for unique stack IDs.
@@ -341,7 +371,7 @@ func newID() int32 {
 }
 
 // id returns the unique ID of the stack passed.
-//lint:ignore U1000 Function is used using compiler directives.
+//lint:ignore U1000 Function is used through compiler directives.
 //noinspection GoUnusedFunction
 func id(s Stack) int32 {
 	if s.Empty() {
@@ -352,17 +382,8 @@ func id(s Stack) int32 {
 
 // format is a utility function to format a list of Values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
-}
-
-// copyMap makes a copy of the map passed. It does not recursively copy the map.
-func copyMap(m map[string]interface{}) map[string]interface{} {
-	cp := make(map[string]interface{}, len(m))
-	for k, v := range m {
-		cp[k] = v
-	}
-	return cp
 }
 
 // copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.

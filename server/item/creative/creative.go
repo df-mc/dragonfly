@@ -1,15 +1,15 @@
 package creative
 
 import (
+	"bytes"
 	_ "embed"
-	"encoding/base64"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	// The following three imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all items are registered before the creative items are registered
 	// in the init function in this package.
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // Items returns a list with all items that have been registered as a creative item. These items will
@@ -33,31 +33,32 @@ var (
 
 // creativeItemEntry holds data of a creative item as present in the creative inventory.
 type creativeItemEntry struct {
-	Name  string `nbt:"name"`
-	Meta  int16  `nbt:"meta"`
-	NBT   string `nbt:"nbt"`
+	Name  string         `nbt:"name"`
+	Meta  int16          `nbt:"meta"`
+	NBT   map[string]any `nbt:"nbt,omitempty"`
 	Block struct {
-		Name       string                 `nbt:"name"`
-		Properties map[string]interface{} `nbt:"states"`
-		Version    int32                  `nbt:"version"`
-	} `nbt:"block"`
+		Name       string         `nbt:"name"`
+		Properties map[string]any `nbt:"states"`
+		Version    int32          `nbt:"version"`
+	} `nbt:"block,omitempty"`
 }
 
 // init initialises the creative items, registering all creative items that have also been registered as
 // normal items and are present in vanilla.
 func init() {
-	var temp map[string]interface{}
+	dec := nbt.NewDecoder(bytes.NewBuffer(creativeItemData))
 
-	var m []creativeItemEntry
-	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {
-		panic(err)
-	}
-	for _, data := range m {
+	// Register all creative items present in the creative_items.nbt file.
+	for {
+		var data creativeItemEntry
+		if err := dec.Decode(&data); err != nil {
+			break
+		}
 		var (
 			it world.Item
 			ok bool
 		)
-		if data.Block.Version != 0 {
+		if data.Block.Version > 0 {
 			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
 			// have their metadata sent, but we still need to get that metadata in order to be able to register
 			// different block states as different items.
@@ -79,14 +80,29 @@ func init() {
 		}
 
 		if n, ok := it.(world.NBTer); ok {
-			nbtData, _ := base64.StdEncoding.DecodeString(data.NBT)
-			if err := nbt.Unmarshal(nbtData, &temp); err != nil {
-				panic(err)
-			}
-			if len(temp) != 0 {
-				it = n.DecodeNBT(temp).(world.Item)
+			if len(data.NBT) > 0 {
+				it = n.DecodeNBT(data.NBT).(world.Item)
 			}
 		}
-		RegisterItem(item.NewStack(it, 1))
+
+		st := item.NewStack(it, 1)
+		if len(data.NBT) > 0 {
+			var invalid bool
+			for _, e := range nbtconv.Map[[]any](data.NBT, "ench") {
+				if v, ok := e.(map[string]any); ok {
+					t, ok := item.EnchantmentByID(int(nbtconv.Map[int16](v, "id")))
+					if !ok {
+						invalid = true
+						break
+					}
+					st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Map[int16](v, "lvl"))))
+				}
+			}
+			if invalid {
+				// Invalid enchantment, skip this item.
+				continue
+			}
+		}
+		RegisterItem(st)
 	}
 }

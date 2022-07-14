@@ -34,26 +34,25 @@ func NewProvider(path string) (*Provider, error) {
 // Save ...
 func (p *Provider) Save(id uuid.UUID, d player.Data) error {
 	data := toJson(d)
-	jsondata, err := json.Marshal(data)
+	jData, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	_ = p.db.Put(id[:], jsondata, nil)
+	_ = p.db.Put(id[:], jData, nil)
 	return nil
 }
 
 // Load ...
 func (p *Provider) Load(id uuid.UUID) (player.Data, error) {
-	jsondata, err := p.db.Get(id[:], nil)
+	jData, err := p.db.Get(id[:], nil)
 	if err != nil {
 		return player.Data{}, err
 	}
 	d := jsonData{}
-	err = json.Unmarshal(jsondata, &d)
+	err = json.Unmarshal(jData, &d)
 	if err != nil {
 		return player.Data{}, err
 	}
-
 	return fromJson(d), nil
 }
 

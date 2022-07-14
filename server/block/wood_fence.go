@@ -42,27 +42,27 @@ func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
 }
 
 // EncodeBlock ...
-func (w WoodFence) EncodeBlock() (name string, properties map[string]interface{}) {
-	if w.Wood == CrimsonWood() || w.Wood == WarpedWood() {
+func (w WoodFence) EncodeBlock() (name string, properties map[string]any) {
+	switch w.Wood {
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+		return "minecraft:fence", map[string]any{"wood_type": w.Wood.String()}
+	default:
 		return "minecraft:" + w.Wood.String() + "_fence", nil
 	}
-	return "minecraft:fence", map[string]interface{}{"wood_type": w.Wood.String()}
 }
 
 // Model ...
 func (w WoodFence) Model() world.BlockModel {
-	return model.Fence{Wooden: true}
+	return model.Fence{Wood: true}
 }
 
 // EncodeItem ...
 func (w WoodFence) EncodeItem() (name string, meta int16) {
 	switch w.Wood {
-	case CrimsonWood():
-		return "minecraft:crimson_fence", 0
-	case WarpedWood():
-		return "minecraft:warped_fence", 0
-	default:
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		return "minecraft:fence", int16(w.Wood.Uint8())
+	default:
+		return "minecraft:" + w.Wood.String() + "_fence", 0
 	}
 }
 

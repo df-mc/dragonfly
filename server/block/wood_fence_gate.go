@@ -39,26 +39,27 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 }
 
 // UseOnBlock ...
-func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, f)
 	if !used {
 		return false
 	}
 	f.Facing = user.Facing()
-	//TODO: Set Lowered if placed next to wall block
+	// TODO: Set Lowered if placed next to wall block.
 
 	place(w, pos, f, user, ctx)
 	return placed(ctx)
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
 	}
-	w.PlaceBlock(pos, f)
+	w.SetBlock(pos, f, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	return true
 }
 
 // CanDisplace ...
@@ -68,7 +69,7 @@ func (f WoodFenceGate) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (f WoodFenceGate) SideClosed(pos, side cube.Pos, w *world.World) bool {
+func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
@@ -81,23 +82,11 @@ func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]interface{}) {
-	direction := 2
-	switch f.Facing {
-	case cube.South:
-		direction = 0
-	case cube.West:
-		direction = 1
-	case cube.East:
-		direction = 3
+func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]any) {
+	if f.Wood == OakWood() {
+		return "minecraft:fence_gate", map[string]any{"direction": int32(horizontalDirection(f.Facing)), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	}
-
-	switch f.Wood {
-	case OakWood():
-		return "minecraft:fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	default:
-		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]interface{}{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	}
+	return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"direction": int32(horizontalDirection(f.Facing)), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 }
 
 // Model ...

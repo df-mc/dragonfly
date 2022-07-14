@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,14 +11,14 @@ import (
 // blocks at a faster pace such as pumpkins.
 type Axe struct {
 	// Tier is the tier of the axe.
-	Tier tool.Tier
+	Tier ToolTier
 }
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
 func (a Axe) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if s, ok := w.Block(pos).(strippable); ok {
 		if res, ok := s.Strip(); ok {
-			w.PlaceBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
 			ctx.DamageItem(1)
@@ -57,8 +56,8 @@ func (a Axe) AttackDamage() float64 {
 }
 
 // ToolType ...
-func (a Axe) ToolType() tool.Type {
-	return tool.TypeAxe
+func (a Axe) ToolType() ToolType {
+	return TypeAxe
 }
 
 // HarvestLevel ...
@@ -69,6 +68,11 @@ func (a Axe) HarvestLevel() int {
 // BaseMiningEfficiency ...
 func (a Axe) BaseMiningEfficiency(world.Block) float64 {
 	return a.Tier.BaseMiningEfficiency
+}
+
+// RepairableBy ...
+func (a Axe) RepairableBy(i Stack) bool {
+	return toolTierRepairable(a.Tier)(i)
 }
 
 // EncodeItem ...

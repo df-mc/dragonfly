@@ -7,14 +7,8 @@ import "github.com/df-mc/dragonfly/server/world"
 type TurtleShell struct{}
 
 // Use handles the using of a turtle shell to auto-equip it in an armour slot.
-func (t TurtleShell) Use(_ *world.World, user User, _ *UseContext) bool {
-	if armoured, ok := user.(Armoured); ok {
-		currentEquipped := armoured.Armour().Helmet()
-
-		right, left := user.HeldItems()
-		armoured.Armour().SetHelmet(right)
-		user.SetHeldItems(currentEquipped, left)
-	}
+func (t TurtleShell) Use(_ *world.World, _ User, ctx *UseContext) bool {
+	ctx.SwapHeldWithArmour(0)
 	return false
 }
 
@@ -26,6 +20,12 @@ func (t TurtleShell) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (t TurtleShell) RepairableBy(i Stack) bool {
+	_, ok := i.Item().(Scute)
+	return ok
+}
+
 // MaxCount always returns 1.
 func (t TurtleShell) MaxCount() int {
 	return 1
@@ -33,12 +33,17 @@ func (t TurtleShell) MaxCount() int {
 
 // DefencePoints ...
 func (t TurtleShell) DefencePoints() float64 {
-	return 2.0
+	return 2
+}
+
+// Toughness ...
+func (t TurtleShell) Toughness() float64 {
+	return 0
 }
 
 // KnockBackResistance ...
 func (t TurtleShell) KnockBackResistance() float64 {
-	return 0.0
+	return 0
 }
 
 // Helmet ...
