@@ -276,7 +276,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		id = packet.GameTypeSpectator
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
-	s.writePacket(&packet.AdventureSettings{
+	s.writePacket(&packet.AdventureSettings{ // TODO: Switch to the new UpdateAbilities and UpdateAdventureSettings packets.
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,

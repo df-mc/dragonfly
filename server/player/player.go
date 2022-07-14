@@ -494,16 +494,15 @@ func (p *Player) fall(distance float64) {
 		w   = p.World()
 		pos = cube.PosFromVec3(p.Position())
 		b   = w.Block(pos)
-		dmg = distance - 3
 	)
 	if len(b.Model().BBox(pos, w)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p)
+		h.EntityLand(pos, w, p, &distance)
 	}
-
+	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
 		dmg -= float64(boost.Level())
 	}
@@ -1990,7 +1989,7 @@ func (p *Player) AddExperience(amount int) int {
 
 // RemoveExperience removes experience from the player.
 func (p *Player) RemoveExperience(amount int) {
-	p.experience.Remove(amount)
+	p.experience.Add(-amount)
 	p.session().SendExperience(p.experience)
 }
 
@@ -2244,9 +2243,10 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 
 // canBreathe returns true if the player can currently breathe.
 func (p *Player) canBreathe(w *world.World) bool {
+	canTakeDamage := p.GameMode().AllowsTakingDamage()
 	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
 	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
-	return waterBreathing || conduitPower || !p.insideOfWater(w)
+	return !canTakeDamage && waterBreathing || conduitPower || !p.insideOfWater(w)
 }
 
 // breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
