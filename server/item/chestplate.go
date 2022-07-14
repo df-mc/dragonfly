@@ -50,7 +50,7 @@ func (c Chestplate) KnockBackResistance() float64 {
 
 // EnchantmentValue ...
 func (c Chestplate) EnchantmentValue() int {
-	return c.Tier.EnchantmentValue
+	return c.Tier.EnchantmentValue()
 }
 
 // DurabilityInfo ...

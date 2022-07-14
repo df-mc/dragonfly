@@ -19,6 +19,16 @@ func (Respiration) MaxLevel() int {
 	return 3
 }
 
+// MinCost ...
+func (Respiration) MinCost(level int) int {
+	return 10 * level
+}
+
+// MaxCost ...
+func (r Respiration) MaxCost(level int) int {
+	return r.MinCost(level) + 30
+}
+
 // Rarity ...
 func (Respiration) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

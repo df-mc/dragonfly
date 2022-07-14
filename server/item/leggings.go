@@ -52,7 +52,7 @@ func (l Leggings) KnockBackResistance() float64 {
 
 // EnchantmentValue ...
 func (l Leggings) EnchantmentValue() int {
-	return l.Tier.EnchantmentValue
+	return l.Tier.EnchantmentValue()
 }
 
 // Leggings ...

@@ -48,7 +48,7 @@ func (h Helmet) Toughness() float64 {
 
 // EnchantmentValue ...
 func (h Helmet) EnchantmentValue() int {
-	return h.Tier.EnchantmentValue
+	return h.Tier.EnchantmentValue()
 }
 
 // DurabilityInfo ...

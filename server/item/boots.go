@@ -61,7 +61,7 @@ func (b Boots) KnockBackResistance() float64 {
 
 // EnchantmentValue ...
 func (b Boots) EnchantmentValue() int {
-	return b.Tier.EnchantmentValue
+	return b.Tier.EnchantmentValue()
 }
 
 // Boots ...
