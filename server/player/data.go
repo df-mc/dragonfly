@@ -35,6 +35,10 @@ type Data struct {
 	EnchantmentSeed int64
 	// Experience is the current experience the player has.
 	Experience int
+	// AirSupply is the current tick of the player's air supply.
+	AirSupply int64
+	// MaxAirSupply is the maximum air supply the player can have.
+	MaxAirSupply int64
 	// GameMode is the last gamemode the user had, like creative or survival.
 	GameMode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.

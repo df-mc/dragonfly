@@ -85,6 +85,15 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
+			Layers: []protocol.AbilityLayer{ // TODO: Make use of everything that this system supports.
+				{
+					Type:      protocol.AbilityLayerTypeBase,
+					Abilities: protocol.AbilityCount - 1,
+					Values:    protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs,
+					FlySpeed:  protocol.AbilityBaseFlySpeed,
+					WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				},
+			},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -446,6 +455,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
 		pk.SoundType = packet.SoundEventIgnite
+	case sound.Burning:
+		pk.SoundType = packet.SoundEventPlayerHurtOnFire
+	case sound.Drowning:
+		pk.SoundType = packet.SoundEventPlayerHurtDrown
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:

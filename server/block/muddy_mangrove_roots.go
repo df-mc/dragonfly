@@ -1,8 +1,19 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // MuddyMangroveRoots are a decorative variant of mangrove roots.
 type MuddyMangroveRoots struct {
 	solid
+}
+
+// SoilFor ...
+func (MuddyMangroveRoots) SoilFor(block world.Block) bool {
+	switch block.(type) {
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+		return true
+	}
+	return false
 }
 
 // BreakInfo ...

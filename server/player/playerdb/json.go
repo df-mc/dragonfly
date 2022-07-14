@@ -22,6 +22,8 @@ func fromJson(d jsonData) player.Data {
 		ExhaustionLevel: d.ExhaustionLevel,
 		SaturationLevel: d.SaturationLevel,
 		Experience:      d.Experience,
+		AirSupply:       d.AirSupply,
+		MaxAirSupply:    d.MaxAirSupply,
 		EnchantmentSeed: d.EnchantmentSeed,
 		GameMode:        dataToGameMode(d.GameMode),
 		Effects:         dataToEffects(d.Effects),
@@ -47,6 +49,8 @@ func toJson(d player.Data) jsonData {
 		ExhaustionLevel: d.ExhaustionLevel,
 		SaturationLevel: d.SaturationLevel,
 		Experience:      d.Experience,
+		AirSupply:       d.AirSupply,
+		MaxAirSupply:    d.MaxAirSupply,
 		EnchantmentSeed: d.EnchantmentSeed,
 		GameMode:        gameModeToData(d.GameMode),
 		Effects:         effectsToData(d.Effects),
@@ -68,6 +72,7 @@ type jsonData struct {
 	ExhaustionLevel, SaturationLevel float64
 	EnchantmentSeed                  int64
 	Experience                       int
+	AirSupply, MaxAirSupply          int64
 	GameMode                         uint8
 	Inventory                        jsonInventoryData
 	Effects                          []jsonEffect
