@@ -174,5 +174,5 @@ func matchingStacks(has, expected item.Stack) bool {
 	}
 	nameOne, _ := has.Item().EncodeItem()
 	nameTwo, _ := expected.Item().EncodeItem()
-	return nameOne != nameTwo
+	return nameOne == nameTwo
 }
