@@ -66,8 +66,8 @@ func RegisterBlock(b Block) {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
 	hash := int64(b.Hash())
-	if _, ok := hashes.Get(hash); ok {
-		panic(fmt.Sprintf("block %#v with hash %v already registered", b, hash))
+	if other, ok := hashes.Get(hash); ok {
+		panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, hash, blocks[other]))
 	}
 	blocks[rid] = b
 	hashes.Put(hash, int64(rid))
@@ -93,7 +93,7 @@ func RegisterBlock(b Block) {
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
-// If the runtime ID cannot be found because the BLock wasn't registered, BlockRuntimeID will panic.
+// If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
 func BlockRuntimeID(b Block) uint32 {
 	if b == nil {
 		return airRID

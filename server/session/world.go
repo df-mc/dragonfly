@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"image/color"
 	"math/rand"
 )
 
@@ -84,6 +85,15 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
+			Layers: []protocol.AbilityLayer{ // TODO: Make use of everything that this system supports.
+				{
+					Type:      protocol.AbilityLayerTypeBase,
+					Abilities: protocol.AbilityCount - 1,
+					Values:    protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs,
+					FlySpeed:  protocol.AbilityBaseFlySpeed,
+					WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				},
+			},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -340,10 +350,17 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.Flame:
+		if pa.Colour != (color.RGBA{}) {
+			s.writePacket(&packet.LevelEvent{
+				EventType: packet.LevelEventParticleLegacyEvent | 56,
+				Position:  vec64To32(pos),
+				EventData: nbtconv.Int32FromRGBA(pa.Colour),
+			})
+			return
+		}
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 56,
+			EventType: packet.LevelEventParticleLegacyEvent | 8,
 			Position:  vec64To32(pos),
-			EventData: nbtconv.Int32FromRGBA(pa.Colour),
 		})
 	case particle.Evaporate:
 		s.writePacket(&packet.LevelEvent{
@@ -438,6 +455,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
 		pk.SoundType = packet.SoundEventIgnite
+	case sound.Burning:
+		pk.SoundType = packet.SoundEventPlayerHurtOnFire
+	case sound.Drowning:
+		pk.SoundType = packet.SoundEventPlayerHurtDrown
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:
@@ -450,6 +471,24 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
 		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(world.BlockRuntimeID(so.Block))
+	case sound.AnvilLand:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundAnvilLand,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.AnvilUse:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundAnvilUsed,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.AnvilBreak:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundAnvilBroken,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.ChestClose:
 		pk.SoundType = packet.SoundEventChestClosed
 	case sound.ChestOpen:
@@ -632,11 +671,12 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	switch b.(type) {
 	case block.CraftingTable:
 		containerType = 1
+	case block.Anvil:
+		containerType = 5
 	case block.Beacon:
 		containerType = 13
 	}
 	s.openedContainerID.Store(uint32(containerType))
-
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
 		ContainerType:           containerType,

@@ -20,6 +20,12 @@ func (t TurtleShell) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (t TurtleShell) RepairableBy(i Stack) bool {
+	_, ok := i.Item().(Scute)
+	return ok
+}
+
 // MaxCount always returns 1.
 func (t TurtleShell) MaxCount() int {
 	return 1

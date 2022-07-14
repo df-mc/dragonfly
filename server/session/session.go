@@ -63,8 +63,8 @@ type Session struct {
 
 	breakingPos cube.Pos
 
-	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
+	openedWindowID                 atomic.Uint32
 	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
@@ -78,6 +78,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.Value[string]
+
+	switchingWorld atomic.Bool
 
 	closeBackground chan struct{}
 }
@@ -231,6 +233,14 @@ func (s *Session) Close() error {
 // manages.
 func (s *Session) close() {
 	_ = s.c.Close()
+
+	// Move UI inventory items to the main inventory.
+	for _, it := range s.ui.Items() {
+		if _, err := s.inv.AddItem(it); err != nil {
+			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
+			s.c.Drop(it)
+		}
+	}
 
 	s.onStop(s.c)
 
@@ -392,12 +402,22 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	if w.Dimension() != s.chunkLoader.World().Dimension() {
-		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
-		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	if same {
+		dim = (dim + 1) % 3
+		s.switchingWorld.Store(true)
 	}
+	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
+}
+
+// changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
+// immediately.
+func (s *Session) changeDimension(dim int32, silent bool) {
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.writePacket(&packet.StopSound{StopAll: silent})
+	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -424,6 +444,7 @@ func (s *Session) registerHandlers() {
 		packet.IDActorEvent:            nil,
 		packet.IDAdventureSettings:     nil, // Deprecated, the client still sends this though.
 		packet.IDAnimate:               nil,
+		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
@@ -433,6 +454,7 @@ func (s *Session) registerHandlers() {
 		packet.IDCraftingEvent:         nil,
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
+		packet.IDFilterText:            nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemFrameDropItem:     nil,

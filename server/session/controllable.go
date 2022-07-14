@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"golang.org/x/text/language"
 )
 
 // Controllable represents an entity that may be controlled by a Session. Generally, Controllable is
@@ -22,6 +23,9 @@ type Controllable interface {
 	form.Submitter
 	cmd.Source
 	chat.Subscriber
+
+	Locale() language.Tag
+
 	SetHeldItems(right, left item.Stack)
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
@@ -44,6 +48,9 @@ type Controllable interface {
 	Drop(s item.Stack) (n int)
 	SwingArm()
 	PunchAir()
+
+	ExperienceLevel() int
+	SetExperienceLevel(level int)
 
 	Respawn()
 	Dead() bool
