@@ -1,7 +1,6 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/action"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -97,7 +96,7 @@ func (c EnderChest) RemoveViewer(w *world.World, pos cube.Pos) {
 // open opens the ender chest, displaying the animation and playing a sound.
 func (c EnderChest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
-		v.ViewBlockAction(pos, action.Open{})
+		v.ViewBlockAction(pos, OpenAction{})
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
 }
@@ -105,7 +104,7 @@ func (c EnderChest) open(w *world.World, pos cube.Pos) {
 // close closes the ender chest, displaying the animation and playing a sound.
 func (c EnderChest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
-		v.ViewBlockAction(pos, action.Close{})
+		v.ViewBlockAction(pos, CloseAction{})
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }

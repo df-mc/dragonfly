@@ -452,7 +452,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
+func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -487,6 +487,16 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
+	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, item)
+			}
+		}
+	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -502,7 +512,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	return s.inv, s.offHand, s.armour, s.heldSlot
+	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
 }
 
 // SetHeldSlot sets the currently held hotbar slot.

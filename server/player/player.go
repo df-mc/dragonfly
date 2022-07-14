@@ -109,10 +109,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		enderChest: inventory.New(27, func(slot int, item item.Stack) {
-			// TODO: This will send the player the change even when they aren't viewing the inventory.
-			p.session().ViewSlotChange(slot, item)
-		}),
+		enderChest:        inventory.New(27, nil),
 		uuid:              uuid.New(),
 		offHand:           inventory.New(1, p.broadcastItems),
 		armour:            inventory.NewArmour(p.broadcastArmour),
@@ -148,7 +145,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = *atomic.NewValue(s), uuid, xuid, *atomic.NewValue(skin)
-	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
+	p.inv, p.offHand, p.enderChest, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	if data != nil {
 		p.load(*data)
@@ -2655,10 +2652,10 @@ func (p *Player) Data() Data {
 			MainHandSlot: p.heldSlot.Load(),
 		},
 		EnderChestInventory: p.enderChest.Items(),
-		Effects:      p.Effects(),
-		FireTicks:    p.fireTicks.Load(),
-		FallDistance: p.fallDistance.Load(),
-		Dimension:    p.World().Dimension().EncodeDimension(),
+		Effects:             p.Effects(),
+		FireTicks:           p.fireTicks.Load(),
+		FallDistance:        p.fallDistance.Load(),
+		Dimension:           p.World().Dimension().EncodeDimension(),
 	}
 }
 
