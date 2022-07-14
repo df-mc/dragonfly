@@ -2243,9 +2243,10 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 
 // canBreathe returns true if the player can currently breathe.
 func (p *Player) canBreathe(w *world.World) bool {
+	canTakeDamage := p.GameMode().AllowsTakingDamage()
 	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
 	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
-	return waterBreathing || conduitPower || !p.insideOfWater(w)
+	return !canTakeDamage && waterBreathing || conduitPower || !p.insideOfWater(w)
 }
 
 // breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
