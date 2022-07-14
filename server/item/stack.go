@@ -332,16 +332,12 @@ func (s Stack) Comparable(s2 Stack) bool {
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
 	if name != name2 || meta != meta2 || s.damage != s2.damage || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
-		fmt.Println(name, meta)
-		fmt.Println(name2, meta2)
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
-		fmt.Println("incompatible lore")
 		return false
 	}
 	if len(s.enchantments) != len(s2.enchantments) {
-		fmt.Println("incompatible enchantments")
 		return false
 	}
 	for i := range s.enchantments {
@@ -350,9 +346,6 @@ func (s Stack) Comparable(s2 Stack) bool {
 		}
 	}
 	if !reflect.DeepEqual(s.data, s2.data) {
-		fmt.Println(s.data)
-		fmt.Println(s2.data)
-		fmt.Println("incompatible data")
 		return false
 	}
 	if nbt, ok := s.Item().(world.NBTer); ok {
