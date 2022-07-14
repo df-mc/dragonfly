@@ -169,17 +169,10 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 // matchingStacks returns true if the two stacks are the same in a crafting scenario.
 func matchingStacks(has, expected item.Stack) bool {
 	_, variants := expected.Value("variants")
-	if !variants && !has.Comparable(expected) {
-		// Not the same item without accounting for variants.
-		return false
+	if !variants {
+		return has.Comparable(expected)
 	}
-	if variants {
-		nameOne, _ := has.Item().EncodeItem()
-		nameTwo, _ := expected.Item().EncodeItem()
-		if nameOne != nameTwo {
-			// Not the same item even when accounting for variants.
-			return false
-		}
-	}
-	return true
+	nameOne, _ := has.Item().EncodeItem()
+	nameTwo, _ := expected.Item().EncodeItem()
+	return nameOne != nameTwo
 }
