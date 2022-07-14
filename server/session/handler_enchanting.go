@@ -226,48 +226,37 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 }
 
 // searchBookshelves searches for nearby bookshelves around the position passed, and returns the amount found.
-func searchBookshelves(w *world.World, pos cube.Pos) int {
-	var foundShelves int
-	for z := -1; z <= 1; z++ {
-		for x := -1; x <= 1; x++ {
-			if z != 0 || x != 0 {
-				if _, ok := w.Block(pos.Add(cube.Pos{x, 0, z})).(block.Air); !ok {
-					continue
-				}
-				if _, ok := w.Block(pos.Add(cube.Pos{x, 1, z})).(block.Air); !ok {
-					continue
-				}
-
-				if _, ok := w.Block(pos.Add(cube.Pos{x * 2, 0, z * 2})).(block.Bookshelf); ok {
-					foundShelves++
-				}
-				if _, ok := w.Block(pos.Add(cube.Pos{x * 2, 1, z * 2})).(block.Bookshelf); ok {
-					foundShelves++
-				}
-
-				if x != 0 && z != 0 {
-					if _, ok := w.Block(pos.Add(cube.Pos{x * 2, 0, z})).(block.Bookshelf); ok {
-						foundShelves++
-					}
-					if _, ok := w.Block(pos.Add(cube.Pos{x * 2, 1, z})).(block.Bookshelf); ok {
-						foundShelves++
+func searchBookshelves(w *world.World, pos cube.Pos) (shelves int) {
+	for x := -1; x <= 1; x++ {
+		for z := -1; z <= 1; z++ {
+			for y := 0; y <= 1; y++ {
+				if z != 0 || x != 0 {
+					if _, ok := w.Block(pos.Add(cube.Pos{x, y, z})).(block.Air); !ok {
+						// There must be a one block space between the bookshelf and the player.
+						continue
 					}
 
-					if _, ok := w.Block(pos.Add(cube.Pos{x, 0, z * 2})).(block.Bookshelf); ok {
-						foundShelves++
+					if _, ok := w.Block(pos.Add(cube.Pos{x * 2, y, z * 2})).(block.Bookshelf); ok {
+						shelves++
 					}
-					if _, ok := w.Block(pos.Add(cube.Pos{x, 1, z * 2})).(block.Bookshelf); ok {
-						foundShelves++
+					if x != 0 && z != 0 {
+						if _, ok := w.Block(pos.Add(cube.Pos{x * 2, y, z})).(block.Bookshelf); ok {
+							shelves++
+						}
+						if _, ok := w.Block(pos.Add(cube.Pos{x, y, z * 2})).(block.Bookshelf); ok {
+							shelves++
+						}
 					}
-				}
 
-				if foundShelves >= 15 {
-					return foundShelves
+					if shelves >= 15 {
+						// We've found enough bookshelves.
+						return shelves
+					}
 				}
 			}
 		}
 	}
-	return foundShelves
+	return shelves
 }
 
 // weightedRandomEnchantment returns a random enchantment from the given list of enchantments using the rarity weight of
