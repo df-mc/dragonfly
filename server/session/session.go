@@ -234,6 +234,14 @@ func (s *Session) Close() error {
 func (s *Session) close() {
 	_ = s.c.Close()
 
+	// Move UI inventory items to the main inventory.
+	for _, it := range s.ui.Items() {
+		if _, err := s.inv.AddItem(it); err != nil {
+			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
+			s.c.Drop(it)
+		}
+	}
+
 	s.onStop(s.c)
 
 	// Clear the inventories so that they no longer hold references to the connection.
