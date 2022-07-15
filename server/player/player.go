@@ -67,8 +67,7 @@ type Player struct {
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
-	fireTicks    atomic.Int64
-	fallDistance atomic.Float64
+	fireTicks atomic.Int64
 
 	breathing         bool
 	airSupplyTicks    atomic.Int64
@@ -83,6 +82,7 @@ type Player struct {
 	health     *entity.HealthManager
 	experience *entity.ExperienceManager
 	effects    *entity.EffectManager
+	fall       *entity.FallManager
 
 	lastXPPickup atomic.Value[time.Time]
 	immunity     atomic.Value[time.Time]
@@ -116,6 +116,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		health:            entity.NewHealthManager(),
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
+		fall:              entity.NewFallManager(p),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
 		h:                 *atomic.NewValue[Handler](NopHandler{}),
 		name:              name,
@@ -262,12 +263,12 @@ func (p *Player) SendToast(title, message string) {
 
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
-	p.fallDistance.Store(0)
+	p.fall.ResetFallDistance()
 }
 
 // FallDistance returns the player's fall distance.
 func (p *Player) FallDistance() float64 {
-	return p.fallDistance.Load()
+	return p.fall.FallDistance()
 }
 
 // SendTitle sends a title to the player. The title may be configured to change the duration it is displayed
@@ -471,45 +472,6 @@ func (p *Player) Heal(health float64, source healing.Source) {
 		return
 	}
 	p.addHealth(health)
-}
-
-// updateFallState is called to update the entities falling state.
-func (p *Player) updateFallState(distanceThisTick float64) {
-	fallDistance := p.fallDistance.Load()
-	if p.OnGround() {
-		if fallDistance > 0 {
-			p.fall(fallDistance)
-			p.ResetFallDistance()
-		}
-	} else if distanceThisTick < fallDistance {
-		p.fallDistance.Sub(distanceThisTick)
-	} else {
-		p.ResetFallDistance()
-	}
-}
-
-// fall is called when a falling entity hits the ground.
-func (p *Player) fall(distance float64) {
-	var (
-		w   = p.World()
-		pos = cube.PosFromVec3(p.Position())
-		b   = w.Block(pos)
-	)
-	if len(b.Model().BBox(pos, w)) == 0 {
-		pos = pos.Sub(cube.Pos{0, 1})
-		b = w.Block(pos)
-	}
-	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p, &distance)
-	}
-	dmg := distance - 3
-	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
-		dmg -= float64(boost.Level())
-	}
-	if dmg < 0.5 {
-		return
-	}
-	p.Hurt(math.Ceil(dmg), damage.SourceFall{})
 }
 
 // Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
@@ -1899,7 +1861,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.checkBlockCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
 
-	p.updateFallState(deltaPos[1])
+	p.fall.UpdateFallState(deltaPos[1], true)
 
 	// The vertical axis isn't relevant for calculation of exhaustion points.
 	deltaPos[1] = 0
@@ -2592,7 +2554,7 @@ func (p *Player) load(data Data) {
 		p.AddEffect(potion)
 	}
 	p.fireTicks.Store(data.FireTicks)
-	p.fallDistance.Store(data.FallDistance)
+	p.fall.SetFallDistance(data.FallDistance)
 
 	p.loadInventory(data.Inventory)
 }
@@ -2643,7 +2605,7 @@ func (p *Player) Data() Data {
 		},
 		Effects:      p.Effects(),
 		FireTicks:    p.fireTicks.Load(),
-		FallDistance: p.fallDistance.Load(),
+		FallDistance: p.fall.FallDistance(),
 		Dimension:    p.World().Dimension().EncodeDimension(),
 	}
 }
