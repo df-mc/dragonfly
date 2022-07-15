@@ -74,7 +74,7 @@ type (
 		Block world.Block
 	}
 
-	// SourceExplosion ...
+	// SourceExplosion is used for damage caused by an explosion.
 	SourceExplosion struct{}
 )
 
