@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -58,9 +59,9 @@ type Player struct {
 	// h holds the current Handler of the player. It may be changed at any time by calling the Handle method.
 	h atomic.Value[Handler]
 
-	inv, offHand *inventory.Inventory
-	armour       *inventory.Armour
-	heldSlot     *atomic.Uint32
+	inv, offHand, enderChest *inventory.Inventory
+	armour                   *inventory.Armour
+	heldSlot                 *atomic.Uint32
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -68,6 +69,10 @@ type Player struct {
 
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
+
+	breathing         bool
+	airSupplyTicks    atomic.Int64
+	maxAirSupplyTicks atomic.Int64
 
 	cooldownMu sync.Mutex
 	cooldowns  map[itemHash]time.Time
@@ -104,26 +109,30 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:          *atomic.NewValue[Handler](NopHandler{}),
-		name:       name,
-		skin:       *atomic.NewValue(skin),
-		speed:      *atomic.NewFloat64(0.1),
-		nameTag:    *atomic.NewValue(name),
-		heldSlot:   atomic.NewUint32(0),
-		locale:     language.BritishEnglish,
-		scale:      *atomic.NewFloat64(1),
-		immunity:   *atomic.NewValue(time.Now()),
-		pos:        *atomic.NewValue(pos),
-		cooldowns:  make(map[itemHash]time.Time),
-		mc:         &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		enderChest:        inventory.New(27, nil),
+		uuid:              uuid.New(),
+		offHand:           inventory.New(1, p.broadcastItems),
+		armour:            inventory.NewArmour(p.broadcastArmour),
+		hunger:            newHungerManager(),
+		health:            entity.NewHealthManager(),
+		experience:        entity.NewExperienceManager(),
+		effects:           entity.NewEffectManager(),
+		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		h:                 *atomic.NewValue[Handler](NopHandler{}),
+		name:              name,
+		skin:              *atomic.NewValue(skin),
+		speed:             *atomic.NewFloat64(0.1),
+		nameTag:           *atomic.NewValue(name),
+		heldSlot:          atomic.NewUint32(0),
+		locale:            language.BritishEnglish,
+		breathing:         true,
+		airSupplyTicks:    *atomic.NewInt64(300),
+		maxAirSupplyTicks: *atomic.NewInt64(300),
+		scale:             *atomic.NewFloat64(1),
+		immunity:          *atomic.NewValue(time.Now()),
+		pos:               *atomic.NewValue(pos),
+		cooldowns:         make(map[itemHash]time.Time),
+		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -136,7 +145,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = *atomic.NewValue(s), uuid, xuid, *atomic.NewValue(skin)
-	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
+	p.inv, p.offHand, p.enderChest, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	if data != nil {
 		p.load(*data)
@@ -486,16 +495,15 @@ func (p *Player) fall(distance float64) {
 		w   = p.World()
 		pos = cube.PosFromVec3(p.Position())
 		b   = w.Block(pos)
-		dmg = distance - 3
 	)
 	if len(b.Model().BBox(pos, w)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p)
+		h.EntityLand(pos, w, p, &distance)
 	}
-
+	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
 		dmg -= float64(boost.Level())
 	}
@@ -515,9 +523,12 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
-	if _, ok := p.Effect(effect.FireResistance{}); ok && (source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}) {
+
+	fireSource := source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}
+	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
 		return 0, false
 	}
+
 	immunity := time.Second / 2
 	ctx := event.C()
 	if p.Handler().HandleHurt(ctx, &dmg, &immunity, source); ctx.Cancelled() {
@@ -526,6 +537,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if dmg < 0 {
 		return 0, true
 	}
+
 	totalDamage := p.FinalDamageFrom(dmg, source)
 	damageLeft := totalDamage
 
@@ -552,9 +564,17 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		}
 	}
 
+	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
+	if fireSource {
+		w.PlaySound(pos, sound.Burning{})
+	}
+	if _, ok := source.(damage.SourceDrowning); ok {
+		w.PlaySound(pos, sound.Drowning{})
+	}
+
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
 		p.kill(source)
@@ -585,17 +605,50 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-	t := 0
+
+	f := p.enchantmentProtectionFactor(src)
+	if f > 25 {
+		f = 25
+	}
+	m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
+	if m > 20 {
+		m = 20
+	}
+
+	dmg -= -dmg * m * 0.04
+	return math.Max(dmg, 0)
+}
+
+// protectionEnchantment represents an enchantment that can protect the player from damage.
+type protectionEnchantment interface {
+	Affects(damage.Source) bool
+	Modifier() float64
+}
+
+// enchantmentProtectionFactor returns the combined enchantment protection factor the player inhibits spanning each
+// armour piece.
+func (p *Player) enchantmentProtectionFactor(src damage.Source) (f int) {
 	for _, it := range p.armour.Items() {
-		if p, ok := it.Enchantment(enchantment.Protection{}); ok && (enchantment.Protection{}).Affects(src) {
-			t += p.Level() + 1
+		for _, e := range it.Enchantments() {
+			if p, ok := e.Type().(protectionEnchantment); ok && p.Affects(src) {
+				lvl := e.Level()
+				f += int(math.Floor(float64(6+lvl*lvl) * p.Modifier() / 3))
+			}
 		}
 	}
-	dmg *= (enchantment.Protection{}).Multiplier(t)
-	if f, ok := p.Armour().Boots().Enchantment(enchantment.FeatherFalling{}); ok && (src == damage.SourceFall{}) {
-		dmg *= (enchantment.FeatherFalling{}).Multiplier(f.Level())
+	return f
+}
+
+// highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
+func (p *Player) highestArmourEnchantmentLevel(enchant item.EnchantmentType) (t int) {
+	for _, it := range p.armour.Items() {
+		if e, ok := it.Enchantment(enchant); ok {
+			if e.Level() > t {
+				t = e.Level()
+			}
+		}
 	}
-	return math.Max(dmg, 0)
+	return t
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -1035,7 +1088,11 @@ func (p *Player) OnFireDuration() time.Duration {
 
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
-	p.fireTicks.Store(int64(duration.Seconds() * 20))
+	ticks := int64(duration.Seconds() * 20)
+	if level := p.highestArmourEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
+		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
+	}
+	p.fireTicks.Store(ticks)
 	p.updateState()
 }
 
@@ -1071,6 +1128,12 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
+}
+
+// EnderChestInventory returns the player's ender chest inventory. Its accessed by the player when opening
+// ender chests anywhere.
+func (p *Player) EnderChestInventory() *inventory.Inventory {
+	return p.enderChest
 }
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
@@ -1502,8 +1565,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	_, ok := w.Liquid(cube.PosFromVec3(entity.EyePosition(p)))
-	if _, ok2 := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); ok && !ok2 {
+	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); p.insideOfWater(w) && !ok {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -1934,7 +1996,7 @@ func (p *Player) AddExperience(amount int) int {
 
 // RemoveExperience removes experience from the player.
 func (p *Player) RemoveExperience(amount int) {
-	p.experience.Remove(amount)
+	p.experience.Add(-amount)
 	p.session().SendExperience(p.experience)
 }
 
@@ -2049,10 +2111,15 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.checkBlockCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
 
-	p.tickFood(w)
 	p.effects.Tick(p)
+
+	p.tickFood(w)
+	p.tickAirSupply(w)
 	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, damage.SourceVoid{})
+	}
+	if !p.AttackImmune() && p.insideOfSolid(w) {
+		p.Hurt(1, damage.SourceSuffocation{})
 	}
 
 	if p.OnFireDuration() > 0 {
@@ -2094,6 +2161,32 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 }
 
+// tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
+func (p *Player) tickAirSupply(w *world.World) {
+	if !p.canBreathe(w) {
+		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration{}); ok && rand.Float64() <= (enchantment.Respiration{}).Chance(r.Level()) {
+			// Respiration grants a chance to avoid drowning damage every tick.
+			return
+		}
+
+		if ticks := p.airSupplyTicks.Dec(); ticks <= -20 {
+			p.airSupplyTicks.Store(0)
+			if !p.AttackImmune() {
+				p.Hurt(2, damage.SourceDrowning{})
+			}
+		}
+		p.breathing = false
+		p.updateState()
+	} else if max := p.maxAirSupplyTicks.Load(); !p.breathing && p.airSupplyTicks.Load() < max {
+		p.airSupplyTicks.Add(5)
+		if p.airSupplyTicks.Load() >= max {
+			p.breathing = true
+			p.airSupplyTicks.Store(max)
+		}
+		p.updateState()
+	}
+}
+
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
 func (p *Player) tickFood(w *world.World) {
@@ -2131,6 +2224,78 @@ func (p *Player) starve(w *world.World) {
 	if p.Health() > w.Difficulty().StarvationHealthLimit() {
 		p.Hurt(1, damage.SourceStarvation{})
 	}
+}
+
+// AirSupply returns the player's remaining air supply.
+func (p *Player) AirSupply() time.Duration {
+	return time.Duration(p.airSupplyTicks.Load()) * time.Second / 20
+}
+
+// SetAirSupply sets the player's remaining air supply.
+func (p *Player) SetAirSupply(duration time.Duration) {
+	p.airSupplyTicks.Store(duration.Milliseconds() / 50)
+	p.updateState()
+}
+
+// MaxAirSupply returns the player's maximum air supply.
+func (p *Player) MaxAirSupply() time.Duration {
+	return time.Duration(p.maxAirSupplyTicks.Load()) * time.Second / 20
+}
+
+// SetMaxAirSupply sets the player's maximum air supply.
+func (p *Player) SetMaxAirSupply(duration time.Duration) {
+	p.maxAirSupplyTicks.Store(duration.Milliseconds() / 50)
+	p.updateState()
+}
+
+// canBreathe returns true if the player can currently breathe.
+func (p *Player) canBreathe(w *world.World) bool {
+	canTakeDamage := p.GameMode().AllowsTakingDamage()
+	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
+	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
+	return !canTakeDamage || waterBreathing || conduitPower || (!p.insideOfWater(w) && !p.insideOfSolid(w))
+}
+
+// breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
+// the player's eye height.
+const breathingDistanceBelowEyes = 0.11111111
+
+// insideOfWater returns true if the player is currently underwater.
+func (p *Player) insideOfWater(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	if l, ok := w.Liquid(pos); ok {
+		if _, ok := l.(block.Water); ok {
+			d := float64(l.SpreadDecay()) + 1
+			if l.LiquidFalling() {
+				d = 1
+			}
+			return p.Position().Y() < (pos.Side(cube.FaceUp).Vec3().Y())-(d/9-breathingDistanceBelowEyes)
+		}
+	}
+	return false
+}
+
+// insideOfSolid returns true if the player is inside a solid block.
+func (p *Player) insideOfSolid(w *world.World) bool {
+	pos := cube.PosFromVec3(entity.EyePosition(p))
+	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+
+	_, solid := b.Model().(model.Solid)
+	if !solid {
+		// Not solid.
+		return false
+	}
+	d, diffuses := b.(block.LightDiffuser)
+	if diffuses && d.LightDiffusionLevel() == 0 {
+		// Transparent.
+		return false
+	}
+	for _, blockBox := range b.Model().BBox(pos, w) {
+		if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
+			return true
+		}
+	}
+	return false
 }
 
 // checkCollisions checks the player's block collisions.
@@ -2423,6 +2588,9 @@ func (p *Player) load(data Data) {
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 	p.sendFood()
 
+	p.airSupplyTicks.Store(data.AirSupply)
+	p.maxAirSupplyTicks.Store(data.MaxAirSupply)
+
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)
 
@@ -2434,6 +2602,9 @@ func (p *Player) load(data Data) {
 	p.fallDistance.Store(data.FallDistance)
 
 	p.loadInventory(data.Inventory)
+	for slot, stack := range data.EnderChestInventory {
+		_ = p.enderChest.SetItem(slot, stack)
+	}
 }
 
 // loadInventory loads all the data associated with the player inventory.
@@ -2466,6 +2637,8 @@ func (p *Player) Data() Data {
 		Hunger:          p.hunger.foodLevel,
 		Experience:      p.Experience(),
 		FoodTick:        p.hunger.foodTick,
+		AirSupply:       p.airSupplyTicks.Load(),
+		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
 		GameMode:        p.GameMode(),
@@ -2478,10 +2651,11 @@ func (p *Player) Data() Data {
 			OffHand:      offHand,
 			MainHandSlot: p.heldSlot.Load(),
 		},
-		Effects:      p.Effects(),
-		FireTicks:    p.fireTicks.Load(),
-		FallDistance: p.fallDistance.Load(),
-		Dimension:    p.World().Dimension().EncodeDimension(),
+		EnderChestInventory: p.enderChest.Slots(),
+		Effects:             p.Effects(),
+		FireTicks:           p.fireTicks.Load(),
+		FallDistance:        p.fallDistance.Load(),
+		Dimension:           p.World().Dimension().EncodeDimension(),
 	}
 }
 

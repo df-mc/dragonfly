@@ -78,6 +78,11 @@ func (s Shovel) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// RepairableBy ...
+func (s Shovel) RepairableBy(i Stack) bool {
+	return toolTierRepairable(s.Tier)(i)
+}
+
 // EncodeItem ...
 func (s Shovel) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Tier.Name + "_shovel", 0

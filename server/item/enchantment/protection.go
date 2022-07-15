@@ -3,6 +3,7 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Protection is an armour enchantment which increases the damage reduction.
@@ -18,25 +19,37 @@ func (Protection) MaxLevel() int {
 	return 4
 }
 
+// Rarity ...
+func (Protection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
+}
+
 // Affects ...
 func (Protection) Affects(src damage.Source) bool {
-	_, ok := src.(damage.SourceEntityAttack)
-	return ok || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
+	_, projectile := src.(damage.SourceProjectile)
+	_, attack := src.(damage.SourceEntityAttack)
+	_, fireTick := src.(damage.SourceFireTick)
+	_, fall := src.(damage.SourceFall)
+	_, fire := src.(damage.SourceFire)
+	_, lava := src.(damage.SourceLava)
+	return projectile || attack || fireTick || fall || fire || lava
 }
 
-// Multiplier returns the damage multiplier of protection.
-func (Protection) Multiplier(lvl int) float64 {
-	if lvl > 20 {
-		lvl = 20
-	}
-	return 1 - float64(lvl)/25
+// Modifier returns the base protection modifier for the enchantment.
+func (Protection) Modifier() float64 {
+	return 0.75
 }
 
-// CompatibleWith ...
-func (Protection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	return ok && !blastProt && !fireProt && !projectileProt
+// CompatibleWithEnchantment ...
+func (Protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	// TODO: Ensure that the armour does not have blast protection.
+	_, fireProt := t.(FireProtection)
+	_, projectileProt := t.(ProjectileProtection)
+	return !fireProt && !projectileProt
+}
+
+// CompatibleWithItem ...
+func (Protection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }

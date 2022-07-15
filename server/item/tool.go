@@ -1,6 +1,8 @@
 package item
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/world"
+)
 
 var (
 	// TypeNone is the ToolType of items that are not tools.
@@ -84,3 +86,32 @@ func (n ToolNone) HarvestLevel() int { return 0 }
 
 // BaseMiningEfficiency ...
 func (n ToolNone) BaseMiningEfficiency(world.Block) float64 { return 1 }
+
+// toolTierRepairable returns true if the ToolTier passed is repairable.
+func toolTierRepairable(tier ToolTier) func(Stack) bool {
+	return func(stack Stack) bool {
+		switch tier {
+		case ToolTierWood:
+			if planks, ok := stack.Item().(interface{ RepairsWoodTools() bool }); ok {
+				return planks.RepairsWoodTools()
+			}
+		case ToolTierStone:
+			if cobblestone, ok := stack.Item().(interface{ RepairsStoneTools() bool }); ok {
+				return cobblestone.RepairsStoneTools()
+			}
+		case ToolTierGold:
+			_, ok := stack.Item().(GoldIngot)
+			return ok
+		case ToolTierIron:
+			_, ok := stack.Item().(IronIngot)
+			return ok
+		case ToolTierDiamond:
+			_, ok := stack.Item().(Diamond)
+			return ok
+		case ToolTierNetherite:
+			_, ok := stack.Item().(NetheriteIngot)
+			return ok
+		}
+		return false
+	}
+}

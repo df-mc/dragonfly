@@ -15,6 +15,7 @@ func ReadItem(data map[string]any, s *item.Stack) item.Stack {
 		s = &a
 	}
 	readDamage(data, s, disk)
+	readAnvilCost(data, s)
 	readDisplay(data, s)
 	readEnchantments(data, s)
 	readDragonflyData(data, s)
@@ -54,6 +55,11 @@ func readDamage(m map[string]any, s *item.Stack, disk bool) {
 		return
 	}
 	*s = s.Damage(int(Map[int32](m, "Damage")))
+}
+
+// readAnvilCost ...
+func readAnvilCost(m map[string]any, s *item.Stack) {
+	*s = s.WithAnvilCost(int(Map[int32](m, "RepairCost")))
 }
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
