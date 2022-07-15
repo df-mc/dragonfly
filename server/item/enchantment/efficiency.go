@@ -18,14 +18,10 @@ func (Efficiency) MaxLevel() int {
 	return 5
 }
 
-// MinCost ...
-func (Efficiency) MinCost(level int) int {
-	return 1 + 10*(level-1)
-}
-
-// MaxCost ...
-func (e Efficiency) MaxCost(level int) int {
-	return e.MinCost(level) + 50
+// Cost ...
+func (Efficiency) Cost(level int) (int, int) {
+	min := 1 + 10*(level-1)
+	return min, min + 50
 }
 
 // Rarity ...

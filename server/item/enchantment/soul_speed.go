@@ -19,14 +19,10 @@ func (SoulSpeed) MaxLevel() int {
 	return 3
 }
 
-// MinCost ...
-func (SoulSpeed) MinCost(level int) int {
-	return level * 10
-}
-
-// MaxCost ...
-func (s SoulSpeed) MaxCost(level int) int {
-	return s.MinCost(level) + 15
+// Cost ...
+func (SoulSpeed) Cost(level int) (int, int) {
+	min := level * 10
+	return min, min + 15
 }
 
 // Rarity ...

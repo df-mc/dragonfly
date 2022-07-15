@@ -18,14 +18,9 @@ func (SilkTouch) MaxLevel() int {
 	return 1
 }
 
-// MinCost ...
-func (SilkTouch) MinCost(int) int {
-	return 15
-}
-
-// MaxCost ...
-func (SilkTouch) MaxCost(int) int {
-	return 65
+// Cost ...
+func (SilkTouch) Cost(int) (int, int) {
+	return 15, 65
 }
 
 // Rarity ...

@@ -19,14 +19,10 @@ func (Respiration) MaxLevel() int {
 	return 3
 }
 
-// MinCost ...
-func (Respiration) MinCost(level int) int {
-	return 10 * level
-}
-
-// MaxCost ...
-func (r Respiration) MaxCost(level int) int {
-	return r.MinCost(level) + 30
+// Cost ...
+func (Respiration) Cost(level int) (int, int) {
+	min := 10 * level
+	return min, min + 30
 }
 
 // Rarity ...

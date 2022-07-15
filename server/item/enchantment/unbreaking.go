@@ -20,14 +20,10 @@ func (Unbreaking) MaxLevel() int {
 	return 3
 }
 
-// MinCost ...
-func (Unbreaking) MinCost(level int) int {
-	return 5 + 8*(level-1)
-}
-
-// MaxCost ...
-func (u Unbreaking) MaxCost(level int) int {
-	return u.MinCost(level) + 50
+// Cost ...
+func (Unbreaking) Cost(level int) (int, int) {
+	min := 5 + 8*(level-1)
+	return min, min + 50
 }
 
 // Rarity ...

@@ -18,14 +18,10 @@ func (Sharpness) MaxLevel() int {
 	return 5
 }
 
-// MinCost ...
-func (Sharpness) MinCost(level int) int {
-	return 1 + (level-1)*11
-}
-
-// MaxCost ...
-func (s Sharpness) MaxCost(level int) int {
-	return s.MinCost(level) + 20
+// Cost ...
+func (Sharpness) Cost(level int) (int, int) {
+	min := 1 + (level-1)*11
+	return min, min + 20
 }
 
 // Rarity ...

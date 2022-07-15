@@ -19,14 +19,10 @@ func (SwiftSneak) MaxLevel() int {
 	return 3
 }
 
-// MinCost ...
-func (SwiftSneak) MinCost(level int) int {
-	return level * 25
-}
-
-// MaxCost ...
-func (s SwiftSneak) MaxCost(level int) int {
-	return s.MinCost(level) + 50
+// Cost ...
+func (SwiftSneak) Cost(level int) (int, int) {
+	min := level * 25
+	return min, min + 50
 }
 
 // Rarity ...

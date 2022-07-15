@@ -18,14 +18,9 @@ func (AquaAffinity) MaxLevel() int {
 	return 1
 }
 
-// MinCost ...
-func (AquaAffinity) MinCost(int) int {
-	return 1
-}
-
-// MaxCost ...
-func (a AquaAffinity) MaxCost(level int) int {
-	return a.MinCost(level) + 40
+// Cost ...
+func (AquaAffinity) Cost(int) (int, int) {
+	return 1, 41
 }
 
 // Rarity ...

@@ -19,14 +19,10 @@ func (Protection) MaxLevel() int {
 	return 4
 }
 
-// MinCost ...
-func (Protection) MinCost(level int) int {
-	return 1 + (level-1)*11
-}
-
-// MaxCost ...
-func (p Protection) MaxCost(level int) int {
-	return p.MinCost(level) + 11
+// Cost ...
+func (Protection) Cost(level int) (int, int) {
+	min := 1 + (level-1)*11
+	return min, min + 11
 }
 
 // Rarity ...

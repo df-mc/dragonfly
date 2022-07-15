@@ -18,14 +18,10 @@ func (KnockBack) MaxLevel() int {
 	return 2
 }
 
-// MinCost ...
-func (KnockBack) MinCost(level int) int {
-	return 5 + (level-1)*20
-}
-
-// MaxCost ...
-func (k KnockBack) MaxCost(level int) int {
-	return k.MinCost(level) + 50
+// Cost ...
+func (KnockBack) Cost(level int) (int, int) {
+	min := 5 + (level-1)*20
+	return min, min + 50
 }
 
 // Rarity ...

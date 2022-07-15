@@ -19,14 +19,10 @@ func (FireProtection) MaxLevel() int {
 	return 4
 }
 
-// MinCost ...
-func (FireProtection) MinCost(level int) int {
-	return 10 + (level-1)*8
-}
-
-// MaxCost ...
-func (f FireProtection) MaxCost(level int) int {
-	return f.MinCost(level) + 8
+// Cost ...
+func (FireProtection) Cost(level int) (int, int) {
+	min := 10 + (level-1)*8
+	return min, min + 8
 }
 
 // Rarity ...

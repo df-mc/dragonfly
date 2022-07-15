@@ -19,14 +19,10 @@ func (FireAspect) MaxLevel() int {
 	return 2
 }
 
-// MinCost ...
-func (FireAspect) MinCost(level int) int {
-	return 10 + (level-1)*20
-}
-
-// MaxCost ...
-func (f FireAspect) MaxCost(level int) int {
-	return f.MinCost(level) + 50
+// Cost ...
+func (FireAspect) Cost(level int) (int, int) {
+	min := 10 + (level-1)*20
+	return min, min + 50
 }
 
 // Rarity ...

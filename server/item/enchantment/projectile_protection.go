@@ -19,14 +19,10 @@ func (ProjectileProtection) MaxLevel() int {
 	return 4
 }
 
-// MinCost ...
-func (ProjectileProtection) MinCost(level int) int {
-	return 3 + (level-1)*6
-}
-
-// MaxCost ...
-func (p ProjectileProtection) MaxCost(level int) int {
-	return p.MinCost(level) + 6
+// Cost ...
+func (ProjectileProtection) Cost(level int) (int, int) {
+	min := 3 + (level-1)*6
+	return min, min + 6
 }
 
 // Rarity ...

@@ -19,14 +19,10 @@ func (FeatherFalling) MaxLevel() int {
 	return 4
 }
 
-// MinCost ...
-func (FeatherFalling) MinCost(level int) int {
-	return 5 + (level-1)*6
-}
-
-// MaxCost ...
-func (f FeatherFalling) MaxCost(level int) int {
-	return f.MinCost(level) + 6
+// Cost ...
+func (FeatherFalling) Cost(level int) (int, int) {
+	min := 5 + (level-1)*6
+	return min, min + 6
 }
 
 // Rarity ...

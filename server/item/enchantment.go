@@ -39,12 +39,9 @@ type EnchantmentType interface {
 	Name() string
 	// MaxLevel returns the maximum level the enchantment should be able to have.
 	MaxLevel() int
-	// MinCost returns the minimum cost the enchantment may inhibit. The higher this cost is, the more likely better
-	// enchantments are to be selected.
-	MinCost(level int) int
-	// MaxCost returns the maximum cost the enchantment may inhibit. The higher this cost is, the more likely better
-	// enchantments are to be selected.
-	MaxCost(level int) int
+	// Cost returns the minimum and maximum cost the enchantment may inhibit. The higher this range is, the more likely
+	// better enchantments are to be selected.
+	Cost(level int) (int, int)
 	// Rarity returns the enchantment's rarity.
 	Rarity() EnchantmentRarity
 	// CompatibleWithEnchantment is called when an enchantment is added to an item. It can be used to check if

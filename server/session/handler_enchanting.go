@@ -225,7 +225,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 		// Now iterate through each possible level of the enchantment.
 		for i := enchant.MaxLevel(); i > 0; i-- {
 			// Use the level to calculate the minimum and maximum costs for this enchantment.
-			if cost >= enchant.MinCost(i) && cost <= enchant.MaxCost(i) {
+			if minCost, maxCost := enchant.Cost(i); cost >= minCost && cost <= maxCost {
 				// If the cost is within the bounds, add the enchantment to the list of available enchantments.
 				availableEnchants = append(availableEnchants, item.NewEnchantment(enchant, i))
 				break
