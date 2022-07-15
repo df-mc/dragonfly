@@ -95,7 +95,7 @@ type BreakInfo struct {
 func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack) BreakInfo {
 	return BreakInfo{
 		Hardness:        hardness,
-		BlastResistance: hardness * 5,
+		BlastResistance: hardness,
 		Harvestable:     harvestable,
 		Effective:       effective,
 		Drops:           drops,

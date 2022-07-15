@@ -47,9 +47,9 @@ type h struct {
 
 func (h h) HandleChat(*event.Context, *string) {
 	block.ExplosionConfig{
-		World: h.p.World(),
-		Pos:   h.p.Position(),
-		Size:  4,
+		World:  h.p.World(),
+		Pos:    h.p.Position(),
+		Radius: 4,
 	}.Do()
 }
 
