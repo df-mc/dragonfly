@@ -142,7 +142,7 @@ func (c ExplosionConfig) Do() {
 	c.World.PlaySound(c.Pos, c.Sound)
 }
 
-// exposure returns the exposure of a block to an entity, used to calculate the impact of an explosion.
+// exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
 func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 	w := e.World()
 	pos := e.Position()
