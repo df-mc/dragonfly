@@ -81,10 +81,10 @@ func (c ExplosionConfig) Do() {
 	r, d := rand.New(c.RandSource), c.Radius*2
 	box := cube.Box(
 		math.Floor(c.Pos[0]-d-1),
-		math.Ceil(c.Pos[0]+d+1),
 		math.Floor(c.Pos[1]-d-1),
-		math.Ceil(c.Pos[1]+d+1),
 		math.Floor(c.Pos[2]-d-1),
+		math.Ceil(c.Pos[0]+d+1),
+		math.Ceil(c.Pos[1]+d+1),
 		math.Ceil(c.Pos[2]+d+1),
 	)
 
@@ -98,7 +98,8 @@ func (c ExplosionConfig) Do() {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
-			explodable.Explode(c, (1-dist/d)*exposure(c.Pos, e))
+			// TODO: exposure
+			explodable.Explode(c, 1-dist/d)
 		}
 	}
 
