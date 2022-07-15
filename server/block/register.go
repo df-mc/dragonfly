@@ -82,6 +82,7 @@ func init() {
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(SlimeBlock{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(SoulSand{})
 	world.RegisterBlock(SoulSoil{})

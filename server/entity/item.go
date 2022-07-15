@@ -69,6 +69,12 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 	it.pickupDelay = ticks
 }
 
+// entityLander represents a block that reacts to an entity landing on it after falling.
+type entityLander interface {
+	// EntityLand is called when an entity lands on the block.
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+}
+
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(w *world.World, current int64) {
 	it.mu.Lock()
@@ -77,6 +83,16 @@ func (it *Item) Tick(w *world.World, current int64) {
 	it.mu.Unlock()
 
 	m.Send()
+
+	pos := cube.PosFromVec3(m.pos)
+	b := w.Block(pos)
+	if len(b.Model().BBox(pos, w)) == 0 {
+		pos = pos.Sub(cube.Pos{0, 1})
+		b = w.Block(pos)
+	}
+	if h, ok := b.(entityLander); ok {
+		h.EntityLand(pos, w, it)
+	}
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
 		_ = it.Close()
