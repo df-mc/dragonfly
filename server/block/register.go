@@ -220,6 +220,7 @@ func init() {
 	world.RegisterItem(EndBrickStairs{})
 	world.RegisterItem(EndBricks{})
 	world.RegisterItem(EndStone{})
+	world.RegisterItem(EnderChest{})
 	world.RegisterItem(Farmland{})
 	world.RegisterItem(GildedBlackstone{})
 	world.RegisterItem(GlassPane{})
