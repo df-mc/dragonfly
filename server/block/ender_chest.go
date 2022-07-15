@@ -70,10 +70,12 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 }
 
 // Activate ...
-func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) {
+func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
 	if opener, ok := u.(enderChestOwner); ok {
 		opener.OpenBlockContainer(pos)
+		return true
 	}
+	return false
 }
 
 // AddViewer ...
