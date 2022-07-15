@@ -59,9 +59,9 @@ type Session struct {
 	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot         *atomic.Uint32
-	inv, offHand, ui *inventory.Inventory
-	armour           *inventory.Armour
+	heldSlot                     *atomic.Uint32
+	inv, offHand, enderChest, ui *inventory.Inventory
+	armour                       *inventory.Armour
 
 	breakingPos cube.Pos
 
@@ -236,6 +236,14 @@ func (s *Session) Close() error {
 // manages.
 func (s *Session) close() {
 	_ = s.c.Close()
+
+	// Move UI inventory items to the main inventory.
+	for _, it := range s.ui.Items() {
+		if _, err := s.inv.AddItem(it); err != nil {
+			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
+			s.c.Drop(it)
+		}
+	}
 
 	s.onStop(s.c)
 
