@@ -46,7 +46,7 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 
 	output := craft.Output()
 	outputStack := item.NewStack(output[0].Item(), input.Count()).
-		WithDurability(input.Durability()).
+		Damage(input.MaxDurability() - input.Durability()).
 		WithCustomName(input.CustomName()).
 		WithLore(input.Lore()...).
 		WithEnchantments(input.Enchantments()...).
