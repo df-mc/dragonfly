@@ -2651,7 +2651,7 @@ func (p *Player) Data() Data {
 			OffHand:      offHand,
 			MainHandSlot: p.heldSlot.Load(),
 		},
-		EnderChestInventory: p.enderChest.Items(),
+		EnderChestInventory: p.enderChest.Slots(),
 		Effects:             p.Effects(),
 		FireTicks:           p.fireTicks.Load(),
 		FallDistance:        p.fallDistance.Load(),
