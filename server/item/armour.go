@@ -28,7 +28,7 @@ type (
 		// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
 		KnockBackResistance() float64
 		// EnchantmentValue is the enchantment value of the armour used when selecting pseudo-random enchantments for
-		// enchanting tables.
+		// enchanting tables. When this value is high, the enchantments that are selected are more likely to be good.
 		EnchantmentValue() int
 		// Name is the name of the tier.
 		Name() string

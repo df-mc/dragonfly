@@ -29,9 +29,9 @@ var enchantNames = []string{
 
 const (
 	// enchantingInputSlot is the slot index of the input item in the enchanting table.
-	enchantingInputSlot = 0x0E
+	enchantingInputSlot = 0x0e
 	// enchantingLapisSlot is the slot index of the lapis in the enchanting table.
-	enchantingLapisSlot = 0x0F
+	enchantingLapisSlot = 0x0f
 )
 
 // handleEnchant handles the enchantment of an item using the CraftRecipe stack request action.
@@ -62,7 +62,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 	requirement := allCosts[a.RecipeNetworkID]
 	enchants := allEnchants[a.RecipeNetworkID]
 
-	// If we don't have indefinite resources, we need to deduct Lapis Lazuli and experience.
+	// If we don't have infinite resources, we need to deduct Lapis Lazuli and experience.
 	if !s.c.GameMode().CreativeInventory() {
 		// First ensure that the experience level is both underneath the requirement and the cost.
 		if s.c.ExperienceLevel() < requirement {
@@ -217,17 +217,18 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 			// the enchanting table.
 			continue
 		}
+		if !book && !enchant.CompatibleWithItem(it) {
+			// The enchantment is not compatible with the item.
+			continue
+		}
 
-		// Also make sure that the enchantment is compatible with the item.
-		if book || enchant.CompatibleWithItem(it) {
-			// Now iterate through each possible level of the enchantment.
-			for i := enchant.MaxLevel(); i > 0; i-- {
-				// Use the level to calculate the minimum and maximum costs for this enchantment.
-				if cost >= enchant.MinCost(i) && cost <= enchant.MaxCost(i) {
-					// If the cost is within the bounds, add the enchantment to the list of available enchantments.
-					availableEnchants = append(availableEnchants, item.NewEnchantment(enchant, i))
-					break
-				}
+		// Now iterate through each possible level of the enchantment.
+		for i := enchant.MaxLevel(); i > 0; i-- {
+			// Use the level to calculate the minimum and maximum costs for this enchantment.
+			if cost >= enchant.MinCost(i) && cost <= enchant.MaxCost(i) {
+				// If the cost is within the bounds, add the enchantment to the list of available enchantments.
+				availableEnchants = append(availableEnchants, item.NewEnchantment(enchant, i))
+				break
 			}
 		}
 	}
@@ -280,31 +281,33 @@ func searchBookshelves(w *world.World, pos cube.Pos) (shelves int) {
 	for x := -1; x <= 1; x++ {
 		for z := -1; z <= 1; z++ {
 			for y := 0; y <= 1; y++ {
-				if z != 0 || x != 0 {
-					if _, ok := w.Block(pos.Add(cube.Pos{x, y, z})).(block.Air); !ok {
-						// There must be a one block space between the bookshelf and the player.
-						continue
-					}
+				if x == 0 && z == 0 {
+					// Ignore the center block.
+					continue
+				}
+				if _, ok := w.Block(pos.Add(cube.Pos{x, y, z})).(block.Air); !ok {
+					// There must be a one block space between the bookshelf and the player.
+					continue
+				}
 
-					// Check for a bookshelf two blocks away.
-					if _, ok := w.Block(pos.Add(cube.Pos{x * 2, y, z * 2})).(block.Bookshelf); ok {
+				// Check for a bookshelf two blocks away.
+				if _, ok := w.Block(pos.Add(cube.Pos{x * 2, y, z * 2})).(block.Bookshelf); ok {
+					shelves++
+				}
+				if x != 0 && z != 0 {
+					// Check for a bookshelf two blocks away on the X axis.
+					if _, ok := w.Block(pos.Add(cube.Pos{x * 2, y, z})).(block.Bookshelf); ok {
 						shelves++
 					}
-					if x != 0 && z != 0 {
-						// Check for a bookshelf two blocks away on the X axis.
-						if _, ok := w.Block(pos.Add(cube.Pos{x * 2, y, z})).(block.Bookshelf); ok {
-							shelves++
-						}
-						// Check for a bookshelf two blocks away on the Z axis.
-						if _, ok := w.Block(pos.Add(cube.Pos{x, y, z * 2})).(block.Bookshelf); ok {
-							shelves++
-						}
+					// Check for a bookshelf two blocks away on the Z axis.
+					if _, ok := w.Block(pos.Add(cube.Pos{x, y, z * 2})).(block.Bookshelf); ok {
+						shelves++
 					}
+				}
 
-					if shelves >= 15 {
-						// We've found enough bookshelves.
-						return shelves
-					}
+				if shelves >= 15 {
+					// We've found enough bookshelves.
+					return shelves
 				}
 			}
 		}
