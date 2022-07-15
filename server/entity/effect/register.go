@@ -43,6 +43,7 @@ func init() {
 	Register(27, SlowFalling{})
 	// TODO: (28) Bad omen. (Requires villages ...)
 	// TODO: (29) Hero of the village. (Requires villages ...)
+	Register(30, Darkness{})
 }
 
 var (

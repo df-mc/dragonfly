@@ -2,34 +2,39 @@ package enchantment
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Efficiency is an enchantment that increases mining speed.
-type Efficiency struct{ enchantment }
-
-// Addend returns the mining speed addend from efficiency.
-func (e Efficiency) Addend(level int) float64 {
-	return float64(level*level + 1)
-}
+type Efficiency struct{}
 
 // Name ...
-func (e Efficiency) Name() string {
+func (Efficiency) Name() string {
 	return "Efficiency"
 }
 
 // MaxLevel ...
-func (e Efficiency) MaxLevel() int {
+func (Efficiency) MaxLevel() int {
 	return 5
 }
 
-// WithLevel ...
-func (e Efficiency) WithLevel(level int) item.Enchantment {
-	return Efficiency{e.withLevel(level, e)}
+// Rarity ...
+func (Efficiency) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
 }
 
-// CompatibleWith ...
-func (e Efficiency) CompatibleWith(s item.Stack) bool {
-	t, ok := s.Item().(tool.Tool)
-	return ok && t.ToolType() == tool.TypePickaxe
+// Addend returns the mining speed addend from efficiency.
+func (Efficiency) Addend(level int) float64 {
+	return float64(level*level + 1)
+}
+
+// CompatibleWithEnchantment ...
+func (Efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
+	return true
+}
+
+// CompatibleWithItem ...
+func (Efficiency) CompatibleWithItem(i world.Item) bool {
+	t, ok := i.(item.Tool)
+	return ok && (t.ToolType() != item.TypeSword && t.ToolType() != item.TypeNone)
 }

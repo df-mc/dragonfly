@@ -1,9 +1,9 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -50,9 +50,9 @@ func (s *Snowball) EncodeEntity() string {
 	return "minecraft:snowball"
 }
 
-// AABB ...
-func (s *Snowball) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (s *Snowball) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
@@ -88,7 +88,7 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, damage.SourceEntityAttack{Attacker: s}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: s, Owner: s.Owner()}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
@@ -127,19 +127,19 @@ func (s *Snowball) Own(owner world.Entity) {
 }
 
 // DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
-func (s *Snowball) DecodeNBT(data map[string]interface{}) interface{} {
+func (s *Snowball) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.MapFloat32(data, "Pitch")),
-		float64(nbtconv.MapFloat32(data, "Yaw")),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
 	)
 }
 
 // EncodeNBT encodes the Snowball entity's properties as a map and returns it.
-func (s *Snowball) EncodeNBT() map[string]interface{} {
+func (s *Snowball) EncodeNBT() map[string]any {
 	yaw, pitch := s.Rotation()
-	return map[string]interface{}{
+	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Yaw":    yaw,
 		"Pitch":  pitch,

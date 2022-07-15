@@ -32,8 +32,8 @@ func (t StainedTerracotta) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:stained_hardened_clay", map[string]interface{}{"color": t.Colour.String()}
+func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:stained_hardened_clay", map[string]any{"color": t.Colour.String()}
 }
 
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.

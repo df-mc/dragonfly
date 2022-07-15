@@ -10,7 +10,7 @@ import (
 
 // Data is a struct that contains all the data of that player to be passed on to the Provider and saved.
 type Data struct {
-	// UUID is the player's unique identifier for their account
+	// UUID is the player's unique identifier for their account.
 	UUID uuid.UUID
 	// Username is the last username the player joined with.
 	Username string
@@ -31,26 +31,23 @@ type Data struct {
 	// ExhaustionLevel determines how fast the hunger level depletes and is controlled by the kinds
 	// of food the player has eaten. SaturationLevel determines how fast the saturation level depletes.
 	ExhaustionLevel, SaturationLevel float64
-	// XPLevel is the current xp level the player has, XPTotal is the total amount of xp the
-	// player has collected during their lifetime, which is used to display score upon player death.
-	// These are currently not implemented in DF.
-	XPLevel, XPTotal int
-	// XPPercentage is the player's current progress towards the next level.
-	// This is currently not implemented in DF.
-	XPPercentage float64
-	// XPSeed is the random seed used to determine the next enchantment in enchantment tables.
-	// This is currently not implemented in DF.
-	XPSeed int
+	// Experience is the current experience the player has.
+	Experience int
+	// AirSupply is the current tick of the player's air supply.
+	AirSupply int64
+	// MaxAirSupply is the maximum air supply the player can have.
+	MaxAirSupply int64
 	// GameMode is the last gamemode the user had, like creative or survival.
 	GameMode world.GameMode
 	// Inventory contains all the items in the inventory, including armor, main inventory and offhand.
 	Inventory InventoryData
+	// EnderChestInventory contains the items in the player's ender chest.
+	EnderChestInventory []item.Stack
 	// Effects contains all the currently active potions effects the player has.
 	Effects []effect.Effect
 	// FireTicks is the amount of ticks the player will be on fire for.
 	FireTicks int64
-	// FallDistance is the distance the player has currently been falling.
-	// This is used to calculate fall damage.
+	// FallDistance is the distance the player has currently been falling. This is used to calculate fall damage.
 	FallDistance float64
 	// Dimension is the ID of the dimension that the player was last in. The player is added to the correct world based
 	// on this number.

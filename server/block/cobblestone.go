@@ -15,6 +15,11 @@ func (c Cobblestone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
+// RepairsStoneTools ...
+func (c Cobblestone) RepairsStoneTools() bool {
+	return !c.Mossy
+}
+
 // EncodeItem ...
 func (c Cobblestone) EncodeItem() (name string, meta int16) {
 	if c.Mossy {
@@ -24,7 +29,7 @@ func (c Cobblestone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Cobblestone) EncodeBlock() (string, map[string]interface{}) {
+func (c Cobblestone) EncodeBlock() (string, map[string]any) {
 	if c.Mossy {
 		return "minecraft:mossy_cobblestone", nil
 	}

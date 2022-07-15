@@ -36,5 +36,17 @@ type BucketEmpty struct {
 	sound
 }
 
-// EndermanTeleport is a sound played upon teleportation of an enderman, or teleportation of a player by an ender pearl or a chorus fruit.
-type EndermanTeleport struct{ sound }
+// BowShoot is a sound played when a bow is shot.
+type BowShoot struct{ sound }
+
+// ArrowHit is a sound played when an arrow hits ground.
+type ArrowHit struct{ sound }
+
+// Teleport is a sound played upon teleportation of an enderman, or teleportation of a player by an ender pearl or a chorus fruit.
+type Teleport struct{ sound }
+
+// UseSpyglass is a sound played when a player uses a spyglass.
+type UseSpyglass struct{ sound }
+
+// StopUsingSpyglass is a sound played when a player stops using a spyglass.
+type StopUsingSpyglass struct{ sound }

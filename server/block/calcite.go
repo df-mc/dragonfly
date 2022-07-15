@@ -17,6 +17,6 @@ func (c Calcite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Calcite) EncodeBlock() (string, map[string]interface{}) {
+func (c Calcite) EncodeBlock() (string, map[string]any) {
 	return "minecraft:calcite", nil
 }

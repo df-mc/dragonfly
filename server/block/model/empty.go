@@ -2,15 +2,14 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Empty is a model that is completely empty. It has no collision boxes or solid faces.
 type Empty struct{}
 
-// AABB returns an empty slice.
-func (Empty) AABB(cube.Pos, *world.World) []physics.AABB {
+// BBox returns an empty slice.
+func (Empty) BBox(cube.Pos, *world.World) []cube.BBox {
 	return nil
 }
 

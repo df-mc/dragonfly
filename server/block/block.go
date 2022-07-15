@@ -60,7 +60,7 @@ type Replaceable interface {
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
-	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64)
 }
 
 // EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
@@ -137,8 +137,24 @@ func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *ite
 		placer.PlaceBlock(pos, b, ctx)
 		return
 	}
-	w.PlaceBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
+}
+
+// horizontalDirection returns the horizontal direction of the given direction. This is a legacy type still used in
+// various blocks.
+func horizontalDirection(d cube.Direction) cube.Direction {
+	switch d {
+	case cube.South:
+		return cube.North
+	case cube.West:
+		return cube.South
+	case cube.North:
+		return cube.West
+	case cube.East:
+		return cube.East
+	}
+	panic("invalid direction")
 }
 
 // placed checks if an item was placed with the use context passed.
@@ -184,10 +200,8 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
-		w.BreakBlockWithoutParticles(pos)
-
-		e := entity.NewFallingBlock(b, pos.Vec3Middle())
-		w.AddEntity(e)
+		w.SetBlock(pos, nil, nil)
+		w.AddEntity(entity.NewFallingBlock(b, pos.Vec3Middle()))
 	}
 }
 

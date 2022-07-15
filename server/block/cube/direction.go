@@ -4,15 +4,20 @@ package cube
 type Direction int
 
 const (
-	// North represents the north direction.
+	// North represents the north direction, towards the negative Z.
 	North Direction = iota
-	// South represents the south direction.
+	// South represents the south direction, towards the positive Z.
 	South
-	// West represents the west direction.
+	// West represents the west direction, towards the negative X.
 	West
-	// East represents the east direction.
+	// East represents the east direction, towards the positive X.
 	East
 )
+
+// Face converts the direction to a Face and returns it.
+func (d Direction) Face() Face {
+	return Face(d + 2)
+}
 
 // Opposite returns Direction opposite to the current one.
 func (d Direction) Opposite() Direction {
@@ -27,11 +32,6 @@ func (d Direction) Opposite() Direction {
 		return West
 	}
 	panic("invalid direction")
-}
-
-// Face converts the direction to a Face and returns it.
-func (d Direction) Face() Face {
-	return Face(d + 2)
 }
 
 // RotateRight rotates the direction 90 degrees to the right horizontally and returns the new direction.

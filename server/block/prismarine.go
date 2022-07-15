@@ -24,8 +24,8 @@ func (p Prismarine) EncodeItem() (id string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p Prismarine) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:prismarine", map[string]interface{}{"prismarine_block_type": p.Type.String()}
+func (p Prismarine) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:prismarine", map[string]any{"prismarine_block_type": p.Type.String()}
 }
 
 // allPrismarine returns a list of all prismarine block variants.

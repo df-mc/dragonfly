@@ -1,8 +1,8 @@
 package world
 
 import (
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"go.uber.org/atomic"
 	"sync"
 )
 
