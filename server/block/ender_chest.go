@@ -113,13 +113,11 @@ func (c EnderChest) close(w *world.World, pos cube.Pos) {
 
 // EncodeNBT ...
 func (c EnderChest) EncodeNBT() map[string]interface{} {
-	// Only implement world.NBTer to retain ender chest viewer data.
-	return map[string]interface{}{}
+	return map[string]interface{}{"id": "EnderChest"}
 }
 
 // DecodeNBT ...
 func (c EnderChest) DecodeNBT(map[string]interface{}) interface{} {
-	// Only implement world.NBTer to retain ender chest viewer data.
 	return NewEnderChest()
 }
 
