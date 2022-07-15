@@ -54,6 +54,7 @@ const (
 	hashEndBrickStairs
 	hashEndBricks
 	hashEndStone
+	hashEnderChest
 	hashFarmland
 	hashFire
 	hashFlower
@@ -357,6 +358,10 @@ func (EndBricks) Hash() uint64 {
 
 func (EndStone) Hash() uint64 {
 	return hashEndStone
+}
+
+func (c EnderChest) Hash() uint64 {
+	return hashEnderChest | uint64(c.Facing)<<8
 }
 
 func (f Farmland) Hash() uint64 {
