@@ -13,7 +13,7 @@ require (
 	github.com/rogpeppe/go-internal v1.3.0
 	github.com/sandertv/gophertunnel v1.22.1
 	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/exp v0.0.0-20220328175248-053ad81199eb
+	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75
 	golang.org/x/text v0.3.7
 )
 
