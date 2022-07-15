@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -17,8 +16,8 @@ import (
 type FallingBlock struct {
 	transform
 
-	block        world.Block
-	fallDistance atomic.Float64
+	block world.Block
+	fall  *FallManager
 
 	c *MovementComputer
 }
@@ -33,6 +32,7 @@ func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
 			DragBeforeGravity: true,
 		},
 	}
+	b.fall = NewFallManager(b)
 	b.transform = newTransform(b, pos)
 	return b
 }
@@ -59,7 +59,7 @@ func (f *FallingBlock) Block() world.Block {
 
 // FallDistance ...
 func (f *FallingBlock) FallDistance() float64 {
-	return f.fallDistance.Load()
+	return f.fall.FallDistance()
 }
 
 // damager ...
@@ -77,6 +77,11 @@ type landable interface {
 	Landed(w *world.World, pos cube.Pos)
 }
 
+// OnGround ...
+func (f *FallingBlock) OnGround() bool {
+	return f.c.OnGround()
+}
+
 // Tick ...
 func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	f.mu.Lock()
@@ -86,12 +91,7 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 
 	m.Send()
 
-	distThisTick := f.vel.Y()
-	if distThisTick < f.fallDistance.Load() {
-		f.fallDistance.Sub(distThisTick)
-	} else {
-		f.fallDistance.Store(0)
-	}
+	f.fall.UpdateFallState(f.vel.Y(), false)
 
 	pos := cube.PosFromVec3(m.pos)
 	if pos[1] < w.Range()[0] {
@@ -101,7 +101,7 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(pos, w)) || f.c.OnGround() {
 		if d, ok := f.block.(damager); ok {
 			damagePerBlock, maxDamage := d.Damage()
-			if dist := math.Ceil(f.fallDistance.Load() - 1.0); dist > 0 {
+			if dist := math.Ceil(f.FallDistance() - 1.0); dist > 0 {
 				force := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
 				for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(0.05), f.ignores) {
 					e.(Living).Hurt(force, damage.SourceBlock{Block: f.block})
@@ -137,7 +137,7 @@ func (f *FallingBlock) DecodeNBT(data map[string]any) any {
 	}
 	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
 	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.fallDistance.Store(nbtconv.Map[float64](data, "FallDistance"))
+	n.fall.SetFallDistance(nbtconv.Map[float64](data, "FallDistance"))
 	return n
 }
 

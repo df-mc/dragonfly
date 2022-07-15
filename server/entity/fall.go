@@ -48,9 +48,9 @@ func (f *FallManager) ResetFallDistance() {
 }
 
 // UpdateFallState is called to update the entities falling state.
-func (f *FallManager) UpdateFallState(distanceThisTick float64) {
+func (f *FallManager) UpdateFallState(distanceThisTick float64, checkOnGround bool) {
 	fallDistance := f.fallDistance.Load()
-	if f.e.OnGround() {
+	if checkOnGround && f.e.OnGround() {
 		if fallDistance > 0 {
 			f.fall(fallDistance)
 			f.ResetFallDistance()
