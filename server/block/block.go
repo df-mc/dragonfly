@@ -245,7 +245,6 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 
 // livingEntity ...
 type livingEntity interface {
-	world.Entity
 	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
 	// immune for half a second after being attacked.
 	AttackImmune() bool

@@ -22,11 +22,11 @@ type ExplosionConfig struct {
 	Pos mgl64.Vec3
 	// Radius is the radius of the explosion.
 	Radius float64
-	// Rand is the source to use for the explosion "randomness". If set to nil, this will default to the global rand.
-	Rand rand.Source
-	// CreateFire is true if the explosion should create fire, for example, if it came from a fireball of a ghast or
-	// a bed in the nether.
-	CreateFire bool
+	// RandSource is the source to use for the explosion "randomness".
+	RandSource rand.Source
+	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
+	// above opaque blocks.
+	SpawnFire bool
 
 	// Sound is the sound to play when the explosion is created. If set to nil, this will default to the sound of a
 	// regular explosion.
@@ -74,11 +74,11 @@ func (c ExplosionConfig) Do() {
 	if c.Particle == nil {
 		c.Particle = particle.HugeExplosion{}
 	}
-	if c.Rand == nil {
-		c.Rand = rand.NewSource(time.Now().UnixNano())
+	if c.RandSource == nil {
+		c.RandSource = rand.NewSource(time.Now().UnixNano())
 	}
-
-	r, d := rand.New(c.Rand), c.Radius*2
+	
+	r, d := rand.New(c.RandSource), c.Radius*2
 	bb := cube.Box(
 		math.Floor(c.Pos[0]-d-1),
 		math.Ceil(c.Pos[0]+d+1),
@@ -102,7 +102,7 @@ func (c ExplosionConfig) Do() {
 		}
 	}
 
-	var affectedBlocks = make([]cube.Pos, 0, 32)
+	affectedBlocks := make([]cube.Pos, 0, 32)
 	for _, ray := range rays {
 		pos := c.Pos
 		for blastForce := c.Radius * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
@@ -121,29 +121,25 @@ func (c ExplosionConfig) Do() {
 			explodable.Explode(pos, c)
 		} else if breakable, ok := bl.(Breakable); ok {
 			c.World.SetBlock(pos, nil, nil)
-			if 1/c.Radius > rand.Float64() {
+			if 1/c.Radius > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(c.World, drop, pos.Vec3Centre())
 				}
 			}
 		}
 	}
-	if c.CreateFire {
+	if c.SpawnFire {
 		for _, pos := range affectedBlocks {
-			if rand.Intn(3) == 0 {
-				if _, ok := c.World.Block(pos).(Air); ok {
+			if r.Intn(3) == 0 {
+				if _, ok := c.World.Block(pos).(Air); ok && !c.World.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, c.World) {
 					c.World.SetBlock(pos, Fire{}, nil)
 				}
 			}
 		}
 	}
 
-	if c.Particle != nil {
-		c.World.AddParticle(c.Pos, c.Particle)
-	}
-	if c.Sound != nil {
-		c.World.PlaySound(c.Pos, c.Sound)
-	}
+	c.World.AddParticle(c.Pos, c.Particle)
+	c.World.PlaySound(c.Pos, c.Sound)
 }
 
 // exposure returns the exposure of a block to an entity, used to calculate the impact of an explosion.
@@ -155,40 +151,38 @@ func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 	boxMin, boxMax := box.Min(), box.Max()
 	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})
 
-	double4 := 1.0 / diff[0]
-	double5 := 1.0 / diff[1]
-	double6 := 1.0 / diff[2]
-	if double4 < 0.0 || double5 < 0.0 || double6 < 0.0 {
+	step := mgl64.Vec3{1.0 / diff[0], 1.0 / diff[1], 1.0 / diff[2]}
+	if step[0] < 0.0 || step[1] < 0.0 || step[2] < 0.0 {
 		return 0.0
 	}
 
-	double7 := (1.0 - math.Floor(1.0/double4)*double4) / 2.0
-	double8 := (1.0 - math.Floor(1.0/double6)*double6) / 2.0
+	double7 := (1.0 - math.Floor(diff[0])/diff[0]) / 2.0
+	double8 := (1.0 - math.Floor(diff[2])/diff[2]) / 2.0
 
-	var integer14, integer15 float64
-	for float16 := 0.0; float16 <= 1.0; float16 += double4 {
-		for float17 := 0.0; float17 <= 1.0; float17 += double5 {
-			for float18 := 0.0; float18 <= 1.0; float18 += double6 {
+	var collisions, checks float64
+	for x := 0.0; x <= 1.0; x += step[0] {
+		for y := 0.0; y <= 1.0; y += step[1] {
+			for z := 0.0; z <= 1.0; z += step[2] {
 				dck2 := mgl64.Vec3{
-					lerp(float16, boxMin[0], boxMax[0]) + double7,
-					lerp(float17, boxMin[1], boxMax[1]),
-					lerp(float18, boxMin[2], boxMax[2]) + double8,
+					lerp(x, boxMin[0], boxMax[0]) + double7,
+					lerp(y, boxMin[1], boxMax[1]),
+					lerp(z, boxMin[2], boxMax[2]) + double8,
 				}
 
 				var collides bool
-				trace.TraverseBlocks(dck2, origin, func(pos cube.Pos) (con bool) {
+				trace.TraverseBlocks(origin, dck2, func(pos cube.Pos) (con bool) {
 					_, air := w.Block(pos).(Air)
 					collides = !air
 					return air
 				})
 				if collides {
-					integer14++
+					collisions++
 				}
-				integer15++
+				checks++
 			}
 		}
 	}
-	return integer14 / integer15
+	return collisions / checks
 }
 
 // lerp returns the linear interpolation between a and b at t.
