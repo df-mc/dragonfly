@@ -131,7 +131,7 @@ func (c ExplosionConfig) Do() {
 	if c.SpawnFire {
 		for _, pos := range affectedBlocks {
 			if r.Intn(3) == 0 {
-				if _, ok := c.World.Block(pos).(Air); ok && !c.World.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, c.World) {
+				if _, ok := c.World.Block(pos).(Air); ok && c.World.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, c.World) {
 					c.World.SetBlock(pos, Fire{}, nil)
 				}
 			}
