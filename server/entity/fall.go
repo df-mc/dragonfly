@@ -62,7 +62,8 @@ func (f *FallManager) UpdateFallState(distanceThisTick float64) {
 	}
 }
 
-// fall is called when a falling entity hits the ground.
+// fall is called when a falling entity hits the ground. It handles the landing, calling EntityLand if needed,
+// and applying fall damage to living entities.
 func (f *FallManager) fall(distance float64) {
 	var (
 		w   = f.e.World()
