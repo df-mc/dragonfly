@@ -85,6 +85,15 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
+			Layers: []protocol.AbilityLayer{ // TODO: Make use of everything that this system supports.
+				{
+					Type:      protocol.AbilityLayerTypeBase,
+					Abilities: protocol.AbilityCount - 1,
+					Values:    protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs,
+					FlySpeed:  protocol.AbilityBaseFlySpeed,
+					WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				},
+			},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -646,9 +655,9 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	}
 	s.closeCurrentContainer()
 
-	b := s.c.World().Block(pos)
-	container, ok := b.(block.Container)
-	if ok {
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
 		s.openNormalContainer(container, pos)
 		return
 	}
@@ -659,13 +668,18 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	s.openedPos.Store(pos)
 
 	var containerType byte
-	switch b.(type) {
+	switch b := b.(type) {
 	case block.CraftingTable:
 		containerType = 1
 	case block.Anvil:
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.EnderChest:
+		b.AddViewer(w, pos)
+		inv := s.c.EnderChestInventory()
+		s.openedWindow.Store(inv)
+		defer s.sendInv(inv, uint32(nextID))
 	}
 	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{

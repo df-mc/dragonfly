@@ -53,8 +53,12 @@ func (s *Session) closeCurrentContainer() {
 	}
 	s.closeWindow()
 	pos := s.openedPos.Load()
-	if container, ok := s.c.World().Block(pos).(block.Container); ok {
-		container.RemoveViewer(s, s.c.World(), pos)
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
+		container.RemoveViewer(s, w, pos)
+	} else if enderChest, ok := b.(block.EnderChest); ok {
+		enderChest.RemoveViewer(w, pos)
 	}
 }
 
@@ -128,6 +132,8 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load(), true
+			} else if _, enderChest := b.(block.EnderChest); enderChest {
 				return s.openedWindow.Load(), true
 			}
 		}
@@ -276,7 +282,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		id = packet.GameTypeSpectator
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: id})
-	s.writePacket(&packet.AdventureSettings{
+	s.writePacket(&packet.AdventureSettings{ // TODO: Switch to the new UpdateAbilities and UpdateAdventureSettings packets.
 		Flags:             flags,
 		PermissionLevel:   packet.PermissionLevelMember,
 		PlayerUniqueID:    selfEntityRuntimeID,
@@ -446,7 +452,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
+func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -481,6 +487,16 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
+	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, item)
+			}
+		}
+	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -496,7 +512,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	return s.inv, s.offHand, s.armour, s.heldSlot
+	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
 }
 
 // SetHeldSlot sets the currently held hotbar slot.

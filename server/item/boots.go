@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Boots are a defensive item that may be equipped in the boots armour slot. They come in several tiers, like
@@ -25,7 +26,7 @@ func (b Boots) MaxCount() int {
 // DurabilityInfo ...
 func (b Boots) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability: int(b.Tier.BaseDurability + b.Tier.BaseDurability/5.5),
+		MaxDurability: int(b.Tier.BaseDurability() + b.Tier.BaseDurability()/5.5),
 		BrokenItem:    simpleItem(Stack{}),
 	}
 }
@@ -37,7 +38,7 @@ func (b Boots) RepairableBy(i Stack) bool {
 
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
-	switch b.Tier {
+	switch b.Tier.(type) {
 	case ArmourTierLeather, ArmourTierGold, ArmourTierChain:
 		return 1
 	case ArmourTierIron:
@@ -50,12 +51,12 @@ func (b Boots) DefencePoints() float64 {
 
 // Toughness ...
 func (b Boots) Toughness() float64 {
-	return b.Tier.Toughness
+	return b.Tier.Toughness()
 }
 
 // KnockBackResistance ...
 func (b Boots) KnockBackResistance() float64 {
-	return b.Tier.KnockBackResistance
+	return b.Tier.KnockBackResistance()
 }
 
 // Boots ...
@@ -65,5 +66,24 @@ func (b Boots) Boots() bool {
 
 // EncodeItem ...
 func (b Boots) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + b.Tier.Name + "_boots", 0
+	return "minecraft:" + b.Tier.Name() + "_boots", 0
+}
+
+// DecodeNBT ...
+func (b Boots) DecodeNBT(data map[string]any) any {
+	if t, ok := b.Tier.(ArmourTierLeather); ok {
+		if v, ok := data["customColor"].(int32); ok {
+			t.Colour = rgbaFromInt32(v)
+			b.Tier = t
+		}
+	}
+	return b
+}
+
+// EncodeNBT ...
+func (b Boots) EncodeNBT() map[string]any {
+	if t, ok := b.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
+		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+	}
+	return nil
 }

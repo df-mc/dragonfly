@@ -59,9 +59,9 @@ type Player struct {
 	// h holds the current Handler of the player. It may be changed at any time by calling the Handle method.
 	h atomic.Value[Handler]
 
-	inv, offHand *inventory.Inventory
-	armour       *inventory.Armour
-	heldSlot     *atomic.Uint32
+	inv, offHand, enderChest *inventory.Inventory
+	armour                   *inventory.Armour
+	heldSlot                 *atomic.Uint32
 
 	sneaking, sprinting, swimming, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
@@ -109,6 +109,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, item)
 			}
 		}),
+		enderChest:        inventory.New(27, nil),
 		uuid:              uuid.New(),
 		offHand:           inventory.New(1, p.broadcastItems),
 		armour:            inventory.NewArmour(p.broadcastArmour),
@@ -144,7 +145,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
 	p.s, p.uuid, p.xuid, p.skin = *atomic.NewValue(s), uuid, xuid, *atomic.NewValue(skin)
-	p.inv, p.offHand, p.armour, p.heldSlot = s.HandleInventories()
+	p.inv, p.offHand, p.enderChest, p.armour, p.heldSlot = s.HandleInventories()
 	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
 	if data != nil {
 		p.load(*data)
@@ -494,16 +495,15 @@ func (p *Player) fall(distance float64) {
 		w   = p.World()
 		pos = cube.PosFromVec3(p.Position())
 		b   = w.Block(pos)
-		dmg = distance - 3
 	)
 	if len(b.Model().BBox(pos, w)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p)
+		h.EntityLand(pos, w, p, &distance)
 	}
-
+	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
 		dmg -= float64(boost.Level())
 	}
@@ -1157,6 +1157,12 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(p.heldSlot.Load()), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
+}
+
+// EnderChestInventory returns the player's ender chest inventory. Its accessed by the player when opening
+// ender chests anywhere.
+func (p *Player) EnderChestInventory() *inventory.Inventory {
+	return p.enderChest
 }
 
 // SetGameMode sets the game mode of a player. The game mode specifies the way that the player can interact
@@ -2019,7 +2025,7 @@ func (p *Player) AddExperience(amount int) int {
 
 // RemoveExperience removes experience from the player.
 func (p *Player) RemoveExperience(amount int) {
-	p.experience.Remove(amount)
+	p.experience.Add(-amount)
 	p.session().SendExperience(p.experience)
 }
 
@@ -2273,9 +2279,10 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 
 // canBreathe returns true if the player can currently breathe.
 func (p *Player) canBreathe(w *world.World) bool {
+	canTakeDamage := p.GameMode().AllowsTakingDamage()
 	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
 	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
-	return waterBreathing || conduitPower || !p.insideOfWater(w)
+	return !canTakeDamage || waterBreathing || conduitPower || (!p.insideOfWater(w) && !p.insideOfSolid(w))
 }
 
 // breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
@@ -2624,6 +2631,9 @@ func (p *Player) load(data Data) {
 	p.fallDistance.Store(data.FallDistance)
 
 	p.loadInventory(data.Inventory)
+	for slot, stack := range data.EnderChestInventory {
+		_ = p.enderChest.SetItem(slot, stack)
+	}
 }
 
 // loadInventory loads all the data associated with the player inventory.
@@ -2670,10 +2680,11 @@ func (p *Player) Data() Data {
 			OffHand:      offHand,
 			MainHandSlot: p.heldSlot.Load(),
 		},
-		Effects:      p.Effects(),
-		FireTicks:    p.fireTicks.Load(),
-		FallDistance: p.fallDistance.Load(),
-		Dimension:    p.World().Dimension().EncodeDimension(),
+		EnderChestInventory: p.enderChest.Slots(),
+		Effects:             p.Effects(),
+		FireTicks:           p.fireTicks.Load(),
+		FallDistance:        p.fallDistance.Load(),
+		Dimension:           p.World().Dimension().EncodeDimension(),
 	}
 }
 

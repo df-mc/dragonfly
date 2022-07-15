@@ -15,22 +15,21 @@ Running Dragonfly requires at least **Go 1.18**. After starting the server throu
 more detailed info.
 
 #### Installation as library
-```
-go mod init github.com/<user>/<module name>
+```shell
+go mod init github.com/user/module
 go get github.com/df-mc/dragonfly
 ```
 
 ![SetupLibrary](https://user-images.githubusercontent.com/16114089/121804512-0f843900-cc47-11eb-9320-d195393b5a1f.gif)
 
 #### Installation of the latest commit
-```
+```shell
 git clone https://github.com/df-mc/dragonfly
 cd dragonfly
 go run main.go
 ```
 
 ![SetupClone](https://user-images.githubusercontent.com/16114089/121804495-ff6c5980-cc46-11eb-8e31-df4d94782e5b.gif)
-
 
 ## Developer info
 [![Go Reference](https://pkg.go.dev/badge/github.com/df-mc/dragonfly/server.svg)](https://pkg.go.dev/github.com/df-mc/dragonfly/server)
