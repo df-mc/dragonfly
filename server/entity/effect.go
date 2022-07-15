@@ -122,6 +122,12 @@ func (m *EffectManager) Tick(entity Living) {
 	for _, eff := range toEnd {
 		eff.Type().(effect.LastingType).End(entity, eff.Level())
 	}
+
+	if len(toEnd) > 0 {
+		for _, v := range entity.World().Viewers(entity.Position()) {
+			v.ViewEntityState(entity)
+		}
+	}
 }
 
 // expired checks if an Effect has expired.
