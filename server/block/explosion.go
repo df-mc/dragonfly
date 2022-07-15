@@ -77,9 +77,9 @@ func (c ExplosionConfig) Do() {
 	if c.RandSource == nil {
 		c.RandSource = rand.NewSource(time.Now().UnixNano())
 	}
-	
+
 	r, d := rand.New(c.RandSource), c.Radius*2
-	bb := cube.Box(
+	box := cube.Box(
 		math.Floor(c.Pos[0]-d-1),
 		math.Ceil(c.Pos[0]+d+1),
 		math.Floor(c.Pos[1]-d-1),
@@ -88,9 +88,9 @@ func (c ExplosionConfig) Do() {
 		math.Ceil(c.Pos[2]+d+1),
 	)
 
-	for _, e := range c.World.EntitiesWithin(bb.Grow(2), nil) {
+	for _, e := range c.World.EntitiesWithin(box.Grow(2), nil) {
 		pos := e.Position()
-		if !e.BBox().Translate(pos).IntersectsWith(bb) {
+		if !e.BBox().Translate(pos).IntersectsWith(box) {
 			continue
 		}
 		dist := pos.Sub(c.Pos).Len()
