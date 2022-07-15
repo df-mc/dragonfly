@@ -2028,7 +2028,18 @@ func (p *Player) CollectExperience(value int) bool {
 	if time.Since(p.lastXPPickup.Load()) < time.Millisecond*100 {
 		return false
 	}
+	value = p.handleMending(value)
+	p.lastXPPickup.Store(time.Now())
+	if value > 0 {
+		return p.AddExperience(value) > 0
+	}
 
+	p.PlaySound(sound.Experience{})
+	return true
+}
+
+// handleMending handles the mending enchantment when collecting experience, it then returns the leftover experience.
+func (p *Player) handleMending(value int) int {
 	mendingItems := make([]item.Stack, 0, 6)
 	held, offHand := p.HeldItems()
 	if _, ok := offHand.Enchantment(enchantment.Mending{}); ok && offHand.Durability() < offHand.MaxDurability() {
@@ -2045,32 +2056,26 @@ func (p *Player) CollectExperience(value int) bool {
 			mendingItems = append(mendingItems, i)
 		}
 	}
-	if length := len(mendingItems); length > 0 {
-		if foundItem := mendingItems[rand.Intn(length)]; foundItem.Durability() < foundItem.MaxDurability() {
-			repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(value*2))
-			repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
-			if repairAmount >= 2 {
-				// Mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
-				// then no experience is removed.
-				value -= int(math.Ceil(repairAmount / 2))
-			}
-			if offHand.Equal(foundItem) {
-				p.SetHeldItems(held, repairedItem)
-			} else if held.Equal(foundItem) {
-				p.SetHeldItems(repairedItem, offHand)
-			} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
-				_ = p.Armour().Inventory().SetItem(slot, repairedItem)
-			}
-		}
+	length := len(mendingItems)
+	if length == 0 {
+		return value
 	}
-
-	p.lastXPPickup.Store(time.Now())
-	if value > 0 {
-		return p.AddExperience(value) > 0
+	foundItem := mendingItems[rand.Intn(length)]
+	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(value*2))
+	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
+	if repairAmount >= 2 {
+		// Mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
+		// then no experience is removed.
+		value -= int(math.Ceil(repairAmount / 2))
 	}
-
-	p.PlaySound(sound.Experience{})
-	return true
+	if offHand.Equal(foundItem) {
+		p.SetHeldItems(held, repairedItem)
+	} else if held.Equal(foundItem) {
+		p.SetHeldItems(repairedItem, offHand)
+	} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
+		_ = p.Armour().Inventory().SetItem(slot, repairedItem)
+	}
+	return value
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
