@@ -3,7 +3,6 @@ package item
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
-	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"reflect"
 	"sort"
@@ -205,7 +204,7 @@ func (s Stack) Lore() []string {
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
 func (s Stack) WithValue(key string, val any) Stack {
-	s.data = maps.Clone(s.data)
+	s.data = copyMap(s.data)
 	if val != nil {
 		s.data[key] = val
 	} else {
@@ -362,7 +361,7 @@ func (s Stack) String() string {
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
 func (s Stack) Values() map[string]any {
-	return maps.Clone(s.data)
+	return copyMap(s.data)
 }
 
 // stackID is a counter for unique stack IDs.
@@ -387,6 +386,15 @@ func id(s Stack) int32 {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
+}
+
+// copyMap makes a copy of the map passed. It does not recursively copy the map.
+func copyMap(m map[string]any) map[string]any {
+	cp := make(map[string]any, len(m))
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
 }
 
 // copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.
