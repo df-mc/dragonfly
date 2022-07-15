@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -19,7 +20,7 @@ import (
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
 	world.Entity
-	item.Carrier
+	item.User
 	form.Submitter
 	cmd.Source
 	chat.Subscriber
@@ -30,7 +31,6 @@ type Controllable interface {
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	Speed() float64
-	Facing() cube.Direction
 
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
@@ -77,6 +77,8 @@ type Controllable interface {
 	Exhaust(points float64)
 
 	EditSign(pos cube.Pos, text string) error
+
+	EnderChestInventory() *inventory.Inventory
 
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.
