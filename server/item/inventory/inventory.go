@@ -25,7 +25,7 @@ type Inventory struct {
 
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
-var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Size()")
+var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Radius()")
 
 // New creates a new inventory with the size passed. The inventory size cannot be changed after it has been
 // constructed.
@@ -44,7 +44,7 @@ func New(size int, f func(slot int, item item.Stack)) *Inventory {
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
 // and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.
-// Item only returns an error if the slot passed is out of range. (0 <= slot < inventory.Size())
+// Item only returns an error if the slot passed is out of range. (0 <= slot < inventory.Radius())
 func (inv *Inventory) Item(slot int) (item.Stack, error) {
 	inv.check()
 	if !inv.validSlot(slot) {
@@ -59,7 +59,7 @@ func (inv *Inventory) Item(slot int) (item.Stack, error) {
 
 // SetItem sets a stack of items to a specific slot in the inventory. If an item is already present in the
 // slot, that item will be overwritten.
-// SetItem will return an error if the slot passed is out of range. (0 <= slot < inventory.Size())
+// SetItem will return an error if the slot passed is out of range. (0 <= slot < inventory.Radius())
 func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	inv.check()
 	if !inv.validSlot(slot) {

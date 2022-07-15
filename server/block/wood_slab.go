@@ -80,7 +80,7 @@ func (s WoodSlab) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(s, 2)}
 		}
 		return []item.Stack{item.NewStack(s, 1)}
-	})
+	}).withBlastResistance(15)
 }
 
 // LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.

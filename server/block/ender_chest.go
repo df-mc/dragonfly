@@ -36,7 +36,7 @@ func NewEnderChest() EnderChest {
 
 // BreakInfo ...
 func (c EnderChest) BreakInfo() BreakInfo {
-	return newBreakInfo(22.5, pickaxeHarvestable, pickaxeEffective, silkTouchDrop(item.NewStack(Obsidian{}, 8), item.NewStack(NewEnderChest(), 1)))
+	return newBreakInfo(22.5, pickaxeHarvestable, pickaxeEffective, silkTouchDrop(item.NewStack(Obsidian{}, 8), item.NewStack(NewEnderChest(), 1))).withBlastResistance(3000)
 }
 
 // LightEmissionLevel ...

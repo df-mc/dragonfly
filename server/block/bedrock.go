@@ -11,11 +11,6 @@ type Bedrock struct {
 	InfiniteBurning bool
 }
 
-// BreakInfo ...
-func (b Bedrock) BreakInfo() BreakInfo {
-	return newBreakInfo(-1, neverHarvestable, nothingEffective, simpleDrops()).withBlastResistance(0.6)
-}
-
 // EncodeItem ...
 func (Bedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:bedrock", 0
