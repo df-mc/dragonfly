@@ -115,13 +115,6 @@ func (s Stack) Damage(d int) Stack {
 	return s
 }
 
-// WithType returns a new item stack with the item type passed.
-func (s Stack) WithType(t world.Item) Stack {
-	s.item = t
-	s.id = newID()
-	return s
-}
-
 // WithDurability returns a new item stack with the durability passed. If the item does not implement the
 // Durable interface, WithDurability returns the original stack.
 // The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,

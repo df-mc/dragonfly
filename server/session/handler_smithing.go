@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -44,6 +45,15 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	}
 
 	output := craft.Output()
+	outputStack := item.NewStack(output[0].Item(), input.Count()).
+		WithDurability(input.Durability()).
+		WithCustomName(input.CustomName()).
+		WithLore(input.Lore()...).
+		WithEnchantments(input.Enchantments()...).
+		WithAnvilCost(input.AnvilCost())
+	for k, v := range input.Values() {
+		outputStack = outputStack.WithValue(k, v)
+	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerSmithingInput,
 		Slot:        smithingInputSlot,
@@ -55,6 +65,6 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerOutput,
 		Slot:        craftingResult,
-	}, input.WithType(output[0].Item()), s)
+	}, outputStack, s)
 	return nil
 }
