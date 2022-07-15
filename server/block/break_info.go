@@ -85,7 +85,8 @@ type BreakInfo struct {
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
 	// XPDrops is the range of XP a block can drop when broken.
 	XPDrops XPDropRange
-	// BlastResistance ...
+	// BlastResistance is the blast resistance of the block, which influences the block's ability to withstand an
+	// explosive blast.
 	BlastResistance float64
 }
 
