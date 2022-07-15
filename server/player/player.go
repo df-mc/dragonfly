@@ -568,7 +568,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 					if e.Level() > 10 {
 						damageToAttacker += e.Level() - 10
 					} else {
-						damageToAttacker += 1 + rand.Intn(3)
+						damageToAttacker += 1 + rand.Intn(4)
 					}
 				}
 				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour+thornsDamage))
