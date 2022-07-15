@@ -558,26 +558,24 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
 		var damageToAttacker int
-		thornsArmour := make([]item.Stack, 0, 4)
+		thornsArmour := map[int]item.Stack{}
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
-				var thornsDamage int
-				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < e.Level()*0.15 {
-					thornsArmour = append(thornsArmour, it)
-					thornsDamage = 1
+				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < float64(e.Level())*0.15 {
+					damageToArmour++
+					thornsArmour[slot] = it
 					if e.Level() > 10 {
 						damageToAttacker += e.Level() - 10
 					} else {
 						damageToAttacker += 1 + rand.Intn(4)
 					}
 				}
-				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour+thornsDamage))
+				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
 			}
 		}
-		if length := len(thornsArmour); length > 0 {
-			slot := rand.Intn(length)
-			it := thornsArmour[slot]
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, 2))
+		// Damage a random thorns piece that the user is wearing.
+		for slot, item := range thornsArmour {
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
 
 			if damageToAttacker > 0 {
 				var attacker world.Entity
@@ -590,6 +588,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
 				}
 			}
+			break
 		}
 	}
 
