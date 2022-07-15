@@ -2246,7 +2246,7 @@ func (p *Player) canBreathe(w *world.World) bool {
 	canTakeDamage := p.GameMode().AllowsTakingDamage()
 	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
 	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
-	return !canTakeDamage && waterBreathing || conduitPower || !p.insideOfWater(w)
+	return !canTakeDamage || waterBreathing || conduitPower || (!p.insideOfWater(w) && !p.insideOfSolid(w))
 }
 
 // breathingDistanceBelowEyes is the lowest distance the player can be in water and still be able to breathe based on
