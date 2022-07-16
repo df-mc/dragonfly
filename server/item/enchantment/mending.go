@@ -29,6 +29,11 @@ func (Mending) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
+// Treasure ...
+func (Mending) Treasure() bool {
+	return true
+}
+
 // CompatibleWithEnchantment ...
 func (Mending) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	// TODO: Infinity.
