@@ -28,6 +28,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 	"math"
 	"math/rand"
@@ -557,9 +558,38 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		p.Exhaust(0.1)
 
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
+		var damageToAttacker int
+		thornsArmour := map[int]item.Stack{}
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
+				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < float64(e.Level())*0.15 {
+					damageToArmour++
+					thornsArmour[slot] = it
+					if e.Level() > 10 {
+						damageToAttacker += e.Level() - 10
+					} else {
+						damageToAttacker += 1 + rand.Intn(4)
+					}
+				}
 				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
+			}
+		}
+
+		if length := len(thornsArmour); length > 0 {
+			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
+			item := thornsArmour[slot]
+
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
+			if damageToAttacker > 0 {
+				var attacker world.Entity
+				if s, ok := source.(damage.SourceEntityAttack); ok {
+					attacker = s.Attacker
+				} else if s, ok := source.(damage.SourceProjectile); ok {
+					attacker = s.Owner
+				}
+				if l, ok := attacker.(entity.Living); ok {
+					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
+				}
 			}
 		}
 	}
