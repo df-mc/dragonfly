@@ -99,6 +99,8 @@ const (
 const (
 	containerAnvilInput           = 0
 	containerAnvilMaterial        = 1
+	containerSmithingInput        = 3
+	containerSmithingMaterial     = 4
 	containerArmour               = 6
 	containerChest                = 7
 	containerBeacon               = 8
@@ -157,6 +159,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, anvil := b.(block.Anvil); anvil {
+				return s.ui, true
+			}
+		}
+	case containerSmithingInput, containerSmithingMaterial:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, smithing := b.(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}

@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -21,6 +22,9 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
+	if _, ok := craft.Block().(block.CraftingTable); !ok {
+		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
+	}
 
 	size := s.craftingSize()
 	offset := s.craftingOffset()
@@ -33,22 +37,13 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				continue
 			}
 			has, _ := s.ui.Item(int(slot))
-			_, variants := expected.Value("variants")
 			if has.Empty() != expected.Empty() || has.Count() < expected.Count() {
 				// We can't process this item, as it's not a part of the recipe.
 				continue
 			}
-			if !variants && !has.Comparable(expected) {
-				// Not the same item without accounting for variants.
+			if !matchingStacks(has, expected) {
+				// Not the same item.
 				continue
-			}
-			if variants {
-				nameOne, _ := has.Item().EncodeItem()
-				nameTwo, _ := expected.Item().EncodeItem()
-				if nameOne != nameTwo {
-					// Not the same item even when accounting for variants.
-					continue
-				}
 			}
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
@@ -95,14 +90,8 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 			continue
 		}
 
-		_, variants := i.Value("variants")
 		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
-			if variants {
-				nameOne, _ := st.Item().EncodeItem()
-				nameTwo, _ := i.Item().EncodeItem()
-				return nameOne == nameTwo
-			}
-			return st.Comparable(i)
+			return matchingStacks(st, i)
 		}); ind >= 0 {
 			i = i.Grow(expectancies[ind].Count())
 			expectancies = slices.Delete(expectancies, ind, ind+1)
@@ -111,24 +100,15 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range expectancies {
-		_, variants := expected.Value("variants")
 		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() {
 					// We don't have this item, skip it.
 					continue
 				}
-				if !variants && !has.Comparable(expected) {
-					// Not the same item without accounting for variants.
+				if !matchingStacks(has, expected) {
+					// Not the same item.
 					continue
-				}
-				if variants {
-					nameOne, _ := has.Item().EncodeItem()
-					nameTwo, _ := expected.Item().EncodeItem()
-					if nameOne != nameTwo {
-						// Not the same item even when accounting for variants.
-						continue
-					}
 				}
 
 				remaining, removal := expected.Count(), has.Count()
@@ -184,4 +164,15 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 		Slot:        craftingResult,
 	}, it, s)
 	return nil
+}
+
+// matchingStacks returns true if the two stacks are the same in a crafting scenario.
+func matchingStacks(has, expected item.Stack) bool {
+	_, variants := expected.Value("variants")
+	if !variants {
+		return has.Comparable(expected)
+	}
+	nameOne, _ := has.Item().EncodeItem()
+	nameTwo, _ := expected.Item().EncodeItem()
+	return nameOne == nameTwo
 }
