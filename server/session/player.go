@@ -97,19 +97,21 @@ const (
 )
 
 const (
-	containerAnvilInput    = 0
-	containerAnvilMaterial = 1
-	containerArmour        = 6
-	containerChest         = 7
-	containerBeacon        = 8
-	containerFullInventory = 12
-	containerCraftingGrid  = 13
-	containerHotbar        = 27
-	containerInventory     = 28
-	containerOffHand       = 33
-	containerBarrel        = 57
-	containerCursor        = 58
-	containerOutput        = 59
+	containerAnvilInput       = 0
+	containerAnvilMaterial    = 1
+	containerSmithingInput    = 3
+	containerSmithingMaterial = 4
+	containerArmour           = 6
+	containerChest            = 7
+	containerBeacon           = 8
+	containerFullInventory    = 12
+	containerCraftingGrid     = 13
+	containerHotbar           = 27
+	containerInventory        = 28
+	containerOffHand          = 33
+	containerBarrel           = 57
+	containerCursor           = 58
+	containerOutput           = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -155,6 +157,13 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, anvil := b.(block.Anvil); anvil {
+				return s.ui, true
+			}
+		}
+	case containerSmithingInput, containerSmithingMaterial:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, smithing := b.(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}

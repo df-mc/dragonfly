@@ -149,7 +149,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *at
 	s := &Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(51, nil),
+		ui:                     inventory.New(53, nil),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},

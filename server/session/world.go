@@ -675,6 +675,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.SmithingTable:
+		containerType = 33
 	case block.EnderChest:
 		b.AddViewer(w, pos)
 		inv := s.c.EnderChestInventory()
