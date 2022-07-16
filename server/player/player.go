@@ -2028,7 +2028,7 @@ func (p *Player) CollectExperience(value int) bool {
 	if time.Since(p.lastXPPickup.Load()) < time.Millisecond*100 {
 		return false
 	}
-	value = p.handleMending(value)
+	value = p.mendItems(value)
 	p.lastXPPickup.Store(time.Now())
 	if value > 0 {
 		return p.AddExperience(value) > 0
@@ -2038,8 +2038,8 @@ func (p *Player) CollectExperience(value int) bool {
 	return true
 }
 
-// handleMending handles the mending enchantment when collecting experience, it then returns the leftover experience.
-func (p *Player) handleMending(value int) int {
+// mendItems handles the mending enchantment when collecting experience, it then returns the leftover experience.
+func (p *Player) mendItems(xp int) int {
 	mendingItems := make([]item.Stack, 0, 6)
 	held, offHand := p.HeldItems()
 	if _, ok := offHand.Enchantment(enchantment.Mending{}); ok && offHand.Durability() < offHand.MaxDurability() {
@@ -2058,15 +2058,15 @@ func (p *Player) handleMending(value int) int {
 	}
 	length := len(mendingItems)
 	if length == 0 {
-		return value
+		return xp
 	}
 	foundItem := mendingItems[rand.Intn(length)]
-	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(value*2))
+	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(xp*2))
 	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
 	if repairAmount >= 2 {
 		// Mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
 		// then no experience is removed.
-		value -= int(math.Ceil(repairAmount / 2))
+		xp -= int(math.Ceil(repairAmount / 2))
 	}
 	if offHand.Equal(foundItem) {
 		p.SetHeldItems(held, repairedItem)
@@ -2075,7 +2075,7 @@ func (p *Player) handleMending(value int) int {
 	} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
 		_ = p.Armour().Inventory().SetItem(slot, repairedItem)
 	}
-	return value
+	return xp
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the
