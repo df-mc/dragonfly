@@ -28,6 +28,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 	"math"
 	"math/rand"
@@ -573,10 +574,12 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
 			}
 		}
-		// Damage a random thorns piece that the user is wearing.
-		for slot, item := range thornsArmour {
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
 
+		if length := len(thornsArmour); length > 0 {
+			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
+			item := thornsArmour[slot]
+
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
 			if damageToAttacker > 0 {
 				var attacker world.Entity
 				if s, ok := source.(damage.SourceEntityAttack); ok {
@@ -588,7 +591,6 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
 				}
 			}
-			break
 		}
 	}
 
