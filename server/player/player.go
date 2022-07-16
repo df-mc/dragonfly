@@ -88,6 +88,8 @@ type Player struct {
 	lastXPPickup atomic.Value[time.Time]
 	immunity     atomic.Value[time.Time]
 
+	enchantSeed atomic.Int64
+
 	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
@@ -129,6 +131,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		breathing:         true,
 		airSupplyTicks:    *atomic.NewInt64(300),
 		maxAirSupplyTicks: *atomic.NewInt64(300),
+		enchantSeed:       *atomic.NewInt64(rand.Int63()),
 		scale:             *atomic.NewFloat64(1),
 		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
@@ -557,8 +560,8 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if source.ReducedByArmour() {
 		p.Exhaust(0.1)
 
-		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
 		var damageToAttacker int
+		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
 		thornsArmour := map[int]item.Stack{}
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
@@ -577,9 +580,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		if length := len(thornsArmour); length > 0 {
 			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
-			item := thornsArmour[slot]
+			it := thornsArmour[slot]
 
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, 2))
 			if damageToAttacker > 0 {
 				var attacker world.Entity
 				if s, ok := source.(damage.SourceEntityAttack); ok {
@@ -2010,6 +2013,16 @@ func (p *Player) Experience() int {
 	return p.experience.Experience()
 }
 
+// EnchantmentSeed is a seed used to calculate random enchantments with enchantment tables.
+func (p *Player) EnchantmentSeed() int64 {
+	return p.enchantSeed.Load()
+}
+
+// ResetEnchantmentSeed resets the enchantment seed to a new random value.
+func (p *Player) ResetEnchantmentSeed() {
+	p.enchantSeed.Store(rand.Int63())
+}
+
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
 	ctx := event.C()
@@ -2673,6 +2686,8 @@ func (p *Player) load(data Data) {
 	p.experience.Add(data.Experience)
 	p.session().SendExperience(p.experience)
 
+	p.enchantSeed.Store(data.EnchantmentSeed)
+
 	p.gameMode.Store(data.GameMode)
 	for _, potion := range data.Effects {
 		p.AddEffect(potion)
@@ -2715,6 +2730,7 @@ func (p *Player) Data() Data {
 		MaxHealth:       p.MaxHealth(),
 		Hunger:          p.hunger.foodLevel,
 		Experience:      p.Experience(),
+		EnchantmentSeed: p.EnchantmentSeed(),
 		FoodTick:        p.hunger.foodTick,
 		AirSupply:       p.airSupplyTicks.Load(),
 		MaxAirSupply:    p.maxAirSupplyTicks.Load(),

@@ -75,6 +75,11 @@ func (a Axe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(a.Tier)(i)
 }
 
+// EnchantmentValue ...
+func (a Axe) EnchantmentValue() int {
+	return a.Tier.EnchantmentValue
+}
+
 // EncodeItem ...
 func (a Axe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + a.Tier.Name + "_axe", 0

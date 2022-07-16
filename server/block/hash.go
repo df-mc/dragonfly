@@ -51,6 +51,7 @@ const (
 	hashDripstone
 	hashEmerald
 	hashEmeraldOre
+	hashEnchantingTable
 	hashEndBrickStairs
 	hashEndBricks
 	hashEndStone
@@ -347,6 +348,10 @@ func (Emerald) Hash() uint64 {
 
 func (e EmeraldOre) Hash() uint64 {
 	return hashEmeraldOre | uint64(e.Type.Uint8())<<8
+}
+
+func (EnchantingTable) Hash() uint64 {
+	return hashEnchantingTable
 }
 
 func (s EndBrickStairs) Hash() uint64 {

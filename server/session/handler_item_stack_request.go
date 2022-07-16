@@ -82,8 +82,15 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
 			if s.containerOpened.Load() {
-				if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
-					err = h.handleSmithing(a, s)
+				var processed bool
+				switch s.c.World().Block(s.openedPos.Load()).(type) {
+				case block.SmithingTable:
+					err, processed = h.handleSmithing(a, s), true
+				case block.EnchantingTable:
+					err, processed = h.handleEnchant(a, s), true
+				}
+				if processed {
+					// This was a "special action" and was handled, so we can move onto the next action.
 					break
 				}
 			}

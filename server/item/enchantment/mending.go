@@ -18,6 +18,12 @@ func (Mending) MaxLevel() int {
 	return 1
 }
 
+// Cost ...
+func (Mending) Cost(level int) (int, int) {
+	min := level * 25
+	return min, min + 50
+}
+
 // Rarity ...
 func (Mending) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
@@ -25,8 +31,7 @@ func (Mending) Rarity() item.EnchantmentRarity {
 
 // CompatibleWithEnchantment ...
 func (Mending) CompatibleWithEnchantment(item.EnchantmentType) bool {
-	//_, infinity := t.(Infinity) TODO: infinity
-	// return !infinty
+	// TODO: Infinity.
 	return true
 }
 
