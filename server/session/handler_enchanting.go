@@ -14,19 +14,6 @@ import (
 	"math/rand"
 )
 
-// enchantNames are names translated to the 'Standard Galactic Alphabet' client-side. The names generally have no meaning
-// on the vanilla server implementation, so we can sneak some easter eggs in here without anyone noticing.
-var enchantNames = []string{
-	"dragonfly",
-	"gophertunnel",
-	"go raknet",
-	"go lang",
-	"sandertv",
-	"t 14 raptor",
-	"da pig guy",
-	"potatoe train yt",
-}
-
 const (
 	// enchantingInputSlot is the slot index of the input item in the enchanting table.
 	enchantingInputSlot = 0x0e
