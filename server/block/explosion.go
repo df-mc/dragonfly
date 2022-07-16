@@ -20,8 +20,8 @@ type ExplosionConfig struct {
 	World *world.World
 	// Pos is the center position of the explosion.
 	Pos mgl64.Vec3
-	// Radius is the radius of the explosion.
-	Radius float64
+	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
+	Size float64
 	// RandSource is the source to use for the explosion "randomness".
 	RandSource rand.Source
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
@@ -78,7 +78,7 @@ func (c ExplosionConfig) Do() {
 		c.RandSource = rand.NewSource(time.Now().UnixNano())
 	}
 
-	r, d := rand.New(c.RandSource), c.Radius*2
+	r, d := rand.New(c.RandSource), c.Size*2
 	box := cube.Box(
 		math.Floor(c.Pos[0]-d-1),
 		math.Floor(c.Pos[1]-d-1),
@@ -106,7 +106,7 @@ func (c ExplosionConfig) Do() {
 	affectedBlocks := make([]cube.Pos, 0, 32)
 	for _, ray := range rays {
 		pos := c.Pos
-		for blastForce := c.Radius * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
+		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
 			if r, ok := c.World.Block(current).(Breakable); ok {
 				if blastForce -= (r.BreakInfo().BlastResistance + 0.3) * 0.3; blastForce > 0 {
@@ -122,7 +122,7 @@ func (c ExplosionConfig) Do() {
 			explodable.Explode(pos, c)
 		} else if breakable, ok := bl.(Breakable); ok {
 			c.World.SetBlock(pos, nil, nil)
-			if 1/c.Radius > r.Float64() {
+			if 1/c.Size > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(c.World, drop, pos.Vec3Centre())
 				}
