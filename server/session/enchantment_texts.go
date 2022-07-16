@@ -4,4 +4,4 @@ package session
 
 // enchantNames are names translated to the 'Standard Galactic Alphabet' client-side. The names generally have no meaning
 // on the vanilla server implementation, so we can sneak some easter eggs in here without anyone noticing.
-var enchantNames = []string{"sandertv", "t14 raptor", "just tal develops", "da pig guy", "sa111n111", "andreas hgk", "prim69", "twisted asylum mc", "mmm545", "restart fu", "tristanmorgan", "endermanbugzjfc", "im da real ani", "provsalt", "hochbaum", "unickorn", "unknown ore", "aimjel", "deniel world", "nonono697", "thunder33345", "aericio", "mohamed587100", "eminarican", "heisenburger69", "liatoast", "neutronic mc", "robertdudaa", "sallypemdas", "sculas"}
+var enchantNames = []string{"aericio", "andreas hgk", "da pig guy", "deniel world", "endermanbugzjfc", "heisenburger69", "im da real ani", "just tal develops", "liatoast", "mohamed587100", "neutronic mc", "prim69", "restart fu", "sallypemdas", "sandertv", "sculas", "t14 raptor", "thunder33345", "twisted asylum mc", "unickorn", "unknown ore", "aimjel", "eminarican", "hochbaum", "mmm545", "nonono697", "provsalt", "robertdudaa", "sa111n111", "tristanmorgan"}
