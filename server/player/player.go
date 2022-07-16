@@ -560,8 +560,8 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if source.ReducedByArmour() {
 		p.Exhaust(0.1)
 
-		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
 		var damageToAttacker int
+		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
 		thornsArmour := map[int]item.Stack{}
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
@@ -580,9 +580,9 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		if length := len(thornsArmour); length > 0 {
 			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
-			item := thornsArmour[slot]
+			it := thornsArmour[slot]
 
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, 2))
 			if damageToAttacker > 0 {
 				var attacker world.Entity
 				if s, ok := source.(damage.SourceEntityAttack); ok {

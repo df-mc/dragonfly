@@ -18,6 +18,12 @@ func (Thorns) MaxLevel() int {
 	return 3
 }
 
+// Cost ...
+func (Thorns) Cost(level int) (int, int) {
+	min := 10 + 20*(level-1)
+	return min, min + 50
+}
+
 // Rarity ...
 func (Thorns) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
