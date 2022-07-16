@@ -599,6 +599,19 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 				toughness += a.Toughness()
 			}
 		}
+
+		// First calculate the enchantment protection factor and cap it at 25. Then, multiply it by a random percent
+		// and round up. Cap that value at 20, and then subtract it from the damage but multiplied by 0.04.
+		f := p.enchantmentProtectionFactor(src)
+		if f > 25 {
+			f = 25
+		}
+		m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
+		if m > 20 {
+			m = 20
+		}
+		dmg -= dmg * m * 0.04
+
 		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
 		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
 		// reduction is decreased by the toughness armor value. Effective armour points will at minimum be 20% of
@@ -609,16 +622,6 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
 
-	f := p.enchantmentProtectionFactor(src)
-	if f > 25 {
-		f = 25
-	}
-	m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
-	if m > 20 {
-		m = 20
-	}
-
-	dmg -= -dmg * m * 0.04
 	return math.Max(dmg, 0)
 }
 
