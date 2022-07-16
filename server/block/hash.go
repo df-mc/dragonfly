@@ -662,7 +662,7 @@ func (s Sign) Hash() uint64 {
 }
 
 func (s Skull) Hash() uint64 {
-	return hashSkull | uint64(s.Direction)<<8
+	return hashSkull | uint64(s.Attach.FaceUint8())<<8
 }
 
 func (Snow) Hash() uint64 {

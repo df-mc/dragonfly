@@ -18,10 +18,9 @@ type Skull struct {
 
 	// Type is the type of the skull.
 	Type SkullType
-	// Direction is the direction the skull is facing. For skulls placed on the floor, this is cube.FaceUp.
-	Direction cube.Face
-	// Rotation is the number of rotations for skulls placed on the floor. There are a total of 16 rotations.
-	Rotation cube.Orientation
+
+	//blockhash:facing_only
+	Attach Attachment
 }
 
 // Helmet ...
@@ -34,6 +33,11 @@ func (Skull) DefencePoints() float64 {
 	return 0
 }
 
+// Toughness ...
+func (Skull) Toughness() float64 {
+	return 0
+}
+
 // KnockBackResistance ...
 func (Skull) KnockBackResistance() float64 {
 	return 0
@@ -41,7 +45,7 @@ func (Skull) KnockBackResistance() float64 {
 
 // Model ...
 func (s Skull) Model() world.BlockModel {
-	return model.Skull{Direction: s.Direction}
+	return model.Skull{Direction: s.Attach.facing.Face(), Hanging: s.Attach.hanging}
 }
 
 // UseOnBlock ...
@@ -51,11 +55,13 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 		return false
 	}
 
-	s.Direction = face
 	if face == cube.FaceUp {
 		yaw, _ := user.Rotation()
-		s.Rotation = cube.OrientationFromYaw(yaw)
+		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw).Opposite())
+		place(w, pos, s, user, ctx)
+		return
 	}
+	s.Attach = WallAttachment(face.Direction().Opposite())
 	place(w, pos, s, user, ctx)
 	return placed(ctx)
 }
@@ -88,25 +94,30 @@ func (s Skull) EncodeItem() (name string, meta int16) {
 
 // DecodeNBT ...
 func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Type = SkullType{skull(nbtconv.MapByte(data, "SkullType"))}
-	s.Rotation = cube.Orientation(nbtconv.MapByte(data, "Rot"))
+	s.Type = SkullType{skull(nbtconv.Map[byte](data, "SkullType"))}
+	s.Attach.o = cube.Orientation(nbtconv.Map[byte](data, "Rot"))
+	if s.Attach.facing >= 0 {
+		s.Attach.hanging = true
+	}
 	return s
 }
 
 // EncodeNBT ...
 func (s Skull) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"id": "Skull", "SkullType": s.Type.Uint8(), "Rot": byte(s.Rotation)}
+	return map[string]interface{}{"id": "Skull", "SkullType": s.Type.Uint8(), "Rot": byte(s.Attach.o)}
 }
 
 // EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Direction), "no_drop_bit": uint8(0)}
+	return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
 }
 
 // allSkulls ...
 func allSkulls() (skulls []world.Block) {
 	for _, f := range cube.Faces() {
-		skulls = append(skulls, Skull{Direction: f})
+		// A direction of -2 and -1 isn't actually valid, but when encoding the block these are encoded as 0 and 1. We
+		// can't otherwise represent this properly in an Attachment type.
+		skulls = append(skulls, Skull{Attach: WallAttachment(f.Direction())})
 	}
 	return
 }
