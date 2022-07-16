@@ -28,6 +28,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 	"math"
 	"math/rand"
@@ -560,9 +561,38 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		p.Exhaust(0.1)
 
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
+		var damageToAttacker int
+		thornsArmour := map[int]item.Stack{}
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
+				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < float64(e.Level())*0.15 {
+					damageToArmour++
+					thornsArmour[slot] = it
+					if e.Level() > 10 {
+						damageToAttacker += e.Level() - 10
+					} else {
+						damageToAttacker += 1 + rand.Intn(4)
+					}
+				}
 				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
+			}
+		}
+
+		if length := len(thornsArmour); length > 0 {
+			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
+			item := thornsArmour[slot]
+
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(item, 2))
+			if damageToAttacker > 0 {
+				var attacker world.Entity
+				if s, ok := source.(damage.SourceEntityAttack); ok {
+					attacker = s.Attacker
+				} else if s, ok := source.(damage.SourceProjectile); ok {
+					attacker = s.Owner
+				}
+				if l, ok := attacker.(entity.Living); ok {
+					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
+				}
 			}
 		}
 	}
@@ -2050,8 +2080,54 @@ func (p *Player) CollectExperience(value int) bool {
 	if time.Since(p.lastXPPickup.Load()) < time.Millisecond*100 {
 		return false
 	}
+	value = p.mendItems(value)
 	p.lastXPPickup.Store(time.Now())
-	return p.AddExperience(value) > 0
+	if value > 0 {
+		return p.AddExperience(value) > 0
+	}
+
+	p.PlaySound(sound.Experience{})
+	return true
+}
+
+// mendItems handles the mending enchantment when collecting experience, it then returns the leftover experience.
+func (p *Player) mendItems(xp int) int {
+	mendingItems := make([]item.Stack, 0, 6)
+	held, offHand := p.HeldItems()
+	if _, ok := offHand.Enchantment(enchantment.Mending{}); ok && offHand.Durability() < offHand.MaxDurability() {
+		mendingItems = append(mendingItems, offHand)
+	}
+	if _, ok := held.Enchantment(enchantment.Mending{}); ok && held.Durability() < held.MaxDurability() {
+		mendingItems = append(mendingItems, held)
+	}
+	for _, i := range p.Armour().Items() {
+		if i.Durability() == i.MaxDurability() {
+			continue
+		}
+		if _, ok := i.Enchantment(enchantment.Mending{}); ok {
+			mendingItems = append(mendingItems, i)
+		}
+	}
+	length := len(mendingItems)
+	if length == 0 {
+		return xp
+	}
+	foundItem := mendingItems[rand.Intn(length)]
+	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(xp*2))
+	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
+	if repairAmount >= 2 {
+		// Mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
+		// then no experience is removed.
+		xp -= int(math.Ceil(repairAmount / 2))
+	}
+	if offHand.Equal(foundItem) {
+		p.SetHeldItems(held, repairedItem)
+	} else if held.Equal(foundItem) {
+		p.SetHeldItems(repairedItem, offHand)
+	} else if slot, ok := p.Armour().Inventory().First(foundItem); ok {
+		_ = p.Armour().Inventory().SetItem(slot, repairedItem)
+	}
+	return xp
 }
 
 // Drop makes the player drop the item.Stack passed as an entity.Item, so that it may be picked up from the

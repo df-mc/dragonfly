@@ -8,7 +8,7 @@ func init() {
 	item.RegisterEnchantment(2, FeatherFalling{})
 	// TODO: (3) Blast Protection.
 	item.RegisterEnchantment(4, ProjectileProtection{})
-	// TODO: (5) Thorns.
+	item.RegisterEnchantment(5, Thorns{})
 	item.RegisterEnchantment(6, Respiration{})
 	item.RegisterEnchantment(7, DepthStrider{})
 	item.RegisterEnchantment(8, AquaAffinity{})
@@ -29,7 +29,7 @@ func init() {
 	// TODO: (23) Luck of the Sea.
 	// TODO: (24) Lure.
 	// TODO: (25) Frost Walker.
-	// TODO: (26) Mending.
+	item.RegisterEnchantment(26, Mending{})
 	// TODO: (27) Curse of Binding.
 	// TODO: (28) Curse of Vanishing.
 	// TODO: (29) Impaling.
