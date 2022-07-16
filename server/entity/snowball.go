@@ -115,7 +115,9 @@ func (s *Snowball) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 
 // Explode ...
 func (s *Snowball) Explode(c block.ExplosionConfig, impact float64) {
-	s.SetVelocity(s.Position().Sub(c.Pos).Normalize().Mul(impact))
+	s.mu.Lock()
+	s.vel = s.vel.Add(s.pos.Sub(c.Pos).Normalize().Mul(impact))
+	s.mu.Unlock()
 }
 
 // Owner ...

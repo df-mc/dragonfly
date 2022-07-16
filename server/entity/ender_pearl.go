@@ -134,7 +134,9 @@ func (e *EnderPearl) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 
 // Explode ...
 func (e *EnderPearl) Explode(c block.ExplosionConfig, impact float64) {
-	e.SetVelocity(e.Position().Sub(c.Pos).Normalize().Mul(impact))
+	e.mu.Lock()
+	e.vel = e.vel.Add(e.pos.Sub(c.Pos).Normalize().Mul(impact))
+	e.mu.Unlock()
 }
 
 // Owner ...

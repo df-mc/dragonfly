@@ -235,7 +235,9 @@ func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity,
 
 // Explode ...
 func (a *Arrow) Explode(c block.ExplosionConfig, impact float64) {
-	a.SetVelocity(a.Position().Sub(c.Pos).Normalize().Mul(impact))
+	a.mu.Lock()
+	a.vel = a.vel.Add(a.pos.Sub(c.Pos).Normalize().Mul(impact))
+	a.mu.Unlock()
 }
 
 // Owner returns the world.Entity that fired the Arrow, or nil if it did not have any.

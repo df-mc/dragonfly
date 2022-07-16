@@ -94,7 +94,7 @@ func (c ExplosionConfig) Do() {
 			continue
 		}
 		dist := pos.Sub(c.Pos).Len()
-		if dist > d {
+		if dist >= d {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
@@ -160,18 +160,18 @@ func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 	double7 := (1.0 - math.Floor(diff[0])/diff[0]) / 2.0
 	double8 := (1.0 - math.Floor(diff[2])/diff[2]) / 2.0
 
-	var collisions, checks float64
+	var collisions, checks int
 	for x := 0.0; x <= 1.0; x += step[0] {
 		for y := 0.0; y <= 1.0; y += step[1] {
 			for z := 0.0; z <= 1.0; z += step[2] {
-				dck2 := mgl64.Vec3{
+				point := mgl64.Vec3{
 					lerp(x, boxMin[0], boxMax[0]) + double7,
 					lerp(y, boxMin[1], boxMax[1]),
 					lerp(z, boxMin[2], boxMax[2]) + double8,
 				}
 
 				var collides bool
-				trace.TraverseBlocks(origin, dck2, func(pos cube.Pos) (con bool) {
+				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (con bool) {
 					_, air := w.Block(pos).(Air)
 					collides = !air
 					return air
@@ -183,10 +183,10 @@ func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 			}
 		}
 	}
-	return collisions / checks
+	return float64(collisions) / float64(checks)
 }
 
 // lerp returns the linear interpolation between a and b at t.
 func lerp(a, b, t float64) float64 {
-	return (1-t)*a + t*b
+	return b + a*(t-b)
 }
