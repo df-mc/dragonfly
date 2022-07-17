@@ -12,7 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
 	"time"
 )
 
@@ -357,7 +356,7 @@ func (a *Arrow) checkNearby(w *world.World) {
 func (a *Arrow) damage(vel mgl64.Vec3) float64 {
 	base := math.Ceil(vel.Len() * a.BaseDamage())
 	if a.Critical() {
-		return base + float64(rand.Intn(int(base/2+1)))
+		return base * 1.98
 	}
 	return base
 }

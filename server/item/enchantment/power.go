@@ -31,7 +31,7 @@ func (Power) Rarity() item.EnchantmentRarity {
 
 // PowerDamage returns the extra base damage dealt by the enchantment and level.
 func (Power) PowerDamage(level int) float64 {
-	return (float64(level) + 1) / 2
+	return float64(level+1) * 0.5
 }
 
 // CompatibleWithEnchantment ...
