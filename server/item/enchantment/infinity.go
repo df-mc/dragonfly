@@ -34,9 +34,9 @@ func (Infinity) ConsumesArrows() bool {
 }
 
 // CompatibleWithEnchantment ...
-func (Infinity) CompatibleWithEnchantment(item.EnchantmentType) bool {
-	// TODO: Account for mending.
-	return true
+func (Infinity) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	_, mending := t.(Mending)
+	return !mending
 }
 
 // CompatibleWithItem ...

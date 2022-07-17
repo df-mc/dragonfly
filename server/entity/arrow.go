@@ -250,7 +250,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 				}
 
 				living.Hurt(dmg, damage.SourceProjectile{Projectile: a, Owner: a.owner})
-				living.KnockBack(m.pos, 0.45, 0.3608)
+				living.KnockBack(m.pos, force, height)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)
 				}
