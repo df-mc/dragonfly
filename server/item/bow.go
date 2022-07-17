@@ -25,6 +25,11 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// FuelInfo ...
+func (Bow) FuelInfo() FuelInfo {
+	return newFuelInfo(time.Second * 10)
+}
+
 // Release ...
 func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	ticks := duration.Milliseconds() / 50

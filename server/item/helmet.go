@@ -59,6 +59,17 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (h Helmet) SmeltInfo() SmeltInfo {
+	switch h.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
 // RepairableBy ...
 func (h Helmet) RepairableBy(i Stack) bool {
 	return armourTierRepairable(h.Tier)(i)
