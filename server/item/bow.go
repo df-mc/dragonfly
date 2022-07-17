@@ -86,7 +86,7 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 			}
 		}
 
-		projectile := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*3), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
+		projectile := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*5), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
 		if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
 			f.SetOnFire(burnDuration)
 		}
