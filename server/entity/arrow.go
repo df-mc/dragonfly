@@ -356,7 +356,7 @@ func (a *Arrow) checkNearby(w *world.World) {
 func (a *Arrow) damage(vel mgl64.Vec3) float64 {
 	base := math.Ceil(vel.Len() * a.BaseDamage())
 	if a.Critical() {
-		return base * 1.98
+		return base * 1.97
 	}
 	return base
 }
