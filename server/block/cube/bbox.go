@@ -124,6 +124,25 @@ func (box BBox) Translate(vec mgl64.Vec3) BBox {
 	return BBox{min: box.min.Add(vec), max: box.max.Add(vec)}
 }
 
+// TranslateTowards moves the entire AABB by x in the direction of a Face passed.
+func (box BBox) TranslateTowards(f Face, x float64) BBox {
+	switch f {
+	case FaceDown:
+		return box.Translate(mgl64.Vec3{0, -x, 0})
+	case FaceUp:
+		return box.Translate(mgl64.Vec3{0, x, 0})
+	case FaceNorth:
+		return box.Translate(mgl64.Vec3{0, 0, -x})
+	case FaceSouth:
+		return box.Translate(mgl64.Vec3{0, 0, x})
+	case FaceWest:
+		return box.Translate(mgl64.Vec3{-x, 0, 0})
+	case FaceEast:
+		return box.Translate(mgl64.Vec3{x, 0, 0})
+	}
+	return box
+}
+
 // IntersectsWith checks if the BBox intersects with another BBox, returning true if this is the case.
 func (box BBox) IntersectsWith(other BBox) bool {
 	return box.intersectsWith(other, 1e-5)

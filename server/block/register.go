@@ -162,6 +162,7 @@ func init() {
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
+	registerAll(allSkulls())
 	registerAll(allSmokers())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
@@ -396,6 +397,9 @@ func init() {
 	}
 	for _, t := range FroglightTypes() {
 		world.RegisterItem(Froglight{Type: t})
+	}
+	for _, s := range SkullTypes() {
+		world.RegisterItem(Skull{Type: s})
 	}
 }
 
