@@ -12,8 +12,8 @@ import (
 )
 
 // BlastFurnace is a block that smelts ores, raw metals, iron and gold armor and tools, similar to a furnace, but at
-// twice the speed. It also serves as an armorer's job site block. BlastFurnace must be created using NewBlastFurnace
-// so that it is properly initialised.
+// twice the speed. It also serves as an armorer's job site block.
+// The empty value of BlastFurnace is not valid. It must be created using block.NewBlastFurnace(cube.Face).
 type BlastFurnace struct {
 	solid
 	bassDrum

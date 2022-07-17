@@ -12,6 +12,7 @@ import (
 )
 
 // Furnace is a utility block used for the smelting of blocks and items.
+// The empty value of Furnace is not valid. It must be created using block.NewFurnace(cube.Face).
 type Furnace struct {
 	solid
 	bassDrum

@@ -13,6 +13,7 @@ import (
 
 // Smoker is a type of furnace that cooks food items, similar to a furnace, but twice as fast. It also serves as a
 // butcher's job site block.
+// The empty value of Smoker is not valid. It must be created using block.NewSmoker(cube.Face).
 type Smoker struct {
 	solid
 	bassDrum
