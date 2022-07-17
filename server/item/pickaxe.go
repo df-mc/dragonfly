@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // Pickaxe is a tool generally used for mining stone-like blocks and ores at a higher speed and to obtain
@@ -56,6 +57,25 @@ func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 // RepairableBy ...
 func (p Pickaxe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(p.Tier)(i)
+}
+
+// SmeltInfo ...
+func (p Pickaxe) SmeltInfo() SmeltInfo {
+	switch p.Tier {
+	case ToolTierIron:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ToolTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
+// FuelInfo ...
+func (p Pickaxe) FuelInfo() FuelInfo {
+	if p.Tier == ToolTierWood {
+		return newFuelInfo(time.Second * 10)
+	}
+	return FuelInfo{}
 }
 
 // EncodeItem ...

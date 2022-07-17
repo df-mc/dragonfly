@@ -20,6 +20,11 @@ func (i IronOre) BreakInfo() BreakInfo {
 	}, pickaxeEffective, silkTouchOneOf(item.RawIron{}, i))
 }
 
+// SmeltInfo ...
+func (IronOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.IronIngot{}, 1), 0.7)
+}
+
 // EncodeItem ...
 func (i IronOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + i.Type.Prefix() + "iron_ore", 0

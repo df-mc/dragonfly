@@ -52,6 +52,7 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
+
 	pos := s.openedPos.Load()
 	w := s.c.World()
 	b := w.Block(pos)
@@ -108,13 +109,24 @@ const (
 	containerCraftingGrid         = 13
 	containerEnchantingTableInput = 21
 	containerEnchantingTableLapis = 22
+	containerFurnaceFuel          = 23
+	containerFurnaceResult        = 25
+	containerFurnaceInput         = 24
 	containerHotbar               = 27
 	containerInventory            = 28
 	containerOffHand              = 33
+	containerBlastFurnaceInput    = 44
+	containerSmokerInput          = 45
 	containerBarrel               = 57
 	containerCursor               = 58
 	containerOutput               = 59
 )
+
+// smelter is an interface representing a block used to smelt items.
+type smelter interface {
+	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
+	ResetExperience() int
+}
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
@@ -132,7 +144,6 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		// Armour inventory.
 		return s.armour.Inventory(), true
 	case containerChest:
-		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
@@ -143,22 +154,19 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, barrel := b.(block.Barrel); barrel {
+			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, beacon := b.(block.Beacon); beacon {
+			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
 	case containerAnvilInput, containerAnvilMaterial:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, anvil := b.(block.Anvil); anvil {
+			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}
@@ -174,6 +182,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, enchanting := b.(block.EnchantingTable); enchanting {
 				return s.ui, true
+			}
+		}
+	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
+				return s.openedWindow.Load(), true
 			}
 		}
 	}
