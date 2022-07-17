@@ -104,63 +104,90 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, supported func(item.SmeltInfo) bool) bool {
 	s.mu.Lock()
 
+	// First keep track of our past durations, since if any of them change, we need to be able to tell they did and then
+	// update the viewers on the change.
 	prevCookDuration := s.cookDuration
 	prevRemainingDuration := s.remainingDuration
 	prevMaxDuration := s.maxDuration
 
+	// Now get each item in the smelter. We don't need to validate errors here since we know the bounds of the smelter.
 	input, _ := s.inventory.Item(0)
 	fuel, _ := s.inventory.Item(1)
 	product, _ := s.inventory.Item(2)
 
+	// Initialize some default smelt info, and update it if we can smelt the item.
 	var inputInfo item.SmeltInfo
 	if i, ok := input.Item().(item.Smeltable); ok && supported(i.SmeltInfo()) {
 		inputInfo = i.SmeltInfo()
 	}
 
+	// Initialize some default fuel info, and update it if it can be used as fuel.
 	var fuelInfo item.FuelInfo
 	if f, ok := fuel.Item().(item.Fuel); ok {
 		fuelInfo = f.FuelInfo()
 		if fuelInfo.Residue.Empty() {
+			// If we don't have a custom residue set, then we just decrement the fuel by one.
 			fuelInfo.Residue = fuel.Grow(-1)
 		}
 	}
 
+	// Now we need to ensure that we can actually smelt the item. We need to ensure that we have at least one input,
+	// the input's product is compatible with the product already in the product slot, the product slot is not full,
+	// and that we have enough fuel to smelt the item. If all of these conditions are met, then we update the remaining
+	// duration and cook duration and create residue.
 	canSmelt := input.Count() > 0 && (inputInfo.Product.Comparable(product)) && !inputInfo.Product.Empty() && product.Count() < product.MaxCount()
 	if s.remainingDuration <= 0 && canSmelt && fuelInfo.Duration > 0 && fuel.Count() > 0 {
 		s.remainingDuration, s.maxDuration, lit = fuelInfo.Duration, fuelInfo.Duration, true
 		defer s.inventory.SetItem(1, fuelInfo.Residue)
 	}
 
+	// Now we need to process a single stage of fuel loss. First, ensure that we have enough remaining duration.
 	if s.remainingDuration > 0 {
+		// Decrement a tick from the remaining fuel duration.
 		s.remainingDuration -= time.Millisecond * 50
-		if canSmelt {
-			s.cookDuration += time.Millisecond * 50
-			if s.cookDuration >= requirement {
-				defer s.inventory.SetItem(2, item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count()))
-				defer s.inventory.SetItem(0, input.Grow(-1))
 
+		// If we have a valid smeltable item, process a single stage of smelting.
+		if canSmelt {
+			// Increase the cook duration by a tick.
+			s.cookDuration += time.Millisecond * 50
+
+			// Check if we've cooked enough to match the requirement.
+			if s.cookDuration >= requirement {
+				// We can now create the product and reduce the input by one.
+				defer s.inventory.SetItem(0, input.Grow(-1))
+				defer s.inventory.SetItem(2, item.NewStack(inputInfo.Product.Item(), product.Count()+inputInfo.Product.Count()))
+
+				// Calculate the amount of experience to grant. Round the experience down to the nearest integer.
+				// The remaining XP is a chance to be granted an additional experience point.
 				xp := inputInfo.Experience * float64(inputInfo.Product.Count())
 				earned := math.Floor(inputInfo.Experience)
 				if chance := xp - earned; chance > 0 && rand.Float64() < chance {
 					earned++
 				}
 
+				// Decrease the cook duration by the requirement, and update the smelter's stored experience.
 				s.cookDuration -= requirement
 				s.experience += int(earned)
 			}
 		} else if s.remainingDuration == 0 {
+			// We've run out of fuel, so we need to reset the max duration too.
 			s.maxDuration = 0
 		} else {
+			// We still have some remaining fuel, but the input isn't smeltable, so we reset the cook duration.
 			s.cookDuration = 0
 		}
 	} else {
-		s.maxDuration, s.remainingDuration, lit = 0, 0, false
+		// We don't have any more remaining duration, so we need to reset the max duration and put out the furnace.
+		s.maxDuration, lit = 0, false
 	}
 
+	// We've run out of fuel, but we have some remaining cook duration, so instead of stopping entirely, we reduce the
+	// cook duration by the decrement.
 	if s.cookDuration > 0 && !lit {
 		s.cookDuration -= decrement
 	}
 
+	// Update the viewers on the new durations.
 	for v := range s.viewers {
 		v.ViewFurnaceUpdate(prevCookDuration, s.cookDuration, prevRemainingDuration, s.remainingDuration, prevMaxDuration, s.maxDuration)
 	}
