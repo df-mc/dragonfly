@@ -38,20 +38,6 @@ func newSmelter() *smelter {
 	return s
 }
 
-// setExperience sets the collected experience of the smelter to the given value.
-func (s *smelter) setExperience(xp int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.experience = xp
-}
-
-// setDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
-func (s *smelter) setDurations(remaining, max, cook time.Duration) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
-}
-
 // Durations returns the remaining, maximum, and cook durations of the smelter.
 func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook time.Duration) {
 	s.mu.Lock()
@@ -97,6 +83,20 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 		return
 	}
 	delete(s.viewers, v)
+}
+
+// setExperience sets the collected experience of the smelter to the given value.
+func (s *smelter) setExperience(xp int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.experience = xp
+}
+
+// setDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
+func (s *smelter) setDurations(remaining, max, cook time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
 }
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
