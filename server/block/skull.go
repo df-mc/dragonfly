@@ -57,11 +57,10 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 	if face == cube.FaceUp {
 		yaw, _ := user.Rotation()
-		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw).Opposite())
-		place(w, pos, s, user, ctx)
-		return
+		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw))
+	} else {
+		s.Attach = WallAttachment(face.Direction())
 	}
-	s.Attach = WallAttachment(face.Direction().Opposite())
 	place(w, pos, s, user, ctx)
 	return placed(ctx)
 }
@@ -109,15 +108,18 @@ func (s Skull) EncodeNBT() map[string]interface{} {
 
 // EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
+	if s.Attach.hanging {
+		return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
+	}
+	return "minecraft:skull", map[string]interface{}{"facing_direction": int32(1)}
 }
 
 // allSkulls ...
 func allSkulls() (skulls []world.Block) {
-	for _, f := range cube.Faces() {
+	for _, f := range cube.HorizontalFaces() {
 		// A direction of -2 and -1 isn't actually valid, but when encoding the block these are encoded as 0 and 1. We
 		// can't otherwise represent this properly in an Attachment type.
 		skulls = append(skulls, Skull{Attach: WallAttachment(f.Direction())})
 	}
-	return
+	return append(skulls, Skull{Attach: StandingAttachment(0)})
 }
