@@ -20,6 +20,14 @@ func (r Rabbit) Consume(_ *world.World, c Consumer) Stack {
 	return Stack{}
 }
 
+// SmeltInfo ...
+func (r Rabbit) SmeltInfo() SmeltInfo {
+	if r.Cooked {
+		return SmeltInfo{}
+	}
+	return newFoodSmeltInfo(NewStack(Rabbit{Cooked: true}, 1), 0.35)
+}
+
 // EncodeItem ...
 func (r Rabbit) EncodeItem() (name string, meta int16) {
 	if r.Cooked {

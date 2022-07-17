@@ -11,18 +11,26 @@ type Cod struct {
 }
 
 // Consume ...
-func (co Cod) Consume(_ *world.World, c Consumer) Stack {
-	if co.Cooked {
-		c.Saturate(5, 6)
+func (c Cod) Consume(_ *world.World, co Consumer) Stack {
+	if c.Cooked {
+		co.Saturate(5, 6)
 	} else {
-		c.Saturate(2, 0.4)
+		co.Saturate(2, 0.4)
 	}
 	return Stack{}
 }
 
+// SmeltInfo ...
+func (c Cod) SmeltInfo() SmeltInfo {
+	if c.Cooked {
+		return SmeltInfo{}
+	}
+	return newFoodSmeltInfo(NewStack(Cod{Cooked: true}, 1), 0.35)
+}
+
 // EncodeItem ...
-func (co Cod) EncodeItem() (name string, meta int16) {
-	if co.Cooked {
+func (c Cod) EncodeItem() (name string, meta int16) {
+	if c.Cooked {
 		return "minecraft:cooked_cod", 0
 	}
 	return "minecraft:cod", 0
