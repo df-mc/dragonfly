@@ -114,8 +114,8 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	b = NewBlastFurnace(b.Facing)
 	b.Lit = lit
-	b.SetExperience(xp)
-	b.SetDurations(remaining, maximum, cook)
+	b.setExperience(xp)
+	b.setDurations(remaining, maximum, cook)
 	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return b
 }

@@ -38,15 +38,15 @@ func newSmelter() *smelter {
 	return s
 }
 
-// SetExperience sets the collected experience of the smelter to the given value.
-func (s *smelter) SetExperience(xp int) {
+// setExperience sets the collected experience of the smelter to the given value.
+func (s *smelter) setExperience(xp int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.experience = xp
 }
 
-// SetDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
-func (s *smelter) SetDurations(remaining, max, cook time.Duration) {
+// setDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
+func (s *smelter) setDurations(remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook

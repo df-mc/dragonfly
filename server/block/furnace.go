@@ -112,8 +112,8 @@ func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 	//noinspection GoAssignmentToReceiver
 	f = NewFurnace(f.Facing)
 	f.Lit = lit
-	f.SetExperience(xp)
-	f.SetDurations(remaining, maximum, cook)
+	f.setExperience(xp)
+	f.setDurations(remaining, maximum, cook)
 	nbtconv.InvFromNBT(f.Inventory(), nbtconv.Map[[]any](data, "Items"))
 	return f
 }
