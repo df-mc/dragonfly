@@ -379,6 +379,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
 			Position:  vec64To32(pos),
 		})
+	case particle.Effect:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 33,
+			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
