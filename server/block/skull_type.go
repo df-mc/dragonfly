@@ -1,9 +1,5 @@
 package block
 
-import (
-	"fmt"
-)
-
 // SkullType represents a mob variant of a skull.
 type SkullType struct {
 	skull
@@ -68,25 +64,6 @@ func (s skull) Name() string {
 		return "Dragon Head"
 	}
 	panic("unknown skull type")
-}
-
-// FromString ...
-func (s skull) FromString(str string) (interface{}, error) {
-	switch str {
-	case "skeleton":
-		return SkeletonSkull(), nil
-	case "wither_skeleton":
-		return WitherSkeletonSkull(), nil
-	case "zombie":
-		return ZombieHead(), nil
-	case "player":
-		return PlayerHead(), nil
-	case "creeper":
-		return CreeperHead(), nil
-	case "dragon":
-		return DragonHead(), nil
-	}
-	return nil, fmt.Errorf("unexpected skull type '%v', expecting one of 'skeleton', 'wither_skeleton', 'zombie', 'creeper', or 'dragon'", str)
 }
 
 // String ...
