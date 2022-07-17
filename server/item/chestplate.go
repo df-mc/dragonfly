@@ -63,7 +63,7 @@ func (c Chestplate) DurabilityInfo() DurabilityInfo {
 
 // SmeltInfo ...
 func (c Chestplate) SmeltInfo() SmeltInfo {
-	switch c.Tier {
+	switch c.Tier.(type) {
 	case ArmourTierChain, ArmourTierIron:
 		return SmeltInfo{
 			Product:    NewStack(IronNugget{}, 1),

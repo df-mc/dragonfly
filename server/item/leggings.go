@@ -75,7 +75,7 @@ func (l Leggings) RepairableBy(i Stack) bool {
 
 // SmeltInfo ...
 func (l Leggings) SmeltInfo() SmeltInfo {
-	switch l.Tier {
+	switch l.Tier.(type) {
 	case ArmourTierChain, ArmourTierIron:
 		return SmeltInfo{
 			Product:    NewStack(IronNugget{}, 1),
