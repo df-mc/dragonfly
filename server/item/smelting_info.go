@@ -4,9 +4,9 @@ import (
 	"time"
 )
 
-// Smelt represents an item that can be input into a smelter, such as a blast furnace, furnace, or smoker, to cook and
+// Smeltable represents an item that can be input into a smelter, such as a blast furnace, furnace, or smoker, to cook and
 // transform it into a different item.
-type Smelt interface {
+type Smeltable interface {
 	// SmeltInfo returns information of the item related to it's smelting capabilities.
 	SmeltInfo() SmeltInfo
 }
@@ -17,7 +17,7 @@ type Fuel interface {
 	FuelInfo() FuelInfo
 }
 
-// SmeltInfo is a struct returned by items that implement Smelt. It contains information about the product, experience
+// SmeltInfo is a struct returned by items that implement Smeltable. It contains information about the product, experience
 // gained, and more.
 type SmeltInfo struct {
 	// Product returns the resulting item stack from smelting the item.

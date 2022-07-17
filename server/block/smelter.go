@@ -113,7 +113,7 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 	product, _ := s.inventory.Item(2)
 
 	var inputInfo item.SmeltInfo
-	if i, ok := input.Item().(item.Smelt); ok && supported(i.SmeltInfo()) {
+	if i, ok := input.Item().(item.Smeltable); ok && supported(i.SmeltInfo()) {
 		inputInfo = i.SmeltInfo()
 	}
 
