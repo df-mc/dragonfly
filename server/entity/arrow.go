@@ -354,9 +354,9 @@ func (a *Arrow) checkNearby(w *world.World) {
 
 // damage returns the full damage the arrow should deal, accounting for the velocity.
 func (a *Arrow) damage(vel mgl64.Vec3) float64 {
-	base := math.Ceil(vel.Len() * a.BaseDamage())
+	base := math.Ceil(vel.Len() * a.BaseDamage() * 0.97)
 	if a.Critical() {
-		return base * 1.97
+		return base * 1.5
 	}
 	return base
 }
