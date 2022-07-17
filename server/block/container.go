@@ -28,9 +28,3 @@ type Container interface {
 	RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos)
 	Inventory() *inventory.Inventory
 }
-
-// XPContainer represents a block that may contain XP, such as smelters.
-type XPContainer interface {
-	// ResetExperience resets the amount of XP the container has to zero, returning the amount of XP that was reset.
-	ResetExperience() int
-}

@@ -70,7 +70,8 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 
 // BreakInfo ...
 func (f Furnace) BreakInfo() BreakInfo {
-	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(f))
+	xp := f.Experience()
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(f)).withXPDropRange(xp, xp)
 }
 
 // Activate ...

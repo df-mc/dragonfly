@@ -1768,12 +1768,6 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	w.SetBlock(pos, nil, nil)
 	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
-	if xp, ok := b.(block.XPContainer); ok {
-		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp.ResetExperience()) {
-			orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
-			w.AddEntity(orb)
-		}
-	}
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		info := breakable.BreakInfo()
 		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 {
