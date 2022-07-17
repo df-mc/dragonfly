@@ -31,6 +31,11 @@ func (s Sword) HarvestLevel() int {
 	return s.Tier.HarvestLevel
 }
 
+// EnchantmentValue ...
+func (s Sword) EnchantmentValue() int {
+	return s.Tier.EnchantmentValue
+}
+
 // BaseMiningEfficiency always returns 1.5, unless the block passed is cobweb, in which case 15 is returned.
 func (s Sword) BaseMiningEfficiency(world.Block) float64 {
 	// TODO: Implement cobwebs and return 15 here.

@@ -26,19 +26,15 @@ func (e *ExperienceManager) Experience() int {
 	return e.experience
 }
 
-// Add adds experience to the total experience and recalculates the level and progress if necessary.
+// Add adds experience to the total experience and recalculates the level and progress if necessary. Passing a negative
+// value is valid. If the new experience would otherwise drop below 0, it is set to 0.
 func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.experience += amount
-	return progressFromExperience(e.total())
-}
-
-// Remove removes experience from the total experience and recalculates the level and progress if necessary.
-func (e *ExperienceManager) Remove(amount int) (level int, progress float64) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	e.experience -= amount
+	if e.experience < 0 {
+		e.experience = 0
+	}
 	return progressFromExperience(e.total())
 }
 

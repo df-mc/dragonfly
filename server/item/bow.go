@@ -101,6 +101,11 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	}
 }
 
+// EnchantmentValue ...
+func (Bow) EnchantmentValue() int {
+	return 1
+}
+
 // Requirements returns the required items to release this item.
 func (Bow) Requirements() []Stack {
 	return []Stack{NewStack(Arrow{}, 1)}

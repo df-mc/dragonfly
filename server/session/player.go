@@ -53,8 +53,12 @@ func (s *Session) closeCurrentContainer() {
 	}
 	s.closeWindow()
 	pos := s.openedPos.Load()
-	if container, ok := s.c.World().Block(pos).(block.Container); ok {
-		container.RemoveViewer(s, s.c.World(), pos)
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
+		container.RemoveViewer(s, w, pos)
+	} else if enderChest, ok := b.(block.EnderChest); ok {
+		enderChest.RemoveViewer(w, pos)
 	}
 }
 
@@ -93,19 +97,23 @@ const (
 )
 
 const (
-	containerAnvilInput    = 0
-	containerAnvilMaterial = 1
-	containerArmour        = 6
-	containerChest         = 7
-	containerBeacon        = 8
-	containerFullInventory = 12
-	containerCraftingGrid  = 13
-	containerHotbar        = 27
-	containerInventory     = 28
-	containerOffHand       = 33
-	containerBarrel        = 57
-	containerCursor        = 58
-	containerOutput        = 59
+	containerAnvilInput           = 0
+	containerAnvilMaterial        = 1
+	containerSmithingInput        = 3
+	containerSmithingMaterial     = 4
+	containerArmour               = 6
+	containerChest                = 7
+	containerBeacon               = 8
+	containerFullInventory        = 12
+	containerCraftingGrid         = 13
+	containerEnchantingTableInput = 21
+	containerEnchantingTableLapis = 22
+	containerHotbar               = 27
+	containerInventory            = 28
+	containerOffHand              = 33
+	containerBarrel               = 57
+	containerCursor               = 58
+	containerOutput               = 59
 )
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
@@ -129,6 +137,8 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
 				return s.openedWindow.Load(), true
+			} else if _, enderChest := b.(block.EnderChest); enderChest {
+				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
@@ -149,6 +159,20 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, anvil := b.(block.Anvil); anvil {
+				return s.ui, true
+			}
+		}
+	case containerSmithingInput, containerSmithingMaterial:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, smithing := b.(block.SmithingTable); smithing {
+				return s.ui, true
+			}
+		}
+	case containerEnchantingTableInput, containerEnchantingTableLapis:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, enchanting := b.(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
@@ -446,7 +470,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
+func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -481,6 +505,16 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
+	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, item)
+			}
+		}
+	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -496,7 +530,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	return s.inv, s.offHand, s.armour, s.heldSlot
+	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
 }
 
 // SetHeldSlot sets the currently held hotbar slot.

@@ -51,9 +51,11 @@ const (
 	hashDripstone
 	hashEmerald
 	hashEmeraldOre
+	hashEnchantingTable
 	hashEndBrickStairs
 	hashEndBricks
 	hashEndStone
+	hashEnderChest
 	hashFarmland
 	hashFire
 	hashFlower
@@ -128,6 +130,7 @@ const (
 	hashSeaPickle
 	hashShroomlight
 	hashSign
+	hashSmithingTable
 	hashSnow
 	hashSoulSand
 	hashSoulSoil
@@ -347,6 +350,10 @@ func (e EmeraldOre) Hash() uint64 {
 	return hashEmeraldOre | uint64(e.Type.Uint8())<<8
 }
 
+func (EnchantingTable) Hash() uint64 {
+	return hashEnchantingTable
+}
+
 func (s EndBrickStairs) Hash() uint64 {
 	return hashEndBrickStairs | uint64(boolByte(s.UpsideDown))<<8 | uint64(s.Facing)<<9
 }
@@ -357,6 +364,10 @@ func (EndBricks) Hash() uint64 {
 
 func (EndStone) Hash() uint64 {
 	return hashEndStone
+}
+
+func (c EnderChest) Hash() uint64 {
+	return hashEnderChest | uint64(c.Facing)<<8
 }
 
 func (f Farmland) Hash() uint64 {
@@ -653,6 +664,10 @@ func (Shroomlight) Hash() uint64 {
 
 func (s Sign) Hash() uint64 {
 	return hashSign | uint64(s.Wood.Uint8())<<8 | uint64(s.Attach.Uint8())<<12
+}
+
+func (SmithingTable) Hash() uint64 {
+	return hashSmithingTable
 }
 
 func (Snow) Hash() uint64 {

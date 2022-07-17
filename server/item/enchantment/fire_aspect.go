@@ -19,6 +19,12 @@ func (FireAspect) MaxLevel() int {
 	return 2
 }
 
+// Cost ...
+func (FireAspect) Cost(level int) (int, int) {
+	min := 10 + (level-1)*20
+	return min, min + 50
+}
+
 // Rarity ...
 func (FireAspect) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

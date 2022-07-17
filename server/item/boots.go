@@ -59,6 +59,11 @@ func (b Boots) KnockBackResistance() float64 {
 	return b.Tier.KnockBackResistance()
 }
 
+// EnchantmentValue ...
+func (b Boots) EnchantmentValue() int {
+	return b.Tier.EnchantmentValue()
+}
+
 // Boots ...
 func (b Boots) Boots() bool {
 	return true

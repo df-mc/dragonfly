@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -57,9 +59,9 @@ type Session struct {
 	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot         *atomic.Uint32
-	inv, offHand, ui *inventory.Inventory
-	armour           *inventory.Armour
+	heldSlot                     *atomic.Uint32
+	inv, offHand, enderChest, ui *inventory.Inventory
+	armour                       *inventory.Armour
 
 	breakingPos cube.Pos
 
@@ -78,6 +80,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.Value[string]
+
+	switchingWorld atomic.Bool
 
 	closeBackground chan struct{}
 }
@@ -144,10 +148,11 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *at
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
 
-	s := &Session{
+	s := &Session{}
+	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(51, nil),
+		ui:                     inventory.New(53, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
@@ -231,6 +236,14 @@ func (s *Session) Close() error {
 // manages.
 func (s *Session) close() {
 	_ = s.c.Close()
+
+	// Move UI inventory items to the main inventory.
+	for _, it := range s.ui.Items() {
+		if _, err := s.inv.AddItem(it); err != nil {
+			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
+			s.c.Drop(it)
+		}
+	}
 
 	s.onStop(s.c)
 
@@ -392,12 +405,22 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	if w.Dimension() != s.chunkLoader.World().Dimension() {
-		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
-		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	if same {
+		dim = (dim + 1) % 3
+		s.switchingWorld.Store(true)
 	}
+	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
+}
+
+// changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
+// immediately.
+func (s *Session) changeDimension(dim int32, silent bool) {
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.writePacket(&packet.StopSound{StopAll: silent})
+	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -452,6 +475,18 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+	}
+}
+
+// handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
+// in the future.
+func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+	if slot == enchantingInputSlot && s.containerOpened.Load() {
+		pos := s.openedPos.Load()
+		b := s.c.World().Block(pos)
+		if _, enchanting := b.(block.EnchantingTable); enchanting {
+			s.sendEnchantmentOptions(s.c.World(), pos, item)
+		}
 	}
 }
 

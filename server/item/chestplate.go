@@ -48,6 +48,11 @@ func (c Chestplate) KnockBackResistance() float64 {
 	return c.Tier.KnockBackResistance()
 }
 
+// EnchantmentValue ...
+func (c Chestplate) EnchantmentValue() int {
+	return c.Tier.EnchantmentValue()
+}
+
 // DurabilityInfo ...
 func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
