@@ -10,32 +10,46 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
-//go:embed crafting_data.nbt
-var vanillaCraftingData []byte
+var (
+	//go:embed crafting_data.nbt
+	vanillaCraftingData []byte
+	//go:embed smithing_data.nbt
+	vanillaSmithingData []byte
+)
+
+// shapedRecipe is a recipe that must be crafted in a specific shape.
+type shapedRecipe struct {
+	Input    inputItems  `nbt:"input"`
+	Output   outputItems `nbt:"output"`
+	Block    string      `nbt:"block"`
+	Width    int32       `nbt:"width"`
+	Height   int32       `nbt:"height"`
+	Priority int32       `nbt:"priority"`
+}
+
+// shapelessRecipe is a recipe that may be crafted without a strict shape.
+type shapelessRecipe struct {
+	Input    inputItems  `nbt:"input"`
+	Output   outputItems `nbt:"output"`
+	Block    string      `nbt:"block"`
+	Priority int32       `nbt:"priority"`
+}
 
 func init() {
-	var vanillaRecipes struct {
-		Shaped []struct {
-			Input    inputItems  `nbt:"input"`
-			Output   outputItems `nbt:"output"`
-			Block    string      `nbt:"block"`
-			Width    int32       `nbt:"width"`
-			Height   int32       `nbt:"height"`
-			Priority int32       `nbt:"priority"`
-		} `nbt:"shaped"`
-		Shapeless []struct {
-			Input    inputItems  `nbt:"input"`
-			Output   outputItems `nbt:"output"`
-			Block    string      `nbt:"block"`
-			Priority int32       `nbt:"priority"`
-		} `nbt:"shapeless"`
+	var craftingRecipes struct {
+		Shaped    []shapedRecipe    `nbt:"shaped"`
+		Shapeless []shapelessRecipe `nbt:"shapeless"`
 	}
-
-	if err := nbt.Unmarshal(vanillaCraftingData, &vanillaRecipes); err != nil {
+	if err := nbt.Unmarshal(vanillaCraftingData, &craftingRecipes); err != nil {
 		panic(err)
 	}
 
-	for _, s := range vanillaRecipes.Shapeless {
+	var smithingRecipes []shapelessRecipe
+	if err := nbt.Unmarshal(vanillaSmithingData, &smithingRecipes); err != nil {
+		panic(err)
+	}
+
+	for _, s := range append(craftingRecipes.Shapeless, smithingRecipes...) {
 		input, ok := s.Input.Stacks()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
@@ -51,7 +65,7 @@ func init() {
 		}})
 	}
 
-	for _, s := range vanillaRecipes.Shaped {
+	for _, s := range craftingRecipes.Shaped {
 		input, ok := s.Input.Stacks()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {

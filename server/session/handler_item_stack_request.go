@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
@@ -83,6 +84,19 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.BeaconPaymentStackRequestAction:
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
+			if s.containerOpened.Load() {
+				var processed bool
+				switch s.c.World().Block(s.openedPos.Load()).(type) {
+				case block.SmithingTable:
+					err, processed = h.handleSmithing(a, s), true
+				case block.EnchantingTable:
+					err, processed = h.handleEnchant(a, s), true
+				}
+				if processed {
+					// This was a "special action" and was handled, so we can move onto the next action.
+					break
+				}
+			}
 			err = h.handleCraft(a, s)
 		case *protocol.AutoCraftRecipeStackRequestAction:
 			err = h.handleAutoCraft(a, s)

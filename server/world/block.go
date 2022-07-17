@@ -66,8 +66,8 @@ func RegisterBlock(b Block) {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
 	hash := int64(b.Hash())
-	if _, ok := hashes.Get(hash); ok {
-		panic(fmt.Sprintf("block %#v with hash %v already registered", b, hash))
+	if other, ok := hashes.Get(hash); ok {
+		panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, hash, blocks[other]))
 	}
 	blocks[rid] = b
 	hashes.Put(hash, int64(rid))

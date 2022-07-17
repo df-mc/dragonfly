@@ -68,6 +68,11 @@ func (h Hoe) BaseMiningEfficiency(world.Block) float64 {
 	return h.Tier.BaseMiningEfficiency
 }
 
+// EnchantmentValue ...
+func (h Hoe) EnchantmentValue() int {
+	return h.Tier.EnchantmentValue
+}
+
 // DurabilityInfo ...
 func (h Hoe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
