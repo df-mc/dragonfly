@@ -19,6 +19,7 @@ type Skull struct {
 	// Type is the type of the skull.
 	Type SkullType
 
+	// Attach is the attachment of the Skull. It is either of the type WallAttachment or StandingAttachment.
 	//blockhash:facing_only
 	Attach Attachment
 }
