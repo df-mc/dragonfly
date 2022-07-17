@@ -7,7 +7,7 @@ type Bowl struct{}
 
 // FuelInfo ...
 func (Bowl) FuelInfo() FuelInfo {
-	return FuelInfo{Duration: time.Second * 10}
+	return newFuelInfo(time.Second * 10)
 }
 
 // EncodeItem ...

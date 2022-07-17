@@ -5,10 +5,7 @@ type ClayBall struct{}
 
 // SmeltInfo ...
 func (ClayBall) SmeltInfo() SmeltInfo {
-	return SmeltInfo{
-		Product:    NewStack(Brick{}, 1),
-		Experience: 0.3,
-	}
+	return newSmeltInfo(NewStack(Brick{}, 1), 0.3)
 }
 
 // EncodeItem ...

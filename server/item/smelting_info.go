@@ -30,6 +30,32 @@ type SmeltInfo struct {
 	Ores bool
 }
 
+// newSmeltInfo returns a new SmeltInfo with the given values.
+func newSmeltInfo(product Stack, experience float64) SmeltInfo {
+	return SmeltInfo{
+		Product:    product,
+		Experience: experience,
+	}
+}
+
+// newFoodSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a smelter.
+func newFoodSmeltInfo(product Stack, experience float64) SmeltInfo {
+	return SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Food:       true,
+	}
+}
+
+// newOreSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a blast furnace.
+func newOreSmeltInfo(product Stack, experience float64) SmeltInfo {
+	return SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Ores:       true,
+	}
+}
+
 // FuelInfo is a struct returned by items that implement Fuel. It contains information about the amount of fuel time
 // it gives, and the residue created from burning the fuel.
 type FuelInfo struct {
@@ -37,4 +63,15 @@ type FuelInfo struct {
 	Duration time.Duration
 	// Residue is the resulting item from burning the fuel in a smelter.
 	Residue Stack
+}
+
+// WithResidue returns a new FuelInfo with a residue.
+func (f FuelInfo) WithResidue(residue Stack) FuelInfo {
+	f.Residue = residue
+	return f
+}
+
+// newFuelInfo returns a new FuelInfo with the given values.
+func newFuelInfo(duration time.Duration) FuelInfo {
+	return FuelInfo{Duration: duration}
 }

@@ -18,11 +18,7 @@ func (a AncientDebris) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (AncientDebris) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.NetheriteScrap{}, 1),
-		Experience: 2,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.NetheriteScrap{}, 1), 2)
 }
 
 // EncodeItem ...

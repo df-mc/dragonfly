@@ -17,11 +17,7 @@ func (n NetherGoldOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (NetherGoldOre) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.GoldIngot{}, 1),
-		Experience: 1,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.GoldIngot{}, 1), 1)
 }
 
 // EncodeItem ...

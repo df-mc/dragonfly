@@ -5,7 +5,7 @@ type RawIron struct{}
 
 // SmeltInfo ...
 func (RawIron) SmeltInfo() SmeltInfo {
-	return SmeltInfo{Product: NewStack(IronIngot{}, 1), Experience: 0.7, Ores: true}
+	return newOreSmeltInfo(NewStack(IronIngot{}, 1), 0.7)
 }
 
 // EncodeItem ...

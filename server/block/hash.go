@@ -725,8 +725,8 @@ func (s StoneBrickStairs) Hash() uint64 {
 	return hashStoneBrickStairs | uint64(boolByte(s.Mossy))<<8 | uint64(boolByte(s.UpsideDown))<<9 | uint64(s.Facing)<<10
 }
 
-func (c StoneBricks) Hash() uint64 {
-	return hashStoneBricks | uint64(c.Type.Uint8())<<8
+func (s StoneBricks) Hash() uint64 {
+	return hashStoneBricks | uint64(s.Type.Uint8())<<8
 }
 
 func (g TallGrass) Hash() uint64 {

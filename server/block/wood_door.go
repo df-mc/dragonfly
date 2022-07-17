@@ -39,7 +39,7 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (WoodDoor) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 10}
+	return newFuelInfo(time.Second * 10)
 }
 
 // Model ...

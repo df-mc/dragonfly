@@ -7,7 +7,7 @@ type Charcoal struct{}
 
 // FuelInfo ...
 func (Charcoal) FuelInfo() FuelInfo {
-	return FuelInfo{Duration: time.Second * 80}
+	return newFuelInfo(time.Second * 80)
 }
 
 // EncodeItem ...

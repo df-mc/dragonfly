@@ -19,7 +19,7 @@ type Kelp struct {
 
 // SmeltInfo ...
 func (k Kelp) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{Product: item.NewStack(item.DriedKelp{}, 1), Experience: 0.1, Food: true}
+	return newFoodSmeltInfo(item.NewStack(item.DriedKelp{}, 1), 0.1)
 }
 
 // BoneMeal ...

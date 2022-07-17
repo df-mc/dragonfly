@@ -5,7 +5,7 @@ type RawCopper struct{}
 
 // SmeltInfo ...
 func (RawCopper) SmeltInfo() SmeltInfo {
-	return SmeltInfo{Product: NewStack(CopperIngot{}, 1), Experience: 0.7, Ores: true}
+	return newOreSmeltInfo(NewStack(CopperIngot{}, 1), 0.7)
 }
 
 // EncodeItem ...

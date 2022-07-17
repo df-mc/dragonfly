@@ -45,7 +45,7 @@ func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (WoodFence) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeBlock ...

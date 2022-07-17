@@ -69,7 +69,7 @@ func (t WoodTrapdoor) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (WoodTrapdoor) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // CanDisplace ...

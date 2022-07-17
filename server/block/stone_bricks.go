@@ -23,10 +23,7 @@ func (s StoneBricks) BreakInfo() BreakInfo {
 // SmeltInfo ...
 func (s StoneBricks) SmeltInfo() item.SmeltInfo {
 	if s.Type == NormalStoneBricks() {
-		return item.SmeltInfo{
-			Product:    item.NewStack(StoneBricks{Type: CrackedStoneBricks()}, 1),
-			Experience: 0.1,
-		}
+		return newSmeltInfo(item.NewStack(StoneBricks{Type: CrackedStoneBricks()}, 1), 0.1)
 	}
 	return item.SmeltInfo{}
 }

@@ -22,7 +22,7 @@ func (DriedKelp) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (DriedKelp) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 200}
+	return newFuelInfo(time.Second * 200)
 }
 
 // EncodeItem ...

@@ -134,7 +134,7 @@ func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (Barrel) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // DecodeNBT ...

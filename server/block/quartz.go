@@ -62,10 +62,7 @@ func (q Quartz) SmeltInfo() item.SmeltInfo {
 	if q.Smooth {
 		return item.SmeltInfo{}
 	}
-	return item.SmeltInfo{
-		Product:    item.NewStack(Quartz{Smooth: true}, 1),
-		Experience: 0.1,
-	}
+	return newSmeltInfo(item.NewStack(Quartz{Smooth: true}, 1), 0.1)
 }
 
 // EncodeItem ...

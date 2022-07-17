@@ -22,11 +22,7 @@ func (e EmeraldOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (EmeraldOre) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(item.Emerald{}, 1),
-		Experience: 1,
-		Ores:       true,
-	}
+	return newOreSmeltInfo(item.NewStack(item.Emerald{}, 1), 1)
 }
 
 // EncodeItem ...

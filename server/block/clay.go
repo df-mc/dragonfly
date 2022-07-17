@@ -22,10 +22,7 @@ func (c Clay) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (Clay) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(Terracotta{}, 1),
-		Experience: 0.35,
-	}
+	return newSmeltInfo(item.NewStack(Terracotta{}, 1), 0.35)
 }
 
 // EncodeItem ...

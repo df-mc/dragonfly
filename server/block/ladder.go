@@ -80,7 +80,7 @@ func (l Ladder) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (Ladder) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

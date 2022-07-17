@@ -37,10 +37,7 @@ func (s Sand) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (Sand) SmeltInfo() item.SmeltInfo {
-	return item.SmeltInfo{
-		Product:    item.NewStack(Glass{}, 1),
-		Experience: 0.1,
-	}
+	return newSmeltInfo(item.NewStack(Glass{}, 1), 0.1)
 }
 
 // EncodeItem ...

@@ -27,7 +27,7 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 
 // FuelInfo ...
 func (Bow) FuelInfo() FuelInfo {
-	return FuelInfo{Duration: time.Second * 10}
+	return newFuelInfo(time.Second * 10)
 }
 
 // Release ...

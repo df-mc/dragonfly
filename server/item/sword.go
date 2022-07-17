@@ -57,15 +57,9 @@ func (s Sword) DurabilityInfo() DurabilityInfo {
 func (s Sword) SmeltInfo() SmeltInfo {
 	switch s.Tier {
 	case ToolTierIron:
-		return SmeltInfo{
-			Product:    NewStack(IronNugget{}, 1),
-			Experience: 0.1,
-		}
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ToolTierGold:
-		return SmeltInfo{
-			Product:    NewStack(GoldNugget{}, 1),
-			Experience: 0.1,
-		}
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
 	}
 	return SmeltInfo{}
 }
@@ -73,7 +67,7 @@ func (s Sword) SmeltInfo() SmeltInfo {
 // FuelInfo ...
 func (s Sword) FuelInfo() FuelInfo {
 	if s.Tier == ToolTierWood {
-		return FuelInfo{Duration: time.Second * 10}
+		return newFuelInfo(time.Second * 10)
 	}
 	return FuelInfo{}
 }

@@ -60,7 +60,7 @@ func (s WoodStairs) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (WoodStairs) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

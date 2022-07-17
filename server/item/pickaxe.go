@@ -63,15 +63,9 @@ func (p Pickaxe) RepairableBy(i Stack) bool {
 func (p Pickaxe) SmeltInfo() SmeltInfo {
 	switch p.Tier {
 	case ToolTierIron:
-		return SmeltInfo{
-			Product:    NewStack(IronNugget{}, 1),
-			Experience: 0.1,
-		}
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ToolTierGold:
-		return SmeltInfo{
-			Product:    NewStack(GoldNugget{}, 1),
-			Experience: 0.1,
-		}
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
 	}
 	return SmeltInfo{}
 }
@@ -79,7 +73,7 @@ func (p Pickaxe) SmeltInfo() SmeltInfo {
 // FuelInfo ...
 func (p Pickaxe) FuelInfo() FuelInfo {
 	if p.Tier == ToolTierWood {
-		return FuelInfo{Duration: time.Second * 10}
+		return newFuelInfo(time.Second * 10)
 	}
 	return FuelInfo{}
 }

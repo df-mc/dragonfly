@@ -18,7 +18,7 @@ func (b Bookshelf) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (Bookshelf) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

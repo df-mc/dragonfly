@@ -30,7 +30,7 @@ func (c CraftingTable) BreakInfo() BreakInfo {
 
 // FuelInfo ...
 func (CraftingTable) FuelInfo() item.FuelInfo {
-	return item.FuelInfo{Duration: time.Second * 15}
+	return newFuelInfo(time.Second * 15)
 }
 
 // Activate ...

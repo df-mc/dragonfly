@@ -25,11 +25,7 @@ func (r Rabbit) SmeltInfo() SmeltInfo {
 	if r.Cooked {
 		return SmeltInfo{}
 	}
-	return SmeltInfo{
-		Product:    NewStack(Rabbit{Cooked: true}, 1),
-		Experience: 0.35,
-		Food:       true,
-	}
+	return newFoodSmeltInfo(NewStack(Rabbit{Cooked: true}, 1), 0.35)
 }
 
 // EncodeItem ...
