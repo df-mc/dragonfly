@@ -19,6 +19,11 @@ func (Flame) MaxLevel() int {
 	return 1
 }
 
+// Cost ...
+func (Flame) Cost(int) (int, int) {
+	return 20, 50
+}
+
 // Rarity ...
 func (Flame) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

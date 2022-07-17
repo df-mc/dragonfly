@@ -18,6 +18,12 @@ func (Punch) MaxLevel() int {
 	return 2
 }
 
+// Cost ...
+func (Punch) Cost(level int) (int, int) {
+	min := 12 + (level-1)*20
+	return min, min + 25
+}
+
 // Rarity ...
 func (Punch) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

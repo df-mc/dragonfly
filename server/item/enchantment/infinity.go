@@ -18,6 +18,11 @@ func (Infinity) MaxLevel() int {
 	return 1
 }
 
+// Cost ...
+func (Infinity) Cost(int) (int, int) {
+	return 20, 50
+}
+
 // Rarity ...
 func (Infinity) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare

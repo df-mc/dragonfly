@@ -18,6 +18,12 @@ func (Power) MaxLevel() int {
 	return 5
 }
 
+// Cost ...
+func (Power) Cost(level int) (int, int) {
+	min := 1 + (level-1)*10
+	return min, min + 15
+}
+
 // Rarity ...
 func (Power) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
