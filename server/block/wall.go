@@ -9,8 +9,8 @@ import (
 )
 
 type Wall struct {
-	// Type is the type of material of the wall.
-	Type WallType
+	// Block is the block to use for the type of wall.
+	Block world.Block
 	// NorthConnection is the type of connection in the north direction of the post.
 	NorthConnection WallConnectionType
 	// EastConnection is the type of connection in the east direction of the post.
@@ -24,19 +24,29 @@ type Wall struct {
 }
 
 // EncodeItem ...
-func (w Wall) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + w.Type.String() + "_wall", 0
+func (w Wall) EncodeItem() (string, int16) {
+	name, meta := encodeWallBlock(w.Block)
+	if meta == 0 {
+		return "minecraft:" + name + "_wall", 0
+	}
+	return "minecraft:cobblestone_wall", meta
 }
 
 // EncodeBlock ...
 func (w Wall) EncodeBlock() (string, map[string]any) {
-	return "minecraft:" + w.Type.String() + "_wall", map[string]any{
+	properties := map[string]any{
 		"wall_connection_type_north": w.NorthConnection.String(),
 		"wall_connection_type_east":  w.EastConnection.String(),
 		"wall_connection_type_south": w.SouthConnection.String(),
 		"wall_connection_type_west":  w.WestConnection.String(),
 		"wall_post_bit":              boolByte(w.Post),
 	}
+	name, meta := encodeWallBlock(w.Block)
+	if meta > 0 || name == "cobblestone" {
+		properties["wall_block_type"] = name
+		name = "cobblestone"
+	}
+	return "minecraft:" + name + "_wall", properties
 }
 
 // Model ...
@@ -53,8 +63,8 @@ func (w Wall) Model() world.BlockModel {
 // BreakInfo ...
 func (w Wall) BreakInfo() BreakInfo {
 	hardness := 2.0
-	switch w.Type {
-	case PolishedDeepslateWall(), DeepslateBrickWall(), DeepslateTileWall(), CobbledDeepslateWall():
+	name, _ := encodeWallBlock(w.Block)
+	if name == "cobbled_deepslate" || name == "deepslate_brick" || name == "deepslate_tile" || name == "polished_deepslate" {
 		hardness = 3.5
 	}
 	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w))
@@ -174,8 +184,6 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 		post = !above.Hanging
 	case Sign:
 		post = !above.Attach.hanging
-	case StoneWall:
-		post = above.Post
 	case Torch:
 		post = above.Facing == cube.FaceDown
 	case Wall:
@@ -204,19 +212,21 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 
 // allWalls returns a list of all wall types.
 func allWalls() (walls []world.Block) {
-	for _, w := range WallTypes() {
+	for _, block := range WallBlocks() {
 		for _, north := range WallConnectionTypes() {
 			for _, east := range WallConnectionTypes() {
 				for _, south := range WallConnectionTypes() {
 					for _, west := range WallConnectionTypes() {
-						walls = append(walls, Wall{Type: w,
+						walls = append(walls, Wall{
+							Block:           block,
 							NorthConnection: north,
 							EastConnection:  east,
 							SouthConnection: south,
 							WestConnection:  west,
 							Post:            false,
 						})
-						walls = append(walls, Wall{Type: w,
+						walls = append(walls, Wall{
+							Block:           block,
 							NorthConnection: north,
 							EastConnection:  east,
 							SouthConnection: south,

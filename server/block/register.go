@@ -171,7 +171,6 @@ func init() {
 	registerAll(allWoodSlabs())
 	registerAll(allWoodStairs())
 	registerAll(allWool())
-	registerAll(allStoneWalls())
 	registerAll(allWalls())
 }
 
@@ -387,11 +386,8 @@ func init() {
 	for _, t := range FroglightTypes() {
 		world.RegisterItem(Froglight{Type: t})
 	}
-	for _, t := range StoneWallTypes() {
-		world.RegisterItem(StoneWall{Type: t})
-	}
-	for _, t := range WallTypes() {
-		world.RegisterItem(Wall{Type: t})
+	for _, t := range WallBlocks() {
+		world.RegisterItem(Wall{Block: t})
 	}
 }
 
