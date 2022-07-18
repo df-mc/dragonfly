@@ -27,6 +27,9 @@ type (
 		// KnockBackResistance is a number from 0-1 that decides the amount of knock back force that is resisted
 		// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
 		KnockBackResistance() float64
+		// EnchantmentValue is the enchantment value of the armour used when selecting pseudo-random enchantments for
+		// enchanting tables. When this value is high, the enchantments that are selected are more likely to be good.
+		EnchantmentValue() int
 		// Name is the name of the tier.
 		Name() string
 	}
@@ -61,6 +64,7 @@ type ArmourTierLeather struct {
 func (ArmourTierLeather) BaseDurability() float64      { return 55 }
 func (ArmourTierLeather) Toughness() float64           { return 0 }
 func (ArmourTierLeather) KnockBackResistance() float64 { return 0 }
+func (ArmourTierLeather) EnchantmentValue() int        { return 15 }
 func (ArmourTierLeather) Name() string                 { return "leather" }
 
 // ArmourTierGold is the ArmourTier of gold armour.
@@ -69,6 +73,7 @@ type ArmourTierGold struct{}
 func (ArmourTierGold) BaseDurability() float64      { return 77 }
 func (ArmourTierGold) Toughness() float64           { return 0 }
 func (ArmourTierGold) KnockBackResistance() float64 { return 0 }
+func (ArmourTierGold) EnchantmentValue() int        { return 25 }
 func (ArmourTierGold) Name() string                 { return "golden" }
 
 // ArmourTierChain is the ArmourTier of chain armour.
@@ -77,6 +82,7 @@ type ArmourTierChain struct{}
 func (ArmourTierChain) BaseDurability() float64      { return 166 }
 func (ArmourTierChain) Toughness() float64           { return 0 }
 func (ArmourTierChain) KnockBackResistance() float64 { return 0 }
+func (ArmourTierChain) EnchantmentValue() int        { return 12 }
 func (ArmourTierChain) Name() string                 { return "chainmail" }
 
 // ArmourTierIron is the ArmourTier of iron armour.
@@ -85,6 +91,7 @@ type ArmourTierIron struct{}
 func (ArmourTierIron) BaseDurability() float64      { return 165 }
 func (ArmourTierIron) Toughness() float64           { return 0 }
 func (ArmourTierIron) KnockBackResistance() float64 { return 0 }
+func (ArmourTierIron) EnchantmentValue() int        { return 9 }
 func (ArmourTierIron) Name() string                 { return "iron" }
 
 // ArmourTierDiamond is the ArmourTier of diamond armour.
@@ -93,6 +100,7 @@ type ArmourTierDiamond struct{}
 func (ArmourTierDiamond) BaseDurability() float64      { return 363 }
 func (ArmourTierDiamond) Toughness() float64           { return 2 }
 func (ArmourTierDiamond) KnockBackResistance() float64 { return 0 }
+func (ArmourTierDiamond) EnchantmentValue() int        { return 10 }
 func (ArmourTierDiamond) Name() string                 { return "diamond" }
 
 // ArmourTierNetherite is the ArmourTier of netherite armour.
@@ -101,6 +109,7 @@ type ArmourTierNetherite struct{}
 func (ArmourTierNetherite) BaseDurability() float64      { return 408 }
 func (ArmourTierNetherite) Toughness() float64           { return 3 }
 func (ArmourTierNetherite) KnockBackResistance() float64 { return 0.1 }
+func (ArmourTierNetherite) EnchantmentValue() int        { return 15 }
 func (ArmourTierNetherite) Name() string                 { return "netherite" }
 
 // ArmourTiers returns a list of all armour tiers.

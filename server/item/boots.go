@@ -31,6 +31,17 @@ func (b Boots) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// SmeltInfo ...
+func (b Boots) SmeltInfo() SmeltInfo {
+	switch b.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
 // RepairableBy ...
 func (b Boots) RepairableBy(i Stack) bool {
 	return armourTierRepairable(b.Tier)(i)
@@ -57,6 +68,11 @@ func (b Boots) Toughness() float64 {
 // KnockBackResistance ...
 func (b Boots) KnockBackResistance() float64 {
 	return b.Tier.KnockBackResistance()
+}
+
+// EnchantmentValue ...
+func (b Boots) EnchantmentValue() int {
+	return b.Tier.EnchantmentValue()
 }
 
 // Boots ...

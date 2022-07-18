@@ -18,6 +18,11 @@ func (AquaAffinity) MaxLevel() int {
 	return 1
 }
 
+// Cost ...
+func (AquaAffinity) Cost(int) (int, int) {
+	return 1, 41
+}
+
 // Rarity ...
 func (AquaAffinity) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Bucket is a tool used to carry water, lava, milk and fish.
@@ -24,6 +25,14 @@ func (b Bucket) MaxCount() int {
 // Empty returns true if the bucket is empty.
 func (b Bucket) Empty() bool {
 	return b.Content == nil
+}
+
+// FuelInfo ...
+func (b Bucket) FuelInfo() FuelInfo {
+	if b.Content.LiquidType() == "lava" {
+		return newFuelInfo(time.Second * 1000).WithResidue(NewStack(Bucket{}, 1))
+	}
+	return FuelInfo{}
 }
 
 // UseOnBlock handles the bucket filling and emptying logic.

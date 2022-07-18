@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // CraftingTable is a utility block that allows the player to craft a variety of blocks and items.
@@ -25,6 +26,11 @@ func (c CraftingTable) EncodeBlock() (name string, properties map[string]interfa
 // BreakInfo ...
 func (c CraftingTable) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
+}
+
+// FuelInfo ...
+func (CraftingTable) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // Activate ...
