@@ -44,3 +44,16 @@ func (w wallConnectionType) String() string {
 	}
 	panic("unknown wall connection type")
 }
+
+// Height returns the height of the connection for the block model.
+func (w wallConnectionType) Height() float64 {
+	switch w {
+	case 0:
+		return 0
+	case 1:
+		return 0.75
+	case 2:
+		return 1
+	}
+	panic("unknown wall connection type")
+}

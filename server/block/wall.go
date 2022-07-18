@@ -54,10 +54,10 @@ func (w Wall) EncodeBlock() (string, map[string]any) {
 // Model ...
 func (w Wall) Model() world.BlockModel {
 	return model.Wall{
-		NorthConnection: w.NorthConnection.String(),
-		EastConnection:  w.EastConnection.String(),
-		SouthConnection: w.SouthConnection.String(),
-		WestConnection:  w.WestConnection.String(),
+		NorthConnection: w.NorthConnection.Height(),
+		EastConnection:  w.EastConnection.Height(),
+		SouthConnection: w.SouthConnection.Height(),
+		WestConnection:  w.WestConnection.Height(),
 		Post:            w.Post,
 	}
 }
@@ -154,13 +154,13 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 					var tall bool
 					switch face {
 					case cube.FaceNorth:
-						tall = xOverlap && bb.Min().Z() < 0.25
-					case cube.FaceEast:
-						tall = bb.Max().X() > 0.75 && zOverlap
-					case cube.FaceSouth:
 						tall = xOverlap && bb.Max().Z() > 0.75
-					case cube.FaceWest:
+					case cube.FaceEast:
 						tall = bb.Min().X() < 0.25 && zOverlap
+					case cube.FaceSouth:
+						tall = xOverlap && bb.Min().Z() < 0.25
+					case cube.FaceWest:
+						tall = bb.Max().X() > 0.75 && zOverlap
 					}
 					if tall {
 						connectionType = TallWallConnection()
