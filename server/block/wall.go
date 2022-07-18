@@ -143,6 +143,8 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 		side := wo.Block(sidePos)
 		var connectionType WallConnectionType
 		if side.Model().FaceSolid(sidePos, face.Opposite(), wo) {
+			// If the wall is connected to the side, it has the possibility of having a tall connection. This is
+			//calculated by checking for any overlapping blocks in the area of the connection.
 			connectionType = ShortWallConnection()
 			boxes := above.Model().BBox(abovePos, wo)
 			for _, bb := range boxes {
@@ -194,6 +196,7 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 		post = true
 	}
 	if !post {
+		// If a wall has two connections that are in different axis then it becomes a post regardless of the above block.
 		post = connections < 2
 		if connections >= 2 {
 			if w.NorthConnection != NoWallConnection() && w.SouthConnection != NoWallConnection() {
