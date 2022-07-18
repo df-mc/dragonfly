@@ -3,11 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -32,25 +28,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(func(p *player.Player) {
-		p.SetGameMode(world.GameModeSurvival)
-		p.Handle(h{p: p})
-	}) {
+	for srv.Accept(nil) {
 	}
-}
-
-type h struct {
-	player.NopHandler
-
-	p *player.Player
-}
-
-func (h h) HandleChat(*event.Context, *string) {
-	block.ExplosionConfig{
-		World:  h.p.World(),
-		Pos:    h.p.Position(),
-		Radius: 4,
-	}.Do()
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
