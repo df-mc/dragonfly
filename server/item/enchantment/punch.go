@@ -31,7 +31,7 @@ func (Punch) Rarity() item.EnchantmentRarity {
 
 // PunchMultiplier returns the punch multiplier for the level and horizontal speed.
 func (Punch) PunchMultiplier(level int, horizontalSpeed float64) float64 {
-	return float64(level) * 0.6 / horizontalSpeed
+	return float64(level) * 1.25 / horizontalSpeed
 }
 
 // CompatibleWithEnchantment ...

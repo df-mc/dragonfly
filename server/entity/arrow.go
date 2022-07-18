@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -12,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"time"
 )
 
@@ -21,6 +21,8 @@ type Arrow struct {
 	transform
 	yaw, pitch float64
 	baseDamage float64
+
+	initialVelocity mgl64.Vec3
 
 	age, ageCollided int
 	close, critical  bool
@@ -63,9 +65,9 @@ func NewTippedArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner 
 		yaw:                 yaw,
 		pitch:               pitch,
 		baseDamage:          damage,
-		obtainArrowOnPickup: true,
 		owner:               owner,
 		tip:                 tip,
+		obtainArrowOnPickup: true,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
@@ -238,26 +240,21 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
-				dmg, force, height := a.damage(), 0.45, 0.3608
-				if a.punchLevel > 0 {
-					horizontalVel := pastVel
-					horizontalVel[1] = 0
-
-					if speed := horizontalVel.Len(); speed > 0 {
-						force += (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
-						fmt.Println(a.punchLevel, speed)
-						fmt.Println(force)
-					}
-					height += 0.1
-				}
-
-				living.Hurt(dmg, damage.SourceProjectile{Projectile: a, Owner: a.owner})
-				living.KnockBack(m.pos, force, height)
+				living.Hurt(a.damage(), damage.SourceProjectile{Projectile: a, Owner: a.owner})
+				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)
 				}
 				if flammable, ok := living.(Flammable); ok && a.OnFireDuration() > 0 {
 					flammable.SetOnFire(time.Second * 5)
+				}
+				if a.punchLevel > 0 {
+					horizontalVel := pastVel
+					horizontalVel[1] = 0
+					if speed := horizontalVel.Len(); speed > 0 {
+						multiplier := (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
+						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
+					}
 				}
 			}
 			a.close = true
@@ -279,6 +276,7 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity {
 	arrow := NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, tip)
 	arrow.vel = vel
+	arrow.initialVelocity = vel
 	arrow.punchLevel = punchLevel
 	arrow.disallowPickup = disallowPickup
 	arrow.obtainArrowOnPickup = obtainArrowOnPickup
@@ -354,10 +352,10 @@ func (a *Arrow) checkNearby(w *world.World) {
 	}
 }
 
-// damage returns the full damage the arrow should deal. In Bedrock, this is the base damage multiplied by three, and
-// multiplied again by one and a half if the arrow is critical.
+// damage returns the full damage the arrow should deal. In Bedrock, this is the initial velocity length multiplied by
+// base damage and then multiplied by 0.6. If the arrow is critical, it is also multiplied by 1.5.
 func (a *Arrow) damage() float64 {
-	base := a.BaseDamage() * 3
+	base := math.Ceil(a.initialVelocity.Len() * a.BaseDamage() * 0.6)
 	if a.Critical() {
 		return base * 1.5
 	}
