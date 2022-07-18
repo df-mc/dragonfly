@@ -9,6 +9,13 @@ import (
 	"math/rand"
 )
 
+const (
+	// anvilInputSlot is the slot index of the input item in the anvil.
+	anvilInputSlot = 0x1
+	// anvilMaterialSlot is the slot index of the material in the anvil.
+	anvilMaterialSlot = 0x2
+)
+
 // handleCraftRecipeOptional handles the CraftRecipeOptional request action, sent when taking a result from an anvil
 // menu. It also contains information such as the new name of the item and the multi-recipe network ID.
 func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) (err error) {
@@ -29,14 +36,14 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
-		Slot:        0x1,
+		Slot:        anvilInputSlot,
 	}, s)
 	if input.Empty() {
 		return fmt.Errorf("no item in input input slot")
 	}
 	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilMaterial,
-		Slot:        0x2,
+		Slot:        anvilMaterialSlot,
 	}, s)
 	result := input
 
@@ -153,17 +160,17 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerAnvilInput,
-		Slot:        0x1,
+		Slot:        anvilInputSlot,
 	}, item.Stack{}, s)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			ContainerID: containerAnvilMaterial,
-			Slot:        0x2,
+			Slot:        anvilMaterialSlot,
 		}, material.Grow(-repairCount), s)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			ContainerID: containerAnvilMaterial,
-			Slot:        0x2,
+			Slot:        anvilMaterialSlot,
 		}, item.Stack{}, s)
 	}
 	h.setItemInSlot(protocol.StackRequestSlotInfo{

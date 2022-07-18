@@ -21,6 +21,11 @@ func (c CopperOre) BreakInfo() BreakInfo {
 	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.RawCopper{}, rand.Intn(4)+2), item.NewStack(c, 1)))
 }
 
+// SmeltInfo ...
+func (CopperOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.CopperIngot{}, 1), 0.7)
+}
+
 // EncodeItem ...
 func (c CopperOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Type.Prefix() + "copper_ore", 0

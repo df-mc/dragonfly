@@ -16,6 +16,11 @@ func (c CoalOre) BreakInfo() BreakInfo {
 	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.Coal{}, c)).withXPDropRange(0, 2)
 }
 
+// SmeltInfo ...
+func (CoalOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.Coal{}, 1), 0.1)
+}
+
 // EncodeItem ...
 func (c CoalOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Type.Prefix() + "coal_ore", 0

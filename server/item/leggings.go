@@ -50,6 +50,11 @@ func (l Leggings) KnockBackResistance() float64 {
 	return l.Tier.KnockBackResistance()
 }
 
+// EnchantmentValue ...
+func (l Leggings) EnchantmentValue() int {
+	return l.Tier.EnchantmentValue()
+}
+
 // Leggings ...
 func (l Leggings) Leggings() bool {
 	return true
@@ -66,6 +71,17 @@ func (l Leggings) DurabilityInfo() DurabilityInfo {
 // RepairableBy ...
 func (l Leggings) RepairableBy(i Stack) bool {
 	return armourTierRepairable(l.Tier)(i)
+}
+
+// SmeltInfo ...
+func (l Leggings) SmeltInfo() SmeltInfo {
+	switch l.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
 }
 
 // EncodeItem ...

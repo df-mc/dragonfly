@@ -48,12 +48,28 @@ func (c Chestplate) KnockBackResistance() float64 {
 	return c.Tier.KnockBackResistance()
 }
 
+// EnchantmentValue ...
+func (c Chestplate) EnchantmentValue() int {
+	return c.Tier.EnchantmentValue()
+}
+
 // DurabilityInfo ...
 func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: int(c.Tier.BaseDurability() + c.Tier.BaseDurability()/2.2),
 		BrokenItem:    simpleItem(Stack{}),
 	}
+}
+
+// SmeltInfo ...
+func (c Chestplate) SmeltInfo() SmeltInfo {
+	switch c.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
 }
 
 // RepairableBy ...

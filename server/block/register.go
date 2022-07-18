@@ -38,6 +38,7 @@ func init() {
 	world.RegisterBlock(DriedKelp{})
 	world.RegisterBlock(Dripstone{})
 	world.RegisterBlock(Emerald{})
+	world.RegisterBlock(EnchantingTable{})
 	world.RegisterBlock(EndBricks{})
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(GildedBlackstone{})
@@ -82,6 +83,7 @@ func init() {
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(SmithingTable{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(SoulSand{})
 	world.RegisterBlock(SoulSoil{})
@@ -107,6 +109,7 @@ func init() {
 	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
+	registerAll(allBlastFurnaces())
 	registerAll(allBoneBlock())
 	registerAll(allCactus())
 	registerAll(allCake())
@@ -131,6 +134,7 @@ func init() {
 	registerAll(allFire())
 	registerAll(allFlowers())
 	registerAll(allFroglight())
+	registerAll(allFurnaces())
 	registerAll(allGlazedTerracotta())
 	registerAll(allHayBales())
 	registerAll(allItemFrames())
@@ -158,6 +162,8 @@ func init() {
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
+	registerAll(allSkulls())
+	registerAll(allSmokers())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
 	registerAll(allStainedTerracotta())
@@ -187,6 +193,7 @@ func init() {
 	world.RegisterItem(Beacon{})
 	world.RegisterItem(Bedrock{})
 	world.RegisterItem(BeetrootSeeds{})
+	world.RegisterItem(BlastFurnace{})
 	world.RegisterItem(BlueIce{})
 	world.RegisterItem(Bone{})
 	world.RegisterItem(Bookshelf{})
@@ -217,11 +224,13 @@ func init() {
 	world.RegisterItem(DriedKelp{})
 	world.RegisterItem(Dripstone{})
 	world.RegisterItem(Emerald{})
+	world.RegisterItem(EnchantingTable{})
 	world.RegisterItem(EndBrickStairs{})
 	world.RegisterItem(EndBricks{})
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
 	world.RegisterItem(Farmland{})
+	world.RegisterItem(Furnace{})
 	world.RegisterItem(GildedBlackstone{})
 	world.RegisterItem(GlassPane{})
 	world.RegisterItem(Glass{})
@@ -284,6 +293,8 @@ func init() {
 	world.RegisterItem(SeaLantern{})
 	world.RegisterItem(SeaPickle{})
 	world.RegisterItem(Shroomlight{})
+	world.RegisterItem(SmithingTable{})
+	world.RegisterItem(Smoker{})
 	world.RegisterItem(Snow{})
 	world.RegisterItem(SoulSand{})
 	world.RegisterItem(SoulSoil{})
@@ -386,6 +397,9 @@ func init() {
 	}
 	for _, t := range FroglightTypes() {
 		world.RegisterItem(Froglight{Type: t})
+	}
+	for _, s := range SkullTypes() {
+		world.RegisterItem(Skull{Type: s})
 	}
 }
 

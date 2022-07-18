@@ -22,6 +22,14 @@ func (s Sponge) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(s))
 }
 
+// SmeltInfo ...
+func (s Sponge) SmeltInfo() item.SmeltInfo {
+	if s.Wet {
+		return newSmeltInfo(item.NewStack(Sponge{}, 1), 0.15)
+	}
+	return item.SmeltInfo{}
+}
+
 // EncodeItem ...
 func (s Sponge) EncodeItem() (name string, meta int16) {
 	if s.Wet {

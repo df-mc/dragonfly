@@ -25,6 +25,11 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// FuelInfo ...
+func (Bow) FuelInfo() FuelInfo {
+	return newFuelInfo(time.Second * 10)
+}
+
 // Release ...
 func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	ticks := duration.Milliseconds() / 50
@@ -73,6 +78,11 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		releaser.PlaySound(sound.BowShoot{})
 		releaser.World().AddEntity(arrow)
 	}
+}
+
+// EnchantmentValue ...
+func (Bow) EnchantmentValue() int {
+	return 1
 }
 
 // Requirements returns the required items to release this item.
