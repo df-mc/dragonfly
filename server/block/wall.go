@@ -8,6 +8,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// Wall is a block similar to fences that prevents players from jumping over and is thinner than the usual block. It is
+// available for many blocks and all types connect together as if they were the same type.
 type Wall struct {
 	// Block is the block to use for the type of wall.
 	Block world.Block
