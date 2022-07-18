@@ -192,8 +192,6 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 		post = above.Facing == cube.FaceDown
 	case Wall:
 		post = above.Post
-	default:
-		post = true
 	}
 	if !post {
 		// If a wall has two connections that are in different axis then it becomes a post regardless of the above block.
