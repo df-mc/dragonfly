@@ -17,6 +17,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"image/color"
 	"math/rand"
+	"time"
 )
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
@@ -378,6 +379,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
 			Position:  vec64To32(pos),
 		})
+	case particle.Effect:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 33,
+			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -447,6 +454,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.FurnaceCrackle:
+		pk.SoundType = packet.SoundEventFurnaceUse
+	case sound.BlastFurnaceCrackle:
+		pk.SoundType = packet.SoundEventBlastFurnaceUse
+	case sound.SmokerCrackle:
+		pk.SoundType = packet.SoundEventSmokerUse
 	case sound.UseSpyglass:
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
@@ -551,6 +564,33 @@ func (s *Session) PlaySound(t world.Sound) {
 // ViewSound ...
 func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	s.playSound(pos, soundType, false)
+}
+
+// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
+func (s *Session) ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration) {
+	if prevCookTime != cookTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataFurnaceTickCount,
+			Value:    int32(cookTime.Milliseconds() / 50),
+		})
+	}
+
+	if prevRemainingFuelTime != remainingFuelTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataFurnaceLitTime,
+			Value:    int32(remainingFuelTime.Milliseconds() / 50),
+		})
+	}
+
+	if prevMaxFuelTime != maxFuelTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataFurnaceLitDuration,
+			Value:    int32(maxFuelTime.Milliseconds() / 50),
+		})
+	}
 }
 
 // ViewBlockUpdate ...
@@ -671,10 +711,14 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	switch b := b.(type) {
 	case block.CraftingTable:
 		containerType = 1
+	case block.EnchantingTable:
+		containerType = 3
 	case block.Anvil:
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.SmithingTable:
+		containerType = 33
 	case block.EnderChest:
 		b.AddViewer(w, pos)
 		inv := s.c.EnderChestInventory()
@@ -690,6 +734,12 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
+const (
+	containerTypeFurnace      = 2
+	containerTypeBlastFurnace = 27
+	containerTypeSmoker       = 28
+)
+
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	b.AddViewer(s, s.c.World(), pos)
@@ -701,6 +751,12 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
+	case block.Furnace:
+		containerType = containerTypeFurnace
+	case block.BlastFurnace:
+		containerType = containerTypeBlastFurnace
+	case block.Smoker:
+		containerType = containerTypeSmoker
 	}
 
 	s.writePacket(&packet.ContainerOpen{

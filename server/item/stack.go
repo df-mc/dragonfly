@@ -223,6 +223,9 @@ func (s Stack) Value(key string) (val any, ok bool) {
 // WithEnchantments returns the current stack with the passed enchantments. If an enchantment is not compatible
 // with the item stack, it will not be applied.
 func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
+	if _, ok := s.item.(Book); ok {
+		s.item = EnchantedBook{}
+	}
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
 		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {

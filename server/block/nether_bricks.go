@@ -1,6 +1,9 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
+)
 
 // NetherBricks are blocks used to form nether fortresses in the Nether.
 // Red Nether bricks, Cracked Nether bricks and Chiseled Nether bricks are decorative variants that do not naturally generate.
@@ -15,6 +18,14 @@ type NetherBricks struct {
 // BreakInfo ...
 func (n NetherBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(30)
+}
+
+// SmeltInfo ...
+func (n NetherBricks) SmeltInfo() item.SmeltInfo {
+	if n.Type == NormalNetherBricks() {
+		return newSmeltInfo(item.NewStack(NetherBricks{Type: CrackedNetherBricks()}, 1), 0.1)
+	}
+	return item.SmeltInfo{}
 }
 
 // EncodeItem ...

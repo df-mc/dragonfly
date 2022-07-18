@@ -18,6 +18,12 @@ func (Efficiency) MaxLevel() int {
 	return 5
 }
 
+// Cost ...
+func (Efficiency) Cost(level int) (int, int) {
+	min := 1 + 10*(level-1)
+	return min, min + 50
+}
+
 // Rarity ...
 func (Efficiency) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon

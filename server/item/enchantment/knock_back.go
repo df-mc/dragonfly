@@ -18,6 +18,12 @@ func (KnockBack) MaxLevel() int {
 	return 2
 }
 
+// Cost ...
+func (KnockBack) Cost(level int) (int, int) {
+	min := 5 + (level-1)*20
+	return min, min + 50
+}
+
 // Rarity ...
 func (KnockBack) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon

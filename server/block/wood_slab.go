@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodSlab is a half block that allows entities to walk up blocks without jumping.
@@ -81,6 +82,11 @@ func (s WoodSlab) BreakInfo() BreakInfo {
 		}
 		return []item.Stack{item.NewStack(s, 1)}
 	}).withBlastResistance(15)
+}
+
+// FuelInfo ...
+func (WoodSlab) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // LightDiffusionLevel returns 0 if the slab is a half slab, or 15 if it is double.

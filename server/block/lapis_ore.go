@@ -25,6 +25,11 @@ func (l LapisOre) BreakInfo() BreakInfo {
 	return i
 }
 
+// SmeltInfo ...
+func (LapisOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.LapisLazuli{}, 1), 0.2)
+}
+
 // EncodeItem ...
 func (l LapisOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Type.Prefix() + "lapis_ore", 0

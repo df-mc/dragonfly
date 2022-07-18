@@ -19,6 +19,12 @@ func (ProjectileProtection) MaxLevel() int {
 	return 4
 }
 
+// Cost ...
+func (ProjectileProtection) Cost(level int) (int, int) {
+	min := 3 + (level-1)*6
+	return min, min + 6
+}
+
 // Rarity ...
 func (ProjectileProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon

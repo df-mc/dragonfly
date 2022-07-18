@@ -52,6 +52,9 @@ type Controllable interface {
 	ExperienceLevel() int
 	SetExperienceLevel(level int)
 
+	EnchantmentSeed() int64
+	ResetEnchantmentSeed()
+
 	Respawn()
 	Dead() bool
 

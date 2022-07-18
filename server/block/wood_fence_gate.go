@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodFenceGate is a block that can be used as an openable 1x1 barrier.
@@ -36,6 +37,11 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 		return newFlammabilityInfo(0, 0, false)
 	}
 	return newFlammabilityInfo(5, 20, true)
+}
+
+// FuelInfo ...
+func (WoodFenceGate) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // UseOnBlock ...
