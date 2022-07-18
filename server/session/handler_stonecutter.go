@@ -16,7 +16,7 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
 	if _, shapeless := craft.(recipe.Shapeless); !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+		return fmt.Errorf("recipe with network id %v is not a shapeless recipe", a.RecipeNetworkID)
 	}
 	if craft.Block() != "stonecutter" {
 		return fmt.Errorf("recipe with network id %v is not a stonecutter recipe", a.RecipeNetworkID)
