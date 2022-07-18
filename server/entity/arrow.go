@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -11,7 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 	"time"
 )
 
@@ -238,13 +238,15 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
-				dmg, force, height := a.damage(pastVel), 0.45, 0.3608
+				dmg, force, height := a.damage(), 0.45, 0.3608
 				if a.punchLevel > 0 {
 					horizontalVel := pastVel
 					horizontalVel[1] = 0
 
 					if speed := horizontalVel.Len(); speed > 0 {
-						force *= (enchantment.Punch{}).PunchMultiplier(a.punchLevel, horizontalVel.Len())
+						force += (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
+						fmt.Println(a.punchLevel, speed)
+						fmt.Println(force)
 					}
 					height += 0.1
 				}
@@ -352,9 +354,10 @@ func (a *Arrow) checkNearby(w *world.World) {
 	}
 }
 
-// damage returns the full damage the arrow should deal, accounting for the velocity.
-func (a *Arrow) damage(vel mgl64.Vec3) float64 {
-	base := math.Ceil(vel.Len() * a.BaseDamage() * 0.97)
+// damage returns the full damage the arrow should deal. In Bedrock, this is the base damage multiplied by three, and
+// multiplied again by one and a half if the arrow is critical.
+func (a *Arrow) damage() float64 {
+	base := a.BaseDamage() * 3
 	if a.Critical() {
 		return base * 1.5
 	}
