@@ -18,6 +18,12 @@ func (Sharpness) MaxLevel() int {
 	return 5
 }
 
+// Cost ...
+func (Sharpness) Cost(level int) (int, int) {
+	min := 1 + (level-1)*11
+	return min, min + 20
+}
+
 // Rarity ...
 func (Sharpness) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon

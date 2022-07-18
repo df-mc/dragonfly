@@ -52,9 +52,14 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
+
 	pos := s.openedPos.Load()
-	if container, ok := s.c.World().Block(pos).(block.Container); ok {
-		container.RemoveViewer(s, s.c.World(), pos)
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
+		container.RemoveViewer(s, w, pos)
+	} else if enderChest, ok := b.(block.EnderChest); ok {
+		enderChest.RemoveViewer(w, pos)
 	}
 }
 
@@ -93,20 +98,35 @@ const (
 )
 
 const (
-	containerAnvilInput    = 0
-	containerAnvilMaterial = 1
-	containerArmour        = 6
-	containerChest         = 7
-	containerBeacon        = 8
-	containerFullInventory = 12
-	containerCraftingGrid  = 13
-	containerHotbar        = 27
-	containerInventory     = 28
-	containerOffHand       = 33
-	containerBarrel        = 57
-	containerCursor        = 58
-	containerOutput        = 59
+	containerAnvilInput           = 0
+	containerAnvilMaterial        = 1
+	containerSmithingInput        = 3
+	containerSmithingMaterial     = 4
+	containerArmour               = 6
+	containerChest                = 7
+	containerBeacon               = 8
+	containerFullInventory        = 12
+	containerCraftingGrid         = 13
+	containerEnchantingTableInput = 21
+	containerEnchantingTableLapis = 22
+	containerFurnaceFuel          = 23
+	containerFurnaceResult        = 25
+	containerFurnaceInput         = 24
+	containerHotbar               = 27
+	containerInventory            = 28
+	containerOffHand              = 33
+	containerBlastFurnaceInput    = 44
+	containerSmokerInput          = 45
+	containerBarrel               = 57
+	containerCursor               = 58
+	containerOutput               = 59
 )
+
+// smelter is an interface representing a block used to smelt items.
+type smelter interface {
+	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
+	ResetExperience() int
+}
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
@@ -124,32 +144,50 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		// Armour inventory.
 		return s.armour.Inventory(), true
 	case containerChest:
-		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load(), true
+			} else if _, enderChest := b.(block.EnderChest); enderChest {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, barrel := b.(block.Barrel); barrel {
+			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, beacon := b.(block.Beacon); beacon {
+			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
 	case containerAnvilInput, containerAnvilMaterial:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, anvil := b.(block.Anvil); anvil {
+			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
+			}
+		}
+	case containerSmithingInput, containerSmithingMaterial:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, smithing := b.(block.SmithingTable); smithing {
+				return s.ui, true
+			}
+		}
+	case containerEnchantingTableInput, containerEnchantingTableLapis:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, enchanting := b.(block.EnchantingTable); enchanting {
+				return s.ui, true
+			}
+		}
+	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
+				return s.openedWindow.Load(), true
 			}
 		}
 	}
@@ -446,7 +484,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
+func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -481,6 +519,16 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
+	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, item)
+			}
+		}
+	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -496,7 +544,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	return s.inv, s.offHand, s.armour, s.heldSlot
+	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
 }
 
 // SetHeldSlot sets the currently held hotbar slot.

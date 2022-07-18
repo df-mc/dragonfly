@@ -18,3 +18,11 @@ type Splash struct {
 	// Colour is the colour that should be splashed.
 	Colour color.RGBA
 }
+
+// Effect is a particle that shows up around an entity when it has effects on.
+type Effect struct {
+	particle
+
+	// Colour is the colour of the particle.
+	Colour color.RGBA
+}

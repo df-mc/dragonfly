@@ -18,6 +18,11 @@ func (SilkTouch) MaxLevel() int {
 	return 1
 }
 
+// Cost ...
+func (SilkTouch) Cost(int) (int, int) {
+	return 15, 65
+}
+
 // Rarity ...
 func (SilkTouch) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare

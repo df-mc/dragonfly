@@ -20,6 +20,11 @@ func (g GoldOre) BreakInfo() BreakInfo {
 	}, pickaxeEffective, silkTouchOneOf(item.RawGold{}, g))
 }
 
+// SmeltInfo ...
+func (GoldOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.GoldIngot{}, 1), 1)
+}
+
 // EncodeItem ...
 func (g GoldOre) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + g.Type.Prefix() + "gold_ore", 0

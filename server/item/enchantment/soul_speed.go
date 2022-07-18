@@ -19,9 +19,20 @@ func (SoulSpeed) MaxLevel() int {
 	return 3
 }
 
+// Cost ...
+func (SoulSpeed) Cost(level int) (int, int) {
+	min := level * 10
+	return min, min + 15
+}
+
 // Rarity ...
 func (SoulSpeed) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
+}
+
+// Treasure ...
+func (SoulSpeed) Treasure() bool {
+	return true
 }
 
 // CompatibleWithEnchantment ...

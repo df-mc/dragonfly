@@ -26,6 +26,11 @@ func (t StainedTerracotta) BreakInfo() BreakInfo {
 	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
 }
 
+// SmeltInfo ...
+func (t StainedTerracotta) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(GlazedTerracotta{Colour: t.Colour}, 1), 0.1)
+}
+
 // EncodeItem ...
 func (t StainedTerracotta) EncodeItem() (name string, meta int16) {
 	return "minecraft:stained_hardened_clay", int16(t.Colour.Uint8())

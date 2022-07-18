@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodDoor is a block that can be used as an openable 1x2 barrier.
@@ -34,6 +35,11 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 		return newFlammabilityInfo(0, 0, false)
 	}
 	return newFlammabilityInfo(0, 0, true)
+}
+
+// FuelInfo ...
+func (WoodDoor) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 10)
 }
 
 // Model ...
