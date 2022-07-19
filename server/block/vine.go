@@ -35,6 +35,13 @@ func (v Vines) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, shearsEffective, oneOf(v))
 }
 
+// EntityInside ...
+func (Vines) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+	if fallEntity, ok := e.(fallDistanceEntity); ok {
+		fallEntity.ResetFallDistance()
+	}
+}
+
 // SetAttachment sets an attachment on the given cube.Direction.
 func (v Vines) SetAttachment(direction cube.Direction, attached bool) Vines {
 	switch direction {
