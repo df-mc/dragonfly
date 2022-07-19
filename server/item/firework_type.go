@@ -45,11 +45,11 @@ func (f fireworkShape) Name() string {
 	case 1:
 		return "Huge Sphere"
 	case 2:
-		return "FireworkShapeStar"
+		return "Star"
 	case 3:
 		return "Creeper Head"
 	case 4:
-		return "FireworkShapeBurst"
+		return "Burst"
 	}
 	panic("unknown firework type")
 }
