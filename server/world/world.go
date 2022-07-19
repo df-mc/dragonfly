@@ -254,6 +254,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 				c.SetBlock(x, y, z, 0, li)
 				c.SetBlock(x, y, z, 1, airRID)
 				secondLayer = air()
+				b, _ = BlockByRuntimeID(li)
 			}
 		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
 			l, _ := BlockByRuntimeID(before)
@@ -262,13 +263,16 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 				secondLayer = l
 			}
 		}
+		c.Unlock()
+
 		if secondLayer != nil {
 			for _, viewer := range viewers {
 				viewer.ViewBlockUpdate(pos, secondLayer, 1)
 			}
 		}
+	} else {
+		c.Unlock()
 	}
-	c.Unlock()
 
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)
