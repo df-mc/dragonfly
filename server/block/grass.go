@@ -79,11 +79,13 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BoneMeal ...
 func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
-	for c := 0; c < 14; c++ {
-		x := randWithinRange(pos.X()-3, pos.X()+3)
-		z := randWithinRange(pos.Z()-3, pos.Z()+3)
-		if (w.Block(cube.Pos{x, pos.Y() + 1, z}) == Air{}) && (w.Block(cube.Pos{x, pos.Y(), z}) == Grass{}) {
-			w.SetBlock(cube.Pos{x, pos.Y() + 1, z}, plantSelection[randWithinRange(0, len(plantSelection)-1)], nil)
+	for i := 0; i < 14; i++ {
+		c := cube.Pos{rand.Intn(6) - 3 + pos[0], pos[1], rand.Intn(6) - 3 + pos[2]}
+		above := c.Side(cube.FaceUp)
+		_, air := w.Block(above).(Air)
+		_, grass := w.Block(c).(Grass)
+		if air && grass {
+			w.SetBlock(above, plantSelection[rand.Intn(len(plantSelection))], nil)
 		}
 	}
 
@@ -113,9 +115,4 @@ func (g Grass) Till() (world.Block, bool) {
 // Shovel ...
 func (g Grass) Shovel() (world.Block, bool) {
 	return DirtPath{}, true
-}
-
-// randWithinRange returns a random integer within a range.
-func randWithinRange(min, max int) int {
-	return rand.Intn(max-min) + min
 }
