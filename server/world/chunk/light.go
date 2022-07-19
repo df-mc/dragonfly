@@ -35,7 +35,7 @@ func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 		// need a node above this block regardless of the neighbours.
 		pos := cube.Pos{x, height, z}
 		if level := a.highest(pos, FilteringBlocks); level != 15 && level != 0 {
-			queue.PushBack(node(pos.Add(cube.Pos{0, 1}), 15, SkyLight))
+			queue.PushBack(node(pos.Side(cube.FaceUp), 15, SkyLight))
 			pos[1]++
 		}
 		for y := pos[1]; y < highestY; y++ {
