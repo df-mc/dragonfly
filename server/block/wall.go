@@ -74,8 +74,9 @@ func (w Wall) BreakInfo() BreakInfo {
 
 // NeighbourUpdateTick ...
 func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
-	w, updated := w.calculateState(wo, pos)
-	if updated {
+	w, connectionsUpdated := w.calculateConnections(wo, pos)
+	w, postUpdated := w.calculatePost(wo, pos)
+	if connectionsUpdated || postUpdated {
 		wo.SetBlock(pos, w, nil)
 	}
 }
@@ -86,7 +87,8 @@ func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.W
 	if !used {
 		return
 	}
-	w, _ = w.calculateState(wo, pos)
+	w, _ = w.calculateConnections(wo, pos)
+	w, _ = w.calculatePost(wo, pos)
 	place(wo, pos, w, user, ctx)
 	return placed(ctx)
 }
@@ -132,15 +134,16 @@ func (w Wall) WithConnectionType(direction cube.Direction, connection WallConnec
 	return w
 }
 
-// calculateState returns the wall with the correct state based on walls around it. If any of the connections have been
-// updated then the wall and true are returned.
-func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
+// calculateConnections calculates the correct connections for the wall at a given position in a world. The updated wall
+// is returned and a bool to determine if any changes were made.
+func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
 	var updated bool
 	abovePos := pos.Add(cube.Pos{0, 1, 0})
 	above := wo.Block(abovePos)
 	for _, face := range cube.HorizontalFaces() {
 		sidePos := pos.Side(face)
 		side := wo.Block(sidePos)
+		// A wall can only connect to a block if the side is solid, with the only exception being the sides of a fence gate.
 		connected := side.Model().FaceSolid(sidePos, face.Opposite(), wo)
 		if !connected {
 			if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
@@ -181,6 +184,15 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 			w = w.WithConnectionType(face.Direction(), connectionType)
 		}
 	}
+	return w, updated
+}
+
+// calculatePost calculates the correct post bit for the wall at a given position in a world. The updated wall is
+// returned and a bool to determine if any changes were made.
+func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
+	var updated bool
+	abovePos := pos.Add(cube.Pos{0, 1, 0})
+	above := wo.Block(abovePos)
 	var connections int
 	for _, face := range cube.HorizontalFaces() {
 		if w.ConnectionType(face.Direction()) != NoWallConnection() {
@@ -191,12 +203,19 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 	switch above := above.(type) {
 	case Air:
 	case Lantern:
+		// Lanterns only make a wall become a post when placed on the wall and not hanging from above.
 		post = !above.Hanging
 	case Sign:
+		// Signs only make a wall become a post when placed on the wall and not placed on the side of a block.
 		post = !above.Attach.hanging
 	case Torch:
+		// Torches only make a wall become a post when placed on the wall and not placed on the side of a block.
 		post = above.Facing == cube.FaceDown
+	case WoodTrapdoor:
+		// Trap doors only make a wall become a post when they are opened and not closed.
+		post = above.Open
 	case Wall:
+		// A wall only make a wall become a post if it is a post itself.
 		post = above.Post
 	}
 	if !post {
