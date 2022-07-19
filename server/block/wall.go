@@ -143,7 +143,8 @@ func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
 	for _, face := range cube.HorizontalFaces() {
 		sidePos := pos.Side(face)
 		side := wo.Block(sidePos)
-		// A wall can only connect to a block if the side is solid, with the only exception being the sides of a fence gate.
+		// A wall can only connect to a block if the side is solid, with the only exception being thin blocks (such as
+		// glass panes and iron bars) as well as the sides of fence gates.
 		connected := side.Model().FaceSolid(sidePos, face.Opposite(), wo)
 		if !connected {
 			if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
