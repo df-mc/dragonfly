@@ -141,8 +141,14 @@ func (w Wall) calculateState(wo *world.World, pos cube.Pos) (Wall, bool) {
 	for _, face := range cube.HorizontalFaces() {
 		sidePos := pos.Side(face)
 		side := wo.Block(sidePos)
+		connected := side.Model().FaceSolid(sidePos, face.Opposite(), wo)
+		if !connected {
+			if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
+				connected = gate.Facing.Face().Axis() != face.Axis()
+			}
+		}
 		var connectionType WallConnectionType
-		if side.Model().FaceSolid(sidePos, face.Opposite(), wo) {
+		if connected {
 			// If the wall is connected to the side, it has the possibility of having a tall connection. This is
 			//calculated by checking for any overlapping blocks in the area of the connection.
 			connectionType = ShortWallConnection()
