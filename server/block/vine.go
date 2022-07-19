@@ -11,6 +11,7 @@ import (
 
 // Vines are climbable non-solid vegetation blocks that grow on walls.
 type Vines struct {
+	replaceable
 	transparent
 	empty
 
@@ -218,6 +219,7 @@ func (v Vines) acceptableNeighbour(w *world.World, pos cube.Pos, face cube.Face)
 
 // canSpreadTo returns true if the vines can spread to the given position.
 func (Vines) canSpreadTo(b world.Block) bool {
+	// TODO: Account for pistons, cauldrons, and shulker boxes.
 	switch b.(type) {
 	case Glass, StainedGlass:
 		return false
@@ -225,7 +227,6 @@ func (Vines) canSpreadTo(b world.Block) bool {
 		return false
 	case WoodTrapdoor:
 		return false
-		// TODO: Account for pistons, cauldrons, and shulker boxes.
 	}
 
 	_, ok := b.Model().(model.Solid)
