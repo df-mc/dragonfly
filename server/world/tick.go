@@ -154,6 +154,7 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 			for i, sub := range c.Sub() {
 				if sub.Empty() {
 					// SubChunk is empty, so skip it right away.
+					x, y, z = g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
 					continue
 				}
 				// Generally we would want to make sure the block has its block entities, but provided blocks
@@ -162,11 +163,9 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
 					subY := (i + (t.w.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
-
-					// Only generate new coordinates if a tickable block was actually found. If not, we can just re-use
-					// the coordinates for the next sub chunk.
-					x, y, z = g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
 				}
+
+				x, y, z = g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
 			}
 		}
 		c.Unlock()
