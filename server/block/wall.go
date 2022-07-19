@@ -212,8 +212,19 @@ func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
 		// Torches only make a wall become a post when placed on the wall and not placed on the side of a block.
 		post = above.Facing == cube.FaceDown
 	case WoodTrapdoor:
-		// Trap doors only make a wall become a post when they are opened and not closed.
-		post = above.Open
+		// Trapdoors only make a wall become a post when they are opened and not closed and above a connection.
+		if above.Open {
+			switch above.Facing {
+			case cube.North:
+				post = w.NorthConnection != NoWallConnection()
+			case cube.East:
+				post = w.EastConnection != NoWallConnection()
+			case cube.South:
+				post = w.SouthConnection != NoWallConnection()
+			case cube.West:
+				post = w.WestConnection != NoWallConnection()
+			}
+		}
 	case Wall:
 		// A wall only make a wall become a post if it is a post itself.
 		post = above.Post
