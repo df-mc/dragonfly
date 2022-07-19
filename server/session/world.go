@@ -454,6 +454,14 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.FireworkLaunch:
+		pk.SoundType = packet.SoundEventLaunch
+	case sound.FireworkHugeBlast:
+		pk.SoundType = packet.SoundEventLargeBlast
+	case sound.FireworkBlast:
+		pk.SoundType = packet.SoundEventBlast
+	case sound.FireworkTwinkle:
+		pk.SoundType = packet.SoundEventTwinkle
 	case sound.FurnaceCrackle:
 		pk.SoundType = packet.SoundEventFurnaceUse
 	case sound.BlastFurnaceCrackle:
@@ -655,6 +663,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventShake,
 			EventData:       int32(act.Duration.Milliseconds() / 50),
+		})
+	case entity.FireworkParticleAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventFireworksExplode,
 		})
 	case entity.EatAction:
 		if user, ok := e.(item.User); ok {
