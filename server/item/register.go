@@ -98,6 +98,7 @@ func init() {
 	world.RegisterItem(DriedKelp{})
 	world.RegisterItem(Feather{})
 	world.RegisterItem(FermentedSpiderEye{})
+	world.RegisterItem(Firework{})
 	world.RegisterItem(GhastTear{})
 	world.RegisterItem(Gunpowder{})
 	world.RegisterItem(HeartOfTheSea{})
