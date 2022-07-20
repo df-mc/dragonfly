@@ -104,7 +104,7 @@ func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 
 // allTorches ...
 func allTorches() (torch []world.Block) {
-	for i := cube.Face(0); i < 6; i++ {
+	for i := cube.Face(0); i < 7; i++ {
 		if i == cube.FaceUp {
 			continue
 		}

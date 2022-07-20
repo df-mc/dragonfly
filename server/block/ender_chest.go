@@ -128,12 +128,15 @@ func (EnderChest) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c EnderChest) EncodeBlock() (name string, properties map[string]interface{}) {
+	if c.Facing == cube.UnknownDirection {
+		return "minecraft:ender_chest", map[string]interface{}{"facing_direction": int32(0)}
+	}
 	return "minecraft:ender_chest", map[string]interface{}{"facing_direction": 2 + int32(c.Facing)}
 }
 
 // allEnderChests ...
 func allEnderChests() (chests []world.Block) {
-	for _, direction := range cube.Directions() {
+	for _, direction := range append(cube.Directions(), cube.UnknownDirection) {
 		chests = append(chests, EnderChest{Facing: direction})
 	}
 	return

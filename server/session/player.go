@@ -735,7 +735,7 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
 	items := make([]protocol.ItemStack, 0, len(inputs))
 	for _, i := range inputs {
-		items = append(items, deleteDamage(stackFromItem(i)))
+		items = append(items, stripMetadata(i))
 	}
 	return items
 }
@@ -768,18 +768,36 @@ func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientIte
 func creativeItems() []protocol.CreativeItem {
 	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
 	for index, i := range creative.Items() {
+		st := stripMetadata(i)
+		if b, ok := i.Item().(world.Block); ok {
+			if nbt, ok := b.(world.NBTer); ok {
+				for k := range nbt.EncodeNBT() {
+					delete(st.NBTData, k)
+				}
+			}
+		}
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  deleteDamage(stackFromItem(i)),
+			Item:                  st,
 		})
 	}
 	return it
 }
 
-// deleteDamage strips the damage from a protocol item.
-func deleteDamage(st protocol.ItemStack) protocol.ItemStack {
-	delete(st.NBTData, "Damage")
-	return st
+// stripMetadata strips metadata such as damage and block NBT from an item.Stack and returns a ready-to-use
+// protocol.ItemStack, specifically for creative items and crafting recipes, in order to properly display the item in
+// the creative inventory and recipe book.
+func stripMetadata(in item.Stack) protocol.ItemStack {
+	out := stackFromItem(in)
+	if b, ok := in.Item().(world.Block); ok {
+		if nbt, ok := b.(world.NBTer); ok {
+			for k := range nbt.EncodeNBT() {
+				delete(out.NBTData, k)
+			}
+		}
+	}
+	delete(out.NBTData, "Damage")
+	return out
 }
 
 // protocolToSkin converts protocol.Skin to skin.Skin.

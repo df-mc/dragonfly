@@ -12,6 +12,8 @@ const (
 	West
 	// East represents the east direction, towards the positive X.
 	East
+	// UnknownDirection represents an unknown direction. This should only be used in items.
+	UnknownDirection
 )
 
 // Face converts the direction to a Face and returns it.
@@ -75,6 +77,8 @@ func (d Direction) String() string {
 		return "south"
 	case West:
 		return "west"
+	case UnknownDirection:
+		return "unknown"
 	}
 	panic("invalid direction")
 }

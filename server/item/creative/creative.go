@@ -54,6 +54,7 @@ func init() {
 		if err := dec.Decode(&data); err != nil {
 			break
 		}
+
 		var (
 			it world.Item
 			ok bool
@@ -67,20 +68,13 @@ func init() {
 					continue
 				}
 			}
-		} else {
-			if it, ok = world.ItemByName(data.Name, data.Meta); !ok {
-				// The item wasn't registered, so don't register it as a creative item.
-				continue
-			}
-			if _, resultingMeta := it.EncodeItem(); resultingMeta != data.Meta {
-				// We found an item registered with that ID and a meta of 0, but we only need items with strictly
-				// the same meta here.
-				continue
-			}
+		} else if it, ok = world.ItemByName(data.Name, data.Meta); !ok {
+			// The item wasn't registered, so don't register it as a creative item.
+			continue
 		}
 
-		if n, ok := it.(world.NBTer); ok {
-			if len(data.NBT) > 0 {
+		if len(data.NBT) > 0 {
+			if n, ok := it.(world.NBTer); ok {
 				it = n.DecodeNBT(data.NBT).(world.Item)
 			}
 		}

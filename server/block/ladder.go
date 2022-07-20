@@ -90,6 +90,9 @@ func (l Ladder) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (l Ladder) EncodeBlock() (string, map[string]any) {
+	if l.Facing == cube.UnknownDirection {
+		return "minecraft:ladder", map[string]interface{}{"facing_direction": int32(0)}
+	}
 	return "minecraft:ladder", map[string]any{"facing_direction": int32(l.Facing + 2)}
 }
 
@@ -100,8 +103,8 @@ func (l Ladder) Model() world.BlockModel {
 
 // allLadders ...
 func allLadders() (b []world.Block) {
-	for i := cube.Direction(0); i <= 3; i++ {
-		b = append(b, Ladder{Facing: i})
+	for _, dir := range append(cube.Directions(), cube.UnknownDirection) {
+		b = append(b, Ladder{Facing: dir})
 	}
 	return
 }
