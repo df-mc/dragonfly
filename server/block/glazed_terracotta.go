@@ -30,7 +30,7 @@ func (t GlazedTerracotta) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]any) {
-	if t.Facing == cube.UnknownDirection {
+	if t.Facing == unknownDirection {
 		return "minecraft:" + t.Colour.String() + "_glazed_terracotta", map[string]any{"facing_direction": int32(0)}
 	}
 	return "minecraft:" + t.Colour.String() + "_glazed_terracotta", map[string]any{"facing_direction": int32(2 + t.Facing)}
@@ -50,7 +50,7 @@ func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
 func allGlazedTerracotta() (b []world.Block) {
-	for _, dir := range append(cube.Directions(), cube.UnknownDirection) {
+	for _, dir := range append(cube.Directions(), unknownDirection) {
 		for _, c := range item.Colours() {
 			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
 		}

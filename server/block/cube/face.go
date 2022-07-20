@@ -13,8 +13,6 @@ const (
 	FaceWest
 	// FaceEast represents the east face of the block.
 	FaceEast
-	// FaceUnknown represents an unknown face. This should only be used in items.
-	FaceUnknown
 )
 
 // Face represents the face of a block or entity.
@@ -105,8 +103,6 @@ func (f Face) String() string {
 		return "west"
 	case FaceEast:
 		return "east"
-	case FaceUnknown:
-		return "unknown"
 	}
 	panic("invalid face")
 }

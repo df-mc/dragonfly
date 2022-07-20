@@ -110,7 +110,7 @@ func (s Skull) EncodeNBT() map[string]interface{} {
 // EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	if s.Attach.hanging {
-		if s.Attach.facing == cube.UnknownDirection {
+		if s.Attach.facing == unknownDirection {
 			return "minecraft:skull", map[string]any{"facing_direction": int32(0)}
 		}
 		return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}

@@ -145,7 +145,7 @@ func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 		woodType = ""
 	}
 	if s.Attach.hanging {
-		if s.Attach.facing == cube.UnknownDirection {
+		if s.Attach.facing == unknownDirection {
 			return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(0)}
 		}
 		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}
@@ -183,7 +183,7 @@ func (s Sign) EncodeNBT() map[string]any {
 // allSigns ...
 func allSigns() (signs []world.Block) {
 	for _, w := range WoodTypes() {
-		for _, d := range append(cube.Directions(), cube.UnknownDirection) {
+		for _, d := range append(cube.Directions(), unknownDirection) {
 			signs = append(signs, Sign{Wood: w, Attach: WallAttachment(d)})
 		}
 		for o := cube.Orientation(0); o <= 15; o++ {

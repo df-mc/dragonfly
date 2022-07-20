@@ -89,9 +89,14 @@ func (t Torch) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]any) {
-	face := t.Facing.String()
-	if t.Facing == cube.FaceDown {
-		face = "top"
+	var face string
+	if t.Facing == unknownFace {
+		face = "unknown"
+	} else {
+		face = t.Facing.String()
+		if t.Facing == cube.FaceDown {
+			face = "top"
+		}
 	}
 	switch t.Type {
 	case NormalFire():
@@ -104,12 +109,12 @@ func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 
 // allTorches ...
 func allTorches() (torch []world.Block) {
-	for i := cube.Face(0); i < 7; i++ {
-		if i == cube.FaceUp {
+	for _, f := range append(cube.Faces(), unknownFace) {
+		if f == cube.FaceUp {
 			continue
 		}
-		torch = append(torch, Torch{Type: NormalFire(), Facing: i})
-		torch = append(torch, Torch{Type: SoulFire(), Facing: i})
+		torch = append(torch, Torch{Type: NormalFire(), Facing: f})
+		torch = append(torch, Torch{Type: SoulFire(), Facing: f})
 	}
 	return
 }
