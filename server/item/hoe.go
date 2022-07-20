@@ -22,7 +22,7 @@ func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 				// Tilled land isn't created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Add(cube.Pos{0, 1})) != air() {
+			if w.Block(pos.Side(cube.FaceUp)) != air() {
 				// Tilled land can only be created if air is above the grass block.
 				return false
 			}

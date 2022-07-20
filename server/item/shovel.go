@@ -23,7 +23,7 @@ func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 				// Dirt paths are not created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Add(cube.Pos{0, 1})) != air() {
+			if w.Block(pos.Side(cube.FaceUp)) != air() {
 				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}
