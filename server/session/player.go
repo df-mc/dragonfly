@@ -569,14 +569,13 @@ func (s *Session) SetHeldSlot(slot int) error {
 	if slot < 0 || slot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	if s.changingSlot.Load() {
-		return nil
-	}
 
 	s.heldSlot.Store(uint32(slot))
-
 	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 		viewer.ViewEntityItems(s.c)
+	}
+	if s.changingSlot.Load() {
+		return nil
 	}
 
 	mainHand, _ := s.c.HeldItems()
