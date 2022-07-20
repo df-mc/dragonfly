@@ -27,9 +27,19 @@ func (GoatHorn) Cooldown() time.Duration {
 
 // Use ...
 func (g GoatHorn) Use(w *world.World, u User, _ *UseContext) bool {
-	w, pos := u.World(), u.Position()
-	w.PlaySound(pos, sound.GoatHorn{Horn: g.Type})
+	w.PlaySound(u.Position(), sound.GoatHorn{Horn: g.Type})
 	time.AfterFunc(time.Second, func() {
+		if !u.UsingItem() {
+			// We aren't using the goat horn anymore.
+			return
+		}
+
+		held, _ := u.HeldItems()
+		if _, ok := held.Item().(GoatHorn); !ok {
+			// We aren't holding the goat horn anymore.
+			return
+		}
+
 		// The goat horn is forcefully released by the server after a second. If the client released the item itself,
 		// before a second, this shouldn't do anything.
 		u.ReleaseItem()

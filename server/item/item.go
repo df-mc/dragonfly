@@ -161,6 +161,7 @@ type User interface {
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
 
+	UsingItem() bool
 	ReleaseItem()
 	UseItem()
 }
