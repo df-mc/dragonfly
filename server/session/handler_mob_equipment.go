@@ -29,6 +29,8 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 			// out of sync.
 			s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSide, actual)
 		}
+		s.changingSlot.Store(true)
+		defer s.changingSlot.Store(false)
 		return s.c.SetHeldSlot(int(pk.InventorySlot))
 	default:
 		return fmt.Errorf("only main inventory should be involved in slot chnage, got window ID %v", pk.WindowID)

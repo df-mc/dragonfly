@@ -569,6 +569,9 @@ func (s *Session) SetHeldSlot(slot int) error {
 	if slot < 0 || slot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
+	if s.changingSlot.Load() {
+		return nil
+	}
 
 	s.heldSlot.Store(uint32(slot))
 
