@@ -30,27 +30,27 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
 		s.changingSlot.Store(true)
-		if err := s.c.SetHeldSlot(int(data.HotBarSlot)); err != nil {
-			s.changingSlot.Store(false)
+		err := s.c.SetHeldSlot(int(data.HotBarSlot))
+		s.changingSlot.Store(false)
+		if err != nil {
 			return err
 		}
-		s.changingSlot.Store(false)
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
 		s.changingSlot.Store(true)
-		if err := s.c.SetHeldSlot(int(data.HotBarSlot)); err != nil {
-			s.changingSlot.Store(false)
+		err := s.c.SetHeldSlot(int(data.HotBarSlot))
+		s.changingSlot.Store(false)
+		if err != nil {
 			return err
 		}
-		s.changingSlot.Store(false)
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
 		s.changingSlot.Store(true)
-		if err := s.c.SetHeldSlot(int(data.HotBarSlot)); err != nil {
-			s.changingSlot.Store(false)
+		err := s.c.SetHeldSlot(int(data.HotBarSlot))
+		s.changingSlot.Store(false)
+		if err != nil {
 			return err
 		}
-		s.changingSlot.Store(false)
 		return h.handleReleaseItemTransaction(s)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
