@@ -61,6 +61,7 @@ func (b Beacon) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (b Beacon) EncodeNBT() map[string]any {
 	m := map[string]any{
+		"id":     "Beacon",
 		"Levels": int32(b.level),
 	}
 	if primary, ok := effect.ID(b.Primary); ok {
