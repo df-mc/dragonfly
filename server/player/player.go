@@ -367,6 +367,29 @@ func (p *Player) Transfer(address string) error {
 	return nil
 }
 
+// SetHeldSlot updates the held slot of the player using the slot provided. It also calls the slot change handler.
+func (p *Player) SetHeldSlot(slot int) error {
+	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
+	// different place in the inventory.
+	if slot > 8 {
+		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+	if p.heldSlot.Swap(uint32(slot)) == uint32(slot) {
+		// Old slot was the same as new slot, so don't do anything.
+		return nil
+	}
+
+	p.usingItem.Store(false)
+
+	ctx := event.C()
+	p.Handler().HandleHeldSlotChange(ctx, slot)
+	if ctx.Cancelled() {
+		// The slot change was cancelled, so don't do anything.
+		return nil
+	}
+	return p.session().SetHeldSlot(slot)
+}
+
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
