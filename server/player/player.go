@@ -371,7 +371,7 @@ func (p *Player) Transfer(address string) error {
 func (p *Player) SetHeldSlot(slot int) error {
 	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
 	// different place in the inventory.
-	if slot > 8 {
+	if slot < 0 || slot > 8 {
 		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 	if p.heldSlot.Swap(uint32(slot)) == uint32(slot) {
@@ -1875,7 +1875,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 	if found {
 		if slot < 9 {
-			_ = p.session().SetHeldSlot(slot)
+			_ = p.SetHeldSlot(slot)
 			return
 		}
 		_ = p.Inventory().Swap(slot, int(p.heldSlot.Load()))
@@ -1888,7 +1888,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 	if firstEmpty < 8 {
-		_ = p.session().SetHeldSlot(firstEmpty)
+		_ = p.SetHeldSlot(firstEmpty)
 		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
 		return
 	}

@@ -566,7 +566,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 
 // SetHeldSlot sets the currently held hotbar slot.
 func (s *Session) SetHeldSlot(slot int) error {
-	if slot > 8 {
+	if slot < 0 || slot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 
