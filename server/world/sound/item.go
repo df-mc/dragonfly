@@ -54,7 +54,7 @@ type StopUsingSpyglass struct{ sound }
 // GoatHorn is a sound played when a player uses a goat horn.
 type GoatHorn struct {
 	// Horn is the type of the goat horn.
-	Horn GeatHorn
+	Horn Horn
 
 	sound
 }

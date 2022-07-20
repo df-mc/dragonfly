@@ -12,7 +12,7 @@ type GoatHorn struct {
 	nopReleasable
 
 	// Type is the type of the goat horn, determining the sound it plays.
-	Type sound.GeatHorn
+	Type sound.Horn
 }
 
 // MaxCount ...

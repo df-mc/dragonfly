@@ -1,48 +1,48 @@
 package sound
 
-// GeatHorn represents a variant of a goat horn.
-type GeatHorn struct {
+// Horn represents a variant of a goat horn.
+type Horn struct {
 	goatHornType
 }
 
 // Ponder returns the 'Ponder' goat horn type.
-func Ponder() GeatHorn {
-	return GeatHorn{0}
+func Ponder() Horn {
+	return Horn{0}
 }
 
 // Sing returns the 'Sing' goat horn type.
-func Sing() GeatHorn {
-	return GeatHorn{1}
+func Sing() Horn {
+	return Horn{1}
 }
 
 // Seek returns the 'Seek' goat horn type.
-func Seek() GeatHorn {
-	return GeatHorn{2}
+func Seek() Horn {
+	return Horn{2}
 }
 
 // Feel returns the 'Feel' goat horn type.
-func Feel() GeatHorn {
-	return GeatHorn{3}
+func Feel() Horn {
+	return Horn{3}
 }
 
 // Admire returns the 'Admire' goat horn type.
-func Admire() GeatHorn {
-	return GeatHorn{4}
+func Admire() Horn {
+	return Horn{4}
 }
 
 // Call returns the 'Call' goat horn type.
-func Call() GeatHorn {
-	return GeatHorn{5}
+func Call() Horn {
+	return Horn{5}
 }
 
 // Yearn returns the 'Yearn' goat horn type.
-func Yearn() GeatHorn {
-	return GeatHorn{6}
+func Yearn() Horn {
+	return Horn{6}
 }
 
 // Dream returns the 'Dream' goat horn type.
-func Dream() GeatHorn {
-	return GeatHorn{7}
+func Dream() Horn {
+	return Horn{7}
 }
 
 type goatHornType uint8
@@ -76,6 +76,6 @@ func (g goatHornType) Name() string {
 }
 
 // GoatHorns ...
-func GoatHorns() []GeatHorn {
-	return []GeatHorn{Ponder(), Sing(), Seek(), Feel(), Admire(), Call(), Yearn(), Dream()}
+func GoatHorns() []Horn {
+	return []Horn{Ponder(), Sing(), Seek(), Feel(), Admire(), Call(), Yearn(), Dream()}
 }
