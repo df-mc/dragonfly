@@ -1,6 +1,8 @@
 package item
 
 import (
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -44,18 +46,19 @@ type baseMap struct {
 	// IsScaling has unknown functionality (referring to the Minecraft Wiki).
 	IsScaling bool
 
+	viewersMu sync.RWMutex
 	viewers   map[MapDataViewer]struct{}
 	data      *world.MapData
 	persisted bool
 }
 
 // DecodeNBT ...
-func (m baseMap) DecodeNBT(data map[string]any) any {
+func (m *baseMap) DecodeNBT(data map[string]any) any {
 	return m
 }
 
 // EncodeNBT ...
-func (m baseMap) EncodeNBT() map[string]any {
+func (m *baseMap) EncodeNBT() map[string]any {
 	return map[string]any{
 		"map_is_init":         m.IsInit,
 		"map_uuid":            m.Uuid,
@@ -67,12 +70,15 @@ func (m baseMap) EncodeNBT() map[string]any {
 }
 
 // GetMapID ...
-func (m baseMap) GetMapID() int64 {
+func (m *baseMap) GetMapID() int64 {
 	return m.Uuid
 }
 
 // UpdateData ...
-func (m baseMap) UpdateData(u MapDataUpdate) {
+func (m *baseMap) UpdateData(u MapDataUpdate) {
+	m.viewersMu.RLock()
+	defer m.viewersMu.RUnlock()
+
 	if m.data == nil || m.viewers == nil {
 		return
 	}
@@ -85,7 +91,7 @@ func (m baseMap) UpdateData(u MapDataUpdate) {
 }
 
 // GetData ...
-func (m baseMap) GetData() world.MapData {
+func (m *baseMap) GetData() world.MapData {
 	if m.data == nil {
 		return world.MapData{}
 	}
@@ -95,6 +101,9 @@ func (m baseMap) GetData() world.MapData {
 
 // AddViewer ...
 func (m *baseMap) AddViewer(v MapDataViewer) {
+	m.viewersMu.Lock()
+	defer m.viewersMu.Unlock()
+
 	s := struct{}{}
 	if m.viewers == nil {
 		m.viewers = map[MapDataViewer]struct{}{v: s}
@@ -104,13 +113,16 @@ func (m *baseMap) AddViewer(v MapDataViewer) {
 }
 
 // RemoveViewer ...
-func (m baseMap) RemoveViewer(v MapDataViewer) {
+func (m *baseMap) RemoveViewer(v MapDataViewer) {
+	m.viewersMu.Lock()
+	defer m.viewersMu.Unlock()
+
 	if m.viewers != nil {
 		delete(m.viewers, v)
 	}
 }
 
 // IsPersisted ...
-func (m baseMap) IsPersisted() bool {
+func (m *baseMap) IsPersisted() bool {
 	return m.persisted
 }
