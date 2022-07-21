@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -196,12 +197,9 @@ func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
 	var updated bool
 	abovePos := pos.Add(cube.Pos{0, 1, 0})
 	above := wo.Block(abovePos)
-	var connections int
-	for _, face := range cube.HorizontalFaces() {
-		if w.ConnectionType(face.Direction()) != NoWallConnection() {
-			connections++
-		}
-	}
+	connections := len(sliceutil.Filter(cube.HorizontalFaces(), func(face cube.Face) bool {
+		return w.ConnectionType(face.Direction()) != NoWallConnection()
+	}))
 	var post bool
 	switch above := above.(type) {
 	case Air:
