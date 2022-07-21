@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -11,12 +10,15 @@ import (
 
 // MapInfoRequestHandler handles the MapInfoRequest packet.
 type MapInfoRequestHandler struct {
-	mu sync.Mutex
 }
 
 // Handle ...
 func (h *MapInfoRequestHandler) Handle(p packet.Packet, s *Session) error {
-	pk := p.(*packet.MapInfoRequest)
+	var (
+		pk      = p.(*packet.MapInfoRequest)
+		mapItem item.MapInterface
+		ok      bool
+	)
 
 	for _, inv := range []*inventory.Inventory{
 		s.inv,
@@ -25,7 +27,7 @@ func (h *MapInfoRequestHandler) Handle(p packet.Packet, s *Session) error {
 		s.armour.Inventory(),
 	} {
 		if inv.ContainsItemFunc(1, func(stack item.Stack) bool {
-			if mapItem, ok := stack.Item().(item.MapInterface); ok {
+			if mapItem, ok = stack.Item().(item.MapInterface); ok {
 				return mapItem.GetMapID() == pk.MapID
 			}
 
@@ -36,6 +38,34 @@ func (h *MapInfoRequestHandler) Handle(p packet.Packet, s *Session) error {
 
 		return fmt.Errorf("client requests info of map %v while he does not have the corresponding map item in inventory, off hand inventory, UI inventory or armour inventory", pk.MapID)
 	}
+
+	var (
+		data   = mapItem.GetData()
+		pixels = data.Pixels
+		height = int32(len(data.Pixels))
+		width  int32
+	)
+	for _, rows := range data.Pixels {
+		if len(rows) > int(width) {
+			width = int32(len(rows))
+		}
+	}
+
+	s.writePacket(&packet.ClientBoundMapItemData{
+		MapID:       pk.MapID,
+		UpdateFlags: packet.MapUpdateFlagInitialisation,
+		Dimension:   byte(mapItem.GetDimension().EncodeDimension()),
+		LockedMap:   false, // TODO: Locked map support
+		Scale:       byte(mapItem.GetScale()),
+		// TrackedObjects []protocol.MapTrackedObject
+		// Decorations is a list of fixed decorations located on the map. The decorations will not change
+		// client-side, unless the server updates them.
+		// Decorations []protocol.MapDecoration
+
+		Height: height,
+		Width:  width,
+		Pixels: pixels,
+	})
 
 	return nil
 }
