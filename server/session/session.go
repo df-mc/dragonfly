@@ -553,7 +553,6 @@ func (s *Session) sendAvailableEntities() {
 func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, dimension, scale byte, data item.MapDataUpdate) {
 	var (
 		pixels = data.Pixels
-		height = int32(len(data.Pixels))
 		width  int32
 
 		trackeds []protocol.MapTrackedObject
@@ -587,8 +586,10 @@ func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, dimension, scal
 		// client-side, unless the server updates them.
 		Decorations: []protocol.MapDecoration{},
 
-		Height: height,
-		Width:  width,
-		Pixels: pixels,
+		Height:  int32(len(data.Pixels)),
+		Width:   width,
+		XOffset: data.XOffset,
+		YOffset: data.YOffset,
+		Pixels:  pixels,
 	})
 }
