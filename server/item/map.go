@@ -7,6 +7,9 @@ import (
 )
 
 type MapInterface interface {
+	GetDimension() world.Dimension
+	GetScale() int32
+
 	GetMapID() int64 // TODO: Keep?
 	// UpdateData updates the map's tracked entites, blocks or a chunk (with offset) of pixels.
 	UpdateData(MapDataUpdate)
@@ -52,6 +55,12 @@ type baseMap struct {
 	persisted bool
 }
 
+// GetDimension ...
+func (m *baseMap) GetDimension() world.Dimension {
+	// TODO: Check where the data is stored if map is pesistent.
+	return world.Overworld
+}
+
 // DecodeNBT ...
 func (m *baseMap) DecodeNBT(data map[string]any) any {
 	return m
@@ -72,6 +81,11 @@ func (m *baseMap) EncodeNBT() map[string]any {
 // GetMapID ...
 func (m *baseMap) GetMapID() int64 {
 	return m.Uuid
+}
+
+// GetScale ...
+func (m *baseMap) GetScale() int32 {
+	return m.Scale
 }
 
 // UpdateData ...
