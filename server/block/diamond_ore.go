@@ -15,11 +15,14 @@ type DiamondOre struct {
 
 // BreakInfo ...
 func (d DiamondOre) BreakInfo() BreakInfo {
-	i := newBreakInfo(d.Type.Hardness(), func(t item.Tool) bool {
+	return newBreakInfo(d.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d))
-	i.XPDrops = XPDropRange{3, 7}
-	return i
+	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d)).withXPDropRange(3, 7)
+}
+
+// SmeltInfo ...
+func (DiamondOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.Diamond{}, 1), 1)
 }
 
 // EncodeItem ...

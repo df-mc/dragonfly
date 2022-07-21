@@ -41,6 +41,7 @@ func init() {
 	world.RegisterItem(ClayBall{})
 	world.RegisterItem(NetherQuartz{})
 	world.RegisterItem(Flint{})
+	world.RegisterItem(EnchantedBook{})
 
 	world.RegisterItem(Stick{})
 	world.RegisterItem(MagmaCream{})
@@ -148,6 +149,8 @@ func init() {
 	}
 	world.RegisterItem(TropicalFish{})
 	world.RegisterItem(AmethystShard{})
+	world.RegisterItem(DiscFragment{})
+	world.RegisterItem(EchoShard{})
 
 	world.RegisterItem(FilledMap{})
 	world.RegisterItem(OceanMap{})

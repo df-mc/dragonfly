@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Shovel is a tool generally used for mining ground-like blocks, such as sand, gravel and dirt. Additionally,
@@ -22,7 +23,7 @@ func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 				// Dirt paths are not created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Add(cube.Pos{0, 1})) != air() {
+			if w.Block(pos.Side(cube.FaceUp)) != air() {
 				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}
@@ -68,6 +69,11 @@ func (s Shovel) BaseMiningEfficiency(world.Block) float64 {
 	return s.Tier.BaseMiningEfficiency
 }
 
+// EnchantmentValue ...
+func (s Shovel) EnchantmentValue() int {
+	return s.Tier.EnchantmentValue
+}
+
 // DurabilityInfo ...
 func (s Shovel) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
@@ -76,6 +82,30 @@ func (s Shovel) DurabilityInfo() DurabilityInfo {
 		AttackDurability: 2,
 		BreakDurability:  1,
 	}
+}
+
+// SmeltInfo ...
+func (s Shovel) SmeltInfo() SmeltInfo {
+	switch s.Tier {
+	case ToolTierIron:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ToolTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
+// FuelInfo ...
+func (s Shovel) FuelInfo() FuelInfo {
+	if s.Tier == ToolTierWood {
+		return newFuelInfo(time.Second * 10)
+	}
+	return FuelInfo{}
+}
+
+// RepairableBy ...
+func (s Shovel) RepairableBy(i Stack) bool {
+	return toolTierRepairable(s.Tier)(i)
 }
 
 // EncodeItem ...

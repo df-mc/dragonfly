@@ -52,7 +52,7 @@ type Eyed interface {
 func EyePosition(e world.Entity) mgl64.Vec3 {
 	pos := e.Position()
 	if eyed, ok := e.(Eyed); ok {
-		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
+		pos[1] += eyed.EyeHeight()
 	}
 	return pos
 }

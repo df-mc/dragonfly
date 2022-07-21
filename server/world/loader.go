@@ -17,7 +17,7 @@ type Loader struct {
 	mu        sync.RWMutex
 	pos       ChunkPos
 	loadQueue []ChunkPos
-	loaded    map[ChunkPos]struct{}
+	loaded    map[ChunkPos]*chunkData
 
 	closed bool
 }
@@ -27,7 +27,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]struct{}), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunkData), viewer: v}
 	l.world(world)
 	return l
 }
@@ -88,17 +88,28 @@ func (l *Loader) Load(n int) {
 		if len(l.loadQueue) == 0 {
 			break
 		}
+
 		pos := l.loadQueue[0]
 		c := l.w.chunk(pos)
+
 		l.viewer.ViewChunk(pos, c.Chunk, c.e)
 		l.w.addViewer(c, l)
 
-		l.loaded[pos] = struct{}{}
+		l.loaded[pos] = c
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 	}
+}
+
+// Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
+// be false.
+func (l *Loader) Chunk(pos ChunkPos) (*chunkData, bool) {
+	l.mu.RLock()
+	c, ok := l.loaded[pos]
+	l.mu.RUnlock()
+	return c, ok
 }
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
@@ -113,12 +124,21 @@ func (l *Loader) Close() error {
 	return nil
 }
 
+// Reset clears all chunks loaded by the Loader and repopulates the loading queue so that they can all be loaded again.
+func (l *Loader) Reset() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.reset()
+	l.populateLoadQueue()
+}
+
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
 func (l *Loader) reset() {
 	for pos := range l.loaded {
 		l.w.removeViewer(pos, l)
 	}
-	l.loaded = map[ChunkPos]struct{}{}
+	l.loaded = map[ChunkPos]*chunkData{}
 	l.w.removeWorldViewer(l)
 }
 

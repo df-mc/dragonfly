@@ -1,18 +1,11 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
-
-// Owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type Owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
 
 // ProjectileComputer is used to compute movement of a projectile. When constructed, a MovementComputer must be passed.
 type ProjectileComputer struct {
@@ -30,10 +23,14 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 	velBefore := vel
 	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	end := pos.Add(vel)
-	hit, ok := trace.Perform(pos, end, w, e.AABB().Grow(1.0), func(e world.Entity) bool {
-		g, ok := e.(interface{ GameMode() world.GameMode })
-		return (ok && !g.GameMode().HasCollision()) || ignored(e)
-	})
+	var hit trace.Result
+	var ok bool
+	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
+		hit, ok = trace.Perform(pos, end, w, e.BBox().Grow(1.0), func(e world.Entity) bool {
+			g, ok := e.(interface{ GameMode() world.GameMode })
+			return (ok && !g.GameMode().HasCollision()) || ignored(e)
+		})
+	}
 	if ok {
 		vel = zeroVec3
 		end = hit.Position()

@@ -3,11 +3,9 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
 )
@@ -63,6 +61,7 @@ func (b Beacon) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (b Beacon) EncodeNBT() map[string]any {
 	m := map[string]any{
+		"id":     "Beacon",
 		"Levels": int32(b.level),
 	}
 	if primary, ok := effect.ID(b.Primary); ok {
@@ -136,7 +135,7 @@ func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
 // obstructed determines whether the beacon is currently obstructed.
 func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
 	// Fast obstructed light calculation.
-	if w.SkyLight(pos.Add(cube.Pos{0, 1})) == 15 {
+	if w.SkyLight(pos.Side(cube.FaceUp)) == 15 {
 		return false
 	}
 	// Slow obstructed light calculation, if the fast way out didn't suffice.
@@ -190,9 +189,9 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 
 	// Finding entities in range.
 	r := 10 + (b.level * 10)
-	entitiesInRange := w.EntitiesWithin(physics.NewAABB(
-		mgl64.Vec3{float64(pos.X() - r), -math.MaxFloat64, float64(pos.Z() - r)},
-		mgl64.Vec3{float64(pos.X() + r), math.MaxFloat64, float64(pos.Z() + r)},
+	entitiesInRange := w.EntitiesWithin(cube.Box(
+		float64(pos.X()-r), -math.MaxFloat64, float64(pos.Z()-r),
+		float64(pos.X()+r), math.MaxFloat64, float64(pos.Z()+r),
 	), nil)
 	for _, e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {

@@ -11,8 +11,7 @@ func Convert[A, B any, S ~[]B](v S) []A {
 	return a
 }
 
-// Index returns the index of the first occurrence of v in s,
-// or -1 if not present. Index accepts any type, as opposed to
+// Index returns the index of the first occurrence of v in s, or -1 if not present. Index accepts any type, as opposed to
 // slices.Index, but might panic if E is not comparable.
 func Index[E any](s []E, v E) int {
 	for i, vs := range s {
@@ -21,6 +20,17 @@ func Index[E any](s []E, v E) int {
 		}
 	}
 	return -1
+}
+
+// Filter iterates over elements of collection, returning an array of all elements predicate returns truthy for.
+func Filter[E any](s []E, c func(E) bool) []E {
+	a := make([]E, 0, len(s))
+	for _, e := range s {
+		if c(e) {
+			a = append(a, e)
+		}
+	}
+	return a
 }
 
 // DeleteVal deletes the first occurrence of a value in a slice of the type E and returns a new slice without the value.

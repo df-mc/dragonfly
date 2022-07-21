@@ -3,114 +3,59 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
-
-// BlastProtection is an armour enchantment that decreases explosion damage.
-type BlastProtection struct{}
-
-// Name ...
-func (e BlastProtection) Name() string {
-	return "Blast Protection"
-}
-
-// MaxLevel ...
-func (e BlastProtection) MaxLevel() int {
-	return 4
-}
-
-// CompatibleWith ...
-func (e BlastProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
-
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	_, prot := s.Enchantment(Protection{})
-
-	return ok && !fireProt && !projectileProt && !prot
-}
-
-// FireProtection is an armour enchantment that decreases fire damage.
-type FireProtection struct{}
-
-// Name ...
-func (e FireProtection) Name() string {
-	return "Fire Protection"
-}
-
-// MaxLevel ...
-func (e FireProtection) MaxLevel() int {
-	return 4
-}
-
-// CompatibleWith ...
-func (e FireProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
-
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
-	_, prot := s.Enchantment(Protection{})
-
-	return ok && !blastProt && !projectileProt && !prot
-}
-
-// ProjectileProtection is an armour enchantment that reduces damage from projectiles.
-type ProjectileProtection struct{}
-
-// Name ...
-func (e ProjectileProtection) Name() string {
-	return "Projectile Protection"
-}
-
-// MaxLevel ...
-func (e ProjectileProtection) MaxLevel() int {
-	return 4
-}
-
-// CompatibleWith ...
-func (e ProjectileProtection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
-
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, prot := s.Enchantment(Protection{})
-
-	return ok && !blastProt && !fireProt && !prot
-}
 
 // Protection is an armour enchantment which increases the damage reduction.
 type Protection struct{}
 
-// Affects ...
-func (e Protection) Affects(src damage.Source) bool {
-	_, ok := src.(damage.SourceEntityAttack)
-	return ok || src == damage.SourceFall{} || src == damage.SourceFire{} || src == damage.SourceFireTick{} || src == damage.SourceLava{}
-}
-
-// Multiplier returns the damage multiplier of protection.
-func (e Protection) Multiplier(lvl int) float64 {
-	if lvl > 20 {
-		lvl = 20
-	}
-	return 1 - float64(lvl)/25
-}
-
 // Name ...
-func (e Protection) Name() string {
+func (Protection) Name() string {
 	return "Protection"
 }
 
 // MaxLevel ...
-func (e Protection) MaxLevel() int {
+func (Protection) MaxLevel() int {
 	return 4
 }
 
-// CompatibleWith ...
-func (e Protection) CompatibleWith(s item.Stack) bool {
-	_, ok := s.Item().(item.Armour)
+// Cost ...
+func (Protection) Cost(level int) (int, int) {
+	min := 1 + (level-1)*11
+	return min, min + 11
+}
 
-	_, blastProt := s.Enchantment(BlastProtection{})
-	_, fireProt := s.Enchantment(FireProtection{})
-	_, projectileProt := s.Enchantment(ProjectileProtection{})
+// Rarity ...
+func (Protection) Rarity() item.EnchantmentRarity {
+	return item.EnchantmentRarityCommon
+}
 
-	return ok && !blastProt && !fireProt && !projectileProt
+// Affects ...
+func (Protection) Affects(src damage.Source) bool {
+	_, projectile := src.(damage.SourceProjectile)
+	_, attack := src.(damage.SourceEntityAttack)
+	_, fireTick := src.(damage.SourceFireTick)
+	_, fall := src.(damage.SourceFall)
+	_, fire := src.(damage.SourceFire)
+	_, lava := src.(damage.SourceLava)
+	return projectile || attack || fireTick || fall || fire || lava
+}
+
+// Modifier returns the base protection modifier for the enchantment.
+func (Protection) Modifier() float64 {
+	return 0.75
+}
+
+// CompatibleWithEnchantment ...
+func (Protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	// TODO: Ensure that the armour does not have blast protection.
+	_, fireProtection := t.(FireProtection)
+	_, projectileProtection := t.(ProjectileProtection)
+	return !fireProtection && !projectileProtection
+}
+
+// CompatibleWithItem ...
+func (Protection) CompatibleWithItem(i world.Item) bool {
+	_, ok := i.(item.Armour)
+	return ok
 }

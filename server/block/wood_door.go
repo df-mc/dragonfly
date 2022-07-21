@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodDoor is a block that can be used as an openable 1x2 barrier.
@@ -36,6 +37,11 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// FuelInfo ...
+func (WoodDoor) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 10)
+}
+
 // Model ...
 func (d WoodDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
@@ -61,17 +67,16 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock handles the directional placing of doors
 func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, d)
-	if !used {
-		return false
-	}
 	if face != cube.FaceUp {
+		// Doors can only be placed when clicking the top face.
 		return false
 	}
-	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
+	below := pos
+	pos = pos.Side(cube.FaceUp)
+	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
 		return false
 	}
 	d.Facing = user.Facing()
@@ -91,9 +96,10 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 		}
 	}
 
-	ctx.IgnoreAABB = true
+	ctx.IgnoreBBox = true
 	place(w, pos, d, user, ctx)
 	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	ctx.CountSub = 1
 	return placed(ctx)
 }
 
@@ -131,25 +137,10 @@ func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // EncodeItem ...
 func (d WoodDoor) EncodeItem() (name string, meta int16) {
-	switch d.Wood {
-	case OakWood():
+	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", 0
-	case SpruceWood():
-		return "minecraft:spruce_door", 0
-	case BirchWood():
-		return "minecraft:birch_door", 0
-	case JungleWood():
-		return "minecraft:jungle_door", 0
-	case AcaciaWood():
-		return "minecraft:acacia_door", 0
-	case DarkOakWood():
-		return "minecraft:dark_oak_door", 0
-	case CrimsonWood():
-		return "minecraft:crimson_door", 0
-	case WarpedWood():
-		return "minecraft:warped_door", 0
 	}
-	panic("invalid wood type")
+	return "minecraft:" + d.Wood.String() + "_door", 0
 }
 
 // EncodeBlock ...
@@ -164,12 +155,10 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
 		direction = 0
 	}
 
-	switch d.Wood {
-	case OakWood():
+	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	default:
-		return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
+	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allDoors returns a list of all door types

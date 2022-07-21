@@ -1,7 +1,7 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"io"
 )
@@ -19,8 +19,8 @@ type Entity interface {
 	// entity, for example 'minecraft:falling_block'.
 	EncodeEntity() string
 
-	// AABB returns the AABB of the entity.
-	AABB() physics.AABB
+	// BBox returns the bounding box of the Entity.
+	BBox() cube.BBox
 
 	// Position returns the current position of the entity in the world.
 	Position() mgl64.Vec3

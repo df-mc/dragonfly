@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -60,7 +61,7 @@ type Replaceable interface {
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
-	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64)
 }
 
 // EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
@@ -141,6 +142,22 @@ func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *ite
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 }
 
+// horizontalDirection returns the horizontal direction of the given direction. This is a legacy type still used in
+// various blocks.
+func horizontalDirection(d cube.Direction) cube.Direction {
+	switch d {
+	case cube.South:
+		return cube.North
+	case cube.West:
+		return cube.South
+	case cube.North:
+		return cube.West
+	case cube.East:
+		return cube.East
+	}
+	panic("invalid direction")
+}
+
 // placed checks if an item was placed with the use context passed.
 func placed(ctx *item.UseContext) bool {
 	return ctx.CountSub > 0
@@ -185,9 +202,7 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
 		w.SetBlock(pos, nil, nil)
-
-		e := entity.NewFallingBlock(b, pos.Vec3Middle())
-		w.AddEntity(e)
+		w.AddEntity(entity.NewFallingBlock(b, pos.Vec3Middle()))
 	}
 }
 
@@ -246,4 +261,35 @@ type bassDrum struct{}
 // Instrument ...
 func (bassDrum) Instrument() sound.Instrument {
 	return sound.BassDrum()
+}
+
+// newSmeltInfo returns a new SmeltInfo with the given values.
+func newSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+	}
+}
+
+// newFoodSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a smelter.
+func newFoodSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Food:       true,
+	}
+}
+
+// newOreSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a blast furnace.
+func newOreSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Ores:       true,
+	}
+}
+
+// newFuelInfo returns a new FuelInfo with the given values.
+func newFuelInfo(duration time.Duration) item.FuelInfo {
+	return item.FuelInfo{Duration: duration}
 }

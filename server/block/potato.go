@@ -15,6 +15,11 @@ type Potato struct {
 	crop
 }
 
+// SmeltInfo ...
+func (p Potato) SmeltInfo() item.SmeltInfo {
+	return newFoodSmeltInfo(item.NewStack(item.BakedPotato{}, 1), 0.35)
+}
+
 // SameCrop ...
 func (Potato) SameCrop(c Crop) bool {
 	_, ok := c.(Potato)

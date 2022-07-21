@@ -32,11 +32,11 @@ func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 	}
 	displacer, _ := w.Block(pos).(world.LiquidDisplacer)
 
-	canFlowBelow := canFlowInto(b, w, pos.Add(cube.Pos{0, -1}), false)
+	canFlowBelow := canFlowInto(b, w, pos.Side(cube.FaceDown), false)
 	if b.LiquidFalling() && !canFlowBelow {
 		b = b.WithDepth(8, true)
 	} else if canFlowBelow {
-		below := pos.Add(cube.Pos{0, -1})
+		below := pos.Side(cube.FaceDown)
 		if displacer == nil || !displacer.SideClosed(pos, below, w) {
 			flowInto(b.WithDepth(8, true), pos, below, w, true)
 		}
@@ -120,10 +120,10 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 			return true
 		}
 		ctx := event.C()
-		w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
-		ctx.Continue(func() {
-			w.SetLiquid(pos, b.WithDepth(newDepth, falling))
-		})
+		if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+			return false
+		}
+		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 		return true
 	} else if alsoLiquid {
 		existingLiquid.Harden(pos, w, &src)
@@ -155,10 +155,10 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		}
 	}
 	ctx := event.C()
-	w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing)
-	ctx.Continue(func() {
-		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
-	})
+	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+		return false
+	}
+	w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
 }
 

@@ -7,9 +7,9 @@ type UseContext struct {
 	Damage int
 	// CountSub is how much of the count should be subtracted after using the item.
 	CountSub int
-	// IgnoreAABB specifies if placing the item should ignore the AABB of the player placing this. This is the case for
+	// IgnoreBBox specifies if placing the item should ignore the BBox of the player placing this. This is the case for
 	// items such as cocoa beans.
-	IgnoreAABB bool
+	IgnoreBBox bool
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack

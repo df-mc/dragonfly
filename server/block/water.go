@@ -125,19 +125,19 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 	}
 	if lava, ok := wo.Block(pos.Side(cube.FaceUp)).(Lava); ok {
 		ctx := event.C()
-		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{})
-		ctx.Continue(func() {
-			wo.SetBlock(pos, Stone{}, nil)
-			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-		})
+		if wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{}); ctx.Cancelled() {
+			return false
+		}
+		wo.SetBlock(pos, Stone{}, nil)
+		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 		return true
 	} else if lava, ok := wo.Block(*flownIntoBy).(Lava); ok {
 		ctx := event.C()
-		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Cobblestone{})
-		ctx.Continue(func() {
-			wo.SetBlock(*flownIntoBy, Cobblestone{}, nil)
-			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-		})
+		if wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Cobblestone{}); ctx.Cancelled() {
+			return false
+		}
+		wo.SetBlock(*flownIntoBy, Cobblestone{}, nil)
+		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 		return true
 	}
 	return false

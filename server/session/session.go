@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,10 +10,12 @@ import (
 	"time"
 
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
@@ -30,7 +31,7 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            internal.Logger
+	log            Logger
 	once, connOnce sync.Once
 
 	c        Controllable
@@ -44,7 +45,6 @@ type Session struct {
 	currentScoreboard atomic.Value[string]
 	currentLines      atomic.Value[[]string]
 
-	chunkBuf                    *bytes.Buffer
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
@@ -60,17 +60,20 @@ type Session struct {
 	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot         *atomic.Uint32
-	inv, offHand, ui *inventory.Inventory
-	armour           *inventory.Armour
+	heldSlot                     *atomic.Uint32
+	inv, offHand, enderChest, ui *inventory.Inventory
+	armour                       *inventory.Armour
 
 	breakingPos cube.Pos
 
-	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
+	openedWindowID                 atomic.Uint32
+	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
+
+	recipes map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
 	blobs                 map[uint64][]byte
@@ -78,6 +81,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.Value[string]
+
+	switchingWorld atomic.Bool
 
 	closeBackground chan struct{}
 }
@@ -112,6 +117,12 @@ type Conn interface {
 	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
+// Logger is used to write debug messages to. These messages are sent whenever handling of a packet of a client fails.
+type Logger interface {
+	Errorf(format string, a ...any)
+	Debugf(format string, a ...any)
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -123,26 +134,26 @@ var sessionMu sync.Mutex
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
 
-// ErrSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
+// errSelfRuntimeID is an error returned during packet handling for fields that refer to the player itself and
 // must therefore always be 1.
-var ErrSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
+var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
 
 // New returns a new session using a controllable entity. The session will control this entity using the
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
-// Session.Start().
-func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
+// Session.Spawn().
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
 
-	s := &Session{
-		chunkBuf:               bytes.NewBuffer(make([]byte, 0, 4096)),
+	s := &Session{}
+	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(51, nil),
+		ui:                     inventory.New(53, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
@@ -156,22 +167,19 @@ func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMe
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
+		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
-	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(cube.Pos{})
-	s.currentScoreboard.Store("")
-	s.currentLines.Store([]string{})
 
 	s.registerHandlers()
 	return s
 }
 
-// Start makes the session start handling incoming packets from the client and initialises the Controllable entity of
-// the session in the world.
+// Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
+func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
+	s.recipes = make(map[uint32]recipe.Recipe)
 	s.entityRuntimeIDs[c] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = c
 
@@ -187,7 +195,7 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 
 	s.initPlayerList()
 
-	w.AddEntity(c)
+	world_add(c, w)
 	s.c.SetGameMode(gm)
 	s.SendSpeed(0.1)
 	for _, e := range s.c.Effects() {
@@ -204,8 +212,18 @@ func (s *Session) Start(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	s.sendRecipes()
+}
 
+// Start makes the session start handling incoming packets from the client.
+func (s *Session) Start() {
+	s.c.World().AddEntity(s.c)
 	go s.handlePackets()
+}
+
+// Controllable returns the Controllable entity that the Session controls.
+func (s *Session) Controllable() Controllable {
+	return s.c
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
@@ -219,6 +237,14 @@ func (s *Session) Close() error {
 // manages.
 func (s *Session) close() {
 	_ = s.c.Close()
+
+	// Move UI inventory items to the main inventory.
+	for _, it := range s.ui.Items() {
+		if _, err := s.inv.AddItem(it); err != nil {
+			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
+			s.c.Drop(it)
+		}
+	}
 
 	s.onStop(s.c)
 
@@ -296,6 +322,22 @@ func (s *Session) handlePackets() {
 	}
 }
 
+// craftingSize gets the crafting size based on the opened container ID.
+func (s *Session) craftingSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// craftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) craftingOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
+}
+
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
@@ -335,11 +377,11 @@ func (s *Session) background() {
 func (s *Session) sendChunks() {
 	const maxChunkTransactions = 8
 
-	s.blobMu.Lock()
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
 		s.handleWorldSwitch(w)
 	}
 
+	s.blobMu.Lock()
 	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 	s.blobMu.Unlock()
 	if toLoad > 4 {
@@ -351,6 +393,7 @@ func (s *Session) sendChunks() {
 // handleWorldSwitch handles the player of the Session switching worlds.
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
+		s.blobMu.Lock()
 		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
 		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
 		for h, blob := range s.blobs {
@@ -360,13 +403,25 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
+		s.blobMu.Unlock()
 	}
 
-	if w.Dimension() != s.chunkLoader.World().Dimension() {
-		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
-		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	if same {
+		dim = (dim + 1) % 3
+		s.switchingWorld.Store(true)
 	}
+	s.changeDimension(dim, same)
+	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
+}
+
+// changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
+// immediately.
+func (s *Session) changeDimension(dim int32, silent bool) {
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.writePacket(&packet.StopSound{StopAll: silent})
+	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -391,19 +446,23 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:            nil,
-		packet.IDAdventureSettings:     &AdventureSettingsHandler{},
+		packet.IDAdventureSettings:     nil, // Deprecated, the client still sends this though.
 		packet.IDAnimate:               nil,
+		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
 		packet.IDContainerClose:        &ContainerCloseHandler{},
+		packet.IDCraftingEvent:         nil,
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
+		packet.IDFilterText:            nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[byte]map[byte]responseChange{}},
+		packet.IDItemFrameDropItem:     nil,
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMapInfoRequest:        &MapInfoRequestHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
@@ -412,11 +471,24 @@ func (s *Session) registerHandlers() {
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},
+		packet.IDRequestAbility:        &RequestAbilityHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
+		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
-		packet.IDItemFrameDropItem:     nil,
+	}
+}
+
+// handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
+// in the future.
+func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+	if slot == enchantingInputSlot && s.containerOpened.Load() {
+		pos := s.openedPos.Load()
+		b := s.c.World().Block(pos)
+		if _, enchanting := b.(block.EnchantingTable); enchanting {
+			s.sendEnchantmentOptions(s.c.World(), pos, item)
+		}
 	}
 }
 
@@ -437,7 +509,9 @@ func (s *Session) initPlayerList() {
 		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
 		// currently open to the player list of the new session.
 		session.addToPlayerList(s)
-		s.addToPlayerList(session)
+		if s != session {
+			s.addToPlayerList(session)
+		}
 	}
 	sessionMu.Unlock()
 }

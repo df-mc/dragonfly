@@ -6,11 +6,11 @@ func init() {
 	item.RegisterEnchantment(0, Protection{})
 	item.RegisterEnchantment(1, FireProtection{})
 	item.RegisterEnchantment(2, FeatherFalling{})
-	item.RegisterEnchantment(3, BlastProtection{})
+	// TODO: (3) Blast Protection.
 	item.RegisterEnchantment(4, ProjectileProtection{})
-	// TODO: (5) Thorns.
-	// TODO: (6) Respiration.
-	// TODO: (7) Depth Strider.
+	item.RegisterEnchantment(5, Thorns{})
+	item.RegisterEnchantment(6, Respiration{})
+	item.RegisterEnchantment(7, DepthStrider{})
 	item.RegisterEnchantment(8, AquaAffinity{})
 	item.RegisterEnchantment(9, Sharpness{})
 	// TODO: (10) Smite. (Requires undead mobs)
@@ -29,7 +29,7 @@ func init() {
 	// TODO: (23) Luck of the Sea.
 	// TODO: (24) Lure.
 	// TODO: (25) Frost Walker.
-	// TODO: (26) Mending.
+	item.RegisterEnchantment(26, Mending{})
 	// TODO: (27) Curse of Binding.
 	// TODO: (28) Curse of Vanishing.
 	// TODO: (29) Impaling.
@@ -39,5 +39,6 @@ func init() {
 	// TODO: (33) Multishot.
 	// TODO: (34) Piercing.
 	// TODO: (35) Quick Charge.
-	// TODO: (36) Soul Speed.
+	item.RegisterEnchantment(36, SoulSpeed{})
+	item.RegisterEnchantment(37, SwiftSneak{})
 }

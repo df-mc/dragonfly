@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/item"
+
 type (
 	// Stone is a block found underground in the world or on mountains.
 	Stone struct {
@@ -27,37 +29,35 @@ type (
 	}
 )
 
-var stoneBreakInfo = newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}))
-
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
-	breakInfo := stoneBreakInfo
 	if s.Smooth {
-		breakInfo.Hardness = 2
-		breakInfo.Drops = oneOf(s)
+		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 	}
-	return breakInfo
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}))
 }
 
 // BreakInfo ...
 func (g Granite) BreakInfo() BreakInfo {
-	i := stoneBreakInfo
-	i.Drops = oneOf(g)
-	return i
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g))
 }
 
 // BreakInfo ...
 func (d Diorite) BreakInfo() BreakInfo {
-	i := stoneBreakInfo
-	i.Drops = oneOf(d)
-	return i
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d))
 }
 
 // BreakInfo ...
 func (a Andesite) BreakInfo() BreakInfo {
-	i := stoneBreakInfo
-	i.Drops = oneOf(a)
-	return i
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+}
+
+// SmeltInfo ...
+func (s Stone) SmeltInfo() item.SmeltInfo {
+	if s.Smooth {
+		return item.SmeltInfo{}
+	}
+	return newSmeltInfo(item.NewStack(Stone{Smooth: true}, 1), 0.1)
 }
 
 // EncodeItem ...

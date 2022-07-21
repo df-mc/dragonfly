@@ -56,10 +56,10 @@ func (t ticker) tick() {
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			if t.w.d.TimeCycle() {
+			if t.w.conf.Dim.TimeCycle() {
 				viewer.ViewTime(tim)
 			}
-			if t.w.d.WeatherCycle() {
+			if t.w.conf.Dim.WeatherCycle() {
 				viewer.ViewWeather(rain, thunder)
 			}
 		}
@@ -122,7 +122,6 @@ func (t ticker) performNeighbourUpdates() {
 // registered from the viewers passed.
 func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 	var (
-		tickSpeed     = t.w.randomTickSpeed.Load()
 		r             = int32(t.w.tickRange())
 		g             randUint4
 		blockEntities []cube.Pos
@@ -150,8 +149,9 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 
 		// We generate up to j random positions for every sub chunk.
-		x, y, z := g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
-		for j := uint32(0); j < tickSpeed; j++ {
+		for j := 0; j < t.w.conf.RandomTickSpeed; j++ {
+			x, y, z := g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
+
 			for i, sub := range c.Sub() {
 				if sub.Empty() {
 					// SubChunk is empty, so skip it right away.
@@ -175,7 +175,9 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 	t.w.chunkMu.Unlock()
 
 	for _, pos := range randomBlocks {
-		t.w.Block(pos).(RandomTicker).RandomTick(pos, t.w, t.w.r)
+		if rb, ok := t.w.Block(pos).(RandomTicker); ok {
+			rb.RandomTick(pos, t.w, t.w.r)
+		}
 	}
 	for _, pos := range blockEntities {
 		if tb, ok := t.w.Block(pos).(TickerBlock); ok {

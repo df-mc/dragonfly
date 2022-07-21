@@ -2,9 +2,8 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/physics"
-	"github.com/df-mc/dragonfly/server/entity/physics/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -142,9 +141,9 @@ func (a *Arrow) VanishOnPickup() {
 	a.obtainArrowOnPickup = false
 }
 
-// AABB ...
-func (a *Arrow) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (a *Arrow) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Rotation ...
@@ -163,10 +162,10 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 
 	a.mu.Lock()
 	if a.collided {
-		aabbs := w.Block(a.collisionPos).Model().AABB(a.collisionPos, w)
-		aabb := a.AABB().Translate(a.pos)
-		for _, bb := range aabbs {
-			if aabb.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
+		boxs := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
+		box := a.BBox().Translate(a.pos)
+		for _, bb := range boxs {
+			if box.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
 				if a.ageCollided > 5 && !a.disallowPickup {
 					a.checkNearby(w)
 				}
@@ -283,12 +282,12 @@ func (a *Arrow) EncodeNBT() map[string]any {
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
 // picked up.
 func (a *Arrow) checkNearby(w *world.World) {
-	grown := a.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
+	grown := a.BBox().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
 	ignore := func(e world.Entity) bool {
 		return e == a
 	}
-	for _, e := range w.EntitiesWithin(a.AABB().Translate(a.pos).Grow(2), ignore) {
-		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
+	for _, e := range w.EntitiesWithin(a.BBox().Translate(a.pos).Grow(2), ignore) {
+		if e.BBox().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				if a.obtainArrowOnPickup {
 					// A collector was within range to pick up the entity.

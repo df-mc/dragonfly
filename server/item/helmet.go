@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Helmet is a defensive item that may be worn in the head slot. It comes in several tiers, each with
@@ -24,7 +25,7 @@ func (h Helmet) MaxCount() int {
 
 // DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
-	switch h.Tier {
+	switch h.Tier.(type) {
 	case ArmourTierLeather:
 		return 1
 	case ArmourTierGold, ArmourTierChain, ArmourTierIron:
@@ -37,15 +38,41 @@ func (h Helmet) DefencePoints() float64 {
 
 // KnockBackResistance ...
 func (h Helmet) KnockBackResistance() float64 {
-	return h.Tier.KnockBackResistance
+	return h.Tier.KnockBackResistance()
+}
+
+// Toughness ...
+func (h Helmet) Toughness() float64 {
+	return h.Tier.Toughness()
+}
+
+// EnchantmentValue ...
+func (h Helmet) EnchantmentValue() int {
+	return h.Tier.EnchantmentValue()
 }
 
 // DurabilityInfo ...
 func (h Helmet) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability: int(h.Tier.BaseDurability),
+		MaxDurability: int(h.Tier.BaseDurability()),
 		BrokenItem:    simpleItem(Stack{}),
 	}
+}
+
+// SmeltInfo ...
+func (h Helmet) SmeltInfo() SmeltInfo {
+	switch h.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
+// RepairableBy ...
+func (h Helmet) RepairableBy(i Stack) bool {
+	return armourTierRepairable(h.Tier)(i)
 }
 
 // Helmet ...
@@ -55,5 +82,24 @@ func (h Helmet) Helmet() bool {
 
 // EncodeItem ...
 func (h Helmet) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + h.Tier.Name + "_helmet", 0
+	return "minecraft:" + h.Tier.Name() + "_helmet", 0
+}
+
+// DecodeNBT ...
+func (h Helmet) DecodeNBT(data map[string]any) any {
+	if t, ok := h.Tier.(ArmourTierLeather); ok {
+		if v, ok := data["customColor"].(int32); ok {
+			t.Colour = rgbaFromInt32(v)
+			h.Tier = t
+		}
+	}
+	return h
+}
+
+// EncodeNBT ...
+func (h Helmet) EncodeNBT() map[string]any {
+	if t, ok := h.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
+		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+	}
+	return nil
 }
