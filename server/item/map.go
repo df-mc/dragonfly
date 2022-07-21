@@ -9,6 +9,7 @@ type MapInterface interface {
 	// UpdateData updates the map's tracked entites, blocks or a chunk (with offset) of pixels.
 	UpdateData(MapDataUpdate)
 	AddViewer(MapDataViewer)
+	RemoveViewer(MapDataViewer)
 	// IsPresisted refers to whether or not the map and its data will be saved to disk.
 	IsPersisted() bool // TODO: Reset map item ID if not persisted. Because all data is gone on server's next life cycle.
 }
@@ -87,6 +88,13 @@ func (m *baseMap) AddViewer(v MapDataViewer) {
 		m.viewers = map[MapDataViewer]struct{}{v: s}
 	} else {
 		m.viewers[v] = s
+	}
+}
+
+// RemoveViewer ...
+func (m baseMap) RemoveViewer(v MapDataViewer) {
+	if m.viewers != nil {
+		delete(m.viewers, v)
 	}
 }
 
