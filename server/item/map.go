@@ -27,9 +27,9 @@ type MapDataUpdate struct {
 
 type baseMap struct {
 	// IsInit has unknown functionality (referring to the Minecraft Wiki).
+	// However in Dragonfly, this indicates whether a player has access to the persisted map data corresponding to Uuid.
 	IsInit bool
-	// Uuid is the numeric identifier of the map (data) used in this item.
-	// Sending packet.ClientBoundMapItemData can create or update map data at client side.
+	// Uuid is the numeric identifier of the map's linked MapData.
 	Uuid int64
 	// NameIndex is the index of the map's name.
 	NameIndex int32
@@ -40,8 +40,9 @@ type baseMap struct {
 	// IsScaling has unknown functionality (referring to the Minecraft Wiki).
 	IsScaling bool
 
-	viewers map[MapDataViewer]struct{}
-	data    *world.MapData
+	viewers   map[MapDataViewer]struct{}
+	data      *world.MapData
+	persisted bool
 }
 
 // DecodeNBT ...
@@ -87,4 +88,9 @@ func (m *baseMap) AddViewer(v MapDataViewer) {
 	} else {
 		m.viewers[v] = s
 	}
+}
+
+// IsPersisted ...
+func (m baseMap) IsPersisted() bool {
+	return m.persisted
 }
