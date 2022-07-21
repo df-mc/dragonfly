@@ -548,3 +548,47 @@ func (s *Session) sendAvailableEntities() {
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }
+
+// sendMapDataUpdate sends all registered entities to the player.
+func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, dimension, scale byte, data item.MapDataUpdate) {
+	var (
+		pixels = data.Pixels
+		height = int32(len(data.Pixels))
+		width  int32
+
+		trackeds []protocol.MapTrackedObject
+	)
+	for _, rows := range data.Pixels {
+		if len(rows) > int(width) {
+			width = int32(len(rows))
+		}
+	}
+	for _, e := range data.TrackEntities {
+		trackeds = append(trackeds, protocol.MapTrackedObject{
+			Type:           protocol.MapObjectTypeEntity,
+			EntityUniqueID: int64(s.entityRuntimeID(e)),
+		})
+	}
+	for _, p := range data.TrackBlocks {
+		trackeds = append(trackeds, protocol.MapTrackedObject{
+			Type:          protocol.MapObjectTypeBlock,
+			BlockPosition: protocol.BlockPos{int32(p[0]), int32(p[1]), int32(p[2])},
+		})
+	}
+
+	s.writePacket(&packet.ClientBoundMapItemData{
+		MapID:          id,
+		UpdateFlags:    updateFlag,
+		Dimension:      dimension,
+		LockedMap:      false, // TODO: Locked map support
+		Scale:          scale,
+		TrackedObjects: trackeds,
+		// Decorations is a list of fixed decorations located on the map. The decorations will not change
+		// client-side, unless the server updates them.
+		Decorations: []protocol.MapDecoration{},
+
+		Height: height,
+		Width:  width,
+		Pixels: pixels,
+	})
+}
