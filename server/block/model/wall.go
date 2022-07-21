@@ -27,16 +27,16 @@ func (w Wall) BBox(cube.Pos, *world.World) []cube.BBox {
 	}
 	boxes := []cube.BBox{cube.Box(0.25, 0, 0.25, 0.75, postHeight, 0.75)}
 	if w.NorthConnection > 0 {
-		boxes = append(boxes, cube.Box(0.25, 0, 0, 0.75, w.NorthConnection, 0.25))
-	}
-	if w.EastConnection > 0 {
-		boxes = append(boxes, cube.Box(0.75, 0, 0.25, 1, w.EastConnection, 0.75))
-	}
-	if w.SouthConnection > 0 {
 		boxes = append(boxes, cube.Box(0.25, 0, 0.75, 0.75, w.SouthConnection, 1))
 	}
-	if w.WestConnection > 0 {
+	if w.EastConnection > 0 {
 		boxes = append(boxes, cube.Box(0, 0, 0.25, 0.25, w.WestConnection, 0.75))
+	}
+	if w.SouthConnection > 0 {
+		boxes = append(boxes, cube.Box(0.25, 0, 0, 0.75, w.NorthConnection, 0.25))
+	}
+	if w.WestConnection > 0 {
+		boxes = append(boxes, cube.Box(0.75, 0, 0.25, 1, w.EastConnection, 0.75))
 	}
 	return boxes
 }
