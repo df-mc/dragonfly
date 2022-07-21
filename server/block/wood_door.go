@@ -72,7 +72,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 		return false
 	}
 	below := pos
-	pos = pos.Add(cube.Pos{0, 1})
+	pos = pos.Side(cube.FaceUp)
 	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
