@@ -5,9 +5,12 @@ import (
 )
 
 type MapInterface interface {
-	GetMapID() int64
+	GetMapID() int64 // TODO: Keep?
 	// UpdateData updates the map's tracked entites, blocks or a chunk (with offset) of pixels.
 	UpdateData(MapDataUpdate)
+	// GetData returns the data corresponding to the map's UUID.
+	// Empty value will be returned if the map has no data.
+	GetData() world.MapData
 	AddViewer(MapDataViewer)
 	RemoveViewer(MapDataViewer)
 	// IsPresisted refers to whether or not the map and its data will be saved to disk.
@@ -15,7 +18,7 @@ type MapInterface interface {
 }
 
 type MapDataViewer interface {
-	ViewMapDataChange(MapDataUpdate)
+	ViewMapDataChange(int64, MapDataUpdate)
 }
 
 // MapDataUpdate is world.MapData but with X and Y offsets.
@@ -75,10 +78,19 @@ func (m baseMap) UpdateData(u MapDataUpdate) {
 	}
 
 	for viewer := range m.viewers {
-		viewer.ViewMapDataChange(u)
+		viewer.ViewMapDataChange(m.Uuid, u)
 	}
 
 	// TODO: Update to disk if map is persistent.
+}
+
+// GetData ...
+func (m baseMap) GetData() world.MapData {
+	if m.data == nil {
+		return world.MapData{}
+	}
+
+	return *m.data
 }
 
 // AddViewer ...
