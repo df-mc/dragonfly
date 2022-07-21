@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 )
 
@@ -12,27 +11,27 @@ type CoralType struct {
 
 // TubeCoral returns the tube coral variant
 func TubeCoral() CoralType {
-	return CoralType{coral(0)}
+	return CoralType{0}
 }
 
 // BrainCoral returns the brain coral variant
 func BrainCoral() CoralType {
-	return CoralType{coral(1)}
+	return CoralType{1}
 }
 
 // BubbleCoral returns the bubble coral variant
 func BubbleCoral() CoralType {
-	return CoralType{coral(2)}
+	return CoralType{2}
 }
 
 // FireCoral returns the fire coral variant
 func FireCoral() CoralType {
-	return CoralType{coral(3)}
+	return CoralType{3}
 }
 
 // HornCoral returns the horn coral variant
 func HornCoral() CoralType {
-	return CoralType{coral(4)}
+	return CoralType{4}
 }
 
 // CoralTypes returns all coral types.
@@ -79,23 +78,6 @@ func (c coral) Name() string {
 		return "Horn Coral"
 	}
 	panic("unknown coral type")
-}
-
-// FromString ...
-func (c coral) FromString(s string) (interface{}, error) {
-	switch s {
-	case "tube":
-		return CoralType{coral(0)}, nil
-	case "brain":
-		return CoralType{coral(1)}, nil
-	case "bubble":
-		return CoralType{coral(2)}, nil
-	case "fire":
-		return CoralType{coral(3)}, nil
-	case "horn":
-		return CoralType{coral(4)}, nil
-	}
-	return nil, fmt.Errorf("unexpected coral type '%v', expecting one of 'tube', 'brain', 'bubble', 'fire', or 'horn'", s)
 }
 
 // String ...

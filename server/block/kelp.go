@@ -17,9 +17,14 @@ type Kelp struct {
 	Age int
 }
 
+// SmeltInfo ...
+func (k Kelp) SmeltInfo() item.SmeltInfo {
+	return newFoodSmeltInfo(item.NewStack(item.DriedKelp{}, 1), 0.1)
+}
+
 // BoneMeal ...
 func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
-	for y := pos.Y(); y < cube.MaxY; y++ {
+	for y := pos.Y(); y <= w.Range()[1]; y++ {
 		currentPos := cube.Pos{pos.X(), y, pos.Z()}
 		block := w.Block(currentPos)
 		if kelp, ok := block.(Kelp); ok {
@@ -29,7 +34,7 @@ func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
 			continue
 		}
 		if water, ok := block.(Water); ok && water.Depth == 8 {
-			w.PlaceBlock(currentPos, Kelp{Age: k.Age + 1})
+			w.SetBlock(currentPos, Kelp{Age: k.Age + 1}, nil)
 			return true
 		}
 		break
@@ -48,8 +53,8 @@ func (Kelp) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (k Kelp) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:kelp", map[string]interface{}{"kelp_age": int32(k.Age)}
+func (k Kelp) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:kelp", map[string]any{"kelp_age": int32(k.Age)}
 }
 
 // CanDisplace will return true if the liquid is Water, since kelp can waterlog.
@@ -76,7 +81,7 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return
 	}
 
-	below := pos.Add(cube.Pos{0, -1})
+	below := pos.Side(cube.FaceDown)
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
@@ -99,19 +104,19 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 // NeighbourUpdateTick ...
 func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 	if _, ok := w.Liquid(pos); !ok {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 		return
 	}
 	if changed.Y()-1 == pos.Y() {
 		// When a kelp block is broken above, the kelp block underneath it gets a new random age.
-		w.PlaceBlock(pos, k.withRandomAge())
+		w.SetBlock(pos, k.withRandomAge(), nil)
 	}
 
-	below := pos.Add(cube.Pos{0, -1})
+	below := pos.Side(cube.FaceDown)
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
-			w.BreakBlockWithoutParticles(pos)
+			w.SetBlock(pos, nil, nil)
 		}
 	}
 }
@@ -120,7 +125,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.Intn(100) < 15 && k.Age < 25 {
-		abovePos := pos.Add(cube.Pos{0, 1})
+		abovePos := pos.Side(cube.FaceUp)
 
 		liquid, ok := w.Liquid(abovePos)
 
@@ -130,7 +135,7 @@ func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		} else if _, ok := liquid.(Water); ok {
 			switch w.Block(abovePos).(type) {
 			case Air, Water:
-				w.PlaceBlock(abovePos, Kelp{Age: k.Age + 1})
+				w.SetBlock(abovePos, Kelp{Age: k.Age + 1}, nil)
 				if liquid.LiquidDepth() < 8 {
 					// When kelp grows into a water block, the water block becomes a source block.
 					w.SetLiquid(abovePos, Water{Still: true, Depth: 8, Falling: false})

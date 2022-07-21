@@ -12,7 +12,7 @@ type Hunger struct {
 }
 
 // Apply ...
-func (Hunger) Apply(e world.Entity, lvl int, d time.Duration) {
+func (Hunger) Apply(e world.Entity, lvl int, _ time.Duration) {
 	if i, ok := e.(interface {
 		Exhaust(points float64)
 	}); ok {

@@ -38,7 +38,7 @@ func DirectionVector(e world.Entity) mgl64.Vec3 {
 		-m * math.Sin(yawRad),
 		-math.Sin(pitchRad),
 		m * math.Cos(yawRad),
-	}.Normalize()
+	}
 }
 
 // Eyed represents an entity that has eyes.
@@ -52,7 +52,7 @@ type Eyed interface {
 func EyePosition(e world.Entity) mgl64.Vec3 {
 	pos := e.Position()
 	if eyed, ok := e.(Eyed); ok {
-		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
+		pos[1] += eyed.EyeHeight()
 	}
 	return pos
 }

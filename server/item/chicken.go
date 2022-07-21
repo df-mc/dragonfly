@@ -16,21 +16,29 @@ type Chicken struct {
 }
 
 // Consume ...
-func (ch Chicken) Consume(_ *world.World, c Consumer) Stack {
-	if ch.Cooked {
-		c.Saturate(6, 7.2)
+func (c Chicken) Consume(_ *world.World, co Consumer) Stack {
+	if c.Cooked {
+		co.Saturate(6, 7.2)
 	} else {
-		c.Saturate(2, 1.2)
+		co.Saturate(2, 1.2)
 		if rand.Float64() < 0.3 {
-			c.AddEffect(effect.New(effect.Hunger{}, 1, 30*time.Second))
+			co.AddEffect(effect.New(effect.Hunger{}, 1, 30*time.Second))
 		}
 	}
 	return Stack{}
 }
 
+// SmeltInfo ...
+func (c Chicken) SmeltInfo() SmeltInfo {
+	if c.Cooked {
+		return SmeltInfo{}
+	}
+	return newFoodSmeltInfo(NewStack(Chicken{Cooked: true}, 1), 0.35)
+}
+
 // EncodeItem ...
-func (ch Chicken) EncodeItem() (name string, meta int16) {
-	if ch.Cooked {
+func (c Chicken) EncodeItem() (name string, meta int16) {
+	if c.Cooked {
 		return "minecraft:cooked_chicken", 0
 	}
 	return "minecraft:chicken", 0

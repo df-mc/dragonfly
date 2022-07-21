@@ -2,7 +2,6 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -13,13 +12,13 @@ type Shears struct{}
 // UseOnBlock ...
 func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if face == cube.FaceUp || face == cube.FaceDown {
-		// Pumpkins can only be carved when once of the horizontal faces is clicked.
+		// Pumpkins can only be carved when one of the horizontal faces is clicked.
 		return false
 	}
 	if c, ok := w.Block(pos).(carvable); ok {
 		if res, ok := c.Carve(face); ok {
 			// TODO: Drop pumpkin seeds.
-			w.PlaceBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 
 			ctx.DamageItem(1)
 			return true
@@ -35,8 +34,8 @@ type carvable interface {
 }
 
 // ToolType ...
-func (s Shears) ToolType() tool.Type {
-	return tool.TypeShears
+func (s Shears) ToolType() ToolType {
+	return TypeShears
 }
 
 // HarvestLevel ...
@@ -45,7 +44,7 @@ func (s Shears) HarvestLevel() int {
 }
 
 // BaseMiningEfficiency ...
-func (s Shears) BaseMiningEfficiency(b world.Block) float64 {
+func (s Shears) BaseMiningEfficiency(world.Block) float64 {
 	return 1.5
 }
 

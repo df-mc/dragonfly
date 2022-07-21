@@ -5,10 +5,12 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"image/color"
 	"strings"
+	"time"
 )
 
 // Sign is a non-solid block that can display text.
@@ -27,7 +29,7 @@ type Sign struct {
 	// BaseColour is the base colour of the text on the sign, changed when using a dye on the sign. The default colour
 	// is black.
 	BaseColour color.RGBA
-	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark and it
+	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark, and it
 	// will have an outline to improve visibility.
 	Glowing bool
 	// owner holds the UUID of the player that initially placed the sign.
@@ -47,6 +49,11 @@ func (s Sign) MaxCount() int {
 // FlammabilityInfo ...
 func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
+}
+
+// FuelInfo ...
+func (Sign) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 10)
 }
 
 // EncodeItem ...
@@ -83,6 +90,11 @@ func (s Sign) Ink(glowing bool) (world.Block, bool) {
 	return s, true
 }
 
+// SignEditor represents something that can edit a sign, typically players.
+type SignEditor interface {
+	UUID() uuid.UUID
+}
+
 // EditableBy returns whether a SignEditor can edit the sign or not. This is based on whether the SignEditor
 // placed the sign and the sign's chunk has yet to be unloaded.
 func (s Sign) EditableBy(editor SignEditor) bool {
@@ -115,39 +127,41 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if s.Attach.hanging {
 		if _, ok := w.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			w.BreakBlock(pos)
+			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		}
 		return
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 	}
 }
 
 // EncodeBlock ...
-func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
 	if woodType == "oak_" {
 		woodType = ""
 	}
 	if s.Attach.hanging {
-		return "minecraft:" + woodType + "wall_sign", map[string]interface{}{"facing_direction": int32(s.Attach.facing + 2)}
+		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}
 	}
-	return "minecraft:" + woodType + "standing_sign", map[string]interface{}{"ground_sign_direction": int32(s.Attach.o)}
+	return "minecraft:" + woodType + "standing_sign", map[string]any{"ground_sign_direction": int32(s.Attach.o)}
 }
 
 // DecodeNBT ...
-func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Text = nbtconv.MapString(data, "Text")
-	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.MapInt32(data, "SignTextColor"))
-	s.Glowing = nbtconv.MapByte(data, "IgnoreLighting") == 1 && nbtconv.MapByte(data, "TextIgnoreLegacyBugResolved") == 1
+func (s Sign) DecodeNBT(data map[string]any) any {
+	s.Text = nbtconv.Map[string](data, "Text")
+	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Map[int32](data, "SignTextColor"))
+	s.Glowing = nbtconv.Map[byte](data, "IgnoreLighting") == 1 && nbtconv.Map[byte](data, "TextIgnoreLegacyBugResolved") == 1
 
 	return s
 }
 
 // EncodeNBT ...
-func (s Sign) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (s Sign) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"id":             "Sign",
 		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
 		"IgnoreLighting": boolByte(s.Glowing),

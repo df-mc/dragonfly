@@ -1,6 +1,8 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/block/instrument"
+import (
+	"github.com/df-mc/dragonfly/server/world/sound"
+)
 
 // PackedIce is an opaque solid block variant of ice. Unlike regular ice, it does not melt near bright light sources.
 type PackedIce struct {
@@ -8,8 +10,8 @@ type PackedIce struct {
 }
 
 // Instrument ...
-func (PackedIce) Instrument() instrument.Instrument {
-	return instrument.Chimes()
+func (PackedIce) Instrument() sound.Instrument {
+	return sound.Chimes()
 }
 
 // BreakInfo ...
@@ -28,6 +30,6 @@ func (PackedIce) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (PackedIce) EncodeBlock() (string, map[string]interface{}) {
+func (PackedIce) EncodeBlock() (string, map[string]any) {
 	return "minecraft:packed_ice", nil
 }

@@ -1,5 +1,7 @@
 package server
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Config is the configuration of a Dragonfly server. It holds settings that affect different aspects of the
 // server, such as its name and maximum players.
 type Config struct {
@@ -15,7 +17,7 @@ type Config struct {
 		// ShutdownMessage is the message shown to players when the server shuts down. If empty, players will
 		// be directed to the menu screen right away.
 		ShutdownMessage string
-		// AuthEnabled controls whether or not players must be connected to Xbox Live in order to join the server.
+		// AuthEnabled controls whether players must be connected to Xbox Live in order to join the server.
 		AuthEnabled bool
 		// JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
 		// %v is the placeholder for the username of the player
@@ -30,9 +32,6 @@ type Config struct {
 		Name string
 		// Folder is the folder that the data of the world resides in.
 		Folder string
-		// SimulationDistance is the maximum distance in chunks that a chunk must be to a player in order for
-		// it to receive random ticks. This field may be set to 0 to disable random block updates altogether.
-		SimulationDistance int
 	}
 	Players struct {
 		// MaxCount is the maximum amount of players allowed to join the server at the same time. If set
@@ -41,19 +40,26 @@ type Config struct {
 		// MaximumChunkRadius is the maximum chunk radius that players may set in their settings. If they try
 		// to set it above this number, it will be capped and set to the max.
 		MaximumChunkRadius int
-		// SaveData controls whether or not a player's data will be saved and loaded. If true, the server
-		// will use the default LevelDB data provider and if false, an empty provider will be used. To use your
-		// own provider, turn this value to false as you will still be able to pass your own provider.
+		// SaveData controls whether a player's data will be saved and loaded. If true, the server will use the default
+		// LevelDB data provider and if false, an empty provider will be used. To use your own provider, turn this value
+		// to false as you will still be able to pass your own provider.
 		SaveData bool
 		// Folder controls where the player data will be stored by the default LevelDB
 		// player provider if it is enabled.
 		Folder string
 	}
-
 	Resources struct {
+		// AutoBuildPack is if the server should automatically generate a resource pack for custom features.
+		AutoBuildPack bool
 		// Folder controls the location where resource packs will be loaded from.
 		Folder string
+		// Required is a boolean to force the client to load the resource pack on join. If they do not accept, they'll have to leave the server.
+		Required bool
 	}
+	// WorldConfig, if non-nil, is called for every default world that a Server creates. It may be used to change the
+	// world.Config that these worlds are created with. The default world.Config is passed to the function and should
+	// be edited, then returned by the WorldConfig function.
+	WorldConfig func(def world.Config) world.Config `toml:"-"`
 }
 
 // DefaultConfig returns a configuration with the default values filled out.
@@ -67,10 +73,11 @@ func DefaultConfig() Config {
 	c.Server.QuitMessage = "%v has left the game"
 	c.World.Name = "World"
 	c.World.Folder = "world"
-	c.World.SimulationDistance = 8
 	c.Players.MaximumChunkRadius = 32
 	c.Players.SaveData = true
 	c.Players.Folder = "players"
+	c.Resources.AutoBuildPack = true
 	c.Resources.Folder = "resources"
+	c.Resources.Required = false
 	return c
 }

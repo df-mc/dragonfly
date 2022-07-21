@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/tool"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -26,7 +25,7 @@ func (c CocoaBean) BoneMeal(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 	c.Age++
-	w.PlaceBlock(pos, c)
+	w.SetBlock(pos, c, nil)
 	return true
 }
 
@@ -37,8 +36,15 @@ func (c CocoaBean) HasLiquidDrops() bool {
 
 // NeighbourUpdateTick ...
 func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if log, ok := w.Block(pos.Side(c.Facing.Face())).(Log); !ok || log.Wood != JungleWood() {
-		w.BreakBlockWithoutParticles(pos)
+	var woodType WoodType
+	switch b := w.Block(pos.Side(c.Facing.Face())).(type) {
+	case Log:
+		woodType = b.Wood
+	case Wood:
+		woodType = b.Wood
+	}
+	if woodType != JungleWood() {
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -52,14 +58,20 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	if face == cube.FaceUp || face == cube.FaceDown {
 		return false
 	}
-	if log, ok := w.Block(pos.Side(face.Opposite())).(Log); ok {
-		if log.Wood == JungleWood() {
-			c.Facing = face.Opposite().Direction()
-			ctx.IgnoreAABB = true
 
-			place(w, pos, c, user, ctx)
-			return placed(ctx)
-		}
+	var woodType WoodType
+	oppositePos := pos.Side(face.Opposite())
+	if log, ok := w.Block(oppositePos).(Log); ok {
+		woodType = log.Wood
+	} else if wood, ok := w.Block(oppositePos).(Wood); ok {
+		woodType = wood.Wood
+	}
+	if woodType == JungleWood() {
+		c.Facing = face.Opposite().Direction()
+		ctx.IgnoreBBox = true
+
+		place(w, pos, c, user, ctx)
+		return placed(ctx)
 	}
 
 	return false
@@ -69,13 +81,13 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 func (c CocoaBean) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if c.Age < 2 && r.Intn(5) == 0 {
 		c.Age++
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 	}
 }
 
 // BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(tool.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if c.Age == 2 {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}
@@ -89,18 +101,8 @@ func (c CocoaBean) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}) {
-	direction := 2
-	switch c.Facing {
-	case cube.South:
-		direction = 0
-	case cube.West:
-		direction = 1
-	case cube.East:
-		direction = 3
-	}
-
-	return "minecraft:cocoa", map[string]interface{}{"age": int32(c.Age), "direction": int32(direction)}
+func (c CocoaBean) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:cocoa", map[string]any{"age": int32(c.Age), "direction": int32(horizontalDirection(c.Facing))}
 }
 
 // Model ...

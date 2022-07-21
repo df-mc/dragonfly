@@ -1,7 +1,9 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // Planks are common blocks used in crafting recipes. They are made by crafting logs into planks.
@@ -27,24 +29,33 @@ func (p Planks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p))
 }
 
+// RepairsWoodTools ...
+func (p Planks) RepairsWoodTools() bool {
+	return true
+}
+
+// FuelInfo ...
+func (Planks) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
 // EncodeItem ...
 func (p Planks) EncodeItem() (name string, meta int16) {
 	switch p.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		return "minecraft:planks", int16(p.Wood.Uint8())
-	case CrimsonWood(), WarpedWood():
+	default:
 		return "minecraft:" + p.Wood.String() + "_planks", 0
 	}
-	panic("invalid wood type")
 }
 
 // EncodeBlock ...
-func (p Planks) EncodeBlock() (name string, properties map[string]interface{}) {
+func (p Planks) EncodeBlock() (name string, properties map[string]any) {
 	switch p.Wood {
-	case CrimsonWood(), WarpedWood():
-		return "minecraft:" + p.Wood.String() + "_planks", nil
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+		return "minecraft:planks", map[string]any{"wood_type": p.Wood.String()}
 	default:
-		return "minecraft:planks", map[string]interface{}{"wood_type": p.Wood.String()}
+		return "minecraft:" + p.Wood.String() + "_planks", nil
 	}
 }
 

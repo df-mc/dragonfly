@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -25,11 +26,12 @@ func (PumpkinSeeds) SameCrop(c Crop) bool {
 // NeighbourUpdateTick ...
 func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
 	} else if p.Direction != cube.FaceDown {
 		if pumpkin, ok := w.Block(pos.Side(p.Direction)).(Pumpkin); !ok || pumpkin.Carved {
 			p.Direction = cube.FaceDown
-			w.PlaceBlock(pos, p)
+			w.SetBlock(pos, p, nil)
 		}
 	}
 }
@@ -39,7 +41,7 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if r.Float64() <= p.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
 		if p.Growth < 7 {
 			p.Growth++
-			w.PlaceBlock(pos, p)
+			w.SetBlock(pos, p, nil)
 		} else {
 			directions := []cube.Direction{cube.North, cube.South, cube.West, cube.East}
 			for _, i := range directions {
@@ -53,8 +55,8 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
 				case Farmland, Dirt, Grass:
 					p.Direction = direction
-					w.PlaceBlock(pos, p)
-					w.PlaceBlock(stemPos, Pumpkin{})
+					w.SetBlock(pos, p, nil)
+					w.SetBlock(stemPos, Pumpkin{}, nil)
 				}
 			}
 		}
@@ -67,7 +69,7 @@ func (p PumpkinSeeds) BoneMeal(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 	p.Growth = min(p.Growth+rand.Intn(4)+2, 7)
-	w.PlaceBlock(pos, p)
+	w.SetBlock(pos, p, nil)
 	return true
 }
 
@@ -97,8 +99,8 @@ func (p PumpkinSeeds) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:pumpkin_stem", map[string]interface{}{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
+func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:pumpkin_stem", map[string]any{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
 }
 
 // allPumpkinStems

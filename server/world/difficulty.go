@@ -13,78 +13,48 @@ type Difficulty interface {
 	FireSpreadIncrease() int
 }
 
-// DifficultyPeaceful difficulty prevents most hostile mobs from spawning and makes players rapidly regenerate
+var (
+	// DifficultyPeaceful prevents most hostile mobs from spawning and makes players rapidly regenerate health and food.
+	DifficultyPeaceful difficultyPeaceful
+	// DifficultyEasy has mobs that deal less damage to players than normal and starvation won't occur if a player has
+	// less than 5 hearts of health.
+	DifficultyEasy difficultyEasy
+	// DifficultyNormal has mobs that deal normal damage to players. Starvation will occur until the player is down to
+	// a single heart.
+	DifficultyNormal difficultyNormal
+	// DifficultyHard has mobs that deal above average damage to players. Starvation will kill players with too little
+	// food and monsters will get additional effects.
+	DifficultyHard difficultyHard
+)
+
+// difficultyPeaceful difficulty prevents most hostile mobs from spawning and makes players rapidly regenerate
 // health and food.
-type DifficultyPeaceful struct{}
+type difficultyPeaceful struct{}
 
-// FoodRegenerates ...
-func (DifficultyPeaceful) FoodRegenerates() bool {
-	return true
-}
+func (difficultyPeaceful) FoodRegenerates() bool          { return true }
+func (difficultyPeaceful) StarvationHealthLimit() float64 { return 20 }
+func (difficultyPeaceful) FireSpreadIncrease() int        { return 0 }
 
-// StarvationHealthLimit ...
-func (DifficultyPeaceful) StarvationHealthLimit() float64 {
-	return 20
-}
-
-// FireSpreadIncrease ...
-func (DifficultyPeaceful) FireSpreadIncrease() int {
-	return 0
-}
-
-// DifficultyEasy difficulty has mobs deal less damage to players than normal and starvation won't occur if
+// difficultyEasy difficulty has mobs deal less damage to players than normal and starvation won't occur if
 // a player has less than 5 hearts of health.
-type DifficultyEasy struct{}
+type difficultyEasy struct{}
 
-// FoodRegenerates ...
-func (DifficultyEasy) FoodRegenerates() bool {
-	return false
-}
+func (difficultyEasy) FoodRegenerates() bool          { return false }
+func (difficultyEasy) StarvationHealthLimit() float64 { return 10 }
+func (difficultyEasy) FireSpreadIncrease() int        { return 7 }
 
-// StarvationHealthLimit ...
-func (DifficultyEasy) StarvationHealthLimit() float64 {
-	return 10
-}
-
-// FireSpreadIncrease ...
-func (DifficultyEasy) FireSpreadIncrease() int {
-	return 7
-}
-
-// DifficultyNormal difficulty has mobs that deal normal damage to players. Starvation will occur until the
+// difficultyNormal difficulty has mobs that deal normal damage to players. Starvation will occur until the
 // player is down to a single heart.
-type DifficultyNormal struct{}
+type difficultyNormal struct{}
 
-// FoodRegenerates ...
-func (DifficultyNormal) FoodRegenerates() bool {
-	return false
-}
+func (difficultyNormal) FoodRegenerates() bool          { return false }
+func (difficultyNormal) StarvationHealthLimit() float64 { return 2 }
+func (difficultyNormal) FireSpreadIncrease() int        { return 14 }
 
-// StarvationHealthLimit ...
-func (DifficultyNormal) StarvationHealthLimit() float64 {
-	return 2
-}
-
-// FireSpreadIncrease ...
-func (DifficultyNormal) FireSpreadIncrease() int {
-	return 14
-}
-
-// DifficultyHard difficulty has mobs that deal above average damage to players. Starvation will kill players
+// difficultyHard difficulty has mobs that deal above average damage to players. Starvation will kill players
 // with too little food and monsters will get additional effects.
-type DifficultyHard struct{}
+type difficultyHard struct{}
 
-// FoodRegenerates ...
-func (DifficultyHard) FoodRegenerates() bool {
-	return false
-}
-
-// StarvationHealthLimit ...
-func (DifficultyHard) StarvationHealthLimit() float64 {
-	return -1
-}
-
-// FireSpreadIncrease ...
-func (DifficultyHard) FireSpreadIncrease() int {
-	return 21
-}
+func (difficultyHard) FoodRegenerates() bool          { return false }
+func (difficultyHard) StarvationHealthLimit() float64 { return -1 }
+func (difficultyHard) FireSpreadIncrease() int        { return 21 }

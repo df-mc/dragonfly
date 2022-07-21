@@ -11,9 +11,9 @@ type Weakness struct {
 
 // Multiplier returns the damage multiplier of the effect.
 func (Weakness) Multiplier(lvl int) float64 {
-	v := -0.2 * float64(lvl)
-	if v < -1 {
-		v = -1
+	v := 0.2 * float64(lvl)
+	if v > 1 {
+		v = 1
 	}
 	return v
 }

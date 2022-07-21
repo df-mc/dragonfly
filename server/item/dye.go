@@ -16,7 +16,7 @@ type Dye struct {
 func (d Dye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if dy, ok := w.Block(pos).(dyeable); ok {
 		if res, ok := dy.Dye(d.Colour); ok {
-			w.SetBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			ctx.SubtractFromCount(1)
 			return true
 		}

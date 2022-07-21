@@ -22,159 +22,67 @@ type GameMode interface {
 	Visible() bool
 }
 
-// GameModeSurvival represents the survival game mode: Players with this game mode have limited supplies and
-// can break blocks using only the right tools.
-type GameModeSurvival struct{}
+var (
+	// GameModeSurvival is the survival game mode: Players with this game mode have limited supplies and can break blocks
+	// after taking some time.
+	GameModeSurvival survival
+	// GameModeCreative represents the creative game mode: Players with this game mode have infinite blocks and
+	// items and can break blocks instantly. Players with creative mode can also fly.
+	GameModeCreative creative
+	// GameModeAdventure represents the adventure game mode: Players with this game mode cannot edit the world
+	// (placing or breaking blocks).
+	GameModeAdventure adventure
+	// GameModeSpectator represents the spectator game mode: Players with this game mode cannot interact with the
+	// world and cannot be seen by other players. spectator players can fly, like creative mode, and can
+	// move through blocks.
+	GameModeSpectator spectator
+)
 
-// AllowsEditing ...
-func (GameModeSurvival) AllowsEditing() bool {
-	return true
-}
+// survival is the survival game mode: Players with this game mode have limited supplies and can break blocks after
+// taking some time.
+type survival struct{}
 
-// AllowsTakingDamage ...
-func (GameModeSurvival) AllowsTakingDamage() bool {
-	return true
-}
+func (survival) AllowsEditing() bool      { return true }
+func (survival) AllowsTakingDamage() bool { return true }
+func (survival) CreativeInventory() bool  { return false }
+func (survival) HasCollision() bool       { return true }
+func (survival) AllowsFlying() bool       { return false }
+func (survival) AllowsInteraction() bool  { return true }
+func (survival) Visible() bool            { return true }
 
-// CreativeInventory ...
-func (GameModeSurvival) CreativeInventory() bool {
-	return false
-}
-
-// HasCollision ...
-func (GameModeSurvival) HasCollision() bool {
-	return true
-}
-
-// AllowsFlying ...
-func (GameModeSurvival) AllowsFlying() bool {
-	return false
-}
-
-// AllowsInteraction ...
-func (GameModeSurvival) AllowsInteraction() bool {
-	return true
-}
-
-// Visible ...
-func (GameModeSurvival) Visible() bool {
-	return true
-}
-
-// GameModeCreative represents the creative game mode: Players with this game mode have infinite blocks and
+// creative represents the creative game mode: Players with this game mode have infinite blocks and
 // items and can break blocks instantly. Players with creative mode can also fly.
-type GameModeCreative struct{}
+type creative struct{}
 
-// AllowsEditing ...
-func (GameModeCreative) AllowsEditing() bool {
-	return true
-}
+func (creative) AllowsEditing() bool      { return true }
+func (creative) AllowsTakingDamage() bool { return false }
+func (creative) CreativeInventory() bool  { return true }
+func (creative) HasCollision() bool       { return true }
+func (creative) AllowsFlying() bool       { return true }
+func (creative) AllowsInteraction() bool  { return true }
+func (creative) Visible() bool            { return true }
 
-// AllowsTakingDamage ...
-func (GameModeCreative) AllowsTakingDamage() bool {
-	return false
-}
-
-// CreativeInventory ...
-func (GameModeCreative) CreativeInventory() bool {
-	return true
-}
-
-// HasCollision ...
-func (GameModeCreative) HasCollision() bool {
-	return true
-}
-
-// AllowsFlying ...
-func (GameModeCreative) AllowsFlying() bool {
-	return true
-}
-
-// AllowsInteraction ...
-func (GameModeCreative) AllowsInteraction() bool {
-	return true
-}
-
-// Visible ...
-func (GameModeCreative) Visible() bool {
-	return true
-}
-
-// GameModeAdventure represents the adventure game mode: Players with this game mode cannot edit the world
+// adventure represents the adventure game mode: Players with this game mode cannot edit the world
 // (placing or breaking blocks).
-type GameModeAdventure struct{}
+type adventure struct{}
 
-// AllowsEditing ...
-func (GameModeAdventure) AllowsEditing() bool {
-	return false
-}
+func (adventure) AllowsEditing() bool      { return false }
+func (adventure) AllowsTakingDamage() bool { return true }
+func (adventure) CreativeInventory() bool  { return false }
+func (adventure) HasCollision() bool       { return true }
+func (adventure) AllowsFlying() bool       { return false }
+func (adventure) AllowsInteraction() bool  { return true }
+func (adventure) Visible() bool            { return true }
 
-// AllowsTakingDamage ...
-func (GameModeAdventure) AllowsTakingDamage() bool {
-	return true
-}
-
-// CreativeInventory ...
-func (GameModeAdventure) CreativeInventory() bool {
-	return false
-}
-
-// HasCollision ...
-func (GameModeAdventure) HasCollision() bool {
-	return true
-}
-
-// AllowsFlying ...
-func (GameModeAdventure) AllowsFlying() bool {
-	return false
-}
-
-// AllowsInteraction ...
-func (GameModeAdventure) AllowsInteraction() bool {
-	return true
-}
-
-// Visible ...
-func (GameModeAdventure) Visible() bool {
-	return true
-}
-
-// GameModeSpectator represents the spectator game mode: Players with this game mode cannot interact with the
-// world and cannot be seen by other players. GameModeSpectator players can fly, like creative mode, and can
+// spectator represents the spectator game mode: Players with this game mode cannot interact with the
+// world and cannot be seen by other players. spectator players can fly, like creative mode, and can
 // move through blocks.
-type GameModeSpectator struct{}
+type spectator struct{}
 
-// AllowsEditing ...
-func (GameModeSpectator) AllowsEditing() bool {
-	return false
-}
-
-// AllowsTakingDamage ...
-func (GameModeSpectator) AllowsTakingDamage() bool {
-	return false
-}
-
-// CreativeInventory ...
-func (GameModeSpectator) CreativeInventory() bool {
-	return true
-}
-
-// HasCollision ...
-func (GameModeSpectator) HasCollision() bool {
-	return false
-}
-
-// AllowsFlying ...
-func (GameModeSpectator) AllowsFlying() bool {
-	return true
-}
-
-// AllowsInteraction ...
-func (GameModeSpectator) AllowsInteraction() bool {
-	return true
-}
-
-// Visible ...
-func (GameModeSpectator) Visible() bool {
-	return false
-}
+func (spectator) AllowsEditing() bool      { return false }
+func (spectator) AllowsTakingDamage() bool { return false }
+func (spectator) CreativeInventory() bool  { return false }
+func (spectator) HasCollision() bool       { return false }
+func (spectator) AllowsFlying() bool       { return true }
+func (spectator) AllowsInteraction() bool  { return false }
+func (spectator) Visible() bool            { return false }

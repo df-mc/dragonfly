@@ -2,31 +2,33 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Door is a model used for doors. It has no solid faces and a bounding box that changes depending on
 // the direction of the door, whether it is open, and the side of its hinge.
 type Door struct {
+	// Facing is the direction that the door is facing when closed.
 	Facing cube.Direction
-	Open   bool
-	Right  bool
+	// Open specifies if the Door is open. The direction it opens towards depends on the Right field.
+	Open bool
+	// Right specifies the attachment side of the door and, with that, the direction it opens in.
+	Right bool
 }
 
-// AABB ...
-func (d Door) AABB(pos cube.Pos, w *world.World) []physics.AABB {
+// BBox returns a physics.BBox that depends on if the Door is open, what direction it is facing and whether it is
+// attached to the right/left side of a block.
+func (d Door) BBox(cube.Pos, *world.World) []cube.BBox {
 	if d.Open {
 		if d.Right {
-			return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.RotateLeft().Face(), -0.8125)}
+			return []cube.BBox{full.ExtendTowards(d.Facing.RotateLeft().Face(), -0.8125)}
 		}
-		return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.RotateRight().Face(), -0.8125)}
+		return []cube.BBox{full.ExtendTowards(d.Facing.RotateRight().Face(), -0.8125)}
 	}
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{}, mgl64.Vec3{1, 1, 1}).ExtendTowards(d.Facing.Face(), -0.8125)}
+	return []cube.BBox{full.ExtendTowards(d.Facing.Face(), -0.8125)}
 }
 
-// FaceSolid ...
-func (d Door) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+// FaceSolid always returns false.
+func (d Door) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }
