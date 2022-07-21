@@ -149,6 +149,8 @@ func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
 		if !connected {
 			if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
 				connected = gate.Facing.Face().Axis() != face.Axis()
+			} else if _, ok := wo.Block(sidePos).Model().(model.Thin); ok {
+				connected = true
 			}
 		}
 		var connectionType WallConnectionType
