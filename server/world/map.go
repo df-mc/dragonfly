@@ -113,6 +113,22 @@ func (d *ViewableMapData) SetLocked(locked bool) {
 	d.data.Locked = locked
 }
 
+// GetMapData ...
+func (d *ViewableMapData) GetMapData() MapData {
+	d.pixelsMu.RLock()
+	d.trackEntitiesMu.RLock()
+	d.trackBlocksMu.RLock()
+	d.scaleMu.RLock()
+	d.lockedMu.RLock()
+	defer d.pixelsMu.RUnlock()
+	defer d.trackEntitiesMu.RUnlock()
+	defer d.trackBlocksMu.RUnlock()
+	defer d.scaleMu.RUnlock()
+	defer d.lockedMu.RUnlock()
+
+	return d.data
+}
+
 func (d *ViewableMapData) change(updateFlag byte) {
 	d.broadcast(updateFlag)
 	d.save()
