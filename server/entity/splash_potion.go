@@ -10,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
 	"time"
 )
 
@@ -96,18 +95,14 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
+		effects := s.t.Effects()
 		box := s.BBox().Translate(m.pos)
-
-		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
-		if effects := s.t.Effects(); len(effects) > 0 {
-			colour, _ = effect.ResultingColour(effects)
-
-			ignore := func(entity world.Entity) bool {
+		colour, _ := effect.ResultingColour(effects)
+		if len(effects) > 0 {
+			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), func(entity world.Entity) bool {
 				_, living := entity.(Living)
 				return !living || entity == s
-			}
-
-			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
+			}) {
 				pos := e.Position()
 				if !e.BBox().Translate(pos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 					continue
@@ -206,11 +201,10 @@ func (s *SplashPotion) EncodeNBT() map[string]any {
 	yaw, pitch := s.Rotation()
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
+		"PotionId": s.t.Uint8(),
 		"Yaw":      yaw,
 		"Pitch":    pitch,
-		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"Damage":   0.0,
-		"PotionId": s.t.Uint8(),
 	}
 }
 

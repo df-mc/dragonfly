@@ -79,12 +79,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sc, ok := e.(scoreTag); ok {
 		m[dataKeyScoreTag] = sc.ScoreTag()
 	}
-	if sp, ok := e.(splash); ok {
-		pot := sp.Type()
-		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
-		if len(pot.Effects()) > 0 {
-			m.setFlag(dataKeyFlags, dataFlagEnchanted)
-		}
+	if p, ok := e.(splash); ok {
+		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+	}
+	if g, ok := e.(glint); ok && g.Glint() {
+		m.setFlag(dataKeyFlags, dataFlagEnchanted)
 	}
 	if t, ok := e.(tipped); ok {
 		if tip := t.Tip().Uint8(); tip > 4 {
@@ -202,6 +201,10 @@ type scoreTag interface {
 
 type splash interface {
 	Type() potion.Potion
+}
+
+type glint interface {
+	Glint() bool
 }
 
 type onFire interface {

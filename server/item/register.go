@@ -61,6 +61,7 @@ func init() {
 	world.RegisterItem(Arrow{})
 
 	world.RegisterItem(GlassBottle{})
+	world.RegisterItem(BottleOfEnchanting{})
 	for i, p := range potion.All() {
 		if i > 4 {
 			world.RegisterItem(Arrow{Tip: p})
