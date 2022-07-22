@@ -93,7 +93,7 @@ func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
 		w.AddParticle(m.pos, particle.Splash{Colour: colour})
 		w.PlaySound(m.pos, sound.GlassBreak{})
 
-		for _, orb := range NewExperienceOrbs(m.pos, rand.Intn(8)+3) {
+		for _, orb := range NewExperienceOrbs(m.pos, rand.Intn(9)+3) {
 			orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 			w.AddEntity(orb)
 		}
