@@ -172,7 +172,7 @@ func (d *ViewableMapData) RemoveViewer(v MapDataViewer) {
 	delete(d.viewers, v)
 }
 
-// EncodeNBT provides value of field map ID, scale and is scaling for item.BaseMap.EncodeNBT().
+// EncodeItemNBT provides value of field map ID, scale and is scaling for item.BaseMap.EncodeNBT().
 // Returns empty map if nil.
 func (d *ViewableMapData) EncodeItemNBT() map[string]any {
 	if d == nil {
