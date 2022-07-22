@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -411,9 +410,9 @@ func (srv *Server) running() bool {
 }
 
 // startListening starts making the listener listen, accepting new connections from players.
-func (server *Server) startListening() error {
-	texturePacksRequired := server.c.Resources.Required
-	if server.c.Resources.AutoBuildPack {
+func (srv *Server) startListening() error {
+	texturePacksRequired := srv.c.Resources.Required
+	if srv.c.Resources.AutoBuildPack {
 		if pack, ok := packbuilder.BuildResourcePack(); ok {
 			srv.resources = append(srv.resources, pack)
 			texturePacksRequired = true
@@ -453,14 +452,14 @@ func (srv *Server) makeItemComponents() {
 
 // makeBlockComponents initializes the server's block components map using the registered custom blocks. It allows block
 // components to be created only once at startup.
-func (server *Server) makeBlockComponents() {
-	server.blockComponents = make(map[string]map[string]any)
+func (srv *Server) makeBlockComponents() {
+	srv.blockComponents = make(map[string]map[string]any)
 	for identifier, group := range world.CustomBlocks() {
 		data, err := blockinternal.Components(identifier, group)
 		if err != nil {
-			server.log.Fatalf("error creating block components: %v", err)
+			srv.log.Fatalf("error creating block components: %v", err)
 		}
-		server.blockComponents[identifier] = data
+		srv.blockComponents[identifier] = data
 	}
 }
 
@@ -491,8 +490,8 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		return
 	}
 
-	_ = conn.WritePacket(&packet.ItemComponent{Items: server.itemComponentEntries()})
-	if p, ok := server.Player(id); ok {
+	_ = conn.WritePacket(&packet.ItemComponent{Items: srv.itemComponentEntries()})
+	if p, ok := srv.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
 	srv.incoming <- srv.createPlayer(id, conn, playerData)
@@ -698,8 +697,8 @@ func (srv *Server) itemEntries() (entries []protocol.ItemEntry) {
 
 // itemComponentEntries returns a list of all custom item component entries of the server, ready to be sent in the
 // ItemComponent packet.
-func (server *Server) itemComponentEntries() (entries []protocol.ItemComponentEntry) {
-	for name, entry := range server.itemComponents {
+func (srv *Server) itemComponentEntries() (entries []protocol.ItemComponentEntry) {
+	for name, entry := range srv.itemComponents {
 		entries = append(entries, protocol.ItemComponentEntry{
 			Name: name,
 			Data: entry,
@@ -709,8 +708,8 @@ func (server *Server) itemComponentEntries() (entries []protocol.ItemComponentEn
 }
 
 // blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
-func (server *Server) blockEntries() (entries []protocol.BlockEntry) {
-	for name, properties := range server.blockComponents {
+func (srv *Server) blockEntries() (entries []protocol.BlockEntry) {
+	for name, properties := range srv.blockComponents {
 		pretty.Println(properties)
 		entries = append(entries, protocol.BlockEntry{
 			Name:       name,

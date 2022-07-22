@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
-	"golang.org/x/exp/maps"
 )
 
 // Model represents the model of a custom block. It can contain multiple materials applied to different parts of the
@@ -23,6 +22,7 @@ func NewModel(geometries []Geometry, origin, size mgl64.Vec3) Model {
 		panic(fmt.Errorf("model size cannot exceed 16x16x16, got %v", size))
 	}
 	return Model{
+		materials:  make(map[MaterialTarget]Material),
 		geometries: geometries,
 		origin:     origin,
 		size:       size,
@@ -31,7 +31,6 @@ func NewModel(geometries []Geometry, origin, size mgl64.Vec3) Model {
 
 // WithMaterial returns a copy of the Model with the provided material.
 func (m Model) WithMaterial(target MaterialTarget, material Material) Model {
-	m.materials = maps.Clone(m.materials)
 	m.materials[target] = material
 	return m
 }
