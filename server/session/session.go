@@ -549,8 +549,18 @@ func (s *Session) sendAvailableEntities() {
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }
 
-// ViewMapDataChange writes *packet.ClientBoundMapItemData.
+// ViewMapDataChange writes *packet.ClientBoundMapItemData if session still has access to the data.
 func (s *Session) ViewMapDataChange(updateFlag uint32, mapID int64, pixelsChunk world.MapPixelsChunk, data *world.ViewableMapData) {
+	if _, ok := s.canAccessMapData(mapID); !ok {
+		data.RemoveViewer(s)
+		return
+	}
+
+	s.SendMapData(updateFlag, mapID, pixelsChunk, data)
+}
+
+// SendMapData writes *packet.ClientBoundMapItemData.
+func (s *Session) SendMapData(updateFlag uint32, mapID int64, pixelsChunk world.MapPixelsChunk, data *world.ViewableMapData) {
 	var (
 		d        = data.MapData()
 		trackeds []protocol.MapTrackedObject
@@ -588,4 +598,30 @@ func (s *Session) ViewMapDataChange(updateFlag uint32, mapID int64, pixelsChunk 
 		YOffset: pixelsChunk.YOffset,
 		Pixels:  pixelsChunk.Pixels,
 	})
+
+}
+
+func (s *Session) canAccessMapData(mapID int64) (item.MapItem, bool) {
+	var (
+		mapItem item.MapItem
+		ok      bool
+	)
+	for _, inv := range []*inventory.Inventory{
+		s.inv,
+		s.offHand,
+		s.ui,
+		s.armour.Inventory(),
+	} {
+		if inv.ContainsItemFunc(1, func(stack item.Stack) bool {
+			if mapItem, ok = stack.Item().(item.MapItem); ok {
+				return mapItem.BaseMap().MapIDEquals(mapID)
+			}
+
+			return false // Item is not map.
+		}) {
+			return mapItem, true
+		}
+	}
+
+	return nil, false
 }
