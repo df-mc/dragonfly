@@ -1,33 +1,33 @@
 package customblock
 
-// RenderMethod is the method to use when rendering a material for a custom block.
-type RenderMethod struct {
+// Method is the method to use when rendering a material for a custom block.
+type Method struct {
 	renderMethod
 }
 
 // OpaqueRenderMethod returns the opaque rendering method for a material. It does not render an alpha layer, meaning it
 // does not support transparent or translucent textures, only textures that are fully opaque.
-func OpaqueRenderMethod() RenderMethod {
-	return RenderMethod{0}
+func OpaqueRenderMethod() Method {
+	return Method{0}
 }
 
 // AlphaTestRenderMethod returns the alpha_test rendering method for a material. It does not allow for translucent
 // textures, only textures that are fully opaque or fully transparent, used for blocks such as regular glass. It also
 // disables ambient occlusion by default.
-func AlphaTestRenderMethod() RenderMethod {
-	return RenderMethod{1}
+func AlphaTestRenderMethod() Method {
+	return Method{1}
 }
 
 // BlendRenderMethod returns the blend rendering method for a material. It allows for transparent and translucent
 // textures, used for blocks such as stained-glass. It also disables ambient occlusion by default.
-func BlendRenderMethod() RenderMethod {
-	return RenderMethod{2}
+func BlendRenderMethod() Method {
+	return Method{2}
 }
 
 // DoubleSidedRenderMethod returns the double_sided rendering method for a material. It is used to completely disable
 // backface culling, which would be used for flat faces visible from both sides.
-func DoubleSidedRenderMethod() RenderMethod {
-	return RenderMethod{3}
+func DoubleSidedRenderMethod() Method {
+	return Method{3}
 }
 
 type renderMethod uint8

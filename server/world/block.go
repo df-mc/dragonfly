@@ -35,9 +35,9 @@ type CustomBlock interface {
 	Name() string
 	// Geometries is the geometries for the block that define the shape of the block. If false is returned, no custom
 	// geometry will be applied.
-	Geometries() (customblock.Geometries, bool)
+	Geometries() (customblock.Geometry, bool)
 	// Textures is a map of images indexed by their target, used to map textures on to the block.
-	Textures() (map[customblock.MaterialTarget]image.Image, customblock.RenderMethod)
+	Textures() (map[customblock.Target]image.Image, map[string]map[customblock.Target]image.Image, customblock.Method)
 }
 
 // Liquid represents a block that can be moved through and which can flow in the world after placement. There

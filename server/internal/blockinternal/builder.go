@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"strings"
@@ -105,42 +104,30 @@ func (builder *ComponentBuilder) applyDefaultProperties(x *[]map[string]any) {
 // modify the builder's components map directly otherwise Empty() will return false in future use of the builder.
 func (builder *ComponentBuilder) applyDefaultComponents(x map[string]any) {
 	base := builder.group[0]
+	geometry, _ := base.Geometries()
 	name := strings.Split(builder.identifier, ":")[1]
-	materials := make(map[customblock.MaterialTarget]customblock.Material)
-	textures, method := base.Textures()
+
+	generalModel := customblock.NewModel(geometry)
+	permutationModels := make(map[string]customblock.Model)
+
+	textures, permutationTextures, method := base.Textures()
 	for target := range textures {
-		materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), method)
+		generalModel = generalModel.WithMaterial(target, customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), method))
+	}
+	if permutationTextures != nil {
+		//for permutation, permutationSpecificTextures := range permutationTextures {
+		//	h := fnv1.HashString64(permutation)
+		//	for target := range permutationSpecificTextures {
+		//		fmt.Println(fmt.Sprintf("%v_%v_%v", name, target.Name(), h))
+		//		//materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v_%v", name, target.Name(), h), method)
+		//	}
+		//}
 	}
 
-	origin := mgl64.Vec3{-8, 0, -8}
-	size := mgl64.Vec3{16, 16, 16}
-	geometries, ok := base.Geometries()
-	if ok {
-		geo := geometries.Geometry[0]
-		origin, size = geo.Origin(), geo.Size()
-	}
-
-	model := customblock.NewModel(geometries.Geometry, origin, size)
-	for target, material := range materials {
-		model = model.WithMaterial(target, material)
-	}
-	for key, value := range model.Encode() {
+	for key, value := range generalModel.Encode() {
 		x[key] = value
 	}
-
-	box := map[string]any{
-		"enabled": byte(0x1),
-		"origin": []float32{
-			float32(origin.X()),
-			float32(origin.Y()),
-			float32(origin.Z()),
-		},
-		"size": []float32{
-			float32(size.X()),
-			float32(size.Y()),
-			float32(size.Z()),
-		},
+	for permutation, model := range permutationModels {
+		builder.AddPermutation(permutation, model.Encode())
 	}
-	x["minecraft:aim_collision"] = box
-	x["minecraft:block_collision"] = box
 }

@@ -1,6 +1,7 @@
 package customblock
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 )
@@ -37,6 +38,33 @@ type Geometry struct {
 	} `json:"bones"`
 }
 
+// Encode encodes the geometry into a JSON component.
+func (g Geometry) Encode() map[string]any {
+	origin, size := vec64To32(g.Origin()), vec64To32(g.Size())
+	box := map[string]any{
+		"enabled": byte(0x1),
+		"origin": []float32{
+			origin.X(),
+			origin.Y(),
+			origin.Z(),
+		},
+		"size": []float32{
+			size.X(),
+			size.Y(),
+			size.Z(),
+		},
+	}
+	return map[string]any{
+		"minecraft:aim_collision": box,
+		"minecraft:collision_box": box,
+		"minecraft:pick_collision": map[string]any{
+			"enabled": uint8(1),
+			"origin":  origin[:],
+			"size":    size[:],
+		},
+	}
+}
+
 // Origin returns the origin of the geometry. It is calculated by using the smallest origin points of all cubes.
 func (g Geometry) Origin() (x mgl64.Vec3) {
 	for _, bone := range g.Bones {
@@ -59,4 +87,9 @@ func (g Geometry) Size() (x mgl64.Vec3) {
 		}
 	}
 	return
+}
+
+// vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
+func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }

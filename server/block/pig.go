@@ -43,10 +43,14 @@ func (p Pig) BreakInfo() BreakInfo {
 }
 
 // Textures ...
-func (p Pig) Textures() (map[customblock.MaterialTarget]image.Image, customblock.RenderMethod) {
-	return map[customblock.MaterialTarget]image.Image{
-		customblock.MaterialTargetAll(): p.Texture(),
-	}, customblock.AlphaTestRenderMethod()
+func (p Pig) Textures() (map[customblock.Target]image.Image, map[string]map[customblock.Target]image.Image, customblock.Method) {
+	return map[customblock.Target]image.Image{
+			customblock.MaterialTargetAll(): p.Texture(),
+		}, map[string]map[customblock.Target]image.Image{
+			"query.block_property('direction') == 0": {
+				customblock.MaterialTargetAll(): p.Texture(),
+			},
+		}, customblock.AlphaTestRenderMethod()
 }
 
 // UseOnBlock ...
@@ -56,13 +60,13 @@ func (p Pig) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 		return
 	}
 
-	p.Facing = user.Facing().Opposite()
+	p.Facing = user.Facing()
 	place(w, pos, p, user, ctx)
 	return placed(ctx)
 }
 
 // Geometries ...
-func (p Pig) Geometries() (customblock.Geometries, bool) {
+func (p Pig) Geometries() (customblock.Geometry, bool) {
 	b, err := os.ReadFile("skull.geo.json")
 	if err != nil {
 		panic(err)
@@ -72,7 +76,7 @@ func (p Pig) Geometries() (customblock.Geometries, bool) {
 	if err != nil {
 		panic(err)
 	}
-	return geometry, true
+	return geometry.Geometry[0], true
 }
 
 // Texture ...
@@ -92,9 +96,9 @@ func (p Pig) Texture() image.Image {
 // Rotation ...
 func (p Pig) Rotation() (mgl64.Vec3, bool, map[string]mgl64.Vec3) {
 	return mgl64.Vec3{}, false, map[string]mgl64.Vec3{
-		"query.block_property('direction') == 0": {0, 180, 0},
-		"query.block_property('direction') == 2": {0, 270, 0},
-		"query.block_property('direction') == 3": {0, 90, 0},
+		"query.block_property('direction') == 1": {0, 180, 0},
+		"query.block_property('direction') == 2": {0, 90, 0},
+		"query.block_property('direction') == 3": {0, 270, 0},
 	}
 }
 

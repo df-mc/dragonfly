@@ -3,7 +3,9 @@ package packbuilder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/segmentio/fasthash/fnv1"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -32,11 +34,21 @@ func buildBlocks(dir string) (count int, lang []string) {
 		base := group[0]
 		name := strings.Split(identifier, ":")[1]
 		lang = append(lang, fmt.Sprintf("tile.%s.name=%s", identifier, base.Name()))
-		textures, _ := base.Textures()
+		textures, permutationTextures, _ := base.Textures()
 		for target, texture := range textures {
 			textureName := fmt.Sprintf("%s_%s", name, target.Name())
 			textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
 			buildBlockTexture(dir, textureName, texture)
+		}
+		if permutationTextures != nil {
+			for permutation, permutationSpecificTextures := range permutationTextures {
+				h := fnv1.HashString64(permutation)
+				for target, texture := range permutationSpecificTextures {
+					textureName := fmt.Sprintf("%s_%s_%x", name, target.Name(), h)
+					textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
+					buildBlockTexture(dir, textureName, texture)
+				}
+			}
 		}
 
 		buildBlockGeometry(dir, name, base)
@@ -70,8 +82,11 @@ func buildBlockTexture(dir, name string, img image.Image) {
 
 // buildBlockGeometry writes the JSON geometry file from the provided name and block and writes it to the pack.
 func buildBlockGeometry(dir, name string, block world.CustomBlock) {
-	if geometries, ok := block.Geometries(); ok {
-		data, err := json.Marshal(geometries)
+	if geometry, ok := block.Geometries(); ok {
+		data, err := json.Marshal(customblock.Geometries{
+			FormatVersion: formatVersion,
+			Geometry:      []customblock.Geometry{geometry},
+		})
 		if err != nil {
 			panic(err)
 		}

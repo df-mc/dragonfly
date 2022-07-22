@@ -1,49 +1,49 @@
 package customblock
 
-// MaterialTarget represents a material target for a custom block. These are limited to either all targets, or the top,
+// Target represents a material target for a custom block. These are limited to either all targets, or the top,
 // bottom, and sides.
-type MaterialTarget struct {
+type Target struct {
 	materialTarget
 }
 
 // MaterialTargetAll represents the material target for all targets.
-func MaterialTargetAll() MaterialTarget {
-	return MaterialTarget{0}
+func MaterialTargetAll() Target {
+	return Target{0}
 }
 
 // MaterialTargetUp represents the material target for the top of the block.
-func MaterialTargetUp() MaterialTarget {
-	return MaterialTarget{1}
+func MaterialTargetUp() Target {
+	return Target{1}
 }
 
 // MaterialTargetDown represents the material target for the bottom of the block.
-func MaterialTargetDown() MaterialTarget {
-	return MaterialTarget{2}
+func MaterialTargetDown() Target {
+	return Target{2}
 }
 
 // MaterialTargetSides represents the material target for the sides of the block.
-func MaterialTargetSides() MaterialTarget {
-	return MaterialTarget{3}
+func MaterialTargetSides() Target {
+	return Target{3}
 }
 
 // MaterialTargetNorth represents the material target for the north face of the block.
-func MaterialTargetNorth() MaterialTarget {
-	return MaterialTarget{4}
+func MaterialTargetNorth() Target {
+	return Target{4}
 }
 
 // MaterialTargetEast represents the material target for the east face of the block.
-func MaterialTargetEast() MaterialTarget {
-	return MaterialTarget{5}
+func MaterialTargetEast() Target {
+	return Target{5}
 }
 
 // MaterialTargetSouth represents the material target for the south face of the block.
-func MaterialTargetSouth() MaterialTarget {
-	return MaterialTarget{6}
+func MaterialTargetSouth() Target {
+	return Target{6}
 }
 
 // MaterialTargetWest represents the material target for the west face of the block.
-func MaterialTargetWest() MaterialTarget {
-	return MaterialTarget{7}
+func MaterialTargetWest() Target {
+	return Target{7}
 }
 
 type materialTarget uint8
