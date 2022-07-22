@@ -19,7 +19,7 @@ type MapData struct {
 }
 
 type MapDataViewer interface {
-	ViewMapDataChange(updateFlag uint32, id int64, xOffset, yOffset int32, d MapData)
+	ViewMapDataChange(updateFlag uint32, mapID int64, pixelsChunk MapPixelsChunk, data *ViewableMapData)
 }
 
 type ViewableMapData struct {
@@ -34,18 +34,42 @@ type ViewableMapData struct {
 	data MapData
 }
 
+type MapPixelsChunk struct {
+	XOffset, YOffset, Height, Width int32
+	Pixels                          [][]color.RGBA
+}
+
 // ChangePixels broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagTexture.
-// Offsets are calculated by diff of new and old pixels.
-func (d *ViewableMapData) ChangePixels(pixels [][]color.RGBA) {
+// Returns the calculated offsets and lengths.
+func (d *ViewableMapData) ChangePixels(pixels [][]color.RGBA) MapPixelsChunk {
 	d.pixelsMu.Lock()
 	defer d.pixelsMu.Unlock()
 
-	d.data.Pixels = pixels
-	// d.change(packet.MapUpdateFlagTexture, xOffset, yOffset)
-}
+	old := d.data.Pixels
+	pixelsChunk := MapPixelsChunk{Pixels: pixels, Height: int32(len(pixels))}
+	for y, row := range pixels {
+		for x, pixel := range row {
+			if old[y][x] != pixel {
+				if pixelsChunk.YOffset == 0 {
+					pixelsChunk.YOffset = int32(y)
+				}
+				if pixelsChunk.XOffset == 0 {
+					pixelsChunk.XOffset = int32(x)
+				}
+			}
 
-// ChangePixelsWithOffset broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagTexture.
-func (d *ViewableMapData) ChangePixelsWithOffset(pixels [][]color.RGBA, xOffset, yOffset int32) {}
+			old[y][x] = pixel
+		}
+
+		rowLen := int32(len(row))
+		if rowLen > pixelsChunk.Width {
+			pixelsChunk.Width = rowLen
+		}
+	}
+
+	d.change(packet.MapUpdateFlagTexture, pixelsChunk)
+	return pixelsChunk
+}
 
 // AddTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
 func (d *ViewableMapData) AddTrackEntity(e Entity) {
@@ -58,7 +82,7 @@ func (d *ViewableMapData) AddTrackEntity(e Entity) {
 	} else {
 		d.data.TrackEntities[e] = s
 	}
-	d.change(packet.MapUpdateFlagDecoration, 0, 0)
+	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
 // RemoveTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
@@ -68,7 +92,7 @@ func (d *ViewableMapData) RemoveTrackEntity(e Entity) {
 
 	if d.data.TrackEntities != nil {
 		delete(d.data.TrackEntities, e)
-		d.change(packet.MapUpdateFlagDecoration, 0, 0)
+		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 	}
 }
 
@@ -83,7 +107,7 @@ func (d *ViewableMapData) AddTrackBlock(pos cube.Pos) {
 	} else {
 		d.data.TrackBlocks[pos] = s
 	}
-	d.change(packet.MapUpdateFlagDecoration, 0, 0)
+	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
 // RemoveTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
@@ -93,12 +117,12 @@ func (d *ViewableMapData) RemoveTrackBlock(pos cube.Pos) {
 
 	if d.data.TrackBlocks != nil {
 		delete(d.data.TrackBlocks, pos)
-		d.change(packet.MapUpdateFlagDecoration, 0, 0)
+		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 	}
 }
 
-// GetMapData ...
-func (d *ViewableMapData) GetMapData() MapData {
+// MapData ...
+func (d *ViewableMapData) MapData() MapData {
 	d.pixelsMu.RLock()
 	d.trackEntitiesMu.RLock()
 	d.trackBlocksMu.RLock()
@@ -109,15 +133,15 @@ func (d *ViewableMapData) GetMapData() MapData {
 	return d.data
 }
 
-func (d *ViewableMapData) change(updateFlag uint32, xOffset, yOffset int32) {
+func (d *ViewableMapData) change(updateFlag uint32, pixelsChunk MapPixelsChunk) {
 	d.viewersMu.RLock()
 	defer d.viewersMu.RUnlock()
 
 	for viewer := range d.viewers {
-		viewer.ViewMapDataChange(updateFlag, d.mapID, xOffset, yOffset, d.GetMapData())
+		viewer.ViewMapDataChange(updateFlag, d.mapID, pixelsChunk, d)
 	}
 
-	// TODO: save().
+	// TODO: async save().
 }
 
 // AddViewer ...
@@ -150,7 +174,7 @@ func (d *ViewableMapData) EncodeItemNBT() map[string]any {
 		return map[string]any{}
 	}
 
-	data := d.GetMapData()
+	data := d.MapData()
 	return map[string]any{
 		"map_uuid":       d.mapID,
 		"map_scale":      data.Scale,
@@ -158,7 +182,9 @@ func (d *ViewableMapData) EncodeItemNBT() map[string]any {
 	}
 }
 
-// GetDimension returns the dimension of map's belonging world.
-func (d *ViewableMapData) GetDimension() Dimension {
-	return d.world.Dimension()
+// World returns the map's belonging world.
+// This is for the map's dimension.
+// And filter tracked blocks that are not in the same world as viewer.
+func (d *ViewableMapData) World() *World {
+	return d.world
 }

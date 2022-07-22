@@ -549,48 +549,43 @@ func (s *Session) sendAvailableEntities() {
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }
 
-// sendMapDataUpdate sends all registered entities to the player.
-func (s *Session) ViewMapDataChange(updateFlag uint32, id int64, xOffset, yOffset int32, d world.MapData) {
-	data := d.GetMapData()
+// ViewMapDataChange writes *packet.ClientBoundMapItemData.
+func (s *Session) ViewMapDataChange(updateFlag uint32, mapID int64, pixelsChunk world.MapPixelsChunk, data *world.ViewableMapData) {
 	var (
-		pixels = data.Pixels
-		width  int32
-
+		d        = data.MapData()
 		trackeds []protocol.MapTrackedObject
 	)
-	for _, rows := range data.Pixels {
-		if len(rows) > int(width) {
-			width = int32(len(rows))
-		}
-	}
-	for _, e := range data.TrackEntities {
+	for e := range d.TrackEntities {
+		// Since entity IDs are not reused per world, I am not checking world here.
 		trackeds = append(trackeds, protocol.MapTrackedObject{
 			Type:           protocol.MapObjectTypeEntity,
 			EntityUniqueID: int64(s.entityRuntimeID(e)),
 		})
 	}
-	for _, p := range data.TrackBlocks {
-		trackeds = append(trackeds, protocol.MapTrackedObject{
-			Type:          protocol.MapObjectTypeBlock,
-			BlockPosition: protocol.BlockPos{int32(p[0]), int32(p[1]), int32(p[2])},
-		})
+	if data.World() == s.c.World() {
+		for p := range d.TrackBlocks {
+			trackeds = append(trackeds, protocol.MapTrackedObject{
+				Type:          protocol.MapObjectTypeBlock,
+				BlockPosition: protocol.BlockPos{int32(p[0]), int32(p[1]), int32(p[2])},
+			})
+		}
 	}
 
 	s.writePacket(&packet.ClientBoundMapItemData{
-		MapID:          id,
+		MapID:          mapID,
 		UpdateFlags:    updateFlag,
-		Dimension:      byte(data.Dimension.EncodeDimension()),
-		LockedMap:      false, // TODO: Locked map support
-		Scale:          data.Scale,
+		Dimension:      byte(data.World().Dimension().EncodeDimension()),
+		LockedMap:      d.Locked,
+		Scale:          d.Scale,
 		TrackedObjects: trackeds,
 		// Decorations is a list of fixed decorations located on the map. The decorations will not change
 		// client-side, unless the server updates them.
 		Decorations: []protocol.MapDecoration{},
 
-		Height:  int32(len(data.Pixels)),
-		Width:   width,
-		XOffset: data.XOffset,
-		YOffset: data.YOffset,
-		Pixels:  pixels,
+		Height:  pixelsChunk.Height,
+		Width:   pixelsChunk.Width,
+		XOffset: pixelsChunk.XOffset,
+		YOffset: pixelsChunk.YOffset,
+		Pixels:  pixelsChunk.Pixels,
 	})
 }
