@@ -106,19 +106,15 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 	}
 
 	a.mu.Lock()
-	age, pos := a.age, a.pos
-	duration, growth := a.duration, a.radiusGrowth
-	a.mu.Unlock()
-
-	if a.age >= duration+10 {
+	if a.age >= a.duration+10 {
 		// We've outlived our duration, close the entity the next tick.
 		a.close = true
+		a.mu.Unlock()
 		return
 	}
 
-	if growth != 0 {
-		a.mu.Lock()
-		a.radius += growth
+	if a.radiusGrowth != 0 {
+		a.radius += a.radiusGrowth
 		if a.radius < 0.5 {
 			a.close = true
 			a.mu.Unlock()
@@ -126,12 +122,14 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		}
 		a.mu.Unlock()
 
-		for _, v := range w.Viewers(pos) {
+		for _, v := range w.Viewers(a.pos) {
 			v.ViewEntityState(a)
 		}
+
+		a.mu.Lock()
 	}
 
-	if age%5 != 0 {
+	if a.age%5 != 0 {
 		// Area effect clouds only trigger updates every five ticks.
 		return
 	}
@@ -142,16 +140,17 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		}
 	}
 
-	entities := w.EntitiesWithin(a.BBox().Translate(pos), func(entity world.Entity) bool {
+	a.mu.Unlock()
+	entities := w.EntitiesWithin(a.BBox().Translate(a.pos), func(entity world.Entity) bool {
 		_, target := a.targets[entity]
 		_, living := entity.(Living)
 		return !living || target || entity == a
 	})
-
 	a.mu.Lock()
+
 	var update bool
 	for _, e := range entities {
-		delta := e.Position().Sub(pos)
+		delta := e.Position().Sub(a.pos)
 		delta[1] = 0
 		if delta.Len() <= a.radius {
 			l := e.(Living)
@@ -171,6 +170,7 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 			}
 		}
 	}
+	pos := a.pos
 	a.mu.Unlock()
 
 	if update {
