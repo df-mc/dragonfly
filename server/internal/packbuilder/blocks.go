@@ -40,14 +40,12 @@ func buildBlocks(dir string) (count int, lang []string) {
 			textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
 			buildBlockTexture(dir, textureName, texture)
 		}
-		if permutationTextures != nil {
-			for permutation, permutationSpecificTextures := range permutationTextures {
-				h := fnv1.HashString64(permutation)
-				for target, texture := range permutationSpecificTextures {
-					textureName := fmt.Sprintf("%s_%s_%x", name, target.Name(), h)
-					textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
-					buildBlockTexture(dir, textureName, texture)
-				}
+		for permutation, permutationSpecificTextures := range permutationTextures {
+			h := fnv1.HashString64(permutation)
+			for target, texture := range permutationSpecificTextures {
+				textureName := fmt.Sprintf("%s_%s_%x", name, target.Name(), h)
+				textureData[textureName] = map[string]string{"textures": "textures/blocks/" + textureName}
+				buildBlockTexture(dir, textureName, texture)
 			}
 		}
 
@@ -94,20 +92,18 @@ func buildBlockGeometry(dir, name string, block world.CustomBlock) {
 			panic(err)
 		}
 
-		if permutationGeometries != nil {
-			for permutation, permutationSpecificGeometry := range permutationGeometries {
-				data, err = json.Marshal(customblock.Geometries{
-					FormatVersion: formatVersion,
-					Geometry:      []customblock.Geometry{permutationSpecificGeometry},
-				})
-				if err != nil {
-					panic(err)
-				}
+		for permutation, permutationSpecificGeometry := range permutationGeometries {
+			data, err = json.Marshal(customblock.Geometries{
+				FormatVersion: formatVersion,
+				Geometry:      []customblock.Geometry{permutationSpecificGeometry},
+			})
+			if err != nil {
+				panic(err)
+			}
 
-				h := fnv1.HashString64(permutation)
-				if err := ioutil.WriteFile(filepath.Join(dir, "models/entity", fmt.Sprintf("%s_%x.geo.json", name, h)), data, 0666); err != nil {
-					panic(err)
-				}
+			h := fnv1.HashString64(permutation)
+			if err := ioutil.WriteFile(filepath.Join(dir, "models/entity", fmt.Sprintf("%s_%x.geo.json", name, h)), data, 0666); err != nil {
+				panic(err)
 			}
 		}
 	}

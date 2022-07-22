@@ -118,28 +118,23 @@ func (builder *ComponentBuilder) applyDefaultComponents(x map[string]any) {
 	}
 
 	permutationModels := make(map[string]customblock.Model)
-	if permutationGeometries != nil {
-		for permutation, permutationSpecificGeometry := range permutationGeometries {
-			permutationModels[permutation] = customblock.NewModel(permutationSpecificGeometry)
-		}
+	for permutation, permutationSpecificGeometry := range permutationGeometries {
+		permutationModels[permutation] = customblock.NewModel(permutationSpecificGeometry)
 	}
-	if permutationTextures != nil {
-		for permutation, permutationSpecificTextures := range permutationTextures {
-			h := fnv1.HashString64(permutation)
-			for target := range permutationSpecificTextures {
-				if _, ok := permutationModels[permutation]; !ok {
-					// If we don't have a model for this permutation, re-use the base geometry and create a new model.
-					permutationModels[permutation] = customblock.NewModel(geometry)
-				}
-				permutationModel := permutationModels[permutation]
-				permutationModels[permutation] = permutationModel.WithMaterial(target, customblock.NewMaterial(fmt.Sprintf("%s_%s_%x", name, target.Name(), h), method))
+	for permutation, permutationSpecificTextures := range permutationTextures {
+		h := fnv1.HashString64(permutation)
+		for target := range permutationSpecificTextures {
+			if _, ok := permutationModels[permutation]; !ok {
+				// If we don't have a model for this permutation, re-use the base geometry and create a new model.
+				permutationModels[permutation] = customblock.NewModel(geometry)
 			}
-		}
-		for permutation, model := range permutationModels {
-			builder.AddPermutation(permutation, model.Encode())
+			permutationModel := permutationModels[permutation]
+			permutationModels[permutation] = permutationModel.WithMaterial(target, customblock.NewMaterial(fmt.Sprintf("%s_%s_%x", name, target.Name(), h), method))
 		}
 	}
-
+	for permutation, model := range permutationModels {
+		builder.AddPermutation(permutation, model.Encode())
+	}
 	for key, value := range generalModel.Encode() {
 		x[key] = value
 	}
