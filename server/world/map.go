@@ -17,7 +17,14 @@ func NewMapData() *ViewableMapData {
 	mapDataMu.Lock()
 	defer mapDataMu.Unlock()
 
-	d := &ViewableMapData{mapID: int64(len(mapData))}
+	d := &ViewableMapData{
+		mapID:   int64(len(mapData)),
+		viewers: map[MapDataViewer]struct{}{},
+		data: MapData{
+			TrackEntities: map[Entity]struct{}{},
+			TrackBlocks:   map[cube.Pos]struct{}{},
+		},
+	}
 	mapData[d.mapID] = d
 
 	return d
@@ -100,11 +107,7 @@ func (d *ViewableMapData) AddTrackEntity(e Entity) {
 	defer d.trackEntitiesMu.Unlock()
 
 	s := struct{}{}
-	if d.data.TrackEntities == nil {
-		d.data.TrackEntities = map[Entity]struct{}{e: s}
-	} else {
-		d.data.TrackEntities[e] = s
-	}
+	d.data.TrackEntities[e] = s
 	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
@@ -113,10 +116,8 @@ func (d *ViewableMapData) RemoveTrackEntity(e Entity) {
 	d.trackEntitiesMu.Lock()
 	defer d.trackEntitiesMu.Unlock()
 
-	if d.data.TrackEntities != nil {
-		delete(d.data.TrackEntities, e)
-		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
-	}
+	delete(d.data.TrackEntities, e)
+	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
 // AddTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
@@ -125,11 +126,7 @@ func (d *ViewableMapData) AddTrackBlock(pos cube.Pos) {
 	defer d.trackBlocksMu.Unlock()
 
 	s := struct{}{}
-	if d.data.TrackBlocks == nil {
-		d.data.TrackBlocks = map[cube.Pos]struct{}{pos: s}
-	} else {
-		d.data.TrackBlocks[pos] = s
-	}
+	d.data.TrackBlocks[pos] = s
 	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
@@ -138,10 +135,8 @@ func (d *ViewableMapData) RemoveTrackBlock(pos cube.Pos) {
 	d.trackBlocksMu.Lock()
 	defer d.trackBlocksMu.Unlock()
 
-	if d.data.TrackBlocks != nil {
-		delete(d.data.TrackBlocks, pos)
-		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
-	}
+	delete(d.data.TrackBlocks, pos)
+	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
 // MapData ...
@@ -173,11 +168,7 @@ func (d *ViewableMapData) AddViewer(v MapDataViewer) {
 	defer d.viewersMu.Unlock()
 
 	s := struct{}{}
-	if d.viewers == nil {
-		d.viewers = map[MapDataViewer]struct{}{v: s}
-	} else {
-		d.viewers[v] = s
-	}
+	d.viewers[v] = s
 }
 
 // RemoveViewer ...
@@ -185,9 +176,7 @@ func (d *ViewableMapData) RemoveViewer(v MapDataViewer) {
 	d.viewersMu.Lock()
 	defer d.viewersMu.Unlock()
 
-	if d.viewers != nil {
-		delete(d.viewers, v)
-	}
+	delete(d.viewers, v)
 }
 
 // EncodeNBT provides value of field map ID, scale and is scaling for item.BaseMap.EncodeNBT().
