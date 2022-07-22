@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -29,7 +30,7 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            internal.Logger
+	log            Logger
 	once, connOnce sync.Once
 
 	c        Controllable
@@ -58,14 +59,14 @@ type Session struct {
 	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot         *atomic.Uint32
-	inv, offHand, ui *inventory.Inventory
-	armour           *inventory.Armour
+	heldSlot                     *atomic.Uint32
+	inv, offHand, enderChest, ui *inventory.Inventory
+	armour                       *inventory.Armour
 
 	breakingPos cube.Pos
 
-	openedWindowID                 atomic.Uint32
 	inTransaction, containerOpened atomic.Bool
+	openedWindowID                 atomic.Uint32
 	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
@@ -79,6 +80,8 @@ type Session struct {
 	invOpened             bool
 
 	joinMessage, quitMessage *atomic.Value[string]
+
+	switchingWorld atomic.Bool
 
 	closeBackground chan struct{}
 }
@@ -113,6 +116,12 @@ type Conn interface {
 	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
+// Logger is used to write debug messages to. These messages are sent whenever handling of a packet of a client fails.
+type Logger interface {
+	Errorf(format string, a ...any)
+	Debugf(format string, a ...any)
+}
+
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -132,17 +141,18 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log internal.Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
 
-	s := &Session{
+	s := &Session{}
+	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(51, nil),
+		ui:                     inventory.New(53, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
@@ -226,6 +236,14 @@ func (s *Session) Close() error {
 // manages.
 func (s *Session) close() {
 	_ = s.c.Close()
+
+	// Move UI inventory items to the main inventory.
+	for _, it := range s.ui.Items() {
+		if _, err := s.inv.AddItem(it); err != nil {
+			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
+			s.c.Drop(it)
+		}
+	}
 
 	s.onStop(s.c)
 
@@ -387,12 +405,22 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	if w.Dimension() != s.chunkLoader.World().Dimension() {
-		s.writePacket(&packet.ChangeDimension{Dimension: int32(w.Dimension().EncodeDimension()), Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
-		s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	if same {
+		dim = (dim + 1) % 3
+		s.switchingWorld.Store(true)
 	}
+	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
+}
+
+// changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
+// immediately.
+func (s *Session) changeDimension(dim int32, silent bool) {
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.writePacket(&packet.StopSound{StopAll: silent})
+	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -417,8 +445,9 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:            nil,
-		packet.IDAdventureSettings:     &AdventureSettingsHandler{},
+		packet.IDAdventureSettings:     nil, // Deprecated, the client still sends this though.
 		packet.IDAnimate:               nil,
+		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
 		packet.IDBossEvent:             nil,
@@ -428,6 +457,7 @@ func (s *Session) registerHandlers() {
 		packet.IDCraftingEvent:         nil,
 		packet.IDEmote:                 &EmoteHandler{},
 		packet.IDEmoteList:             nil,
+		packet.IDFilterText:            nil,
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemFrameDropItem:     nil,
@@ -439,11 +469,24 @@ func (s *Session) registerHandlers() {
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},
+		packet.IDRequestAbility:        &RequestAbilityHandler{},
 		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
 		packet.IDRespawn:               &RespawnHandler{},
 		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+	}
+}
+
+// handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
+// in the future.
+func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+	if slot == enchantingInputSlot && s.containerOpened.Load() {
+		pos := s.openedPos.Load()
+		b := s.c.World().Block(pos)
+		if _, enchanting := b.(block.EnchantingTable); enchanting {
+			s.sendEnchantmentOptions(s.c.World(), pos, item)
+		}
 	}
 }
 

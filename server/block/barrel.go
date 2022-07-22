@@ -11,6 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Barrel is a fisherman's job site block, used to store items. It functions like a single chest, although
@@ -129,6 +130,11 @@ func (b Barrel) BreakInfo() BreakInfo {
 // FlammabilityInfo ...
 func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
+}
+
+// FuelInfo ...
+func (Barrel) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // DecodeNBT ...

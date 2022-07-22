@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Hoe is a tool generally used to till dirt and grass blocks into farmland blocks for planting crops.
@@ -21,7 +22,7 @@ func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 				// Tilled land isn't created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Add(cube.Pos{0, 1})) != air() {
+			if w.Block(pos.Side(cube.FaceUp)) != air() {
 				// Tilled land can only be created if air is above the grass block.
 				return false
 			}
@@ -67,6 +68,11 @@ func (h Hoe) BaseMiningEfficiency(world.Block) float64 {
 	return h.Tier.BaseMiningEfficiency
 }
 
+// EnchantmentValue ...
+func (h Hoe) EnchantmentValue() int {
+	return h.Tier.EnchantmentValue
+}
+
 // DurabilityInfo ...
 func (h Hoe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
@@ -75,6 +81,30 @@ func (h Hoe) DurabilityInfo() DurabilityInfo {
 		AttackDurability: 2,
 		BreakDurability:  1,
 	}
+}
+
+// SmeltInfo ...
+func (h Hoe) SmeltInfo() SmeltInfo {
+	switch h.Tier {
+	case ToolTierIron:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ToolTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
+// FuelInfo ...
+func (h Hoe) FuelInfo() FuelInfo {
+	if h.Tier == ToolTierWood {
+		return newFuelInfo(time.Second * 10)
+	}
+	return FuelInfo{}
+}
+
+// RepairableBy ...
+func (h Hoe) RepairableBy(i Stack) bool {
+	return toolTierRepairable(h.Tier)(i)
 }
 
 // EncodeItem ...

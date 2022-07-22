@@ -6,15 +6,13 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 	"math/rand"
-	"sync/atomic"
 	"time"
 )
 
 // Lightning is a lethal element to thunderstorms. Lightning momentarily increases the skylight's brightness to slightly greater than full daylight.
 type Lightning struct {
-	pos atomic.Value
+	pos mgl64.Vec3
 
 	state    int
 	liveTime int
@@ -23,17 +21,16 @@ type Lightning struct {
 // NewLightning creates a lightning entity. The lightning entity will be positioned at the position passed.
 func NewLightning(pos mgl64.Vec3) *Lightning {
 	li := &Lightning{
+		pos:      pos,
 		state:    2,
 		liveTime: rand.Intn(3) + 1,
 	}
-	li.pos.Store(mgl64.Vec3{math.Floor(pos[0]), math.Floor(pos[1]), math.Floor(pos[2])})
-
 	return li
 }
 
 // Position returns the current position of the lightning entity.
 func (li *Lightning) Position() mgl64.Vec3 {
-	return li.pos.Load().(mgl64.Vec3)
+	return li.pos
 }
 
 // World returns the world that the lightning entity is currently in, or nil if it is not added to a world.
@@ -51,11 +48,6 @@ func (Lightning) BBox() cube.BBox {
 func (li *Lightning) Close() error {
 	li.World().RemoveEntity(li)
 	return nil
-}
-
-// OnGround ...
-func (Lightning) OnGround() bool {
-	return false
 }
 
 // Rotation ...
@@ -80,16 +72,15 @@ func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
 
 // Tick ...
 func (li *Lightning) Tick(w *world.World, _ int64) {
-	pos := li.Position()
 	f := fire().(interface {
 		Start(w *world.World, pos cube.Pos)
 	})
 
 	if li.state == 2 { // Init phase
-		w.PlaySound(pos, sound.Thunder{})
-		w.PlaySound(pos, sound.Explosion{})
+		w.PlaySound(li.pos, sound.Thunder{})
+		w.PlaySound(li.pos, sound.Explosion{})
 
-		bb := li.BBox().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
+		bb := li.BBox().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(li.pos.Add(mgl64.Vec3{0, 3}))
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
@@ -100,7 +91,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 			}
 		}
 		if w.Difficulty().FireSpreadIncrease() >= 10 {
-			f.Start(w, cube.PosFromVec3(pos))
+			f.Start(w, cube.PosFromVec3(li.pos))
 		}
 	}
 
@@ -112,7 +103,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 			li.state = 1
 
 			if w.Difficulty().FireSpreadIncrease() >= 10 {
-				f.Start(w, cube.PosFromVec3(pos))
+				f.Start(w, cube.PosFromVec3(li.pos))
 			}
 		}
 	}

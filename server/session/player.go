@@ -52,9 +52,14 @@ func (s *Session) closeCurrentContainer() {
 		return
 	}
 	s.closeWindow()
+
 	pos := s.openedPos.Load()
-	if container, ok := s.c.World().Block(pos).(block.Container); ok {
-		container.RemoveViewer(s, s.c.World(), pos)
+	w := s.c.World()
+	b := w.Block(pos)
+	if container, ok := b.(block.Container); ok {
+		container.RemoveViewer(s, w, pos)
+	} else if enderChest, ok := b.(block.EnderChest); ok {
+		enderChest.RemoveViewer(w, pos)
 	}
 }
 
@@ -89,28 +94,45 @@ const (
 	craftingGridSizeLarge   = 9
 	craftingGridSmallOffset = 28
 	craftingGridLargeOffset = 32
-	craftingGridResult      = 50
+	craftingResult          = 50
 )
 
 const (
-	containerArmour         = 6
-	containerChest          = 7
-	containerBeacon         = 8
-	containerFullInventory  = 12
-	containerCraftingGrid   = 13
-	containerHotbar         = 27
-	containerInventory      = 28
-	containerOffHand        = 33
-	containerBarrel         = 57
-	containerCursor         = 58
-	containerCreativeOutput = 59
+	containerAnvilInput           = 0
+	containerAnvilMaterial        = 1
+	containerSmithingInput        = 3
+	containerSmithingMaterial     = 4
+	containerArmour               = 6
+	containerChest                = 7
+	containerBeacon               = 8
+	containerFullInventory        = 12
+	containerCraftingGrid         = 13
+	containerEnchantingTableInput = 21
+	containerEnchantingTableLapis = 22
+	containerFurnaceFuel          = 23
+	containerFurnaceResult        = 25
+	containerFurnaceInput         = 24
+	containerHotbar               = 27
+	containerInventory            = 28
+	containerOffHand              = 33
+	containerBlastFurnaceInput    = 44
+	containerSmokerInput          = 45
+	containerBarrel               = 57
+	containerCursor               = 58
+	containerOutput               = 59
 )
+
+// smelter is an interface representing a block used to smelt items.
+type smelter interface {
+	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
+	ResetExperience() int
+}
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerCreativeOutput, containerCursor:
+	case containerCraftingGrid, containerOutput, containerCursor:
 		// UI inventory.
 		return s.ui, true
 	case containerHotbar, containerInventory, containerFullInventory:
@@ -122,25 +144,50 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		// Armour inventory.
 		return s.armour.Inventory(), true
 	case containerChest:
-		// Chests, potentially other containers too.
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
+				return s.openedWindow.Load(), true
+			} else if _, enderChest := b.(block.EnderChest); enderChest {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBarrel:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, barrel := b.(block.Barrel); barrel {
+			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case containerBeacon:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, beacon := b.(block.Beacon); beacon {
+			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
+			}
+		}
+	case containerAnvilInput, containerAnvilMaterial:
+		if s.containerOpened.Load() {
+			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
+				return s.ui, true
+			}
+		}
+	case containerSmithingInput, containerSmithingMaterial:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, smithing := b.(block.SmithingTable); smithing {
+				return s.ui, true
+			}
+		}
+	case containerEnchantingTableInput, containerEnchantingTableLapis:
+		if s.containerOpened.Load() {
+			b := s.c.World().Block(s.openedPos.Load())
+			if _, enchanting := b.(block.EnchantingTable); enchanting {
+				return s.ui, true
+			}
+		}
+	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
+				return s.openedWindow.Load(), true
 			}
 		}
 	}
@@ -236,40 +283,59 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if s == Nop {
 		return
 	}
-	flags, id, perms := uint32(0), int32(packet.GameTypeSurvival), uint32(0)
+
+	id := int32(packet.GameTypeSurvival)
+	if mode.AllowsFlying() && mode.CreativeInventory() {
+		id = packet.GameTypeCreative
+	}
+	if !mode.Visible() && !mode.HasCollision() {
+		id = packet.GameTypeSpectator
+	}
+	s.writePacket(&packet.SetPlayerGameType{GameType: id})
+	s.sendAbilities()
+}
+
+// sendAbilities sends the abilities of the Controllable entity of the session to the client.
+func (s *Session) sendAbilities() {
+	mode, abilities := s.c.GameMode(), uint32(0)
 	if mode.AllowsFlying() {
-		flags |= packet.AdventureFlagAllowFlight
+		abilities |= protocol.AbilityMayFly
 		if s.c.Flying() {
-			flags |= packet.AdventureFlagFlying
+			abilities |= protocol.AbilityFlying
 		}
 	}
 	if !mode.HasCollision() {
-		flags |= packet.AdventureFlagNoClip
+		abilities |= protocol.AbilityNoClip
 		defer s.c.StartFlying()
 		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
 		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
 		s.ViewEntityTeleport(s.c, s.c.Position())
 	}
-	if !mode.AllowsEditing() {
-		flags |= packet.AdventureFlagWorldImmutable
-	} else {
-		perms |= packet.ActionPermissionBuild | packet.ActionPermissionMine
+	if !mode.AllowsTakingDamage() {
+		abilities |= protocol.AbilityInvulnerable
 	}
-	if !mode.AllowsInteraction() {
-		flags |= packet.AdventureSettingsFlagsNoPvM
-	} else {
-		perms |= packet.ActionPermissionDoorsAndSwitches | packet.ActionPermissionOpenContainers | packet.ActionPermissionAttackPlayers | packet.ActionPermissionAttackMobs
+	if mode.CreativeInventory() {
+		abilities |= protocol.AbilityInstantBuild
 	}
-	// Creative or spectator players both use the same game type over the network.
-	if mode.AllowsFlying() && mode.CreativeInventory() {
-		id = packet.GameTypeCreative
+	if mode.AllowsEditing() {
+		abilities |= protocol.AbilityBuild | protocol.AbilityMine
 	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
-	s.writePacket(&packet.AdventureSettings{
-		Flags:             flags,
-		PermissionLevel:   packet.PermissionLevelMember,
-		PlayerUniqueID:    selfEntityRuntimeID,
-		ActionPermissions: perms,
+	if mode.AllowsInteraction() {
+		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
+	}
+	s.writePacket(&packet.UpdateAbilities{
+		EntityUniqueID:     selfEntityRuntimeID,
+		PlayerPermissions:  packet.PermissionLevelMember,
+		CommandPermissions: packet.CommandPermissionLevelNormal,
+		Layers: []protocol.AbilityLayer{ // TODO: Support customization of fly and walk speeds.
+			{
+				Type:      protocol.AbilityLayerTypeBase,
+				Abilities: protocol.AbilityCount - 1,
+				Values:    abilities,
+				FlySpeed:  protocol.AbilityBaseFlySpeed,
+				WalkSpeed: protocol.AbilityBaseWalkSpeed,
+			},
+		},
 	})
 }
 
@@ -435,7 +501,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
+func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
 	s.inv = inventory.New(36, func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -470,6 +536,16 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
+	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, item)
+			}
+		}
+	})
 	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
 		if s.c == nil {
 			return
@@ -485,7 +561,7 @@ func (s *Session) HandleInventories() (inv, offHand *inventory.Inventory, armour
 			})
 		}
 	})
-	return s.inv, s.offHand, s.armour, s.heldSlot
+	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
 }
 
 // SetHeldSlot sets the currently held hotbar slot.
@@ -522,8 +598,6 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
-	// The user swapped changed held slots so stop using item right away.
-	s.c.ReleaseItem()
 
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
@@ -604,6 +678,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
+
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
 		blockRuntimeID = world.BlockRuntimeID(b)
@@ -616,9 +691,9 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 			NetworkID:     rid,
 			MetadataValue: uint32(meta),
 		},
-		BlockRuntimeID: int32(blockRuntimeID),
 		HasNetworkID:   true,
 		Count:          uint16(it.Count()),
+		BlockRuntimeID: int32(blockRuntimeID),
 		NBTData:        nbtconv.WriteItem(it, false),
 	}
 }

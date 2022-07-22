@@ -108,7 +108,7 @@ func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube
 				baseY := cy << 4
 
 				xa, za := cube.Pos{a.baseX + u, baseY, a.baseZ + v}, cube.Pos{a.baseX + v, baseY, a.baseZ + u}
-				xb, zb := xa.Add(cube.Pos{-1, 0, 0}), za.Add(cube.Pos{0, 0, -1})
+				xb, zb := xa.Side(cube.FaceWest), za.Side(cube.FaceNorth)
 
 				addX, addZ := filter(a.sub(xa), a.sub(xb)), filter(a.sub(za), a.sub(zb))
 				if !addX && !addZ {

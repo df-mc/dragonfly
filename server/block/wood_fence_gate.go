@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodFenceGate is a block that can be used as an openable 1x1 barrier.
@@ -36,6 +37,11 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 		return newFlammabilityInfo(0, 0, false)
 	}
 	return newFlammabilityInfo(5, 20, true)
+}
+
+// FuelInfo ...
+func (WoodFenceGate) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // UseOnBlock ...
@@ -83,22 +89,10 @@ func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]any) {
-	direction := 2
-	switch f.Facing {
-	case cube.South:
-		direction = 0
-	case cube.West:
-		direction = 1
-	case cube.East:
-		direction = 3
+	if f.Wood == OakWood() {
+		return "minecraft:fence_gate", map[string]any{"direction": int32(horizontalDirection(f.Facing)), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 	}
-
-	switch f.Wood {
-	case OakWood():
-		return "minecraft:fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	default:
-		return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"direction": int32(direction), "open_bit": f.Open, "in_wall_bit": f.Lowered}
-	}
+	return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"direction": int32(horizontalDirection(f.Facing)), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 }
 
 // Model ...

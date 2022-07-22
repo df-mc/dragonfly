@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodDoor is a block that can be used as an openable 1x2 barrier.
@@ -34,6 +35,11 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 		return newFlammabilityInfo(0, 0, false)
 	}
 	return newFlammabilityInfo(0, 0, true)
+}
+
+// FuelInfo ...
+func (WoodDoor) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 10)
 }
 
 // Model ...
@@ -66,7 +72,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 		return false
 	}
 	below := pos
-	pos = pos.Add(cube.Pos{0, 1})
+	pos = pos.Side(cube.FaceUp)
 	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
@@ -131,25 +137,10 @@ func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // EncodeItem ...
 func (d WoodDoor) EncodeItem() (name string, meta int16) {
-	switch d.Wood {
-	case OakWood():
+	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", 0
-	case SpruceWood():
-		return "minecraft:spruce_door", 0
-	case BirchWood():
-		return "minecraft:birch_door", 0
-	case JungleWood():
-		return "minecraft:jungle_door", 0
-	case AcaciaWood():
-		return "minecraft:acacia_door", 0
-	case DarkOakWood():
-		return "minecraft:dark_oak_door", 0
-	case CrimsonWood():
-		return "minecraft:crimson_door", 0
-	case WarpedWood():
-		return "minecraft:warped_door", 0
 	}
-	panic("invalid wood type")
+	return "minecraft:" + d.Wood.String() + "_door", 0
 }
 
 // EncodeBlock ...
@@ -164,12 +155,10 @@ func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
 		direction = 0
 	}
 
-	switch d.Wood {
-	case OakWood():
+	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
-	default:
-		return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
+	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allDoors returns a list of all door types

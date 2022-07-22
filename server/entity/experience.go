@@ -11,6 +11,7 @@ import (
 type ExperienceManager struct {
 	mu         sync.RWMutex
 	experience int
+	d          float64
 }
 
 // NewExperienceManager returns a new ExperienceManager with no experience.
@@ -25,27 +26,28 @@ func (e *ExperienceManager) Experience() int {
 	return e.experience
 }
 
-// Add adds experience to the total experience and recalculates the level and progress if necessary.
+// Add adds experience to the total experience and recalculates the level and progress if necessary. Passing a negative
+// value is valid. If the new experience would otherwise drop below 0, it is set to 0.
 func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.experience += amount
-	return progressFromExperience(e.experience)
+	if e.experience < 0 {
+		e.experience = 0
+	}
+	return progressFromExperience(e.total())
 }
 
-// Remove removes experience from the total experience and recalculates the level and progress if necessary.
-func (e *ExperienceManager) Remove(amount int) (level int, progress float64) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	e.experience -= amount
-	return progressFromExperience(e.experience)
+// total returns the total amount of experience including the extra decimals provided for more accuracy.
+func (e *ExperienceManager) total() float64 {
+	return float64(e.experience) + e.d
 }
 
 // Level returns the current experience level.
 func (e *ExperienceManager) Level() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	level, _ := progressFromExperience(e.experience)
+	level, _ := progressFromExperience(e.total())
 	return level
 }
 
@@ -56,7 +58,7 @@ func (e *ExperienceManager) SetLevel(level int) {
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	_, progress := progressFromExperience(e.experience)
+	_, progress := progressFromExperience(e.total())
 	e.experience = experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
 }
 
@@ -64,7 +66,7 @@ func (e *ExperienceManager) SetLevel(level int) {
 func (e *ExperienceManager) Progress() float64 {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	_, progress := progressFromExperience(e.experience)
+	_, progress := progressFromExperience(e.total())
 	return progress
 }
 
@@ -75,30 +77,32 @@ func (e *ExperienceManager) SetProgress(progress float64) {
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	currentLevel, _ := progressFromExperience(e.experience)
-	e.experience = experienceForLevels(currentLevel) + int(float64(experienceForLevel(currentLevel))*progress)
+	currentLevel, _ := progressFromExperience(e.total())
+	progressExp := float64(experienceForLevel(currentLevel)) * progress
+	e.experience = experienceForLevels(currentLevel) + int(progressExp)
+	e.d = progressExp - math.Trunc(progressExp)
 }
 
 // Reset resets the total experience, level, and progress of the manager to zero.
 func (e *ExperienceManager) Reset() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.experience = 0
+	e.experience, e.d = 0, 0
 }
 
 // progressFromExperience returns the level and progress from the total experience given.
-func progressFromExperience(experience int) (level int, progress float64) {
+func progressFromExperience(experience float64) (level int, progress float64) {
 	var a, b, c float64
-	if experience <= experienceForLevels(16) {
+	if experience <= float64(experienceForLevels(16)) {
 		a, b = 1.0, 6.0
-	} else if experience <= experienceForLevels(31) {
+	} else if experience <= float64(experienceForLevels(31)) {
 		a, b, c = 2.5, -40.5, 360.0
 	} else {
 		a, b, c = 4.5, -162.5, 2220.0
 	}
 
 	var sol float64
-	if d := b*b - 4*a*(c-float64(experience)); d > 0 {
+	if d := b*b - 4*a*(c-experience); d > 0 {
 		s := math.Sqrt(d)
 		sol = math.Max((-b+s)/(2*a), (-b-s)/(2*a))
 	} else if d == 0 {

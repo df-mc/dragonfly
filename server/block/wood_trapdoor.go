@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
+	"time"
 )
 
 // WoodTrapdoor is a block that can be used as an openable 1x1 barrier.
@@ -66,6 +67,11 @@ func (t WoodTrapdoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(t))
 }
 
+// FuelInfo ...
+func (WoodTrapdoor) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
 // CanDisplace ...
 func (t WoodTrapdoor) CanDisplace(l world.Liquid) bool {
 	_, water := l.(Water)
@@ -87,12 +93,10 @@ func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]any) {
-	switch t.Wood {
-	case OakWood():
+	if t.Wood == OakWood() {
 		return "minecraft:trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
-	default:
-		return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 	}
+	return "minecraft:" + t.Wood.String() + "_trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 }
 
 // allTrapdoors returns a list of all trapdoor types

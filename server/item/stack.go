@@ -3,7 +3,6 @@ package item
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
-	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"reflect"
 	"sort"
@@ -23,6 +22,8 @@ type Stack struct {
 	lore       []string
 
 	damage int
+
+	anvilCost int
 
 	data map[string]any
 
@@ -203,7 +204,7 @@ func (s Stack) Lore() []string {
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
 func (s Stack) WithValue(key string, val any) Stack {
-	s.data = maps.Clone(s.data)
+	s.data = copyMap(s.data)
 	if val != nil {
 		s.data[key] = val
 	} else {
@@ -222,9 +223,12 @@ func (s Stack) Value(key string) (val any, ok bool) {
 // WithEnchantments returns the current stack with the passed enchantments. If an enchantment is not compatible
 // with the item stack, it will not be applied.
 func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
+	if _, ok := s.item.(Book); ok {
+		s.item = EnchantedBook{}
+	}
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
-		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWith(s) {
+		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {
 			// Enchantment is not compatible with the item.
 			continue
 		}
@@ -262,6 +266,25 @@ func (s Stack) Enchantments() []Enchantment {
 		return id1 < id2
 	})
 	return e
+}
+
+// AnvilCost returns the number of experience levels to add to the base level cost when repairing, combining, or
+// renaming this item with an anvil.
+func (s Stack) AnvilCost() int {
+	return s.anvilCost
+}
+
+// WithAnvilCost returns the current Stack with the anvil cost set to the passed value.
+func (s Stack) WithAnvilCost(anvilCost int) Stack {
+	i := s.Item()
+	_, repairable := i.(Repairable)
+	_, enchantedBook := i.(EnchantedBook)
+	if !repairable && !enchantedBook {
+		// This item can't have a repair cost.
+		return s
+	}
+	s.anvilCost = anvilCost
+	return s
 }
 
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
@@ -303,7 +326,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage || s.customName != s2.customName {
+	if name != name2 || meta != meta2 || s.damage != s2.damage || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
@@ -332,13 +355,13 @@ func (s Stack) String() string {
 	if s.item == nil {
 		return fmt.Sprintf("Stack<nil> x%v", s.count)
 	}
-	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v') x%v", s.item, s.item, s.customName, s.lore, s.count)
+	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, anvilCost=%v) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.anvilCost, s.count)
 }
 
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
 func (s Stack) Values() map[string]any {
-	return maps.Clone(s.data)
+	return copyMap(s.data)
 }
 
 // stackID is a counter for unique stack IDs.
@@ -363,6 +386,15 @@ func id(s Stack) int32 {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
+}
+
+// copyMap makes a copy of the map passed. It does not recursively copy the map.
+func copyMap(m map[string]any) map[string]any {
+	cp := make(map[string]any, len(m))
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
 }
 
 // copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.

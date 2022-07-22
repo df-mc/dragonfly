@@ -1,5 +1,7 @@
 package server
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Config is the configuration of a Dragonfly server. It holds settings that affect different aspects of the
 // server, such as its name and maximum players.
 type Config struct {
@@ -54,6 +56,10 @@ type Config struct {
 		// Required is a boolean to force the client to load the resource pack on join. If they do not accept, they'll have to leave the server.
 		Required bool
 	}
+	// WorldConfig, if non-nil, is called for every default world that a Server creates. It may be used to change the
+	// world.Config that these worlds are created with. The default world.Config is passed to the function and should
+	// be edited, then returned by the WorldConfig function.
+	WorldConfig func(def world.Config) world.Config `toml:"-"`
 }
 
 // DefaultConfig returns a configuration with the default values filled out.
