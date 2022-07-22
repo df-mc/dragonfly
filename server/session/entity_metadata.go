@@ -99,6 +99,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 			m.setFlag(dataKeyFlags, dataFlagEnchanted)
 		}
 	}
+	if l, ok := e.(lingers); ok && l.Lingers() {
+		m.setFlag(dataKeyFlags, dataFlagLinger)
+	}
 	if t, ok := e.(tipped); ok {
 		if tip := t.Tip().Uint8(); tip > 4 {
 			m[dataKeyCustomDisplay] = tip + 1
@@ -170,6 +173,7 @@ const (
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
+	dataFlagLinger            = 46
 	dataFlagHasCollision      = 47
 	dataFlagAffectedByGravity = 48
 	dataFlagEnchanted         = 51
@@ -220,6 +224,10 @@ type scoreTag interface {
 
 type splash interface {
 	Type() potion.Potion
+}
+
+type lingers interface {
+	Lingers() bool
 }
 
 type areaEffectCloud interface {
