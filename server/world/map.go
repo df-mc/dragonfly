@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	mapDataMu sync.RWMutex
-	mapData   = map[int64]*ViewableMapData{}
+	mapDataMu/*, persistedMapDataMu*/ sync.RWMutex
+	mapData = map[int64]*ViewableMapData{}
+	// persistedMapData              = map[int64]*ViewableMapData{}
 )
 
 func NewMapData() *ViewableMapData {
@@ -26,14 +27,6 @@ func NewMapData() *ViewableMapData {
 		},
 	}
 	mapData[d.mapID] = d
-
-	return d
-}
-
-// LoadMapData loads persisted map data.
-func LoadMapData(mapID int64) *ViewableMapData {
-	d := &ViewableMapData{mapID: mapID}
-	// go d.load() // TODO: load persisted map data.
 
 	return d
 }
@@ -199,4 +192,9 @@ func (d *ViewableMapData) EncodeItemNBT() map[string]any {
 // And filter tracked blocks that are not in the same world as viewer.
 func (d *ViewableMapData) World() *World {
 	return d.world
+}
+
+// MapIDEquals ...
+func (d *ViewableMapData) MapIDEquals(mapID int64) bool {
+	return d.mapID == mapID
 }

@@ -24,11 +24,10 @@ func (m BaseMap) DecodeNBT(data map[string]any) any {
 	m.IsInit, _ = data["map_is_init"].(bool)
 	m.NameIndex, _ = data["map_name_index"].(int32)
 	m.DisplayPlayers, _ = data["map_display_players"].(bool)
-
-	if id, ok := data["map_uuid"].(int64); ok {
-		m.ViewableMapData = world.LoadMapData(id)
-	}
-
+	/*
+		if id, ok := data["map_uuid"].(int64); ok {
+		} TODO: Persisted map data.
+	*/
 	return m
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -16,7 +17,7 @@ type MapInfoRequestHandler struct {
 func (h *MapInfoRequestHandler) Handle(p packet.Packet, s *Session) error {
 	var (
 		pk      = p.(*packet.MapInfoRequest)
-		mapItem item.MapInterface
+		mapItem item.MapItem
 		ok      bool
 	)
 
@@ -27,8 +28,8 @@ func (h *MapInfoRequestHandler) Handle(p packet.Packet, s *Session) error {
 		s.armour.Inventory(),
 	} {
 		if inv.ContainsItemFunc(1, func(stack item.Stack) bool {
-			if mapItem, ok = stack.Item().(item.MapInterface); ok {
-				return mapItem.GetMapID() == pk.MapID
+			if mapItem, ok = stack.Item().(item.MapItem); ok {
+				return mapItem.BaseMap().MapIDEquals(pk.MapID)
 			}
 
 			return false // Item is not map.
@@ -39,7 +40,8 @@ func (h *MapInfoRequestHandler) Handle(p packet.Packet, s *Session) error {
 		return fmt.Errorf("client requests info of map %v while he does not have the corresponding map item in inventory, off hand inventory, UI inventory or armour inventory", pk.MapID)
 	}
 
-	s.sendMapDataUpdate(packet.MapUpdateFlagInitialisation, pk.MapID, byte(mapItem.GetDimension().EncodeDimension()), byte(mapItem.GetScale()), item.MapDataUpdate{MapData: mapItem.GetData()})
+	mapItem.BaseMap().AddViewer(s)
+	s.ViewMapDataChange(packet.MapUpdateFlagInitialisation, pk.MapID, world.MapPixelsChunk{}, mapItem.BaseMap().ViewableMapData)
 
 	return nil
 }
