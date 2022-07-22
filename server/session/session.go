@@ -550,7 +550,8 @@ func (s *Session) sendAvailableEntities() {
 }
 
 // sendMapDataUpdate sends all registered entities to the player.
-func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, data item.MapDataUpdate) {
+func (s *Session) ViewMapDataChange(updateFlag uint32, id int64, xOffset, yOffset int32, d world.MapData) {
+	data := d.GetMapData()
 	var (
 		pixels = data.Pixels
 		width  int32

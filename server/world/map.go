@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -20,7 +19,7 @@ type MapData struct {
 }
 
 type MapDataViewer interface {
-	ViewMapDataChange(*ViewableMapData)
+	ViewMapDataChange(updateFlag uint32, id int64, xOffset, yOffset int32, d MapData)
 }
 
 type ViewableMapData struct {
@@ -36,13 +35,17 @@ type ViewableMapData struct {
 }
 
 // ChangePixels broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagTexture.
+// Offsets are calculated by diff of new and old pixels.
 func (d *ViewableMapData) ChangePixels(pixels [][]color.RGBA) {
 	d.pixelsMu.Lock()
 	defer d.pixelsMu.Unlock()
 
 	d.data.Pixels = pixels
-	d.change(packet.MapUpdateFlagTexture)
+	// d.change(packet.MapUpdateFlagTexture, xOffset, yOffset)
 }
+
+// ChangePixelsWithOffset broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagTexture.
+func (d *ViewableMapData) ChangePixelsWithOffset(pixels [][]color.RGBA, xOffset, yOffset int32) {}
 
 // AddTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
 func (d *ViewableMapData) AddTrackEntity(e Entity) {
@@ -55,7 +58,7 @@ func (d *ViewableMapData) AddTrackEntity(e Entity) {
 	} else {
 		d.data.TrackEntities[e] = s
 	}
-	d.change(packet.MapUpdateFlagDecoration)
+	d.change(packet.MapUpdateFlagDecoration, 0, 0)
 }
 
 // RemoveTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
@@ -65,7 +68,7 @@ func (d *ViewableMapData) RemoveTrackEntity(e Entity) {
 
 	if d.data.TrackEntities != nil {
 		delete(d.data.TrackEntities, e)
-		d.change(packet.MapUpdateFlagDecoration)
+		d.change(packet.MapUpdateFlagDecoration, 0, 0)
 	}
 }
 
@@ -80,7 +83,7 @@ func (d *ViewableMapData) AddTrackBlock(pos cube.Pos) {
 	} else {
 		d.data.TrackBlocks[pos] = s
 	}
-	d.change(packet.MapUpdateFlagDecoration)
+	d.change(packet.MapUpdateFlagDecoration, 0, 0)
 }
 
 // RemoveTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
@@ -90,7 +93,7 @@ func (d *ViewableMapData) RemoveTrackBlock(pos cube.Pos) {
 
 	if d.data.TrackBlocks != nil {
 		delete(d.data.TrackBlocks, pos)
-		d.change(packet.MapUpdateFlagDecoration)
+		d.change(packet.MapUpdateFlagDecoration, 0, 0)
 	}
 }
 
@@ -106,44 +109,37 @@ func (d *ViewableMapData) GetMapData() MapData {
 	return d.data
 }
 
-func (d *ViewableMapData) change(updateFlag byte) {
-	d.broadcast(updateFlag)
-	d.save()
-}
-
-func (d *ViewableMapData) broadcast(updateFlag byte) {
+func (d *ViewableMapData) change(updateFlag uint32, xOffset, yOffset int32) {
 	d.viewersMu.RLock()
 	defer d.viewersMu.RUnlock()
 
 	for viewer := range d.viewers {
-		viewer.ViewMapDataChange(d)
+		viewer.ViewMapDataChange(updateFlag, d.mapID, xOffset, yOffset, d.GetMapData())
 	}
-}
 
-func (d *ViewableMapData) save() {
-	// TODO: save()
+	// TODO: save().
 }
 
 // AddViewer ...
 func (d *ViewableMapData) AddViewer(v MapDataViewer) {
-	m.viewersMu.Lock()
+	d.viewersMu.Lock()
 	defer d.viewersMu.Unlock()
 
 	s := struct{}{}
 	if d.viewers == nil {
-		m.viewers = map[MapDataViewer]struct{}{v: s}
+		d.viewers = map[MapDataViewer]struct{}{v: s}
 	} else {
-		m.viewers[v] = s
+		d.viewers[v] = s
 	}
 }
 
 // RemoveViewer ...
 func (d *ViewableMapData) RemoveViewer(v MapDataViewer) {
-	m.viewersMu.Lock()
+	d.viewersMu.Lock()
 	defer d.viewersMu.Unlock()
 
 	if d.viewers != nil {
-		delete(m.viewers, v)
+		delete(d.viewers, v)
 	}
 }
 
@@ -154,7 +150,7 @@ func (d *ViewableMapData) EncodeItemNBT() map[string]any {
 		return map[string]any{}
 	}
 
-	data := d.GetData()
+	data := d.GetMapData()
 	return map[string]any{
 		"map_uuid":       d.mapID,
 		"map_scale":      data.Scale,
@@ -163,6 +159,6 @@ func (d *ViewableMapData) EncodeItemNBT() map[string]any {
 }
 
 // GetDimension returns the dimension of map's belonging world.
-func (d *ViewableMapData) GetDimension() world.Dimension {
+func (d *ViewableMapData) GetDimension() Dimension {
 	return d.world.Dimension()
 }
