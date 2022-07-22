@@ -30,7 +30,7 @@ type ViewableMapData struct {
 	viewersMu sync.RWMutex
 	viewers   map[MapDataViewer]struct{}
 
-	pixelsMu, trackEntitiesMu, trackBlocksMu, scaleMu, lockedMu sync.RWMutex
+	pixelsMu, trackEntitiesMu, trackBlocksMu sync.RWMutex
 
 	data MapData
 }
@@ -94,37 +94,14 @@ func (d *ViewableMapData) RemoveTrackBlock(pos cube.Pos) {
 	}
 }
 
-// SetScale does not broadcast *packet.ClientBoundMapItemData.
-// Scale of existed map data should not be changed, please create a new map data instead.
-// Scale should be 0 to 4.
-func (d *ViewableMapData) SetScale(scale byte) {
-	d.scaleMu.Lock()
-	defer d.scaleMu.Unlock()
-
-	d.data.Scale = scale
-}
-
-// SetLocked does not broadcast *packet.ClientBoundMapItemData.
-// Lock status of existed map data should not be changed, please create a new map data instead.
-func (d *ViewableMapData) SetLocked(locked bool) {
-	d.lockedMu.Lock()
-	defer d.lockedMu.Unlock()
-
-	d.data.Locked = locked
-}
-
 // GetMapData ...
 func (d *ViewableMapData) GetMapData() MapData {
 	d.pixelsMu.RLock()
 	d.trackEntitiesMu.RLock()
 	d.trackBlocksMu.RLock()
-	d.scaleMu.RLock()
-	d.lockedMu.RLock()
 	defer d.pixelsMu.RUnlock()
 	defer d.trackEntitiesMu.RUnlock()
 	defer d.trackBlocksMu.RUnlock()
-	defer d.scaleMu.RUnlock()
-	defer d.lockedMu.RUnlock()
 
 	return d.data
 }
