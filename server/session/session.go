@@ -550,7 +550,7 @@ func (s *Session) sendAvailableEntities() {
 }
 
 // sendMapDataUpdate sends all registered entities to the player.
-func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, dimension, scale byte, data item.MapDataUpdate) {
+func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, data item.MapDataUpdate) {
 	var (
 		pixels = data.Pixels
 		width  int32
@@ -578,9 +578,9 @@ func (s *Session) sendMapDataUpdate(updateFlag uint32, id int64, dimension, scal
 	s.writePacket(&packet.ClientBoundMapItemData{
 		MapID:          id,
 		UpdateFlags:    updateFlag,
-		Dimension:      dimension,
+		Dimension:      byte(data.Dimension.EncodeDimension()),
 		LockedMap:      false, // TODO: Locked map support
-		Scale:          scale,
+		Scale:          data.Scale,
 		TrackedObjects: trackeds,
 		// Decorations is a list of fixed decorations located on the map. The decorations will not change
 		// client-side, unless the server updates them.
