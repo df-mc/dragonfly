@@ -106,17 +106,17 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 	}
 
 	a.mu.Lock()
-	if a.age >= a.duration+10 {
+	age, pos := a.age, a.pos
+	duration, growth := a.duration, a.radiusGrowth
+	a.mu.Unlock()
+
+	if a.age >= duration+10 {
 		// We've outlived our duration, close the entity the next tick.
 		a.close = true
-		a.mu.Unlock()
 		return
 	}
 
-	age, growth := a.age, a.radiusGrowth
-	pos := a.pos
-	a.mu.Unlock()
-
+	viewers := w.Viewers(pos)
 	if growth != 0 {
 		a.mu.Lock()
 		a.radius += growth
@@ -127,7 +127,7 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		}
 		a.mu.Unlock()
 
-		for _, v := range w.Viewers(pos) {
+		for _, v := range viewers {
 			v.ViewEntityState(a)
 		}
 	}
@@ -150,8 +150,6 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 	})
 
 	a.mu.Lock()
-
-	var updated bool
 	for _, e := range entities {
 		delta := e.Position().Sub(pos)
 		delta[1] = 0
@@ -166,33 +164,11 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 			}
 
 			a.targets[e] = a.age + a.reapplicationDelay
-			if a.radiusOnUse != 0.0 {
-				a.radius += a.radiusOnUse
-				updated = true
-				if a.radius < 0.5 {
-					a.close = true
-					a.mu.Unlock()
-					return
-				}
-			}
-			if a.durationOnUse != 0 {
-				a.duration += a.durationOnUse
-				updated = true
-				if a.duration <= 0 {
-					a.close = true
-					a.mu.Unlock()
-					return
-				}
-			}
+			a.useRadius(viewers)
+			a.useDuration(viewers)
 		}
 	}
 	a.mu.Unlock()
-
-	if updated {
-		for _, v := range w.Viewers(pos) {
-			v.ViewEntityState(a)
-		}
-	}
 }
 
 // EncodeNBT ...
@@ -221,4 +197,44 @@ func (a *AreaEffectCloud) DecodeNBT(data map[string]any) any {
 		float64(nbtconv.Map[float32](data, "RadiusOnUse")),
 		float64(nbtconv.Map[float32](data, "RadiusPerTick")),
 	)
+}
+
+// useDuration grows duration by the durationOnUse factor. If duration goes under zero, it will close the entity.
+// useDuration should always be called when the mutex is locked.
+func (a *AreaEffectCloud) useDuration(viewers []world.Viewer) {
+	if a.durationOnUse == 0 {
+		// No change in duration on use, so don't do anything.
+		return
+	}
+
+	a.duration += a.durationOnUse
+	if a.duration <= 0 {
+		a.close = true
+	}
+
+	a.mu.Unlock()
+	for _, v := range viewers {
+		v.ViewEntityState(a)
+	}
+	a.mu.Lock()
+}
+
+// useRadius grows radius by the radiusOnUse factor. If radius goes under 1/2, it will close the entity. useRadius
+// should always be called when the mutex is locked.
+func (a *AreaEffectCloud) useRadius(viewers []world.Viewer) {
+	if a.radiusOnUse == 0 {
+		// No change in radius on use, so don't do anything.
+		return
+	}
+
+	a.radius += a.radiusOnUse
+	if a.radius <= 0.5 {
+		a.close = true
+	}
+
+	a.mu.Unlock()
+	for _, v := range viewers {
+		v.ViewEntityState(a)
+	}
+	a.mu.Lock()
 }
