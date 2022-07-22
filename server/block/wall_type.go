@@ -59,6 +59,56 @@ func encodeWallBlock(block world.Block) (string, int16) {
 	panic("invalid block used for wall")
 }
 
+// calculateWallHardness calculates the appropriate hardness for a wall based on the provided block.
+func calculateWallHardness(block world.Block) float64 {
+	switch block := block.(type) {
+	case Andesite:
+		if !block.Polished {
+			return 1.5
+		}
+	// TODO: Blackstone: 2
+	case Bricks:
+		return 2
+	// TODO: Cobbled Deepslate: 3.5
+	case Cobblestone:
+		if block.Mossy {
+			return 2
+		}
+		return 1.5
+	// TODO: Deepslate Brick: 3.5
+	// TODO: Deepslate Tile: 3.5
+	case Diorite:
+		if !block.Polished {
+			return 1.5
+		}
+	case EndBricks:
+		return 3
+	case Granite:
+		if !block.Polished {
+			return 1.5
+		}
+	case MudBricks:
+		return 1.5
+	case NetherBricks:
+		if block.Type == NormalNetherBricks() || block.Type == RedNetherBricks() {
+			return 2
+		}
+	case Prismarine:
+		if block.Type == NormalPrismarine() {
+			return 1.5
+		}
+	case Sandstone:
+		if block.Type == NormalSandstone() {
+			return 0.8
+		}
+	case StoneBricks:
+		if block.Type == NormalStoneBricks() || block.Type == MossyStoneBricks() {
+			return 1.5
+		}
+	}
+	panic("invalid block used for wall")
+}
+
 // WallBlocks returns a list of all possible blocks for a wall.
 func WallBlocks() []world.Block {
 	return []world.Block{

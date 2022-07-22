@@ -66,12 +66,7 @@ func (w Wall) Model() world.BlockModel {
 
 // BreakInfo ...
 func (w Wall) BreakInfo() BreakInfo {
-	hardness := 2.0
-	name, _ := encodeWallBlock(w.Block)
-	if name == "cobbled_deepslate" || name == "deepslate_brick" || name == "deepslate_tile" || name == "polished_deepslate" {
-		hardness = 3.5
-	}
-	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w))
+	return newBreakInfo(calculateWallHardness(w.Block), pickaxeHarvestable, pickaxeEffective, oneOf(w))
 }
 
 // NeighbourUpdateTick ...
