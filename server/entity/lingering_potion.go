@@ -21,7 +21,6 @@ type LingeringPotion struct {
 
 	owner world.Entity
 
-	t potion.Potion
 	c *ProjectileComputer
 }
 
@@ -32,7 +31,7 @@ func NewLingeringPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, 
 		pitch: pitch,
 		owner: owner,
 
-		splashable: splashable{t: t},
+		splashable: splashable{t: t, m: 0.25},
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
@@ -91,7 +90,7 @@ func (l *LingeringPotion) Tick(w *world.World, current int64) {
 
 	if result != nil {
 		l.splash(l, w, m.pos, result, l.BBox())
-		w.AddEntity(NewDefaultAreaEffectCloud(m.pos, l.splashable.t))
+		w.AddEntity(NewDefaultAreaEffectCloud(m.pos, l.t))
 
 		l.close = true
 	}

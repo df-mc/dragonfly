@@ -14,6 +14,7 @@ import (
 
 // splashable is a struct that can be embedded by splashable projectiles, such as splash potions or lingering potions.
 type splashable struct {
+	m float64
 	t potion.Potion
 }
 
@@ -54,7 +55,7 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 					continue
 				}
 
-				dur := time.Duration(float64(eff.Duration()) * 0.75 * f)
+				dur := time.Duration(float64(eff.Duration()) * s.m * f)
 				if dur < time.Second {
 					continue
 				}

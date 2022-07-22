@@ -20,7 +20,6 @@ type SplashPotion struct {
 
 	owner world.Entity
 
-	t potion.Potion
 	c *ProjectileComputer
 }
 
@@ -31,7 +30,7 @@ func NewSplashPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, t p
 		pitch: pitch,
 		owner: owner,
 
-		splashable: splashable{t: t},
+		splashable: splashable{t: t, m: 0.75},
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
