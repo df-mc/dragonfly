@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"hash/fnv"
+	"github.com/segmentio/fasthash/fnv1"
 	"math"
 	"sort"
 	"strings"
@@ -81,19 +81,9 @@ func registerBlockState(s blockState, order bool) {
 			nameOne, _ := blocks[i].EncodeBlock()
 			nameTwo, _ := blocks[j].EncodeBlock()
 			if nameOne == nameTwo {
-				// Identifiers are equal, maintain the original order.
 				return false
 			}
-
-			f := fnv.New64()
-			_, _ = f.Write([]byte(nameOne))
-			hashOne := f.Sum64()
-
-			f = fnv.New64()
-			_, _ = f.Write([]byte(nameTwo))
-			hashTwo := f.Sum64()
-
-			return hashOne < hashTwo
+			return fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
 		})
 
 		for id, b := range blocks {
