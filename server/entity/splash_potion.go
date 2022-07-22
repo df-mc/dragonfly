@@ -68,10 +68,13 @@ func (s *SplashPotion) Rotation() (float64, float64) {
 	return s.yaw, s.pitch
 }
 
+// Glint returns true if the splash potion should render with glint.
+func (s *SplashPotion) Glint() bool {
+	return len(s.t.Effects()) > 0
+}
+
 // Type returns the type of potion the splash potion will grant effects for when thrown.
 func (s *SplashPotion) Type() potion.Potion {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.t
 }
 
