@@ -72,12 +72,12 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 		case trace.BlockResult:
 			blockPos := result.BlockPosition().Side(result.Face())
 			if w.Block(blockPos) == fire() {
-				w.SetBlock(blockPos, air(), nil)
+				w.SetBlock(blockPos, nil, nil)
 			}
 
 			for _, f := range cube.HorizontalFaces() {
 				if h := blockPos.Side(f); w.Block(h) == fire() {
-					w.SetBlock(h, air(), nil)
+					w.SetBlock(h, nil, nil)
 				}
 			}
 		case trace.EntityResult:
@@ -87,13 +87,4 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 
 	w.AddParticle(pos, particle.Splash{Colour: colour})
 	w.PlaySound(pos, sound.GlassBreak{})
-}
-
-// air returns an air block.
-func air() world.Block {
-	f, ok := world.BlockByName("minecraft:air", map[string]any{})
-	if !ok {
-		panic("could not find air block")
-	}
-	return f
 }
