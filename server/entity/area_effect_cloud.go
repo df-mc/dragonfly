@@ -157,15 +157,11 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		delta[1] = 0
 		if delta.Len() <= a.radius {
 			l := e.(Living)
-			effects := a.t.Effects()
-			for i := 0; i < len(effects); i++ {
-				eff := effects[i]
-				if l, ok := eff.Type().(effect.LastingType); ok {
-					effects[i] = effect.New(l, eff.Level(), eff.Duration()/4)
+			for _, eff := range a.t.Effects() {
+				if lasting, ok := eff.Type().(effect.LastingType); ok {
+					l.AddEffect(effect.New(lasting, eff.Level(), eff.Duration()/4))
 					continue
 				}
-			}
-			for _, eff := range effects {
 				l.AddEffect(eff)
 			}
 
