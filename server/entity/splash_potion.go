@@ -134,7 +134,7 @@ func (s *SplashPotion) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"PotionId": s.t.Uint8(),
+		"PotionId": int32(s.t.Uint8()),
 		"Yaw":      yaw,
 		"Pitch":    pitch,
 	}

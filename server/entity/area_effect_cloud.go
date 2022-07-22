@@ -191,7 +191,7 @@ func (a *AreaEffectCloud) EncodeNBT() map[string]any {
 		"DurationOnUse":      int32(a.durationOnUse),
 		"Radius":             float32(a.radius),
 		"Duration":           int32(a.duration),
-		"PotionId":           a.t.Uint8(),
+		"PotionId":           int32(a.t.Uint8()),
 	}
 }
 
