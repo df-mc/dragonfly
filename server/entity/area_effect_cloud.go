@@ -99,13 +99,13 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		return
 	}
 
-	a.mu.Lock()
 	a.age++
 	if a.age < 10 {
 		// The cloud lives for at least half a second before it may begin spreading effects and growing/shrinking.
-		a.mu.Unlock()
 		return
 	}
+
+	a.mu.Lock()
 	if a.age >= a.duration+10 {
 		// We've outlived our duration, close the entity the next tick.
 		a.close = true
@@ -137,19 +137,14 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		return
 	}
 
-	a.mu.Lock()
 	for target, expiration := range a.targets {
 		if a.age >= expiration {
 			delete(a.targets, target)
 		}
 	}
-	a.mu.Unlock()
 
 	entities := w.EntitiesWithin(a.BBox().Translate(pos), func(entity world.Entity) bool {
-		a.mu.Lock()
 		_, target := a.targets[entity]
-		a.mu.Unlock()
-
 		_, living := entity.(Living)
 		return !living || target || entity == a
 	})
