@@ -18,6 +18,11 @@ type splashable struct {
 	t potion.Potion
 }
 
+// Glint returns true if the splashable should render with glint.
+func (s *splashable) Glint() bool {
+	return len(s.t.Effects()) > 0
+}
+
 // Type returns the type of potion the splashable will grant effects for when thrown.
 func (s *splashable) Type() potion.Potion {
 	return s.t

@@ -80,24 +80,23 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if c, ok := e.(areaEffectCloud); ok {
 		radius, radiusOnUse, radiusGrowth := c.Radius()
+		colour, am := effect.ResultingColour(c.Effects())
 		m[dataKeyAreaEffectCloudDuration] = int32(c.Duration().Milliseconds() / 50)
 		m[dataKeyAreaEffectCloudRadius] = float32(radius)
 		m[dataKeyAreaEffectCloudRadiusChangeOnPickup] = float32(radiusOnUse)
 		m[dataKeyAreaEffectCloudRadiusPerTick] = float32(radiusGrowth)
-
-		colour, am := effect.ResultingColour(c.Effects())
 		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
 		if am {
 			m[dataKeyPotionAmbient] = byte(1)
 		} else {
 			m[dataKeyPotionAmbient] = byte(0)
 		}
-	} else if sp, ok := e.(splash); ok {
-		pot := sp.Type()
-		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
-		if len(pot.Effects()) > 0 {
-			m.setFlag(dataKeyFlags, dataFlagEnchanted)
-		}
+	}
+	if p, ok := e.(splash); ok {
+		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+	}
+	if g, ok := e.(glint); ok && g.Glint() {
+		m.setFlag(dataKeyFlags, dataFlagEnchanted)
 	}
 	if l, ok := e.(lingers); ok && l.Lingers() {
 		m.setFlag(dataKeyFlags, dataFlagLinger)
@@ -224,6 +223,10 @@ type scoreTag interface {
 
 type splash interface {
 	Type() potion.Potion
+}
+
+type glint interface {
+	Glint() bool
 }
 
 type lingers interface {
