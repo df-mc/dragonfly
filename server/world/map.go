@@ -8,6 +8,29 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
+var (
+	mapDataMu sync.RWMutex
+	mapData   = map[int64]*ViewableMapData{}
+)
+
+func NewMapData() *ViewableMapData {
+	mapDataMu.Lock()
+	defer mapDataMu.Unlock()
+
+	d := &ViewableMapData{mapID: int64(len(mapData))}
+	mapData[d.mapID] = d
+
+	return d
+}
+
+// LoadMapData loads persisted map data.
+func LoadMapData(mapID int64) *ViewableMapData {
+	d := &ViewableMapData{mapID: mapID}
+	// go d.load() // TODO: load persisted map data.
+
+	return d
+}
+
 type MapData struct {
 	Pixels        [][]color.RGBA
 	TrackEntities map[Entity]struct{}
@@ -23,7 +46,7 @@ type MapDataViewer interface {
 }
 
 type ViewableMapData struct {
-	mapID int64
+	mapID/*, persistentID*/ int64
 	world *World
 
 	viewersMu sync.RWMutex

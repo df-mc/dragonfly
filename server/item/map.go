@@ -5,7 +5,7 @@ import (
 )
 
 type MapItem interface {
-	GetBaseMap() BaseMap
+	BaseMap() BaseMap
 }
 
 type BaseMap struct {
@@ -21,13 +21,13 @@ type BaseMap struct {
 
 // DecodeNBT ...
 func (m BaseMap) DecodeNBT(data map[string]any) any {
+	m.ViewableMapData
 	m.IsInit, _ = data["map_is_init"].(bool)
 	m.NameIndex, _ = data["map_name_index"].(int32)
 	m.DisplayPlayers, _ = data["map_display_players"].(bool)
 
 	if id, ok := data["map_uuid"].(int64); ok {
-		id = id
-		// TODO: load map data.
+		id = world.LoadMapData(id)
 	}
 
 	return m
@@ -40,4 +40,9 @@ func (m BaseMap) EncodeNBT() map[string]any {
 	data["map_name_index"] = m.NameIndex
 	data["map_display_players"] = m.DisplayPlayers
 	return data
+}
+
+// BaseMap ...
+func (m BaseMap) BaseMap() BaseMap {
+	return m
 }
