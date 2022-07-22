@@ -42,6 +42,6 @@ func (w Wall) BBox(cube.Pos, *world.World) []cube.BBox {
 }
 
 // FaceSolid ...
-func (w Wall) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
-	return true
+func (w Wall) FaceSolid(_ cube.Pos, face cube.Face, _ *world.World) bool {
+	return face == cube.FaceUp
 }
