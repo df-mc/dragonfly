@@ -131,6 +131,7 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 
 	if a.age%5 != 0 {
 		// Area effect clouds only trigger updates every five ticks.
+		a.mu.Unlock()
 		return
 	}
 
