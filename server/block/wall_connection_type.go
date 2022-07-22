@@ -5,17 +5,17 @@ type WallConnectionType struct {
 	wallConnectionType
 }
 
-// NoWallConnection returns the cobblestone wall variant.
+// NoWallConnection returns the no connection type of a wall.
 func NoWallConnection() WallConnectionType {
 	return WallConnectionType{0}
 }
 
-// ShortWallConnection returns the mossy cobblestone wall variant.
+// ShortWallConnection returns the short connection type of a wall.
 func ShortWallConnection() WallConnectionType {
 	return WallConnectionType{1}
 }
 
-// TallWallConnection returns the granite wall variant.
+// TallWallConnection returns the tall connection type of a wall.
 func TallWallConnection() WallConnectionType {
 	return WallConnectionType{2}
 }
