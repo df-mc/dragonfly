@@ -21,13 +21,12 @@ type BaseMap struct {
 
 // DecodeNBT ...
 func (m BaseMap) DecodeNBT(data map[string]any) any {
-	m.ViewableMapData
 	m.IsInit, _ = data["map_is_init"].(bool)
 	m.NameIndex, _ = data["map_name_index"].(int32)
 	m.DisplayPlayers, _ = data["map_display_players"].(bool)
 
 	if id, ok := data["map_uuid"].(int64); ok {
-		id = world.LoadMapData(id)
+		m.ViewableMapData = world.LoadMapData(id)
 	}
 
 	return m
