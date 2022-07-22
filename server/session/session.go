@@ -71,6 +71,7 @@ type Session struct {
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
+	changingSlot                   atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
 

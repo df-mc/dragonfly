@@ -14,7 +14,6 @@ type InventoryTransactionHandler struct{}
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.InventoryTransaction)
-
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
 		h.resendInventories(s)
@@ -30,17 +29,26 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		h.resendInventories(s)
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+		s.changingSlot.Store(true)
+		err := s.c.SetHeldSlot(int(data.HotBarSlot))
+		s.changingSlot.Store(false)
+		if err != nil {
 			return err
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+		s.changingSlot.Store(true)
+		err := s.c.SetHeldSlot(int(data.HotBarSlot))
+		s.changingSlot.Store(false)
+		if err != nil {
 			return err
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+		s.changingSlot.Store(true)
+		err := s.c.SetHeldSlot(int(data.HotBarSlot))
+		s.changingSlot.Store(false)
+		if err != nil {
 			return err
 		}
 		return h.handleReleaseItemTransaction(s)

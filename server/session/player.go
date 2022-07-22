@@ -566,14 +566,16 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 
 // SetHeldSlot sets the currently held hotbar slot.
 func (s *Session) SetHeldSlot(slot int) error {
-	if slot > 8 {
+	if slot < 0 || slot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 
 	s.heldSlot.Store(uint32(slot))
-
 	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 		viewer.ViewEntityItems(s.c)
+	}
+	if s.changingSlot.Load() {
+		return nil
 	}
 
 	mainHand, _ := s.c.HeldItems()
@@ -583,34 +585,6 @@ func (s *Session) SetHeldSlot(slot int) error {
 		InventorySlot:   byte(slot),
 		HotBarSlot:      byte(slot),
 	})
-	return nil
-}
-
-// UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
-// matches an expected item stack.
-func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
-	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
-	// different place in the inventory.
-	if slot > 8 {
-		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
-	}
-	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
-		// Old slot was the same as new slot, so don't do anything.
-		return nil
-	}
-
-	clientSideItem := expected
-	actual, _ := s.inv.Item(slot)
-
-	// The item the client claims to have must be identical to the one we have registered server-side.
-	if !clientSideItem.Equal(actual) {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.log.Debugf("failed processing packet from %v (%v): failed changing held slot: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
-	}
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
-	}
 	return nil
 }
 
