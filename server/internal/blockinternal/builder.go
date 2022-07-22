@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/segmentio/fasthash/fnv1"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"strings"
@@ -60,15 +61,17 @@ func (builder *ComponentBuilder) AddPermutation(condition string, components map
 // Construct constructs the final block components map and returns it. It also applies the default properties required
 // for the block to work without modifying the original maps in the builder.
 func (builder *ComponentBuilder) Construct() map[string]any {
-	permutations := maps.Clone(builder.permutations)
 	properties := slices.Clone(builder.properties)
 	components := maps.Clone(builder.components)
 	builder.applyDefaultProperties(&properties)
 	builder.applyDefaultComponents(components)
+
 	result := map[string]any{"components": components}
 	if len(properties) > 0 {
 		result["properties"] = properties
 	}
+
+	permutations := maps.Clone(builder.permutations)
 	if len(permutations) > 0 {
 		result["molangVersion"] = int32(0)
 		result["permutations"] = []map[string]any{}
@@ -104,30 +107,40 @@ func (builder *ComponentBuilder) applyDefaultProperties(x *[]map[string]any) {
 // modify the builder's components map directly otherwise Empty() will return false in future use of the builder.
 func (builder *ComponentBuilder) applyDefaultComponents(x map[string]any) {
 	base := builder.group[0]
-	geometry, _ := base.Geometries()
 	name := strings.Split(builder.identifier, ":")[1]
 
+	geometry, permutationGeometries, _ := base.Geometries()
 	generalModel := customblock.NewModel(geometry)
-	permutationModels := make(map[string]customblock.Model)
 
 	textures, permutationTextures, method := base.Textures()
 	for target := range textures {
 		generalModel = generalModel.WithMaterial(target, customblock.NewMaterial(fmt.Sprintf("%v_%v", name, target.Name()), method))
 	}
+
+	permutationModels := make(map[string]customblock.Model)
+	if permutationGeometries != nil {
+		for permutation, permutationSpecificGeometry := range permutationGeometries {
+			permutationModels[permutation] = customblock.NewModel(permutationSpecificGeometry)
+		}
+	}
 	if permutationTextures != nil {
-		//for permutation, permutationSpecificTextures := range permutationTextures {
-		//	h := fnv1.HashString64(permutation)
-		//	for target := range permutationSpecificTextures {
-		//		fmt.Println(fmt.Sprintf("%v_%v_%v", name, target.Name(), h))
-		//		//materials[target] = customblock.NewMaterial(fmt.Sprintf("%v_%v_%v", name, target.Name(), h), method)
-		//	}
-		//}
+		for permutation, permutationSpecificTextures := range permutationTextures {
+			h := fnv1.HashString64(permutation)
+			for target := range permutationSpecificTextures {
+				if _, ok := permutationModels[permutation]; !ok {
+					// If we don't have a model for this permutation, re-use the base geometry and create a new model.
+					permutationModels[permutation] = customblock.NewModel(geometry)
+				}
+				permutationModel := permutationModels[permutation]
+				permutationModels[permutation] = permutationModel.WithMaterial(target, customblock.NewMaterial(fmt.Sprintf("%s_%s_%x", name, target.Name(), h), method))
+			}
+		}
+		for permutation, model := range permutationModels {
+			builder.AddPermutation(permutation, model.Encode())
+		}
 	}
 
 	for key, value := range generalModel.Encode() {
 		x[key] = value
-	}
-	for permutation, model := range permutationModels {
-		builder.AddPermutation(permutation, model.Encode())
 	}
 }

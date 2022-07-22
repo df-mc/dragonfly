@@ -34,9 +34,11 @@ type CustomBlock interface {
 	// Name is the name displayed to clients using the block.
 	Name() string
 	// Geometries is the geometries for the block that define the shape of the block. If false is returned, no custom
-	// geometry will be applied.
-	Geometries() (customblock.Geometry, bool)
-	// Textures is a map of images indexed by their target, used to map textures on to the block.
+	// geometry will be applied. Permutation-specific geometry can be defined by returning a map of permutations to
+	// geometry.
+	Geometries() (customblock.Geometry, map[string]customblock.Geometry, bool)
+	// Textures is a map of images indexed by their target, used to map textures on to the block. Permutation-specific
+	// textures can be defined by returning a map of permutations to textures.
 	Textures() (map[customblock.Target]image.Image, map[string]map[customblock.Target]image.Image, customblock.Method)
 }
 

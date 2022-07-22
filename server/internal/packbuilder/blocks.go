@@ -82,7 +82,7 @@ func buildBlockTexture(dir, name string, img image.Image) {
 
 // buildBlockGeometry writes the JSON geometry file from the provided name and block and writes it to the pack.
 func buildBlockGeometry(dir, name string, block world.CustomBlock) {
-	if geometry, ok := block.Geometries(); ok {
+	if geometry, permutationGeometries, ok := block.Geometries(); ok {
 		data, err := json.Marshal(customblock.Geometries{
 			FormatVersion: formatVersion,
 			Geometry:      []customblock.Geometry{geometry},
@@ -92,6 +92,23 @@ func buildBlockGeometry(dir, name string, block world.CustomBlock) {
 		}
 		if err := ioutil.WriteFile(filepath.Join(dir, "models/entity", fmt.Sprintf("%s.geo.json", name)), data, 0666); err != nil {
 			panic(err)
+		}
+
+		if permutationGeometries != nil {
+			for permutation, permutationSpecificGeometry := range permutationGeometries {
+				data, err = json.Marshal(customblock.Geometries{
+					FormatVersion: formatVersion,
+					Geometry:      []customblock.Geometry{permutationSpecificGeometry},
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				h := fnv1.HashString64(permutation)
+				if err := ioutil.WriteFile(filepath.Join(dir, "models/entity", fmt.Sprintf("%s_%x.geo.json", name, h)), data, 0666); err != nil {
+					panic(err)
+				}
+			}
 		}
 	}
 }
