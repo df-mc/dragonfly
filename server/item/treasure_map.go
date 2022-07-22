@@ -1,7 +1,7 @@
 package item
 
 type TreasureMap struct {
-	baseMap
+	BaseMap
 }
 
 // EncodeItem ...

@@ -1,10 +1,15 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-type baseMap struct {
+type MapItem interface {
+	GetBaseMap() BaseMap
+}
+
+type BaseMap struct {
 	// IsInit has unknown functionality (referring to the Minecraft Wiki).
 	IsInit bool
 	// NameIndex is the index of the map's name.
@@ -12,28 +17,27 @@ type baseMap struct {
 	// DisplayPlayers controls whether the map displays player markers (depends on Decorations and TrackedObjects in the map data).
 	DisplayPlayers bool
 
-	data *world.ViewableMapData
-}
-
-// GetDimension ...
-func (m *baseMap) GetDimension() world.Dimension {
-	// TODO: Check where the data is stored if map is pesistent.
-	return world.Overworld
+	*world.ViewableMapData
 }
 
 // DecodeNBT ...
-func (m *baseMap) DecodeNBT(data map[string]any) any {
+func (m BaseMap) DecodeNBT(data map[string]any) any {
+	m.IsInit = nbtconv.Map[bool](data, "map_is_init")
+	m.NameIndex = nbtconv.Map[int32](data, "map_name_index")
+	m.DisplayPlayers = nbtconv.Map[bool](data, "map_display_players")
+
+	if id, ok := data["map_uuid"].(int64); ok {
+		// TODO: load map data.
+	}
+
 	return m
 }
 
 // EncodeNBT ...
-func (m *baseMap) EncodeNBT() map[string]any {
-	return map[string]any{
-		"map_is_init":         m.IsInit,
-		"map_uuid":            m.data.MapID,
-		"map_name_index":      m.NameIndex,
-		"map_display_players": m.DisplayPlayers,
-		"map_scale":           int32(m.data.Scale),
-		"map_is_scaling":      m.IsScaling,
-	}
+func (m BaseMap) EncodeNBT() map[string]any {
+	data := m.ViewableMapData.EncodeItemNBT()
+	data["map_is_init"] = m.IsInit
+	data["map_name_index"] = m.NameIndex
+	data["map_display_players"] = m.DisplayPlayers
+	return data
 }

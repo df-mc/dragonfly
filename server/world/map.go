@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -12,7 +13,7 @@ type MapData struct {
 	Pixels        [][]color.RGBA
 	TrackEntities map[Entity]struct{}
 	TrackBlocks   map[cube.Pos]struct{}
-	// Scale should be 0 to 4.
+	// Scale should be 0 to 4. TODO: verify.
 	Scale byte
 	// Locked map should not be affected by world content (block) changes.
 	Locked bool
@@ -23,8 +24,7 @@ type MapDataViewer interface {
 }
 
 type ViewableMapData struct {
-	// MapID is the unique identifier of a map data. For both runtime and when in disk.
-	MapID int64
+	mapID int64
 	world *World
 
 	viewersMu sync.RWMutex
@@ -125,12 +125,12 @@ func (d *ViewableMapData) save() {
 }
 
 // AddViewer ...
-func (m *ViewableMapData) AddViewer(v MapDataViewer) {
+func (d *ViewableMapData) AddViewer(v MapDataViewer) {
 	m.viewersMu.Lock()
-	defer m.viewersMu.Unlock()
+	defer d.viewersMu.Unlock()
 
 	s := struct{}{}
-	if m.viewers == nil {
+	if d.viewers == nil {
 		m.viewers = map[MapDataViewer]struct{}{v: s}
 	} else {
 		m.viewers[v] = s
@@ -138,11 +138,31 @@ func (m *ViewableMapData) AddViewer(v MapDataViewer) {
 }
 
 // RemoveViewer ...
-func (m *ViewableMapData) RemoveViewer(v MapDataViewer) {
+func (d *ViewableMapData) RemoveViewer(v MapDataViewer) {
 	m.viewersMu.Lock()
-	defer m.viewersMu.Unlock()
+	defer d.viewersMu.Unlock()
 
-	if m.viewers != nil {
+	if d.viewers != nil {
 		delete(m.viewers, v)
 	}
+}
+
+// EncodeNBT provides value of field map ID, scale and is scaling for item.BaseMap.EncodeNBT().
+// Returns empty map if nil.
+func (d *ViewableMapData) EncodeItemNBT() map[string]any {
+	if d == nil {
+		return map[string]any{}
+	}
+
+	data := d.GetData()
+	return map[string]any{
+		"map_uuid":       d.mapID,
+		"map_scale":      data.Scale,
+		"map_is_scaling": data.Scale > 0,
+	}
+}
+
+// GetDimension returns the dimension of map's belonging world.
+func (d *ViewableMapData) GetDimension() world.Dimension {
+	return d.world.Dimension()
 }

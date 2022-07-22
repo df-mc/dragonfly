@@ -1,7 +1,7 @@
 package item
 
 type FilledMap struct {
-	baseMap
+	BaseMap
 }
 
 // EncodeItem ...
