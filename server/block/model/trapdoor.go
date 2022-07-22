@@ -19,7 +19,7 @@ type Trapdoor struct {
 // top part of the block.
 func (t Trapdoor) BBox(cube.Pos, *world.World) []cube.BBox {
 	if t.Open {
-		return []cube.BBox{full.ExtendTowards(t.Facing.Face().Opposite(), -0.8125)}
+		return []cube.BBox{full.ExtendTowards(t.Facing.Face(), -0.8125)}
 	} else if t.Top {
 		return []cube.BBox{cube.Box(0, 0.8125, 0, 1, 1, 1)}
 	}
