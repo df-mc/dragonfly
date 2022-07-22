@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"image/color"
 	"time"
 )
 
@@ -79,7 +78,21 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sc, ok := e.(scoreTag); ok {
 		m[dataKeyScoreTag] = sc.ScoreTag()
 	}
-	if sp, ok := e.(splash); ok {
+	if c, ok := e.(areaEffectCloud); ok {
+		radius, radiusOnUse, radiusGrowth := c.Radius()
+		m[dataKeyAreaEffectCloudDuration] = int32(c.Duration().Milliseconds() / 50)
+		m[dataKeyAreaEffectCloudRadius] = float32(radius)
+		m[dataKeyAreaEffectCloudRadiusChangeOnPickup] = float32(radiusOnUse)
+		m[dataKeyAreaEffectCloudRadiusPerTick] = float32(radiusGrowth)
+
+		colour, am := effect.ResultingColour(c.Effects())
+		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+		if am {
+			m[dataKeyPotionAmbient] = byte(1)
+		} else {
+			m[dataKeyPotionAmbient] = byte(0)
+		}
+	} else if sp, ok := e.(splash); ok {
 		pot := sp.Type()
 		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
 		if len(pot.Effects()) > 0 {
@@ -93,13 +106,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
-		if (colour != color.RGBA{}) {
-			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
-			if am {
-				m[dataKeyPotionAmbient] = byte(1)
-			} else {
-				m[dataKeyPotionAmbient] = byte(0)
-			}
+		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+		if am {
+			m[dataKeyPotionAmbient] = byte(1)
+		} else {
+			m[dataKeyPotionAmbient] = byte(0)
 		}
 	}
 	return m
@@ -127,15 +138,22 @@ const (
 	dataKeyAir
 	dataKeyPotionColour
 	dataKeyPotionAmbient
-	dataKeyExperienceValue   = 15
-	dataKeyCustomDisplay     = 18
-	dataKeyPotionAuxValue    = 36
-	dataKeyScale             = 38
-	dataKeyMaxAir            = 42
-	dataKeyBoundingBoxWidth  = 53
-	dataKeyBoundingBoxHeight = 54
-	dataKeyAlwaysShowNameTag = 81
-	dataKeyScoreTag          = 84
+	dataKeyExperienceValue                     = 15
+	dataKeyCustomDisplay                       = 18
+	dataKeyPotionAuxValue                      = 36
+	dataKeyScale                               = 38
+	dataKeyMaxAir                              = 42
+	dataKeyBoundingBoxWidth                    = 53
+	dataKeyBoundingBoxHeight                   = 54
+	dataKeyAreaEffectCloudRadius               = 61
+	dataKeyAreaEffectCloudParticleID           = 63
+	dataKeyAlwaysShowNameTag                   = 81
+	dataKeyScoreTag                            = 84
+	dataKeyAreaEffectCloudDuration             = 95
+	dataKeyAreaEffectCloudSpawnTime            = 96
+	dataKeyAreaEffectCloudRadiusPerTick        = 97
+	dataKeyAreaEffectCloudRadiusChangeOnPickup = 98
+	dataKeyAreaEffectCloudPickupCount          = 99
 )
 
 //noinspection GoUnusedConst
@@ -202,6 +220,12 @@ type scoreTag interface {
 
 type splash interface {
 	Type() potion.Potion
+}
+
+type areaEffectCloud interface {
+	effectBearer
+	Duration() time.Duration
+	Radius() (radius, radiusOnUse, radiusGrowth float64)
 }
 
 type onFire interface {
