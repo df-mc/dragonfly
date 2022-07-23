@@ -15,14 +15,14 @@ type BannerPatternLayer struct {
 // EncodeNBT encodes the given BannerPatternLayer into an NBT map.
 func (b BannerPatternLayer) EncodeNBT() map[string]any {
 	return map[string]any{
-		"Pattern": BannerPatternID(b.BannerPatternType),
+		"Pattern": bannerPatternID(b.BannerPatternType),
 		"Color":   int32(invertColour(b.Colour)),
 	}
 }
 
 // DecodeNBT decodes the given NBT map into a BannerPatternLayer and returns it.
 func (b BannerPatternLayer) DecodeNBT(data map[string]any) any {
-	b.BannerPatternType = BannerPatternByID(nbtconv.Map[string](data, "Pattern"))
+	b.BannerPatternType = bannerPatternByID(nbtconv.Map[string](data, "Pattern"))
 	b.Colour = invertColourID(int16(nbtconv.Map[int32](data, "Color")))
 	return b
 }
