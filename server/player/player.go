@@ -117,7 +117,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		offHand:           inventory.New(1, p.broadcastItems),
 		armour:            inventory.NewArmour(p.broadcastArmour),
 		hunger:            newHungerManager(),
-		health:            entity.NewHealthManager(),
+		health:            entity.NewHealthManager(20, 20),
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
