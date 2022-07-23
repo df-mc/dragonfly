@@ -1768,6 +1768,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	w.SetBlock(pos, nil, nil)
 	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
+	if j, ok := b.(block.PostBreakable); ok {
+		j.PostBreak(pos, w, p)
+	}
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		info := breakable.BreakInfo()
 		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 {

@@ -149,6 +149,9 @@ func init() {
 	}
 	world.RegisterItem(TropicalFish{})
 	world.RegisterItem(AmethystShard{})
+	for _, disc := range AllMusicDiscs() {
+		world.RegisterItem(disc)
+	}
 	world.RegisterItem(DiscFragment{})
 	world.RegisterItem(EchoShard{})
 }

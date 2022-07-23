@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
@@ -13,6 +14,12 @@ import (
 type Breakable interface {
 	// BreakInfo returns information of the block related to the breaking of it.
 	BreakInfo() BreakInfo
+}
+
+// PostBreakable represents a block that has an action(s) processed after the block is broken.
+type PostBreakable interface {
+	// PostBreak is called after the block has broken.
+	PostBreak(pos cube.Pos, w *world.World, u item.User)
 }
 
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the
