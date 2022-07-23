@@ -151,4 +151,7 @@ func init() {
 	world.RegisterItem(AmethystShard{})
 	world.RegisterItem(DiscFragment{})
 	world.RegisterItem(EchoShard{})
+	for _, pattern := range BannerPatterns() {
+		world.RegisterItem(BannerPattern{Pattern: pattern})
+	}
 }
