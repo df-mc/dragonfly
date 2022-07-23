@@ -21,6 +21,8 @@ type Banner struct {
 	Attach Attachment
 	// Patterns represents the patterns the Banner should show when rendering.
 	Patterns []BannerPatternLayer
+	// Illager returns true if the banner is an illager banner.
+	Illager bool
 }
 
 // MaxCount ...
@@ -92,14 +94,16 @@ func (b Banner) EncodeNBT() map[string]any {
 	}
 	return map[string]any{
 		"id":       "Banner",
-		"Base":     int32(invertColour(b.Colour)),
 		"Patterns": patterns,
+		"Type":     int32(boolByte(b.Illager)),
+		"Base":     int32(invertColour(b.Colour)),
 	}
 }
 
 // DecodeNBT ...
 func (b Banner) DecodeNBT(data map[string]any) any {
 	b.Colour = invertColourID(int16(nbtconv.Map[int32](data, "Base")))
+	b.Illager = nbtconv.Map[int32](data, "Type") == 1
 	if patterns, ok := data["Patterns"].([]any); ok {
 		b.Patterns = make([]BannerPatternLayer, len(patterns))
 		for i, p := range b.Patterns {
