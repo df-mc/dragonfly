@@ -91,7 +91,8 @@ func registerBlockState(s blockState, order bool) {
 			i := stateHash{name: name, properties: hashProperties(properties)}
 			if name == "minecraft:air" {
 				airRID = uint32(id)
-			} else if i == h {
+			}
+			if i == h {
 				rid = uint32(id)
 			}
 			stateRuntimeIDs[i] = uint32(id)
