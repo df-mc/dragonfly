@@ -113,6 +113,7 @@ func init() {
 	registerAll(allBoneBlock())
 	registerAll(allCactus())
 	registerAll(allCake())
+	registerAll(allCampfires())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allChains())
@@ -378,6 +379,7 @@ func init() {
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
 		world.RegisterItem(Torch{Type: f})
+		world.RegisterItem(Campfire{Type: f})
 	}
 	for _, f := range FlowerTypes() {
 		world.RegisterItem(Flower{Type: f})

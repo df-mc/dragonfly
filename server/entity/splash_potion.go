@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -26,6 +27,16 @@ type SplashPotion struct {
 
 	t potion.Potion
 	c *ProjectileComputer
+}
+
+// A block that can be splashed with a splash bottle
+type SplashableBlock interface {
+	Splash(pos cube.Pos, potion *SplashPotion)
+}
+
+// An enetity that can be splashed with a splash bottle
+type SplashableEntity interface {
+	Splash(potion *SplashPotion)
 }
 
 // NewSplashPotion ...
@@ -137,24 +148,24 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 					splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
 				}
 			}
-		} else if s.t == potion.Water() {
-			switch result := result.(type) {
-			case trace.BlockResult:
-				pos := result.BlockPosition().Side(result.Face())
-				if w.Block(pos) == fire() {
-					w.SetBlock(pos, air(), nil)
-				}
-
-				for _, f := range cube.HorizontalFaces() {
-					if h := pos.Side(f); w.Block(h) == fire() {
-						w.SetBlock(h, air(), nil)
-					}
-				}
-			case trace.EntityResult:
-				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
+		}
+		// Splashing Entities and Blocks
+		switch result := result.(type) {
+		case trace.BlockResult:
+			// we first check to see if it splashed an empty block that's splashable
+			pos := result.BlockPosition().Side(result.Face())
+			block := w.Block(pos)
+			if splashable, ok := block.(SplashableBlock); ok && block.Model() == emptyModel() {
+				splashable.Splash(pos, s)
+				// Doesn't run rest of code if it's a splashable empty block
+				break
+			}
+			// splashable non-empty block
+			pos = result.BlockPosition()
+			if b, ok := w.Block(pos).(SplashableBlock); ok {
+				b.Splash(pos, s)
 			}
 		}
-
 		w.AddParticle(m.pos, particle.Splash{Colour: colour})
 		w.PlaySound(m.pos, sound.GlassBreak{})
 
@@ -190,6 +201,10 @@ func (s *SplashPotion) Own(owner world.Entity) {
 	s.owner = owner
 }
 
+func emptyModel() world.BlockModel {
+	return model.Empty{}
+}
+
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
 func (s *SplashPotion) DecodeNBT(data map[string]any) any {
 	return s.New(
@@ -212,13 +227,4 @@ func (s *SplashPotion) EncodeNBT() map[string]any {
 		"Damage":   0.0,
 		"PotionId": s.t.Uint8(),
 	}
-}
-
-// air returns an air block.
-func air() world.Block {
-	f, ok := world.BlockByName("minecraft:air", map[string]any{})
-	if !ok {
-		panic("could not find air block")
-	}
-	return f
 }

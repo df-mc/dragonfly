@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
@@ -39,6 +40,22 @@ func neighboursFlammable(pos cube.Pos, w *world.World) bool {
 		}
 	}
 	return false
+}
+
+// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself and its neighboring fires
+func (f Fire) Splash(pos cube.Pos, p *entity.SplashPotion) {
+	if p.Type() != potion.Water() {
+		return
+	}
+	w := p.World()
+	w.SetBlock(pos, nil, nil)
+	for _, face := range cube.HorizontalFaces() {
+		h := pos.Side(face)
+		fire := Fire{}
+		if w.Block(h) == fire {
+			w.SetBlock(h, nil, nil)
+		}
+	}
 }
 
 // max ...
