@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 //noinspection SpellCheckingInspection
@@ -149,8 +150,8 @@ func init() {
 	}
 	world.RegisterItem(TropicalFish{})
 	world.RegisterItem(AmethystShard{})
-	for _, disc := range AllMusicDiscs() {
-		world.RegisterItem(disc)
+	for _, disc := range sound.MusicDiscs() {
+		world.RegisterItem(MusicDisc{DiscType: disc})
 	}
 	world.RegisterItem(DiscFragment{})
 	world.RegisterItem(EchoShard{})
