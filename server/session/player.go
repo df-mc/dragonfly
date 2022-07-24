@@ -89,6 +89,15 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	s.writePacket(pk)
 }
 
+// sendItem sends the item stack passed to the client with the window ID and slot passed.
+func (s *Session) sendItem(item item.Stack, slot int, windowID uint32) {
+	s.writePacket(&packet.InventorySlot{
+		WindowID: windowID,
+		Slot:     uint32(slot),
+		NewItem:  instanceFromItem(item),
+	})
+}
+
 const (
 	craftingGridSizeSmall   = 4
 	craftingGridSizeLarge   = 9
@@ -512,11 +521,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			}
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
-				WindowID: protocol.WindowIDInventory,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
-			})
+			s.sendItem(item, slot, protocol.WindowIDInventory)
 		}
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
@@ -554,11 +559,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			viewer.ViewEntityArmour(s.c)
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
-				WindowID: protocol.WindowIDArmour,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
-			})
+			s.sendItem(item, slot, protocol.WindowIDArmour)
 		}
 	})
 	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
