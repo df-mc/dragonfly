@@ -18,7 +18,7 @@ type Jukebox struct {
 	solid
 	bass
 
-	// item is the music disc played by the jukebox
+	// item is the music disc played by the jukebox.
 	item item.Stack
 }
 
@@ -39,7 +39,7 @@ func (j Jukebox) BreakInfo() BreakInfo {
 // jukeboxUser represents an item.User that can use a jukebox.
 type jukeboxUser interface {
 	item.User
-	// SendJukeboxPopup sends a jukebox popup to the item.User
+	// SendJukeboxPopup sends a jukebox popup to the item.User.
 	SendJukeboxPopup(a ...any)
 }
 
@@ -65,6 +65,7 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 	return true
 }
 
+// InsertMusicDisc clears any potentially inserted music disc, inserts a new disc and plays it.
 func (j Jukebox) InsertMusicDisc(m item.MusicDisc, pos cube.Pos, w *world.World) {
 	if !j.item.Empty() {
 		j.ClearMusicDisc(pos, w)
@@ -74,6 +75,7 @@ func (j Jukebox) InsertMusicDisc(m item.MusicDisc, pos cube.Pos, w *world.World)
 	w.SetBlock(pos, j, nil)
 }
 
+// ClearMusicDisc clears any potentially inserted music disc.
 func (j Jukebox) ClearMusicDisc(pos cube.Pos, w *world.World) {
 	j.item = item.Stack{}
 	w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
