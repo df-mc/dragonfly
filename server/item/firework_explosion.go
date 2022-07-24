@@ -20,13 +20,13 @@ type FireworkExplosion struct {
 func (f FireworkExplosion) EncodeNBT() map[string]any {
 	data := map[string]any{
 		"FireworkType":    f.Shape.Uint8(),
-		"FireworkColor":   [1]uint8{f.Colour.Uint8()},
+		"FireworkColor":   [1]uint8{uint8(invertColour(f.Colour))},
 		"FireworkFade":    [0]uint8{},
 		"FireworkFlicker": boolByte(f.Twinkle),
 		"FireworkTrail":   boolByte(f.Trail),
 	}
 	if f.Fades {
-		data["FireworkFade"] = [1]uint8{f.Fade.Uint8()}
+		data["FireworkFade"] = [1]uint8{uint8(invertColour(f.Fade))}
 	}
 	return data
 }
@@ -39,13 +39,13 @@ func (f FireworkExplosion) DecodeNBT(data map[string]any) any {
 
 	colours := data["FireworkColor"]
 	if diskColour, ok := colours.([1]uint8); ok {
-		f.Colour = Colours()[diskColour[0]]
+		f.Colour = invertColourID(int16(diskColour[0]))
 	} else if networkColours, ok := colours.([]any); ok {
-		f.Colour = Colours()[networkColours[0].(uint8)]
+		f.Colour = invertColourID(int16(networkColours[0].(uint8)))
 	}
 
 	if fades, ok := data["FireworkFade"].([1]uint8); ok {
-		f.Fade, f.Fades = Colours()[fades[0]], true
+		f.Fade, f.Fades = invertColourID(int16(fades[0])), true
 	}
 	return f
 }

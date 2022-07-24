@@ -112,11 +112,15 @@ func (f *Firework) Tick(w *world.World, current int64) {
 		if len(explosions) > 0 {
 			force := float64(len(explosions)*2) + 5.0
 			for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
-				_, living := e.(Living)
-				return !living
+				l, living := e.(Living)
+				return !living || l.AttackImmune()
 			}) {
 				pos := e.Position()
-				dist := pos.Sub(m.pos).Len()
+				dist := m.pos.Sub(pos).Len()
+				if dist > 5.0 {
+					// The maximum distance allowed is 5.0 blocks.
+					continue
+				}
 				if _, ok := trace.Perform(m.pos, pos, w, e.BBox().Grow(0.3), func(world.Entity) bool {
 					return true
 				}); ok {

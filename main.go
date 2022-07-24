@@ -3,11 +3,16 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 func main() {
@@ -28,7 +33,20 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.SetGameMode(world.GameModeSurvival)
+
+		inv := p.Inventory()
+		inv.Clear()
+		inv.AddItem(item.NewStack(block.Dirt{}, 64))
+		inv.AddItem(item.NewStack(item.Firework{
+			Duration: time.Millisecond * 50,
+			Explosions: []item.FireworkExplosion{{
+				Shape:  item.FireworkShapeCreeperHead(),
+				Colour: item.ColourRed(),
+			}},
+		}, 64))
+	}) {
 	}
 }
 
