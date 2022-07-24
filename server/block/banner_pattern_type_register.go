@@ -45,6 +45,8 @@ func init() {
 	registerBannerPattern("tt", TriangleTopBannerPattern())
 	registerBannerPattern("bts", TrianglesBottomBannerPattern())
 	registerBannerPattern("tts", TrianglesTopBannerPattern())
+	registerBannerPattern("glb", GlobeBannerPattern())
+	registerBannerPattern("pig", PiglinBannerPattern())
 }
 
 // registerBannerPattern registers a banner pattern with the ID passed.
@@ -53,8 +55,7 @@ func registerBannerPattern(id string, pattern BannerPatternType) {
 	bannerPatternIDs[pattern] = id
 }
 
-// bannerPatternByID attempts to return a banner pattern by the ID it was registered with. If found, the banner pattern
-// is returned and the bool returned is true.
+// bannerPatternByID returns a banner pattern by the ID it was registered with.
 func bannerPatternByID(id string) BannerPatternType {
 	b, ok := bannerPatternsMap[id]
 	if !ok {
@@ -63,8 +64,7 @@ func bannerPatternByID(id string) BannerPatternType {
 	return b
 }
 
-// bannerPatternID attempts to return the ID the banner pattern was registered with. If found, the ID is returned and
-// the bool returned is true.
+// bannerPatternID returns the ID a banner pattern was registered with.
 func bannerPatternID(pattern BannerPatternType) string {
 	id, ok := bannerPatternIDs[pattern]
 	if !ok {

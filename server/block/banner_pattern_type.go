@@ -195,6 +195,16 @@ func TrianglesTopBannerPattern() BannerPatternType {
 	return BannerPatternType{37}
 }
 
+// GlobeBannerPattern represents the 'Globe' banner pattern type.
+func GlobeBannerPattern() BannerPatternType {
+	return BannerPatternType{38}
+}
+
+// PiglinBannerPattern represents the 'Piglin' banner pattern type.
+func PiglinBannerPattern() BannerPatternType {
+	return BannerPatternType{39}
+}
+
 // BannerPatternTypes returns all the available banner pattern types.
 func BannerPatternTypes() []BannerPatternType {
 	return []BannerPatternType{
@@ -236,6 +246,8 @@ func BannerPatternTypes() []BannerPatternType {
 		TriangleTopBannerPattern(),
 		TrianglesBottomBannerPattern(),
 		TrianglesTopBannerPattern(),
+		GlobeBannerPattern(),
+		PiglinBannerPattern(),
 	}
 }
 
@@ -325,6 +337,10 @@ func (b bannerPatternType) String() string {
 		return "triangles_bottom"
 	case 37:
 		return "triangles_top"
+	case 38:
+		return "globe"
+	case 39:
+		return "piglin"
 	}
 	panic("should never happen")
 }
