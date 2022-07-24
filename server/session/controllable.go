@@ -41,10 +41,10 @@ type Controllable interface {
 	UseItem()
 	ReleaseItem()
 	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
-	UseItemOnEntity(e world.Entity)
+	UseItemOnEntity(e world.Entity) bool
 	BreakBlock(pos cube.Pos)
 	PickBlock(pos cube.Pos)
-	AttackEntity(e world.Entity)
+	AttackEntity(e world.Entity) bool
 	Drop(s item.Stack) (n int)
 	SwingArm()
 	PunchAir()

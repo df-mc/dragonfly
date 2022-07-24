@@ -55,7 +55,7 @@ func (n Note) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 }
 
 // Activate ...
-func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}
