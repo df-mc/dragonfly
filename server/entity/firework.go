@@ -50,7 +50,7 @@ func (f *Firework) EncodeEntity() string {
 
 // BBox ...
 func (f *Firework) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+	return cube.BBox{}
 }
 
 // Firework returns the underlying item.Firework of the Firework.
