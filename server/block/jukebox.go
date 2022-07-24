@@ -44,17 +44,17 @@ type jukeboxUser interface {
 }
 
 // Activate ...
-func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if !j.item.Empty() {
 		ent := entity.NewItem(j.item, pos.Side(cube.FaceUp).Vec3Middle())
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
 
 		j.ClearMusicDisc(pos, w)
-	} else if held, other := u.HeldItems(); !held.Empty() {
+	} else if held, _ := u.HeldItems(); !held.Empty() {
 		if m, ok := held.Item().(item.MusicDisc); ok {
 			j.InsertMusicDisc(held, pos, w)
-			u.SetHeldItems(held.Grow(-1), other)
+			ctx.CountSub = 1
 
 			if u, ok := u.(jukeboxUser); ok {
 				u.SendJukeboxPopup(fmt.Sprintf("Now playing: %v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
