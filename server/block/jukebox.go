@@ -53,7 +53,7 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 		j.ClearMusicDisc(pos, w)
 	} else if held, other := u.HeldItems(); !held.Empty() {
 		if m, ok := held.Item().(item.MusicDisc); ok {
-			j.InsertMusicDisc(m, pos, w)
+			j.InsertMusicDisc(held, pos, w)
 			u.SetHeldItems(held.Grow(-1), other)
 
 			if u, ok := u.(jukeboxUser); ok {
@@ -66,11 +66,16 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 }
 
 // InsertMusicDisc clears any potentially inserted music disc, inserts a new disc and plays it.
-func (j Jukebox) InsertMusicDisc(m item.MusicDisc, pos cube.Pos, w *world.World) {
+func (j Jukebox) InsertMusicDisc(s item.Stack, pos cube.Pos, w *world.World) {
+	m, ok := s.Item().(item.MusicDisc)
+	if !ok {
+		return
+	}
+
 	if !j.item.Empty() {
 		j.ClearMusicDisc(pos, w)
 	}
-	j.item = item.NewStack(m, 1)
+	j.item = s
 	w.PlaySound(pos.Vec3(), sound.MusicDiscPlay{DiscType: m.DiscType})
 	w.SetBlock(pos, j, nil)
 }
