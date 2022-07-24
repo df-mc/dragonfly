@@ -18,7 +18,7 @@ type Jukebox struct {
 	solid
 	bass
 
-	// Item is the disc that is displayed inside the frame.
+	// Item is the music disc played by the jukebox
 	Item item.Stack
 }
 

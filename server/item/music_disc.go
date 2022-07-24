@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-// A MusicDisc is an item that can be played in jukeboxes.
+// MusicDisc is an item that can be played in jukeboxes.
 type MusicDisc struct {
 	// DiscType is the disc type of the music disc.
 	DiscType sound.DiscType
@@ -16,7 +16,7 @@ func (MusicDisc) MaxCount() int {
 	return 1
 }
 
-// AllMusicDiscs returns all 15 music disc items
+// AllMusicDiscs returns all 15 music disc items.
 func AllMusicDiscs() []world.Item {
 	m := make([]world.Item, 0, 15)
 	for _, c := range sound.MusicDiscs() {
