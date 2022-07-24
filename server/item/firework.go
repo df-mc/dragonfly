@@ -19,7 +19,7 @@ type Firework struct {
 }
 
 // UseOnBlock ...
-func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
 	firework, ok := world.EntityByName("minecraft:fireworks_rocket")
 	if !ok {
 		return false
@@ -33,9 +33,15 @@ func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3
 	}
 
 	pos := blockPos.Vec3().Add(clickPos)
-	w.AddEntity(p.New(pos, rand.Float64()*360, 90, f))
-	w.PlaySound(pos, sound.FireworkLaunch{})
+	entity := p.New(pos, rand.Float64()*360, 90, f)
+	if o, ok := entity.(owned); ok {
+		o.Own(user)
+	}
+
 	ctx.SubtractFromCount(1)
+
+	w.PlaySound(pos, sound.FireworkLaunch{})
+	w.AddEntity(entity)
 	return true
 }
 

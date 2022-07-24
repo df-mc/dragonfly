@@ -2,11 +2,14 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"math/rand"
 )
 
@@ -17,6 +20,8 @@ type Firework struct {
 
 	yaw, pitch float64
 	firework   item.Firework
+
+	owner world.Entity
 
 	c *MovementComputer
 
@@ -89,10 +94,11 @@ func (f *Firework) Tick(w *world.World, current int64) {
 
 	f.ticks--
 	if f.ticks < 0 {
+		explosions := f.Firework().Explosions
 		for _, v := range w.Viewers(m.pos) {
 			v.ViewEntityAction(f, FireworkParticleAction{})
 		}
-		for _, explosion := range f.Firework().Explosions {
+		for _, explosion := range explosions {
 			if explosion.Shape == item.FireworkShapeHugeSphere() {
 				w.PlaySound(m.pos, sound.FireworkHugeBlast{})
 			} else {
@@ -102,6 +108,24 @@ func (f *Firework) Tick(w *world.World, current int64) {
 				w.PlaySound(m.pos, sound.FireworkTwinkle{})
 			}
 		}
+
+		if len(explosions) > 0 {
+			force := float64(len(explosions)*2) + 5.0
+			for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
+				_, living := e.(Living)
+				return !living
+			}) {
+				pos := e.Position()
+				dist := pos.Sub(m.pos).Len()
+				if _, ok := trace.Perform(m.pos, pos, w, e.BBox().Grow(0.3), func(world.Entity) bool {
+					return true
+				}); ok {
+					dmg := force * math.Sqrt((5.0-dist)/5.0)
+					e.(Living).Hurt(dmg, damage.SourceProjectile{Owner: f.Owner(), Projectile: f})
+				}
+			}
+		}
+
 		f.close = true
 	}
 }
@@ -110,6 +134,20 @@ func (f *Firework) Tick(w *world.World, current int64) {
 // only returns it.
 func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) world.Entity {
 	return NewFirework(pos, yaw, pitch, firework)
+}
+
+// Owner ...
+func (f *Firework) Owner() world.Entity {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.owner
+}
+
+// Own ...
+func (f *Firework) Own(owner world.Entity) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.owner = owner
 }
 
 // DecodeNBT decodes the properties in a map to a Firework and returns a new Firework entity.
