@@ -166,6 +166,22 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	return nil
 }
 
+// craftingSize gets the crafting size based on the opened container ID.
+func (s *Session) craftingSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// craftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) craftingOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
+}
+
 // matchingStacks returns true if the two stacks are the same in a crafting scenario.
 func matchingStacks(has, expected item.Stack) bool {
 	_, variants := expected.Value("variants")

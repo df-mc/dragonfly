@@ -81,7 +81,7 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return
 	}
 
-	below := pos.Add(cube.Pos{0, -1})
+	below := pos.Side(cube.FaceDown)
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
@@ -112,7 +112,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 		w.SetBlock(pos, k.withRandomAge(), nil)
 	}
 
-	below := pos.Add(cube.Pos{0, -1})
+	below := pos.Side(cube.FaceDown)
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
@@ -125,7 +125,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.Intn(100) < 15 && k.Age < 25 {
-		abovePos := pos.Add(cube.Pos{0, 1})
+		abovePos := pos.Side(cube.FaceUp)
 
 		liquid, ok := w.Liquid(abovePos)
 

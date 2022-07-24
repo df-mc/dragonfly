@@ -321,22 +321,6 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// craftingSize gets the crafting size based on the opened container ID.
-func (s *Session) craftingSize() uint32 {
-	if s.openedContainerID.Load() == 1 {
-		return craftingGridSizeLarge
-	}
-	return craftingGridSizeSmall
-}
-
-// craftingOffset gets the crafting offset based on the opened container ID.
-func (s *Session) craftingOffset() uint32 {
-	if s.openedContainerID.Load() == 1 {
-		return craftingGridLargeOffset
-	}
-	return craftingGridSmallOffset
-}
-
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {

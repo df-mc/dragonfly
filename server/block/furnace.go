@@ -76,7 +76,7 @@ func (f Furnace) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (f Furnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (f Furnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true

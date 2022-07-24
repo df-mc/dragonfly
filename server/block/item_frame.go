@@ -32,15 +32,15 @@ type ItemFrame struct {
 }
 
 // Activate ...
-func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if !i.Item.Empty() {
 		// TODO: Item frames with maps can only be rotated four times.
 		i.Rotations = (i.Rotations + 1) % 8
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRotate{})
-	} else if held, other := u.HeldItems(); !held.Empty() {
+	} else if held, _ := u.HeldItems(); !held.Empty() {
 		i.Item = held.Grow(-held.Count() + 1)
 		// TODO: When maps are implemented, check the item is a map, and if so, display the large version of the frame.
-		u.SetHeldItems(held.Grow(-1), other)
+		ctx.SubtractFromCount(1)
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameAdd{})
 	} else {
 		return true

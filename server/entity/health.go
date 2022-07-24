@@ -9,9 +9,12 @@ type HealthManager struct {
 	max    float64
 }
 
-// NewHealthManager returns a new health manager with a default of 20 health and max health.
-func NewHealthManager() *HealthManager {
-	return &HealthManager{health: 20, max: 20}
+// NewHealthManager returns a new health manager with the health and max health provided.
+func NewHealthManager(health, max float64) *HealthManager {
+	if health > max {
+		health = max
+	}
+	return &HealthManager{health: health, max: max}
 }
 
 // Health returns the current health of an entity.

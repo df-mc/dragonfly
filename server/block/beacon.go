@@ -38,7 +38,7 @@ func (b Beacon) BreakInfo() BreakInfo {
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -61,6 +61,7 @@ func (b Beacon) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (b Beacon) EncodeNBT() map[string]any {
 	m := map[string]any{
+		"id":     "Beacon",
 		"Levels": int32(b.level),
 	}
 	if primary, ok := effect.ID(b.Primary); ok {
@@ -134,7 +135,7 @@ func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
 // obstructed determines whether the beacon is currently obstructed.
 func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
 	// Fast obstructed light calculation.
-	if w.SkyLight(pos.Add(cube.Pos{0, 1})) == 15 {
+	if w.SkyLight(pos.Side(cube.FaceUp)) == 15 {
 		return false
 	}
 	// Slow obstructed light calculation, if the fast way out didn't suffice.
