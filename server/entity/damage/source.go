@@ -49,7 +49,9 @@ type (
 	SourceWitherEffect struct{}
 
 	// SourceFire is used for damage caused by being in fire.
-	SourceFire struct{}
+	SourceFire struct {
+		Campfire bool
+	}
 
 	// SourceFireTick is used for damage caused by being on fire.
 	SourceFireTick struct{}
