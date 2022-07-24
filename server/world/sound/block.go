@@ -78,8 +78,8 @@ type Note struct {
 	Pitch int
 }
 
-// ItemFrameAdd is a sound played when an item is added to an item frame.
-type ItemFrameAdd struct{ sound }
+// Additem is a sound played when an item is added to an item frame or campfire.
+type AddItem struct{ sound }
 
 // ItemFrameRemove is a sound played when an item is removed from an item frame.
 type ItemFrameRemove struct{ sound }
@@ -89,6 +89,9 @@ type ItemFrameRotate struct{ sound }
 
 // FurnaceCrackle is a sound played every one to five seconds from a furnace.
 type FurnaceCrackle struct{ sound }
+
+// CampfireCrackle is a sound played every one to five seconds from a campfire
+type CampfireCrackle struct{ sound }
 
 // BlastFurnaceCrackle is a sound played every one to five seconds from a blast furnace.
 type BlastFurnaceCrackle struct{ sound }

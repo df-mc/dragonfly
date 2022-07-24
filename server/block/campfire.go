@@ -9,7 +9,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"strconv"
 	"time"
 )
@@ -57,6 +59,7 @@ func (c Campfire) Splash(pos cube.Pos, p *entity.SplashPotion) {
 	}
 	w := p.World()
 	c.Extinguished = true
+	p.World().PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 	w.SetBlock(pos, c, nil)
 }
 
@@ -87,6 +90,9 @@ func (c Campfire) BreakInfo() BreakInfo {
 
 // LightEmissionLevel ...
 func (c Campfire) LightEmissionLevel() uint8 {
+	if c.Extinguished {
+		return 0
+	}
 	switch c.Type {
 	case NormalFire():
 		return 15
@@ -100,9 +106,9 @@ func (c Campfire) LightEmissionLevel() uint8 {
 func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if held, _ := u.HeldItems(); !held.Empty() {
 		if _, ok := held.Item().(item.FlintAndSteel); ok {
+			w.PlaySound(pos.Vec3(), sound.Ignite{})
 			c.Extinguished = false
 			w.SetBlock(pos, c, nil)
-			//TODO: Egnite Sound
 			return true
 		}
 		if rawFood, ok := held.Item().(item.Smeltable); ok && rawFood.SmeltInfo().Food {
@@ -113,6 +119,7 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 						Time: 600,
 					}
 					ctx.SubtractFromCount(1)
+					w.PlaySound(pos.Vec3Centre(), sound.AddItem{})
 					w.SetBlock(pos, c, nil)
 					return true
 				}
@@ -135,19 +142,23 @@ func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 
 // Tick is called to cook the items within the campfire
 func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
-	//TODO: check to see if ember particles are client side
+	if !c.Extinguished && rand.Float64() <= 0.016 { // Every three or so seconds.
+		w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
+	}
 	if !c.Extinguished {
 		// if the campfire is water logged we extinguish it
 		if _, ok := w.Liquid(pos); ok {
 			c.Extinguished = true
+			w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 			w.SetBlock(pos, c, nil)
 		}
 		for i, it := range c.Items {
 			if !it.Item.Empty() && it.Time <= 0 {
 				itemCooked := it.Item
 				if food, ok := itemCooked.Item().(item.Smeltable); ok {
-					//TODO: Play Pop Sound
-					w.AddEntity(entity.NewItem(food.SmeltInfo().Product, pos.Vec3Middle()))
+					ent := entity.NewItem(food.SmeltInfo().Product, pos.Vec3Middle())
+					ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
+					w.AddEntity(ent)
 					c.Items[i].Item = item.Stack{}
 					w.SetBlock(pos, c, nil)
 					continue
@@ -165,6 +176,7 @@ func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 		// Try to egnite the campfire is the entity is on fire and ontop
 		if flammable.OnFireDuration() > 0 && c.Extinguished {
 			c.Extinguished = false
+			w.PlaySound(pos.Vec3(), sound.Ignite{})
 			w.SetBlock(pos, c, nil)
 		}
 		if !c.Extinguished && !w.RainingAt(pos) {
