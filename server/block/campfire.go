@@ -29,7 +29,7 @@ type Campfire struct {
 	Type FireType
 }
 
-// An object that holds the data about the items in the campfire
+// CampfireItem is an object that holds the data about the items in the campfire
 type CampfireItem struct {
 	Item item.Stack
 	// Time is the countdown of ticks until the item is cooked (when 0)
