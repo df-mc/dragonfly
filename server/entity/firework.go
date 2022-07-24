@@ -87,12 +87,8 @@ func (f *Firework) Tick(w *world.World, current int64) {
 		return
 	}
 
-	f.mu.Lock()
 	f.ticks--
-	ticks := f.ticks
-	f.mu.Unlock()
-
-	if ticks < 0 {
+	if f.ticks < 0 {
 		for _, v := range w.Viewers(m.pos) {
 			v.ViewEntityAction(f, FireworkParticleAction{})
 		}
@@ -107,7 +103,6 @@ func (f *Firework) Tick(w *world.World, current int64) {
 			}
 		}
 		f.close = true
-		return
 	}
 }
 
