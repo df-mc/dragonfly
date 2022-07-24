@@ -60,6 +60,31 @@ func (c Campfire) Splash(pos cube.Pos, p *entity.SplashPotion) {
 	w.SetBlock(pos, c, nil)
 }
 
+// BreakInfo ...
+func (c Campfire) BreakInfo() BreakInfo {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		var drops []item.Stack
+		if hasSilkTouch(enchantments) {
+			drops = append(drops, item.NewStack(c, 1))
+		} else {
+			switch c.Type {
+			case NormalFire():
+				drops = append(drops, item.NewStack(item.Charcoal{}, 2))
+			case SoulFire():
+				drops = append(drops, item.NewStack(SoulSoil{}, 1))
+			default:
+				panic("invalid fire type")
+			}
+		}
+		for _, v := range c.Items {
+			if !v.Item.Empty() {
+				drops = append(drops, v.Item)
+			}
+		}
+		return drops
+	})
+}
+
 // LightEmissionLevel ...
 func (c Campfire) LightEmissionLevel() uint8 {
 	switch c.Type {
@@ -71,23 +96,25 @@ func (c Campfire) LightEmissionLevel() uint8 {
 	panic("invalid fire type")
 }
 
-func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
-	if held, other := u.HeldItems(); !held.Empty() {
+// Activate ...
+func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+	if held, _ := u.HeldItems(); !held.Empty() {
 		if _, ok := held.Item().(item.FlintAndSteel); ok {
 			c.Extinguished = false
 			w.SetBlock(pos, c, nil)
 			//TODO: Egnite Sound
+			return true
 		}
 		if rawFood, ok := held.Item().(item.Smeltable); ok && rawFood.SmeltInfo().Food {
 			for i, it := range c.Items {
-				if !it.Item.Empty() {
+				if it.Item.Empty() {
 					c.Items[i] = CampfireItem{
 						Item: held.Grow(-held.Count() + 1),
 						Time: 600,
 					}
-					u.SetHeldItems(held.Grow(-1), other)
+					ctx.SubtractFromCount(1)
 					w.SetBlock(pos, c, nil)
-					//TODO: Play Sound for when adding item
+					return true
 				}
 			}
 		}
