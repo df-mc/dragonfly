@@ -16,7 +16,7 @@ type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
 	// Activate returns a bool indicating if activating the block was used successfully.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
 }
 
 // Pickable represents a block that may give a different item then the block itself when picked.

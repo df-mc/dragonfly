@@ -58,7 +58,7 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
