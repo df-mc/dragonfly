@@ -18,8 +18,8 @@ type Jukebox struct {
 	solid
 	bass
 
-	// Item is the music disc played by the jukebox
-	Item item.Stack
+	// item is the music disc played by the jukebox
+	item item.Stack
 }
 
 // FuelInfo ...
@@ -30,8 +30,8 @@ func (j Jukebox) FuelInfo() item.FuelInfo {
 // BreakInfo ...
 func (j Jukebox) BreakInfo() BreakInfo {
 	d := []item.Stack{item.NewStack(Jukebox{}, 1)}
-	if !j.Item.Empty() {
-		d = append(d, j.Item)
+	if !j.item.Empty() {
+		d = append(d, j.item)
 	}
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, simpleDrops(d...))
 }
@@ -45,34 +45,44 @@ type jukeboxUser interface {
 
 // Activate ...
 func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
-	if !j.Item.Empty() {
-		ent := entity.NewItem(j.Item, pos.Side(cube.FaceUp).Vec3Middle())
+	if !j.item.Empty() {
+		ent := entity.NewItem(j.item, pos.Side(cube.FaceUp).Vec3Middle())
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
 		w.AddEntity(ent)
 
-		j.Item = item.Stack{}
+		j.ClearMusicDisc(pos, w)
 	} else if held, other := u.HeldItems(); !held.Empty() {
 		if m, ok := held.Item().(item.MusicDisc); ok {
-			j.Item = item.NewStack(held.Item(), 1)
-
+			j.InsertMusicDisc(m, pos, w)
 			u.SetHeldItems(held.Grow(-1), other)
-			w.PlaySound(pos.Vec3(), sound.MusicDiscPlay{DiscType: m.DiscType})
+
 			if u, ok := u.(jukeboxUser); ok {
 				u.SendJukeboxPopup(fmt.Sprintf("Now playing: %v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
 			}
 		}
-	} else {
-		return true
 	}
 
-	w.SetBlock(pos, j, nil)
 	return true
+}
+
+func (j Jukebox) InsertMusicDisc(m item.MusicDisc, pos cube.Pos, w *world.World) {
+	if !j.item.Empty() {
+		j.ClearMusicDisc(pos, w)
+	}
+	j.item = item.NewStack(m, 1)
+	w.PlaySound(pos.Vec3(), sound.MusicDiscPlay{DiscType: m.DiscType})
+	w.SetBlock(pos, j, nil)
+}
+
+func (j Jukebox) ClearMusicDisc(pos cube.Pos, w *world.World) {
+	j.item = item.Stack{}
+	w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
+	w.SetBlock(pos, j, nil)
 }
 
 // PostBreak ...
 func (j Jukebox) PostBreak(pos cube.Pos, w *world.World, _ item.User) {
-	if !j.Item.Empty() {
+	if !j.item.Empty() {
 		w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
 	}
 }
@@ -80,15 +90,15 @@ func (j Jukebox) PostBreak(pos cube.Pos, w *world.World, _ item.User) {
 // EncodeNBT ...
 func (j Jukebox) EncodeNBT() map[string]any {
 	m := map[string]any{"id": "Jukebox"}
-	if !j.Item.Empty() {
-		m["RecordItem"] = nbtconv.WriteItem(j.Item, true)
+	if !j.item.Empty() {
+		m["RecordItem"] = nbtconv.WriteItem(j.item, true)
 	}
 	return m
 }
 
 // DecodeNBT ...
 func (j Jukebox) DecodeNBT(data map[string]any) any {
-	j.Item = nbtconv.MapItem(data, "RecordItem")
+	j.item = nbtconv.MapItem(data, "RecordItem")
 	return j
 }
 
