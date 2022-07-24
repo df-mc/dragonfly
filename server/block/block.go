@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -15,7 +16,7 @@ type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
 	// Activate returns a bool indicating if activating the block was used successfully.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
 }
 
 // Pickable represents a block that may give a different item then the block itself when picked.
@@ -198,7 +199,7 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
-	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
+	_, air := w.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
 		w.SetBlock(pos, nil, nil)

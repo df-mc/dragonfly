@@ -38,7 +38,7 @@ func (b Beacon) BreakInfo() BreakInfo {
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
