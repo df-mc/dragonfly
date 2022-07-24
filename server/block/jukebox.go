@@ -50,14 +50,19 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
 
-		j.ClearMusicDisc(pos, w)
+		w.SetBlock(pos, WithoutMusicDisc(), nil)
+		w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
 	} else if held, _ := u.HeldItems(); !held.Empty() {
-		if m, ok := held.Item().(item.MusicDisc); ok {
-			j.InsertMusicDisc(held, pos, w)
+		box := WithMusicDisc(held)
+		if box.Disc() != nil {
+			w.SetBlock(pos, box, nil)
+			w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
 			ctx.CountSub = 1
 
+			disc := *box.Disc()
+			w.PlaySound(pos.Vec3(), sound.MusicDiscPlay{DiscType: disc})
 			if u, ok := u.(jukeboxUser); ok {
-				u.SendJukeboxPopup(fmt.Sprintf("Now playing: %v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
+				u.SendJukeboxPopup(fmt.Sprintf("Now playing: %v - %v", disc.Author(), disc.DisplayName()))
 			}
 		}
 	}
@@ -65,26 +70,30 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 	return true
 }
 
-// InsertMusicDisc clears any potentially inserted music disc, inserts a new disc and plays it.
-func (j Jukebox) InsertMusicDisc(s item.Stack, pos cube.Pos, w *world.World) {
-	m, ok := s.Item().(item.MusicDisc)
+// WithMusicDisc creates a new jukebox with a music disc and plays it.
+func WithMusicDisc(s item.Stack) Jukebox {
+	_, ok := s.Item().(item.MusicDisc)
 	if !ok {
-		return
+		return WithoutMusicDisc()
 	}
 
-	if !j.item.Empty() {
-		j.ClearMusicDisc(pos, w)
-	}
-	j.item = s
-	w.PlaySound(pos.Vec3(), sound.MusicDiscPlay{DiscType: m.DiscType})
-	w.SetBlock(pos, j, nil)
+	return Jukebox{item: s}
 }
 
-// ClearMusicDisc clears any potentially inserted music disc.
-func (j Jukebox) ClearMusicDisc(pos cube.Pos, w *world.World) {
-	j.item = item.Stack{}
-	w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
-	w.SetBlock(pos, j, nil)
+// WithoutMusicDisc creates a new jukebox without a music disc.
+func WithoutMusicDisc() Jukebox {
+	return Jukebox{item: item.Stack{}}
+}
+
+// Disc returns the currently playing music disc
+func (j Jukebox) Disc() *sound.DiscType {
+	if !j.item.Empty() {
+		if m, ok := j.item.Item().(item.MusicDisc); ok {
+			return &m.DiscType
+		}
+	}
+
+	return nil
 }
 
 // PostBreak ...
