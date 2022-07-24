@@ -149,8 +149,9 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 
 		// We generate up to j random positions for every sub chunk.
-		x, y, z := g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
 		for j := 0; j < t.w.conf.RandomTickSpeed; j++ {
+			x, y, z := g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
+
 			for i, sub := range c.Sub() {
 				if sub.Empty() {
 					// SubChunk is empty, so skip it right away.

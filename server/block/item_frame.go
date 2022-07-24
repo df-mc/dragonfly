@@ -76,7 +76,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	if !used {
 		return false
 	}
-	if (w.Block(pos.Side(face.Opposite())).Model() == model.Empty{}) {
+	if _, ok := w.Block(pos.Side(face.Opposite())).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
 		return false
 	}
