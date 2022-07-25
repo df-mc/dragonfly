@@ -30,7 +30,7 @@ type Geometry struct {
 		Cubes    []struct {
 			Origin   mgl64.Vec3 `json:"origin"`
 			Size     mgl64.Vec3 `json:"size"`
-			UV       mgl64.Vec2 `json:"uv"`
+			UV       any        `json:"uv"`
 			Pivot    mgl64.Vec3 `json:"pivot,omitempty"`
 			Rotation mgl64.Vec3 `json:"rotation,omitempty"`
 			Inflate  float64    `json:"inflate,omitempty"`
