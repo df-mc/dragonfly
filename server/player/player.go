@@ -1975,6 +1975,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 		if p.collidedHorizontally.Load() {
 			if force := horizontalVel.Len()*10.0 - 3.0; force > 0.0 && !p.AttackImmune() {
+				p.PlaySound(sound.Fall{Distance: force})
 				p.Hurt(force, damage.SourceGlide{})
 			}
 		}
