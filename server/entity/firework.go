@@ -25,6 +25,8 @@ type Firework struct {
 
 	c *MovementComputer
 
+	attached bool
+
 	ticks int
 	close bool
 }
@@ -78,11 +80,24 @@ func (f *Firework) Tick(w *world.World, current int64) {
 	}
 
 	f.mu.Lock()
-	f.vel[0] *= 1.15
-	f.vel[1] += 0.04
-	f.vel[2] *= 1.15
+	if f.attached {
+		if o, ok := f.owner.(interface {
+			Velocity() mgl64.Vec3
+		}); ok {
+			vel := o.Velocity()
+			dV := DirectionVector(f.owner)
+
+			// The client will propel itself to match the firework's velocity since we set the appropriate metadata.
+			f.pos = f.owner.Position()
+			f.vel.Add(vel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(vel).Mul(0.5))))
+		}
+	} else {
+		f.vel[0] *= 1.15
+		f.vel[1] += 0.04
+		f.vel[2] *= 1.15
+	}
 	m := f.c.TickMovement(f, f.pos, f.vel, f.yaw, f.pitch)
-	f.pos, f.vel, f.yaw, f.pitch = m.pos, m.vel, m.yaw, m.pitch
+	f.pos, f.vel = m.pos, m.vel
 	f.mu.Unlock()
 
 	m.Send()
@@ -111,6 +126,9 @@ func (f *Firework) Tick(w *world.World, current int64) {
 
 		if len(explosions) > 0 {
 			force := float64(len(explosions)*2) + 5.0
+			if l, ok := f.owner.(Living); ok && f.attached {
+				l.Hurt(force, damage.SourceProjectile{Owner: l, Projectile: f})
+			}
 			for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
 				l, living := e.(Living)
 				return !living || l.AttackImmune()
@@ -136,8 +154,15 @@ func (f *Firework) Tick(w *world.World, current int64) {
 
 // New creates an firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
 // only returns it.
-func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) world.Entity {
-	return NewFirework(pos, yaw, pitch, firework)
+func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, it item.Firework) world.Entity {
+	firework := NewFirework(pos, yaw, pitch, it)
+	firework.attached = attached
+	return firework
+}
+
+// Attached ...
+func (f *Firework) Attached() bool {
+	return f.attached
 }
 
 // Owner ...

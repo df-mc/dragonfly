@@ -64,7 +64,7 @@ type Player struct {
 	armour                   *inventory.Armour
 	heldSlot                 *atomic.Uint32
 
-	sneaking, sprinting, swimming, flying,
+	sneaking, sprinting, swimming, gliding, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
@@ -1015,6 +1015,27 @@ func (p *Player) StopSwimming() {
 	p.updateState()
 }
 
+// StartGliding makes the player start gliding if it is not currently doing so.
+func (p *Player) StartGliding() {
+	if !p.gliding.CAS(false, true) {
+		return
+	}
+	p.updateState()
+}
+
+// Gliding checks if the player is currently gliding.
+func (p *Player) Gliding() bool {
+	return p.gliding.Load()
+}
+
+// StopGliding makes the player stop gliding if it is currently doing so.
+func (p *Player) StopGliding() {
+	if !p.gliding.CAS(true, false) {
+		return
+	}
+	p.updateState()
+}
+
 // StartFlying makes the player start flying if they aren't already. It requires the player to be in a gamemode which
 // allows flying.
 func (p *Player) StartFlying() {
@@ -1937,6 +1958,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 
 	p.pos.Store(res)
 	p.yaw.Store(resYaw)
+	p.vel.Store(deltaPos)
 	p.pitch.Store(resPitch)
 
 	_, submergedBefore := w.Liquid(cube.PosFromVec3(pos.Add(mgl64.Vec3{0, p.EyeHeight()})))
@@ -2453,7 +2475,7 @@ func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
 	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
-	case p.Swimming():
+	case p.Gliding(), p.Swimming():
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)

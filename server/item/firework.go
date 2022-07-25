@@ -18,6 +18,40 @@ type Firework struct {
 	Explosions []FireworkExplosion
 }
 
+// Use ...
+func (f Firework) Use(w *world.World, user User, ctx *UseContext) bool {
+	if g, ok := user.(interface {
+		Gliding() bool
+	}); !ok || !g.Gliding() {
+		return false
+	}
+
+	firework, ok := world.EntityByName("minecraft:fireworks_rocket")
+	if !ok {
+		return false
+	}
+
+	p, ok := firework.(interface {
+		New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework Firework) world.Entity
+	})
+	if !ok {
+		return false
+	}
+
+	pos := user.Position()
+	yaw, pitch := user.Rotation()
+	entity := p.New(pos, yaw, pitch, true, f)
+	if o, ok := entity.(owned); ok {
+		o.Own(user)
+	}
+
+	ctx.SubtractFromCount(1)
+
+	w.PlaySound(pos, sound.FireworkLaunch{})
+	w.AddEntity(entity)
+	return true
+}
+
 // UseOnBlock ...
 func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
 	firework, ok := world.EntityByName("minecraft:fireworks_rocket")
@@ -26,14 +60,14 @@ func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3
 	}
 
 	p, ok := firework.(interface {
-		New(pos mgl64.Vec3, yaw, pitch float64, firework Firework) world.Entity
+		New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework Firework) world.Entity
 	})
 	if !ok {
 		return false
 	}
 
 	pos := blockPos.Vec3().Add(clickPos)
-	entity := p.New(pos, rand.Float64()*360, 90, f)
+	entity := p.New(pos, rand.Float64()*360, 90, false, f)
 	if o, ok := entity.(owned); ok {
 		o.Own(user)
 	}

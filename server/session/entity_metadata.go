@@ -37,6 +37,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sw, ok := e.(swimmer); ok && sw.Swimming() {
 		m.setFlag(dataKeyFlags, dataFlagSwimming)
 	}
+	if gl, ok := e.(glider); ok && gl.Gliding() {
+		m.setFlag(dataKeyFlags, dataFlagGliding)
+	}
 	if b, ok := e.(breather); ok {
 		m[dataKeyAir] = int16(b.AirSupply().Milliseconds() / 50)
 		m[dataKeyMaxAir] = int16(b.MaxAirSupply().Milliseconds() / 50)
@@ -65,14 +68,16 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if o, ok := e.(orb); ok {
 		m[dataKeyExperienceValue] = int32(o.Experience())
 	}
-	if o, ok := e.(firework); ok {
-		m[dataKeyFireworkItem] = nbtconv.WriteItem(item.NewStack(o.Firework(), 1), false)
+	if f, ok := e.(firework); ok {
+		m[dataKeyFireworkItem] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
+		if o, ok := e.(owned); ok && f.Attached() {
+			m[dataKeyCustomDisplay] = int64(s.entityRuntimeID(o.Owner()))
+		}
+	} else if o, ok := e.(owned); ok {
+		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
 	}
 	if sc, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(sc.Scale())
-	}
-	if o, ok := e.(owned); ok {
-		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
 	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
@@ -156,6 +161,7 @@ const (
 	dataFlagAlwaysShowNameTag = 15
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
+	dataFlagGliding           = 32
 	dataFlagBreathing         = 35
 	dataFlagHasCollision      = 47
 	dataFlagAffectedByGravity = 48
@@ -173,6 +179,10 @@ type sprinter interface {
 
 type swimmer interface {
 	Swimming() bool
+}
+
+type glider interface {
+	Gliding() bool
 }
 
 type breather interface {
@@ -235,6 +245,7 @@ type orb interface {
 
 type firework interface {
 	Firework() item.Firework
+	Attached() bool
 }
 
 type gameMode interface {
