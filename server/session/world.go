@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -110,6 +111,15 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Position:        vec64To32(v.Position()),
 			Velocity:        vec64To32(v.Velocity()),
 			EntityMetadata:  metadata,
+		})
+		return
+	case *entity.Painting:
+		s.writePacket(&packet.AddPainting{
+			EntityUniqueID:  int64(runtimeID),
+			EntityRuntimeID: runtimeID,
+			Position:        vec64To32(v.Position()),
+			Direction:       int32(sliceutil.Index(cube.Directions(), v.Direction())),
+			Title:           v.Motive().String(),
 		})
 		return
 	case *entity.FallingBlock:
