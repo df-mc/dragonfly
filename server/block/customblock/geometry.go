@@ -81,9 +81,9 @@ func (g Geometry) Origin() (x mgl64.Vec3) {
 func (g Geometry) Size() (x mgl64.Vec3) {
 	for _, bone := range g.Bones {
 		for _, cube := range bone.Cubes {
-			x[0] = math.Max(x[0], cube.Size.X())
-			x[1] = math.Max(x[1], cube.Size.Y())
-			x[2] = math.Max(x[2], cube.Size.Z())
+			x[0] = math.Max(x[0], math.Abs(cube.Size.X()))
+			x[1] = math.Max(x[1], math.Abs(cube.Size.Y()))
+			x[2] = math.Max(x[2], math.Abs(cube.Size.Z()))
 		}
 	}
 	return
