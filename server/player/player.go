@@ -1968,7 +1968,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	horizontalVel := deltaPos
 	horizontalVel[1] = 0
 	if p.Gliding() {
-		if deltaPos.Y() > -0.5 {
+		if deltaPos.Y() >= -0.5 {
 			p.fallDistance.Store(1.0)
 		}
 		if p.collidedHorizontally.Load() {
