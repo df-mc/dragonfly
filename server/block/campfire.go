@@ -19,6 +19,7 @@ import (
 // Campfire is a block that can be used to cook food, pacify bees, act as a spread-proof light source, smoke signal or
 // damaging trap block.
 type Campfire struct {
+	bass
 	// Items represents the items in the campfire that are being cooked.
 	Items [4]CampfireItem
 	// Facing represents the direction that the campfire is facing.
@@ -126,11 +127,14 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 			}
 		}
 	}
-	return true
+	return false
 }
 
 // UseOnBlock ...
 func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	if _, ok := w.Block(pos).(Campfire); ok && face == cube.FaceUp {
+		return false
+	}
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return
