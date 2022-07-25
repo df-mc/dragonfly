@@ -68,6 +68,7 @@ type Player struct {
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	glideTicks   atomic.Int64
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
@@ -1035,6 +1036,7 @@ func (p *Player) StopGliding() {
 	if !p.gliding.CAS(true, false) {
 		return
 	}
+	p.glideTicks.Store(0)
 	p.updateState()
 }
 
@@ -2240,6 +2242,14 @@ func (p *Player) Tick(w *world.World, current int64) {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
 			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
+		}
+	}
+
+	if _, ok := p.Armour().Chestplate().Item().(item.Elytra); ok && p.Gliding() {
+		if t := p.glideTicks.Inc(); t%10 == 0 {
+			if (t/10)%2 == 0 {
+				p.armour.SetChestplate(p.damageItem(p.Armour().Chestplate(), 1))
+			}
 		}
 	}
 
