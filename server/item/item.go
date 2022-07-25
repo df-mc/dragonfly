@@ -91,7 +91,7 @@ type Consumer interface {
 	AddEffect(e effect.Effect)
 	// RemoveEffect removes any effect that might currently be active on the Consumer.
 	RemoveEffect(e effect.Type)
-	// Effects returns any effect currently applied to the entity. The returned effects are guaranteed not to have
+	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
 	// expired when returned.
 	Effects() []effect.Effect
 }
