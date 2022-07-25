@@ -29,12 +29,12 @@ type SplashPotion struct {
 	c *ProjectileComputer
 }
 
-// SplashableBlock is a block that can be splashed with a splash bottle
+// SplashableBlock is a block that can be splashed with a splash bottle.
 type SplashableBlock interface {
 	Splash(pos cube.Pos, potion *SplashPotion)
 }
 
-// SplashableEntity is an entity that can be splashed with a splash bottle
+// SplashableEntity is an entity that can be splashed with a splash bottle.
 type SplashableEntity interface {
 	Splash(potion *SplashPotion)
 }

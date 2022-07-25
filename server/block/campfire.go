@@ -19,20 +19,20 @@ import (
 // Campfire is a block that can be used to cook food, pacify bees, act as a spread-proof light source, smoke signal or
 // damaging trap block.
 type Campfire struct {
-	// Items represents the items in the campfire that are getting cooked
+	// Items represents the items in the campfire that are being cooked.
 	Items [4]CampfireItem
 	// Facing represents the direction that the campfire is facing.
 	Facing cube.Direction
 	// Extinguished is true if the campfire was extinguished by a water source.
 	Extinguished bool
-	// Type represents the type of Campfire, currently there are Normal and Soul campfires
+	// Type represents the type of Campfire, currently there are Normal and Soul campfires.
 	Type FireType
 }
 
-// CampfireItem is an object that holds the data about the items in the campfire
+// CampfireItem is an object that holds the data about the items in the campfire.
 type CampfireItem struct {
 	Item item.Stack
-	// Time is the countdown of ticks until the item is cooked (when 0)
+	// Time is the countdown of ticks until the item is cooked (when 0).
 	Time int
 }
 
