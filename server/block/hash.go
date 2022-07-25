@@ -90,6 +90,7 @@ const (
 	hashLight
 	hashLitPumpkin
 	hashLog
+	hashLoom
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
@@ -509,6 +510,10 @@ func (l LitPumpkin) Hash() uint64 {
 
 func (l Log) Hash() uint64 {
 	return hashLog | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Stripped))<<12 | uint64(l.Axis)<<13
+}
+
+func (l Loom) Hash() uint64 {
+	return hashLoom | uint64(l.Facing)<<8
 }
 
 func (Melon) Hash() uint64 {

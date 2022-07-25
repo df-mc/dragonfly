@@ -709,6 +709,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.Loom:
+		containerType = 24
 	case block.SmithingTable:
 		containerType = 33
 	case block.EnderChest:

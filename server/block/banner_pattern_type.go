@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/item"
+
 // BannerPatternType represents a type of banner pattern, used to customize banners.
 type BannerPatternType struct {
 	bannerPatternType
@@ -343,4 +345,27 @@ func (b bannerPatternType) String() string {
 		return "piglin"
 	}
 	panic("should never happen")
+}
+
+// Item returns the equivalent item type for the pattern. If none exists, false is returned.
+func (b bannerPatternType) Item() (item.BannerPatternType, bool) {
+	switch b {
+	case 1:
+		return item.BricksBannerPattern(), true
+	case 3:
+		return item.CreeperBannerPattern(), true
+	case 5:
+		return item.CurlyBorderBannerPattern(), true
+	case 10:
+		return item.FlowerBannerPattern(), true
+	case 17:
+		return item.MojangBannerPattern(), true
+	case 19:
+		return item.SkullBannerPattern(), true
+	case 38:
+		return item.GlobeBannerPattern(), true
+	case 39:
+		return item.PiglinBannerPattern(), true
+	}
+	return item.BannerPatternType{}, false
 }

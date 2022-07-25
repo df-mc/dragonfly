@@ -115,6 +115,9 @@ const (
 	containerHotbar               = 27
 	containerInventory            = 28
 	containerOffHand              = 33
+	containerLoomInput            = 40
+	containerLoomDye              = 41
+	containerLoomPattern          = 42
 	containerBlastFurnaceInput    = 44
 	containerSmokerInput          = 45
 	containerBarrel               = 57
@@ -172,15 +175,19 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		}
 	case containerSmithingInput, containerSmithingMaterial:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, smithing := b.(block.SmithingTable); smithing {
+			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
+				return s.ui, true
+			}
+		}
+	case containerLoomInput, containerLoomDye, containerLoomPattern:
+		if s.containerOpened.Load() {
+			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
 		}
 	case containerEnchantingTableInput, containerEnchantingTableLapis:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, enchanting := b.(block.EnchantingTable); enchanting {
+			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
