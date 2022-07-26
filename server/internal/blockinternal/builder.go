@@ -95,6 +95,12 @@ func (builder *ComponentBuilder) applyDefaultProperties(x *[]map[string]any) {
 			if _, ok := traits[trait]; !ok {
 				traits[trait] = []any{}
 			}
+			if slices.IndexFunc(traits[trait], func(i any) bool {
+				return i == value
+			}) >= 0 {
+				// Already exists, skip.
+				continue
+			}
 			traits[trait] = append(traits[trait], value)
 		}
 	}
