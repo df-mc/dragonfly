@@ -1,10 +1,12 @@
 package world
 
 import (
+	"fmt"
 	"image/color"
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -22,8 +24,8 @@ func NewMapData() *ViewableMapData {
 		mapID:   int64(len(mapData)),
 		viewers: map[MapDataViewer]struct{}{},
 		data: MapData{
-			TrackEntities: map[Entity]struct{}{},
-			TrackBlocks:   map[cube.Pos]struct{}{},
+			TrackEntities: map[Entity][2]byte{},
+			TrackBlocks:   map[cube.Pos][2]byte{},
 		},
 	}
 	mapData[d.mapID] = d
@@ -32,9 +34,11 @@ func NewMapData() *ViewableMapData {
 }
 
 type MapData struct {
-	Pixels        [][]color.RGBA
-	TrackEntities map[Entity]struct{}
-	TrackBlocks   map[cube.Pos]struct{}
+	Pixels [][]color.RGBA
+	// TrackEntities are map decorations. Each's two bytes are the X and Y offset of its decoration.
+	TrackEntities map[Entity][2]byte
+	// TrackBlocks are map decorations. Each's two bytes are the X and Y offset of its decoration.
+	TrackBlocks map[cube.Pos][2]byte
 	// Scale should be 0 to 4. TODO: verify.
 	Scale byte
 	// Locked map should not be affected by world content (block) changes.
@@ -95,13 +99,17 @@ func (d *ViewableMapData) ChangePixels(pixels [][]color.RGBA) MapPixelsChunk {
 }
 
 // AddTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
-func (d *ViewableMapData) AddTrackEntity(e Entity) {
-	d.trackEntitiesMu.Lock()
-	defer d.trackEntitiesMu.Unlock()
+// A map can only display 256*256 pixels so the offsets must neither be smaller than 0 nor greater than 255.
+func (d *ViewableMapData) AddTrackEntityWithCustomOffsets(e Entity, offsets mgl64.Vec2) {
+	if verify, err := verifyMapDecorationOffsets(offsets); err != nil {
+		panic(err)
+	} else {
+		d.trackEntitiesMu.Lock()
+		defer d.trackEntitiesMu.Unlock()
 
-	s := struct{}{}
-	d.data.TrackEntities[e] = s
-	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
+		d.data.TrackEntities[e] = verify
+		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
+	}
 }
 
 // RemoveTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
@@ -114,13 +122,27 @@ func (d *ViewableMapData) RemoveTrackEntity(e Entity) {
 }
 
 // AddTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
-func (d *ViewableMapData) AddTrackBlock(pos cube.Pos) {
-	d.trackBlocksMu.Lock()
-	defer d.trackBlocksMu.Unlock()
+// A map can only display 256*256 pixels so the offsets must neither be smaller than 0 nor greater than 255.
+func (d *ViewableMapData) AddTrackBlockWithCustomOffsets(pos cube.Pos, offsets mgl64.Vec2) {
+	if verify, err := verifyMapDecorationOffsets(offsets); err != nil {
+		panic(err)
+	} else {
+		d.trackBlocksMu.Lock()
+		defer d.trackBlocksMu.Unlock()
 
-	s := struct{}{}
-	d.data.TrackBlocks[pos] = s
-	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
+		d.data.TrackBlocks[pos] = verify
+		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
+	}
+}
+
+func verifyMapDecorationOffsets(offsets mgl64.Vec2) ([2]byte, error) {
+	for offset := range offsets {
+		if offset < 0 || offset > 255 {
+			return [2]byte{}, fmt.Errorf("illegal map decoration offset")
+		}
+	}
+
+	return [2]byte{byte(offsets.X()), byte(offsets.Y())}, nil
 }
 
 // RemoveTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
