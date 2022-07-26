@@ -70,6 +70,10 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if o, ok := e.(owned); ok {
 		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
 	}
+	if t, ok := e.(tnt); ok {
+		m[dataKeyFuseLength] = int32(t.Fuse().Milliseconds() / 50)
+		m.setFlag(dataKeyFlags, dataFlagIgnited)
+	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
 		m[dataKeyAlwaysShowNameTag] = uint8(1)
@@ -134,6 +138,7 @@ const (
 	dataKeyMaxAir            = 42
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
+	dataKeyFuseLength        = 55
 	dataKeyAlwaysShowNameTag = 81
 	dataKeyScoreTag          = 84
 )
@@ -146,6 +151,7 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagIgnited           = 10
 	dataFlagCritical          = 13
 	dataFlagCanShowNameTag    = 14
 	dataFlagAlwaysShowNameTag = 15
@@ -230,4 +236,8 @@ type orb interface {
 
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type tnt interface {
+	Fuse() time.Duration
 }

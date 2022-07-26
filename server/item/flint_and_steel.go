@@ -3,10 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
-	"time"
 )
 
 // FlintAndSteel is an item used to light blocks on fire.
@@ -25,14 +22,19 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// lightable represents a block that can be lit by a fire emitter, such as flint and steel.
+type lightable interface {
+	// Light is called when the block is lit by flint and steel.
+	Light(pos cube.Pos, w *world.World) bool
+}
+
 // UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	if w.Block(pos.Side(face)) == air() {
-		w.PlaySound(pos.Vec3(), sound.Ignite{})
-		w.SetBlock(pos.Side(face), fire(), nil)
-		w.ScheduleBlockUpdate(pos.Side(face), time.Duration(30+rand.Intn(10))*time.Second/20)
-		return true
+	for _, b := range []cube.Pos{pos, pos.Side(face)} {
+		if l, ok := w.Block(b).(lightable); ok && l.Light(b, w) {
+			return true
+		}
 	}
 	return false
 }

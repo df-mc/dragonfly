@@ -92,6 +92,7 @@ func init() {
 	world.RegisterBlock(SporeBlossom{})
 	world.RegisterBlock(Stone{Smooth: true})
 	world.RegisterBlock(Stone{})
+	world.RegisterBlock(TNT{})
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(Tuff{})
 
@@ -305,6 +306,7 @@ func init() {
 	world.RegisterItem(StoneBrickStairs{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(WheatSeeds{})
