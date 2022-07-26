@@ -26,6 +26,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		return fmt.Errorf("no loom container opened")
 	}
 
+	// Next, check if the input slot has a valid banner item.
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerLoomInput,
 		Slot:        loomInputSlot,
@@ -38,6 +39,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		return fmt.Errorf("input item is not a banner")
 	}
 
+	// Do the same with the input dye.
 	dye, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerLoomDye,
 		Slot:        loomDyeSlot,
@@ -50,11 +52,15 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		return fmt.Errorf("dye item is not a dye")
 	}
 
+	// The action contains the pattern that the client wanted to apply, so parse the ID and check if it is a valid
+	// pattern.
 	expectedPattern, ok := block.BannerPatternByID(a.Pattern)
 	if !ok {
 		return fmt.Errorf("pattern %v is not a valid banner pattern", a.Pattern)
 	}
 
+	// Some banner patterns have equivalent banner pattern items that are required to craft the pattern. If the expected
+	// pattern has a pattern item, check if the player input the correct pattern item.
 	pattern, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerLoomPattern,
 		Slot:        loomPatternSlot,
@@ -72,6 +78,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		}
 	}
 
+	// Add a new pattern layer onto the banner, and create the result.
 	b.Patterns = append(b.Patterns, block.BannerPatternLayer{
 		BannerPatternType: expectedPattern,
 		Colour:            d.Colour,
