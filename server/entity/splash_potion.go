@@ -155,10 +155,12 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			// we first check to see if it splashed an empty block that's splashable
 			pos := result.BlockPosition().Side(result.Face())
 			block := w.Block(pos)
-			if splashable, ok := block.(SplashableBlock); ok && block.Model() == emptyModel() {
-				splashable.Splash(pos, s)
-				// Doesn't run rest of code if it's a splashable empty block
-				break
+			if splashable, ok := block.(SplashableBlock); ok {
+				if _, ok := block.Model().(model.Empty); ok {
+					splashable.Splash(pos, s)
+					// Doesn't run rest of code if it's a splashable empty block
+					break
+				}
 			}
 			// splashable non-empty block
 			pos = result.BlockPosition()
@@ -199,10 +201,6 @@ func (s *SplashPotion) Own(owner world.Entity) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.owner = owner
-}
-
-func emptyModel() world.BlockModel {
-	return model.Empty{}
 }
 
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.

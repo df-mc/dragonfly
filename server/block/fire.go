@@ -51,8 +51,7 @@ func (f Fire) Splash(pos cube.Pos, p *entity.SplashPotion) {
 	w.SetBlock(pos, nil, nil)
 	for _, face := range cube.HorizontalFaces() {
 		h := pos.Side(face)
-		fire := Fire{}
-		if w.Block(h) == fire {
+		if _, ok := w.Block(h).(Fire); ok {
 			w.SetBlock(h, nil, nil)
 		}
 	}
