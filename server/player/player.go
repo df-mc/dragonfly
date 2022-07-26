@@ -659,8 +659,15 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 func (p *Player) Explode(c block.ExplosionConfig, impact float64) {
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), damage.SourceExplosion{})
 
-	diff := p.Position().Sub(c.Pos)
-	p.KnockBack(c.Pos, impact, diff[1]/diff.Len()*impact)
+	vel := p.Position().Sub(c.Pos).Normalize().Mul(impact)
+	res := 0.0
+	for _, i := range p.armour.Items() {
+		if a, ok := i.Item().(item.Armour); ok {
+			res += a.KnockBackResistance()
+		}
+	}
+
+	p.SetVelocity(vel.Mul(1 - res))
 }
 
 // protectionEnchantment represents an enchantment that can protect the player from damage.
