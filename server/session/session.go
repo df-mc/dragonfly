@@ -562,21 +562,38 @@ func (s *Session) ViewMapDataChange(updateFlag uint32, mapID int64, pixelsChunk 
 // SendMapData writes *packet.ClientBoundMapItemData.
 func (s *Session) SendMapData(updateFlag uint32, mapID int64, pixelsChunk world.MapPixelsChunk, data *world.ViewableMapData) {
 	var (
-		d        = data.MapData()
-		trackeds []protocol.MapTrackedObject
+		d           = data.MapData()
+		trackeds    []protocol.MapTrackedObject
+		decorations []protocol.MapDecoration
 	)
-	for e := range d.TrackEntities {
-		// Since entity IDs are not reused per world, I am not checking world here.
+	for e, offsets := range d.TrackEntities {
 		trackeds = append(trackeds, protocol.MapTrackedObject{
 			Type:           protocol.MapObjectTypeEntity,
 			EntityUniqueID: int64(s.entityRuntimeID(e)),
 		})
+
+		if data.World() == s.c.World() {
+			yaw, _ := e.Rotation()
+			decorations = append(decorations, protocol.MapDecoration{
+				Type:     protocol.MapObjectTypeEntity,
+				Rotation: byte((yaw*2+45)/45 - 1), // Credit to SOFe#4765.
+				X:        offsets[0],
+				Y:        offsets[1],
+				Label:    e.Name(),
+			})
+		}
 	}
 	if data.World() == s.c.World() {
-		for p := range d.TrackBlocks {
+		for p, offsets := range d.TrackBlocks {
 			trackeds = append(trackeds, protocol.MapTrackedObject{
 				Type:          protocol.MapObjectTypeBlock,
 				BlockPosition: protocol.BlockPos{int32(p[0]), int32(p[1]), int32(p[2])},
+			})
+
+			decorations = append(decorations, protocol.MapDecoration{
+				Type: protocol.MapObjectTypeEntity,
+				X:    offsets[0],
+				Y:    offsets[1],
 			})
 		}
 	}
@@ -590,7 +607,7 @@ func (s *Session) SendMapData(updateFlag uint32, mapID int64, pixelsChunk world.
 		TrackedObjects: trackeds,
 		// Decorations is a list of fixed decorations located on the map. The decorations will not change
 		// client-side, unless the server updates them.
-		Decorations: []protocol.MapDecoration{},
+		Decorations: decorations,
 
 		Height:  pixelsChunk.Height,
 		Width:   pixelsChunk.Width,
