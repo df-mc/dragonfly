@@ -134,9 +134,6 @@ func New(c *Config, log Logger) *Server {
 	s.JoinMessage(c.Server.JoinMessage)
 	s.QuitMessage(c.Server.QuitMessage)
 
-	s.makeItemComponents()
-	s.makeBlockComponents()
-
 	s.loadResources(c.Resources.Folder, log)
 	s.checkNetIsolation()
 
@@ -696,8 +693,11 @@ func (srv *Server) itemEntries() (entries []protocol.ItemEntry) {
 }
 
 // itemComponentEntries returns a list of all custom item component entries of the server, ready to be sent in the
-// ItemComponent packet.
+// ItemComponent packet. If the list does not exist, it will be created and stored for future use.
 func (srv *Server) itemComponentEntries() (entries []protocol.ItemComponentEntry) {
+	if srv.itemComponents == nil {
+		srv.makeItemComponents()
+	}
 	for name, entry := range srv.itemComponents {
 		entries = append(entries, protocol.ItemComponentEntry{
 			Name: name,
@@ -707,8 +707,12 @@ func (srv *Server) itemComponentEntries() (entries []protocol.ItemComponentEntry
 	return
 }
 
-// blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet.
+// blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet. If the
+// list does not exist, it will be created and stored for future use.
 func (srv *Server) blockEntries() (entries []protocol.BlockEntry) {
+	if srv.blockComponents == nil {
+		srv.makeBlockComponents()
+	}
 	for name, properties := range srv.blockComponents {
 		pretty.Println(properties)
 		entries = append(entries, protocol.BlockEntry{
