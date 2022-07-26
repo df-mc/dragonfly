@@ -1,11 +1,10 @@
 package entity
 
 import (
-	"math"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 )
 
 // Facing returns the horizontal direction that an entity is facing.
@@ -26,22 +25,6 @@ func Facing(e world.Entity) cube.Direction {
 		return cube.South
 	}
 	return 0
-}
-
-// Bearing splits the 360 degree to sections and returns the section number by yaw.
-func Bearing(yaw float64, max int64) int64 {
-	// Ported from from https://stackoverflow.com/a/38505683.
-	// https://code.sololearn.com/cLibMMRbbnb2.
-	roundedYaw := int64(math.Round(yaw))
-
-	divisor := 360 / max
-	coci := roundedYaw / divisor
-	resto := roundedYaw % divisor
-	if resto <= divisor/2 {
-		return coci % max
-	} else {
-		return (coci + 1) % max
-	}
 }
 
 // DirectionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
