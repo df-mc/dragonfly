@@ -389,6 +389,38 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 	}
 }
 
+// DisplaceableBlock attempts to return any block that implements DisplaceableBlock at the position passed that matches
+// the block to be checked for. This block may be in the foreground or in any other layer.  If found, the block is
+// returned. If not, the bool returned is false, and the displaceableblock is nil
+func (w *World) DisplaceableBlock(pos cube.Pos) (DisplaceableBlock, bool) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
+		// Fast way out.
+		return nil, false
+	}
+	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
+	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
+
+	id := c.Block(x, y, z, 0)
+	b, ok := BlockByRuntimeID(id)
+	if !ok {
+		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		return nil, false
+	}
+	// we could possibly replace this with runtime reflections
+	if d, ok := w.Block(pos).(DisplaceableBlock); ok {
+		return d, true
+	}
+	id = c.Block(x, y, z, 1)
+	b, ok = BlockByRuntimeID(id)
+	if !ok {
+		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		return nil, false
+	}
+	d, ok := b.(DisplaceableBlock)
+	return d, ok
+}
+
 // Liquid attempts to return any liquid block at the position passed. This liquid may be in the foreground or
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
