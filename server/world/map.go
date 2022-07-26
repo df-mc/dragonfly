@@ -61,6 +61,7 @@ type ViewableMapData struct {
 	data MapData
 }
 
+// MapPixelsChunk refers to a part on map. The word "chunk" has nothing to do with world data.
 type MapPixelsChunk struct {
 	XOffset, YOffset, Height, Width int32
 	Pixels                          [][]color.RGBA
