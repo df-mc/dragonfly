@@ -26,7 +26,7 @@ func (t Trapdoor) BBox(cube.Pos, *world.World) []cube.BBox {
 	return []cube.BBox{cube.Box(0, 0, 0, 1, 0.1875, 1)}
 }
 
-// FaceSolid always returns false.
+// FaceSolid returns true if the face is completely filled with the trapdoor.
 func (t Trapdoor) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
 	if t.Open {
 		return t.Facing.Face().Opposite() == face

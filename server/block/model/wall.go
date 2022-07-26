@@ -41,7 +41,7 @@ func (w Wall) BBox(cube.Pos, *world.World) []cube.BBox {
 	return boxes
 }
 
-// FaceSolid ...
+// FaceSolid returns true if the face is in the Y axis.
 func (w Wall) FaceSolid(_ cube.Pos, face cube.Face, _ *world.World) bool {
-	return face == cube.FaceUp
+	return face.Axis() == cube.Y
 }
