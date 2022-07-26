@@ -88,24 +88,26 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 // applyDefaultProperties applies the default properties to the provided map. It is important that this method does
 // not modify the builder's properties map directly otherwise Empty() will return false in future use of the builder.
 func (builder *ComponentBuilder) applyDefaultProperties(x *[]map[string]any) {
-	traits := make(map[string][]any)
+	var names []string
+	values := make(map[string][]any)
 	for _, b := range builder.group {
 		_, properties := b.EncodeBlock()
-		for trait, value := range properties {
-			if _, ok := traits[trait]; !ok {
-				traits[trait] = []any{}
+		for name, value := range properties {
+			if _, ok := values[name]; !ok {
+				names = append(names, name)
+				values[name] = []any{}
 			}
-			if slices.IndexFunc(traits[trait], func(i any) bool {
+			if slices.IndexFunc(values[name], func(i any) bool {
 				return i == value
 			}) >= 0 {
 				// Already exists, skip.
 				continue
 			}
-			traits[trait] = append(traits[trait], value)
+			values[name] = append(values[name], value)
 		}
 	}
-	for trait, values := range traits {
-		*x = append(*x, map[string]any{"enum": values, "name": trait})
+	for _, name := range names {
+		*x = append(*x, map[string]any{"enum": values[name], "name": name})
 	}
 }
 
