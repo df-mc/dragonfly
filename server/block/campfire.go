@@ -94,13 +94,7 @@ func (c Campfire) LightEmissionLevel() uint8 {
 	if c.Extinguished {
 		return 0
 	}
-	switch c.Type {
-	case NormalFire():
-		return 15
-	case SoulFire():
-		return 10
-	}
-	panic("invalid fire type")
+	return c.Type.LightLevel()
 }
 
 // Activate ...
