@@ -198,7 +198,6 @@ func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
 	}))
 	var post bool
 	switch above := above.(type) {
-	case Air:
 	case Lantern:
 		// Lanterns only make a wall become a post when placed on the wall and not hanging from above.
 		post = !above.Hanging
