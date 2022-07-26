@@ -108,7 +108,7 @@ func (c ExplosionConfig) Do() {
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
 			if r, ok := c.World.Block(current).(Breakable); ok {
-				if blastForce -= (r.BreakInfo().BlastResistance + 0.3) * 0.3; blastForce > 0 {
+				if blastForce -= (r.BreakInfo().BlastResistance/5 + 0.3) * 0.3; blastForce > 0 {
 					affectedBlocks = append(affectedBlocks, current)
 				}
 			}
