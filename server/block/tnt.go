@@ -14,8 +14,8 @@ type TNT struct {
 	solid
 }
 
-// Light ...
-func (t TNT) Light(pos cube.Pos, w *world.World) bool {
+// Ignite ...
+func (t TNT) Ignite(pos cube.Pos, w *world.World) bool {
 	ent, ok := world.EntityByName("minecraft:tnt")
 	if !ok {
 		return false

@@ -20,8 +20,8 @@ func (Air) HasLiquidDrops() bool {
 	return false
 }
 
-// Light ...
-func (Air) Light(pos cube.Pos, w *world.World) bool {
+// Ignite ...
+func (Air) Ignite(pos cube.Pos, w *world.World) bool {
 	if _, ok := w.Block(pos.Sub(cube.Pos{0, 1})).(Air); !ok {
 		w.PlaySound(pos.Vec3Centre(), sound.Ignite{})
 		w.SetBlock(pos, Fire{}, nil)
