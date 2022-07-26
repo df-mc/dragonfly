@@ -423,8 +423,10 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 			// ignore this and proceed.
 			continue
 		}
-		if v := e.DecodeNBT(m); v != nil {
-			a = append(a, v.(world.SaveableEntity))
+		if s, ok := e.(world.SaveableEntity); ok {
+			if v := s.DecodeNBT(m); v != nil {
+				a = append(a, s)
+			}
 		}
 	}
 	return a, nil
