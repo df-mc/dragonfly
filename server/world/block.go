@@ -90,6 +90,9 @@ func RegisterBlock(b Block) {
 	if _, ok := b.(LiquidDisplacer); ok {
 		liquidDisplacingBlocks[rid] = true
 	}
+	if _, ok := b.(DisplaceableBlock); ok {
+		displaceableBlocks[rid] = true
+	}
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
@@ -195,6 +198,12 @@ type LiquidDisplacer interface {
 	// closed. When this returns true (for example, when the side is below the position and the block is a
 	// slab), liquid inside the displacer won't flow from pos into side.
 	SideClosed(pos, side cube.Pos, w *World) bool
+}
+
+// DisplaceableBlock represents a block that gets displaced to a different world layer, with another block taking its place.
+type DisplaceableBlock interface {
+	// CanDisplace specifies if the block will be displaced with the block passed.
+	CanDisplace(b Block) bool
 }
 
 // lightEmitter is identical to a block.LightEmitter.

@@ -201,10 +201,10 @@ func (w *World) highestObstructingBlock(x, z int) int {
 type SetOpts struct {
 	// DisableBlockUpdates makes SetBlock not update any neighbouring blocks as a result of the SetBlock call.
 	DisableBlockUpdates bool
-	// DisableLiquidDisplacement disables the displacement of liquid blocks to the second layer (or back to the first
+	// DisableBlockDisplacement disables the displacement of liquid blocks to the second layer (or back to the first
 	// layer, if it already was on the second layer). Disabling this is not strongly recommended unless performance is
 	// very important or where it is known no liquid can be present anyway.
-	DisableLiquidDisplacement bool
+	DisableBlockDisplacement bool
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -233,7 +233,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	rid := BlockRuntimeID(b)
 
 	var before uint32
-	if rid != airRID && !opts.DisableLiquidDisplacement {
+	if rid != airRID && !opts.DisableBlockDisplacement {
 		before = c.Block(x, y, z, 0)
 	}
 
@@ -246,9 +246,8 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	viewers := slices.Clone(c.v)
 
-	if !opts.DisableLiquidDisplacement {
+	if !opts.DisableBlockDisplacement {
 		var secondLayer Block
-
 		if rid == airRID {
 			if li := c.Block(x, y, z, 1); li != airRID {
 				c.SetBlock(x, y, z, 0, li)
@@ -262,9 +261,14 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 				c.SetBlock(x, y, z, 1, before)
 				secondLayer = l
 			}
+		} else if displaceableBlocks[before] {
+			block, _ := BlockByRuntimeID(before)
+			if block.(DisplaceableBlock).CanDisplace(b) {
+				c.SetBlock(x, y, z, 1, before)
+				secondLayer = block
+			}
 		}
 		c.Unlock()
-
 		if secondLayer != nil {
 			for _, viewer := range viewers {
 				viewer.ViewBlockUpdate(pos, secondLayer, 1)
