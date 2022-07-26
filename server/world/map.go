@@ -98,7 +98,7 @@ func (d *ViewableMapData) ChangePixels(pixels [][]color.RGBA) MapPixelsChunk {
 	return pixelsChunk
 }
 
-// AddTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
+// AddTrackEntityWithCustomOffsets broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
 // A map can only display 256*256 pixels so the offsets must neither be smaller than 0 nor greater than 255.
 func (d *ViewableMapData) AddTrackEntityWithCustomOffsets(e Entity, offsets mgl64.Vec2) {
 	if verify, err := verifyMapDecorationOffsets(offsets); err != nil {
@@ -121,7 +121,7 @@ func (d *ViewableMapData) RemoveTrackEntity(e Entity) {
 	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
 }
 
-// AddTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
+// AddTrackBlockWithCustomOffsets broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
 // A map can only display 256*256 pixels so the offsets must neither be smaller than 0 nor greater than 255.
 func (d *ViewableMapData) AddTrackBlockWithCustomOffsets(pos cube.Pos, offsets mgl64.Vec2) {
 	if verify, err := verifyMapDecorationOffsets(offsets); err != nil {
