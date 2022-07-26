@@ -140,10 +140,11 @@ func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 
 // Tick is called to cook the items within the campfire
 func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
-	if !c.Extinguished && rand.Float64() <= 0.016 { // Every three or so seconds.
-		w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
-	}
 	if !c.Extinguished {
+		if rand.Float64() <= 0.016 { // Every three or so seconds.
+			w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
+
+		}
 		// if the campfire is water logged we extinguish it
 		if _, ok := w.Liquid(pos); ok {
 			c.Extinguished = true
