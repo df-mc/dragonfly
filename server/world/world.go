@@ -408,7 +408,7 @@ func (w *World) DisplaceableBlock(pos cube.Pos) (DisplaceableBlock, bool) {
 		return nil, false
 	}
 	// we could possibly replace this with runtime reflections
-	if d, ok := w.Block(pos).(DisplaceableBlock); ok {
+	if d, ok := b.(DisplaceableBlock); ok {
 		return d, true
 	}
 	id = c.Block(x, y, z, 1)
