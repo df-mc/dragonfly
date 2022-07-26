@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
@@ -13,6 +14,12 @@ import (
 type Breakable interface {
 	// BreakInfo returns information of the block related to the breaking of it.
 	BreakInfo() BreakInfo
+}
+
+// PreBreakable represents a block that has an action(s) processed before the block is broken.
+type PreBreakable interface {
+	// PreBreak is called before the block has broken.
+	PreBreak(pos cube.Pos, w *world.World, u item.User) world.Block
 }
 
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the

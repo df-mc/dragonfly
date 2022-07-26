@@ -734,11 +734,12 @@ const (
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
-	b.AddViewer(s, s.c.World(), pos)
+	w := s.c.World()
+	b.AddViewer(s, w, pos)
 
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
-	s.openedWindow.Store(b.Inventory())
+	s.openedWindow.Store(b.Inventory(w, pos))
 	s.openedPos.Store(pos)
 
 	var containerType byte
@@ -757,7 +758,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		ContainerEntityUniqueID: -1,
 	})
-	s.sendInv(b.Inventory(), uint32(nextID))
+	s.sendInv(b.Inventory(w, pos), uint32(nextID))
 }
 
 // ViewSlotChange ...

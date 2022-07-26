@@ -129,6 +129,9 @@ func (it *Item) merge(w *world.World, other *Item, pos mgl64.Vec3) bool {
 		return false
 	}
 
+	_ = it.Close()
+	_ = other.Close()
+
 	a, b := other.i.AddStack(it.i)
 
 	newA := NewItem(a, other.Position())
@@ -140,8 +143,6 @@ func (it *Item) merge(w *world.World, other *Item, pos mgl64.Vec3) bool {
 		newB.SetVelocity(it.vel)
 		w.AddEntity(newB)
 	}
-	_ = it.Close()
-	_ = other.Close()
 	return true
 }
 

@@ -14,6 +14,13 @@ func Map[T any](m map[string]any, key string) T {
 	return v
 }
 
+// TryMap reads a value of the type T from the map passed. If the key was not found in the map or if the value was
+// of a different type, false is returned.
+func TryMap[T any](m map[string]any, key string) (T, bool) {
+	v, ok := m[key].(T)
+	return v, ok
+}
+
 // MapVec3 converts x, y and z values in an NBT map to an mgl64.Vec3.
 func MapVec3(x map[string]any, k string) mgl64.Vec3 {
 	if i, ok := x[k].([]any); ok {
