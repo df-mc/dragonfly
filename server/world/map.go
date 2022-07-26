@@ -94,64 +94,71 @@ func (d *ViewableMapData) ChangePixels(pixels [][]color.RGBA) MapPixelsChunk {
 		}
 	}
 
-	d.change(packet.MapUpdateFlagTexture, pixelsChunk)
+	d.change(packet.MapUpdateFlagTexture, pixelsChunk, true)
 	return pixelsChunk
 }
 
-// AddTrackEntityWithCustomOffsets broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
-// A map can only display 256*256 pixels so the offsets must neither be smaller than 0 nor greater than 255.
-func (d *ViewableMapData) AddTrackEntityWithCustomOffsets(e Entity, offsets mgl64.Vec2) {
-	if verify, err := verifyMapDecorationOffsets(offsets); err != nil {
-		panic(err)
-	} else {
-		d.trackEntitiesMu.Lock()
-		defer d.trackEntitiesMu.Unlock()
+// MapDecoration holds X and Y offsets that must neither be smaller than 0 nor greater than 255 because a map can only display 256*256 pixels.
+type MapDecoration struct {
+	Block        cube.Pos
+	Entity       Entity
+	CustomOffset bool
 
-		d.data.TrackEntities[e] = verify
-		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
-	}
+	mgl64.Vec2
 }
 
-// RemoveTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
-func (d *ViewableMapData) RemoveTrackEntity(e Entity) {
-	d.trackEntitiesMu.Lock()
-	defer d.trackEntitiesMu.Unlock()
-
-	delete(d.data.TrackEntities, e)
-	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
-}
-
-// AddTrackBlockWithCustomOffsets broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
-// A map can only display 256*256 pixels so the offsets must neither be smaller than 0 nor greater than 255.
-func (d *ViewableMapData) AddTrackBlockWithCustomOffsets(pos cube.Pos, offsets mgl64.Vec2) {
-	if verify, err := verifyMapDecorationOffsets(offsets); err != nil {
-		panic(err)
-	} else {
-		d.trackBlocksMu.Lock()
-		defer d.trackBlocksMu.Unlock()
-
-		d.data.TrackBlocks[pos] = verify
-		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
-	}
-}
-
-func verifyMapDecorationOffsets(offsets mgl64.Vec2) ([2]byte, error) {
-	for offset := range offsets {
+func (d MapDecoration) verifyMapDecorationOffsets() ([2]byte, error) {
+	for offset := range d.Vec2 {
 		if offset < 0 || offset > 255 {
 			return [2]byte{}, fmt.Errorf("illegal map decoration offset")
 		}
 	}
 
-	return [2]byte{byte(offsets.X()), byte(offsets.Y())}, nil
+	return [2]byte{byte(d.X()), byte(d.Y())}, nil
 }
 
-// RemoveTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration.
-func (d *ViewableMapData) RemoveTrackBlock(pos cube.Pos) {
+// AddTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration if send = true.
+func (d *ViewableMapData) AddTrackEntity(decoration MapDecoration, send bool) {
+	if verify, err := decoration.verifyMapDecorationOffsets(); err != nil {
+		panic(err)
+	} else {
+		d.trackEntitiesMu.Lock()
+		defer d.trackEntitiesMu.Unlock()
+
+		d.data.TrackEntities[decoration.Entity] = verify
+		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{}, send)
+	}
+}
+
+// RemoveTrackEntity broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration if send = true.
+func (d *ViewableMapData) RemoveTrackEntity(e Entity, send bool) {
+	d.trackEntitiesMu.Lock()
+	defer d.trackEntitiesMu.Unlock()
+
+	delete(d.data.TrackEntities, e)
+	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{}, send)
+}
+
+// AddTrackBlockWithCustomOffsets broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration if send = true.
+func (d *ViewableMapData) AddTrackBlockWithCustomOffsets(decoration MapDecoration, send bool) {
+	if verify, err := decoration.verifyMapDecorationOffsets(); err != nil {
+		panic(err)
+	} else {
+		d.trackBlocksMu.Lock()
+		defer d.trackBlocksMu.Unlock()
+
+		d.data.TrackBlocks[decoration.Block] = verify
+		d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{}, send)
+	}
+}
+
+// RemoveTrackBlock broadcast *packet.ClientBoundMapItemData to viewers with packet.MapUpdateFlagDecoration if send = true.
+func (d *ViewableMapData) RemoveTrackBlock(pos cube.Pos, send bool) {
 	d.trackBlocksMu.Lock()
 	defer d.trackBlocksMu.Unlock()
 
 	delete(d.data.TrackBlocks, pos)
-	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{})
+	d.change(packet.MapUpdateFlagDecoration, MapPixelsChunk{}, send)
 }
 
 // MapData ...
@@ -166,12 +173,14 @@ func (d *ViewableMapData) MapData() MapData {
 	return d.data
 }
 
-func (d *ViewableMapData) change(updateFlag uint32, pixelsChunk MapPixelsChunk) {
-	d.viewersMu.RLock()
-	defer d.viewersMu.RUnlock()
+func (d *ViewableMapData) change(updateFlag uint32, pixelsChunk MapPixelsChunk, send bool) {
+	if send {
+		d.viewersMu.RLock()
+		defer d.viewersMu.RUnlock()
 
-	for viewer := range d.viewers {
-		viewer.ViewMapDataChange(updateFlag, d.mapID, pixelsChunk, d)
+		for viewer := range d.viewers {
+			viewer.ViewMapDataChange(updateFlag, d.mapID, pixelsChunk, d)
+		}
 	}
 
 	// TODO: async save().
