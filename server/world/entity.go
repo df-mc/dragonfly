@@ -49,10 +49,10 @@ type SaveableEntity interface {
 
 // entities holds a map of name => SaveableEntity to be used for looking up the entity by a string ID. It is registered
 // to when calling RegisterEntity.
-var entities = map[string]SaveableEntity{}
+var entities = map[string]Entity{}
 
 // RegisterEntity registers a SaveableEntity to the map so that it can be saved and loaded with the world.
-func RegisterEntity(e SaveableEntity) {
+func RegisterEntity(e Entity) {
 	name := e.EncodeEntity()
 	if _, ok := entities[name]; ok {
 		panic("cannot register the same entity (" + name + ") twice")
@@ -63,14 +63,14 @@ func RegisterEntity(e SaveableEntity) {
 // EntityByName looks up a SaveableEntity by the name (for example, 'minecraft:slime') and returns it if found.
 // EntityByName can only return entities previously registered using RegisterEntity. If not found, the bool returned is
 // false.
-func EntityByName(name string) (SaveableEntity, bool) {
+func EntityByName(name string) (Entity, bool) {
 	e, ok := entities[name]
 	return e, ok
 }
 
 // Entities returns all registered entities.
-func Entities() []SaveableEntity {
-	es := make([]SaveableEntity, 0, len(entities))
+func Entities() []Entity {
+	es := make([]Entity, 0, len(entities))
 	for _, e := range entities {
 		es = append(es, e)
 	}

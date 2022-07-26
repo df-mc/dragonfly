@@ -29,11 +29,11 @@ func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 	}
 	displacer, _ := w.Block(pos).(world.LiquidDisplacer)
 
-	canFlowBelow := canFlowInto(b, w, pos.Add(cube.Pos{0, -1}), false)
+	canFlowBelow := canFlowInto(b, w, pos.Side(cube.FaceDown), false)
 	if b.LiquidFalling() && !canFlowBelow {
 		b = b.WithDepth(8, true)
 	} else if canFlowBelow {
-		below := pos.Add(cube.Pos{0, -1})
+		below := pos.Side(cube.FaceDown)
 		if displacer == nil || !displacer.SideClosed(pos, below, w) {
 			flowInto(b.WithDepth(8, true), pos, below, w, true)
 		}

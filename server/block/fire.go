@@ -121,12 +121,17 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		}
 	}
 
-	//TODO: If high humidity, chance should be subtracted by 50
-	for face := cube.Face(0); face < 6; face++ {
+	humid := w.Biome(pos).Rainfall() > 0.85
+
+	s := 0
+	if humid {
+		s = 50
+	}
+	for _, face := range cube.Faces() {
 		if face == cube.FaceUp || face == cube.FaceDown {
-			f.burn(pos, pos.Side(face), w, r, 300)
+			f.burn(pos, pos.Side(face), w, r, 300-s)
 		} else {
-			f.burn(pos, pos.Side(face), w, r, 250)
+			f.burn(pos, pos.Side(face), w, r, 250-s)
 		}
 	}
 
@@ -157,8 +162,10 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 					continue
 				}
 
-				//TODO: Divide chance by 2 in high humidity
 				maxChance := (encouragement + 40 + w.Difficulty().FireSpreadIncrease()) / (f.Age + 30)
+				if humid {
+					maxChance /= 2
+				}
 
 				if maxChance > 0 && r.Intn(randomBound) <= maxChance && !rainingAround(blockPos, w) {
 					f.spread(pos, blockPos, w, r)
@@ -255,9 +262,9 @@ func (f Fire) EncodeBlock() (name string, properties map[string]any) {
 // for a fire to be present must be present.
 func (f Fire) Start(w *world.World, pos cube.Pos) {
 	b := w.Block(pos)
-	_, isAir := b.(Air)
-	_, isTallGrass := b.(TallGrass)
-	if isAir || isTallGrass {
+	_, air := b.(Air)
+	_, tallGrass := b.(TallGrass)
+	if air || tallGrass {
 		below := w.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
 			w.SetBlock(pos, Fire{}, nil)
