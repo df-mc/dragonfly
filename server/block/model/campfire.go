@@ -8,7 +8,7 @@ import (
 // Campfire is the model used by Campfires
 type Campfire struct{}
 
-// BBox returns a flat BBox with a width of 0.0625.
+// BBox returns a flat BBox with a width of 0.4375.
 func (Campfire) BBox(cube.Pos, *world.World) []cube.BBox {
 	return []cube.BBox{cube.Box(0, 0, 0, 1, 0.4375, 1)}
 }
