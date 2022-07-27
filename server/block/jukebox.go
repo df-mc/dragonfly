@@ -88,9 +88,7 @@ func (j Jukebox) WithoutMusicDisc() Jukebox {
 // Disc returns the currently playing music disc
 func (j Jukebox) Disc() (sound.DiscType, bool) {
 	if !j.item.Empty() {
-		if m, ok := j.item.Item().(item.MusicDisc); ok {
-			return m.DiscType, true
-		}
+		return j.item.Item().(item.MusicDisc).DiscType, true
 	}
 
 	return sound.DiscType{}, false
@@ -114,8 +112,9 @@ func (j Jukebox) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (j Jukebox) DecodeNBT(data map[string]any) any {
-	j.item = nbtconv.MapItem(data, "RecordItem")
-	return j
+	s := nbtconv.MapItem(data, "RecordItem")
+
+	return j.WithMusicDisc(s)
 }
 
 // EncodeItem ...
