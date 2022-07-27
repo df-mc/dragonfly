@@ -425,7 +425,7 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 		}
 		if s, ok := e.(world.SaveableEntity); ok {
 			if v := s.DecodeNBT(m); v != nil {
-				a = append(a, s)
+				a = append(a, v.(world.SaveableEntity))
 			}
 		}
 	}
