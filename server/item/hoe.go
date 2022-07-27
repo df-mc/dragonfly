@@ -111,12 +111,3 @@ func (h Hoe) RepairableBy(i Stack) bool {
 func (h Hoe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + h.Tier.Name + "_hoe", 0
 }
-
-// air returns an air block.
-func air() world.Block {
-	a, ok := world.BlockByName("minecraft:air", nil)
-	if !ok {
-		panic("could not find air block")
-	}
-	return a
-}

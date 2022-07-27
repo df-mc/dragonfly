@@ -3,7 +3,10 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
+	"time"
 )
 
 // FlintAndSteel is an item used to light blocks on fire.
@@ -34,6 +37,11 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 	for _, b := range []cube.Pos{pos, pos.Side(face)} {
 		if l, ok := w.Block(b).(ignitable); ok && l.Ignite(b, w) {
 			return true
+		} else if w.Block(pos.Side(cube.FaceDown)) == air() {
+			w.PlaySound(pos.Vec3Centre(), sound.Ignite{})
+			w.SetBlock(pos, fire(), nil)
+			w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
+			return true
 		}
 	}
 	return false
@@ -42,4 +50,22 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 // EncodeItem ...
 func (f FlintAndSteel) EncodeItem() (name string, meta int16) {
 	return "minecraft:flint_and_steel", 0
+}
+
+// air returns an air block.
+func air() world.Block {
+	a, ok := world.BlockByName("minecraft:air", nil)
+	if !ok {
+		panic("could not find air block")
+	}
+	return a
+}
+
+// fire returns a fire block.
+func fire() world.Block {
+	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
+	if !ok {
+		panic("could not find fire block")
+	}
+	return f
 }
