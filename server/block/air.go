@@ -22,7 +22,7 @@ func (Air) HasLiquidDrops() bool {
 
 // Ignite ...
 func (Air) Ignite(pos cube.Pos, w *world.World) bool {
-	if _, ok := w.Block(pos.Sub(cube.Pos{0, 1})).(Air); !ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); !ok {
 		w.PlaySound(pos.Vec3Centre(), sound.Ignite{})
 		w.SetBlock(pos, Fire{}, nil)
 		w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
