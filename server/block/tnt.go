@@ -2,6 +2,8 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,6 +14,16 @@ import (
 // TNT is an explosive block that can be primed to generate an explosion.
 type TNT struct {
 	solid
+}
+
+// Activate ...
+func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+	held, _ := u.HeldItems()
+	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
+		t.Ignite(pos, w)
+		return true
+	}
+	return false
 }
 
 // Ignite ...
