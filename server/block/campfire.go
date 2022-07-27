@@ -143,7 +143,6 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 	if !c.Extinguished {
 		if rand.Float64() <= 0.016 { // Every three or so seconds.
 			w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
-
 		}
 		// if the campfire is water logged we extinguish it
 		if _, ok := w.Liquid(pos); ok {
