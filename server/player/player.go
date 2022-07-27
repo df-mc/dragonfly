@@ -1065,7 +1065,7 @@ func (p *Player) StopFlying() {
 func (p *Player) Sleep(pos cube.Pos) {
 	w := p.World()
 	b, ok := w.Block(pos).(block.Bed)
-	if !ok || b.Occupied || !b.Head {
+	if ok && b.Occupied {
 		// The player cannot sleep here.
 		return
 	}
@@ -1086,7 +1086,8 @@ func (p *Player) Wake() {
 
 	w := p.World()
 	w.SetSleepRequirement(0)
-	for _, v := range w.Viewers(p.Position()) {
+
+	for _, v := range p.viewers() {
 		v.ViewEntityWake(p)
 	}
 	p.updateState()
@@ -1958,6 +1959,8 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.Wake()
+	p.ResetFallDistance()
 	p.teleport(pos)
 }
 
@@ -2524,9 +2527,14 @@ func (p *Player) checkOnGround(w *world.World) bool {
 // BBox returns the axis aligned bounding box of the player.
 func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
-	switch {
+
 	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
-	case p.Swimming():
+	swimming := p.Swimming()
+	_, sleeping := p.Sleeping()
+	switch {
+	case sleeping:
+		return cube.Box(-0.1*s, 0, -0.1*s, 0.1*s, 0.2*s, 0.1*s)
+	case swimming:
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
