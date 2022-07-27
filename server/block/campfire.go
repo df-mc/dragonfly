@@ -144,12 +144,6 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 		if rand.Float64() <= 0.016 { // Every three or so seconds.
 			w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
 		}
-		// if the campfire is water logged we extinguish it
-		if _, ok := w.Liquid(pos); ok {
-			c.Extinguished = true
-			w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-			w.SetBlock(pos, c, nil)
-		}
 		for i, it := range c.Items {
 			if !it.Item.Empty() && it.Time <= 0 {
 				itemCooked := it.Item
@@ -165,6 +159,16 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 			c.Items[i].Time = it.Time - 1
 			w.SetBlock(pos, c, nil)
 		}
+	}
+}
+
+// NeighbourUpdateTick ...
+func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	// if the campfire is water logged we extinguish it
+	if _, ok := w.Liquid(pos); ok && !c.Extinguished {
+		c.Extinguished = true
+		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+		w.SetBlock(pos, c, nil)
 	}
 }
 
