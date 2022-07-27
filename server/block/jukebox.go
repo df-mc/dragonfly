@@ -69,7 +69,7 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 	return true
 }
 
-// WithMusicDisc creates a new jukebox with a music disc and plays it.
+// WithMusicDisc updates the jukebox with a music disc.
 func (j Jukebox) WithMusicDisc(s item.Stack) Jukebox {
 	if _, ok := s.Item().(item.MusicDisc); !ok {
 		return j.WithoutMusicDisc()
@@ -79,7 +79,7 @@ func (j Jukebox) WithMusicDisc(s item.Stack) Jukebox {
 	return j
 }
 
-// WithoutMusicDisc creates a new jukebox without a music disc.
+// WithoutMusicDisc updates the jukebox to remove the music disc.
 func (j Jukebox) WithoutMusicDisc() Jukebox {
 	j.item = item.Stack{}
 	return j

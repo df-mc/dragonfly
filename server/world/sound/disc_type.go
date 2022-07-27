@@ -91,7 +91,7 @@ func MusicDiscs() []DiscType {
 // disc is the underlying value of a DiscType struct.
 type disc uint8
 
-// Uint8 converts the record to an integer that uniquely identifies it's type.
+// Uint8 converts the disc to an integer that uniquely identifies its type.
 func (d disc) Uint8() uint8 {
 	return uint8(d)
 }
