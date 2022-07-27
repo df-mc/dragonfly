@@ -34,15 +34,13 @@ type ignitable interface {
 // UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	for _, b := range []cube.Pos{pos, pos.Side(face)} {
-		if l, ok := w.Block(b).(ignitable); ok && l.Ignite(b, w) {
-			return true
-		} else if w.Block(pos.Side(cube.FaceDown)) != air() {
-			w.PlaySound(pos.Vec3Centre(), sound.Ignite{})
-			w.SetBlock(pos, fire(), nil)
-			w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
-			return true
-		}
+	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w) {
+		return true
+	} else if s := pos.Side(face); w.Block(s.Side(cube.FaceDown)) != air() && w.Block(s) == air() {
+		w.PlaySound(s.Vec3Centre(), sound.Ignite{})
+		w.SetBlock(s, fire(), nil)
+		w.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
+		return true
 	}
 	return false
 }
