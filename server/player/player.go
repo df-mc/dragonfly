@@ -68,6 +68,9 @@ type Player struct {
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	sleeping atomic.Bool
+	sleepPos atomic.Value[cube.Pos]
+
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
@@ -267,7 +270,12 @@ func (p *Player) SendToast(title, message string) {
 
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
-	p.fallDistance.Store(0)
+	p.SetFallDistance(0)
+}
+
+// SetFallDistance sets the player's fall distance.
+func (p *Player) SetFallDistance(distance float64) {
+	p.fallDistance.Store(distance)
 }
 
 // FallDistance returns the player's fall distance.
@@ -1050,6 +1058,53 @@ func (p *Player) StopFlying() {
 		return
 	}
 	p.session().SendGameMode(p.GameMode())
+}
+
+// Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
+// the player will not sleep.
+func (p *Player) Sleep(pos cube.Pos) {
+	w := p.World()
+	b, ok := w.Block(pos).(block.Bed)
+	if !ok || b.Occupied || !b.Head {
+		// The player cannot sleep here.
+		return
+	}
+	b.Occupied = true
+	w.SetBlock(pos, b, nil)
+	w.SetSleepRequirement(time.Second * 5)
+
+	p.sleeping.Store(true)
+	p.sleepPos.Store(pos)
+	p.updateState()
+}
+
+// Wake forces the player out of bed if they are sleeping.
+func (p *Player) Wake() {
+	if !p.sleeping.CAS(true, false) {
+		return
+	}
+
+	w := p.World()
+	w.SetSleepRequirement(0)
+	for _, v := range w.Viewers(p.Position()) {
+		v.ViewEntityWake(p)
+	}
+	p.updateState()
+
+	pos := p.sleepPos.Load()
+	if b, ok := w.Block(pos).(block.Bed); ok {
+		b.Occupied = false
+		w.SetBlock(pos, b, nil)
+	}
+}
+
+// Sleeping returns true if the player is currently sleeping, along with the position of the bed the player is sleeping
+// on.
+func (p *Player) Sleeping() (cube.Pos, bool) {
+	if !p.sleeping.Load() {
+		return cube.Pos{}, false
+	}
+	return p.sleepPos.Load(), true
 }
 
 // Jump makes the player jump if they are on ground. It exhausts the player by 0.05 food points, an additional 0.15
@@ -1954,6 +2009,8 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.yaw.Store(resYaw)
 	p.pitch.Store(resPitch)
 
+	p.vel.Store(deltaPos)
+
 	_, submergedBefore := w.Liquid(cube.PosFromVec3(pos.Add(mgl64.Vec3{0, p.EyeHeight()})))
 	_, submergedAfter := w.Liquid(cube.PosFromVec3(res.Add(mgl64.Vec3{0, p.EyeHeight()})))
 	if submergedBefore != submergedAfter {
@@ -2001,8 +2058,9 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // SetVelocity updates the player's velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
+	p.vel.Store(velocity)
 	if p.session() == session.Nop {
-		p.vel.Store(velocity)
+		// We don't have a session, so we don't need to send the velocity here.
 		return
 	}
 	for _, v := range p.viewers() {

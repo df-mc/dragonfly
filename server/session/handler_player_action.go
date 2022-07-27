@@ -25,6 +25,10 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	switch action {
 	case protocol.PlayerActionRespawn:
 		// Don't do anything for these actions.
+	case protocol.PlayerActionStartSleeping:
+		// Don't do anything for this action.
+	case protocol.PlayerActionStopSleeping:
+		s.c.Wake()
 	case protocol.PlayerActionDimensionChangeDone:
 		if s.switchingWorld.CAS(true, false) {
 			s.chunkLoader.Reset()

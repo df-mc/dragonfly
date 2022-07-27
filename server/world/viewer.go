@@ -63,6 +63,8 @@ type Viewer interface {
 	ViewWorldSpawn(pos cube.Pos)
 	// ViewWeather views the weather of the world, including rain and thunder.
 	ViewWeather(raining, thunder bool)
+	// ViewEntityWake views an entity wake up from a bed.
+	ViewEntityWake(e Entity)
 }
 
 // NopViewer is a Viewer implementation that does not implement any behaviour. It may be embedded by other structs to
@@ -91,5 +93,6 @@ func (NopViewer) ViewEmote(Entity, uuid.UUID)                                   
 func (NopViewer) ViewSkin(Entity)                                               {}
 func (NopViewer) ViewWorldSpawn(cube.Pos)                                       {}
 func (NopViewer) ViewWeather(bool, bool)                                        {}
+func (NopViewer) ViewEntityWake(Entity)                                         {}
 func (NopViewer) ViewFurnaceUpdate(time.Duration, time.Duration, time.Duration, time.Duration, time.Duration, time.Duration) {
 }

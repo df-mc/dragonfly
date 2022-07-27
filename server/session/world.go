@@ -308,7 +308,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.BlockEvent{
 			EventType: pa.Instrument.Int32(),
 			EventData: int32(pa.Pitch),
-			Position:  protocol.BlockPos{int32(pos.X()), int32(pos.Y()), int32(pos.Z())},
+			Position:  blockPosToProtocol(cube.PosFromVec3(pos)),
 		})
 	case particle.HugeExplosion:
 		s.writePacket(&packet.LevelEvent{
@@ -587,7 +587,7 @@ func (s *Session) ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTim
 
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
-	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	blockPos := blockPosToProtocol(pos)
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,
 		NewBlockRuntimeID: world.BlockRuntimeID(b),
@@ -721,7 +721,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
 		ContainerType:           containerType,
-		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		ContainerPosition:       blockPosToProtocol(pos),
 		ContainerEntityUniqueID: -1,
 	})
 }
@@ -754,7 +754,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
 		ContainerType:           containerType,
-		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		ContainerPosition:       blockPosToProtocol(pos),
 		ContainerEntityUniqueID: -1,
 	})
 	s.sendInv(b.Inventory(), uint32(nextID))
@@ -778,7 +778,7 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 
 // ViewBlockAction ...
 func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
-	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	blockPos := blockPosToProtocol(pos)
 	switch t := a.(type) {
 	case block.OpenAction:
 		s.writePacket(&packet.BlockEvent{
@@ -834,7 +834,7 @@ func (s *Session) ViewSkin(e world.Entity) {
 
 // ViewWorldSpawn ...
 func (s *Session) ViewWorldSpawn(pos cube.Pos) {
-	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	blockPos := blockPosToProtocol(pos)
 	s.writePacket(&packet.SetSpawnPosition{
 		SpawnType:     packet.SpawnTypeWorld,
 		Position:      blockPos,
@@ -860,6 +860,14 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 		pk.EventType, pk.EventData = packet.LevelEventStartThunderstorm, int32(rand.Intn(50000)+10000)
 	}
 	s.writePacket(pk)
+}
+
+// ViewEntityWake ...
+func (s *Session) ViewEntityWake(e world.Entity) {
+	s.writePacket(&packet.Animate{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		ActionType:      packet.AnimateActionStopSleep,
+	})
 }
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
@@ -908,6 +916,11 @@ func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
+}
+
+// blockPosToProtocol converts a cube.Pos to a protocol.BlockPos.
+func blockPosToProtocol(pos cube.Pos) protocol.BlockPos {
+	return protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 }
 
 // abs ...

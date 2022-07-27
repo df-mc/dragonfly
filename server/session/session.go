@@ -186,7 +186,7 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 	spawn := w.Spawn()
 	s.chunkLoader.Move(spawn.Vec3Middle())
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(spawn[0]), int32(spawn[1]), int32(spawn[2])},
+		Position: blockPosToProtocol(spawn),
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
@@ -254,6 +254,8 @@ func (s *Session) close() {
 
 	s.closeCurrentContainer()
 	_ = s.chunkLoader.Close()
+
+	s.c.Wake()
 	s.c.World().RemoveEntity(s.c)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.

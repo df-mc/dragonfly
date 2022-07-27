@@ -26,6 +26,8 @@ type Settings struct {
 	Raining bool
 	// ThunderTime is the current thunder time of the World. It advances every tick if WeatherCycle is set to true.
 	ThunderTime int64
+	// RequiredSleepTicks is the number of ticks that players must sleep for in order for the time to change to day.
+	RequiredSleepTicks int64
 	// Thunder is the current thunder level of the World.
 	Thundering bool
 	// WeatherCycle specifies if weather should be enabled in this world. If set to false, weather will be disabled.

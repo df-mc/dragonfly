@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -79,6 +80,12 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sc, ok := e.(scoreTag); ok {
 		m[dataKeyScoreTag] = sc.ScoreTag()
 	}
+	if sl, ok := e.(sleeper); ok {
+		if pos, ok := sl.Sleeping(); ok {
+			m[dataKeyBedPosition] = blockPosToProtocol(pos)
+			m.setFlag(dataKeyPlayerFlags, dataPlayerFlagSleep)
+		}
+	}
 	if sp, ok := e.(splash); ok {
 		pot := sp.Type()
 		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
@@ -108,10 +115,19 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 // setFlag sets a flag with a specific index in the int64 stored in the entity metadata map to the value
 // passed. It is typically used for entity metadata flags.
 func (m entityMetadata) setFlag(key uint32, index uint8) {
-	if v, ok := m[key]; !ok {
-		m[key] = int64(0) ^ (1 << uint64(index))
+	v, ok := m[key]
+	if key == dataKeyPlayerFlags {
+		if ok {
+			m[key] = v.(byte) ^ 1<<index
+		} else {
+			m[key] = byte(0) ^ 1<<index
+		}
 	} else {
-		m[key] = v.(int64) ^ (1 << uint64(index))
+		if ok {
+			m[key] = v.(int64) ^ (1 << uint64(index))
+		} else {
+			m[key] = int64(0) ^ (1 << uint64(index))
+		}
 	}
 }
 
@@ -129,6 +145,8 @@ const (
 	dataKeyPotionAmbient
 	dataKeyExperienceValue   = 15
 	dataKeyCustomDisplay     = 18
+	dataKeyPlayerFlags       = 26
+	dataKeyBedPosition       = 28
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
 	dataKeyMaxAir            = 42
@@ -136,6 +154,10 @@ const (
 	dataKeyBoundingBoxHeight = 54
 	dataKeyAlwaysShowNameTag = 81
 	dataKeyScoreTag          = 84
+)
+
+const (
+	dataPlayerFlagSleep = iota + 1
 )
 
 //noinspection GoUnusedConst
@@ -230,4 +252,8 @@ type orb interface {
 
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type sleeper interface {
+	Sleeping() (cube.Pos, bool)
 }

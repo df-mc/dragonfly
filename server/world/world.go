@@ -64,6 +64,16 @@ type World struct {
 	viewers   map[*Loader]Viewer
 }
 
+const (
+	TimeDay      = 1000
+	TimeNoon     = 6000
+	TimeSunset   = 12000
+	TimeNight    = 13000
+	TimeMidnight = 18000
+	TimeSunrise  = 23000
+	TimeFull     = 24000
+)
+
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NopProvider)
 // By default, the name of the world will be 'World'.
@@ -719,6 +729,8 @@ func (w *World) RemoveEntity(e Entity) {
 	viewers := slices.Clone(c.v)
 	c.Unlock()
 
+	w.tryAdvanceDay()
+
 	w.entityMu.Lock()
 	delete(w.entities, e)
 	w.entityMu.Unlock()
@@ -842,6 +854,17 @@ func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 	if err := w.conf.Provider.SavePlayerSpawnPosition(uuid, pos); err != nil {
 		w.conf.Log.Errorf("failed to set player spawn: %v", err)
 	}
+}
+
+// SetSleepRequirement sets the duration of time players in the world must sleep for, in order for the time to change to
+// day.
+func (w *World) SetSleepRequirement(duration time.Duration) {
+	if w == nil {
+		return
+	}
+	w.set.Lock()
+	defer w.set.Unlock()
+	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game

@@ -65,7 +65,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	if !mgl64.FloatEqual(deltaPos.Len(), 0) {
 		s.chunkLoader.Move(newPos)
 		s.writePacket(&packet.NetworkChunkPublisherUpdate{
-			Position: protocol.BlockPos{int32(pk.Position[0]), int32(pk.Position[1]), int32(pk.Position[2])},
+			Position: blockPosToProtocol(cube.PosFromVec3(vec32To64(pk.Position))),
 			Radius:   uint32(s.chunkRadius) << 4,
 		})
 	}
