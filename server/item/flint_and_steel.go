@@ -37,7 +37,7 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 	for _, b := range []cube.Pos{pos, pos.Side(face)} {
 		if l, ok := w.Block(b).(ignitable); ok && l.Ignite(b, w) {
 			return true
-		} else if w.Block(pos.Side(cube.FaceDown)) == air() {
+		} else if w.Block(pos.Side(cube.FaceDown)) != air() {
 			w.PlaySound(pos.Vec3Centre(), sound.Ignite{})
 			w.SetBlock(pos, fire(), nil)
 			w.ScheduleBlockUpdate(pos, time.Duration(30+rand.Intn(10))*time.Second/20)
