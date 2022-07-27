@@ -308,8 +308,8 @@ func init() {
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(WheatSeeds{})
-	world.RegisterItem(item.Bucket{Content: Lava{}})
-	world.RegisterItem(item.Bucket{Content: Water{}})
+	world.RegisterItem(item.LiquidBucket{Content: Lava{}})
+	world.RegisterItem(item.LiquidBucket{Content: Water{}})
 
 	for _, b := range allLight() {
 		world.RegisterItem(b.(world.Item))

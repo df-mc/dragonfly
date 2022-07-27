@@ -28,7 +28,7 @@ func (m MilkBucket) Consume(_ *world.World, c Consumer) Stack {
 	for _, effect := range c.Effects() {
 		c.RemoveEffect(effect.Type())
 	}
-	return NewStack(Bucket{}, 1)
+	return NewStack(LiquidBucket{}, 1)
 }
 
 // EncodeItem ...
