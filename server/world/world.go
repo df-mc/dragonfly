@@ -407,7 +407,6 @@ func (w *World) DisplaceableBlock(pos cube.Pos) (DisplaceableBlock, bool) {
 		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
 	}
-	// we could possibly replace this with runtime reflections
 	if d, ok := b.(DisplaceableBlock); ok {
 		return d, true
 	}
