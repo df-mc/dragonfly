@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
@@ -13,7 +14,6 @@ import (
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
-	"math"
 	"os"
 	"time"
 )
@@ -87,16 +87,10 @@ func (h *redstonePlayerHandler) tick() {
 		case <-h.closeChan:
 			return
 		case <-t.C:
-			yaw, pitch := h.p.Rotation()
-			yaw, pitch = yaw*(math.Pi/180), pitch*(math.Pi/180)
-			y := -math.Sin(pitch)
-			xz := math.Cos(pitch)
-			x := -xz * math.Sin(yaw)
-			z := xz * math.Cos(yaw)
 			start := h.p.Position().Add(mgl64.Vec3{0, h.p.EyeHeight()})
-			direction := mgl64.Vec3{x, y, z}.Normalize().Mul(50)
+			end := start.Add(entity.DirectionVector(h.p).Mul(50))
 			var hitBlock world.Block
-			trace.TraverseBlocks(start, start.Add(direction), func(pos cube.Pos) bool {
+			trace.TraverseBlocks(start, end, func(pos cube.Pos) bool {
 				b := h.p.World().Block(pos)
 				if _, ok := b.(block.Air); !ok {
 					hitBlock = b
