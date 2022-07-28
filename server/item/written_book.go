@@ -10,7 +10,6 @@ type WrittenBook struct {
 	// Generation is the generation of the book. The copy tier of the book. 0 = original, 1 = copy of original,
 	// 2 = copy of copy.
 	Generation uint
-	Glinted
 	// Pages represents the pages within the book.
 	Pages []string
 }
