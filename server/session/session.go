@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -21,10 +26,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
-	"io"
-	"net"
-	"sync"
-	"time"
 )
 
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
@@ -447,6 +448,7 @@ func (s *Session) registerHandlers() {
 		packet.IDItemFrameDropItem:     nil,
 		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
 		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
+		packet.IDMapInfoRequest:        &MapInfoRequestHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,
@@ -527,4 +529,96 @@ func (s *Session) sendAvailableEntities() {
 		panic("should never happen")
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+}
+
+// ViewMapDataChange writes *packet.ClientBoundMapItemData if session still has access to the data.
+func (s *Session) ViewMapDataChange(updateFlag uint32, mapID int64, pixelsChunk world.MapPixelsChunk, data *world.ViewableMapData) {
+	if _, ok := s.canAccessMapData(mapID); !ok {
+		data.RemoveViewer(s)
+		return
+	}
+
+	s.SendMapData(updateFlag, mapID, pixelsChunk, data)
+}
+
+// SendMapData writes *packet.ClientBoundMapItemData.
+func (s *Session) SendMapData(updateFlag uint32, mapID int64, pixelsChunk world.MapPixelsChunk, data *world.ViewableMapData) {
+	var (
+		d           = data.MapData()
+		trackeds    []protocol.MapTrackedObject
+		decorations []protocol.MapDecoration
+	)
+	for e, offsets := range d.TrackEntities {
+		trackeds = append(trackeds, protocol.MapTrackedObject{
+			Type:           protocol.MapObjectTypeEntity,
+			EntityUniqueID: int64(s.entityRuntimeID(e)),
+		})
+
+		if data.World() == s.c.World() {
+			yaw, _ := e.Rotation()
+			decorations = append(decorations, protocol.MapDecoration{
+				Type:     protocol.MapObjectTypeEntity,
+				Rotation: byte((yaw*2+45)/45 - 1), // Credit to SOFe#4765.
+				X:        offsets[0],
+				Y:        offsets[1],
+				Label:    e.Name(),
+			})
+		}
+	}
+	if data.World() == s.c.World() {
+		for p, offsets := range d.TrackBlocks {
+			trackeds = append(trackeds, protocol.MapTrackedObject{
+				Type:          protocol.MapObjectTypeBlock,
+				BlockPosition: protocol.BlockPos{int32(p[0]), int32(p[1]), int32(p[2])},
+			})
+
+			decorations = append(decorations, protocol.MapDecoration{
+				Type: protocol.MapObjectTypeEntity,
+				X:    offsets[0],
+				Y:    offsets[1],
+			})
+		}
+	}
+
+	s.writePacket(&packet.ClientBoundMapItemData{
+		MapID:          mapID,
+		UpdateFlags:    updateFlag,
+		Dimension:      byte(data.World().Dimension().EncodeDimension()),
+		LockedMap:      d.Locked,
+		Scale:          d.Scale,
+		TrackedObjects: trackeds,
+		Decorations:    decorations,
+
+		Height:  pixelsChunk.Height,
+		Width:   pixelsChunk.Width,
+		XOffset: pixelsChunk.XOffset,
+		YOffset: pixelsChunk.YOffset,
+		Pixels:  pixelsChunk.Pixels,
+	})
+
+}
+
+func (s *Session) canAccessMapData(mapID int64) (item.MapItem, bool) {
+	var (
+		mapItem item.MapItem
+		ok      bool
+	)
+	for _, inv := range []*inventory.Inventory{
+		s.inv,
+		s.offHand,
+		s.ui,
+		s.armour.Inventory(),
+	} {
+		if inv.ContainsItemFunc(1, func(stack item.Stack) bool {
+			if mapItem, ok = stack.Item().(item.MapItem); ok {
+				return mapItem.BaseMap().MapIDEquals(mapID)
+			}
+
+			return false // Item is not map.
+		}) {
+			return mapItem, true
+		}
+	}
+
+	return nil, false
 }
