@@ -34,7 +34,6 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 	switch pk.ActionType {
 	case packet.BookActionReplacePage:
 		pages = book.Set(page, pk.Text)
-		break
 	case packet.BookActionAddPage:
 		if !book.Exists(page) {
 			return fmt.Errorf("may only come before a page which already exists")
@@ -43,13 +42,11 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 			return fmt.Errorf("unable to add page beyond 50")
 		}
 		pages = slices.Insert(book.Pages, int(page), pk.Text)
-		break
 	case packet.BookActionDeletePage:
 		if !book.Exists(page) {
 			return fmt.Errorf("page number %v does not exist", pk.PageNumber)
 		}
 		pages = slices.Delete(book.Pages, int(page), int(page+1))
-		break
 	case packet.BookActionSwapPages:
 		if pk.SecondaryPageNumber >= 50 {
 			return fmt.Errorf("page number out of bounds")
@@ -58,7 +55,6 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 			return fmt.Errorf("page numbers do not exist")
 		}
 		pages = book.Swap(page, uint(pk.SecondaryPageNumber))
-		break
 	case packet.BookActionSign:
 		// Error does not need to be handled as it's confirmed at the begging that this slot contains a writable book.
 		s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: 0}, 1))

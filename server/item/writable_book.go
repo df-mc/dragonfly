@@ -21,10 +21,7 @@ func (w WritableBook) MaxCount() int {
 
 // Exists checks to see weather a page exists or not
 func (w WritableBook) Exists(page uint) bool {
-	if len(w.Pages) <= int(page) {
-		return false
-	}
-	return true
+	return len(w.Pages) > int(page)
 }
 
 // Set writes a page to the book, if the page doesn't exist it will be created. It will panic if the
