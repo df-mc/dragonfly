@@ -587,9 +587,7 @@ func (s *Session) SendMapData(updateFlag uint32, mapID int64, pixelsChunk world.
 		LockedMap:      d.Locked,
 		Scale:          d.Scale,
 		TrackedObjects: trackeds,
-		// Decorations is a list of fixed decorations located on the map. The decorations will not change
-		// client-side, unless the server updates them.
-		Decorations: decorations,
+		Decorations:    decorations,
 
 		Height:  pixelsChunk.Height,
 		Width:   pixelsChunk.Width,
