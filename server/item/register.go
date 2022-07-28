@@ -92,6 +92,8 @@ func init() {
 	world.RegisterItem(BlazeRod{})
 	world.RegisterItem(Bone{})
 	world.RegisterItem(Book{})
+	world.RegisterItem(WritableBook{})
+	world.RegisterItem(WrittenBook{})
 	world.RegisterItem(Bowl{})
 	world.RegisterItem(Charcoal{})
 	world.RegisterItem(DragonBreath{})
