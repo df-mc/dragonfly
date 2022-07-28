@@ -23,7 +23,7 @@ func (w WritableBook) MaxCount() int {
 	return 1
 }
 
-// PageExists checks to see weather a page exists or not
+// PageExists checks to see whether a page exists or not.
 func (w WritableBook) PageExists(page int) bool {
 	return page >= 0 && len(w.Pages) > page
 }
