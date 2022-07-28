@@ -53,8 +53,7 @@ func (w WrittenBook) EncodeNBT() map[string]any {
 	var pages []map[string]string
 	for _, page := range w.Pages {
 		pages = append(pages, map[string]string{
-			"text":      page,
-			"photoname": "",
+			"text": page,
 		})
 	}
 	data["pages"] = pages
