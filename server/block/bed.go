@@ -21,8 +21,8 @@ type Bed struct {
 	Facing cube.Direction
 	// Head is true if the bed is the head side or the bottom side.
 	Head bool
-	// Occupied is true if the bed is occupied by another player.
-	Occupied bool
+	// User is the user that is using the bed.
+	User item.User
 }
 
 // Model ...
@@ -67,6 +67,7 @@ type sleeper interface {
 	UUID() uuid.UUID
 	Message(a ...any)
 	Sleep(pos cube.Pos)
+	Wake()
 }
 
 // Activate ...
@@ -88,7 +89,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		return true
 	}
 
-	side, sidePos, ok := b.side(pos, w)
+	_, sidePos, ok := b.side(pos, w)
 	if !ok {
 		return false
 	}
@@ -99,9 +100,9 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		return true
 	}
 
-	headSide, headPos := side, sidePos
-	if b.Head {
-		headSide, headPos = b, pos
+	headSide, headPos, ok := b.head(pos, w)
+	if !ok {
+		return false
 	}
 
 	w.SetPlayerSpawn(s.UUID(), headPos)
@@ -112,13 +113,24 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		s.Message(text.Colourf("<grey>You can only sleep at night</grey>"))
 		return true
 	}
-	if headSide.Occupied {
+	if headSide.User != nil {
 		s.Message(text.Colourf("<grey>This bed is occupied</grey>"))
 		return true
 	}
 
 	s.Sleep(headPos)
 	return true
+}
+
+// PostBreak ...
+func (b Bed) PostBreak(pos cube.Pos, w *world.World, _ item.User) {
+	headSide, _, ok := b.head(pos, w)
+	if !ok {
+		return
+	}
+	if s, ok := headSide.User.(sleeper); ok {
+		s.Wake()
+	}
 }
 
 // EntityLand ...
@@ -167,7 +179,7 @@ func (b Bed) EncodeItem() (name string, meta int16) {
 func (b Bed) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:bed", map[string]interface{}{
 		"facing_bit":   int32(horizontalDirection(b.Facing)),
-		"occupied_bit": boolByte(b.Occupied),
+		"occupied_bit": boolByte(b.User != nil),
 		"head_bit":     boolByte(b.Head),
 	}
 }
@@ -184,6 +196,18 @@ func (b Bed) EncodeNBT() map[string]interface{} {
 func (b Bed) DecodeNBT(data map[string]interface{}) interface{} {
 	b.Colour = item.Colours()[nbtconv.Map[uint8](data, "color")]
 	return b
+}
+
+// head returns the head side of the bed. If neither side is a head side, the third return value is false.
+func (b Bed) head(pos cube.Pos, w *world.World) (Bed, cube.Pos, bool) {
+	headSide, headPos, ok := b.side(pos, w)
+	if !ok {
+		return Bed{}, cube.Pos{}, false
+	}
+	if b.Head {
+		headSide, headPos = b, pos
+	}
+	return headSide, headPos, true
 }
 
 // side returns the other side of the bed. If the other side is not a bed, the third return value is false.

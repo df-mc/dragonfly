@@ -1065,11 +1065,11 @@ func (p *Player) StopFlying() {
 func (p *Player) Sleep(pos cube.Pos) {
 	w := p.World()
 	b, ok := w.Block(pos).(block.Bed)
-	if ok && b.Occupied {
+	if !ok || b.User != nil {
 		// The player cannot sleep here.
 		return
 	}
-	b.Occupied = true
+	b.User = p
 	w.SetBlock(pos, b, nil)
 	w.SetSleepRequirement(time.Second * 5)
 
@@ -1094,7 +1094,7 @@ func (p *Player) Wake() {
 
 	pos := p.sleepPos.Load()
 	if b, ok := w.Block(pos).(block.Bed); ok {
-		b.Occupied = false
+		b.User = p
 		w.SetBlock(pos, b, nil)
 	}
 }
@@ -1847,6 +1847,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	w.SetBlock(pos, nil, nil)
 	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
+	if j, ok := b.(block.PostBreakable); ok {
+		j.PostBreak(pos, w, p)
+	}
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		info := breakable.BreakInfo()
 		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 {

@@ -13,7 +13,6 @@ type PlayerActionHandler struct{}
 // Handle ...
 func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.PlayerAction)
-
 	return handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
 }
 
@@ -23,10 +22,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		return errSelfRuntimeID
 	}
 	switch action {
-	case protocol.PlayerActionRespawn:
+	case protocol.PlayerActionRespawn, protocol.PlayerActionStartSleeping:
 		// Don't do anything for these actions.
-	case protocol.PlayerActionStartSleeping:
-		// Don't do anything for this action.
 	case protocol.PlayerActionStopSleeping:
 		s.c.Wake()
 	case protocol.PlayerActionDimensionChangeDone:
