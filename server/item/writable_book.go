@@ -23,45 +23,43 @@ func (w WritableBook) MaxCount() int {
 	return 1
 }
 
-// Exists checks to see weather a page exists or not
-func (w WritableBook) Exists(page int) bool {
-	return page > 0 && len(w.Pages) > page
+// PageExists checks to see weather a page exists or not
+func (w WritableBook) PageExists(page int) bool {
+	return page >= 0 && len(w.Pages) > page
 }
 
 // Set writes a page to the book, if the page doesn't exist it will be created. It will panic if the
-// text is longer then 256 characters. It will return the newly updated pages.
-func (w WritableBook) Set(page int, text string) []string {
+// text is longer then 256 characters. It will return a new book representing this data.
+func (w WritableBook) Set(page int, text string) WritableBook {
 	if page < 0 {
 		panic("negative page number")
 	}
 	if len(text) > 256 {
 		panic("text longer then 256 bytes")
 	}
-	pages := w.Pages
-	if !w.Exists(page) {
+	if !w.PageExists(page) {
 		newPages := make([]string, page+1)
-		copy(newPages, pages)
-		pages = newPages
+		copy(newPages, w.Pages)
+		w.Pages = newPages
 	}
-	pages[page] = text
-	return pages
+	w.Pages[page] = text
+	return w
 }
 
 // Swap swaps two different pages, it will panic if the largest of the two numbers doesn't exist. It will
 // return the newly updated pages.
-func (w WritableBook) Swap(page1, page2 int) []string {
-	pages := w.Pages
+func (w WritableBook) Swap(page1, page2 int) WritableBook {
 	if page1 < 0 || page2 < 0 {
 		panic("negative page number")
 	}
-	if w.Exists(max(page1, page2)) {
+	if w.PageExists(max(page1, page2)) {
 		panic("invalid page number")
 	}
-	content1 := pages[page1]
-	content2 := pages[page2]
-	pages[page1] = content2
-	pages[page2] = content1
-	return pages
+	content1 := w.Pages[page1]
+	content2 := w.Pages[page2]
+	w.Pages[page1] = content2
+	w.Pages[page2] = content1
+	return w
 }
 
 // DecodeNBT ...
