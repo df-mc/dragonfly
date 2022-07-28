@@ -1,6 +1,6 @@
 package item
 
-// A WritableBook is an item used to write written books.
+// WritableBook is an item used to write written books.
 type WritableBook struct {
 	// Pages represents the pages within the book.
 	Pages []string

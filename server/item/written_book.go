@@ -9,7 +9,7 @@ type WrittenBook struct {
 	Author string
 	// Generation is the generation of the book. The copy tier of the book. 0 = original, 1 = copy of original,
 	// 2 = copy of copy.
-	Generation uint
+	Generation WrittenBookGeneration
 	// Pages represents the pages within the book.
 	Pages []string
 }
@@ -44,6 +44,18 @@ func (w WrittenBook) DecodeNBT(data map[string]any) any {
 	if v, ok := data["author"].(string); ok {
 		w.Author = v
 	}
+	if v, ok := data["generation"].(uint8); ok {
+		switch v {
+		case 0:
+			w.Generation = OriginalGeneration()
+		case 1:
+			w.Generation = CopyGeneration()
+		case 2:
+			w.Generation = CopyOfCopyGeneration()
+		default:
+			panic("unknown written book generation")
+		}
+	}
 	return w
 }
 
@@ -59,7 +71,7 @@ func (w WrittenBook) EncodeNBT() map[string]any {
 	data["pages"] = pages
 	data["author"] = w.Author
 	data["title"] = w.Title
-	data["generation"] = byte(w.Generation)
+	data["generation"] = w.Generation.Uint8()
 	return data
 }
 

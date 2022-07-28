@@ -57,7 +57,7 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 		book = book.Swap(page, int(pk.SecondaryPageNumber))
 	case packet.BookActionSign:
 		// Error does not need to be handled as it's confirmed at the beginning that this slot contains a writable book.
-		s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: 0}, 1))
+		s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: item.OriginalGeneration()}, 1))
 		return nil
 	}
 	// Error does not need to be handled as it's confirmed at the beginning that this slot contains a writable book.
