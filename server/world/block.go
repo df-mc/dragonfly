@@ -46,6 +46,14 @@ type Liquid interface {
 	Harden(pos cube.Pos, w *World, flownIntoBy *cube.Pos) bool
 }
 
+// Conductor represents a block that can conduct a redstone signal.
+type Conductor interface {
+	// WeakPower returns the power from a partial source and has limited usage.
+	WeakPower(pos cube.Pos, face cube.Face, w *World) int
+	// StrongPower returns the power from a full source and can be passed to any redstone component.
+	StrongPower(pos cube.Pos, face cube.Face, w *World) int
+}
+
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to look up a block's runtime ID quickly.
 var hashes = intintmap.New(7000, 0.999)
