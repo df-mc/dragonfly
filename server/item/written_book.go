@@ -1,10 +1,17 @@
 package item
 
+// WrittenBook is an item created after a book and quill is signed. It appears the same as a regular book, but
+// without the quill, and has an enchanted-looking glint.
 type WrittenBook struct {
-	Title      string
-	Author     string
+	// Title is the title of the book
+	Title string
+	// Author is the author of the book
+	Author string
+	// Generation is the generation of the book. The copy tier of the book. 0 = original, 1 = copy of original,
+	// 2 = copy of copy.
 	Generation uint
 	Glinted
+	// Pages represents the pages within the book.
 	Pages []string
 }
 
@@ -15,12 +22,14 @@ func (w WrittenBook) MaxCount() int {
 
 // Page returns a specific page from the book. If the page exists, it will return the content and true, otherwise
 // it will return an empty string and false.
-func (w WrittenBook) Page(page uint) (string, bool) {
-	p := int(page)
-	if len(w.Pages) <= p {
+func (w WrittenBook) Page(page int) (string, bool) {
+	if page < 0 {
+		panic("negative page number")
+	}
+	if len(w.Pages) <= page {
 		return "", false
 	}
-	return w.Pages[p], true
+	return w.Pages[page], true
 }
 
 // DecodeNBT ...

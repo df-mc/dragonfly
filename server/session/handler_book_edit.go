@@ -22,8 +22,8 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 	}
 	// check page number and text beforehand to reduce repetition, shouldn't matter as the default values
 	// match these constraints
-	page := uint(pk.PageNumber)
-	if page >= 50 {
+	page := int(pk.PageNumber)
+	if page >= 50 || page < 0 {
 		return fmt.Errorf("page number %v is out of bounds", pk.PageNumber)
 	}
 	if len(pk.Text) > 256 {
@@ -51,10 +51,10 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 		if pk.SecondaryPageNumber >= 50 {
 			return fmt.Errorf("page number out of bounds")
 		}
-		if !book.Exists(page) || !book.Exists(uint(pk.SecondaryPageNumber)) {
+		if !book.Exists(page) || !book.Exists(int(pk.SecondaryPageNumber)) {
 			return fmt.Errorf("page numbers do not exist")
 		}
-		pages = book.Swap(page, uint(pk.SecondaryPageNumber))
+		pages = book.Swap(page, int(pk.SecondaryPageNumber))
 	case packet.BookActionSign:
 		// Error does not need to be handled as it's confirmed at the begging that this slot contains a writable book.
 		s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: 0}, 1))

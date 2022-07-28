@@ -1,17 +1,21 @@
 package item
 
+// A WritableBook is an item used to write written books.
 type WritableBook struct {
+	// Pages represents the pages within the book.
 	Pages []string
 }
 
 // Page returns a specific page from the book. If the page exists, it will return the content and true, otherwise
 // it will return an empty string and false.
-func (w WritableBook) Page(page uint) (string, bool) {
-	p := int(page)
-	if len(w.Pages) <= p {
+func (w WritableBook) Page(page int) (string, bool) {
+	if page < 0 {
+		panic("negative page number")
+	}
+	if len(w.Pages) <= page {
 		return "", false
 	}
-	return w.Pages[p], true
+	return w.Pages[page], true
 }
 
 // MaxCount always returns 1.
@@ -20,13 +24,16 @@ func (w WritableBook) MaxCount() int {
 }
 
 // Exists checks to see weather a page exists or not
-func (w WritableBook) Exists(page uint) bool {
-	return len(w.Pages) > int(page)
+func (w WritableBook) Exists(page int) bool {
+	return page > 0 && len(w.Pages) > page
 }
 
 // Set writes a page to the book, if the page doesn't exist it will be created. It will panic if the
 // text is longer then 256 characters. It will return the newly updated pages.
-func (w WritableBook) Set(page uint, text string) []string {
+func (w WritableBook) Set(page int, text string) []string {
+	if page < 0 {
+		panic("negative page number")
+	}
 	if len(text) > 256 {
 		panic("text longer then 256 bytes")
 	}
@@ -40,10 +47,13 @@ func (w WritableBook) Set(page uint, text string) []string {
 	return pages
 }
 
-// Swap swaps two different pages, it will panic if the largest of the two numbers doesn't exist. it will
+// Swap swaps two different pages, it will panic if the largest of the two numbers doesn't exist. It will
 // return the newly updated pages.
-func (w WritableBook) Swap(page1, page2 uint) []string {
+func (w WritableBook) Swap(page1, page2 int) []string {
 	pages := w.Pages
+	if page1 < 0 || page2 < 0 {
+		panic("negative page number")
+	}
 	if w.Exists(max(page1, page2)) {
 		panic("invalid page number")
 	}
@@ -85,7 +95,7 @@ func (w WritableBook) EncodeNBT() map[string]any {
 }
 
 // max ...
-func max(a, b uint) uint {
+func max(a, b int) int {
 	if a > b {
 		return a
 	}
