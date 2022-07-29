@@ -76,7 +76,7 @@ type Player struct {
 	maxAirSupplyTicks atomic.Int64
 
 	cooldownMu sync.Mutex
-	cooldowns  map[itemHash]time.Time
+	cooldowns  map[string]time.Time
 	// lastTickedWorld holds the world that the player was in, in the last tick.
 	lastTickedWorld *world.World
 
@@ -135,7 +135,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		scale:             *atomic.NewFloat64(1),
 		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
-		cooldowns:         make(map[itemHash]time.Time),
+		cooldowns:         make(map[string]time.Time),
 		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
@@ -1208,23 +1208,6 @@ func (p *Player) GameMode() world.GameMode {
 	return p.gameMode.Load()
 }
 
-// itemHash is used as a hash for a world.Item.
-type itemHash struct {
-	// Name is the name of the item.
-	Name string
-	// Meta is the item's metadata value.
-	Meta int16
-}
-
-// hashFromItem returns an item hash from an item.
-func hashFromItem(item world.Item) itemHash {
-	name, meta := item.EncodeItem()
-	return itemHash{
-		Name: name,
-		Meta: meta,
-	}
-}
-
 // HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
 // world.Item passed is nil, HasCooldown always returns false.
 func (p *Player) HasCooldown(item world.Item) bool {
@@ -1234,13 +1217,13 @@ func (p *Player) HasCooldown(item world.Item) bool {
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
-	hash := hashFromItem(item)
-	otherTime, ok := p.cooldowns[hash]
+	name, _ := item.EncodeItem()
+	otherTime, ok := p.cooldowns[name]
 	if !ok {
 		return false
 	}
 	if time.Now().After(otherTime) {
-		delete(p.cooldowns, hash)
+		delete(p.cooldowns, name)
 		return false
 	}
 	return true
@@ -1254,7 +1237,9 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
-	p.cooldowns[hashFromItem(item)] = time.Now().Add(cooldown)
+	name, _ := item.EncodeItem()
+	p.cooldowns[name] = time.Now().Add(cooldown)
+	p.session().ViewItemCooldown(item, cooldown)
 }
 
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
@@ -1279,14 +1264,16 @@ func (p *Player) UseItem() {
 		p.SetCooldown(it, cd.Cooldown())
 	}
 
-	switch usable := it.(type) {
-	case item.Releasable:
+	if _, ok := it.(item.Releasable); ok {
 		if !p.canRelease() {
 			return
 		}
 		p.usingSince.Store(time.Now().UnixNano())
 		p.usingItem.Store(true)
 		p.updateState()
+	}
+
+	switch usable := it.(type) {
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(w, p, useCtx) {
