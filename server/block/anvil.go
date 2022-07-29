@@ -27,7 +27,7 @@ func (a Anvil) Model() world.BlockModel {
 
 // BreakInfo ...
 func (a Anvil) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(6000)
 }
 
 // Activate ...

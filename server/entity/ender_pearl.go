@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -129,6 +130,13 @@ func (e *EnderPearl) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 	pearl := NewEnderPearl(pos, yaw, pitch, nil)
 	pearl.vel = vel
 	return pearl
+}
+
+// Explode ...
+func (e *EnderPearl) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+	e.mu.Lock()
+	e.vel = e.vel.Add(e.pos.Sub(explosionPos).Normalize().Mul(impact))
+	e.mu.Unlock()
 }
 
 // Owner ...
