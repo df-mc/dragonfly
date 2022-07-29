@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -110,6 +111,13 @@ func (s *Snowball) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
 	snow := NewSnowball(pos, yaw, pitch, nil)
 	snow.vel = vel
 	return snow
+}
+
+// Explode ...
+func (s *Snowball) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+	s.mu.Lock()
+	s.vel = s.vel.Add(s.pos.Sub(explosionPos).Normalize().Mul(impact))
+	s.mu.Unlock()
 }
 
 // Owner ...

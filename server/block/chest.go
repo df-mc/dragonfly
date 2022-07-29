@@ -114,7 +114,7 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 }
 
 // Activate ...
-func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if d, ok := w.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
 			opener.OpenBlockContainer(pos)
@@ -140,7 +140,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Items(), item.NewStack(c, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
 }
 
 // FuelInfo ...
