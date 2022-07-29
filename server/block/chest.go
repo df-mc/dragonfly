@@ -151,9 +151,9 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
 		sidePos := pos.Side(dir.Face())
 		if ch, pair, ok := c.pair(w, pos, sidePos); ok {
-			w.SetBlock(pos, ch, nil)
-			w.SetBlock(sidePos, pair, nil)
-			return
+			place(w, pos, ch, user, ctx)
+			place(w, sidePos, pair, user, ctx)
+			return placed(ctx)
 		}
 	}
 
@@ -177,17 +177,18 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 }
 
 // DecodeNBT ...
-func (c Chest) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
+func (c Chest) DecodeNBT(pos cube.Pos, _ *world.World, data map[string]any) any {
 	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
 	c.Facing = facing
 	c.CustomName = nbtconv.Map[string](data, "CustomName")
+
 	pairX, ok := nbtconv.TryMap[int32](data, "pairx")
 	pairZ, ok2 := nbtconv.TryMap[int32](data, "pairz")
 	if ok && ok2 {
 		c.paired = true
-		c.pairPos = cube.Pos{int(pairX), 0, int(pairZ)}
+		c.pairPos = cube.Pos{int(pairX), pos.Y(), int(pairZ)}
 	}
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Map[[]any](data, "Items"))
 	return c
