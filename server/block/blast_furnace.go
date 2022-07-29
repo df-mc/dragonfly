@@ -73,11 +73,11 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
 	xp := b.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...)).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp)
 }
 
 // Activate ...
-func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true

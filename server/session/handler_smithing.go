@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -16,6 +15,7 @@ const (
 
 // handleSmithing handles a CraftRecipe stack request action made using a smithing table.
 func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+	// First, check the recipe and ensure it is valid for the smithing table.
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
@@ -27,6 +27,7 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		return fmt.Errorf("recipe with network id %v is not a smithing table recipe", a.RecipeNetworkID)
 	}
 
+	// Check if the input item and material item match what the recipe requires.
 	expectedInputs := craft.Input()
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerSmithingInput,
@@ -43,16 +44,7 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		return fmt.Errorf("material item is not the same as expected material")
 	}
 
-	output := craft.Output()
-	outputStack := item.NewStack(output[0].Item(), input.Count()).
-		Damage(input.MaxDurability() - input.Durability()).
-		WithCustomName(input.CustomName()).
-		WithLore(input.Lore()...).
-		WithEnchantments(input.Enchantments()...).
-		WithAnvilCost(input.AnvilCost())
-	for k, v := range input.Values() {
-		outputStack = outputStack.WithValue(k, v)
-	}
+	// Create the output using the input stack as reference and the recipe's output item type.
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerSmithingInput,
 		Slot:        smithingInputSlot,
@@ -64,6 +56,6 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerOutput,
 		Slot:        craftingResult,
-	}, outputStack, s)
+	}, duplicateStack(input, craft.Output()[0].Item()), s)
 	return nil
 }

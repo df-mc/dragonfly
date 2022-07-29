@@ -160,6 +160,10 @@ type User interface {
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
+
+	UsingItem() bool
+	ReleaseItem()
+	UseItem()
 }
 
 // Carrier represents an entity that is able to carry an item.
@@ -181,6 +185,14 @@ type owned interface {
 // to surrounding players.
 type BeaconPayment interface {
 	PayableForBeacon() bool
+}
+
+// nopReleasable represents a releasable item that does nothing.
+type nopReleasable struct{}
+
+func (nopReleasable) Release(Releaser, time.Duration, *UseContext) {}
+func (nopReleasable) Requirements() []Stack {
+	return []Stack{}
 }
 
 // defaultFood represents a consumable item with a default consumption duration.
@@ -249,4 +261,12 @@ func rgbaFromInt32(x int32) color.RGBA {
 	binary.BigEndian.PutUint32(b, uint32(x))
 
 	return color.RGBA{A: b[0], R: b[1], G: b[2], B: b[3]}
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }

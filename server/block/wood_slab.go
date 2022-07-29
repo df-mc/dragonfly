@@ -81,7 +81,7 @@ func (s WoodSlab) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(s, 2)}
 		}
 		return []item.Stack{item.NewStack(s, 1)}
-	})
+	}).withBlastResistance(15)
 }
 
 // FuelInfo ...

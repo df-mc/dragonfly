@@ -2,13 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
 	"sync"
 )
 
@@ -32,11 +29,11 @@ func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 	}
 	displacer, _ := w.Block(pos).(world.LiquidDisplacer)
 
-	canFlowBelow := canFlowInto(b, w, pos.Add(cube.Pos{0, -1}), false)
+	canFlowBelow := canFlowInto(b, w, pos.Side(cube.FaceDown), false)
 	if b.LiquidFalling() && !canFlowBelow {
 		b = b.WithDepth(8, true)
 	} else if canFlowBelow {
-		below := pos.Add(cube.Pos{0, -1})
+		below := pos.Side(cube.FaceDown)
 		if displacer == nil || !displacer.SideClosed(pos, below, w) {
 			flowInto(b.WithDepth(8, true), pos, below, w, true)
 		}
@@ -146,9 +143,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 	if removable.HasLiquidDrops() {
 		if b, ok := existing.(Breakable); ok {
 			for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
-				itemEntity := entity.NewItem(d, pos.Vec3Centre())
-				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-				w.AddEntity(itemEntity)
+				dropItem(w, d, pos.Vec3Centre())
 			}
 		} else {
 			panic("liquid drops should always implement breakable")
