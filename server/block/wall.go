@@ -66,7 +66,11 @@ func (w Wall) Model() world.BlockModel {
 
 // BreakInfo ...
 func (w Wall) BreakInfo() BreakInfo {
-	return newBreakInfo(calculateWallHardness(w.Block), pickaxeHarvestable, pickaxeEffective, oneOf(w))
+	breakable, ok := w.Block.(Breakable)
+	if !ok {
+		panic("wall block is not breakable")
+	}
+	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w))
 }
 
 // NeighbourUpdateTick ...
