@@ -28,7 +28,7 @@ type WoodFenceGate struct {
 
 // BreakInfo ...
 func (f WoodFenceGate) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f)).withBlastResistance(15)
 }
 
 // FlammabilityInfo ...
@@ -74,7 +74,7 @@ func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, w *world.World) bool {
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()

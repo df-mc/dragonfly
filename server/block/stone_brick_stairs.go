@@ -44,7 +44,7 @@ func (s StoneBrickStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s StoneBrickStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
 }
 
 // EncodeItem ...

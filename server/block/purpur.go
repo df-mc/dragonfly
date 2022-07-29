@@ -25,7 +25,7 @@ type (
 
 // BreakInfo ...
 func (p Purpur) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p)).withBlastResistance(30)
 }
 
 // EncodeItem ...

@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
@@ -42,8 +41,8 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-	if flammable, ok := e.(entity.Flammable); ok {
-		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+	if flammable, ok := e.(flammableEntity); ok {
+		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 			l.Hurt(4, damage.SourceLava{})
 		}
 		flammable.SetOnFire(15 * time.Second)
