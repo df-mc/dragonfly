@@ -138,7 +138,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 }
 
 // Explode ...
-func (e *ExperienceOrb) Explode(block.ExplosionConfig, float64) {
+func (e *ExperienceOrb) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = e.Close()
 }
 

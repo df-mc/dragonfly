@@ -176,7 +176,7 @@ func (it *Item) New(stack item.Stack, pos, vel mgl64.Vec3) world.Entity {
 }
 
 // Explode ...
-func (it *Item) Explode(block.ExplosionConfig, float64) {
+func (it *Item) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = it.Close()
 }
 

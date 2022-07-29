@@ -21,7 +21,7 @@ func (t Thin) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 		pos := pos.Side(f)
 		block := w.Block(pos)
 
-		// TODO(lhochbaum): Do the same check for walls as soon as they're implemented.
+		// TODO(lhochbaum): Explode the same check for walls as soon as they're implemented.
 		if _, thin := block.Model().(Thin); thin || block.Model().FaceSolid(pos, f.Opposite(), w) {
 			boxes = append(boxes, mainBox.ExtendTowards(f, offset))
 		}

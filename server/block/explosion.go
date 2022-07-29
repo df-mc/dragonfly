@@ -16,14 +16,10 @@ import (
 // ExplosionConfig is the configuration for an explosion. The world, position, size, sound, particle, and more can all
 // be configured through this configuration.
 type ExplosionConfig struct {
-	// World is the world in which the explosion should take place.
-	World *world.World
-	// Pos is the center position of the explosion.
-	Pos mgl64.Vec3
 	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
 	Size float64
-	// RandSource is the source to use for the explosion "randomness".
-	RandSource rand.Source
+	// Rand is the source to use for the explosion "randomness".
+	Rand rand.Source
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
 	// above opaque blocks.
 	SpawnFire bool
@@ -40,13 +36,13 @@ type ExplosionConfig struct {
 type ExplodableEntity interface {
 	// Explode is called when an explosion occurs. The entity can then react to the explosion using the configuration
 	// and impact provided.
-	Explode(c ExplosionConfig, impact float64)
+	Explode(explosionPos mgl64.Vec3, impact float64, c ExplosionConfig)
 }
 
 // Explodable represents a block that can be exploded.
 type Explodable interface {
 	// Explode is called when an explosion occurs. The block can react to the explosion using the configuration passed.
-	Explode(pos cube.Pos, c ExplosionConfig)
+	Explode(explosionPos mgl64.Vec3, pos cube.Pos, w *world.World, c ExplosionConfig)
 }
 
 // rays ...
@@ -66,48 +62,49 @@ func init() {
 	}
 }
 
-// Do performs the explosion as specified by the configuration.
-func (c ExplosionConfig) Do() {
+// Explode performs the explosion as specified by the configuration.
+func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 	if c.Sound == nil {
 		c.Sound = sound.Explosion{}
 	}
 	if c.Particle == nil {
 		c.Particle = particle.HugeExplosion{}
 	}
-	if c.RandSource == nil {
-		c.RandSource = rand.NewSource(time.Now().UnixNano())
+	if c.Rand == nil {
+		c.Rand = rand.NewSource(time.Now().UnixNano())
 	}
 
-	r, d := rand.New(c.RandSource), c.Size*2
+	r, d := rand.New(c.Rand), c.Size*2
 	box := cube.Box(
-		math.Floor(c.Pos[0]-d-1),
-		math.Floor(c.Pos[1]-d-1),
-		math.Floor(c.Pos[2]-d-1),
-		math.Ceil(c.Pos[0]+d+1),
-		math.Ceil(c.Pos[1]+d+1),
-		math.Ceil(c.Pos[2]+d+1),
+		math.Floor(explosionPos[0]-d-1),
+		math.Floor(explosionPos[1]-d-1),
+		math.Floor(explosionPos[2]-d-1),
+		math.Ceil(explosionPos[0]+d+1),
+		math.Ceil(explosionPos[1]+d+1),
+		math.Ceil(explosionPos[2]+d+1),
 	)
 
-	for _, e := range c.World.EntitiesWithin(box.Grow(2), nil) {
+	for _, e := range w.EntitiesWithin(box.Grow(2), nil) {
 		pos := e.Position()
 		if !e.BBox().Translate(pos).IntersectsWith(box) {
 			continue
 		}
-		dist := pos.Sub(c.Pos).Len()
+		dist := pos.Sub(pos).Len()
 		if dist >= d {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
-			explodable.Explode(c, (1-dist/d)*exposure(c.Pos, e))
+			impact := (1 - dist/d) * exposure(pos, e)
+			explodable.Explode(explosionPos, impact, c)
 		}
 	}
 
 	affectedBlocks := make([]cube.Pos, 0, 32)
 	for _, ray := range rays {
-		pos := c.Pos
+		pos := explosionPos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			if r, ok := c.World.Block(current).(Breakable); ok {
+			if r, ok := w.Block(current).(Breakable); ok {
 				if blastForce -= (r.BreakInfo().BlastResistance/5 + 0.3) * 0.3; blastForce > 0 {
 					affectedBlocks = append(affectedBlocks, current)
 				}
@@ -116,14 +113,14 @@ func (c ExplosionConfig) Do() {
 		}
 	}
 	for _, pos := range affectedBlocks {
-		bl := c.World.Block(pos)
+		bl := w.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
-			explodable.Explode(pos, c)
+			explodable.Explode(explosionPos, pos, w, c)
 		} else if breakable, ok := bl.(Breakable); ok {
-			c.World.SetBlock(pos, nil, nil)
+			w.SetBlock(pos, nil, nil)
 			if 1/c.Size > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
-					dropItem(c.World, drop, pos.Vec3Centre())
+					dropItem(w, drop, pos.Vec3Centre())
 				}
 			}
 		}
@@ -131,15 +128,15 @@ func (c ExplosionConfig) Do() {
 	if c.SpawnFire {
 		for _, pos := range affectedBlocks {
 			if r.Intn(3) == 0 {
-				if _, ok := c.World.Block(pos).(Air); ok && c.World.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, c.World) {
-					c.World.SetBlock(pos, Fire{}, nil)
+				if _, ok := w.Block(pos).(Air); ok && w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, w) {
+					w.SetBlock(pos, Fire{}, nil)
 				}
 			}
 		}
 	}
 
-	c.World.AddParticle(c.Pos, c.Particle)
-	c.World.PlaySound(c.Pos, c.Sound)
+	w.AddParticle(explosionPos, c.Particle)
+	w.PlaySound(explosionPos, c.Sound)
 }
 
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
