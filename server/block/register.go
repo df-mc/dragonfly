@@ -179,6 +179,7 @@ func init() {
 	registerAll(allWoodSlabs())
 	registerAll(allWoodStairs())
 	registerAll(allWool())
+	registerAll(allWalls())
 }
 
 func init() {
@@ -402,6 +403,9 @@ func init() {
 	}
 	for _, s := range SkullTypes() {
 		world.RegisterItem(Skull{Type: s})
+	}
+	for _, t := range WallBlocks() {
+		world.RegisterItem(Wall{Block: t})
 	}
 }
 

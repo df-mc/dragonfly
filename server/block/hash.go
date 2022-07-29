@@ -151,6 +151,7 @@ const (
 	hashTerracotta
 	hashTorch
 	hashTuff
+	hashWall
 	hashWater
 	hashWheatSeeds
 	hashWood
@@ -753,6 +754,10 @@ func (t Torch) Hash() uint64 {
 
 func (Tuff) Hash() uint64 {
 	return hashTuff
+}
+
+func (w Wall) Hash() uint64 {
+	return hashWall | w.Block.Hash()<<8 | uint64(w.NorthConnection.Uint8())<<24 | uint64(w.EastConnection.Uint8())<<26 | uint64(w.SouthConnection.Uint8())<<28 | uint64(w.WestConnection.Uint8())<<30 | uint64(boolByte(w.Post))<<32
 }
 
 func (w Water) Hash() uint64 {
