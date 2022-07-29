@@ -66,7 +66,7 @@ func (o ore) Hardness() float64 {
 	case 0:
 		return 3
 	case 1:
-		return 4.5
+		return 3.5
 	}
 	panic("unknown ore type")
 }

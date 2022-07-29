@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 //noinspection SpellCheckingInspection
@@ -122,6 +123,9 @@ func init() {
 	for _, c := range Colours() {
 		world.RegisterItem(Dye{Colour: c})
 		world.RegisterItem(FireworkStar{FireworkExplosion: FireworkExplosion{Colour: c}})
+	}
+	for _, horn := range sound.GoatHorns() {
+		world.RegisterItem(GoatHorn{Type: horn})
 	}
 	for i, p := range potion.All() {
 		if i > 4 {
