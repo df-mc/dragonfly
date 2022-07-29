@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -98,22 +97,13 @@ func (c Campfire) LightEmissionLevel() uint8 {
 	return c.Type.LightLevel()
 }
 
-// Ignite ...
-func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
-	w.PlaySound(pos.Vec3(), sound.Ignite{})
-	if _, ok := w.Liquid(pos); ok {
-		return false
-	}
-	c.Extinguished = false
-	w.SetBlock(pos, c, nil)
-	return true
-}
-
 // Activate ...
 func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if held, _ := u.HeldItems(); !held.Empty() {
-		if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
-			c.Ignite(pos, w)
+		if _, ok := held.Item().(item.FlintAndSteel); ok {
+			w.PlaySound(pos.Vec3(), sound.Ignite{})
+			c.Extinguished = false
+			w.SetBlock(pos, c, nil)
 			return true
 		}
 		if rawFood, ok := held.Item().(item.Smeltable); ok && rawFood.SmeltInfo().Food {
