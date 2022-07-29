@@ -656,18 +656,10 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 }
 
 // Explode ...
-func (p *Player) Explode(c block.ExplosionConfig, impact float64) {
+func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
+	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), damage.SourceExplosion{})
-
-	vel := p.Position().Sub(c.Pos).Normalize().Mul(impact)
-	res := 0.0
-	for _, i := range p.armour.Items() {
-		if a, ok := i.Item().(item.Armour); ok {
-			res += a.KnockBackResistance()
-		}
-	}
-
-	p.SetVelocity(vel.Mul(1 - res))
+	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
 // protectionEnchantment represents an enchantment that can protect the player from damage.
@@ -723,13 +715,19 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
+	p.knockBack(src, force, height)
+}
+
+// knockBack is an unexported function that is used to knock the player back. This function does not check if the player
+// can take damage or not.
+func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 
 	velocity = velocity.Normalize().Mul(force)
 	velocity[1] = height
 
-	resistance := 0.0
+	var resistance float64
 	for _, i := range p.armour.Items() {
 		if a, ok := i.Item().(item.Armour); ok {
 			resistance += a.KnockBackResistance()
