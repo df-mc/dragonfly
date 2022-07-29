@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -121,8 +120,9 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	defer c.viewerMu.Unlock()
 	i := sliceutil.Index(*c.viewers, v)
 	if i == -1 {
-		*c.viewers = slices.Delete(*c.viewers, i, i+1)
+		return
 	}
+	*c.viewers = slices.Delete(*c.viewers, i, i+1)
 	if len(*c.viewers) == 0 {
 		c.close(w, pos)
 	}
@@ -151,7 +151,6 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
 		sidePos := pos.Side(dir.Face())
 		if ch, pair, ok := c.pair(w, pos, sidePos); ok {
-			fmt.Println("paired")
 			w.SetBlock(pos, ch, nil)
 			w.SetBlock(sidePos, pair, nil)
 			return
@@ -218,13 +217,8 @@ func (c Chest) EncodeNBT() map[string]any {
 
 // pair pairs this chest with the given chest position.
 func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
-	pair, ok = w.Block(c.pairPos).(Chest)
-	fmt.Println(ok)
-	if !ok {
-		return c, pair, false
-	}
-	fmt.Println(c.Facing, pair.Facing)
-	if c.Facing != pair.Facing || pair.paired {
+	pair, ok = w.Block(pairPos).(Chest)
+	if !ok || c.Facing != pair.Facing || pair.paired {
 		return c, pair, false
 	}
 	c.pairPos, c.paired = pairPos, true
