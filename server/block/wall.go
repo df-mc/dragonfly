@@ -150,7 +150,9 @@ func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
 		// glass panes and iron bars) as well as the sides of fence gates.
 		connected := side.Model().FaceSolid(sidePos, face.Opposite(), wo)
 		if !connected {
-			if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
+			if _, ok := wo.Block(sidePos).(Wall); ok {
+				connected = true
+			} else if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
 				connected = gate.Facing.Face().Axis() != face.Axis()
 			} else if _, ok := wo.Block(sidePos).Model().(model.Thin); ok {
 				connected = true
