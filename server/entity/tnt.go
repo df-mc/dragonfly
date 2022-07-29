@@ -60,9 +60,9 @@ func (t *TNT) Fuse() time.Duration {
 }
 
 // Explode ...
-func (t *TNT) Explode(c block.ExplosionConfig, impact float64) {
+func (t *TNT) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	t.mu.Lock()
-	t.vel = t.vel.Add(t.pos.Sub(c.Pos).Normalize().Mul(impact))
+	t.vel = t.vel.Add(t.pos.Sub(explosionPos).Normalize().Mul(impact))
 	t.mu.Unlock()
 }
 
@@ -93,10 +93,8 @@ func (t *TNT) Tick(w *world.World, _ int64) {
 		_ = t.Close()
 
 		block.ExplosionConfig{
-			World: w,
-			Pos:   m.pos,
-			Size:  4,
-		}.Do()
+			Size: 4,
+		}.Explode(w, m.pos)
 	}
 }
 
