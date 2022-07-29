@@ -21,6 +21,7 @@ func init() {
 	world.RegisterItem(BoneMeal{})
 	world.RegisterItem(Bone{})
 	world.RegisterItem(Book{})
+	world.RegisterItem(BottleOfEnchanting{})
 	world.RegisterItem(Bowl{})
 	world.RegisterItem(Bow{})
 	world.RegisterItem(Bread{})
