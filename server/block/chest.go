@@ -163,7 +163,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(item.NewStack(c, 1)))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
 }
 
 // FuelInfo ...
@@ -250,6 +250,7 @@ func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok b
 }
 
 // unpair ...
+// TODO: Proper unpairing logic.
 func (c Chest) unpair() (ch, pair Chest, ok bool) {
 	return Chest{}, Chest{}, false
 }
