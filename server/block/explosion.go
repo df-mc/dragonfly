@@ -23,6 +23,9 @@ type ExplosionConfig struct {
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
 	// above opaque blocks.
 	SpawnFire bool
+	// DisableItemDrops, when set to true, will prevent any item entities from dropping as a result of blocks being
+	// destroyed.
+	DisableItemDrops bool
 
 	// Sound is the sound to play when the explosion is created. If set to nil, this will default to the sound of a
 	// regular explosion.
@@ -118,7 +121,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 			explodable.Explode(explosionPos, pos, w, c)
 		} else if breakable, ok := bl.(Breakable); ok {
 			w.SetBlock(pos, nil, nil)
-			if 1/c.Size > r.Float64() {
+			if !c.DisableItemDrops && 1/c.Size > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(w, drop, pos.Vec3Centre())
 				}
