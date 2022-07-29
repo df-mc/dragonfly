@@ -33,9 +33,7 @@ func (e EnderPearl) Use(w *world.World, user User, ctx *UseContext) bool {
 	ctx.SubtractFromCount(1)
 
 	w.PlaySound(user.Position(), sound.ItemThrow{})
-
 	w.AddEntity(entity)
-
 	return true
 }
 

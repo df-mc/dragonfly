@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
@@ -63,6 +64,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if o, ok := e.(orb); ok {
 		m[dataKeyExperienceValue] = int32(o.Experience())
+	}
+	if o, ok := e.(firework); ok {
+		m[dataKeyFireworkItem] = nbtconv.WriteItem(item.NewStack(o.Firework(), 1), false)
 	}
 	if sc, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(sc.Scale())
@@ -127,6 +131,7 @@ const (
 	dataKeyPotionColour
 	dataKeyPotionAmbient
 	dataKeyExperienceValue   = 15
+	dataKeyFireworkItem      = 16
 	dataKeyCustomDisplay     = 18
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
@@ -229,6 +234,10 @@ type arrow interface {
 
 type orb interface {
 	Experience() int
+}
+
+type firework interface {
+	Firework() item.Firework
 }
 
 type gameMode interface {

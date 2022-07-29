@@ -38,3 +38,15 @@ type GhastWarning struct{ sound }
 
 // GhastShoot is a sound played when a ghast shoots a fire charge.
 type GhastShoot struct{ sound }
+
+// FireworkLaunch is a sound played when a firework is launched.
+type FireworkLaunch struct{ sound }
+
+// FireworkHugeBlast is a sound played when a huge sphere firework explodes.
+type FireworkHugeBlast struct{ sound }
+
+// FireworkBlast is a sound played when a small sphere firework explodes.
+type FireworkBlast struct{ sound }
+
+// FireworkTwinkle is a sound played when a firework explodes and should twinkle.
+type FireworkTwinkle struct{ sound }
