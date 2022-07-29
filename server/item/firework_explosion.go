@@ -6,7 +6,7 @@ type FireworkExplosion struct {
 	Shape FireworkShape
 	// Colour is the colour of the explosion.
 	Colour Colour
-	// Fade is the colour the explosion should fade into.
+	// Fade is the colour the explosion should fade into. Fades must be set to true in order for this to function.
 	Fade Colour
 	// Fades is true if the explosion should fade into the fade colour.
 	Fades bool

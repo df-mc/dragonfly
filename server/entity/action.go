@@ -41,8 +41,8 @@ type PickedUpAction struct {
 	action
 }
 
-// FireworkParticleAction is a world.EntityAction that makes a Firework rocket display an explosion particle.
-type FireworkParticleAction struct{ action }
+// FireworkExplosionAction is a world.EntityAction that makes a Firework rocket display an explosion particle.
+type FireworkExplosionAction struct{ action }
 
 // action implements the Action interface. Structures in this package may embed it to gets its functionality
 // out of the box.

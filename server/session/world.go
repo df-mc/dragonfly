@@ -656,7 +656,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventShake,
 			EventData:       int32(act.Duration.Milliseconds() / 50),
 		})
-	case entity.FireworkParticleAction:
+	case entity.FireworkExplosionAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventFireworksExplode,

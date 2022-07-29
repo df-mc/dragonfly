@@ -73,8 +73,8 @@ func (f Firework) DecodeNBT(data map[string]any) any {
 	return f
 }
 
-// RandomizedDuration returns the randomized flight duration of the firework.
-func (f Firework) RandomizedDuration() time.Duration {
+// RandomisedDuration returns the randomised flight duration of the firework.
+func (f Firework) RandomisedDuration() time.Duration {
 	definite := f.Duration + time.Millisecond*50
 	randomness := time.Duration(rand.Intn(int(time.Millisecond * 600)))
 	return definite*10 + randomness
