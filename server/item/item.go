@@ -262,3 +262,11 @@ func rgbaFromInt32(x int32) color.RGBA {
 
 	return color.RGBA{A: b[0], R: b[1], G: b[2], B: b[3]}
 }
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
+}
