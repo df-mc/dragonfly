@@ -74,20 +74,6 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	return nil
 }
 
-// SetItemSilently is a version of SetItem which does not call the function passed to New. This is useful for containers
-// such as double chests.
-func (inv *Inventory) SetItemSilently(slot int, item item.Stack) error {
-	inv.check()
-	if !inv.validSlot(slot) {
-		return ErrSlotOutOfRange
-	}
-
-	inv.mu.Lock()
-	defer inv.mu.Unlock()
-	_ = inv.setItem(slot, item)
-	return nil
-}
-
 // Slots returns the all slots in the inventory as a slice. The index in the slice is the slot of the inventory that a
 // specific item.Stack is in. Note that this item.Stack might be empty.
 func (inv *Inventory) Slots() []item.Stack {

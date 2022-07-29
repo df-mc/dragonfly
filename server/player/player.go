@@ -1767,7 +1767,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	held, _ := p.HeldItems()
-	drops := p.drops(w, pos, b, held)
+	drops := p.drops(b, held)
 
 	ctx := event.C()
 	if p.Handler().HandleBlockBreak(ctx, pos, &drops); ctx.Cancelled() {
@@ -1806,7 +1806,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 }
 
 // drops returns the drops that the player can get from the block passed using the item held.
-func (p *Player) drops(w *world.World, pos cube.Pos, b world.Block, held item.Stack) []item.Stack {
+func (p *Player) drops(b world.Block, held item.Stack) []item.Stack {
 	t, ok := held.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
@@ -1815,13 +1815,13 @@ func (p *Player) drops(w *world.World, pos cube.Pos, b world.Block, held item.St
 	if container, ok := b.(block.Container); ok {
 		// If the block is a container, it should drop its inventory contents regardless whether the
 		// player is in creative mode or not.
-		drops = container.Inventory(w, pos).Items()
+		drops = container.Inventory().Items()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
 				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 			}
 		}
-		container.Inventory(w, pos).Clear()
+		container.Inventory().Clear()
 	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
 			drops = breakable.BreakInfo().Drops(t, held.Enchantments())

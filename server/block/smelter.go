@@ -62,7 +62,7 @@ func (s *smelter) ResetExperience() int {
 }
 
 // Inventory returns the inventory of the furnace.
-func (s *smelter) Inventory(*world.World, cube.Pos) *inventory.Inventory {
+func (s *smelter) Inventory() *inventory.Inventory {
 	return s.inventory
 }
 

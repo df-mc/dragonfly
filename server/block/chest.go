@@ -55,7 +55,7 @@ func NewChest() Chest {
 
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
 // whether the chest is single or double.
-func (c Chest) Inventory(w *world.World, pos cube.Pos) *inventory.Inventory {
+func (c Chest) Inventory() *inventory.Inventory {
 	return c.inventory
 }
 
