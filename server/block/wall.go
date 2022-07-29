@@ -1,12 +1,14 @@
 package block
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 )
 
 // Wall is a block similar to fences that prevents players from jumping over and is thinner than the usual block. It is
@@ -252,6 +254,10 @@ func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
 // allWalls returns a list of all wall types.
 func allWalls() (walls []world.Block) {
 	for _, block := range WallBlocks() {
+		if block.Hash() > math.MaxUint16 {
+			name, _ := block.EncodeBlock()
+			panic(fmt.Errorf("hash of block %s exceeds 16 bytes", name))
+		}
 		for _, north := range WallConnectionTypes() {
 			for _, east := range WallConnectionTypes() {
 				for _, south := range WallConnectionTypes() {
