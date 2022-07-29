@@ -343,8 +343,8 @@ func (s Stack) Comparable(s2 Stack) bool {
 	if !reflect.DeepEqual(s.data, s2.data) {
 		return false
 	}
-	if nbt, ok := s.Item().(world.NBTer); ok {
-		nbt2, ok := s2.Item().(world.NBTer)
+	if nbt, ok := s.Item().(world.ItemNBTer); ok {
+		nbt2, ok := s2.Item().(world.ItemNBTer)
 		return ok && reflect.DeepEqual(nbt.EncodeNBT(), nbt2.EncodeNBT())
 	}
 	return true

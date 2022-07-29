@@ -42,7 +42,7 @@ func readItemStack(m map[string]any) item.Stack {
 	if it == nil {
 		return item.Stack{}
 	}
-	if n, ok := it.(world.NBTer); ok {
+	if n, ok := it.(world.ItemNBTer); ok {
 		it = n.DecodeNBT(m).(world.Item)
 	}
 	return item.NewStack(it, int(Map[byte](m, "Count")))

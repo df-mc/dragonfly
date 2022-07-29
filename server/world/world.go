@@ -1303,8 +1303,8 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 			w.conf.Log.Errorf("error loading block entity data: could not find block state by runtime ID %v", id)
 			continue
 		}
-		if nbt, ok := b.(NBTer); ok {
-			b = nbt.DecodeNBT(data).(Block)
+		if nbt, ok := b.(BlockNBTer); ok {
+			b = nbt.DecodeNBT(pos, w, data).(Block)
 		}
 		c.e[pos] = b
 	}
@@ -1317,9 +1317,9 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	// We allocate a new map for all block entities.
 	m := make([]map[string]any, 0, len(c.e))
 	for pos, b := range c.e {
-		if n, ok := b.(NBTer); ok {
+		if n, ok := b.(BlockNBTer); ok {
 			// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
-			data := n.EncodeNBT()
+			data := n.EncodeNBT(pos, w)
 			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 			m = append(m, data)
 		}

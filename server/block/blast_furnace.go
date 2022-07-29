@@ -52,11 +52,11 @@ func (b BlastFurnace) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (b BlastFurnace) EncodeBlock() (name string, properties map[string]interface{}) {
+func (b BlastFurnace) EncodeBlock() (name string, properties map[string]any) {
 	if b.Lit {
-		return "minecraft:lit_blast_furnace", map[string]interface{}{"facing_direction": int32(b.Facing)}
+		return "minecraft:lit_blast_furnace", map[string]any{"facing_direction": int32(b.Facing)}
 	}
-	return "minecraft:blast_furnace", map[string]interface{}{"facing_direction": int32(b.Facing)}
+	return "minecraft:blast_furnace", map[string]any{"facing_direction": int32(b.Facing)}
 }
 
 // UseOnBlock ...
@@ -86,13 +86,13 @@ func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item
 }
 
 // EncodeNBT ...
-func (b BlastFurnace) EncodeNBT() map[string]interface{} {
+func (b BlastFurnace) EncodeNBT(cube.Pos, *world.World) map[string]any {
 	if b.smelter == nil {
 		//noinspection GoAssignmentToReceiver
 		b = NewBlastFurnace(b.Facing)
 	}
 	remaining, maximum, cook := b.Durations()
-	return map[string]interface{}{
+	return map[string]any{
 		"BurnTime":     int16(remaining.Milliseconds() / 50),
 		"CookTime":     int16(cook.Milliseconds() / 50),
 		"BurnDuration": int16(maximum.Milliseconds() / 50),
@@ -103,7 +103,7 @@ func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 }
 
 // DecodeNBT ...
-func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
+func (b BlastFurnace) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50

@@ -47,7 +47,7 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User,
 }
 
 // DecodeNBT ...
-func (b Beacon) DecodeNBT(data map[string]any) any {
+func (b Beacon) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	b.level = int(nbtconv.Map[int32](data, "Levels"))
 	if primary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Primary"))); ok {
 		b.Primary = primary.(effect.LastingType)
@@ -59,7 +59,7 @@ func (b Beacon) DecodeNBT(data map[string]any) any {
 }
 
 // EncodeNBT ...
-func (b Beacon) EncodeNBT() map[string]any {
+func (b Beacon) EncodeNBT(cube.Pos, *world.World) map[string]any {
 	m := map[string]any{
 		"id":     "Beacon",
 		"Levels": int32(b.level),

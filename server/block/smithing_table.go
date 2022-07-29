@@ -19,7 +19,7 @@ func (SmithingTable) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (SmithingTable) EncodeBlock() (name string, properties map[string]interface{}) {
+func (SmithingTable) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:smithing_table", nil
 }
 

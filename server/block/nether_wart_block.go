@@ -22,7 +22,7 @@ func (n NetherWartBlock) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (n NetherWartBlock) EncodeBlock() (name string, properties map[string]interface{}) {
+func (n NetherWartBlock) EncodeBlock() (name string, properties map[string]any) {
 	if n.Warped {
 		return "minecraft:warped_wart_block", nil
 	}
