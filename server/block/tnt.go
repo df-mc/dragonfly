@@ -44,17 +44,17 @@ func (t TNT) Ignite(pos cube.Pos, w *world.World) bool {
 }
 
 // Explode ...
-func (t TNT) Explode(pos cube.Pos, c ExplosionConfig) {
+func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, c ExplosionConfig) {
 	ent, ok := world.EntityByName("minecraft:tnt")
 	if !ok {
 		return
 	}
 
-	c.World.SetBlock(pos, nil, nil)
+	w.SetBlock(pos, nil, nil)
 	if p, ok := ent.(interface {
 		New(pos mgl64.Vec3, fuse time.Duration) world.Entity
 	}); ok {
-		c.World.AddEntity(p.New(pos.Vec3Centre(), time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2)))))
+		w.AddEntity(p.New(pos.Vec3Centre(), time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2)))))
 	}
 }
 
