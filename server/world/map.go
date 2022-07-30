@@ -21,7 +21,7 @@ func NewMapData() *ViewableMapData {
 	defer mapDataMu.Unlock()
 
 	d := &ViewableMapData{
-		mapID:   int64(len(mapData)),
+		mapID:   int64(len(mapData) + 1), // 0 is unused.
 		viewers: map[MapDataViewer]struct{}{},
 		data: MapData{
 			TrackEntities: map[Entity][2]byte{},
