@@ -991,34 +991,36 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // EmittedRedstonePower returns the level of redstone power being emitted from a position to the provided face.
 func (w *World) EmittedRedstonePower(pos cube.Pos, face cube.Face) int {
-	block := w.Block(pos)
-	if conductor, ok := block.(Conductor); ok {
-		power := conductor.WeakPower(pos, face, w)
-		for _, f := range cube.Faces() {
-			if !block.Model().FaceSolid(pos, f, w) {
-				return power
-			}
-		}
-		return max(power, w.ReceivedStrongRedstonePower(pos))
+	c, ok := w.Block(pos).(Conductor)
+	if !ok {
+		return 0
 	}
-	return 0
+	power := c.WeakPower(pos, face, w)
+	for _, f := range cube.Faces() {
+		if !c.Model().FaceSolid(pos, f, w) {
+			return power
+		}
+	}
+	return max(power, w.ReceivedStrongRedstonePower(pos))
 }
 
 // ReceivedStrongRedstonePower returns the level of strong redstone power being received at the provided position.
 func (w *World) ReceivedStrongRedstonePower(pos cube.Pos) (power int) {
 	for _, face := range cube.Faces() {
-		if conductor, ok := w.Block(pos.Side(face)).(Conductor); ok {
-			power = max(power, conductor.StrongPower(pos.Side(face), face.Opposite(), w))
-			if power >= 15 {
-				return power
-			}
+		c, ok := w.Block(pos.Side(face)).(Conductor)
+		if !ok {
+			continue
+		}
+		power = max(power, c.StrongPower(pos.Side(face), face.Opposite(), w))
+		if power >= 15 {
+			return power
 		}
 	}
-	return
+	return power
 }
 
-// IsReceivingRedstonePower returns if the provided position is receiving any level of redstone power.
-func (w *World) IsReceivingRedstonePower(pos cube.Pos) bool {
+// ReceivingRedstonePower returns if the provided position is receiving any level of redstone power.
+func (w *World) ReceivingRedstonePower(pos cube.Pos) bool {
 	return w.ReceivedRedstonePower(pos) > 0
 }
 
@@ -1028,11 +1030,10 @@ func (w *World) ReceivedRedstonePower(pos cube.Pos) (power int) {
 		emitted := w.EmittedRedstonePower(pos.Side(face), face.Opposite())
 		if emitted >= 15 {
 			return emitted
-		} else if emitted > power {
-			power = emitted
 		}
+		power = max(emitted, power)
 	}
-	return
+	return power
 }
 
 // Close closes the world and saves all chunks currently loaded.

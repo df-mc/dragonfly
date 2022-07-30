@@ -9,7 +9,7 @@ import (
 
 type RedstoneLamp struct {
 	solid
-	// Lit is if the redstone lamp is lit and emitting light.
+	// Lit is if the redstone lamp is lit and disableEmitting light.
 	Lit bool
 }
 
@@ -45,14 +45,14 @@ func (l RedstoneLamp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	if !used {
 		return
 	}
-	l.Lit = w.IsReceivingRedstonePower(pos)
+	l.Lit = w.ReceivingRedstonePower(pos)
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
 func (l RedstoneLamp) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if l.Lit != w.IsReceivingRedstonePower(pos) {
+	if l.Lit != w.ReceivingRedstonePower(pos) {
 		l.Lit = !l.Lit
 		w.SetBlock(pos, l, nil)
 	}
