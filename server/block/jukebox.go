@@ -3,13 +3,10 @@ package block
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 	"time"
 )
 
@@ -50,9 +47,7 @@ type jukeboxUser interface {
 // Activate ...
 func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if _, hasDisc := j.Disc(); hasDisc {
-		ent := entity.NewItem(j.Item, pos.Side(cube.FaceUp).Vec3Middle())
-		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		w.AddEntity(ent)
+		dropItem(w, j.Item, pos.Side(cube.FaceUp).Vec3Middle())
 
 		j.Item = item.Stack{}
 		w.SetBlock(pos, j, nil)
