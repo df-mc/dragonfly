@@ -16,12 +16,6 @@ type Breakable interface {
 	BreakInfo() BreakInfo
 }
 
-// PostBreakable represents a block that has an action(s) processed after the block is broken.
-type PostBreakable interface {
-	// PostBreak is called after the block has broken.
-	PostBreak(pos cube.Pos, w *world.World, u item.User)
-}
-
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the
 // item passed.
 func BreakDuration(b world.Block, i item.Stack) time.Duration {
@@ -90,6 +84,8 @@ type BreakInfo struct {
 	Effective func(t item.Tool) bool
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
+	// BreakHandler is called after the block has broken.
+	BreakHandler func(pos cube.Pos, w *world.World, u item.User)
 	// XPDrops is the range of XP a block can drop when broken.
 	XPDrops XPDropRange
 }
@@ -107,6 +103,12 @@ func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective 
 // withXPDropRange sets the XPDropRange field of the BreakInfo struct to the passed value.
 func (b BreakInfo) withXPDropRange(min, max int) BreakInfo {
 	b.XPDrops = XPDropRange{min, max}
+	return b
+}
+
+// withBreakHandler sets the BreakHandler field of the BreakInfo struct to the passed value.
+func (b BreakInfo) withBreakHandler(handler func(pos cube.Pos, w *world.World, u item.User)) BreakInfo {
+	b.BreakHandler = handler
 	return b
 }
 

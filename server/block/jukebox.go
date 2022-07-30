@@ -33,7 +33,11 @@ func (j Jukebox) BreakInfo() BreakInfo {
 	if !j.Item.Empty() {
 		d = append(d, j.Item)
 	}
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, simpleDrops(d...))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, simpleDrops(d...)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		if _, hasDisc := j.Disc(); hasDisc {
+			w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
+		}
+	})
 }
 
 // jukeboxUser represents an item.User that can use a jukebox.
@@ -80,13 +84,6 @@ func (j Jukebox) Disc() (sound.DiscType, bool) {
 	}
 
 	return sound.DiscType{}, false
-}
-
-// Break ...
-func (j Jukebox) Break(pos cube.Pos, w *world.World, _ item.User) {
-	if _, hasDisc := j.Disc(); hasDisc {
-		w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
-	}
 }
 
 // EncodeNBT ...
