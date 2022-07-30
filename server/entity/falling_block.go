@@ -137,7 +137,7 @@ func (f *FallingBlock) New(bl world.Block, pos mgl64.Vec3) world.Entity {
 }
 
 // Explode ...
-func (f *FallingBlock) Explode(block.ExplosionConfig, float64) {
+func (f *FallingBlock) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = f.Close()
 }
 

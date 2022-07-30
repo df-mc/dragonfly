@@ -2,7 +2,6 @@ package recipe
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Recipe is implemented by all recipe types.
@@ -12,7 +11,7 @@ type Recipe interface {
 	// Output returns the items that are produced when the recipe is crafted.
 	Output() []item.Stack
 	// Block returns the block that is used to craft the recipe.
-	Block() world.Block
+	Block() string
 	// Priority returns the priority of the recipe. Recipes with lower priority are preferred compared to recipes with
 	// higher priority.
 	Priority() uint32
@@ -26,7 +25,7 @@ type Shapeless struct {
 // NewShapeless creates a new shapeless recipe and returns it. The recipe can only be crafted on the block passed in the
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
 // player's inventory. If nil is passed, the block will be autofilled as a crafting table.
-func NewShapeless(input []item.Stack, output item.Stack, block world.Block) Shapeless {
+func NewShapeless(input []item.Stack, output item.Stack, block string) Shapeless {
 	return Shapeless{recipe: recipe{
 		input:  input,
 		output: []item.Stack{output},
@@ -45,7 +44,7 @@ type Shaped struct {
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
 // player's inventory. If nil is passed, the block will be autofilled as a crafting table. The inputs must always match
 // the width*height of the shape.
-func NewShaped(input []item.Stack, output item.Stack, block world.Block, shape Shape) Shaped {
+func NewShaped(input []item.Stack, output item.Stack, shape Shape, block string) Shaped {
 	return Shaped{
 		shape: shape,
 		recipe: recipe{
@@ -70,7 +69,7 @@ type recipe struct {
 	// output contains items that are created as a result of crafting the recipe.
 	output []item.Stack
 	// block is the block that is used to craft the recipe.
-	block world.Block
+	block string
 	// priority is the priority of the recipe versus others.
 	priority uint32
 }
@@ -86,7 +85,7 @@ func (r recipe) Output() []item.Stack {
 }
 
 // Block ...
-func (r recipe) Block() world.Block {
+func (r recipe) Block() string {
 	return r.block
 }
 

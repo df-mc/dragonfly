@@ -167,19 +167,6 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	_ = it.Close()
 }
 
-// New creates and returns an Item with the item.Stack, position, and velocity provided. It doesn't spawn the Item
-// by itself.
-func (it *Item) New(stack item.Stack, pos, vel mgl64.Vec3) world.Entity {
-	itemEntity := NewItem(stack, pos)
-	itemEntity.vel = vel
-	return itemEntity
-}
-
-// Explode ...
-func (it *Item) Explode(block.ExplosionConfig, float64) {
-	_ = it.Close()
-}
-
 // DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
 func (it *Item) DecodeNBT(data map[string]any) any {
 	i := nbtconv.MapItem(data, "Item")
