@@ -228,5 +228,9 @@ func (d *ViewableMapData) World() *World {
 
 // MapIDEquals ...
 func (d *ViewableMapData) MapIDEquals(mapID int64) bool {
+	if d == nil {
+		return false
+	}
+
 	return d.mapID == mapID
 }
