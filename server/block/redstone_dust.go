@@ -71,9 +71,10 @@ func (r RedstoneDust) WeakPower(pos cube.Pos, side cube.Face, w *world.World) in
 	faces := sliceutil.Filter(cube.HorizontalFaces(), func(face cube.Face) bool {
 		return r.powers(pos, face, w)
 	})
-	if side.Axis() != cube.Y && len(faces) == 0 {
+	if len(faces) == 0 {
 		return r.Power
-	} else if slices.Contains(faces, side) && !slices.Contains(faces, side.RotateLeft()) && !slices.Contains(faces, side.RotateRight()) {
+	}
+	if slices.Contains(faces, side) && !slices.Contains(faces, side.RotateLeft()) && !slices.Contains(faces, side.RotateRight()) {
 		return r.Power
 	}
 	return 0
