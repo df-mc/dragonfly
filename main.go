@@ -76,6 +76,7 @@ func newRedstonePlayerHandler(p *player.Player) *redstonePlayerHandler {
 		p:         p,
 		closeChan: make(chan struct{}, 1),
 	}
+	p.ShowCoordinates()
 	go h.tick()
 	return h
 }
@@ -87,13 +88,16 @@ func (h *redstonePlayerHandler) tick() {
 		case <-h.closeChan:
 			return
 		case <-t.C:
+			w := h.p.World()
 			start := h.p.Position().Add(mgl64.Vec3{0, h.p.EyeHeight()})
 			end := start.Add(entity.DirectionVector(h.p).Mul(50))
 			var hitBlock world.Block
+			var hitPos cube.Pos
 			trace.TraverseBlocks(start, end, func(pos cube.Pos) bool {
-				b := h.p.World().Block(pos)
+				b := w.Block(pos)
 				if _, ok := b.(block.Air); !ok {
 					hitBlock = b
+					hitPos = pos
 					return false
 				}
 				return true
@@ -104,6 +108,7 @@ func (h *redstonePlayerHandler) tick() {
 				case block.RedstoneDust:
 					popup += fmt.Sprintf("\nPower: %d", hitBlock.Power)
 				}
+				popup += fmt.Sprintf("\nCalculated Power: %d", w.ReceivedRedstonePower(hitPos))
 				h.p.SendPopup(popup)
 			} else {
 				h.p.SendPopup("You are not looking at a block")

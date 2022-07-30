@@ -14,7 +14,7 @@ type RedstoneTorch struct {
 
 	// Facing is the direction from the torch to the block.
 	Facing cube.Face
-	// Lit is if the redstone torch is lit and disableEmitting power.
+	// Lit is if the redstone torch is lit and emitting power.
 	Lit bool
 }
 

@@ -990,18 +990,17 @@ func (w *World) PortalDestination(dim Dimension) *World {
 }
 
 // EmittedRedstonePower returns the level of redstone power being emitted from a position to the provided face.
-func (w *World) EmittedRedstonePower(pos cube.Pos, face cube.Face) int {
-	c, ok := w.Block(pos).(Conductor)
-	if !ok {
-		return 0
+func (w *World) EmittedRedstonePower(pos cube.Pos, face cube.Face) (weak int) {
+	b := w.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		weak = c.WeakPower(pos, face, w)
 	}
-	power := c.WeakPower(pos, face, w)
 	for _, f := range cube.Faces() {
-		if !c.Model().FaceSolid(pos, f, w) {
-			return power
+		if !b.Model().FaceSolid(pos, f, w) {
+			return weak
 		}
 	}
-	return max(power, w.ReceivedStrongRedstonePower(pos))
+	return max(weak, w.ReceivedStrongRedstonePower(pos))
 }
 
 // ReceivedStrongRedstonePower returns the level of strong redstone power being received at the provided position.
@@ -1011,7 +1010,7 @@ func (w *World) ReceivedStrongRedstonePower(pos cube.Pos) (power int) {
 		if !ok {
 			continue
 		}
-		power = max(power, c.StrongPower(pos.Side(face), face.Opposite(), w))
+		power = max(power, c.StrongPower(pos.Side(face), face, w))
 		if power >= 15 {
 			return power
 		}
@@ -1027,9 +1026,9 @@ func (w *World) ReceivingRedstonePower(pos cube.Pos) bool {
 // ReceivedRedstonePower returns the highest level of redstone power received by the provided position.
 func (w *World) ReceivedRedstonePower(pos cube.Pos) (power int) {
 	for _, face := range cube.Faces() {
-		emitted := w.EmittedRedstonePower(pos.Side(face), face.Opposite())
+		emitted := w.EmittedRedstonePower(pos.Side(face), face)
 		if emitted >= 15 {
-			return emitted
+			return 15
 		}
 		power = max(emitted, power)
 	}

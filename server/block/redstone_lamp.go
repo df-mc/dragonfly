@@ -9,7 +9,7 @@ import (
 
 type RedstoneLamp struct {
 	solid
-	// Lit is if the redstone lamp is lit and disableEmitting light.
+	// Lit is if the redstone lamp is lit and emitting light.
 	Lit bool
 }
 
