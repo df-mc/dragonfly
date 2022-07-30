@@ -66,7 +66,7 @@ func (t TNT) BreakInfo() BreakInfo {
 
 // FlammabilityInfo ...
 func (t TNT) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(0, 0, true)
+	return newFlammabilityInfo(15, 100, true)
 }
 
 // EncodeItem ...
