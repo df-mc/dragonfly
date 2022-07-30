@@ -17,10 +17,11 @@ type TNT struct {
 }
 
 // Activate ...
-func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
 		t.Ignite(pos, w)
+		ctx.DamageItem(1)
 		return true
 	}
 	return false
