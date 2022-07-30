@@ -32,7 +32,7 @@ func (Bed) Model() world.BlockModel {
 
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, oneOf(b))
+	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b))
 }
 
 // UseOnBlock ...
