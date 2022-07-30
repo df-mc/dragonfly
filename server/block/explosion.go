@@ -45,7 +45,7 @@ type ExplodableEntity interface {
 // Explodable represents a block that can be exploded.
 type Explodable interface {
 	// Explode is called when an explosion occurs. The block can react to the explosion using the configuration passed.
-	Explode(pos cube.Pos, c ExplosionConfig)
+	Explode(explosionPos mgl64.Vec3, pos cube.Pos, w *world.World, c ExplosionConfig)
 }
 
 // rays ...

@@ -80,12 +80,9 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 	if w.Dimension() != world.Overworld {
 		w.SetBlock(pos, nil, nil)
 		ExplosionConfig{
-			World: w,
-			Pos:   pos.Vec3Centre(),
-
 			Size:      5,
 			SpawnFire: true,
-		}.Do()
+		}.Explode(w, pos.Vec3Centre())
 		return true
 	}
 
