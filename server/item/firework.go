@@ -26,22 +26,17 @@ func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3
 	}
 
 	p, ok := firework.(interface {
-		New(pos mgl64.Vec3, yaw, pitch float64, firework Firework) world.Entity
+		New(pos mgl64.Vec3, yaw, pitch float64, firework Firework, owner world.Entity) world.Entity
 	})
 	if !ok {
 		return false
 	}
-
 	pos := blockPos.Vec3().Add(clickPos)
-	entity := p.New(pos, rand.Float64()*360, 90, f)
-	if o, ok := entity.(owned); ok {
-		o.Own(user)
-	}
-
-	ctx.SubtractFromCount(1)
 
 	w.PlaySound(pos, sound.FireworkLaunch{})
-	w.AddEntity(entity)
+	w.AddEntity(p.New(pos, rand.Float64()*360, 90, f, user))
+
+	ctx.SubtractFromCount(1)
 	return true
 }
 
