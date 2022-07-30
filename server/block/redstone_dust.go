@@ -61,10 +61,10 @@ func (r RedstoneDust) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // WeakPower ...
 func (r RedstoneDust) WeakPower(pos cube.Pos, side cube.Face, w *world.World) int {
-	if r.disableEmitting || side == cube.FaceDown {
+	if r.disableEmitting {
 		return 0
 	}
-	if side == cube.FaceUp {
+	if side.Axis() == cube.Y {
 		return r.Power
 	}
 
