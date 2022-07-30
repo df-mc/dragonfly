@@ -17,6 +17,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"image/color"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -284,6 +285,15 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 	})
 }
 
+// ViewItemCooldown ...
+func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
+	name, _ := item.EncodeItem()
+	s.writePacket(&packet.ClientStartItemCooldown{
+		Category: strings.Split(name, ":")[1],
+		Duration: int32(duration.Milliseconds() / 50),
+	})
+}
+
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
@@ -446,6 +456,14 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.FireworkLaunch:
+		pk.SoundType = packet.SoundEventLaunch
+	case sound.FireworkHugeBlast:
+		pk.SoundType = packet.SoundEventLargeBlast
+	case sound.FireworkBlast:
+		pk.SoundType = packet.SoundEventBlast
+	case sound.FireworkTwinkle:
+		pk.SoundType = packet.SoundEventTwinkle
 	case sound.FurnaceCrackle:
 		pk.SoundType = packet.SoundEventFurnaceUse
 	case sound.BlastFurnaceCrackle:
@@ -456,6 +474,25 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
 		pk.SoundType = packet.SoundEventStopUsingSpyglass
+	case sound.GoatHorn:
+		switch so.Horn {
+		case sound.Ponder():
+			pk.SoundType = packet.SoundEventGoatCall0
+		case sound.Sing():
+			pk.SoundType = packet.SoundEventGoatCall1
+		case sound.Seek():
+			pk.SoundType = packet.SoundEventGoatCall2
+		case sound.Feel():
+			pk.SoundType = packet.SoundEventGoatCall3
+		case sound.Admire():
+			pk.SoundType = packet.SoundEventGoatCall4
+		case sound.Call():
+			pk.SoundType = packet.SoundEventGoatCall5
+		case sound.Yearn():
+			pk.SoundType = packet.SoundEventGoatCall6
+		case sound.Dream():
+			pk.SoundType = packet.SoundEventGoatCall7
+		}
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
@@ -683,6 +720,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventShake,
 			EventData:       int32(act.Duration.Milliseconds() / 50),
 		})
+	case entity.FireworkExplosionAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventFireworksExplode,
+		})
 	case entity.EatAction:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
@@ -744,6 +786,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.Stonecutter:
+		containerType = 29
 	case block.SmithingTable:
 		containerType = 33
 	case block.EnderChest:
