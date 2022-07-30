@@ -71,7 +71,7 @@ func (f fireworkShape) String() string {
 	panic("unknown firework type")
 }
 
-// FireworkTypes ...
-func FireworkTypes() []FireworkShape {
+// FireworkShapes ...
+func FireworkShapes() []FireworkShape {
 	return []FireworkShape{FireworkShapeSmallSphere(), FireworkShapeHugeSphere(), FireworkShapeStar(), FireworkShapeCreeperHead(), FireworkShapeBurst()}
 }
