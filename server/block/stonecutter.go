@@ -28,7 +28,7 @@ func (s Stonecutter) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (Stonecutter) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (Stonecutter) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
