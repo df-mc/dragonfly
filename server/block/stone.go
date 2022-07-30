@@ -32,7 +32,7 @@ type (
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
 	if s.Smooth {
-		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
+		return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
 	}
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{})).withBlastResistance(30)
 }

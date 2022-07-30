@@ -21,7 +21,7 @@ func (e EnchantingTable) Model() world.BlockModel {
 
 // BreakInfo ...
 func (e EnchantingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(6000)
 }
 
 // CanDisplace ...
