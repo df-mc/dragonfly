@@ -64,6 +64,11 @@ func (t TNT) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
 }
 
+// FlammabilityInfo ...
+func (t TNT) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(0, 0, true)
+}
+
 // EncodeItem ...
 func (t TNT) EncodeItem() (name string, meta int16) {
 	return "minecraft:tnt", 0
