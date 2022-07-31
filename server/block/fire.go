@@ -4,7 +4,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -211,8 +210,8 @@ func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
 
 // EntityInside ...
 func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if flammable, ok := e.(entity.Flammable); ok {
-		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+	if flammable, ok := e.(flammableEntity); ok {
+		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 			l.Hurt(f.Type.Damage(), damage.SourceFire{})
 		}
 		if flammable.OnFireDuration() < time.Second*8 {

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/block/model"
@@ -11,15 +12,12 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
 	"time"
 )
 
 // SplashPotion is an item that grants effects when thrown.
 type SplashPotion struct {
 	transform
-	yaw, pitch float64
-
 	age   int
 	close bool
 
@@ -40,13 +38,10 @@ type SplashableEntity interface {
 }
 
 // NewSplashPotion ...
-func NewSplashPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, t potion.Potion) *SplashPotion {
+func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *SplashPotion {
 	s := &SplashPotion{
-		yaw:   yaw,
-		pitch: pitch,
 		owner: owner,
-
-		t: t,
+		t:     t,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
@@ -73,17 +68,13 @@ func (s *SplashPotion) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// Rotation ...
-func (s *SplashPotion) Rotation() (float64, float64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.yaw, s.pitch
+// Glint returns true if the splash potion should render with glint.
+func (s *SplashPotion) Glint() bool {
+	return len(s.t.Effects()) > 0
 }
 
 // Type returns the type of potion the splash potion will grant effects for when thrown.
 func (s *SplashPotion) Type() potion.Potion {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.t
 }
 
@@ -94,8 +85,8 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 		return
 	}
 	s.mu.Lock()
-	m, result := s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.ignores)
-	s.pos, s.vel, s.yaw, s.pitch = m.pos, m.vel, m.yaw, m.pitch
+	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0, s.ignores)
+	s.pos, s.vel = m.pos, m.vel
 	s.mu.Unlock()
 
 	s.age++
@@ -107,18 +98,14 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
+		effects := s.t.Effects()
 		box := s.BBox().Translate(m.pos)
-
-		colour := color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}
-		if effects := s.t.Effects(); len(effects) > 0 {
-			colour, _ = effect.ResultingColour(effects)
-
-			ignore := func(entity world.Entity) bool {
+		colour, _ := effect.ResultingColour(effects)
+		if len(effects) > 0 {
+			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), func(entity world.Entity) bool {
 				_, living := entity.(Living)
 				return !living || entity == s
-			}
-
-			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignore) {
+			}) {
 				pos := e.Position()
 				if !e.BBox().Translate(pos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 					continue
@@ -183,10 +170,18 @@ func (s *SplashPotion) ignores(entity world.Entity) bool {
 
 // New creates a SplashPotion with the position, velocity, yaw, and pitch provided. It doesn't spawn the SplashPotion,
 // only returns it.
-func (s *SplashPotion) New(pos, vel mgl64.Vec3, yaw, pitch float64, t potion.Potion) world.Entity {
-	splash := NewSplashPotion(pos, yaw, pitch, nil, t)
+func (s *SplashPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity {
+	splash := NewSplashPotion(pos, owner, t)
 	splash.vel = vel
+	splash.owner = owner
 	return splash
+}
+
+// Explode ...
+func (s *SplashPotion) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+	s.mu.Lock()
+	s.vel = s.vel.Add(s.pos.Sub(explosionPos).Normalize().Mul(impact))
+	s.mu.Unlock()
 }
 
 // Owner ...
@@ -196,33 +191,23 @@ func (s *SplashPotion) Owner() world.Entity {
 	return s.owner
 }
 
-// Own ...
-func (s *SplashPotion) Own(owner world.Entity) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.owner = owner
-}
-
 // DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
 func (s *SplashPotion) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		float64(nbtconv.Map[float32](data, "Pitch")),
 		potion.From(nbtconv.Map[int32](data, "PotionId")),
+		nil,
 	)
 }
 
 // EncodeNBT encodes the SplashPotion entity's properties as a map and returns it.
 func (s *SplashPotion) EncodeNBT() map[string]any {
-	yaw, pitch := s.Rotation()
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Yaw":      yaw,
-		"Pitch":    pitch,
 		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"Damage":   0.0,
 		"PotionId": s.t.Uint8(),
+		"Yaw":      0.0,
+		"Pitch":    0.0,
 	}
 }

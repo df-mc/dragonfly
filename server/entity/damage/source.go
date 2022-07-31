@@ -84,6 +84,9 @@ type (
 		// Block is the block that caused the damage.
 		Block world.Block
 	}
+
+	// SourceExplosion is used for damage caused by an explosion.
+	SourceExplosion struct{}
 )
 
 func (SourceFall) ReducedByArmour() bool                    { return false }
@@ -118,3 +121,5 @@ func (SourceThorns) ReducedByResistance() bool              { return true }
 func (SourceThorns) ReducedByArmour() bool                  { return false }
 func (SourceBlock) ReducedByResistance() bool               { return true }
 func (SourceBlock) ReducedByArmour() bool                   { return true }
+func (SourceExplosion) ReducedByResistance() bool           { return true }
+func (SourceExplosion) ReducedByArmour() bool               { return true }
