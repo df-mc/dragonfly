@@ -29,34 +29,12 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ct
 
 // Ignite ...
 func (t TNT) Ignite(pos cube.Pos, w *world.World) bool {
-	ent, ok := world.EntityByName("minecraft:tnt")
-	if !ok {
-		return false
-	}
-
-	w.PlaySound(pos.Vec3Centre(), sound.TNT{})
-	w.SetBlock(pos, nil, nil)
-	if p, ok := ent.(interface {
-		New(pos mgl64.Vec3, fuse time.Duration) world.Entity
-	}); ok {
-		w.AddEntity(p.New(pos.Vec3Centre(), time.Second*4))
-	}
-	return true
+	return spawnTnt(pos, w, time.Second*4)
 }
 
 // Explode ...
-func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, c ExplosionConfig) {
-	ent, ok := world.EntityByName("minecraft:tnt")
-	if !ok {
-		return
-	}
-
-	w.SetBlock(pos, nil, nil)
-	if p, ok := ent.(interface {
-		New(pos mgl64.Vec3, fuse time.Duration) world.Entity
-	}); ok {
-		w.AddEntity(p.New(pos.Vec3Centre(), time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2)))))
-	}
+func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, _ ExplosionConfig) {
+	spawnTnt(pos, w, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))))
 }
 
 // BreakInfo ...
@@ -77,4 +55,21 @@ func (t TNT) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:tnt", map[string]interface{}{"allow_underwater_bit": false, "explode_bit": false}
+}
+
+// spawnTnt creates a new TNT entity at the given position with the given fuse duration.
+func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration) bool {
+	ent, ok := world.EntityByName("minecraft:tnt")
+	if !ok {
+		return false
+	}
+
+	w.PlaySound(pos.Vec3Centre(), sound.TNT{})
+	w.SetBlock(pos, nil, nil)
+	if p, ok := ent.(interface {
+		New(pos mgl64.Vec3, fuse time.Duration) world.Entity
+	}); ok {
+		w.AddEntity(p.New(pos.Vec3Centre(), fuse))
+	}
+	return true
 }

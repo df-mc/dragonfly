@@ -92,9 +92,7 @@ func (t *TNT) Tick(w *world.World, _ int64) {
 	if fuse-1 <= 0 {
 		_ = t.Close()
 
-		block.ExplosionConfig{
-			Size: 4,
-		}.Explode(w, m.pos)
+		block.ExplosionConfig{}.Explode(w, m.pos)
 	}
 }
 
