@@ -31,12 +31,12 @@ type SplashPotion struct {
 
 // SplashableBlock is a block that can be splashed with a splash bottle.
 type SplashableBlock interface {
-	Splash(pos cube.Pos, potion *SplashPotion)
+	Splash(pos cube.Pos, e world.Entity, t potion.Potion)
 }
 
 // SplashableEntity is an entity that can be splashed with a splash bottle.
 type SplashableEntity interface {
-	Splash(potion *SplashPotion)
+	Splash(e world.Entity, t potion.Potion)
 }
 
 // NewSplashPotion ...
@@ -157,7 +157,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			block := w.Block(pos)
 			if splashable, ok := block.(SplashableBlock); ok {
 				if _, ok := block.Model().(model.Empty); ok {
-					splashable.Splash(pos, s)
+					splashable.Splash(pos, s, s.Type())
 					// Doesn't run rest of code if it's a splashable empty block
 					break
 				}
@@ -165,7 +165,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			// splashable non-empty block
 			pos = result.BlockPosition()
 			if b, ok := w.Block(pos).(SplashableBlock); ok {
-				b.Splash(pos, s)
+				b.Splash(pos, s, s.Type())
 			}
 		}
 		w.AddParticle(m.pos, particle.Splash{Colour: colour})
