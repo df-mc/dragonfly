@@ -19,7 +19,7 @@ func (e Emerald) Instrument() sound.Instrument {
 func (e Emerald) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, oneOf(e))
+	}, pickaxeEffective, oneOf(e)).withBlastResistance(30)
 }
 
 // PowersBeacon ...

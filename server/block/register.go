@@ -169,6 +169,7 @@ func init() {
 	registerAll(allStainedTerracotta())
 	registerAll(allStoneBrickStairs())
 	registerAll(allStoneBricks())
+	registerAll(allStonecutters())
 	registerAll(allTallGrass())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
@@ -178,6 +179,7 @@ func init() {
 	registerAll(allWoodSlabs())
 	registerAll(allWoodStairs())
 	registerAll(allWool())
+	registerAll(allWalls())
 }
 
 func init() {
@@ -303,6 +305,7 @@ func init() {
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(StoneBrickStairs{Mossy: true})
 	world.RegisterItem(StoneBrickStairs{})
+	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
 	world.RegisterItem(Terracotta{})
@@ -400,6 +403,9 @@ func init() {
 	}
 	for _, s := range SkullTypes() {
 		world.RegisterItem(Skull{Type: s})
+	}
+	for _, t := range WallBlocks() {
+		world.RegisterItem(Wall{Block: t})
 	}
 }
 

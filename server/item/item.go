@@ -160,6 +160,10 @@ type User interface {
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
+
+	UsingItem() bool
+	ReleaseItem()
+	UseItem()
 }
 
 // Carrier represents an entity that is able to carry an item.
@@ -170,17 +174,18 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast
 // to surrounding players.
 type BeaconPayment interface {
 	PayableForBeacon() bool
+}
+
+// nopReleasable represents a releasable item that does nothing.
+type nopReleasable struct{}
+
+func (nopReleasable) Release(Releaser, time.Duration, *UseContext) {}
+func (nopReleasable) Requirements() []Stack {
+	return []Stack{}
 }
 
 // defaultFood represents a consumable item with a default consumption duration.

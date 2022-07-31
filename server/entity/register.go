@@ -15,4 +15,5 @@ func init() {
 	world.RegisterEntity(&Arrow{})
 	world.RegisterEntity(&ExperienceOrb{})
 	world.RegisterEntity(&Firework{})
+	world.RegisterEntity(&BottleOfEnchanting{})
 }

@@ -69,14 +69,14 @@ func (s SandstoneSlab) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s SandstoneSlab) BreakInfo() BreakInfo {
-	return newBreakInfo(s.Type.Hardness(), alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if s.Double {
 			s.Double = false
 			// If the slab is double, it should drop two single slabs.
 			return []item.Stack{item.NewStack(s, 2)}
 		}
 		return []item.Stack{item.NewStack(s, 1)}
-	})
+	}).withBlastResistance(30)
 }
 
 // EncodeItem ...
@@ -135,7 +135,7 @@ func (s SandstoneSlab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s SandstoneSlab) SideClosed(pos, side cube.Pos, w *world.World) bool {
+func (s SandstoneSlab) SideClosed(pos, side cube.Pos, _ *world.World) bool {
 	return !s.Top && side[1] == pos[1]-1
 }
 

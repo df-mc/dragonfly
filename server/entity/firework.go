@@ -38,7 +38,7 @@ func NewFirework(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) *Fi
 		pitch:    pitch,
 		firework: firework,
 		c:        &MovementComputer{},
-		ticks:    int(firework.RandomizedDuration().Milliseconds() / 50),
+		ticks:    int(firework.RandomisedDuration().Milliseconds() / 50),
 	}
 	f.transform = newTransform(f, pos)
 	f.vel = mgl64.Vec3{rand.Float64() * 0.001, 0.05, rand.Float64() * 0.001}
@@ -108,56 +108,56 @@ func (f *Firework) Tick(w *world.World, current int64) {
 	}
 
 	f.ticks--
-	if f.ticks < 0 {
-		explosions := f.Firework().Explosions
-		for _, v := range w.Viewers(m.pos) {
-			v.ViewEntityAction(f, FireworkParticleAction{})
-		}
-		for _, explosion := range explosions {
-			if explosion.Shape == item.FireworkShapeHugeSphere() {
-				w.PlaySound(m.pos, sound.FireworkHugeBlast{})
-			} else {
-				w.PlaySound(m.pos, sound.FireworkBlast{})
-			}
-			if explosion.Twinkle {
-				w.PlaySound(m.pos, sound.FireworkTwinkle{})
-			}
-		}
-
-		if len(explosions) > 0 {
-			force := float64(len(explosions)*2) + 5.0
-			if l, ok := f.owner.(Living); ok && f.attached {
-				l.Hurt(force, damage.SourceProjectile{Owner: l, Projectile: f})
-			}
-			for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
-				l, living := e.(Living)
-				return !living || l.AttackImmune()
-			}) {
-				pos := e.Position()
-				dist := m.pos.Sub(pos).Len()
-				if dist > 5.0 {
-					// The maximum distance allowed is 5.0 blocks.
-					continue
-				}
-				if _, ok := trace.Perform(m.pos, pos, w, e.BBox().Grow(0.3), func(world.Entity) bool {
-					return true
-				}); ok {
-					dmg := force * math.Sqrt((5.0-dist)/5.0)
-					e.(Living).Hurt(dmg, damage.SourceProjectile{Owner: f.Owner(), Projectile: f})
-				}
-			}
-		}
-
-		f.close = true
+	if f.ticks >= 0 {
+		return
 	}
+
+	explosions := f.Firework().Explosions
+	for _, v := range w.Viewers(m.pos) {
+		v.ViewEntityAction(f, FireworkExplosionAction{})
+	}
+	for _, explosion := range explosions {
+		if explosion.Shape == item.FireworkShapeHugeSphere() {
+			w.PlaySound(m.pos, sound.FireworkHugeBlast{})
+		} else {
+			w.PlaySound(m.pos, sound.FireworkBlast{})
+		}
+		if explosion.Twinkle {
+			w.PlaySound(m.pos, sound.FireworkTwinkle{})
+		}
+	}
+
+	if len(explosions) > 0 {
+		force := float64(len(explosions)*2) + 5.0
+		for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
+			l, living := e.(Living)
+			return !living || l.AttackImmune()
+		}) {
+			pos := e.Position()
+			dist := m.pos.Sub(pos).Len()
+			if dist > 5.0 {
+				// The maximum distance allowed is 5.0 blocks.
+				continue
+			}
+			if _, ok := trace.Perform(m.pos, pos, w, e.BBox().Grow(0.3), func(world.Entity) bool {
+				return true
+			}); ok {
+				dmg := force * math.Sqrt((5.0-dist)/5.0)
+				e.(Living).Hurt(dmg, damage.SourceProjectile{Owner: f.Owner(), Projectile: f})
+			}
+		}
+	}
+
+	f.close = true
 }
 
 // New creates an firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
 // only returns it.
-func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, it item.Firework) world.Entity {
-	firework := NewFirework(pos, yaw, pitch, it)
-	firework.attached = attached
-	return firework
+func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework item.Firework, owner world.Entity) world.Entity {
+	fw := NewFirework(pos, yaw, pitch, firework)
+	fw.attached = attached
+	fw.owner = owner
+	return fw
 }
 
 // Attached ...
@@ -170,13 +170,6 @@ func (f *Firework) Owner() world.Entity {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.owner
-}
-
-// Own ...
-func (f *Firework) Own(owner world.Entity) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.owner = owner
 }
 
 // DecodeNBT decodes the properties in a map to a Firework and returns a new Firework entity.
