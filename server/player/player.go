@@ -1285,6 +1285,10 @@ func (p *Player) UseItem() {
 		p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 		p.addNewItem(useCtx)
 	case item.Consumable:
+		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
+			p.ReleaseItem()
+			return
+		}
 		if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 			// The item.Consumable is not always consumable, the player is not in creative mode and the
 			// food bar is filled: The item cannot be consumed.

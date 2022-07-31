@@ -22,8 +22,7 @@ func init() {
 	}
 	world.RegisterItem(TurtleShell{})
 
-	world.RegisterItem(LiquidBucket{})
-	world.RegisterItem(MilkBucket{})
+	world.RegisterItem(Bucket{})
 
 	world.RegisterItem(Shears{})
 

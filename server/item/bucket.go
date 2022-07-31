@@ -8,39 +8,89 @@ import (
 	"time"
 )
 
-// LiquidBucket is a tool used to carry water, lava and fish.
-type LiquidBucket struct {
+// BucketContent is the content of a bucket.
+type BucketContent struct {
+	liquid world.Liquid
+	milk   bool
+}
+
+// LiquidContent returns a new BucketContent with the liquid passed in.
+func LiquidContent(l world.Liquid) BucketContent {
+	return BucketContent{liquid: l}
+}
+
+// MilkContent returns a new BucketContent with the milk flag set.
+func MilkContent() BucketContent {
+	return BucketContent{milk: true}
+}
+
+// LiquidType returns the type of liquid the bucket contains.
+func (b BucketContent) LiquidType() string {
+	if b.liquid != nil {
+		return b.liquid.LiquidType()
+	}
+	return "milk"
+}
+
+// Bucket is a tool used to carry water, lava and fish.
+type Bucket struct {
 	// Content is the content that the bucket has. By default, this value resolves to an empty bucket.
-	Content world.Liquid
+	Content BucketContent
 }
 
 // MaxCount returns 16.
-func (l LiquidBucket) MaxCount() int {
-	if l.Empty() {
+func (b Bucket) MaxCount() int {
+	if b.Empty() {
 		return 16
 	}
 	return 1
 }
 
+// AlwaysConsumable ...
+func (b Bucket) AlwaysConsumable() bool {
+	return b.Content.milk
+}
+
+// CanConsume ...
+func (b Bucket) CanConsume() bool {
+	return b.Content.milk
+}
+
+// ConsumeDuration ...
+func (b Bucket) ConsumeDuration() time.Duration {
+	return DefaultConsumeDuration
+}
+
+// Consume ...
+func (b Bucket) Consume(_ *world.World, c Consumer) Stack {
+	for _, effect := range c.Effects() {
+		c.RemoveEffect(effect.Type())
+	}
+	return NewStack(Bucket{}, 1)
+}
+
 // Empty returns true if the bucket is empty.
-func (l LiquidBucket) Empty() bool {
-	return l.Content == nil
+func (b Bucket) Empty() bool {
+	return b.Content.liquid == nil && !b.Content.milk
 }
 
 // FuelInfo ...
-func (l LiquidBucket) FuelInfo() FuelInfo {
-	if l.Content.LiquidType() == "lava" {
-		return newFuelInfo(time.Second * 1000).WithResidue(NewStack(LiquidBucket{}, 1))
+func (b Bucket) FuelInfo() FuelInfo {
+	if liq := b.Content.liquid; liq != nil && liq.LiquidType() == "lava" {
+		return newFuelInfo(time.Second * 1000).WithResidue(NewStack(Bucket{}, 1))
 	}
 	return FuelInfo{}
 }
 
 // UseOnBlock handles the bucket filling and emptying logic.
-func (l LiquidBucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if l.Empty() {
-		return l.fillFrom(pos, w, ctx)
+func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+	if b.Content.milk {
+		return false
 	}
-	liq := l.Content.WithDepth(8, false)
+	if b.Empty() {
+		return b.fillFrom(pos, w, ctx)
+	}
+	liq := b.Content.liquid.WithDepth(8, false)
 	if bl := w.Block(pos); canDisplace(bl, liq) || replaceableWith(bl, liq) {
 		w.SetLiquid(pos, liq)
 	} else if bl := w.Block(pos.Side(face)); canDisplace(bl, liq) || replaceableWith(bl, liq) {
@@ -49,8 +99,8 @@ func (l LiquidBucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 		return false
 	}
 
-	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: l.Content})
-	ctx.NewItem = NewStack(LiquidBucket{}, 1)
+	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: b.Content.liquid})
+	ctx.NewItem = NewStack(Bucket{}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true
@@ -58,7 +108,7 @@ func (l LiquidBucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // fillFrom fills a bucket from the liquid at the position passed in the world. If there is no liquid or if
 // the liquid is no source, fillFrom returns false.
-func (l LiquidBucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
+func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 	liquid, ok := w.Liquid(pos)
 	if !ok {
 		return false
@@ -70,16 +120,16 @@ func (l LiquidBucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bo
 	w.SetLiquid(pos, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.BucketFill{Liquid: liquid})
 
-	ctx.NewItem = NewStack(LiquidBucket{Content: liquid}, 1)
+	ctx.NewItem = NewStack(Bucket{Content: LiquidContent(liquid)}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true
 }
 
 // EncodeItem ...
-func (l LiquidBucket) EncodeItem() (name string, meta int16) {
-	if !l.Empty() {
-		return "minecraft:" + l.Content.LiquidType() + "_bucket", 0
+func (b Bucket) EncodeItem() (name string, meta int16) {
+	if !b.Empty() {
+		return "minecraft:" + b.Content.LiquidType() + "_bucket", 0
 	}
 	return "minecraft:bucket", 0
 }
