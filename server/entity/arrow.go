@@ -233,6 +233,9 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		if res, ok := result.(trace.BlockResult); ok {
 			a.mu.Lock()
 			a.collisionPos, a.collided = res.BlockPosition(), true
+			if t, ok := w.Block(a.collisionPos).(block.TNT); ok && a.fireTicks > 0 {
+				t.Ignite(a.collisionPos, w)
+			}
 			a.mu.Unlock()
 
 			for _, v := range w.Viewers(m.pos) {
@@ -256,8 +259,8 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
 					}
 				}
+				a.close = true
 			}
-			a.close = true
 		}
 
 		a.setCritical(false)
