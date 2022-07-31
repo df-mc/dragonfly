@@ -1848,17 +1848,19 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		p.resendBlocks(pos, w)
 		return
 	}
+	if breakable, ok := b.(block.Breakable); ok {
+		if info := breakable.BreakInfo(); info.BreakHandler != nil {
+			info.BreakHandler(pos, w, p)
+		}
+	}
+
 	held, left := p.HeldItems()
 
 	p.SwingArm()
 	w.SetBlock(pos, nil, nil)
 	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-
 	if breakable, ok := b.(block.Breakable); ok {
 		info := breakable.BreakInfo()
-		if info.BreakHandler != nil {
-			info.BreakHandler(pos, w, p)
-		}
 		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 && !p.GameMode().CreativeInventory() {
 			amount := rand.Intn(diff) + info.XPDrops[0]
 			for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), amount) {
