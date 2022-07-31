@@ -133,8 +133,8 @@ func (s WoodSlab) EncodeBlock() (name string, properties map[string]any) {
 
 // CanDisplace ...
 func (s WoodSlab) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return !s.Double && ok
+	w, ok := b.(Water)
+	return !s.Double && ok && !w.Falling && w.Depth == 8
 }
 
 // SideClosed ...

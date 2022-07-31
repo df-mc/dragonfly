@@ -66,10 +66,13 @@ func (f Fire) burn(from, to cube.Pos, w *world.World, r *rand.Rand, chanceBound 
 	if flammable, ok := w.Block(to).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		if r.Intn(f.Age+10) < 5 && !rainingAround(to, w) {
 			f.spread(from, to, w, r)
-		} else {
-			w.SetBlock(to, nil, nil)
+			return
 		}
-		//TODO: Light TNT
+		if t, ok := flammable.(TNT); ok {
+			t.Ignite(to, w)
+			return
+		}
+		w.SetBlock(to, nil, nil)
 	}
 }
 
