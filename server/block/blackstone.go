@@ -18,7 +18,6 @@ type Blackstone struct {
 
 // BreakInfo ...
 func (b Blackstone) BreakInfo() BreakInfo {
-	hardness := 1.5
 	drops := oneOf(b)
 	if b.Type == GildedBlackstone() {
 		drops = func(item.Tool, []item.Enchantment) []item.Stack {
@@ -28,7 +27,7 @@ func (b Blackstone) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(b, 1)}
 		}
 	}
-	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
 }
 
 // EncodeItem ...
