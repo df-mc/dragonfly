@@ -38,7 +38,7 @@ func (Bed) Model() world.BlockModel {
 func (b Bed) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
 		headSide, _, ok := b.head(pos, w)
-		if ok {
+		if !ok {
 			return
 		}
 		if s, ok := headSide.User.(world.Sleeper); ok {
