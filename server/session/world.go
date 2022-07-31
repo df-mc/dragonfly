@@ -294,6 +294,14 @@ func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 	})
 }
 
+// ViewSleepingPlayers ...
+func (s *Session) ViewSleepingPlayers(sleeping, max int) {
+	s.writePacket(&packet.LevelEvent{
+		EventType: packet.LevelEventSleepingPlayers,
+		EventData: int32((max << 16) | sleeping),
+	})
+}
+
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {

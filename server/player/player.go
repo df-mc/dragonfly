@@ -243,6 +243,11 @@ func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
+// Messaget sends a message translation to the player. The message is translated client-side using the client's locale.
+func (p *Player) Messaget(key string, a ...string) {
+	p.session().SendTranslation(key, a...)
+}
+
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
 // overwrites/is overwritten by the name of the item equipped.
 // The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
@@ -615,6 +620,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if _, ok := source.(damage.SourceDrowning); ok {
 		w.PlaySound(pos, sound.Drowning{})
 	}
+	p.Wake()
 
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
@@ -1070,9 +1076,13 @@ func (p *Player) Sleep(pos cube.Pos) {
 	b.User = p
 	w.SetBlock(pos, b, nil)
 	w.SetSleepRequirement(time.Second * 5)
+	w.BroadcastSleepingReminder(p)
 
+	p.pos.Store(pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625}))
 	p.sleeping.Store(true)
 	p.sleepPos.Store(pos)
+
+	w.BroadcastSleepingIndicator()
 	p.updateState()
 }
 
@@ -1084,6 +1094,7 @@ func (p *Player) Wake() {
 
 	w := p.World()
 	w.SetSleepRequirement(0)
+	w.BroadcastSleepingIndicator()
 
 	for _, v := range p.viewers() {
 		v.ViewEntityWake(p)
@@ -1092,7 +1103,7 @@ func (p *Player) Wake() {
 
 	pos := p.sleepPos.Load()
 	if b, ok := w.Block(pos).(block.Bed); ok {
-		b.User = p
+		b.User = nil
 		w.SetBlock(pos, b, nil)
 	}
 }
@@ -1104,6 +1115,11 @@ func (p *Player) Sleeping() (cube.Pos, bool) {
 		return cube.Pos{}, false
 	}
 	return p.sleepPos.Load(), true
+}
+
+// SendSleepingIndicator displays a notification to the player on the amount of sleeping players in the world.
+func (p *Player) SendSleepingIndicator(sleeping, max int) {
+	p.session().ViewSleepingPlayers(sleeping, max)
 }
 
 // Jump makes the player jump if they are on ground. It exhausts the player by 0.05 food points, an additional 0.15

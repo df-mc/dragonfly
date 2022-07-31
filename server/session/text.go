@@ -47,6 +47,16 @@ func (s *Session) SendJukeboxPopup(message string) {
 	})
 }
 
+// SendTranslation ...
+func (s *Session) SendTranslation(key string, a ...string) {
+	s.writePacket(&packet.Text{
+		TextType:         packet.TextTypeTranslation,
+		NeedsTranslation: true,
+		Message:          key,
+		Parameters:       a,
+	})
+}
+
 // SendToast ...
 func (s *Session) SendToast(title, message string) {
 	s.writePacket(&packet.ToastRequest{

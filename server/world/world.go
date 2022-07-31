@@ -789,6 +789,41 @@ func (w *World) Entities() []Entity {
 	return m
 }
 
+// Sleepers returns a list of all sleeping entities currently added to the World.
+func (w *World) Sleepers() []Sleeper {
+	ent := w.Entities()
+	sleepers := make([]Sleeper, 0, len(ent))
+	for _, e := range ent {
+		if s, ok := e.(Sleeper); ok {
+			sleepers = append(sleepers, s)
+		}
+	}
+	return sleepers
+}
+
+// BroadcastSleepingIndicator broadcasts a sleeping indicator to all sleepers in the world.
+func (w *World) BroadcastSleepingIndicator() {
+	sleepers := w.Sleepers()
+	sleeping := len(sliceutil.Filter(sleepers, func(s Sleeper) bool {
+		_, ok := s.Sleeping()
+		return ok
+	}))
+	for _, s := range sleepers {
+		s.SendSleepingIndicator(sleeping, len(sleepers))
+	}
+}
+
+// BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
+// passed.
+func (w *World) BroadcastSleepingReminder(sleeper Sleeper) {
+	for _, s := range w.Sleepers() {
+		if s == sleeper {
+			continue
+		}
+		s.Messaget("chat.type.sleeping", sleeper.Name())
+	}
+}
+
 // OfEntity attempts to return a world that an entity is currently in. If the entity was not currently added
 // to a world, the world returned is nil and the bool returned is false.
 func OfEntity(e Entity) (*World, bool) {

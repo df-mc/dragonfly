@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 )
 
@@ -35,6 +34,17 @@ func (b Bed) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b))
 }
 
+// CanDisplace ...
+func (Bed) CanDisplace(b world.Liquid) bool {
+	_, water := b.(Water)
+	return water
+}
+
+// SideClosed ...
+func (Bed) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
+}
+
 // UseOnBlock ...
 func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	if pos, _, used = firstReplaceable(w, pos, face, b); !used {
@@ -56,23 +66,15 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 		return
 	}
 
+	ctx.IgnoreBBox = true
 	place(w, sidePos, side, user, ctx)
 	place(w, pos, b, user, ctx)
 	return placed(ctx)
 }
 
-// sleeper represents an entity that can sleep on beds.
-type sleeper interface {
-	item.User
-	UUID() uuid.UUID
-	Message(a ...any)
-	Sleep(pos cube.Pos)
-	Wake()
-}
-
 // Activate ...
 func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
-	s, ok := u.(sleeper)
+	s, ok := u.(world.Sleeper)
 	if !ok {
 		return false
 	}
@@ -93,7 +95,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 
 	userPos := s.Position()
 	if sidePos.Vec3Middle().Sub(userPos).Len() > 4 && pos.Vec3Middle().Sub(userPos).Len() > 4 {
-		s.Message(text.Colourf("<grey>Bed is too far away</grey>"))
+		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.tooFar"))
 		return true
 	}
 
@@ -101,17 +103,21 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 	if !ok {
 		return false
 	}
+	if _, ok = w.Liquid(headPos); ok {
+		return false
+	}
 
 	w.SetPlayerSpawn(s.UUID(), headPos)
-	s.Message(text.Colourf("<grey>Respawn point set</grey>"))
 
 	time := w.Time() % world.TimeFull
-	if !(time >= world.TimeNight && time < world.TimeSunrise) {
-		s.Message(text.Colourf("<grey>You can only sleep at night</grey>"))
+	if (time < world.TimeNight || time >= world.TimeSunrise) && !w.ThunderingAt(pos) {
+		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.respawnSet"))
+		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.noSleep"))
 		return true
 	}
 	if headSide.User != nil {
-		s.Message(text.Colourf("<grey>This bed is occupied</grey>"))
+		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.respawnSet"))
+		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.occupied"))
 		return true
 	}
 
@@ -125,7 +131,7 @@ func (b Bed) PostBreak(pos cube.Pos, w *world.World, _ item.User) {
 	if !ok {
 		return
 	}
-	if s, ok := headSide.User.(sleeper); ok {
+	if s, ok := headSide.User.(world.Sleeper); ok {
 		s.Wake()
 	}
 }
