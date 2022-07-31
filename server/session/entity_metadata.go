@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
@@ -64,11 +65,18 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if o, ok := e.(orb); ok {
 		m[dataKeyExperienceValue] = int32(o.Experience())
 	}
+	if o, ok := e.(firework); ok {
+		m[dataKeyFireworkItem] = nbtconv.WriteItem(item.NewStack(o.Firework(), 1), false)
+	}
 	if sc, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(sc.Scale())
 	}
 	if o, ok := e.(owned); ok {
 		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
+	}
+	if t, ok := e.(tnt); ok {
+		m[dataKeyFuseLength] = int32(t.Fuse().Milliseconds() / 50)
+		m.setFlag(dataKeyFlags, dataFlagIgnited)
 	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
@@ -79,12 +87,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sc, ok := e.(scoreTag); ok {
 		m[dataKeyScoreTag] = sc.ScoreTag()
 	}
-	if sp, ok := e.(splash); ok {
-		pot := sp.Type()
-		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
-		if len(pot.Effects()) > 0 {
-			m.setFlag(dataKeyFlags, dataFlagEnchanted)
-		}
+	if p, ok := e.(splash); ok {
+		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+	}
+	if g, ok := e.(glint); ok && g.Glint() {
+		m.setFlag(dataKeyFlags, dataFlagEnchanted)
 	}
 	if t, ok := e.(tipped); ok {
 		if tip := t.Tip().Uint8(); tip > 4 {
@@ -128,12 +135,14 @@ const (
 	dataKeyPotionColour
 	dataKeyPotionAmbient
 	dataKeyExperienceValue   = 15
+	dataKeyFireworkItem      = 16
 	dataKeyCustomDisplay     = 18
 	dataKeyPotionAuxValue    = 36
 	dataKeyScale             = 38
 	dataKeyMaxAir            = 42
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
+	dataKeyFuseLength        = 55
 	dataKeyAlwaysShowNameTag = 81
 	dataKeyScoreTag          = 84
 )
@@ -146,6 +155,7 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagIgnited           = 10
 	dataFlagCritical          = 13
 	dataFlagCanShowNameTag    = 14
 	dataFlagAlwaysShowNameTag = 15
@@ -204,6 +214,10 @@ type splash interface {
 	Type() potion.Potion
 }
 
+type glint interface {
+	Glint() bool
+}
+
 type onFire interface {
 	OnFireDuration() time.Duration
 }
@@ -228,6 +242,14 @@ type orb interface {
 	Experience() int
 }
 
+type firework interface {
+	Firework() item.Firework
+}
+
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type tnt interface {
+	Fuse() time.Duration
 }

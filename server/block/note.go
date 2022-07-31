@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"time"
 )
 
 // Note is a musical block that emits sounds when powered with redstone.
@@ -54,7 +55,7 @@ func (n Note) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 }
 
 // Activate ...
-func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}
@@ -67,6 +68,11 @@ func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) b
 // BreakInfo ...
 func (n Note) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(n))
+}
+
+// FuelInfo ...
+func (Note) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

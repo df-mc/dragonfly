@@ -7,12 +7,14 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodFenceGate is a block that can be used as an openable 1x1 barrier.
 type WoodFenceGate struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the fence gate. This field must have one of the values found in the material
 	// package.
@@ -27,7 +29,7 @@ type WoodFenceGate struct {
 
 // BreakInfo ...
 func (f WoodFenceGate) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f)).withBlastResistance(15)
 }
 
 // FlammabilityInfo ...
@@ -38,6 +40,11 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
 }
 
+// FuelInfo ...
+func (WoodFenceGate) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
 // UseOnBlock ...
 func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, f)
@@ -45,14 +52,30 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 		return false
 	}
 	f.Facing = user.Facing()
-	// TODO: Set Lowered if placed next to wall block.
+	f.Lowered = f.shouldBeLowered(pos, w)
 
 	place(w, pos, f, user, ctx)
 	return placed(ctx)
 }
 
+// NeighbourUpdateTick ...
+func (f WoodFenceGate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if f.shouldBeLowered(pos, w) != f.Lowered {
+		f.Lowered = !f.Lowered
+		w.SetBlock(pos, f, nil)
+	}
+}
+
+// shouldBeLowered returns if the fence gate should be lowered or not, based on the neighbouring walls.
+func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, w *world.World) bool {
+	leftSide := f.Facing.RotateLeft().Face()
+	_, left := w.Block(pos.Side(leftSide)).(Wall)
+	_, right := w.Block(pos.Side(leftSide.Opposite())).(Wall)
+	return left || right
+}
+
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Facing() {
 		f.Facing = u.Facing()
@@ -60,12 +83,6 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u ite
 	w.SetBlock(pos, f, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 	return true
-}
-
-// CanDisplace ...
-func (f WoodFenceGate) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

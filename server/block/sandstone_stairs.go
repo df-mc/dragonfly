@@ -11,6 +11,7 @@ import (
 // SandstoneStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using sandstone.
 type SandstoneStairs struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Type is the type of sandstone of the block.
 	Type SandstoneType
@@ -49,7 +50,11 @@ func (s SandstoneStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s SandstoneStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(s.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	i := newBreakInfo(s.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	if s.Type == SmoothSandstone() {
+		i = i.withBlastResistance(30)
+	}
+	return i
 }
 
 // EncodeItem ...
@@ -78,13 +83,6 @@ func (s SandstoneStairs) EncodeBlock() (name string, properties map[string]any) 
 		return "minecraft:red_sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	return "minecraft:sandstone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-
-}
-
-// CanDisplace ...
-func (SandstoneStairs) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

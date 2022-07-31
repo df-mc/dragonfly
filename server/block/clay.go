@@ -20,6 +20,11 @@ func (c Clay) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchDrop(item.NewStack(item.ClayBall{}, 4), item.NewStack(c, 1)))
 }
 
+// SmeltInfo ...
+func (Clay) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(Terracotta{}, 1), 0.35)
+}
+
 // EncodeItem ...
 func (c Clay) EncodeItem() (name string, meta int16) {
 	return "minecraft:clay", 0

@@ -15,6 +15,7 @@ import (
 type SeaPickle struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// AdditionalCount is the amount of additional sea pickles clustered together.
 	AdditionalCount int
@@ -126,12 +127,6 @@ func (SeaPickle) HasLiquidDrops() bool {
 	return true
 }
 
-// CanDisplace ...
-func (SeaPickle) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
-}
-
 // SideClosed ...
 func (SeaPickle) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -148,6 +143,11 @@ func (s SeaPickle) LightEmissionLevel() uint8 {
 // BreakInfo ...
 func (s SeaPickle) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
+}
+
+// SmeltInfo ...
+func (SeaPickle) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(item.Dye{Colour: item.ColourLime()}, 1), 0.1)
 }
 
 // EncodeItem ...

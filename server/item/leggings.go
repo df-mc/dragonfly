@@ -73,6 +73,17 @@ func (l Leggings) RepairableBy(i Stack) bool {
 	return armourTierRepairable(l.Tier)(i)
 }
 
+// SmeltInfo ...
+func (l Leggings) SmeltInfo() SmeltInfo {
+	switch l.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
 // EncodeItem ...
 func (l Leggings) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Tier.Name() + "_leggings", 0

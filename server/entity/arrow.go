@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -280,6 +281,13 @@ func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world
 	arrow.obtainArrowOnPickup = obtainArrowOnPickup
 	arrow.setCritical(critical)
 	return arrow
+}
+
+// Explode ...
+func (a *Arrow) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+	a.mu.Lock()
+	a.vel = a.vel.Add(a.pos.Sub(explosionPos).Normalize().Mul(impact))
+	a.mu.Unlock()
 }
 
 // Owner returns the world.Entity that fired the Arrow, or nil if it did not have any.

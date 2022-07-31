@@ -92,6 +92,7 @@ func init() {
 	world.RegisterBlock(SporeBlossom{})
 	world.RegisterBlock(Stone{Smooth: true})
 	world.RegisterBlock(Stone{})
+	world.RegisterBlock(TNT{})
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(Tuff{})
 
@@ -109,6 +110,7 @@ func init() {
 	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
+	registerAll(allBlastFurnaces())
 	registerAll(allBoneBlock())
 	registerAll(allCactus())
 	registerAll(allCake())
@@ -133,6 +135,7 @@ func init() {
 	registerAll(allFire())
 	registerAll(allFlowers())
 	registerAll(allFroglight())
+	registerAll(allFurnaces())
 	registerAll(allGlazedTerracotta())
 	registerAll(allHayBales())
 	registerAll(allItemFrames())
@@ -160,11 +163,14 @@ func init() {
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
+	registerAll(allSkulls())
+	registerAll(allSmokers())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
 	registerAll(allStainedTerracotta())
 	registerAll(allStoneBrickStairs())
 	registerAll(allStoneBricks())
+	registerAll(allStonecutters())
 	registerAll(allTallGrass())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
@@ -174,6 +180,7 @@ func init() {
 	registerAll(allWoodSlabs())
 	registerAll(allWoodStairs())
 	registerAll(allWool())
+	registerAll(allWalls())
 }
 
 func init() {
@@ -189,6 +196,7 @@ func init() {
 	world.RegisterItem(Beacon{})
 	world.RegisterItem(Bedrock{})
 	world.RegisterItem(BeetrootSeeds{})
+	world.RegisterItem(BlastFurnace{})
 	world.RegisterItem(BlueIce{})
 	world.RegisterItem(Bone{})
 	world.RegisterItem(Bookshelf{})
@@ -225,6 +233,7 @@ func init() {
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
 	world.RegisterItem(Farmland{})
+	world.RegisterItem(Furnace{})
 	world.RegisterItem(GildedBlackstone{})
 	world.RegisterItem(GlassPane{})
 	world.RegisterItem(Glass{})
@@ -288,6 +297,7 @@ func init() {
 	world.RegisterItem(SeaPickle{})
 	world.RegisterItem(Shroomlight{})
 	world.RegisterItem(SmithingTable{})
+	world.RegisterItem(Smoker{})
 	world.RegisterItem(Snow{})
 	world.RegisterItem(SoulSand{})
 	world.RegisterItem(SoulSoil{})
@@ -296,8 +306,10 @@ func init() {
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(StoneBrickStairs{Mossy: true})
 	world.RegisterItem(StoneBrickStairs{})
+	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(WheatSeeds{})
@@ -390,6 +402,12 @@ func init() {
 	}
 	for _, t := range FroglightTypes() {
 		world.RegisterItem(Froglight{Type: t})
+	}
+	for _, s := range SkullTypes() {
+		world.RegisterItem(Skull{Type: s})
+	}
+	for _, t := range WallBlocks() {
+		world.RegisterItem(Wall{Block: t})
 	}
 }
 

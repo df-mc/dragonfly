@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six
@@ -31,6 +32,25 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 5, true)
 }
 
+// BreakInfo ...
+func (l Log) BreakInfo() BreakInfo {
+	b := newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	if l.Wood == CrimsonWood() || l.Wood == WarpedWood() {
+		b = b.withBlastResistance(1.5)
+	}
+	return b
+}
+
+// SmeltInfo ...
+func (Log) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(item.Charcoal{}, 1), 0.15)
+}
+
+// FuelInfo ...
+func (Log) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
 // UseOnBlock handles the rotational placing of logs.
 func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(w, pos, face, l)
@@ -41,11 +61,6 @@ func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
-}
-
-// BreakInfo ...
-func (l Log) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
 }
 
 // Strip ...

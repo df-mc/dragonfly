@@ -244,21 +244,35 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		delete(c.e, pos)
 	}
 
+	viewers := slices.Clone(c.v)
+
 	if !opts.DisableLiquidDisplacement {
+		var secondLayer Block
+
 		if rid == airRID {
 			if li := c.Block(x, y, z, 1); li != airRID {
 				c.SetBlock(x, y, z, 0, li)
+				c.SetBlock(x, y, z, 1, airRID)
+				secondLayer = air()
+				b, _ = BlockByRuntimeID(li)
 			}
 		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
 			l, _ := BlockByRuntimeID(before)
-			if liq := l.(Liquid); b.(LiquidDisplacer).CanDisplace(liq) && liq.LiquidDepth() == 8 {
+			if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 				c.SetBlock(x, y, z, 1, before)
+				secondLayer = l
 			}
 		}
-	}
+		c.Unlock()
 
-	viewers := slices.Clone(c.v)
-	c.Unlock()
+		if secondLayer != nil {
+			for _, viewer := range viewers {
+				viewer.ViewBlockUpdate(pos, secondLayer, 1)
+			}
+		}
+	} else {
+		c.Unlock()
+	}
 
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)

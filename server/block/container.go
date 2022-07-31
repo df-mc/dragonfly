@@ -9,6 +9,7 @@ import (
 
 // ContainerViewer represents a viewer that is able to view a container and its inventory.
 type ContainerViewer interface {
+	world.Viewer
 	// ViewSlotChange views a change of a single slot in the inventory, in which the item was changed to the
 	// new item passed.
 	ViewSlotChange(slot int, newItem item.Stack)

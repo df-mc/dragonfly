@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/item"
+
 type (
 	// Stone is a block found underground in the world or on mountains.
 	Stone struct {
@@ -30,24 +32,32 @@ type (
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
 	if s.Smooth {
-		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+		return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
 	}
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{})).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (g Granite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g)).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (d Diorite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (a Andesite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(30)
+}
+
+// SmeltInfo ...
+func (s Stone) SmeltInfo() item.SmeltInfo {
+	if s.Smooth {
+		return item.SmeltInfo{}
+	}
+	return newSmeltInfo(item.NewStack(Stone{Smooth: true}, 1), 0.1)
 }
 
 // EncodeItem ...

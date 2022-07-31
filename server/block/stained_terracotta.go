@@ -23,7 +23,12 @@ func (t StainedTerracotta) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (t StainedTerracotta) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(21)
+}
+
+// SmeltInfo ...
+func (t StainedTerracotta) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(GlazedTerracotta{Colour: t.Colour}, 1), 0.1)
 }
 
 // EncodeItem ...

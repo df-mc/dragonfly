@@ -3,7 +3,9 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // WoodFence are blocks similar to Walls, which cannot normally be jumped over. Unlike walls however,
@@ -11,6 +13,7 @@ import (
 type WoodFence struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
@@ -19,13 +22,7 @@ type WoodFence struct {
 
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
-}
-
-// CanDisplace ...
-func (WoodFence) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w)).withBlastResistance(15)
 }
 
 // SideClosed ...
@@ -39,6 +36,11 @@ func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
 		return newFlammabilityInfo(0, 0, false)
 	}
 	return newFlammabilityInfo(5, 20, true)
+}
+
+// FuelInfo ...
+func (WoodFence) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeBlock ...

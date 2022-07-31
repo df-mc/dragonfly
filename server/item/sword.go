@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // Sword is a tool generally used to attack enemies. In addition, it may be used to mine any block slightly
@@ -50,6 +51,25 @@ func (s Sword) DurabilityInfo() DurabilityInfo {
 		AttackDurability: 1,
 		BreakDurability:  2,
 	}
+}
+
+// SmeltInfo ...
+func (s Sword) SmeltInfo() SmeltInfo {
+	switch s.Tier {
+	case ToolTierIron:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ToolTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
+// FuelInfo ...
+func (s Sword) FuelInfo() FuelInfo {
+	if s.Tier == ToolTierWood {
+		return newFuelInfo(time.Second * 10)
+	}
+	return FuelInfo{}
 }
 
 // RepairableBy ...

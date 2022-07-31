@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"time"
 )
 
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
@@ -25,6 +26,8 @@ type Viewer interface {
 	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
 	// target position.
 	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
+	// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
+	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]Block)
@@ -88,3 +91,5 @@ func (NopViewer) ViewEmote(Entity, uuid.UUID)                                   
 func (NopViewer) ViewSkin(Entity)                                               {}
 func (NopViewer) ViewWorldSpawn(cube.Pos)                                       {}
 func (NopViewer) ViewWeather(bool, bool)                                        {}
+func (NopViewer) ViewFurnaceUpdate(time.Duration, time.Duration, time.Duration, time.Duration, time.Duration, time.Duration) {
+}

@@ -66,6 +66,9 @@ type Click struct{ sound }
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 
+// TNT is a sound played when TNT is ignited.
+type TNT struct{ sound }
+
 // FireExtinguish is a sound played when a fire is extinguished.
 type FireExtinguish struct{ sound }
 
@@ -86,6 +89,15 @@ type ItemFrameRemove struct{ sound }
 
 // ItemFrameRotate is a sound played when an item frame's item is rotated.
 type ItemFrameRotate struct{ sound }
+
+// FurnaceCrackle is a sound played every one to five seconds from a furnace.
+type FurnaceCrackle struct{ sound }
+
+// BlastFurnaceCrackle is a sound played every one to five seconds from a blast furnace.
+type BlastFurnaceCrackle struct{ sound }
+
+// SmokerCrackle is a sound played every one to five seconds from a smoker.
+type SmokerCrackle struct{ sound }
 
 // sound implements the world.Sound interface.
 type sound struct{}

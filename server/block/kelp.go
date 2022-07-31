@@ -12,9 +12,15 @@ import (
 type Kelp struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Age is the age of the kelp block which can be 0-25. If age is 25, kelp won't grow any further.
 	Age int
+}
+
+// SmeltInfo ...
+func (k Kelp) SmeltInfo() item.SmeltInfo {
+	return newFoodSmeltInfo(item.NewStack(item.DriedKelp{}, 1), 0.1)
 }
 
 // BoneMeal ...
@@ -52,12 +58,6 @@ func (k Kelp) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:kelp", map[string]any{"kelp_age": int32(k.Age)}
 }
 
-// CanDisplace will return true if the liquid is Water, since kelp can waterlog.
-func (Kelp) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed will always return false since kelp doesn't close any side.
 func (Kelp) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -76,7 +76,7 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return
 	}
 
-	below := pos.Add(cube.Pos{0, -1})
+	below := pos.Side(cube.FaceDown)
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
@@ -107,7 +107,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 		w.SetBlock(pos, k.withRandomAge(), nil)
 	}
 
-	below := pos.Add(cube.Pos{0, -1})
+	below := pos.Side(cube.FaceDown)
 	belowBlock := w.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
 		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
@@ -120,7 +120,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
 func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.Intn(100) < 15 && k.Age < 25 {
-		abovePos := pos.Add(cube.Pos{0, 1})
+		abovePos := pos.Side(cube.FaceUp)
 
 		liquid, ok := w.Liquid(abovePos)
 

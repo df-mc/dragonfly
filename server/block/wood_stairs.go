@@ -6,12 +6,14 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
 type WoodStairs struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
@@ -54,7 +56,12 @@ func (s WoodStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s WoodStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(s))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(s)).withBlastResistance(15)
+}
+
+// FuelInfo ...
+func (WoodStairs) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...
@@ -70,12 +77,6 @@ func (s WoodStairs) EncodeBlock() (name string, properties map[string]any) {
 // toStairDirection converts a facing to a stair's direction for Minecraft.
 func toStairsDirection(v cube.Direction) int32 {
 	return int32(3 - v)
-}
-
-// CanDisplace ...
-func (WoodStairs) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

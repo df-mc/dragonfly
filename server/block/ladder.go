@@ -7,12 +7,14 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Ladder is a wooden block used for climbing walls either vertically or horizontally. They can be placed only on
 // the sides of other blocks.
 type Ladder struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the side of the block the ladder is currently attached to.
 	Facing cube.Direction
@@ -61,12 +63,6 @@ func (l Ladder) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	}
 }
 
-// CanDisplace ...
-func (l Ladder) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
 func (l Ladder) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -75,6 +71,11 @@ func (l Ladder) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // BreakInfo ...
 func (l Ladder) BreakInfo() BreakInfo {
 	return newBreakInfo(0.4, alwaysHarvestable, axeEffective, oneOf(l))
+}
+
+// FuelInfo ...
+func (Ladder) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // EncodeItem ...

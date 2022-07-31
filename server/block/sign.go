@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"image/color"
 	"strings"
+	"time"
 )
 
 // Sign is a non-solid block that can display text.
@@ -17,6 +18,7 @@ type Sign struct {
 	transparent
 	empty
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the sign. This field must have one of the values found in the material
 	// package.
@@ -50,6 +52,11 @@ func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// FuelInfo ...
+func (Sign) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 10)
+}
+
 // EncodeItem ...
 func (s Sign) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Wood.String() + "_sign", 0
@@ -58,12 +65,6 @@ func (s Sign) EncodeItem() (name string, meta int16) {
 // BreakInfo ...
 func (s Sign) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(s))
-}
-
-// CanDisplace ...
-func (s Sign) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.

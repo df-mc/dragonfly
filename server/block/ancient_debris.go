@@ -13,7 +13,12 @@ type AncientDebris struct {
 func (a AncientDebris) BreakInfo() BreakInfo {
 	return newBreakInfo(30, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(a))
+	}, pickaxeEffective, oneOf(a)).withBlastResistance(3600)
+}
+
+// SmeltInfo ...
+func (AncientDebris) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.NetheriteScrap{}, 1), 2)
 }
 
 // EncodeItem ...

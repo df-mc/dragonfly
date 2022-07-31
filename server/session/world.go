@@ -17,6 +17,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"image/color"
 	"math/rand"
+	"strings"
+	"time"
 )
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
@@ -75,6 +77,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				Skin:           skinToProtocol(v.Skin()),
 			}}})
 		}
+
 		s.writePacket(&packet.AddPlayer{
 			UUID:            v.UUID(),
 			Username:        v.Name(),
@@ -85,15 +88,6 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
-			Layers: []protocol.AbilityLayer{ // TODO: Make use of everything that this system supports.
-				{
-					Type:      protocol.AbilityLayerTypeBase,
-					Abilities: protocol.AbilityCount - 1,
-					Values:    protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs,
-					FlySpeed:  protocol.AbilityBaseFlySpeed,
-					WalkSpeed: protocol.AbilityBaseWalkSpeed,
-				},
-			},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -193,7 +187,7 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 		return mgl64.Vec3{0, 1.62}
 	case *entity.Item:
 		return mgl64.Vec3{0, 0.125}
-	case *entity.FallingBlock:
+	case *entity.FallingBlock, *entity.TNT:
 		return mgl64.Vec3{0, 0.49, 0}
 	}
 	return mgl64.Vec3{}
@@ -291,6 +285,15 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 	})
 }
 
+// ViewItemCooldown ...
+func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
+	name, _ := item.EncodeItem()
+	s.writePacket(&packet.ClientStartItemCooldown{
+		Category: strings.Split(name, ":")[1],
+		Duration: int32(duration.Milliseconds() / 50),
+	})
+}
+
 // ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
@@ -378,6 +381,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
 			Position:  vec64To32(pos),
 		})
+	case particle.Effect:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 33,
+			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -447,10 +456,49 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.TNT:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundFuse,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.FireworkLaunch:
+		pk.SoundType = packet.SoundEventLaunch
+	case sound.FireworkHugeBlast:
+		pk.SoundType = packet.SoundEventLargeBlast
+	case sound.FireworkBlast:
+		pk.SoundType = packet.SoundEventBlast
+	case sound.FireworkTwinkle:
+		pk.SoundType = packet.SoundEventTwinkle
+	case sound.FurnaceCrackle:
+		pk.SoundType = packet.SoundEventFurnaceUse
+	case sound.BlastFurnaceCrackle:
+		pk.SoundType = packet.SoundEventBlastFurnaceUse
+	case sound.SmokerCrackle:
+		pk.SoundType = packet.SoundEventSmokerUse
 	case sound.UseSpyglass:
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
 		pk.SoundType = packet.SoundEventStopUsingSpyglass
+	case sound.GoatHorn:
+		switch so.Horn {
+		case sound.Ponder():
+			pk.SoundType = packet.SoundEventGoatCall0
+		case sound.Sing():
+			pk.SoundType = packet.SoundEventGoatCall1
+		case sound.Seek():
+			pk.SoundType = packet.SoundEventGoatCall2
+		case sound.Feel():
+			pk.SoundType = packet.SoundEventGoatCall3
+		case sound.Admire():
+			pk.SoundType = packet.SoundEventGoatCall4
+		case sound.Call():
+			pk.SoundType = packet.SoundEventGoatCall5
+		case sound.Yearn():
+			pk.SoundType = packet.SoundEventGoatCall6
+		case sound.Dream():
+			pk.SoundType = packet.SoundEventGoatCall7
+		}
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
@@ -553,6 +601,33 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	s.playSound(pos, soundType, false)
 }
 
+// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
+func (s *Session) ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration) {
+	if prevCookTime != cookTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataFurnaceTickCount,
+			Value:    int32(cookTime.Milliseconds() / 50),
+		})
+	}
+
+	if prevRemainingFuelTime != remainingFuelTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataFurnaceLitTime,
+			Value:    int32(remainingFuelTime.Milliseconds() / 50),
+		})
+	}
+
+	if prevMaxFuelTime != maxFuelTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataFurnaceLitDuration,
+			Value:    int32(maxFuelTime.Milliseconds() / 50),
+		})
+	}
+}
+
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
@@ -616,6 +691,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventShake,
 			EventData:       int32(act.Duration.Milliseconds() / 50),
 		})
+	case entity.FireworkExplosionAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventFireworksExplode,
+		})
 	case entity.EatAction:
 		if user, ok := e.(item.User); ok {
 			held, _ := user.HeldItems()
@@ -677,6 +757,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.Stonecutter:
+		containerType = 29
 	case block.SmithingTable:
 		containerType = 33
 	case block.EnderChest:
@@ -694,6 +776,12 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
+const (
+	containerTypeFurnace      = 2
+	containerTypeBlastFurnace = 27
+	containerTypeSmoker       = 28
+)
+
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	b.AddViewer(s, s.c.World(), pos)
@@ -705,6 +793,12 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	var containerType byte
 	switch b.(type) {
+	case block.Furnace:
+		containerType = containerTypeFurnace
+	case block.BlastFurnace:
+		containerType = containerTypeBlastFurnace
+	case block.Smoker:
+		containerType = containerTypeSmoker
 	}
 
 	s.writePacket(&packet.ContainerOpen{
