@@ -27,11 +27,11 @@ func (a Anvil) Model() world.BlockModel {
 
 // BreakInfo ...
 func (a Anvil) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(6000)
 }
 
 // Activate ...
-func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true

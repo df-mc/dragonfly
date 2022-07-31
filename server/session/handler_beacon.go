@@ -8,12 +8,15 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
+// beaconInputSlot is the slot index of the input item in the beacon.
+const beaconInputSlot = 0x1b
+
 // handleBeaconPayment handles the selection of effects in a beacon and the removal of the item used to pay
 // for those effects.
 func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
 	slot := protocol.StackRequestSlotInfo{
 		ContainerID: containerBeacon,
-		Slot:        0x1b,
+		Slot:        beaconInputSlot,
 	}
 	// First check if there actually is a beacon opened.
 	if !s.containerOpened.Load() {

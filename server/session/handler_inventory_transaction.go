@@ -106,13 +106,20 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	if data.TargetEntityRuntimeID == selfEntityRuntimeID {
 		return fmt.Errorf("invalid entity interaction: players cannot interact with themselves")
 	}
+
+	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
-		s.c.UseItemOnEntity(e)
+		valid = s.c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
-		s.c.AttackEntity(e)
+		valid = s.c.AttackEntity(e)
 	default:
 		return fmt.Errorf("unhandled UseItemOnEntity ActionType %v", data.ActionType)
+	}
+	if !valid {
+		slot := int(s.heldSlot.Load())
+		item, _ := s.inv.Item(slot)
+		s.sendItem(item, slot, protocol.WindowIDInventory)
 	}
 	return nil
 }

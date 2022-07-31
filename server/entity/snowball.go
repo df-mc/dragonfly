@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/damage"
@@ -13,8 +14,6 @@ import (
 // Snowball is a throwable projectile which damages entities on impact.
 type Snowball struct {
 	transform
-	yaw, pitch float64
-
 	age   int
 	close bool
 
@@ -24,10 +23,8 @@ type Snowball struct {
 }
 
 // NewSnowball ...
-func NewSnowball(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Snowball {
+func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Snowball {
 	s := &Snowball{
-		yaw:   yaw,
-		pitch: pitch,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.03,
 			Drag:              0.01,
@@ -55,13 +52,6 @@ func (s *Snowball) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// Rotation ...
-func (s *Snowball) Rotation() (float64, float64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.yaw, s.pitch
-}
-
 // Tick ...
 func (s *Snowball) Tick(w *world.World, current int64) {
 	if s.close {
@@ -69,8 +59,8 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 		return
 	}
 	s.mu.Lock()
-	m, result := s.c.TickMovement(s, s.pos, s.vel, s.yaw, s.pitch, s.ignores)
-	s.pos, s.vel, s.yaw, s.pitch = m.pos, m.vel, m.yaw, m.pitch
+	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0, s.ignores)
+	s.pos, s.vel = m.pos, m.vel
 	s.mu.Unlock()
 
 	s.age++
@@ -106,10 +96,17 @@ func (s *Snowball) ignores(entity world.Entity) bool {
 
 // New creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
 // only returns it.
-func (s *Snowball) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
-	snow := NewSnowball(pos, yaw, pitch, nil)
+func (s *Snowball) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
+	snow := NewSnowball(pos, owner)
 	snow.vel = vel
 	return snow
+}
+
+// Explode ...
+func (s *Snowball) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+	s.mu.Lock()
+	s.vel = s.vel.Add(s.pos.Sub(explosionPos).Normalize().Mul(impact))
+	s.mu.Unlock()
 }
 
 // Owner ...
@@ -119,30 +116,21 @@ func (s *Snowball) Owner() world.Entity {
 	return s.owner
 }
 
-// Own ...
-func (s *Snowball) Own(owner world.Entity) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.owner = owner
-}
-
 // DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
 func (s *Snowball) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.Map[float32](data, "Pitch")),
-		float64(nbtconv.Map[float32](data, "Yaw")),
+		nil,
 	)
 }
 
 // EncodeNBT encodes the Snowball entity's properties as a map and returns it.
 func (s *Snowball) EncodeNBT() map[string]any {
-	yaw, pitch := s.Rotation()
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Yaw":    yaw,
-		"Pitch":  pitch,
+		"Yaw":    0.0,
+		"Pitch":  0.0,
 		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
 		"Damage": 0.0,
 	}
