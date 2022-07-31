@@ -502,6 +502,7 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 	case sound.Drowning:
 		pk.SoundType = packet.SoundEventPlayerHurtDrown
 	case sound.Fall:
+		pk.EntityType = "minecraft:player"
 		if so.Distance > 4 {
 			pk.SoundType = packet.SoundEventFallBig
 			break
