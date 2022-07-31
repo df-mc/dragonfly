@@ -24,14 +24,14 @@ type TravelComputer struct {
 
 // Traveller represents a world.Entity that can travel between dimensions.
 type Traveller interface {
+	world.Entity
 	// Teleport teleports the entity to the position given.
 	Teleport(pos mgl64.Vec3)
-
-	world.Entity
 }
 
 // portalBlock represents a block that can be used as a portal to travel between dimensions.
 type portalBlock interface {
+	world.Block
 	// Portal returns the dimension that the portal leads to.
 	Portal() world.Dimension
 }
@@ -45,18 +45,19 @@ func (t *TravelComputer) TickTravelling(e Traveller) {
 	min, max := box.Min(), box.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
 	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
-	travelling, target := false, world.Dimension(nil)
+	found, target := false, world.Dimension(nil)
 	for y := minY; y <= maxY; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				b := w.Block(pos)
-				if p, ok := b.(portalBlock); ok {
-					for _, blockBox := range b.Model().BBox(pos, w) {
-						if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
-							travelling, target = true, p.Portal()
-							break
-						}
+				p, ok := w.Block(pos).(portalBlock)
+				if !ok {
+					continue
+				}
+				for _, blockBox := range p.Model().BBox(pos, w) {
+					if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
+						found, target = true, p.Portal()
+						break
 					}
 				}
 			}
@@ -65,25 +66,27 @@ func (t *TravelComputer) TickTravelling(e Traveller) {
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if !travelling {
-		// No portals found. Check if we aren't travelling and if so, reset.
-		if !t.travelling {
-			t.timedOut, t.awaitingTravel = false, false
+	if !found {
+		if t.travelling {
+			// Don't reset if we're travelling.
+			return
 		}
+		t.timedOut, t.awaitingTravel = false, false
 		return
 	}
 
 	switch target {
 	case world.Nether:
-		timeOut, awaitingTravel, start := t.timedOut, t.awaitingTravel, t.start
-		if !timeOut {
-			if t.Instantaneous() || (awaitingTravel && time.Since(start) >= time.Second*4) {
-				t.mu.Unlock()
-				t.Travel(e, w, w.PortalDestination(world.Nether))
-				t.mu.Lock()
-			} else if !awaitingTravel {
-				t.start, t.awaitingTravel = time.Now(), true
-			}
+		if t.timedOut {
+			// Timed out, we can't travel through Nether portals.
+			return
+		}
+		if t.Instantaneous() || (t.awaitingTravel && time.Since(t.start) >= time.Second*4) {
+			t.mu.Unlock()
+			t.Travel(e, w, w.PortalDestination(world.Nether))
+			t.mu.Lock()
+		} else if !t.awaitingTravel {
+			t.start, t.awaitingTravel = time.Now(), true
 		}
 	}
 }
@@ -100,8 +103,8 @@ func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *w
 	}
 
 	t.mu.Lock()
+	defer t.mu.Unlock()
 	t.travelling, t.timedOut, t.awaitingTravel = true, true, false
-	t.mu.Unlock()
 
 	go func() {
 		spawn := pos.Vec3Middle()
@@ -113,7 +116,7 @@ func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *w
 		e.Teleport(spawn)
 
 		t.mu.Lock()
+		defer t.mu.Unlock()
 		t.travelling = false
-		t.mu.Unlock()
 	}()
 }

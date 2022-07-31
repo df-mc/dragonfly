@@ -82,7 +82,8 @@ func FindNetherPortal(w *world.World, pos cube.Pos, radius int) (Nether, bool) {
 	closestPos, closestDist, found := cube.Pos{}, math.MaxFloat64, false
 	for x := pos.X() - radius; x < pos.X()+radius; x++ {
 		for z := pos.Z() - radius; z < pos.Z()+radius; z++ {
-			for y := w.Dimension().Range().Max(); y >= w.Dimension().Range().Min(); y-- {
+			r := w.Dimension().Range()
+			for y := r.Max(); y >= r.Min(); y-- {
 				selectedPos := cube.Pos{x, y, z}
 				if p, ok := w.Block(selectedPos).(portalBlock); ok && p.Portal() == world.Nether {
 					belowPos := selectedPos.Side(cube.FaceDown)
