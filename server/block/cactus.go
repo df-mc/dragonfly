@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -78,7 +77,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // EntityInside ...
 func (c Cactus) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+	if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 		l.Hurt(0.5, damage.SourceBlock{Block: c})
 	}
 }

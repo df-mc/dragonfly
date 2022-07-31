@@ -89,6 +89,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 				switch s.c.World().Block(s.openedPos.Load()).(type) {
 				case block.SmithingTable:
 					err, processed = h.handleSmithing(a, s), true
+				case block.Stonecutter:
+					err, processed = h.handleStonecutting(a, s), true
 				case block.EnchantingTable:
 					err, processed = h.handleEnchant(a, s), true
 				}

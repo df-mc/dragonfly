@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -23,7 +22,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
-	if _, ok := craft.Block().(block.CraftingTable); !ok {
+	if craft.Block() != "crafting_table" {
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
@@ -77,6 +76,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	_, shapeless := craft.(recipe.Shapeless)
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	}
+	if craft.Block() != "crafting_table" {
+		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
 	input := make([]item.Stack, 0, len(craft.Input()))
@@ -165,6 +167,22 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 		Slot:        craftingResult,
 	}, it, s)
 	return nil
+}
+
+// craftingSize gets the crafting size based on the opened container ID.
+func (s *Session) craftingSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// craftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) craftingOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
 }
 
 // duplicateStack duplicates an item.Stack with the new item type given.

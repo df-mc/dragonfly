@@ -21,7 +21,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
-	"strings"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -89,6 +88,15 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	s.writePacket(pk)
 }
 
+// sendItem sends the item stack passed to the client with the window ID and slot passed.
+func (s *Session) sendItem(item item.Stack, slot int, windowID uint32) {
+	s.writePacket(&packet.InventorySlot{
+		WindowID: windowID,
+		Slot:     uint32(slot),
+		NewItem:  instanceFromItem(item),
+	})
+}
+
 const (
 	craftingGridSizeSmall   = 4
 	craftingGridSizeLarge   = 9
@@ -120,6 +128,7 @@ const (
 	containerLoomPattern          = 42
 	containerBlastFurnaceInput    = 44
 	containerSmokerInput          = 45
+	containerStonecutterInput     = 52
 	containerBarrel               = 57
 	containerCursor               = 58
 	containerOutput               = 59
@@ -182,6 +191,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerLoomInput, containerLoomDye, containerLoomPattern:
 		if s.containerOpened.Load() {
 			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
+				return s.ui, true
+			}
+		}
+	case containerStonecutterInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
@@ -519,11 +534,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			}
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
-				WindowID: protocol.WindowIDInventory,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
-			})
+			s.sendItem(item, slot, protocol.WindowIDInventory)
 		}
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
@@ -561,11 +572,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			viewer.ViewEntityArmour(s.c)
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
-				WindowID: protocol.WindowIDArmour,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
-			})
+			s.sendItem(item, slot, protocol.WindowIDArmour)
 		}
 	})
 	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
@@ -650,12 +657,6 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
 
-		blockName := "crafting_table"
-		if b := i.Block(); b != nil {
-			blockName, _ = b.EncodeBlock()
-			blockName = strings.Split(blockName, ":")[1]
-		}
-
 		switch i := i.(type) {
 		case recipe.Shapeless:
 			recipes = append(recipes, &protocol.ShapelessRecipe{
@@ -663,7 +664,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Priority:        int32(i.Priority()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           blockName,
+				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		case recipe.Shaped:
@@ -674,7 +675,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Height:          int32(i.Shape().Height()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           blockName,
+				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		}

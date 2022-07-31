@@ -143,7 +143,7 @@ func ResultingColour(effects []Effect) (color.RGBA, bool) {
 	}
 	if l == 0 {
 		// Prevent division by 0 errors if no effects with particles were present.
-		return color.RGBA{}, false
+		return color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}, false
 	}
 	return color.RGBA{R: uint8(r / l), G: uint8(g / l), B: uint8(b / l), A: uint8(a / l)}, ambient
 }
