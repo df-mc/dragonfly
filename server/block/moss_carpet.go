@@ -11,12 +11,7 @@ import (
 type MossCarpet struct {
 	carpet
 	transparent
-}
-
-// CanDisplace ...
-func (MossCarpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	sourceWaterDisplacer
 }
 
 // SideClosed ...

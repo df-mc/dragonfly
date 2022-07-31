@@ -11,6 +11,7 @@ import (
 // CobblestoneStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using Cobblestone.
 type CobblestoneStairs struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Mossy specifies if the cobblestone is mossy. This variant of cobblestone is typically found in
 	// dungeons or in small clusters in the giant tree taiga biome.
@@ -62,12 +63,6 @@ func (s CobblestoneStairs) EncodeBlock() (name string, properties map[string]any
 		return "minecraft:mossy_cobblestone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	return "minecraft:stone_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-}
-
-// CanDisplace ...
-func (CobblestoneStairs) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...
