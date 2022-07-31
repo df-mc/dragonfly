@@ -174,13 +174,6 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast
 // to surrounding players.
 type BeaconPayment interface {

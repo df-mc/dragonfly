@@ -26,22 +26,17 @@ func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3
 	}
 
 	p, ok := firework.(interface {
-		New(pos mgl64.Vec3, yaw, pitch float64, firework Firework) world.Entity
+		New(pos mgl64.Vec3, yaw, pitch float64, firework Firework, owner world.Entity) world.Entity
 	})
 	if !ok {
 		return false
 	}
-
 	pos := blockPos.Vec3().Add(clickPos)
-	entity := p.New(pos, rand.Float64()*360, 90, f)
-	if o, ok := entity.(owned); ok {
-		o.Own(user)
-	}
-
-	ctx.SubtractFromCount(1)
 
 	w.PlaySound(pos, sound.FireworkLaunch{})
-	w.AddEntity(entity)
+	w.AddEntity(p.New(pos, rand.Float64()*360, 90, f, user))
+
+	ctx.SubtractFromCount(1)
 	return true
 }
 
@@ -53,7 +48,7 @@ func (f Firework) EncodeNBT() map[string]any {
 	}
 	return map[string]any{"Fireworks": map[string]any{
 		"Explosions": explosions,
-		"Flight":     uint8(f.Duration.Milliseconds() / 50),
+		"Flight":     uint8((f.Duration/10 - time.Millisecond*50).Milliseconds() / 50),
 	}}
 }
 
@@ -67,7 +62,7 @@ func (f Firework) DecodeNBT(data map[string]any) any {
 			}
 		}
 		if durationTicks, ok := fireworks["Flight"].(uint8); ok {
-			f.Duration = time.Duration(durationTicks) * 50 * time.Millisecond
+			f.Duration = (time.Duration(durationTicks)*time.Millisecond*50 + time.Millisecond*50) * 10
 		}
 	}
 	return f
@@ -75,9 +70,7 @@ func (f Firework) DecodeNBT(data map[string]any) any {
 
 // RandomisedDuration returns the randomised flight duration of the firework.
 func (f Firework) RandomisedDuration() time.Duration {
-	definite := f.Duration + time.Millisecond*50
-	randomness := time.Duration(rand.Intn(int(time.Millisecond * 600)))
-	return definite*10 + randomness
+	return f.Duration + time.Duration(rand.Intn(int(time.Millisecond*600)))
 }
 
 // EncodeItem ...

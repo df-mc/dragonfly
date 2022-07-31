@@ -45,7 +45,7 @@ func (s QuartzStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s QuartzStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // EncodeItem ...

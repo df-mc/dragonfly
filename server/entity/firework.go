@@ -138,8 +138,10 @@ func (f *Firework) Tick(w *world.World, current int64) {
 
 // New creates an firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
 // only returns it.
-func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) world.Entity {
-	return NewFirework(pos, yaw, pitch, firework)
+func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework, owner world.Entity) world.Entity {
+	fw := NewFirework(pos, yaw, pitch, firework)
+	fw.owner = owner
+	return fw
 }
 
 // Owner ...
@@ -147,13 +149,6 @@ func (f *Firework) Owner() world.Entity {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.owner
-}
-
-// Own ...
-func (f *Firework) Own(owner world.Entity) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.owner = owner
 }
 
 // DecodeNBT decodes the properties in a map to a Firework and returns a new Firework entity.
