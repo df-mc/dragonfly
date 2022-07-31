@@ -17,7 +17,7 @@ func (b GildedBlackstone) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(item.GoldNugget{}, rand.Intn(4)+2)}
 		}
 		return []item.Stack{item.NewStack(b, 1)}
-	})
+	}).withBlastResistance(30)
 }
 
 // EncodeItem ...
@@ -26,6 +26,6 @@ func (GildedBlackstone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (GildedBlackstone) EncodeBlock() (string, map[string]interface{}) {
+func (GildedBlackstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:gilded_blackstone", nil
 }

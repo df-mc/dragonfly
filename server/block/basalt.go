@@ -32,7 +32,7 @@ func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (b Basalt) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b))
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(21)
 }
 
 // EncodeItem ...
@@ -44,11 +44,11 @@ func (b Basalt) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (b Basalt) EncodeBlock() (name string, properties map[string]interface{}) {
+func (b Basalt) EncodeBlock() (name string, properties map[string]any) {
 	if b.Polished {
-		return "minecraft:polished_basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
+		return "minecraft:polished_basalt", map[string]any{"pillar_axis": b.Axis.String()}
 	}
-	return "minecraft:basalt", map[string]interface{}{"pillar_axis": b.Axis.String()}
+	return "minecraft:basalt", map[string]any{"pillar_axis": b.Axis.String()}
 }
 
 // allBasalt ...

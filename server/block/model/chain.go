@@ -2,9 +2,7 @@ package model
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Chain is a model used by chain blocks.
@@ -13,9 +11,9 @@ type Chain struct {
 	Axis cube.Axis
 }
 
-// AABB ...
-func (c Chain) AABB(cube.Pos, *world.World) []physics.AABB {
-	return []physics.AABB{physics.NewAABB(mgl64.Vec3{0.40625, 0.40625, 0.40625}, mgl64.Vec3{0.59375, 0.59375, 0.59375}).Stretch(c.Axis, 0.40625)}
+// BBox ...
+func (c Chain) BBox(cube.Pos, *world.World) []cube.BBox {
+	return []cube.BBox{cube.Box(0.40625, 0.40625, 0.40625, 0.59375, 0.59375, 0.59375).Stretch(c.Axis, 0.40625)}
 }
 
 // FaceSolid ...

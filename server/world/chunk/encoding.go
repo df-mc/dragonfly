@@ -57,26 +57,41 @@ func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
 func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
-	var e blockEntry
-	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&e); err != nil {
+	var m map[string]any
+	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&m); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
-	if e.ID > 0 && len(e.State) == 0 {
-		// For some reason, whenever Mojang converts a world prior to 1.13 to the latest format, they include these
-		// extra "oldid" and "val" fields, which are the legacy ID and meta. The only problem with this is that they
-		// also clear the regular states field, which means we can't simply ignore them, but rather convert them to the
-		// new format ourselves, so we can fill in the gaps. Immaculate, Mojang.
-		conversion, ok := upgradeLegacyEntry(e.ID, e.Meta)
-		if !ok {
-			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", e.ID, e.Meta)
-		}
 
-		// The name already exists, so we only need to update the states field.
-		e.State = conversion.State
-	}
-	v, ok := StateToRuntimeID(e.Name, e.State)
+	// Decode the name and version of the block entry.
+	name, _ := m["name"].(string)
+	version, _ := m["version"].(int32)
+
+	// Now check for a state field.
+	stateI, ok := m["states"]
 	if !ok {
-		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", e.Name, e.State)
+		// If it doesn't exist, this is likely a pre-1.13 block state, so decode the meta value instead.
+		meta, _ := m["val"].(int16)
+
+		// Upgrade the pre-1.13 state into a post-1.13 state.
+		stateI, ok = upgradeLegacyEntry(name, meta)
+		if !ok {
+			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", name, meta)
+		}
+	}
+	state, ok := stateI.(map[string]any)
+	if !ok {
+		return 0, fmt.Errorf("invalid state in block entry")
+	}
+
+	// If the entry is an alias, then we need to resolve it.
+	entry := blockEntry{Name: name, State: state, Version: version}
+	if updatedEntry, ok := upgradeAliasEntry(entry); ok {
+		entry = updatedEntry
+	}
+
+	v, ok := StateToRuntimeID(entry.Name, entry.State)
+	if !ok {
+		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", name, state)
 	}
 	return v, nil
 }

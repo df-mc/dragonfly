@@ -18,6 +18,6 @@ func (Snow) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Snow) EncodeBlock() (string, map[string]interface{}) {
+func (Snow) EncodeBlock() (string, map[string]any) {
 	return "minecraft:snow", nil
 }

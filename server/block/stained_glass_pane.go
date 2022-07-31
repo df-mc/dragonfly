@@ -38,8 +38,8 @@ func (p StainedGlassPane) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:stained_glass_pane", map[string]interface{}{"color": p.Colour.String()}
+func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:stained_glass_pane", map[string]any{"color": p.Colour.String()}
 }
 
 // allStainedGlassPane returns stained-glass panes with all possible colours.

@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 )
 
@@ -79,23 +78,6 @@ func (c coral) Name() string {
 		return "Horn Coral"
 	}
 	panic("unknown coral type")
-}
-
-// FromString ...
-func (c coral) FromString(s string) (interface{}, error) {
-	switch s {
-	case "tube":
-		return CoralType{coral(0)}, nil
-	case "brain":
-		return CoralType{coral(1)}, nil
-	case "bubble":
-		return CoralType{coral(2)}, nil
-	case "fire":
-		return CoralType{coral(3)}, nil
-	case "horn":
-		return CoralType{coral(4)}, nil
-	}
-	return nil, fmt.Errorf("unexpected coral type '%v', expecting one of 'tube', 'brain', 'bubble', 'fire', or 'horn'", s)
 }
 
 // String ...

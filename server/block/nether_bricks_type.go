@@ -1,7 +1,5 @@
 package block
 
-import "fmt"
-
 // NetherBricksType represents a type of nether bricks.
 type NetherBricksType struct {
 	netherBricks
@@ -47,21 +45,6 @@ func (n netherBricks) Name() string {
 		return "Chiseled Nether Bricks"
 	}
 	panic("unknown nether brick type")
-}
-
-// FromString ...
-func (n netherBricks) FromString(str string) (interface{}, error) {
-	switch str {
-	case "normal", "default":
-		return NormalNetherBricks(), nil
-	case "red":
-		return RedNetherBricks(), nil
-	case "cracked":
-		return CrackedNetherBricks(), nil
-	case "chiseled":
-		return ChiseledNetherBricks(), nil
-	}
-	return nil, fmt.Errorf("unexpected nether brick type '%v'", n)
 }
 
 // String ...

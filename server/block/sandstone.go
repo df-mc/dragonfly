@@ -1,6 +1,9 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
+)
 
 // Sandstone is a solid block commonly found in deserts and beaches underneath sand.
 type Sandstone struct {
@@ -29,11 +32,19 @@ func (s Sandstone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s Sandstone) EncodeBlock() (string, map[string]interface{}) {
+func (s Sandstone) EncodeBlock() (string, map[string]any) {
 	if s.Red {
-		return "minecraft:red_sandstone", map[string]interface{}{"sand_stone_type": s.Type.String()}
+		return "minecraft:red_sandstone", map[string]any{"sand_stone_type": s.Type.String()}
 	}
-	return "minecraft:sandstone", map[string]interface{}{"sand_stone_type": s.Type.String()}
+	return "minecraft:sandstone", map[string]any{"sand_stone_type": s.Type.String()}
+}
+
+// SmeltInfo ...
+func (s Sandstone) SmeltInfo() item.SmeltInfo {
+	if s.Type == NormalSandstone() {
+		return newSmeltInfo(item.NewStack(Sandstone{Red: s.Red, Type: SmoothSandstone()}, 1), 0.1)
+	}
+	return item.SmeltInfo{}
 }
 
 // allSandstones returns a list of all sandstone block variants.

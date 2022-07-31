@@ -21,6 +21,12 @@ type DurabilityInfo struct {
 	AttackDurability, BreakDurability int
 }
 
+// Repairable represents a durable item that can be repaired by other items.
+type Repairable interface {
+	Durable
+	RepairableBy(i Stack) bool
+}
+
 // simpleItem is a convenience function to return an item stack as BrokenItem.
 func simpleItem(i Stack) func() Stack {
 	return func() Stack {

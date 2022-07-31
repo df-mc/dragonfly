@@ -15,7 +15,7 @@ func (s SoulSoil) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (s SoulSoil) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
+	return newBreakInfo(1, alwaysHarvestable, shovelEffective, oneOf(s))
 }
 
 // EncodeItem ...
@@ -24,6 +24,6 @@ func (SoulSoil) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (SoulSoil) EncodeBlock() (string, map[string]interface{}) {
+func (SoulSoil) EncodeBlock() (string, map[string]any) {
 	return "minecraft:soul_soil", nil
 }

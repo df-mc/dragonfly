@@ -25,7 +25,7 @@ func (c CocoaBean) BoneMeal(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 	c.Age++
-	w.PlaceBlock(pos, c)
+	w.SetBlock(pos, c, nil)
 	return true
 }
 
@@ -44,7 +44,7 @@ func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		woodType = b.Wood
 	}
 	if woodType != JungleWood() {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -68,7 +68,7 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	}
 	if woodType == JungleWood() {
 		c.Facing = face.Opposite().Direction()
-		ctx.IgnoreAABB = true
+		ctx.IgnoreBBox = true
 
 		place(w, pos, c, user, ctx)
 		return placed(ctx)
@@ -81,7 +81,7 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 func (c CocoaBean) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if c.Age < 2 && r.Intn(5) == 0 {
 		c.Age++
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 	}
 }
 
@@ -92,7 +92,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
-	})
+	}).withBlastResistance(15)
 }
 
 // EncodeItem ...
@@ -101,18 +101,8 @@ func (c CocoaBean) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c CocoaBean) EncodeBlock() (name string, properties map[string]interface{}) {
-	direction := 2
-	switch c.Facing {
-	case cube.South:
-		direction = 0
-	case cube.West:
-		direction = 1
-	case cube.East:
-		direction = 3
-	}
-
-	return "minecraft:cocoa", map[string]interface{}{"age": int32(c.Age), "direction": int32(direction)}
+func (c CocoaBean) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:cocoa", map[string]any{"age": int32(c.Age), "direction": int32(horizontalDirection(c.Facing))}
 }
 
 // Model ...

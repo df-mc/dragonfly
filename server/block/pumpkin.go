@@ -58,6 +58,11 @@ func (p Pumpkin) DefencePoints() float64 {
 	return 0
 }
 
+// Toughness ...
+func (p Pumpkin) Toughness() float64 {
+	return 0
+}
+
 // KnockBackResistance ...
 func (p Pumpkin) KnockBackResistance() float64 {
 	return 0
@@ -72,21 +77,11 @@ func (p Pumpkin) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p Pumpkin) EncodeBlock() (name string, properties map[string]interface{}) {
-	direction := 2
-	switch p.Facing {
-	case cube.South:
-		direction = 0
-	case cube.West:
-		direction = 1
-	case cube.East:
-		direction = 3
-	}
-
+func (p Pumpkin) EncodeBlock() (name string, properties map[string]any) {
 	if p.Carved {
-		return "minecraft:carved_pumpkin", map[string]interface{}{"direction": int32(direction)}
+		return "minecraft:carved_pumpkin", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
 	}
-	return "minecraft:pumpkin", map[string]interface{}{"direction": int32(direction)}
+	return "minecraft:pumpkin", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
 }
 
 func allPumpkins() (pumpkins []world.Block) {

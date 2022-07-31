@@ -2,11 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // DoubleFlower is a two block high flower consisting of an upper and lower part.
@@ -27,9 +26,7 @@ func (d DoubleFlower) FlammabilityInfo() FlammabilityInfo {
 
 // BoneMeal ...
 func (d DoubleFlower) BoneMeal(pos cube.Pos, w *world.World) bool {
-	itemEntity := entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre())
-	itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-	w.AddEntity(itemEntity)
+	dropItem(w, item.NewStack(d, 1), pos.Vec3Centre())
 	return true
 }
 
@@ -37,16 +34,19 @@ func (d DoubleFlower) BoneMeal(pos cube.Pos, w *world.World) bool {
 func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.UpperPart {
 		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
-			w.BreakBlock(pos)
+			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		}
 		return
 	}
 	if upper, ok := w.Block(pos.Side(cube.FaceUp)).(DoubleFlower); !ok || upper.Type != d.Type || !upper.UpperPart {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		return
 	}
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 
@@ -84,8 +84,8 @@ func (d DoubleFlower) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DoubleFlower) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:double_plant", map[string]interface{}{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
+func (d DoubleFlower) EncodeBlock() (string, map[string]any) {
+	return "minecraft:double_plant", map[string]any{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
 }
 
 // allDoubleFlowers ...

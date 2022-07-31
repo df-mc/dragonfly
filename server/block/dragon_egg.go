@@ -38,9 +38,9 @@ func (d DragonEgg) teleport(pos cube.Pos, w *world.World) {
 		newPos := pos.Add(cube.Pos{rand.Intn(31) - 15, max(w.Range()[0]-pos.Y(), min(w.Range()[1]-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
 
 		if _, ok := w.Block(newPos).(Air); ok {
-			w.PlaceBlock(newPos, d)
-			w.BreakBlockWithoutParticles(pos)
-			w.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Subtract(newPos)})
+			w.SetBlock(newPos, d, nil)
+			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Sub(newPos)})
 			return
 		}
 	}
@@ -60,7 +60,7 @@ func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	d.teleport(pos, w)
 	return true
 }
@@ -76,6 +76,6 @@ func (DragonEgg) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (DragonEgg) EncodeBlock() (string, map[string]interface{}) {
+func (DragonEgg) EncodeBlock() (string, map[string]any) {
 	return "minecraft:dragon_egg", nil
 }

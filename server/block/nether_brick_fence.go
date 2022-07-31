@@ -13,7 +13,7 @@ type NetherBrickFence struct {
 
 // BreakInfo ...
 func (n NetherBrickFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n))
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(30)
 }
 
 // CanDisplace ...
@@ -38,6 +38,6 @@ func (NetherBrickFence) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (NetherBrickFence) EncodeBlock() (string, map[string]interface{}) {
+func (NetherBrickFence) EncodeBlock() (string, map[string]any) {
 	return "minecraft:nether_brick_fence", nil
 }

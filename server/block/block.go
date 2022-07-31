@@ -2,10 +2,14 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
+	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -14,7 +18,7 @@ type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
 	// Activate returns a bool indicating if activating the block was used successfully.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
 }
 
 // Pickable represents a block that may give a different item then the block itself when picked.
@@ -60,7 +64,7 @@ type Replaceable interface {
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
-	EntityLand(pos cube.Pos, w *world.World, e world.Entity)
+	EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64)
 }
 
 // EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
@@ -82,7 +86,7 @@ func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 	pos := cube.PosFromVec3(userPos)
 	if abs(pos[0]-placePos[0]) < 2 && abs(pos[2]-placePos[2]) < 2 {
 		y := userPos[1]
-		if eyed, ok := user.(entity.Eyed); ok {
+		if eyed, ok := user.(interface{ EyeHeight() float64 }); ok {
 			y += eyed.EyeHeight()
 		}
 
@@ -137,8 +141,24 @@ func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *ite
 		placer.PlaceBlock(pos, b, ctx)
 		return
 	}
-	w.PlaceBlock(pos, b)
+	w.SetBlock(pos, b, nil)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
+}
+
+// horizontalDirection returns the horizontal direction of the given direction. This is a legacy type still used in
+// various blocks.
+func horizontalDirection(d cube.Direction) cube.Direction {
+	switch d {
+	case cube.South:
+		return cube.North
+	case cube.West:
+		return cube.South
+	case cube.North:
+		return cube.West
+	case cube.East:
+		return cube.East
+	}
+	panic("invalid direction")
 }
 
 // placed checks if an item was placed with the use context passed.
@@ -181,13 +201,21 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
-	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
+	_, air := w.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 
-		e := entity.NewFallingBlock(b, pos.Vec3Middle())
-		w.AddEntity(e)
+		ent, ok := world.EntityByName("minecraft:falling_block")
+		if !ok {
+			return
+		}
+
+		if p, ok := ent.(interface {
+			New(bl world.Block, pos mgl64.Vec3) world.Entity
+		}); ok {
+			w.AddEntity(p.New(b, pos.Vec3Centre()))
+		}
 	}
 }
 
@@ -213,6 +241,43 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 		Encouragement: encouragement,
 		Flammability:  flammability,
 		LavaFlammable: lavaFlammable,
+	}
+}
+
+// livingEntity ...
+type livingEntity interface {
+	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
+	// immune for half a second after being attacked.
+	AttackImmune() bool
+	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
+	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
+	// If the final damage exceeds the health that the entity currently has, the entity is killed.
+	// Hurt returns the final amount of damage dealt to the Living entity and returns whether the Living entity
+	// was vulnerable to the damage at all.
+	Hurt(damage float64, src damage.Source) (n float64, vulnerable bool)
+}
+
+// flammableEntity ...
+type flammableEntity interface {
+	// OnFireDuration returns duration of fire in ticks.
+	OnFireDuration() time.Duration
+	// SetOnFire sets the entity on fire for the specified duration.
+	SetOnFire(duration time.Duration)
+	// Extinguish extinguishes the entity.
+	Extinguish()
+}
+
+// dropItem ...
+func dropItem(w *world.World, it item.Stack, pos mgl64.Vec3) {
+	ent, ok := world.EntityByName("minecraft:item")
+	if !ok {
+		return
+	}
+
+	if p, ok := ent.(interface {
+		New(it item.Stack, pos, vel mgl64.Vec3) world.Entity
+	}); ok {
+		w.AddEntity(p.New(it, pos, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}))
 	}
 }
 
@@ -246,4 +311,35 @@ type bassDrum struct{}
 // Instrument ...
 func (bassDrum) Instrument() sound.Instrument {
 	return sound.BassDrum()
+}
+
+// newSmeltInfo returns a new SmeltInfo with the given values.
+func newSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+	}
+}
+
+// newFoodSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a smelter.
+func newFoodSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Food:       true,
+	}
+}
+
+// newOreSmeltInfo returns a new SmeltInfo with the given values that allows smelting in a blast furnace.
+func newOreSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
+	return item.SmeltInfo{
+		Product:    product,
+		Experience: experience,
+		Ores:       true,
+	}
+}
+
+// newFuelInfo returns a new FuelInfo with the given values.
+func newFuelInfo(duration time.Duration) item.FuelInfo {
+	return item.FuelInfo{Duration: duration}
 }

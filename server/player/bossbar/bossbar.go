@@ -17,7 +17,7 @@ type BossBar struct {
 // fmt.Sprintln.
 // By default, the boss bar will have a full health bar. To change this, use BossBar.WithHealthPercentage().
 // The default colour of the BossBar is Purple. This can be changed using BossBar.WithColour.
-func New(text ...interface{}) BossBar {
+func New(text ...any) BossBar {
 	return BossBar{text: format(text), health: 1, c: Purple()}
 }
 
@@ -56,6 +56,6 @@ func (bar BossBar) Colour() Colour {
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
 // end, which is typically used for sending messages, popups and tips.
-func format(a []interface{}) string {
+func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 }

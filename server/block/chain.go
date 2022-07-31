@@ -41,7 +41,7 @@ func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chain) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(15)
 }
 
 // EncodeItem ...
@@ -50,8 +50,8 @@ func (Chain) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Chain) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:chain", map[string]interface{}{"pillar_axis": c.Axis.String()}
+func (c Chain) EncodeBlock() (string, map[string]any) {
+	return "minecraft:chain", map[string]any{"pillar_axis": c.Axis.String()}
 }
 
 // Model ...

@@ -27,7 +27,7 @@ func (Glowstone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Glowstone) EncodeBlock() (string, map[string]interface{}) {
+func (Glowstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:glowstone", nil
 }
 

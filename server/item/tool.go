@@ -1,6 +1,8 @@
 package item
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/world"
+)
 
 var (
 	// TypeNone is the ToolType of items that are not tools.
@@ -19,17 +21,17 @@ var (
 	TypeSword = ToolType{5}
 
 	// ToolTierWood is the ToolTier of wood tools. This is the lowest possible tier.
-	ToolTierWood = ToolTier{HarvestLevel: 1, Durability: 59, BaseMiningEfficiency: 2, BaseAttackDamage: 1, Name: "wooden"}
+	ToolTierWood = ToolTier{HarvestLevel: 1, Durability: 59, BaseMiningEfficiency: 2, BaseAttackDamage: 1, EnchantmentValue: 15, Name: "wooden"}
 	// ToolTierGold is the ToolTier of gold tools.
-	ToolTierGold = ToolTier{HarvestLevel: 1, Durability: 32, BaseMiningEfficiency: 12, BaseAttackDamage: 1, Name: "golden"}
+	ToolTierGold = ToolTier{HarvestLevel: 1, Durability: 32, BaseMiningEfficiency: 12, BaseAttackDamage: 1, EnchantmentValue: 22, Name: "golden"}
 	// ToolTierStone is the ToolTier of stone tools.
-	ToolTierStone = ToolTier{HarvestLevel: 2, Durability: 131, BaseMiningEfficiency: 4, BaseAttackDamage: 2, Name: "stone"}
+	ToolTierStone = ToolTier{HarvestLevel: 2, Durability: 131, BaseMiningEfficiency: 4, BaseAttackDamage: 2, EnchantmentValue: 5, Name: "stone"}
 	// ToolTierIron is the ToolTier of iron tools.
-	ToolTierIron = ToolTier{HarvestLevel: 3, Durability: 250, BaseMiningEfficiency: 6, BaseAttackDamage: 3, Name: "iron"}
+	ToolTierIron = ToolTier{HarvestLevel: 3, Durability: 250, BaseMiningEfficiency: 6, BaseAttackDamage: 3, EnchantmentValue: 14, Name: "iron"}
 	// ToolTierDiamond is the ToolTier of diamond tools.
-	ToolTierDiamond = ToolTier{HarvestLevel: 4, Durability: 1561, BaseMiningEfficiency: 8, BaseAttackDamage: 4, Name: "diamond"}
+	ToolTierDiamond = ToolTier{HarvestLevel: 4, Durability: 1561, BaseMiningEfficiency: 8, BaseAttackDamage: 4, EnchantmentValue: 10, Name: "diamond"}
 	// ToolTierNetherite is the ToolTier of netherite tools. This is the highest possible tier.
-	ToolTierNetherite = ToolTier{HarvestLevel: 4, Durability: 2031, BaseMiningEfficiency: 9, BaseAttackDamage: 5, Name: "netherite"}
+	ToolTierNetherite = ToolTier{HarvestLevel: 4, Durability: 2031, BaseMiningEfficiency: 9, BaseAttackDamage: 5, EnchantmentValue: 15, Name: "netherite"}
 )
 
 type (
@@ -58,6 +60,9 @@ type (
 		// BaseAttackDamage is the base attack damage to tools with this tier. All tools have a constant value
 		// that is added on top of this.
 		BaseAttackDamage float64
+		// EnchantmentValue is the enchantment value of the tool used when selecting pseudo-random enchantments for
+		// enchanting tables.
+		EnchantmentValue int
 		// BaseDurability returns the maximum durability that a tool with this tier has.
 		Durability int
 		// Name is the name of the tier.
@@ -84,3 +89,32 @@ func (n ToolNone) HarvestLevel() int { return 0 }
 
 // BaseMiningEfficiency ...
 func (n ToolNone) BaseMiningEfficiency(world.Block) float64 { return 1 }
+
+// toolTierRepairable returns true if the ToolTier passed is repairable.
+func toolTierRepairable(tier ToolTier) func(Stack) bool {
+	return func(stack Stack) bool {
+		switch tier {
+		case ToolTierWood:
+			if planks, ok := stack.Item().(interface{ RepairsWoodTools() bool }); ok {
+				return planks.RepairsWoodTools()
+			}
+		case ToolTierStone:
+			if cobblestone, ok := stack.Item().(interface{ RepairsStoneTools() bool }); ok {
+				return cobblestone.RepairsStoneTools()
+			}
+		case ToolTierGold:
+			_, ok := stack.Item().(GoldIngot)
+			return ok
+		case ToolTierIron:
+			_, ok := stack.Item().(IronIngot)
+			return ok
+		case ToolTierDiamond:
+			_, ok := stack.Item().(Diamond)
+			return ok
+		case ToolTierNetherite:
+			_, ok := stack.Item().(NetheriteIngot)
+			return ok
+		}
+		return false
+	}
+}

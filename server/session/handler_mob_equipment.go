@@ -14,7 +14,7 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.MobEquipment)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
-		return ErrSelfRuntimeID
+		return errSelfRuntimeID
 	}
 	switch pk.WindowID {
 	case protocol.WindowIDOffHand:

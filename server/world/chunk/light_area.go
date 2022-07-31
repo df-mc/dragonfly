@@ -85,7 +85,7 @@ func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cu
 				if !filter(sub) {
 					continue
 				}
-				baseY := int(c.subY(int16(index)))
+				baseY := int(c.SubY(int16(index)))
 				a.iterSubChunk(func(x, y, z int) {
 					f(cube.Pos{x + baseX, y + baseY, z + baseZ})
 				})
@@ -108,7 +108,7 @@ func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube
 				baseY := cy << 4
 
 				xa, za := cube.Pos{a.baseX + u, baseY, a.baseZ + v}, cube.Pos{a.baseX + v, baseY, a.baseZ + u}
-				xb, zb := xa.Add(cube.Pos{-1, 0, 0}), za.Add(cube.Pos{0, 0, -1})
+				xb, zb := xa.Side(cube.FaceWest), za.Side(cube.FaceNorth)
 
 				addX, addZ := filter(a.sub(xa), a.sub(xb)), filter(a.sub(za), a.sub(zb))
 				if !addX && !addZ {
@@ -132,13 +132,19 @@ func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube
 	}
 }
 
-// iterHeightmap iterates over the heightmap of the lightArea and calls the function f with the heightmap value, the
-// heightmap value of the highest neighbour and the Y value of the highest non-empty SubChunk.
+// iterHeightmap iterates over the height map of the lightArea and calls the function f with the height map value, the
+// height map value of the highest neighbour and the Y value of the highest non-empty SubChunk.
 func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
-	m, highestY := a.calculateHeightmap()
+	m, highestY := a.c[0].HeightMap(), a.c[0].Range().Min()
+	for index := range a.c[0].sub {
+		if a.c[0].sub[index].Empty() {
+			continue
+		}
+		highestY = int(a.c[0].SubY(int16(index))) + 15
+	}
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.at(x, z)), int(m.highestNeighbour(x, z)), highestY)
+			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.At(x, z)), int(m.HighestNeighbour(x, z)), highestY)
 		}
 	}
 }
@@ -210,7 +216,7 @@ func (a *lightArea) initialiseLightSlices() {
 
 // sub returns the SubChunk corresponding to a cube.Pos.
 func (a *lightArea) sub(pos cube.Pos) *SubChunk {
-	return a.chunk(pos).subChunk(int16(pos[1]))
+	return a.chunk(pos).SubChunk(int16(pos[1]))
 }
 
 // chunk returns the Chunk corresponding to a cube.Pos.

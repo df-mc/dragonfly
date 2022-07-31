@@ -11,6 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Chest is a container block which may be used to store items. Chests may also be paired to create a bigger
@@ -56,7 +57,7 @@ func (c Chest) Inventory() *inventory.Inventory {
 }
 
 // WithName returns the chest after applying a specific name to the block.
-func (c Chest) WithName(a ...interface{}) world.Item {
+func (c Chest) WithName(a ...any) world.Item {
 	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return c
 }
@@ -113,9 +114,11 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 }
 
 // Activate ...
-func (c Chest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		if d, ok := w.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+			opener.OpenBlockContainer(pos)
+		}
 		return true
 	}
 	return false
@@ -137,7 +140,12 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Items(), item.NewStack(c, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
+}
+
+// FuelInfo ...
+func (Chest) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
 }
 
 // FlammabilityInfo ...
@@ -146,25 +154,25 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 }
 
 // DecodeNBT ...
-func (c Chest) DecodeNBT(data map[string]interface{}) interface{} {
+func (c Chest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
 	c.Facing = facing
-	c.CustomName = nbtconv.MapString(data, "CustomName")
-	nbtconv.InvFromNBT(c.inventory, nbtconv.MapSlice(data, "Items"))
+	c.CustomName = nbtconv.Map[string](data, "CustomName")
+	nbtconv.InvFromNBT(c.inventory, nbtconv.Map[[]any](data, "Items"))
 	return c
 }
 
 // EncodeNBT ...
-func (c Chest) EncodeNBT() map[string]interface{} {
+func (c Chest) EncodeNBT() map[string]any {
 	if c.inventory == nil {
 		facing, customName := c.Facing, c.CustomName
 		//noinspection GoAssignmentToReceiver
 		c = NewChest()
 		c.Facing, c.CustomName = facing, customName
 	}
-	m := map[string]interface{}{
+	m := map[string]any{
 		"Items": nbtconv.InvToNBT(c.inventory),
 		"id":    "Chest",
 	}
@@ -180,8 +188,8 @@ func (Chest) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Chest) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:chest", map[string]interface{}{"facing_direction": 2 + int32(c.Facing)}
+func (c Chest) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:chest", map[string]any{"facing_direction": 2 + int32(c.Facing)}
 }
 
 // allChests ...

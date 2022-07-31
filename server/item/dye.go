@@ -16,7 +16,7 @@ type Dye struct {
 func (d Dye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	if dy, ok := w.Block(pos).(dyeable); ok {
 		if res, ok := dy.Dye(d.Colour); ok {
-			w.SetBlock(pos, res)
+			w.SetBlock(pos, res, nil)
 			ctx.SubtractFromCount(1)
 			return true
 		}
@@ -29,15 +29,6 @@ type dyeable interface {
 	// Dye uses a dye with the Colour passed on the block. The resulting block is returned. A bool is returned to
 	// indicate if dyeing the block was successful.
 	Dye(c Colour) (world.Block, bool)
-}
-
-// AllDyes returns all 16 dye items
-func AllDyes() []world.Item {
-	b := make([]world.Item, 0, 16)
-	for _, c := range Colours() {
-		b = append(b, Dye{Colour: c})
-	}
-	return b
 }
 
 // EncodeItem ...

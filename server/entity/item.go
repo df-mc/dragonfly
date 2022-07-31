@@ -2,7 +2,8 @@ package entity
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/physics"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -56,9 +57,9 @@ func (it *Item) EncodeEntity() string {
 	return "minecraft:item"
 }
 
-// AABB ...
-func (it *Item) AABB() physics.AABB {
-	return physics.NewAABB(mgl64.Vec3{-0.125, 0, -0.125}, mgl64.Vec3{0.125, 0.25, 0.125})
+// BBox ...
+func (it *Item) BBox() cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Item returns the item stack that the item entity holds.
@@ -79,7 +80,7 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(w *world.World, current int64) {
 	it.mu.Lock()
-	m := it.c.TickMovement(w, it, it.pos, it.vel, 0, 0)
+	m := it.c.TickMovement(it, it.pos, it.vel, 0, 0)
 	it.pos, it.vel = m.pos, m.vel
 	it.mu.Unlock()
 
@@ -114,42 +115,17 @@ func (it *Item) Teleport(pos mgl64.Vec3) {
 	it.pos = pos
 }
 
-// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
-func (it *Item) DecodeNBT(data map[string]interface{}) interface{} {
-	i := nbtconv.MapItem(data, "Item")
-	if i.Empty() {
-		return nil
-	}
-	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.age = int(nbtconv.MapInt16(data, "Age"))
-	n.pickupDelay = int(nbtconv.MapInt64(data, "PickupDelay"))
-	return n
-}
-
-// EncodeNBT encodes the Item entity's properties as a map and returns it.
-func (it *Item) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{
-		"Age":         int16(it.age),
-		"PickupDelay": int64(it.pickupDelay),
-		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
-		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
-		"Health":      int16(5),
-		"Item":        nbtconv.WriteItem(it.Item(), true),
-	}
-}
-
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby(w *world.World, pos mgl64.Vec3) {
-	grown := it.AABB().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range w.EntitiesWithin(it.AABB().Translate(pos).Grow(2), nil) {
+	grown := it.BBox().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
+	for _, e := range w.EntitiesWithin(it.BBox().Translate(pos).Grow(2), nil) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
 		}
-		if e.AABB().Translate(e.Position()).IntersectsWith(grown) {
+		if e.BBox().Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				// A collector was within range to pick up the entity.
 				it.collect(w, collector, pos)
@@ -209,6 +185,44 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	w.AddEntity(NewItem(it.i.Grow(-n), pos))
 
 	_ = it.Close()
+}
+
+// New creates and returns an Item with the item.Stack, position, and velocity provided. It doesn't spawn the Item
+// by itself.
+func (it *Item) New(stack item.Stack, pos, vel mgl64.Vec3) world.Entity {
+	itemEntity := NewItem(stack, pos)
+	itemEntity.vel = vel
+	return itemEntity
+}
+
+// Explode ...
+func (it *Item) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
+	_ = it.Close()
+}
+
+// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
+func (it *Item) DecodeNBT(data map[string]any) any {
+	i := nbtconv.MapItem(data, "Item")
+	if i.Empty() {
+		return nil
+	}
+	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
+	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	n.age = int(nbtconv.Map[int16](data, "Age"))
+	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
+	return n
+}
+
+// EncodeNBT encodes the Item entity's properties as a map and returns it.
+func (it *Item) EncodeNBT() map[string]any {
+	return map[string]any{
+		"Age":         int16(it.age),
+		"PickupDelay": int64(it.pickupDelay),
+		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Health":      int16(5),
+		"Item":        nbtconv.WriteItem(it.Item(), true),
+	}
 }
 
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as

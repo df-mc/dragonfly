@@ -3,7 +3,9 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
 // WoodFence are blocks similar to Walls, which cannot normally be jumped over. Unlike walls however,
@@ -19,7 +21,7 @@ type WoodFence struct {
 
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w)).withBlastResistance(15)
 }
 
 // CanDisplace ...
@@ -41,12 +43,19 @@ func (w WoodFence) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
 }
 
+// FuelInfo ...
+func (WoodFence) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
 // EncodeBlock ...
-func (w WoodFence) EncodeBlock() (name string, properties map[string]interface{}) {
-	if w.Wood == CrimsonWood() || w.Wood == WarpedWood() {
+func (w WoodFence) EncodeBlock() (name string, properties map[string]any) {
+	switch w.Wood {
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+		return "minecraft:fence", map[string]any{"wood_type": w.Wood.String()}
+	default:
 		return "minecraft:" + w.Wood.String() + "_fence", nil
 	}
-	return "minecraft:fence", map[string]interface{}{"wood_type": w.Wood.String()}
 }
 
 // Model ...
@@ -57,12 +66,10 @@ func (w WoodFence) Model() world.BlockModel {
 // EncodeItem ...
 func (w WoodFence) EncodeItem() (name string, meta int16) {
 	switch w.Wood {
-	case CrimsonWood():
-		return "minecraft:crimson_fence", 0
-	case WarpedWood():
-		return "minecraft:warped_fence", 0
-	default:
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
 		return "minecraft:fence", int16(w.Wood.Uint8())
+	default:
+		return "minecraft:" + w.Wood.String() + "_fence", 0
 	}
 }
 

@@ -2,9 +2,9 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/physics"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 )
 
 // MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
@@ -62,7 +62,8 @@ func (m *Movement) Rotation() (yaw, pitch float64) {
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
 // The resulting Movement can be sent to viewers by calling Movement.Send.
-func (c *MovementComputer) TickMovement(w *world.World, e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
+func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
+	w := e.World()
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
@@ -123,36 +124,27 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	// Entities only ever have a single bounding box.
-	w := e.World()
-	entityAABB := e.AABB().Translate(pos)
-	positions := w.BlocksAround(entityAABB.Extend(vel))
-
-	var blocks []physics.AABB
-	for _, blockPos := range positions {
-		boxes := w.Block(blockPos).Model().AABB(blockPos, w)
-		for _, box := range boxes {
-			blocks = append(blocks, box.Translate(blockPos.Vec3()))
-		}
-	}
+	entityBBox := e.BBox().Translate(pos)
+	blocks := blockBBoxsAround(e, entityBBox.Extend(vel))
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
-		// First we move the entity AABB on the Y axis.
-		for _, blockAABB := range blocks {
-			deltaY = entityAABB.CalculateYOffset(blockAABB, deltaY)
+		// First we move the entity BBox on the Y axis.
+		for _, blockBBox := range blocks {
+			deltaY = entityBBox.YOffset(blockBBox, deltaY)
 		}
-		entityAABB = entityAABB.Translate(mgl64.Vec3{0, deltaY})
+		entityBBox = entityBBox.Translate(mgl64.Vec3{0, deltaY})
 	}
 	if !mgl64.FloatEqualThreshold(deltaX, 0, epsilon) {
 		// Then on the X axis.
-		for _, blockAABB := range blocks {
-			deltaX = entityAABB.CalculateXOffset(blockAABB, deltaX)
+		for _, blockBBox := range blocks {
+			deltaX = entityBBox.XOffset(blockBBox, deltaX)
 		}
-		entityAABB = entityAABB.Translate(mgl64.Vec3{deltaX})
+		entityBBox = entityBBox.Translate(mgl64.Vec3{deltaX})
 	}
 	if !mgl64.FloatEqualThreshold(deltaZ, 0, epsilon) {
 		// And finally on the Z axis.
-		for _, blockAABB := range blocks {
-			deltaZ = entityAABB.CalculateZOffset(blockAABB, deltaZ)
+		for _, blockBBox := range blocks {
+			deltaZ = entityBBox.ZOffset(blockBBox, deltaZ)
 		}
 	}
 	if !mgl64.FloatEqual(vel[1], 0) {
@@ -175,4 +167,29 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 		vel[2] = 0
 	}
 	return mgl64.Vec3{deltaX, deltaY, deltaZ}, vel
+}
+
+// blockBBoxsAround returns all blocks around the entity passed, using the BBox passed to make a prediction of
+// what blocks need to have their BBox returned.
+func blockBBoxsAround(e world.Entity, box cube.BBox) []cube.BBox {
+	w := e.World()
+	grown := box.Grow(0.25)
+	min, max := grown.Min(), grown.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	// A prediction of one BBox per block, plus an additional 2, in case
+	blockBBoxs := make([]cube.BBox, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				pos := cube.Pos{x, y, z}
+				boxes := w.Block(pos).Model().BBox(pos, w)
+				for _, box := range boxes {
+					blockBBoxs = append(blockBBoxs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
+				}
+			}
+		}
+	}
+	return blockBBoxs
 }

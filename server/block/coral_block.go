@@ -42,18 +42,18 @@ func (c CoralBlock) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	}, w.Range())
 	if !adjacentWater {
 		c.Dead = true
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 	}
 }
 
 // BreakInfo ...
 func (c CoralBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c))
+	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c)).withBlastResistance(4.5)
 }
 
 // EncodeBlock ...
-func (c CoralBlock) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:coral_block", map[string]interface{}{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
+func (c CoralBlock) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:coral_block", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...

@@ -45,10 +45,10 @@ func (g Grass) SoilFor(block world.Block) bool {
 
 // RandomTick handles the ticking of grass, which may or may not result in the spreading of grass onto dirt.
 func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	aboveLight := w.Light(pos.Add(cube.Pos{0, 1}))
+	aboveLight := w.Light(pos.Side(cube.FaceUp))
 	if aboveLight < 4 {
 		// The light above the block is too low: The grass turns to dirt.
-		w.SetBlock(pos, Dirt{})
+		w.SetBlock(pos, Dirt{}, nil)
 		return
 	}
 	if aboveLight < 9 {
@@ -65,25 +65,27 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		n >>= 7
 
 		spreadPos := pos.Add(cube.Pos{x - 1, y - 3, z - 1})
+		// Don't spread grass to locations where dirt is exposed to hardly any light.
+		if w.Light(spreadPos.Side(cube.FaceUp)) < 4 {
+			continue
+		}
 		b := w.Block(spreadPos)
 		if dirt, ok := b.(Dirt); !ok || dirt.Coarse {
 			continue
 		}
-		// Don't spread grass to locations where dirt is exposed to hardly any light.
-		if w.Light(spreadPos.Add(cube.Pos{0, 1})) < 4 {
-			continue
-		}
-		w.SetBlock(spreadPos, g)
+		w.SetBlock(spreadPos, g, nil)
 	}
 }
 
 // BoneMeal ...
 func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
-	for c := 0; c < 14; c++ {
-		x := randWithinRange(pos.X()-3, pos.X()+3)
-		z := randWithinRange(pos.Z()-3, pos.Z()+3)
-		if (w.Block(cube.Pos{x, pos.Y() + 1, z}) == Air{}) && (w.Block(cube.Pos{x, pos.Y(), z}) == Grass{}) {
-			w.SetBlock(cube.Pos{x, pos.Y() + 1, z}, plantSelection[randWithinRange(0, len(plantSelection)-1)])
+	for i := 0; i < 14; i++ {
+		c := pos.Add(cube.Pos{rand.Intn(6) - 3, 0, rand.Intn(6) - 3})
+		above := c.Side(cube.FaceUp)
+		_, air := w.Block(above).(Air)
+		_, grass := w.Block(c).(Grass)
+		if air && grass {
+			w.SetBlock(above, plantSelection[rand.Intn(len(plantSelection))], nil)
 		}
 	}
 
@@ -101,7 +103,7 @@ func (Grass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Grass) EncodeBlock() (string, map[string]interface{}) {
+func (Grass) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grass", nil
 }
 
@@ -113,9 +115,4 @@ func (g Grass) Till() (world.Block, bool) {
 // Shovel ...
 func (g Grass) Shovel() (world.Block, bool) {
 	return DirtPath{}, true
-}
-
-// randWithinRange returns a random integer within a range.
-func randWithinRange(min, max int) int {
-	return rand.Intn(max-min) + min
 }
