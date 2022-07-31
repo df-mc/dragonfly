@@ -14,8 +14,6 @@ import (
 // BottleOfEnchanting is a bottle that releases experience orbs when thrown.
 type BottleOfEnchanting struct {
 	transform
-	yaw, pitch float64
-
 	age   int
 	close bool
 
@@ -25,13 +23,9 @@ type BottleOfEnchanting struct {
 }
 
 // NewBottleOfEnchanting ...
-func NewBottleOfEnchanting(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *BottleOfEnchanting {
+func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *BottleOfEnchanting {
 	b := &BottleOfEnchanting{
-		yaw:   yaw,
-		pitch: pitch,
-
 		owner: owner,
-
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.07,
 			Drag:              0.01,
@@ -62,13 +56,6 @@ func (b *BottleOfEnchanting) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// Rotation ...
-func (b *BottleOfEnchanting) Rotation() (float64, float64) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.yaw, b.pitch
-}
-
 // Tick ...
 func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
 	if b.close {
@@ -76,8 +63,8 @@ func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
 		return
 	}
 	b.mu.Lock()
-	m, result := b.c.TickMovement(b, b.pos, b.vel, b.yaw, b.pitch, b.ignores)
-	b.pos, b.vel, b.yaw, b.pitch = m.pos, m.vel, m.yaw, m.pitch
+	m, result := b.c.TickMovement(b, b.pos, b.vel, 0, 0, b.ignores)
+	b.pos, b.vel = m.pos, m.vel
 	b.mu.Unlock()
 
 	b.age++
@@ -110,8 +97,8 @@ func (b *BottleOfEnchanting) ignores(entity world.Entity) bool {
 
 // New creates a BottleOfEnchanting with the position, velocity, yaw, and pitch provided. It doesn't spawn the
 // BottleOfEnchanting, only returns it.
-func (b *BottleOfEnchanting) New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity {
-	bottle := NewBottleOfEnchanting(pos, yaw, pitch, nil)
+func (b *BottleOfEnchanting) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
+	bottle := NewBottleOfEnchanting(pos, owner)
 	bottle.vel = vel
 	return bottle
 }
@@ -123,30 +110,21 @@ func (b *BottleOfEnchanting) Owner() world.Entity {
 	return b.owner
 }
 
-// Own ...
-func (b *BottleOfEnchanting) Own(owner world.Entity) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.owner = owner
-}
-
 // DecodeNBT decodes the properties in a map to a BottleOfEnchanting and returns a new BottleOfEnchanting entity.
 func (b *BottleOfEnchanting) DecodeNBT(data map[string]any) any {
 	return b.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		float64(nbtconv.Map[float32](data, "Pitch")),
+		nil,
 	)
 }
 
 // EncodeNBT encodes the BottleOfEnchanting entity's properties as a map and returns it.
 func (b *BottleOfEnchanting) EncodeNBT() map[string]any {
-	yaw, pitch := b.Rotation()
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
-		"Yaw":    yaw,
-		"Pitch":  pitch,
+		"Yaw":    0.0,
+		"Pitch":  0.0,
 	}
 }
