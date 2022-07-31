@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -21,8 +22,6 @@ type Arrow struct {
 	transform
 	yaw, pitch float64
 	baseDamage float64
-
-	initialVelocity mgl64.Vec3
 
 	age, ageCollided int
 	close, critical  bool
@@ -200,9 +199,9 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 
 	a.mu.Lock()
 	if a.collided {
-		boxs := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
+		boxes := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
 		box := a.BBox().Translate(a.pos)
-		for _, bb := range boxs {
+		for _, bb := range boxes {
 			if box.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
 				if a.ageCollided > 5 && !a.disallowPickup {
 					a.checkNearby(w)
@@ -240,7 +239,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
-				living.Hurt(a.damage(), damage.SourceProjectile{Projectile: a, Owner: a.owner})
+				living.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)
@@ -276,7 +275,6 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity {
 	arrow := NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, tip)
 	arrow.vel = vel
-	arrow.initialVelocity = vel
 	arrow.punchLevel = punchLevel
 	arrow.disallowPickup = disallowPickup
 	arrow.obtainArrowOnPickup = obtainArrowOnPickup
@@ -354,10 +352,10 @@ func (a *Arrow) checkNearby(w *world.World) {
 
 // damage returns the full damage the arrow should deal. In Bedrock, this is the initial velocity length multiplied by
 // base damage and then multiplied by 0.6. If the arrow is critical, it is also multiplied by 1.5.
-func (a *Arrow) damage() float64 {
-	base := math.Ceil(a.initialVelocity.Len() * a.BaseDamage() * 0.6)
+func (a *Arrow) damage(vel mgl64.Vec3) float64 {
+	base := math.Ceil(vel.Len() * a.BaseDamage())
 	if a.Critical() {
-		return base * 1.5
+		return base + float64(rand.Intn(int(base/2+1)))
 	}
 	return base
 }
