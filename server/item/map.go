@@ -5,7 +5,7 @@ import (
 )
 
 type MapItem interface {
-	BaseMap() BaseMap
+	BaseMap() *BaseMap
 }
 
 type BaseMap struct {
@@ -40,7 +40,7 @@ func (m BaseMap) EncodeNBT() map[string]any {
 	return data
 }
 
-// BaseMap ...
-func (m BaseMap) BaseMap() BaseMap {
+// BaseMap returns the pointer instead of a value copy.
+func (m *BaseMap) BaseMap() *BaseMap {
 	return m
 }
