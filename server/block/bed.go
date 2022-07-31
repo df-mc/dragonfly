@@ -24,6 +24,11 @@ type Bed struct {
 	User item.User
 }
 
+// MaxCount always returns 1.
+func (Bed) MaxCount() int {
+	return 1
+}
+
 // Model ...
 func (Bed) Model() world.BlockModel {
 	return model.Bed{}
@@ -31,7 +36,15 @@ func (Bed) Model() world.BlockModel {
 
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(b.handleBreak)
+	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+		headSide, _, ok := b.head(pos, w)
+		if ok {
+			return
+		}
+		if s, ok := headSide.User.(world.Sleeper); ok {
+			s.Wake()
+		}
+	})
 }
 
 // CanDisplace ...
@@ -138,17 +151,6 @@ func (b Bed) EntityLand(_ cube.Pos, _ *world.World, e world.Entity) {
 		vel := v.Velocity()
 		vel[1] = vel[1] * -3 / 4
 		v.SetVelocity(vel)
-	}
-}
-
-// handleBreak handles the breaking of the bed.
-func (b Bed) handleBreak(pos cube.Pos, w *world.World, _ item.User) {
-	headSide, _, ok := b.head(pos, w)
-	if ok {
-		return
-	}
-	if s, ok := headSide.User.(world.Sleeper); ok {
-		s.Wake()
 	}
 }
 
