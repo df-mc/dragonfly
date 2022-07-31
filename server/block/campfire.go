@@ -66,7 +66,7 @@ func (c Campfire) Splash(pos cube.Pos, p *entity.SplashPotion) {
 
 // BreakInfo ...
 func (c Campfire) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(5, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		var drops []item.Stack
 		if hasSilkTouch(enchantments) {
 			drops = append(drops, item.NewStack(c, 1))
