@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/portal"
 	"math/rand"
 	"time"
 )
@@ -205,6 +206,20 @@ func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 			flammable.SetOnFire(8 * time.Second)
 		}
 	}
+}
+
+// Place ...
+func (Fire) Place(pos cube.Pos, w *world.World) bool {
+	for _, f := range cube.Faces() {
+		if o, ok := w.Block(pos.Side(f)).(Obsidian); ok && !o.Crying {
+			if p, ok := portal.NetherPortalFromPos(w, pos); ok && p.Framed() && !p.Activated() {
+				p.Activate()
+				return false
+			}
+			return true
+		}
+	}
+	return true
 }
 
 // ScheduledTick ...

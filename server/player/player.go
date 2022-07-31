@@ -90,6 +90,7 @@ type Player struct {
 
 	enchantSeed atomic.Int64
 
+	tc *entity.TravelComputer
 	mc *entity.MovementComputer
 
 	breaking          atomic.Bool
@@ -136,7 +137,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
 		cooldowns:         make(map[string]time.Time),
-		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		tc:                &entity.TravelComputer{Instantaneous: func() bool { return p.GameMode().CreativeInventory() }},
 	}
 	return p
 }
@@ -2259,6 +2261,8 @@ func (p *Player) Tick(w *world.World, current int64) {
 	} else {
 		p.vel.Store(mgl64.Vec3{})
 	}
+
+	p.tc.TickTravelling(p)
 }
 
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.

@@ -39,6 +39,8 @@ type TickerEntity interface {
 	Entity
 	// Tick ticks the entity with the current World and tick passed.
 	Tick(w *World, current int64)
+
+	Entity
 }
 
 // SaveableEntity is an Entity that can be saved and loaded with the World it was added to. These entities can be
