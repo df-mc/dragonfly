@@ -15,6 +15,7 @@ import (
 type SeaPickle struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// AdditionalCount is the amount of additional sea pickles clustered together.
 	AdditionalCount int
@@ -124,12 +125,6 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 // HasLiquidDrops ...
 func (SeaPickle) HasLiquidDrops() bool {
 	return true
-}
-
-// CanDisplace ...
-func (SeaPickle) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...
