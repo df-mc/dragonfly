@@ -81,7 +81,7 @@ type landable interface {
 // Tick ...
 func (f *FallingBlock) Tick(w *world.World, _ int64) {
 	f.mu.Lock()
-	m := f.c.TickMovement(w, f, f.pos, f.vel, 0, 0)
+	m := f.c.TickMovement(f, f.pos, f.vel, 0, 0)
 	f.pos, f.vel = m.pos, m.vel
 	f.mu.Unlock()
 

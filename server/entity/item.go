@@ -84,7 +84,7 @@ func (it *Item) Tick(w *world.World, current int64) {
 	it.pos, it.vel = m.pos, m.vel
 	it.mu.Unlock()
 
-	it.t.TickTravelling(w, it)
+	it.t.TickTravelling(it)
 
 	m.Send()
 

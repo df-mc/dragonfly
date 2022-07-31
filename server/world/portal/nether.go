@@ -60,6 +60,18 @@ func FindOrCreateNetherPortal(w *world.World, pos cube.Pos, radius int) (Nether,
 	return CreateNetherPortal(w, pos)
 }
 
+// portalBlock represents a block that can be used as a portal to travel between dimensions.
+type portalBlock interface {
+	// Portal returns the dimension that the portal leads to.
+	Portal() world.Dimension
+}
+
+// frameBlock represents a block that can be used as a frame for a Nether portal.
+type frameBlock interface {
+	// Frame returns true if the block is used as a frame for the given dimension.
+	Frame(dimension world.Dimension) bool
+}
+
 // FindNetherPortal searches a provided radius for a Nether portal.
 func FindNetherPortal(w *world.World, pos cube.Pos, radius int) (Nether, bool) {
 	if w.Dimension() == world.End {
@@ -67,26 +79,24 @@ func FindNetherPortal(w *world.World, pos cube.Pos, radius int) (Nether, bool) {
 		return Nether{}, false
 	}
 
-	closestPos, closestDist, ok := cube.Pos{}, math.MaxFloat64, false
-	for x := pos.X() - radius/2; x < (pos.X() + radius/2); x++ {
-		for z := pos.Z() - radius/2; z < (pos.Z() + radius/2); z++ {
+	closestPos, closestDist, found := cube.Pos{}, math.MaxFloat64, false
+	for x := pos.X() - radius; x < pos.X()+radius; x++ {
+		for z := pos.Z() - radius; z < pos.Z()+radius; z++ {
 			for y := w.Dimension().Range().Max(); y >= w.Dimension().Range().Min(); y-- {
 				selectedPos := cube.Pos{x, y, z}
-				name, _ := w.Block(selectedPos).EncodeBlock()
-				if name == "minecraft:portal" {
+				if p, ok := w.Block(selectedPos).(portalBlock); ok && p.Portal() == world.Nether {
 					belowPos := selectedPos.Side(cube.FaceDown)
-					name, _ = w.Block(belowPos).EncodeBlock()
-					if name == "minecraft:obsidian" {
-						dist := world.Distance(pos.Vec3(), selectedPos.Vec3())
+					if f, ok := w.Block(belowPos).(frameBlock); ok && f.Frame(world.Nether) {
+						dist := selectedPos.Vec3().Sub(pos.Vec3()).Len()
 						if dist < closestDist {
-							closestDist, closestPos, ok = dist, selectedPos, true
+							closestDist, closestPos, found = dist, selectedPos, true
 						}
 					}
 				}
 			}
 		}
 	}
-	if !ok {
+	if !found {
 		// Don't waste our time if the search didn't work out.
 		return Nether{}, false
 	}
@@ -208,9 +218,9 @@ func CreateNetherPortal(w *world.World, pos cube.Pos) (Nether, bool) {
 						resultPos.Z() + safeWidth*coEff2 - safeBeforeAfter*coEff1,
 					}
 
-					w.SetBlock(entryPos, air())
+					w.SetBlock(entryPos, nil, nil)
 					if height < 0 {
-						w.SetBlock(entryPos, obsidian())
+						w.SetBlock(entryPos, obsidian(), nil)
 					}
 				}
 			}
@@ -228,11 +238,11 @@ func CreateNetherPortal(w *world.World, pos cube.Pos) (Nether, bool) {
 			}
 
 			if width == -1 || width == 2 || height == -1 || height == 3 {
-				w.SetBlock(entryPos, obsidian())
+				w.SetBlock(entryPos, obsidian(), nil)
 				continue
 			}
 			positions = append(positions, entryPos)
-			w.SetBlock(entryPos, portal(axis))
+			w.SetBlock(entryPos, portal(axis), nil)
 		}
 	}
 
@@ -255,14 +265,14 @@ func (n Nether) Bounds() (int, int) {
 // Activate ...
 func (n Nether) Activate() {
 	for _, pos := range n.Positions() {
-		n.world.SetBlock(pos, portal(n.axis))
+		n.world.SetBlock(pos, portal(n.axis), nil)
 	}
 }
 
 // Deactivate ...
 func (n Nether) Deactivate() {
 	for _, pos := range n.Positions() {
-		n.world.BreakBlockWithoutParticles(pos)
+		n.world.SetBlock(pos, nil, nil)
 	}
 }
 

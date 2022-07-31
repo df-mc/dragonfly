@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -140,24 +139,6 @@ func (w *World) Biome(pos cube.Pos) Biome {
 	return b
 }
 
-// BlocksAround returns all block positions around the AABB passed.
-func (w *World) BlocksAround(aabb physics.AABB) []cube.Pos {
-	grown := aabb.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
-	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
-	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
-
-	blockAABBs := make([]cube.Pos, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ))
-	for y := minY; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			for z := minZ; z <= maxZ; z++ {
-				blockAABBs = append(blockAABBs, cube.Pos{x, y, z})
-			}
-		}
-	}
-	return blockAABBs
-}
-
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
 func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
@@ -244,6 +225,12 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	}
 	if opts == nil {
 		opts = &SetOpts{}
+	}
+	if p, ok := b.(interface {
+		Place(pos cube.Pos, w *World) bool
+	}); ok && !p.Place(pos, w) {
+		// Don't place the block.
+		return
 	}
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])

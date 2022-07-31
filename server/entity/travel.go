@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
 	"sync"
 	"time"
 )
@@ -29,45 +30,60 @@ type Traveller interface {
 	world.Entity
 }
 
+// portalBlock represents a block that can be used as a portal to travel between dimensions.
+type portalBlock interface {
+	// Portal returns the dimension that the portal leads to.
+	Portal() world.Dimension
+}
+
 // TickTravelling checks if the player is colliding with a nether portal block. If so, it teleports the player
 // to the other dimension after four seconds or instantly if instantaneous is true.
-func (t *TravelComputer) TickTravelling(w *world.World, e Traveller) {
-	aabb := e.AABB().Translate(e.Position())
-	if w.Dimension() == world.Overworld || w.Dimension() == world.Nether {
-		// Get all blocks that could touch the player and check if any of them intersect with a portal block.
-		for _, pos := range w.BlocksAround(aabb) {
-			b := w.Block(pos)
-			if p, ok := b.(interface {
-				// Portal returns the dimension the portal block takes you to.
-				Portal() world.Dimension
-			}); ok && p.Portal() == world.Nether {
-				for _, a := range b.Model().AABB(pos, w) {
-					if a.Translate(pos.Vec3()).IntersectsWith(aabb.Grow(0.25)) {
-						t.mu.Lock()
-						timeOut, awaitingTravel, start := t.timedOut, t.awaitingTravel, t.start
-						t.mu.Unlock()
+func (t *TravelComputer) TickTravelling(e Traveller) {
+	w := e.World()
+	box := e.BBox().Translate(e.Position()).Grow(0.25)
 
-						if !timeOut {
-							if t.Instantaneous() || (awaitingTravel && time.Since(start) >= time.Second*4) {
-								d, _ := w.PortalDestinations()
-								t.Travel(e, w, d)
-							} else if !awaitingTravel {
-								t.mu.Lock()
-								t.start, t.awaitingTravel = time.Now(), true
-								t.mu.Unlock()
-							}
+	min, max := box.Min(), box.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+	travelling, target := false, world.Dimension(nil)
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				pos := cube.Pos{x, y, z}
+				b := w.Block(pos)
+				if p, ok := b.(portalBlock); ok {
+					for _, blockBox := range b.Model().BBox(pos, w) {
+						if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
+							travelling, target = true, p.Portal()
+							break
 						}
-						return
 					}
 				}
 			}
 		}
+	}
 
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if !travelling {
 		// No portals found. Check if we aren't travelling and if so, reset.
-		t.mu.Lock()
-		defer t.mu.Unlock()
 		if !t.travelling {
 			t.timedOut, t.awaitingTravel = false, false
+		}
+		return
+	}
+
+	switch target {
+	case world.Nether:
+		timeOut, awaitingTravel, start := t.timedOut, t.awaitingTravel, t.start
+		if !timeOut {
+			if t.Instantaneous() || (awaitingTravel && time.Since(start) >= time.Second*4) {
+				t.mu.Unlock()
+				t.Travel(e, w, w.PortalDestination(world.Nether))
+				t.mu.Lock()
+			} else if !awaitingTravel {
+				t.start, t.awaitingTravel = time.Now(), true
+			}
 		}
 	}
 }
@@ -88,13 +104,11 @@ func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *w
 	t.mu.Unlock()
 
 	go func() {
-		// Java edition spawns the player at the translated position if all else fails, so we do the same.
 		spawn := pos.Vec3Middle()
 		if netherPortal, ok := portal.FindOrCreateNetherPortal(destination, pos, 128); ok {
 			spawn = netherPortal.Spawn().Vec3Middle()
 		}
 
-		// Add the entity to the destination dimension and stop the portal travel status.
 		destination.AddEntity(e)
 		e.Teleport(spawn)
 
