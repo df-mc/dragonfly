@@ -2,11 +2,11 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"golang.org/x/exp/slices"
 )
@@ -22,7 +22,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
-	if _, ok := craft.Block().(block.CraftingTable); !ok {
+	if craft.Block() != "crafting_table" {
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
@@ -76,6 +76,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	_, shapeless := craft.(recipe.Shapeless)
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	}
+	if craft.Block() != "crafting_table" {
+		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
 	input := make([]item.Stack, 0, len(craft.Input()))
@@ -180,6 +183,20 @@ func (s *Session) craftingOffset() uint32 {
 		return craftingGridLargeOffset
 	}
 	return craftingGridSmallOffset
+}
+
+// duplicateStack duplicates an item.Stack with the new item type given.
+func duplicateStack(input item.Stack, newType world.Item) item.Stack {
+	outputStack := item.NewStack(newType, input.Count()).
+		Damage(input.MaxDurability() - input.Durability()).
+		WithCustomName(input.CustomName()).
+		WithLore(input.Lore()...).
+		WithEnchantments(input.Enchantments()...).
+		WithAnvilCost(input.AnvilCost())
+	for k, v := range input.Values() {
+		outputStack = outputStack.WithValue(k, v)
+	}
+	return outputStack
 }
 
 // matchingStacks returns true if the two stacks are the same in a crafting scenario.

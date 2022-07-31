@@ -275,9 +275,12 @@ func (t ticker) tickEntities(tick int64) {
 		}
 	}
 	for _, ticker := range entitiesToTick {
-		// We gather entities to ticker and ticker them later, so that the lock on the entity mutex is no longer
-		// active.
-		ticker.Tick(t.w, tick)
+		// Make sure the entity is still in world and has not been closed.
+		if ticker.World() == t.w {
+			// We gather entities to ticker and ticker them later, so that the lock on the entity mutex is no longer
+			// active.
+			ticker.Tick(t.w, tick)
+		}
 	}
 }
 
