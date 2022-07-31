@@ -152,7 +152,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		}
 	}
 	removable, isRemovable := existing.(LiquidRemovable)
-	if !isRemovable || (isDisplacer && !displacer.CanDisplace(b.WithDepth(newDepth, falling))) {
+	if !isRemovable && (isDisplacer && !displacer.CanDisplace(b.WithDepth(newDepth, falling))) {
 		// Can't flow into this block.
 		return false
 	}
