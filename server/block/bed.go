@@ -31,7 +31,15 @@ func (Bed) Model() world.BlockModel {
 
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b))
+	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		headSide, _, ok := b.head(pos, w)
+		if ok {
+			return
+		}
+		if s, ok := headSide.User.(world.Sleeper); ok {
+			s.Wake()
+		}
+	})
 }
 
 // CanDisplace ...
@@ -123,17 +131,6 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 
 	s.Sleep(headPos)
 	return true
-}
-
-// PostBreak ...
-func (b Bed) PostBreak(pos cube.Pos, w *world.World, _ item.User) {
-	headSide, _, ok := b.head(pos, w)
-	if !ok {
-		return
-	}
-	if s, ok := headSide.User.(world.Sleeper); ok {
-		s.Wake()
-	}
 }
 
 // EntityLand ...
