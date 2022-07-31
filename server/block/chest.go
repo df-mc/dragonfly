@@ -21,6 +21,7 @@ type Chest struct {
 	chest
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Facing is the direction that the chest is facing.
 	Facing cube.Direction
@@ -60,12 +61,6 @@ func (c Chest) Inventory() *inventory.Inventory {
 func (c Chest) WithName(a ...any) world.Item {
 	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return c
-}
-
-// CanDisplace ...
-func (Chest) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -140,7 +135,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(c.inventory.Items(), item.NewStack(c, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
 }
 
 // FuelInfo ...

@@ -26,7 +26,7 @@ func (p Planks) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (p Planks) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p)).withBlastResistance(15)
 }
 
 // RepairsWoodTools ...

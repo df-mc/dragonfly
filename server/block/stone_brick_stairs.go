@@ -11,6 +11,7 @@ import (
 // StoneBrickStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using stone bricks.
 type StoneBrickStairs struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Mossy specifies if the stairs are mossy.
 	Mossy bool
@@ -44,7 +45,11 @@ func (s StoneBrickStairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s StoneBrickStairs) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	hardness := 1.5
+	if s.Mossy {
+		hardness = 2
+	}
+	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
 }
 
 // EncodeItem ...
@@ -61,12 +66,6 @@ func (s StoneBrickStairs) EncodeBlock() (name string, properties map[string]any)
 		return "minecraft:mossy_stone_brick_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 	}
 	return "minecraft:stone_brick_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-}
-
-// CanDisplace ...
-func (StoneBrickStairs) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

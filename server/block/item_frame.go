@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -17,6 +16,7 @@ import (
 type ItemFrame struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the direction from the frame to the block.
 	Facing cube.Face
@@ -60,9 +60,7 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 		GameMode() world.GameMode
 	}); ok {
 		if rand.Float64() <= i.DropChance && !g.GameMode().CreativeInventory() {
-			it := entity.NewItem(i.Item, pos.Vec3Centre())
-			it.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-			w.AddEntity(it)
+			dropItem(w, i.Item, pos.Vec3Centre())
 		}
 	}
 	i.Item, i.Rotations = item.Stack{}, 0
@@ -89,7 +87,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(i))
+	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(i))
 }
 
 // EncodeItem ...
@@ -143,12 +141,6 @@ func (i ItemFrame) Pick() item.Stack {
 		return item.NewStack(ItemFrame{Glowing: i.Glowing}, 1)
 	}
 	return item.NewStack(i.Item.Item(), 1)
-}
-
-// CanDisplace ...
-func (ItemFrame) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
