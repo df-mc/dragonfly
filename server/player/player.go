@@ -1068,15 +1068,21 @@ func (p *Player) StopFlying() {
 // the player will not sleep.
 func (p *Player) Sleep(pos cube.Pos) {
 	w := p.World()
-	b, ok := w.Block(pos).(block.Bed)
-	if !ok || b.User != nil {
-		// The player cannot sleep here.
-		return
+	if b, ok := w.Block(pos).(block.Bed); ok {
+		if b.User != nil {
+			// The player cannot sleep here.
+			return
+		}
+		b.User = p
+		w.SetBlock(pos, b, nil)
 	}
-	b.User = p
-	w.SetBlock(pos, b, nil)
-	w.SetSleepRequirement(time.Second * 5)
-	w.BroadcastSleepingReminder(p)
+
+	w.SetRequiredSleepDuration(time.Second * 5)
+
+	ctx := event.C()
+	if p.Handler().HandleSleepReminder(ctx); !ctx.Cancelled() {
+		w.BroadcastSleepingReminder(p)
+	}
 
 	p.pos.Store(pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625}))
 	p.sleeping.Store(true)
@@ -1093,7 +1099,7 @@ func (p *Player) Wake() {
 	}
 
 	w := p.World()
-	w.SetSleepRequirement(0)
+	w.SetRequiredSleepDuration(0)
 	w.BroadcastSleepingIndicator()
 
 	for _, v := range p.viewers() {

@@ -110,6 +110,9 @@ type Handler interface {
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *event.Context, oldText, newText string)
+	// HandleSleepReminder handles the player broadcasting a sleeping reminder. It is called in vanilla to remind other
+	// players to sleep in order to advance the day.
+	HandleSleepReminder(ctx *event.Context)
 	// HandleItemDamage handles the event wherein the item either held by the player or as armour takes
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
@@ -157,6 +160,7 @@ func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack)     
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
 func (NopHandler) HandleSignEdit(*event.Context, string, string)                              {}
+func (NopHandler) HandleSleepReminder(*event.Context)                                         {}
 func (NopHandler) HandleItemPickup(*event.Context, item.Stack)                                {}
 func (NopHandler) HandleItemUse(*event.Context)                                               {}
 func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3)       {}

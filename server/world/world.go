@@ -891,9 +891,9 @@ func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 	}
 }
 
-// SetSleepRequirement sets the duration of time players in the world must sleep for, in order for the time to change to
-// day.
-func (w *World) SetSleepRequirement(duration time.Duration) {
+// SetRequiredSleepDuration sets the duration of time players in the world must sleep for, in order to advance to the
+// next day.
+func (w *World) SetRequiredSleepDuration(duration time.Duration) {
 	if w == nil {
 		return
 	}
