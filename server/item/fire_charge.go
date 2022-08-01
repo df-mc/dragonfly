@@ -20,11 +20,12 @@ func (f FireCharge) EncodeItem() (name string, meta int16) {
 
 // UseOnBlock ...
 func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	ctx.SubtractFromCount(1)
 	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w) {
+		ctx.SubtractFromCount(1)
 		w.PlaySound(pos.Vec3Centre(), sound.UseFireCharge{})
 		return true
 	} else if s := pos.Side(face); w.Block(s) == air() {
+		ctx.SubtractFromCount(1)
 		w.PlaySound(s.Vec3Centre(), sound.UseFireCharge{})
 		w.SetBlock(s, fire(), nil)
 		w.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
