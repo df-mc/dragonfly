@@ -27,11 +27,11 @@ func (FletchingTable) FuelInfo() item.FuelInfo {
 }
 
 // EncodeItem ...
-func (FletchingTable) EncodeItem() (name string, meta int16) {
+func (FletchingTable) EncodeItem() (string, int16) {
 	return "minecraft:fletching_table", 0
 }
 
 // EncodeBlock ...
-func (FletchingTable) EncodeBlock() (name string, properties map[string]any) {
+func (FletchingTable) EncodeBlock() (string, map[string]any) {
 	return "minecraft:fletching_table", nil
 }
