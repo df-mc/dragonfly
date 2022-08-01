@@ -122,7 +122,7 @@ func init() {
 		world.RegisterItem(Boots{Tier: t})
 	}
 	for _, pattern := range BannerPatterns() {
-		world.RegisterItem(BannerPattern{Pattern: pattern})
+		world.RegisterItem(BannerPattern{Type: pattern})
 	}
 	for _, c := range Colours() {
 		world.RegisterItem(Dye{Colour: c})
