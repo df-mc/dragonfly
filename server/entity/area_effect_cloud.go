@@ -31,13 +31,13 @@ type AreaEffectCloud struct {
 	transform
 }
 
-// NewDefaultAreaEffectCloud ...
-func NewDefaultAreaEffectCloud(pos mgl64.Vec3, t potion.Potion) *AreaEffectCloud {
-	return NewAreaEffectCloud(pos, t, time.Second*30, time.Second*2, 0, 3.0, -0.5, -0.005)
+// NewAreaEffectCloud ...
+func NewAreaEffectCloud(pos mgl64.Vec3, t potion.Potion) *AreaEffectCloud {
+	return NewAreaEffectCloudWith(pos, t, time.Second*30, time.Second*2, 0, 3.0, -0.5, -0.005)
 }
 
-// NewAreaEffectCloud ...
-func NewAreaEffectCloud(pos mgl64.Vec3, t potion.Potion, duration, reapplicationDelay, durationOnUse time.Duration, radius, radiusOnUse, radiusGrowth float64) *AreaEffectCloud {
+// NewAreaEffectCloudWith ...
+func NewAreaEffectCloudWith(pos mgl64.Vec3, t potion.Potion, duration, reapplicationDelay, durationOnUse time.Duration, radius, radiusOnUse, radiusGrowth float64) *AreaEffectCloud {
 	a := &AreaEffectCloud{
 		duration:           duration.Milliseconds() / 50,
 		reapplicationDelay: reapplicationDelay.Milliseconds() / 50,
@@ -197,7 +197,7 @@ func (a *AreaEffectCloud) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (a *AreaEffectCloud) DecodeNBT(data map[string]any) any {
-	return NewAreaEffectCloud(
+	return NewAreaEffectCloudWith(
 		nbtconv.MapVec3(data, "Pos"),
 		potion.From(nbtconv.Map[int32](data, "PotionId")),
 		time.Duration(nbtconv.Map[int32](data, "Duration"))*time.Millisecond*50,
