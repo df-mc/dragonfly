@@ -16,6 +16,7 @@ type Beacon struct {
 	solid
 	transparent
 	clicksAndSticks
+	sourceWaterDisplacer
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
@@ -71,12 +72,6 @@ func (b Beacon) EncodeNBT() map[string]any {
 		m["Secondary"] = int32(secondary)
 	}
 	return m
-}
-
-// CanDisplace ...
-func (b Beacon) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // SideClosed ...

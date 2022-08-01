@@ -66,6 +66,9 @@ type Click struct{ sound }
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 
+// TNT is a sound played when TNT is ignited.
+type TNT struct{ sound }
+
 // FireExtinguish is a sound played when a fire is extinguished.
 type FireExtinguish struct{ sound }
 

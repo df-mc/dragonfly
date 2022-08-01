@@ -15,6 +15,24 @@ type LiquidRemovable interface {
 	HasLiquidDrops() bool
 }
 
+// sourceWaterDisplacer may be embedded to allow displacing water source blocks.
+type sourceWaterDisplacer struct{}
+
+// CanDisplace returns true if the world.Liquid passed is of the type Water, not falling and has a depth of 8.
+func (s sourceWaterDisplacer) CanDisplace(b world.Liquid) bool {
+	w, ok := b.(Water)
+	return ok && !w.Falling && w.Depth == 8
+}
+
+// flowingWaterDisplacer may be embedded to allow displacing water source blocks or flowing water.
+type flowingWaterDisplacer struct{}
+
+// CanDisplace returns true if the world.Liquid passed is of the type Water.
+func (s flowingWaterDisplacer) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return ok
+}
+
 // tickLiquid ticks the liquid block passed at a specific position in the world. Depending on the surroundings
 // and the liquid block, the liquid will either spread or decrease in depth. Additionally, the liquid might
 // be turned into a solid block if a different liquid is next to it.
@@ -126,32 +144,36 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		existingLiquid.Harden(pos, w, &src)
 		return false
 	}
-	if _, ok := existing.(world.LiquidDisplacer); ok {
+	displacer, isDisplacer := existing.(world.LiquidDisplacer)
+	if isDisplacer {
 		if _, ok := w.Liquid(pos); ok {
-			// We've got a liquid displacer and it's got a liquid within it, so we can't flow into this.
+			// We've got a liquid displacer, and it's got a liquid within it, so we can't flow into this.
 			return false
 		}
 	}
-	removable, ok := existing.(LiquidRemovable)
-	if !ok {
+	removable, isRemovable := existing.(LiquidRemovable)
+	if !isRemovable && (!isDisplacer || !displacer.CanDisplace(b.WithDepth(newDepth, falling))) {
 		// Can't flow into this block.
 		return false
-	}
-	if _, air := existing.(Air); !air {
-		w.SetBlock(pos, nil, nil)
-	}
-	if removable.HasLiquidDrops() {
-		if b, ok := existing.(Breakable); ok {
-			for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
-				dropItem(w, d, pos.Vec3Centre())
-			}
-		} else {
-			panic("liquid drops should always implement breakable")
-		}
 	}
 	ctx := event.C()
 	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
 		return false
+	}
+
+	if isRemovable {
+		if _, air := existing.(Air); !air {
+			w.SetBlock(pos, nil, nil)
+		}
+		if removable.HasLiquidDrops() {
+			if b, ok := existing.(Breakable); ok {
+				for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
+					dropItem(w, d, pos.Vec3Centre())
+				}
+			} else {
+				panic("liquid drops should always implement breakable")
+			}
+		}
 	}
 	w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
@@ -250,6 +272,12 @@ func canFlowInto(b world.Liquid, w *world.World, pos cube.Pos, sideways bool) bo
 			}
 		}
 		return true
+	}
+	if dis, ok := bl.(world.LiquidDisplacer); ok {
+		res := b.WithDepth(b.LiquidDepth()-b.SpreadDecay(), !sideways)
+		if dis.CanDisplace(res) {
+			return true
+		}
 	}
 	return false
 }

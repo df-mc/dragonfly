@@ -187,7 +187,7 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 		return mgl64.Vec3{0, 1.62}
 	case *entity.Item:
 		return mgl64.Vec3{0, 0.125}
-	case *entity.FallingBlock:
+	case *entity.FallingBlock, *entity.TNT:
 		return mgl64.Vec3{0, 0.49, 0}
 	}
 	return mgl64.Vec3{}
@@ -456,6 +456,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.TNT:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundFuse,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.FireworkLaunch:
 		pk.SoundType = packet.SoundEventLaunch
 	case sound.FireworkHugeBlast:
@@ -589,6 +595,9 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 // PlaySound plays a world.Sound to the client. The volume is not dependent on the distance to the source if it is a
 // sound of the LevelSoundEvent packet.
 func (s *Session) PlaySound(t world.Sound) {
+	if s == Nop {
+		return
+	}
 	s.playSound(entity.EyePosition(s.c), t, true)
 }
 
