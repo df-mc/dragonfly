@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Fletching Table is a block in villages that turn an unemployed villager into a Fletcher.
+// FletchingTable is a block in villages that turn an unemployed villager into a Fletcher.
 type FletchingTable struct {
 	solid
 	bassDrum
