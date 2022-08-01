@@ -41,7 +41,7 @@ func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 		i.Item = held.Grow(-held.Count() + 1)
 		// TODO: When maps are implemented, check the item is a map, and if so, display the large version of the frame.
 		ctx.SubtractFromCount(1)
-		w.PlaySound(pos.Vec3Centre(), sound.AddItem{})
+		w.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
 	} else {
 		return true
 	}

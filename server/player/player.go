@@ -528,10 +528,17 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		return 0, false
 	}
 
-	fireSource := source == damage.SourceFireTick{} || source == damage.SourceLava{}
+	fireSource := false
+	if _, ok := source.(damage.SourceFireTick); ok {
+		fireSource = true
+	}
+	if _, ok := source.(damage.SourceLava); ok {
+		fireSource = true
+	}
 	if _, ok := source.(damage.SourceFire); ok {
 		fireSource = true
 	}
+
 	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
 		return 0, false
 	}

@@ -19,6 +19,7 @@ import (
 // damaging trap block.
 type Campfire struct {
 	bass
+	sourceWaterDisplacer
 	// Items represents the items in the campfire that are being cooked.
 	Items [4]CampfireItem
 	// Facing represents the direction that the campfire is facing.
@@ -29,22 +30,17 @@ type Campfire struct {
 	Type FireType
 }
 
-// CampfireItem is an object that holds the data about the items in the campfire.
+// CampfireItem holds data about the items in the campfire.
 type CampfireItem struct {
+	// Item is a specific item being cooked on top of the campfire.
 	Item item.Stack
-	// Time is the countdown of ticks until the item is cooked (when 0).
+	// Time is the countdown of ticks until the food item is cooked (when 0).
 	Time int
 }
 
 // Model ...
 func (c Campfire) Model() world.BlockModel {
 	return model.Campfire{}
-}
-
-// CanDisplace ...
-func (c Campfire) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -96,15 +92,20 @@ func (c Campfire) LightEmissionLevel() uint8 {
 	return c.Type.LightLevel()
 }
 
+// Ignite ...
+func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
+	w.PlaySound(pos.Vec3(), sound.Ignite{})
+	if _, ok := w.Liquid(pos); ok {
+		return true
+	}
+	c.Extinguished = false
+	w.SetBlock(pos, c, nil)
+	return true
+}
+
 // Activate ...
 func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if held, _ := u.HeldItems(); !held.Empty() {
-		if _, ok := held.Item().(item.FlintAndSteel); ok {
-			w.PlaySound(pos.Vec3(), sound.Ignite{})
-			c.Extinguished = false
-			w.SetBlock(pos, c, nil)
-			return true
-		}
 		if rawFood, ok := held.Item().(item.Smeltable); ok && rawFood.SmeltInfo().Food {
 			for i, it := range c.Items {
 				if it.Item.Empty() {
@@ -113,7 +114,7 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 						Time: 600,
 					}
 					ctx.SubtractFromCount(1)
-					w.PlaySound(pos.Vec3Centre(), sound.AddItem{})
+					w.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
 					w.SetBlock(pos, c, nil)
 					return true
 				}
@@ -145,8 +146,7 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 		}
 		for i, it := range c.Items {
 			if !it.Item.Empty() && it.Time <= 0 {
-				itemCooked := it.Item
-				if food, ok := itemCooked.Item().(item.Smeltable); ok {
+				if food, ok := it.Item.Item().(item.Smeltable); ok {
 					dropItem(w, food.SmeltInfo().Product, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 					c.Items[i].Item = item.Stack{}
 					w.SetBlock(pos, c, nil)
@@ -190,14 +190,12 @@ func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 
 // EncodeNBT ...
 func (c Campfire) EncodeNBT() map[string]any {
-	m := map[string]any{
-		"id": "Campfire",
-	}
+	m := map[string]any{}
 	for i, v := range c.Items {
-		itemNumberIdentifier := strconv.Itoa(i + 1)
+		id := strconv.Itoa(i + 1)
 		if !v.Item.Empty() {
-			m["Item"+itemNumberIdentifier] = nbtconv.WriteItem(v.Item, true)
-			m["ItemTime"+itemNumberIdentifier] = uint8(v.Time)
+			m["Item"+id] = nbtconv.WriteItem(v.Item, true)
+			m["ItemTime"+id] = uint8(v.Time)
 		}
 	}
 	switch c.Type {
@@ -214,10 +212,10 @@ func (c Campfire) EncodeNBT() map[string]any {
 // DecodeNBT ...
 func (c Campfire) DecodeNBT(data map[string]any) any {
 	for i := 0; i < 4; i++ {
-		itemNumberIdentifier := strconv.Itoa(i + 1)
+		id := strconv.Itoa(i + 1)
 		c.Items[i] = CampfireItem{
-			Item: nbtconv.MapItem(data, "Item"+itemNumberIdentifier),
-			Time: int(nbtconv.Map[byte](data, "ItemTime"+itemNumberIdentifier)),
+			Item: nbtconv.MapItem(data, "Item"+id),
+			Time: int(nbtconv.Map[byte](data, "ItemTime"+id)),
 		}
 	}
 	return c
@@ -241,8 +239,6 @@ func (c Campfire) EncodeBlock() (name string, properties map[string]any) {
 		name = "minecraft:campfire"
 	case SoulFire():
 		name = "minecraft:soul_campfire"
-	default:
-		panic("invalid fire type")
 	}
 	return name, map[string]any{
 		"direction":    int32(horizontalDirection(c.Facing)),
@@ -250,6 +246,7 @@ func (c Campfire) EncodeBlock() (name string, properties map[string]any) {
 	}
 }
 
+// allCampfires ...
 func allCampfires() (campfires []world.Block) {
 	for _, d := range cube.Directions() {
 		for _, e := range []bool{true, false} {

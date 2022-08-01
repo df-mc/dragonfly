@@ -81,8 +81,8 @@ type Note struct {
 	Pitch int
 }
 
-// AddItem is a sound played when an item is added to an item frame or campfire.
-type AddItem struct{ sound }
+// ItemAdd is a sound played when an item is added to an item frame or campfire.
+type ItemAdd struct{ sound }
 
 // ItemFrameRemove is a sound played when an item is removed from an item frame.
 type ItemFrameRemove struct{ sound }

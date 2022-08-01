@@ -426,7 +426,7 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.Teleport:
 		pk.SoundType = packet.SoundEventTeleport
-	case sound.AddItem:
+	case sound.ItemAdd:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundAddItem,
 			Position:  vec64To32(pos),

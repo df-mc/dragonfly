@@ -29,11 +29,13 @@ type SplashPotion struct {
 
 // SplashableBlock is a block that can be splashed with a splash bottle.
 type SplashableBlock interface {
+	world.Block
 	Splash(pos cube.Pos, e world.Entity, t potion.Potion)
 }
 
 // SplashableEntity is an entity that can be splashed with a splash bottle.
 type SplashableEntity interface {
+	world.Entity
 	Splash(e world.Entity, t potion.Potion)
 }
 
@@ -136,25 +138,23 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 				}
 			}
 		}
+
 		// Splashing Entities and Blocks
 		switch result := result.(type) {
 		case trace.BlockResult:
-			// we first check to see if it splashed an empty block that's splashable
 			pos := result.BlockPosition().Side(result.Face())
-			block := w.Block(pos)
-			if splashable, ok := block.(SplashableBlock); ok {
-				if _, ok := block.Model().(model.Empty); ok {
+			if splashable, ok := w.Block(pos).(SplashableBlock); ok {
+				if _, ok := splashable.Model().(model.Empty); ok {
 					splashable.Splash(pos, s, s.Type())
-					// Doesn't run rest of code if it's a splashable empty block
 					break
 				}
 			}
-			// splashable non-empty block
 			pos = result.BlockPosition()
 			if b, ok := w.Block(pos).(SplashableBlock); ok {
 				b.Splash(pos, s, s.Type())
 			}
 		}
+
 		w.AddParticle(m.pos, particle.Splash{Colour: colour})
 		w.PlaySound(m.pos, sound.GlassBreak{})
 
