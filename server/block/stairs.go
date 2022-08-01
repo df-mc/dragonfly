@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Stairs are blocks that allow entities to walk up blocks without jumping. They are crafted using planks.
+// Stairs are blocks that allow entities to walk up blocks without jumping.
 type Stairs struct {
 	transparent
 	sourceWaterDisplacer
