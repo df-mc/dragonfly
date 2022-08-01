@@ -13,6 +13,7 @@ import (
 // Bed is a block, allowing players to sleep to set their spawns and skip the night.
 type Bed struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Colour is the colour of the bed.
 	Colour item.Colour
@@ -34,6 +35,11 @@ func (Bed) Model() world.BlockModel {
 	return model.Bed{}
 }
 
+// SideClosed ...
+func (Bed) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
+}
+
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
@@ -45,17 +51,6 @@ func (b Bed) BreakInfo() BreakInfo {
 			s.Wake()
 		}
 	})
-}
-
-// CanDisplace ...
-func (Bed) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
-// SideClosed ...
-func (Bed) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
-	return false
 }
 
 // UseOnBlock ...
