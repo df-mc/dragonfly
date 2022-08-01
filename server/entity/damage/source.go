@@ -50,7 +50,7 @@ type (
 
 	// SourceFire is used for damage caused by being in fire.
 	SourceFire struct {
-		// Campfire specifies if the damage was caused by block.Campfire or not
+		// Campfire specifies if the damage was caused by block.Campfire or not.
 		Campfire bool
 	}
 

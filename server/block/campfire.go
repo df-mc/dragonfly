@@ -48,7 +48,7 @@ func (c Campfire) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
-// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself
+// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself.
 func (c Campfire) Splash(pos cube.Pos, e world.Entity, t potion.Potion) {
 	if t != potion.Water() {
 		return
@@ -138,7 +138,7 @@ func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	return placed(ctx)
 }
 
-// Tick is called to cook the items within the campfire
+// Tick is called to cook the items within the campfire.
 func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 	if !c.Extinguished {
 		if rand.Float64() <= 0.016 { // Every three or so seconds.
@@ -161,7 +161,7 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	// if the campfire is water logged we extinguish it
+	// If the campfire is waterlogged, we need to extinguish it.
 	if _, ok := w.Liquid(pos); ok && !c.Extinguished {
 		c.Extinguished = true
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
