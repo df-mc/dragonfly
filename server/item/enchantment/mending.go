@@ -35,9 +35,9 @@ func (Mending) Treasure() bool {
 }
 
 // CompatibleWithEnchantment ...
-func (Mending) CompatibleWithEnchantment(item.EnchantmentType) bool {
-	// TODO: Infinity.
-	return true
+func (Mending) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	_, infinity := t.(Infinity)
+	return !infinity
 }
 
 // CompatibleWithItem ...

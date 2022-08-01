@@ -11,6 +11,7 @@ import (
 // EndBrickStairs are blocks that allow entities to walk up blocks without jumping. They are crafted using end bricks.
 type EndBrickStairs struct {
 	transparent
+	sourceWaterDisplacer
 
 	// UpsideDown specifies if the stairs are upside down. If set to true, the full side is at the top part
 	// of the block.
@@ -53,12 +54,6 @@ func (s EndBrickStairs) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (s EndBrickStairs) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:end_brick_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
-}
-
-// CanDisplace ...
-func (EndBrickStairs) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

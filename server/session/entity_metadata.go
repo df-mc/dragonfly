@@ -79,6 +79,10 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sc, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(sc.Scale())
 	}
+	if t, ok := e.(tnt); ok {
+		m[dataKeyFuseLength] = int32(t.Fuse().Milliseconds() / 50)
+		m.setFlag(dataKeyFlags, dataFlagIgnited)
+	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
 		m[dataKeyAlwaysShowNameTag] = uint8(1)
@@ -143,6 +147,7 @@ const (
 	dataKeyMaxAir            = 42
 	dataKeyBoundingBoxWidth  = 53
 	dataKeyBoundingBoxHeight = 54
+	dataKeyFuseLength        = 55
 	dataKeyAlwaysShowNameTag = 81
 	dataKeyScoreTag          = 84
 )
@@ -155,6 +160,7 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagIgnited           = 10
 	dataFlagCritical          = 13
 	dataFlagCanShowNameTag    = 14
 	dataFlagAlwaysShowNameTag = 15
@@ -253,4 +259,8 @@ type firework interface {
 
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type tnt interface {
+	Fuse() time.Duration
 }

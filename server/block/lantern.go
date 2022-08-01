@@ -11,6 +11,7 @@ import (
 // Lantern is a light emitting block.
 type Lantern struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
@@ -65,12 +66,6 @@ func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
-}
-
-// CanDisplace ...
-func (l Lantern) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
