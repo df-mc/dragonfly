@@ -136,6 +136,7 @@ func init() {
 		if i > 4 {
 			world.RegisterItem(Arrow{Tip: p})
 		}
+		world.RegisterItem(LingeringPotion{Type: p})
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}

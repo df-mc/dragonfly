@@ -3,26 +3,22 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
-	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // SplashPotion is an item that grants effects when thrown.
 type SplashPotion struct {
+	splashable
 	transform
+
 	age   int
 	close bool
 
 	owner world.Entity
 
-	t potion.Potion
 	c *ProjectileComputer
 }
 
@@ -30,7 +26,8 @@ type SplashPotion struct {
 func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *SplashPotion {
 	s := &SplashPotion{
 		owner: owner,
-		t:     t,
+
+		splashable: splashable{t: t, m: 0.75},
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
@@ -38,7 +35,6 @@ func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Splas
 		}},
 	}
 	s.transform = newTransform(s, pos)
-
 	return s
 }
 
@@ -55,16 +51,6 @@ func (s *SplashPotion) EncodeEntity() string {
 // BBox ...
 func (s *SplashPotion) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-// Glint returns true if the splash potion should render with glint.
-func (s *SplashPotion) Glint() bool {
-	return len(s.t.Effects()) > 0
-}
-
-// Type returns the type of potion the splash potion will grant effects for when thrown.
-func (s *SplashPotion) Type() potion.Potion {
-	return s.t
 }
 
 // Tick ...
@@ -87,64 +73,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		effects := s.t.Effects()
-		box := s.BBox().Translate(m.pos)
-		colour, _ := effect.ResultingColour(effects)
-		if len(effects) > 0 {
-			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), func(entity world.Entity) bool {
-				_, living := entity.(Living)
-				return !living || entity == s
-			}) {
-				pos := e.Position()
-				if !e.BBox().Translate(pos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
-					continue
-				}
-
-				dist := pos.Sub(m.pos).Len()
-				if dist > 4 {
-					continue
-				}
-
-				f := 1 - dist/4
-				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == e {
-					f = 1
-				}
-
-				splashed := e.(Living)
-				for _, eff := range effects {
-					if p, ok := eff.Type().(effect.PotentType); ok {
-						splashed.AddEffect(effect.NewInstant(p.WithPotency(f), eff.Level()))
-						continue
-					}
-
-					dur := time.Duration(float64(eff.Duration()) * 0.75 * f)
-					if dur < time.Second {
-						continue
-					}
-					splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
-				}
-			}
-		} else if s.t == potion.Water() {
-			switch result := result.(type) {
-			case trace.BlockResult:
-				pos := result.BlockPosition().Side(result.Face())
-				if w.Block(pos) == fire() {
-					w.SetBlock(pos, air(), nil)
-				}
-
-				for _, f := range cube.HorizontalFaces() {
-					if h := pos.Side(f); w.Block(h) == fire() {
-						w.SetBlock(h, air(), nil)
-					}
-				}
-			case trace.EntityResult:
-				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
-			}
-		}
-
-		w.AddParticle(m.pos, particle.Splash{Colour: colour})
-		w.PlaySound(m.pos, sound.GlassBreak{})
-
+		s.splash(s, w, m.pos, result, s.BBox())
 		s.close = true
 	}
 }
@@ -193,17 +122,8 @@ func (s *SplashPotion) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"PotionId": s.t.Uint8(),
+		"PotionId": int32(s.t.Uint8()),
 		"Yaw":      0.0,
 		"Pitch":    0.0,
 	}
-}
-
-// air returns an air block.
-func air() world.Block {
-	f, ok := world.BlockByName("minecraft:air", map[string]any{})
-	if !ok {
-		panic("could not find air block")
-	}
-	return f
 }
