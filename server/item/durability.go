@@ -19,7 +19,7 @@ type DurabilityInfo struct {
 	// AttackDurability and BreakDurability are the losses in durability that the item sustains when they are
 	// used to do the respective actions.
 	AttackDurability, BreakDurability int
-	// Persistent is true if the item is persistent, i.e. it will not be destroyed when at it's last durability stage.
+	// Persistent is true if the item is persistent, i.e. it will not be destroyed when at its last durability stage.
 	Persistent bool
 }
 
