@@ -11,9 +11,9 @@ const (
 	// loomInputSlot is the slot index of the input item in the loom table.
 	loomInputSlot = 0x09
 	// loomDyeSlot is the slot index of the dye item in the loom table.
-	loomDyeSlot = 0x0A
+	loomDyeSlot = 0x0a
 	// loomPatternSlot is the slot index of the pattern item in the loom table.
-	loomPatternSlot = 0x0B
+	loomPatternSlot = 0x0b
 )
 
 // handleLoomCraft handles a CraftLoomRecipe stack request action made using a loom table.
