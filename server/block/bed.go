@@ -18,7 +18,7 @@ type Bed struct {
 	Colour item.Colour
 	// Facing is the direction that the bed is facing.
 	Facing cube.Direction
-	// Head is true if the bed is the head side or the bottom side.
+	// Head is true if the bed is the head side.
 	Head bool
 	// User is the user that is using the bed.
 	User item.User
