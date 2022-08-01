@@ -258,7 +258,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 			}
 		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
 			l, _ := BlockByRuntimeID(before)
-			if liq := l.(Liquid); b.(LiquidDisplacer).CanDisplace(liq) && liq.LiquidDepth() == 8 {
+			if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 				c.SetBlock(x, y, z, 1, before)
 				secondLayer = l
 			}

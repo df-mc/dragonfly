@@ -16,6 +16,7 @@ import (
 type ItemFrame struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the direction from the frame to the block.
 	Facing cube.Face
@@ -140,12 +141,6 @@ func (i ItemFrame) Pick() item.Stack {
 		return item.NewStack(ItemFrame{Glowing: i.Glowing}, 1)
 	}
 	return item.NewStack(i.Item.Item(), 1)
-}
-
-// CanDisplace ...
-func (ItemFrame) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

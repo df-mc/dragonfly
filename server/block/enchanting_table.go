@@ -12,6 +12,7 @@ import (
 type EnchantingTable struct {
 	transparent
 	bassDrum
+	sourceWaterDisplacer
 }
 
 // Model ...
@@ -22,12 +23,6 @@ func (e EnchantingTable) Model() world.BlockModel {
 // BreakInfo ...
 func (e EnchantingTable) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(6000)
-}
-
-// CanDisplace ...
-func (EnchantingTable) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // SideClosed ...
