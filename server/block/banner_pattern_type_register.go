@@ -55,8 +55,8 @@ func registerBannerPattern(id string, pattern BannerPatternType) {
 	bannerPatternIDs[pattern] = id
 }
 
-// bannerPatternByID returns a banner pattern by the ID it was registered with.
-func bannerPatternByID(id string) BannerPatternType {
+// BannerPatternByID returns a banner pattern by the ID it was registered with.
+func BannerPatternByID(id string) BannerPatternType {
 	b, ok := bannerPatternsMap[id]
 	if !ok {
 		panic("should never happen")
