@@ -16,11 +16,6 @@ func (Bedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:bedrock", 0
 }
 
-// BreakInfo ...
-func (b Bedrock) BreakInfo() BreakInfo {
-	return newBreakInfo(-1, neverHarvestable, nothingEffective, simpleDrops()).withBlastResistance(18000000)
-}
-
 // EncodeBlock ...
 func (b Bedrock) EncodeBlock() (name string, properties map[string]any) {
 	//noinspection SpellCheckingInspection
