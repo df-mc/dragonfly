@@ -126,13 +126,13 @@ const (
 	hashReinforcedDeepslate
 	hashSand
 	hashSandstone
-	hashSandstoneSlab
 	hashSandstoneStairs
 	hashSeaLantern
 	hashSeaPickle
 	hashShroomlight
 	hashSign
 	hashSkull
+	hashSlab
 	hashSmithingTable
 	hashSmoker
 	hashSnow
@@ -159,7 +159,6 @@ const (
 	hashWoodDoor
 	hashWoodFence
 	hashWoodFenceGate
-	hashWoodSlab
 	hashWoodStairs
 	hashWoodTrapdoor
 	hashWool
@@ -657,10 +656,6 @@ func (s Sandstone) Hash() uint64 {
 	return hashSandstone | uint64(s.Type.Uint8())<<8 | uint64(boolByte(s.Red))<<10
 }
 
-func (s SandstoneSlab) Hash() uint64 {
-	return hashSandstoneSlab | uint64(s.Type.Uint8())<<8 | uint64(boolByte(s.Red))<<10 | uint64(boolByte(s.Top))<<11 | uint64(boolByte(s.Double))<<12
-}
-
 func (s SandstoneStairs) Hash() uint64 {
 	return hashSandstoneStairs | uint64(s.Type.Uint8())<<8 | uint64(boolByte(s.Red))<<10 | uint64(boolByte(s.UpsideDown))<<11 | uint64(s.Facing)<<12
 }
@@ -683,6 +678,10 @@ func (s Sign) Hash() uint64 {
 
 func (s Skull) Hash() uint64 {
 	return hashSkull | uint64(s.Attach.FaceUint8())<<8
+}
+
+func (s Slab) Hash() uint64 {
+	return hashSlab | s.Block.Hash()<<8 | uint64(boolByte(s.Top))<<24 | uint64(boolByte(s.Double))<<25
 }
 
 func (SmithingTable) Hash() uint64 {
@@ -787,10 +786,6 @@ func (w WoodFence) Hash() uint64 {
 
 func (f WoodFenceGate) Hash() uint64 {
 	return hashWoodFenceGate | uint64(f.Wood.Uint8())<<8 | uint64(f.Facing)<<12 | uint64(boolByte(f.Open))<<14 | uint64(boolByte(f.Lowered))<<15
-}
-
-func (s WoodSlab) Hash() uint64 {
-	return hashWoodSlab | uint64(s.Wood.Uint8())<<8 | uint64(boolByte(s.Top))<<12 | uint64(boolByte(s.Double))<<13
 }
 
 func (s WoodStairs) Hash() uint64 {
