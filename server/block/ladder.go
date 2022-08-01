@@ -14,6 +14,7 @@ import (
 // the sides of other blocks.
 type Ladder struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the side of the block the ladder is currently attached to.
 	Facing cube.Direction
@@ -60,12 +61,6 @@ func (l Ladder) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-}
-
-// CanDisplace ...
-func (l Ladder) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

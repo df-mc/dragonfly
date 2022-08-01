@@ -22,6 +22,7 @@ type EnderChest struct {
 	chest
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Facing is the direction that the ender chest is facing.
 	Facing cube.Direction
@@ -36,18 +37,12 @@ func NewEnderChest() EnderChest {
 
 // BreakInfo ...
 func (c EnderChest) BreakInfo() BreakInfo {
-	return newBreakInfo(22.5, pickaxeHarvestable, pickaxeEffective, silkTouchDrop(item.NewStack(Obsidian{}, 8), item.NewStack(NewEnderChest(), 1)))
+	return newBreakInfo(22.5, pickaxeHarvestable, pickaxeEffective, silkTouchDrop(item.NewStack(Obsidian{}, 8), item.NewStack(NewEnderChest(), 1))).withBlastResistance(3000)
 }
 
 // LightEmissionLevel ...
 func (c EnderChest) LightEmissionLevel() uint8 {
 	return 7
-}
-
-// CanDisplace ...
-func (EnderChest) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -70,7 +65,7 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 }
 
 // Activate ...
-func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(enderChestOwner); ok {
 		opener.OpenBlockContainer(pos)
 		return true

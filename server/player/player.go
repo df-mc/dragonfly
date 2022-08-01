@@ -76,7 +76,7 @@ type Player struct {
 	maxAirSupplyTicks atomic.Int64
 
 	cooldownMu sync.Mutex
-	cooldowns  map[itemHash]time.Time
+	cooldowns  map[string]time.Time
 	// lastTickedWorld holds the world that the player was in, in the last tick.
 	lastTickedWorld *world.World
 
@@ -117,7 +117,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		offHand:           inventory.New(1, p.broadcastItems),
 		armour:            inventory.NewArmour(p.broadcastArmour),
 		hunger:            newHungerManager(),
-		health:            entity.NewHealthManager(),
+		health:            entity.NewHealthManager(20, 20),
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
@@ -135,7 +135,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		scale:             *atomic.NewFloat64(1),
 		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
-		cooldowns:         make(map[itemHash]time.Time),
+		cooldowns:         make(map[string]time.Time),
 		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
@@ -655,6 +655,13 @@ func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
 	return math.Max(dmg, 0)
 }
 
+// Explode ...
+func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
+	diff := p.Position().Sub(explosionPos)
+	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), damage.SourceExplosion{})
+	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
+}
+
 // protectionEnchantment represents an enchantment that can protect the player from damage.
 type protectionEnchantment interface {
 	Affects(damage.Source) bool
@@ -708,13 +715,19 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
+	p.knockBack(src, force, height)
+}
+
+// knockBack is an unexported function that is used to knock the player back. This function does not check if the player
+// can take damage or not.
+func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 
 	velocity = velocity.Normalize().Mul(force)
 	velocity[1] = height
 
-	resistance := 0.0
+	var resistance float64
 	for _, i := range p.armour.Items() {
 		if a, ok := i.Item().(item.Armour); ok {
 			resistance += a.KnockBackResistance()
@@ -1195,23 +1208,6 @@ func (p *Player) GameMode() world.GameMode {
 	return p.gameMode.Load()
 }
 
-// itemHash is used as a hash for a world.Item.
-type itemHash struct {
-	// Name is the name of the item.
-	Name string
-	// Meta is the item's metadata value.
-	Meta int16
-}
-
-// hashFromItem returns an item hash from an item.
-func hashFromItem(item world.Item) itemHash {
-	name, meta := item.EncodeItem()
-	return itemHash{
-		Name: name,
-		Meta: meta,
-	}
-}
-
 // HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
 // world.Item passed is nil, HasCooldown always returns false.
 func (p *Player) HasCooldown(item world.Item) bool {
@@ -1221,13 +1217,13 @@ func (p *Player) HasCooldown(item world.Item) bool {
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
-	hash := hashFromItem(item)
-	otherTime, ok := p.cooldowns[hash]
+	name, _ := item.EncodeItem()
+	otherTime, ok := p.cooldowns[name]
 	if !ok {
 		return false
 	}
 	if time.Now().After(otherTime) {
-		delete(p.cooldowns, hash)
+		delete(p.cooldowns, name)
 		return false
 	}
 	return true
@@ -1241,7 +1237,9 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 	p.cooldownMu.Lock()
 	defer p.cooldownMu.Unlock()
 
-	p.cooldowns[hashFromItem(item)] = time.Now().Add(cooldown)
+	name, _ := item.EncodeItem()
+	p.cooldowns[name] = time.Now().Add(cooldown)
+	p.session().ViewItemCooldown(item, cooldown)
 }
 
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
@@ -1266,14 +1264,16 @@ func (p *Player) UseItem() {
 		p.SetCooldown(it, cd.Cooldown())
 	}
 
-	switch usable := it.(type) {
-	case item.Releasable:
+	if _, ok := it.(item.Releasable); ok {
 		if !p.canRelease() {
 			return
 		}
 		p.usingSince.Store(time.Now().UnixNano())
 		p.usingItem.Store(true)
 		p.updateState()
+	}
+
+	switch usable := it.(type) {
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(w, p, useCtx) {
@@ -1407,9 +1407,12 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		// items, in which case the block will be activated as usual.
 		if !p.Sneaking() || i.Empty() {
 			p.SwingArm()
+
 			// The block was activated: Blocks such as doors must always have precedence over the item being
 			// used.
-			if act.Activate(pos, face, p.World(), p) {
+			if useCtx := p.useContext(); act.Activate(pos, face, p.World(), p, useCtx) {
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
+				p.addNewItem(useCtx)
 				return
 			}
 		}
@@ -1447,26 +1450,27 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 // UseItemOnEntity uses the item held in the main hand of the player on the entity passed, provided it is
 // within range of the player.
 // If the item held in the main hand of the player does nothing when used on an entity, nothing will happen.
-func (p *Player) UseItemOnEntity(e world.Entity) {
+func (p *Player) UseItemOnEntity(e world.Entity) bool {
 	if !p.canReach(e.Position()) {
-		return
+		return false
 	}
 	ctx := event.C()
 	if p.Handler().HandleItemUseOnEntity(ctx, e); ctx.Cancelled() {
-		return
+		return false
 	}
 	i, left := p.HeldItems()
 	usable, ok := i.Item().(item.UsableOnEntity)
 	if !ok {
-		return
+		return true
 	}
 	useCtx := p.useContext()
 	if !usable.UseOnEntity(e, e.World(), p, useCtx) {
-		return
+		return true
 	}
 	p.SwingArm()
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 	p.addNewItem(useCtx)
+	return true
 }
 
 // AttackEntity uses the item held in the main hand of the player to attack the entity passed, provided it is
@@ -1474,9 +1478,9 @@ func (p *Player) UseItemOnEntity(e world.Entity) {
 // The damage dealt to the entity will depend on the item held by the player and any effects the player may
 // have.
 // If the player cannot reach the entity at its position, the method returns immediately.
-func (p *Player) AttackEntity(e world.Entity) {
+func (p *Player) AttackEntity(e world.Entity) bool {
 	if !p.canReach(e.Position()) {
-		return
+		return false
 	}
 	var (
 		force, height  = 0.45, 0.3608
@@ -1487,14 +1491,17 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	ctx := event.C()
 	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
-		return
+		return false
 	}
 	p.SwingArm()
 
 	i, _ := p.HeldItems()
 	living, ok := e.(entity.Living)
-	if !ok || living.AttackImmune() {
-		return
+	if !ok {
+		return false
+	}
+	if living.AttackImmune() {
+		return true
 	}
 
 	dmg := i.AttackDamage()
@@ -1516,7 +1523,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 
 	p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
-		return
+		return true
 	}
 	if critical {
 		for _, v := range p.World().Viewers(living.Position()) {
@@ -1542,6 +1549,7 @@ func (p *Player) AttackEntity(e world.Entity) {
 	if durable, ok := i.Item().(item.Durable); ok {
 		p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
 	}
+	return true
 }
 
 // StartBreaking makes the player start breaking the block at the position passed using the item currently

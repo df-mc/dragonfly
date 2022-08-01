@@ -50,3 +50,15 @@ type UseSpyglass struct{ sound }
 
 // StopUsingSpyglass is a sound played when a player stops using a spyglass.
 type StopUsingSpyglass struct{ sound }
+
+// GoatHorn is a sound played when a player uses a goat horn.
+type GoatHorn struct {
+	// Horn is the type of the goat horn.
+	Horn Horn
+
+	sound
+}
+
+// FireCharge is a sound played when a player lights a block on fire with a fire charge, or when a dispenser or a
+// blaze shoots a fireball.
+type FireCharge struct{ sound }

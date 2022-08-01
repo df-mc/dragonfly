@@ -16,6 +16,7 @@ type Beacon struct {
 	solid
 	transparent
 	clicksAndSticks
+	sourceWaterDisplacer
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
@@ -38,7 +39,7 @@ func (b Beacon) BreakInfo() BreakInfo {
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -71,12 +72,6 @@ func (b Beacon) EncodeNBT() map[string]any {
 		m["Secondary"] = int32(secondary)
 	}
 	return m
-}
-
-// CanDisplace ...
-func (b Beacon) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // SideClosed ...

@@ -13,15 +13,10 @@ import (
 // Cake is an edible block.
 type Cake struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
-}
-
-// CanDisplace ...
-func (c Cake) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -53,7 +48,7 @@ func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // Activate ...
-func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {

@@ -21,7 +21,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
-	"strings"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -89,6 +88,15 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	s.writePacket(pk)
 }
 
+// sendItem sends the item stack passed to the client with the window ID and slot passed.
+func (s *Session) sendItem(item item.Stack, slot int, windowID uint32) {
+	s.writePacket(&packet.InventorySlot{
+		WindowID: windowID,
+		Slot:     uint32(slot),
+		NewItem:  instanceFromItem(item),
+	})
+}
+
 const (
 	craftingGridSizeSmall   = 4
 	craftingGridSizeLarge   = 9
@@ -117,6 +125,7 @@ const (
 	containerOffHand              = 33
 	containerBlastFurnaceInput    = 44
 	containerSmokerInput          = 45
+	containerStonecutterInput     = 52
 	containerBarrel               = 57
 	containerCursor               = 58
 	containerOutput               = 59
@@ -172,15 +181,19 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		}
 	case containerSmithingInput, containerSmithingMaterial:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, smithing := b.(block.SmithingTable); smithing {
+			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
+				return s.ui, true
+			}
+		}
+	case containerStonecutterInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
 	case containerEnchantingTableInput, containerEnchantingTableLapis:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, enchanting := b.(block.EnchantingTable); enchanting {
+			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
@@ -512,11 +525,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			}
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
-				WindowID: protocol.WindowIDInventory,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
-			})
+			s.sendItem(item, slot, protocol.WindowIDInventory)
 		}
 	})
 	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
@@ -554,11 +563,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			viewer.ViewEntityArmour(s.c)
 		}
 		if !s.inTransaction.Load() {
-			s.writePacket(&packet.InventorySlot{
-				WindowID: protocol.WindowIDArmour,
-				Slot:     uint32(slot),
-				NewItem:  instanceFromItem(item),
-			})
+			s.sendItem(item, slot, protocol.WindowIDArmour)
 		}
 	})
 	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
@@ -598,6 +603,8 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
+	// The user swapped changed held slots so stop using item right away.
+	s.c.ReleaseItem()
 
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
@@ -641,12 +648,6 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
 
-		blockName := "crafting_table"
-		if b := i.Block(); b != nil {
-			blockName, _ = b.EncodeBlock()
-			blockName = strings.Split(blockName, ":")[1]
-		}
-
 		switch i := i.(type) {
 		case recipe.Shapeless:
 			recipes = append(recipes, &protocol.ShapelessRecipe{
@@ -654,7 +655,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Priority:        int32(i.Priority()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           blockName,
+				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		case recipe.Shaped:
@@ -665,7 +666,7 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Height:          int32(i.Shape().Height()),
 				Input:           stacksToIngredientItems(i.Input()),
 				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           blockName,
+				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		}

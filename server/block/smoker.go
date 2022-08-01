@@ -73,11 +73,11 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 // BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
 	xp := s.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, simpleDrops(append(s.inventory.Items(), item.NewStack(s, 1))...)).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp)
 }
 
 // Activate ...
-func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true

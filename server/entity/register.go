@@ -16,4 +16,7 @@ func init() {
 	world.RegisterEntity(&ExperienceOrb{})
 	world.RegisterEntity(&AreaEffectCloud{})
 	world.RegisterEntity(&LingeringPotion{})
+	world.RegisterEntity(&Firework{})
+	world.RegisterEntity(&BottleOfEnchanting{})
+	world.RegisterEntity(&TNT{})
 }
