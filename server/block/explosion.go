@@ -76,6 +76,9 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 	if c.Rand == nil {
 		c.Rand = rand.NewSource(time.Now().UnixNano())
 	}
+	if c.Size == 0 {
+		c.Size = 4
+	}
 
 	r, d := rand.New(c.Rand), c.Size*2
 	box := cube.Box(

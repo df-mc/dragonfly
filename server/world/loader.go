@@ -130,6 +130,7 @@ func (l *Loader) Reset() {
 	defer l.mu.Unlock()
 
 	l.reset()
+	l.w.addWorldViewer(l)
 	l.populateLoadQueue()
 }
 
