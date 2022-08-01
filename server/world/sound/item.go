@@ -59,6 +59,6 @@ type GoatHorn struct {
 	sound
 }
 
-// UseFireCharge is a sound played when a player lights a block on fire with a fire charge, or when a dispenser or a
+// FireCharge is a sound played when a player lights a block on fire with a fire charge, or when a dispenser or a
 // blaze shoots a fireball.
-type UseFireCharge struct{ sound }
+type FireCharge struct{ sound }
