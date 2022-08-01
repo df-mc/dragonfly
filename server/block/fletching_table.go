@@ -16,11 +16,6 @@ func (f FletchingTable) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, silkTouchOnlyDrop(f))
 }
 
-// FlammabilityInfo ...
-func (FletchingTable) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(5, 5, true)
-}
-
 // FuelInfo ...
 func (FletchingTable) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
