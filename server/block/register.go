@@ -41,6 +41,7 @@ func init() {
 	world.RegisterBlock(EnchantingTable{})
 	world.RegisterBlock(EndBricks{})
 	world.RegisterBlock(EndStone{})
+	world.RegisterBlock(FletchingTable{})
 	world.RegisterBlock(GildedBlackstone{})
 	world.RegisterBlock(GlassPane{})
 	world.RegisterBlock(Glass{})
