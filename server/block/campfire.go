@@ -52,7 +52,7 @@ func (c Campfire) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
-// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself
+// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself.
 func (c Campfire) Splash(pos cube.Pos, e world.Entity, t potion.Potion) {
 	if t != potion.Water() {
 		return
