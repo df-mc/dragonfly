@@ -565,7 +565,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		var damageToAttacker int
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
-		// campfires don't deal armour damage
+		// Campfires don't deal armour damage.
 		if s, ok := source.(damage.SourceFire); ok && s.Campfire {
 			damageToArmour = 0
 		}
