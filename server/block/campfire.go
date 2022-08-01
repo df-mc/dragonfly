@@ -137,7 +137,7 @@ func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	return placed(ctx)
 }
 
-// Tick is called to cook the items within the campfire
+// Tick is called to cook the items within the campfire.
 func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 	if !c.Extinguished {
 		if rand.Float64() <= 0.016 { // Every three or so seconds.
