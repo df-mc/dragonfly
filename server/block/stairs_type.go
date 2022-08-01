@@ -84,7 +84,7 @@ func encodeStairsBlock(block world.Block) string {
 	case MudBricks:
 		return "mud_brick"
 	}
-	panic("invalid block used for slab")
+	panic("invalid block used for stairs")
 }
 
 // StairsBlocks returns a list of all possible blocks for stairs.
