@@ -76,6 +76,9 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 	if c.Rand == nil {
 		c.Rand = rand.NewSource(time.Now().UnixNano())
 	}
+	if c.Size == 0 {
+		c.Size = 4
+	}
 
 	r, d := rand.New(c.Rand), c.Size*2
 	box := cube.Box(
@@ -107,12 +110,22 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 		pos := explosionPos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			if r, ok := w.Block(current).(Breakable); ok {
-				if blastForce -= (r.BreakInfo().BlastResistance/5 + 0.3) * 0.3; blastForce > 0 {
-					affectedBlocks = append(affectedBlocks, current)
-				}
+			currentBlock := w.Block(current)
+
+			resistance := 0.0
+			if l, ok := w.Liquid(current); ok {
+				resistance = l.BlastResistance()
+			} else if i, ok := currentBlock.(Breakable); ok {
+				resistance = i.BreakInfo().BlastResistance
+			} else if _, ok = currentBlock.(Air); !ok {
+				// Completely stop the ray if the current block is not air and unbreakable.
+				break
 			}
+
 			pos = pos.Add(ray)
+			if blastForce -= (resistance/5 + 0.3) * 0.3; blastForce > 0 {
+				affectedBlocks = append(affectedBlocks, current)
+			}
 		}
 	}
 	for _, pos := range affectedBlocks {

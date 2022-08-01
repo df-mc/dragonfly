@@ -125,6 +125,11 @@ func (l Lava) LiquidFalling() bool {
 	return l.Falling
 }
 
+// BlastResistance always returns 500.
+func (Lava) BlastResistance() float64 {
+	return 500
+}
+
 // LiquidType returns 10 as a unique identifier for the lava liquid.
 func (Lava) LiquidType() string {
 	return "lava"

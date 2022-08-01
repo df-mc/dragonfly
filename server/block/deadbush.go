@@ -14,6 +14,7 @@ type DeadBush struct {
 	empty
 	replaceable
 	transparent
+	sourceWaterDisplacer
 }
 
 // NeighbourUpdateTick ...
@@ -36,12 +37,6 @@ func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 
 	place(w, pos, d, user, ctx)
 	return placed(ctx)
-}
-
-// CanDisplace ...
-func (d DeadBush) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

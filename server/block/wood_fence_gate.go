@@ -14,6 +14,7 @@ import (
 type WoodFenceGate struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the fence gate. This field must have one of the values found in the material
 	// package.
@@ -82,12 +83,6 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u ite
 	w.SetBlock(pos, f, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.Door{})
 	return true
-}
-
-// CanDisplace ...
-func (f WoodFenceGate) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
