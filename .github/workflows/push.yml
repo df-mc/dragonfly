@@ -91,6 +91,7 @@ jobs:
   update_contributors:
     name: Update Contributors
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2

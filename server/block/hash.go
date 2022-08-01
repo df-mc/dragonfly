@@ -8,6 +8,7 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashBanner
 	hashBarrel
 	hashBarrier
 	hashBasalt
@@ -78,6 +79,7 @@ const (
 	hashIronBars
 	hashIronOre
 	hashItemFrame
+	hashJukebox
 	hashKelp
 	hashLadder
 	hashLantern
@@ -88,6 +90,7 @@ const (
 	hashLight
 	hashLitPumpkin
 	hashLog
+	hashLoom
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
@@ -179,6 +182,10 @@ func (a Andesite) Hash() uint64 {
 
 func (a Anvil) Hash() uint64 {
 	return hashAnvil | uint64(a.Type.Uint8())<<8 | uint64(a.Facing)<<10
+}
+
+func (b Banner) Hash() uint64 {
+	return hashBanner | uint64(b.Attach.Uint8())<<8
 }
 
 func (b Barrel) Hash() uint64 {
@@ -461,6 +468,10 @@ func (i ItemFrame) Hash() uint64 {
 	return hashItemFrame | uint64(i.Facing)<<8 | uint64(boolByte(i.Glowing))<<11
 }
 
+func (Jukebox) Hash() uint64 {
+	return hashJukebox
+}
+
 func (k Kelp) Hash() uint64 {
 	return hashKelp | uint64(k.Age)<<8
 }
@@ -499,6 +510,10 @@ func (l LitPumpkin) Hash() uint64 {
 
 func (l Log) Hash() uint64 {
 	return hashLog | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Stripped))<<12 | uint64(l.Axis)<<13
+}
+
+func (l Loom) Hash() uint64 {
+	return hashLoom | uint64(l.Facing)<<8
 }
 
 func (Melon) Hash() uint64 {

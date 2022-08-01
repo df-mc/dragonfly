@@ -55,6 +55,7 @@ func init() {
 	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(Iron{})
+	world.RegisterBlock(Jukebox{})
 	world.RegisterBlock(Lapis{})
 	world.RegisterBlock(Melon{})
 	world.RegisterBlock(MossCarpet{})
@@ -108,6 +109,7 @@ func init() {
 	}
 
 	registerAll(allAnvils())
+	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
 	registerAll(allBeetroot())
@@ -146,6 +148,7 @@ func init() {
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
+	registerAll(allLooms())
 	registerAll(allMelonStems())
 	registerAll(allNetherBricks())
 	registerAll(allNetherWart())
@@ -243,10 +246,12 @@ func init() {
 	world.RegisterItem(Iron{})
 	world.RegisterItem(ItemFrame{Glowing: true})
 	world.RegisterItem(ItemFrame{})
+	world.RegisterItem(Jukebox{})
 	world.RegisterItem(Kelp{})
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(LitPumpkin{})
+	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
 	world.RegisterItem(Melon{})
 	world.RegisterItem(MossCarpet{})
@@ -302,8 +307,9 @@ func init() {
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(WheatSeeds{})
-	world.RegisterItem(item.Bucket{Content: Lava{}})
-	world.RegisterItem(item.Bucket{Content: Water{}})
+	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Lava{})})
+	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Water{})})
+	world.RegisterItem(item.Bucket{Content: item.MilkBucketContent()})
 
 	for _, b := range allLight() {
 		world.RegisterItem(b.(world.Item))
@@ -329,6 +335,7 @@ func init() {
 		world.RegisterItem(Anvil{Type: t})
 	}
 	for _, c := range item.Colours() {
+		world.RegisterItem(Banner{Colour: c})
 		world.RegisterItem(Carpet{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(Concrete{Colour: c})
