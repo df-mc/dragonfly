@@ -80,8 +80,7 @@ func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // open opens the chest, displaying the animation and playing a sound.
 func (c Chest) open(w *world.World, pos cube.Pos) {
-	viewers := w.Viewers(pos.Vec3())
-	for _, v := range viewers {
+	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, OpenAction{})
 		if c.paired {
 			v.ViewBlockAction(c.pairPos, OpenAction{})
@@ -92,8 +91,7 @@ func (c Chest) open(w *world.World, pos cube.Pos) {
 
 // close closes the chest, displaying the animation and playing a sound.
 func (c Chest) close(w *world.World, pos cube.Pos) {
-	viewers := w.Viewers(pos.Vec3())
-	for _, v := range viewers {
+	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 		if c.paired {
 			v.ViewBlockAction(c.pairPos, CloseAction{})
@@ -226,7 +224,7 @@ func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok b
 	pair.pairPos, pair.paired = pos, true
 
 	left, right := c.inventory, pair.inventory
-	if pos.Side(c.Facing.RotateLeft().Face()) == c.pairPos {
+	if pos.Side(c.Facing.RotateRight().Face()) == c.pairPos {
 		left, right = right, left
 	}
 
