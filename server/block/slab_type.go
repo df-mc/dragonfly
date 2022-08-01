@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -113,7 +112,6 @@ func encodeLegacySlabId(slabType string) string {
 	case "stone_slab_type_4":
 		return "stone_block_slab4"
 	}
-	fmt.Println(slabType)
 	panic("invalid slab type")
 }
 
