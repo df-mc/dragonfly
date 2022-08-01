@@ -50,6 +50,7 @@ func init() {
 	world.RegisterItem(EnderPearl{})
 	world.RegisterItem(Feather{})
 	world.RegisterItem(FermentedSpiderEye{})
+	world.RegisterItem(FireCharge{})
 	world.RegisterItem(Firework{})
 	world.RegisterItem(FlintAndSteel{})
 	world.RegisterItem(Flint{})
