@@ -146,4 +146,7 @@ func init() {
 		world.RegisterItem(Sword{Tier: t})
 		world.RegisterItem(Hoe{Tier: t})
 	}
+	for _, disc := range sound.MusicDiscs() {
+		world.RegisterItem(MusicDisc{DiscType: disc})
+	}
 }
