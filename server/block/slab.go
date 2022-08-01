@@ -136,7 +136,12 @@ func (s Slab) BreakInfo() BreakInfo {
 		effective = axeEffective
 		blastResistance = 15.0
 	}
-	return newBreakInfo(hardness, harvestable, effective, oneOf(s)).withBlastResistance(blastResistance)
+	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if s.Double {
+			return []item.Stack{item.NewStack(s, 2)}
+		}
+		return []item.Stack{item.NewStack(s, 1)}
+	}).withBlastResistance(blastResistance)
 }
 
 // Model ...
