@@ -38,10 +38,6 @@ type Living interface {
 	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.
 	KnockBack(src mgl64.Vec3, force, height float64)
-	// Velocity returns the players current velocity.
-	Velocity() mgl64.Vec3
-	// SetVelocity updates the entity's velocity.
-	SetVelocity(velocity mgl64.Vec3)
 	// AddEffect adds an entity.Effect to the entity. If the effect is instant, it is applied to the entity
 	// immediately. If not, the effect is applied to the entity every time the Tick method is called.
 	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or

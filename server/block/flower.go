@@ -88,13 +88,8 @@ func (Flower) HasLiquidDrops() bool {
 }
 
 // FlammabilityInfo ...
-func (f Flower) FlammabilityInfo() FlammabilityInfo {
-	encouragement := 30
-	switch f.Type {
-	case Dandelion(), WitherRose(), Poppy():
-		encouragement = 60
-	}
-	return newFlammabilityInfo(encouragement, 100, false)
+func (Flower) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(30, 100, false)
 }
 
 // BreakInfo ...
