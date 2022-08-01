@@ -2247,10 +2247,8 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 
 	if _, ok := p.Armour().Chestplate().Item().(item.Elytra); ok && p.Gliding() {
-		if t := p.glideTicks.Inc(); t%10 == 0 {
-			if (t/10)%2 == 0 {
-				p.armour.SetChestplate(p.damageItem(p.Armour().Chestplate(), 1))
-			}
+		if t := p.glideTicks.Inc(); t%20 == 0 {
+			p.armour.SetChestplate(p.damageItem(p.Armour().Chestplate(), 1))
 		}
 	}
 
