@@ -7,37 +7,63 @@ import (
 // encodeStairsBlock encodes the provided block in to an identifier and meta value that can be used to encode the stairs.
 func encodeStairsBlock(block world.Block) string {
 	switch block := block.(type) {
-	case Planks:
-		return block.Wood.String()
-	case Stone:
-		if !block.Smooth {
-			return "normal_stone"
-		}
-	case Cobblestone:
-		if block.Mossy {
-			return "mossy_cobblestone"
-		}
-		return "stone"
-	case StoneBricks:
-		if block.Type == MossyStoneBricks() {
-			return "mossy_stone_brick"
-		}
-		return "stone_brick"
+	// TODO: Copper
 	case Andesite:
 		if block.Polished {
 			return "polished_andesite"
 		}
 		return "andesite"
+	case Blackstone:
+		if block.Type == NormalBlackstone() {
+			return "blackstone"
+		} else if block.Type == PolishedBlackstone() {
+			return "polished_blackstone"
+		}
+	case PolishedBlackstoneBrick:
+		return "polished_blackstone_brick"
+	case Bricks:
+		return "brick"
+	case Cobblestone:
+		if block.Mossy {
+			return "mossy_cobblestone"
+		}
+		return "stone"
 	case Diorite:
 		if block.Polished {
 			return "polished_diorite"
 		}
 		return "diorite"
+	case EndBricks:
+		return "end_brick"
 	case Granite:
 		if block.Polished {
 			return "polished_granite"
 		}
 		return "granite"
+	case NetherBricks:
+		if block.Type == RedNetherBricks() {
+			return "nether_brick"
+		}
+		return "red_nether_brick"
+	case Planks:
+		return block.Wood.String()
+	case Prismarine:
+		switch block.Type {
+		case NormalPrismarine():
+			return "prismarine"
+		case DarkPrismarine():
+			return "dark_prismarine"
+		case BrickPrismarine():
+			return "prismarine_bricks"
+		}
+		panic("invalid prismarine type")
+	case Purpur:
+		return "purpur"
+	case Quartz:
+		if block.Smooth {
+			return "smooth_quartz"
+		}
+		return "quartz"
 	case Sandstone:
 		switch block.Type {
 		case NormalSandstone():
@@ -52,37 +78,15 @@ func encodeStairsBlock(block world.Block) string {
 			return "smooth_sandstone"
 		}
 		panic("invalid sandstone type")
-	case Bricks:
-		return "brick"
-	case Prismarine:
-		switch block.Type {
-		case NormalPrismarine():
-			return "prismarine"
-		case DarkPrismarine():
-			return "dark_prismarine"
-		case BrickPrismarine():
-			return "prismarine_bricks"
+	case Stone:
+		if !block.Smooth {
+			return "normal_stone"
 		}
-		panic("invalid prismarine type")
-	case NetherBricks:
-		if block.Type == RedNetherBricks() {
-			return "nether_brick"
+	case StoneBricks:
+		if block.Type == MossyStoneBricks() {
+			return "mossy_stone_brick"
 		}
-		return "red_nether_brick"
-	case Quartz:
-		if block.Smooth {
-			return "smooth_quartz"
-		}
-		return "quartz"
-	case Purpur:
-		return "purpur"
-	case EndBricks:
-		return "end_brick"
-	// TODO: Blackstone
-	// TODO: Copper
-	// TODO: Deepslate,
-	case MudBricks:
-		return "mud_brick"
+		return "stone_brick"
 	}
 	panic("invalid block used for stairs")
 }
@@ -90,14 +94,18 @@ func encodeStairsBlock(block world.Block) string {
 // StairsBlocks returns a list of all possible blocks for stairs.
 func StairsBlocks() []world.Block {
 	b := []world.Block{
-		// TODO: Blackstone
 		// TODO: Copper
-		// TODO: Deepslate,
 		Andesite{Polished: true},
 		Andesite{},
+		Blackstone{Type: PolishedBlackstone()},
+		Blackstone{},
 		Bricks{},
 		Cobblestone{Mossy: true},
 		Cobblestone{},
+		DeepslateBricks{},
+		DeepslateTiles{},
+		Deepslate{Type: CobbledDeepslate()},
+		Deepslate{Type: PolishedDeepslate()},
 		Diorite{Polished: true},
 		Diorite{},
 		EndBricks{},
@@ -106,6 +114,7 @@ func StairsBlocks() []world.Block {
 		MudBricks{},
 		NetherBricks{Type: RedNetherBricks()},
 		NetherBricks{},
+		PolishedBlackstoneBrick{},
 		Purpur{},
 		Quartz{Smooth: true},
 		Quartz{},
