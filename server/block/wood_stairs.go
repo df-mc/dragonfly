@@ -13,6 +13,7 @@ import (
 type WoodStairs struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the stairs. This field must have one of the values found in the material
 	// package.
@@ -76,12 +77,6 @@ func (s WoodStairs) EncodeBlock() (name string, properties map[string]any) {
 // toStairDirection converts a facing to a stair's direction for Minecraft.
 func toStairsDirection(v cube.Direction) int32 {
 	return int32(3 - v)
-}
-
-// CanDisplace ...
-func (WoodStairs) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

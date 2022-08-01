@@ -21,6 +21,7 @@ type Chest struct {
 	chest
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Facing is the direction that the chest is facing.
 	Facing cube.Direction
@@ -60,12 +61,6 @@ func (c Chest) Inventory() *inventory.Inventory {
 func (c Chest) WithName(a ...any) world.Item {
 	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return c
-}
-
-// CanDisplace ...
-func (Chest) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

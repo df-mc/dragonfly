@@ -11,6 +11,7 @@ import (
 type Carpet struct {
 	carpet
 	transparent
+	sourceWaterDisplacer
 
 	// Colour is the colour of the carpet.
 	Colour item.Colour
@@ -19,12 +20,6 @@ type Carpet struct {
 // FlammabilityInfo ...
 func (c Carpet) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 60, true)
-}
-
-// CanDisplace ...
-func (Carpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
