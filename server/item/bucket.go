@@ -14,13 +14,13 @@ type BucketContent struct {
 	milk   bool
 }
 
-// LiquidContent returns a new BucketContent with the liquid passed in.
-func LiquidContent(l world.Liquid) BucketContent {
+// LiquidBucketContent returns a new BucketContent with the liquid passed in.
+func LiquidBucketContent(l world.Liquid) BucketContent {
 	return BucketContent{liquid: l}
 }
 
-// MilkContent returns a new BucketContent with the milk flag set.
-func MilkContent() BucketContent {
+// MilkBucketContent returns a new BucketContent with the milk flag set.
+func MilkBucketContent() BucketContent {
 	return BucketContent{milk: true}
 }
 
@@ -120,7 +120,7 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 	w.SetLiquid(pos, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.BucketFill{Liquid: liquid})
 
-	ctx.NewItem = NewStack(Bucket{Content: LiquidContent(liquid)}, 1)
+	ctx.NewItem = NewStack(Bucket{Content: LiquidBucketContent(liquid)}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true
