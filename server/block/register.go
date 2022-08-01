@@ -119,7 +119,6 @@ func init() {
 	registerAll(allCarrots())
 	registerAll(allChains())
 	registerAll(allChests())
-	registerAll(allCobblestoneStairs())
 	registerAll(allCocoaBeans())
 	registerAll(allConcrete())
 	registerAll(allConcretePowder())
@@ -128,7 +127,6 @@ func init() {
 	registerAll(allDoors())
 	registerAll(allDoubleFlowers())
 	registerAll(allDoubleTallGrass())
-	registerAll(allEndBrickStairs())
 	registerAll(allEnderChests())
 	registerAll(allFarmland())
 	registerAll(allFence())
@@ -158,9 +156,7 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
-	registerAll(allQuartzStairs())
 	registerAll(allSandstoneSlabs())
-	registerAll(allSandstoneStairs())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
@@ -169,7 +165,7 @@ func init() {
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
 	registerAll(allStainedTerracotta())
-	registerAll(allStoneBrickStairs())
+	registerAll(allStairs())
 	registerAll(allStoneBricks())
 	registerAll(allStonecutters())
 	registerAll(allTallGrass())
@@ -179,7 +175,6 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWoodSlabs())
-	registerAll(allWoodStairs())
 	registerAll(allWool())
 	registerAll(allWalls())
 }
@@ -211,8 +206,6 @@ func init() {
 	world.RegisterItem(ChiseledQuartz{})
 	world.RegisterItem(Clay{})
 	world.RegisterItem(Coal{})
-	world.RegisterItem(CobblestoneStairs{Mossy: true})
-	world.RegisterItem(CobblestoneStairs{})
 	world.RegisterItem(Cobblestone{Mossy: true})
 	world.RegisterItem(Cobblestone{})
 	world.RegisterItem(CocoaBean{})
@@ -229,7 +222,6 @@ func init() {
 	world.RegisterItem(Dripstone{})
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantingTable{})
-	world.RegisterItem(EndBrickStairs{})
 	world.RegisterItem(EndBricks{})
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
@@ -284,8 +276,6 @@ func init() {
 	world.RegisterItem(PurpurPillar{})
 	world.RegisterItem(QuartzBricks{})
 	world.RegisterItem(QuartzPillar{})
-	world.RegisterItem(QuartzStairs{Smooth: true})
-	world.RegisterItem(QuartzStairs{})
 	world.RegisterItem(Quartz{Smooth: true})
 	world.RegisterItem(Quartz{})
 	world.RegisterItem(RawCopper{})
@@ -305,8 +295,6 @@ func init() {
 	world.RegisterItem(Sponge{Wet: true})
 	world.RegisterItem(Sponge{})
 	world.RegisterItem(SporeBlossom{})
-	world.RegisterItem(StoneBrickStairs{Mossy: true})
-	world.RegisterItem(StoneBrickStairs{})
 	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
@@ -332,10 +320,6 @@ func init() {
 		if t.SlabAble() {
 			world.RegisterItem(SandstoneSlab{Type: t, Red: true})
 			world.RegisterItem(SandstoneSlab{Type: t})
-		}
-		if t.StairAble() {
-			world.RegisterItem(SandstoneStairs{Type: t, Red: true})
-			world.RegisterItem(SandstoneStairs{Type: t})
 		}
 	}
 	for _, s := range allStoneBricks() {
@@ -367,7 +351,6 @@ func init() {
 		world.RegisterItem(WoodFence{Wood: w})
 		world.RegisterItem(WoodSlab{Wood: w, Double: true})
 		world.RegisterItem(WoodSlab{Wood: w})
-		world.RegisterItem(WoodStairs{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
 		world.RegisterItem(Wood{Wood: w, Stripped: true})
 		world.RegisterItem(Wood{Wood: w})
@@ -409,6 +392,9 @@ func init() {
 	}
 	for _, t := range WallBlocks() {
 		world.RegisterItem(Wall{Block: t})
+	}
+	for _, s := range StairsBlocks() {
+		world.RegisterItem(Stairs{Block: s})
 	}
 }
 
