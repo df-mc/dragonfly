@@ -25,13 +25,13 @@ func MojangBannerPattern() BannerPatternType {
 	return BannerPatternType{3}
 }
 
-// BricksBannerPattern represents the 'Field Masoned' banner pattern type.
-func BricksBannerPattern() BannerPatternType {
+// FieldMasonedBannerPattern represents the 'Field Masoned' banner pattern type.
+func FieldMasonedBannerPattern() BannerPatternType {
 	return BannerPatternType{4}
 }
 
-// CurlyBorderBannerPattern represents the 'Bordure Indented' banner pattern type.
-func CurlyBorderBannerPattern() BannerPatternType {
+// BordureIndentedBannerPattern represents the 'Bordure Indented' banner pattern type.
+func BordureIndentedBannerPattern() BannerPatternType {
 	return BannerPatternType{5}
 }
 
@@ -52,8 +52,8 @@ func BannerPatterns() []BannerPatternType {
 		SkullBannerPattern(),
 		FlowerBannerPattern(),
 		MojangBannerPattern(),
-		BricksBannerPattern(),
-		CurlyBorderBannerPattern(),
+		FieldMasonedBannerPattern(),
+		BordureIndentedBannerPattern(),
 		PiglinBannerPattern(),
 		GlobeBannerPattern(),
 	}

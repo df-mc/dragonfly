@@ -1,71 +1,71 @@
 package block
 
-// init initializes all default banner patterns to the registry.
-func init() {
-	RegisterBannerPattern("bo", BorderBannerPattern())
-	RegisterBannerPattern("bri", BricksBannerPattern())
-	RegisterBannerPattern("mc", CircleBannerPattern())
-	RegisterBannerPattern("cre", CreeperBannerPattern())
-	RegisterBannerPattern("cr", CrossBannerPattern())
-	RegisterBannerPattern("cbo", CurlyBorderBannerPattern())
-	RegisterBannerPattern("lud", DiagonalLeftBannerPattern())
-	RegisterBannerPattern("rd", DiagonalRightBannerPattern())
-	RegisterBannerPattern("ld", DiagonalUpLeftBannerPattern())
-	RegisterBannerPattern("rud", DiagonalUpRightBannerPattern())
-	RegisterBannerPattern("flo", FlowerBannerPattern())
-	RegisterBannerPattern("gra", GradientBannerPattern())
-	RegisterBannerPattern("gru", GradientUpBannerPattern())
-	RegisterBannerPattern("hh", HalfHorizontalBannerPattern())
-	RegisterBannerPattern("hhb", HalfHorizontalBottomBannerPattern())
-	RegisterBannerPattern("vh", HalfVerticalBannerPattern())
-	RegisterBannerPattern("vhr", HalfVerticalRightBannerPattern())
-	RegisterBannerPattern("moj", MojangBannerPattern())
-	RegisterBannerPattern("mr", RhombusBannerPattern())
-	RegisterBannerPattern("sku", SkullBannerPattern())
-	RegisterBannerPattern("ss", SmallStripesBannerPattern())
-	RegisterBannerPattern("bl", SquareBottomLeftBannerPattern())
-	RegisterBannerPattern("br", SquareBottomRightBannerPattern())
-	RegisterBannerPattern("tl", SquareTopLeftBannerPattern())
-	RegisterBannerPattern("tr", SquareTopRightBannerPattern())
-	RegisterBannerPattern("sc", StraightCrossBannerPattern())
-	RegisterBannerPattern("bs", StripeBottomBannerPattern())
-	RegisterBannerPattern("cs", StripeCenterBannerPattern())
-	RegisterBannerPattern("dls", StripeDownLeftBannerPattern())
-	RegisterBannerPattern("drs", StripeDownRightBannerPattern())
-	RegisterBannerPattern("ls", StripeLeftBannerPattern())
-	RegisterBannerPattern("ms", StripeMiddleBannerPattern())
-	RegisterBannerPattern("rs", StripeRightBannerPattern())
-	RegisterBannerPattern("ts", StripeTopBannerPattern())
-	RegisterBannerPattern("bt", TriangleBottomBannerPattern())
-	RegisterBannerPattern("tt", TriangleTopBannerPattern())
-	RegisterBannerPattern("bts", TrianglesBottomBannerPattern())
-	RegisterBannerPattern("tts", TrianglesTopBannerPattern())
-	RegisterBannerPattern("glb", GlobeBannerPattern())
-	RegisterBannerPattern("pig", PiglinBannerPattern())
-}
-
 var (
 	bannerPatternsMap = map[string]BannerPatternType{}
 	bannerPatternIDs  = map[BannerPatternType]string{}
 )
 
-// RegisterBannerPattern registers a banner pattern with the ID passed.
-func RegisterBannerPattern(id string, pattern BannerPatternType) {
+// init initializes all default banner patterns to the registry.
+func init() {
+	registerBannerPattern("bo", BorderBannerPattern())
+	registerBannerPattern("bri", BricksBannerPattern())
+	registerBannerPattern("mc", CircleBannerPattern())
+	registerBannerPattern("cre", CreeperBannerPattern())
+	registerBannerPattern("cr", CrossBannerPattern())
+	registerBannerPattern("cbo", CurlyBorderBannerPattern())
+	registerBannerPattern("lud", DiagonalLeftBannerPattern())
+	registerBannerPattern("rd", DiagonalRightBannerPattern())
+	registerBannerPattern("ld", DiagonalUpLeftBannerPattern())
+	registerBannerPattern("rud", DiagonalUpRightBannerPattern())
+	registerBannerPattern("flo", FlowerBannerPattern())
+	registerBannerPattern("gra", GradientBannerPattern())
+	registerBannerPattern("gru", GradientUpBannerPattern())
+	registerBannerPattern("hh", HalfHorizontalBannerPattern())
+	registerBannerPattern("hhb", HalfHorizontalBottomBannerPattern())
+	registerBannerPattern("vh", HalfVerticalBannerPattern())
+	registerBannerPattern("vhr", HalfVerticalRightBannerPattern())
+	registerBannerPattern("moj", MojangBannerPattern())
+	registerBannerPattern("mr", RhombusBannerPattern())
+	registerBannerPattern("sku", SkullBannerPattern())
+	registerBannerPattern("ss", SmallStripesBannerPattern())
+	registerBannerPattern("bl", SquareBottomLeftBannerPattern())
+	registerBannerPattern("br", SquareBottomRightBannerPattern())
+	registerBannerPattern("tl", SquareTopLeftBannerPattern())
+	registerBannerPattern("tr", SquareTopRightBannerPattern())
+	registerBannerPattern("sc", StraightCrossBannerPattern())
+	registerBannerPattern("bs", StripeBottomBannerPattern())
+	registerBannerPattern("cs", StripeCenterBannerPattern())
+	registerBannerPattern("dls", StripeDownLeftBannerPattern())
+	registerBannerPattern("drs", StripeDownRightBannerPattern())
+	registerBannerPattern("ls", StripeLeftBannerPattern())
+	registerBannerPattern("ms", StripeMiddleBannerPattern())
+	registerBannerPattern("rs", StripeRightBannerPattern())
+	registerBannerPattern("ts", StripeTopBannerPattern())
+	registerBannerPattern("bt", TriangleBottomBannerPattern())
+	registerBannerPattern("tt", TriangleTopBannerPattern())
+	registerBannerPattern("bts", TrianglesBottomBannerPattern())
+	registerBannerPattern("tts", TrianglesTopBannerPattern())
+	registerBannerPattern("glb", GlobeBannerPattern())
+	registerBannerPattern("pig", PiglinBannerPattern())
+}
+
+// registerBannerPattern registers a banner pattern with the ID passed.
+func registerBannerPattern(id string, pattern BannerPatternType) {
 	bannerPatternsMap[id] = pattern
 	bannerPatternIDs[pattern] = id
 }
 
-// BannerPatternByID returns a banner pattern by the ID it was registered with.
-func BannerPatternByID(id string) (BannerPatternType, bool) {
+// bannerPatternByID returns a banner pattern by the ID it was registered with.
+func bannerPatternByID(id string) BannerPatternType {
 	b, ok := bannerPatternsMap[id]
 	if !ok {
-		return BannerPatternType{}, false
+		panic("should never happen")
 	}
-	return b, true
+	return b
 }
 
-// BannerPatternID returns the ID a banner pattern was registered with.
-func BannerPatternID(pattern BannerPatternType) string {
+// bannerPatternID returns the ID a banner pattern was registered with.
+func bannerPatternID(pattern BannerPatternType) string {
 	id, ok := bannerPatternIDs[pattern]
 	if !ok {
 		panic("should never happen")
