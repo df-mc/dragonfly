@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -148,9 +147,7 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 			if !it.Item.Empty() && it.Time <= 0 {
 				itemCooked := it.Item
 				if food, ok := itemCooked.Item().(item.Smeltable); ok {
-					ent := entity.NewItem(food.SmeltInfo().Product, pos.Vec3Middle())
-					ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-					w.AddEntity(ent)
+					dropItem(w, food.SmeltInfo().Product, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 					c.Items[i].Item = item.Stack{}
 					w.SetBlock(pos, c, nil)
 					continue
@@ -174,15 +171,14 @@ func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // EntityInside ...
 func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
-	if flammable, ok := e.(entity.Flammable); ok {
-		// Try to egnite the campfire is the entity is on fire and ontop
+	if flammable, ok := e.(flammableEntity); ok {
 		if flammable.OnFireDuration() > 0 && c.Extinguished {
 			c.Extinguished = false
 			w.PlaySound(pos.Vec3(), sound.Ignite{})
 			w.SetBlock(pos, c, nil)
 		}
 		if !c.Extinguished && !w.RainingAt(pos) {
-			if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+			if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 				l.Hurt(c.Type.Damage(), damage.SourceFire{Campfire: true})
 			}
 			if flammable.OnFireDuration() < time.Second*8 {
