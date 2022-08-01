@@ -161,7 +161,7 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	// if the campfire is water logged we extinguish it
+	// If the campfire is waterlogged, we need to extinguish it.
 	if _, ok := w.Liquid(pos); ok && !c.Extinguished {
 		c.Extinguished = true
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
