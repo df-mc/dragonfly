@@ -74,7 +74,12 @@ func (w Wall) BreakInfo() BreakInfo {
 	if !ok {
 		panic("wall block is not breakable")
 	}
-	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(breakable.BreakInfo().BlastResistance)
+	blastResistance := breakable.BreakInfo().BlastResistance
+	switch w.Block.(type) {
+	case MudBricks:
+		blastResistance = 30
+	}
+	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(blastResistance)
 }
 
 // NeighbourUpdateTick ...
