@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Campfire is the model used by Campfires
+// Campfire is the model used by campfires.
 type Campfire struct{}
 
 // BBox returns a flat BBox with a width of 0.4375.
