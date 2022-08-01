@@ -122,6 +122,9 @@ func init() {
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
 	}
+	for _, pattern := range BannerPatterns() {
+		world.RegisterItem(BannerPattern{Type: pattern})
+	}
 	for _, c := range Colours() {
 		world.RegisterItem(Dye{Colour: c})
 		world.RegisterItem(FireworkStar{FireworkExplosion: FireworkExplosion{Colour: c}})

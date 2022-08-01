@@ -8,6 +8,7 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashBanner
 	hashBarrel
 	hashBarrier
 	hashBasalt
@@ -179,6 +180,10 @@ func (a Andesite) Hash() uint64 {
 
 func (a Anvil) Hash() uint64 {
 	return hashAnvil | uint64(a.Type.Uint8())<<8 | uint64(a.Facing)<<10
+}
+
+func (b Banner) Hash() uint64 {
+	return hashBanner | uint64(b.Attach.Uint8())<<8
 }
 
 func (b Barrel) Hash() uint64 {
