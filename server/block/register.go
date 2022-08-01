@@ -159,11 +159,11 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
-	registerAll(allSandstoneSlabs())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
 	registerAll(allSkulls())
+	registerAll(allSlabs())
 	registerAll(allSmokers())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
@@ -177,7 +177,6 @@ func init() {
 	registerAll(allWater())
 	registerAll(allWheat())
 	registerAll(allWood())
-	registerAll(allWoodSlabs())
 	registerAll(allWool())
 	registerAll(allWalls())
 }
@@ -323,10 +322,6 @@ func init() {
 	for _, t := range SandstoneTypes() {
 		world.RegisterItem(Sandstone{Type: t, Red: true})
 		world.RegisterItem(Sandstone{Type: t})
-		if t.SlabAble() {
-			world.RegisterItem(SandstoneSlab{Type: t, Red: true})
-			world.RegisterItem(SandstoneSlab{Type: t})
-		}
 	}
 	for _, s := range allStoneBricks() {
 		world.RegisterItem(s.(world.Item))
@@ -356,8 +351,6 @@ func init() {
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
-		world.RegisterItem(WoodSlab{Wood: w, Double: true})
-		world.RegisterItem(WoodSlab{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
 		world.RegisterItem(Wood{Wood: w, Stripped: true})
 		world.RegisterItem(Wood{Wood: w})
@@ -396,6 +389,9 @@ func init() {
 	}
 	for _, s := range SkullTypes() {
 		world.RegisterItem(Skull{Type: s})
+	}
+	for _, t := range SlabBlocks() {
+		world.RegisterItem(Slab{Block: t})
 	}
 	for _, t := range WallBlocks() {
 		world.RegisterItem(Wall{Block: t})
