@@ -198,15 +198,8 @@ func (c Campfire) EncodeNBT() map[string]any {
 			m["ItemTime"+id] = uint8(v.Time)
 		}
 	}
-	switch c.Type {
-	case NormalFire():
-		m["id"] = "Campfire"
-		return m
-	case SoulFire():
-		m["id"] = "SoulFire"
-		return m
-	}
-	panic("invalid fire type")
+	m["id"] = "Campfire"
+	return m
 }
 
 // DecodeNBT ...
