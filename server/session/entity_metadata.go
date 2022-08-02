@@ -101,7 +101,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 			m[dataKeyPotionAmbient] = byte(0)
 		}
 	}
-	if l, ok := e.(living); ok {
+	if l, ok := e.(living); ok && s.c == e {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
 			m[dataKeyPlayerLastDeathPos] = vec64To32(deathPos)
