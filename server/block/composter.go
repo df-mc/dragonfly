@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"math/rand"
 	"time"
@@ -35,6 +36,7 @@ func (c Composter) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World,
 		return false
 	}
 	ctx.CountSub = 1
+	w.AddParticle(pos.Vec3(), particle.BoneMeal{})
 	if rand.Float64() > compostable.CompostChance() {
 		w.PlaySound(pos.Vec3(), sound.ComposterFill{})
 		return true
