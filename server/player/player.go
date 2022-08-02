@@ -1036,7 +1036,8 @@ func (p *Player) StartGliding() {
 	if !p.gliding.CAS(false, true) {
 		return
 	}
-	if _, ok := p.Armour().Chestplate().Item().(item.Elytra); ok {
+	chest := p.Armour().Chestplate()
+	if _, ok := chest.Item().(item.Elytra); !ok || chest.Durability() < 2 {
 		return
 	}
 	p.updateState()
@@ -2260,7 +2261,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 		if t := p.glideTicks.Inc(); t%20 == 0 {
 			d := p.damageItem(p.Armour().Chestplate(), 1)
 			p.armour.SetChestplate(d)
-			if d.Empty() {
+			if d.Durability() < 2 {
 				p.StopGliding()
 			}
 		}
