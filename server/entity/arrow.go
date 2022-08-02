@@ -320,10 +320,10 @@ func (a *Arrow) EncodeNBT() map[string]any {
 	yaw, pitch := a.Rotation()
 	data := map[string]any{
 		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":          yaw,
-		"Pitch":        pitch,
+		"Yaw":          float32(yaw),
+		"Pitch":        float32(pitch),
 		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":       a.BaseDamage(),
+		"Damage":       float32(a.BaseDamage()),
 		"Fire":         int16(a.OnFireDuration() * 20),
 		"enchantPunch": byte(a.punchLevel),
 		"auxValue":     int32(a.tip.Uint8() + 1),
