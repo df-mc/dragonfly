@@ -16,6 +16,11 @@ func (b Bookshelf) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.Book{}, 3), item.NewStack(b, 1)))
 }
 
+// FlammabilityInfo ...
+func (Bookshelf) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(30, 20, true)
+}
+
 // FuelInfo ...
 func (Bookshelf) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
