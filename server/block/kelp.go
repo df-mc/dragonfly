@@ -48,6 +48,11 @@ func (k Kelp) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(k))
 }
 
+// CompostChance ...
+func (Kelp) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (Kelp) EncodeItem() (name string, meta int16) {
 	return "minecraft:kelp", 0

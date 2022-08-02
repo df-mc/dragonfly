@@ -15,6 +15,11 @@ func (s Shroomlight) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(s))
 }
 
+// CompostChance ...
+func (Shroomlight) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (Shroomlight) EncodeItem() (name string, meta int16) {
 	return "minecraft:shroomlight", 0

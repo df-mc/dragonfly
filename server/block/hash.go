@@ -34,6 +34,7 @@ const (
 	hashCoalOre
 	hashCobblestone
 	hashCocoaBean
+	hashComposter
 	hashConcrete
 	hashConcretePowder
 	hashCopperOre
@@ -291,6 +292,10 @@ func (c CocoaBean) Hash() uint64 {
 	return hashCocoaBean | uint64(c.Facing)<<8 | uint64(c.Age)<<10
 }
 
+func (c Composter) Hash() uint64 {
+	return hashComposter | uint64(c.Level)<<8
+}
+
 func (c Concrete) Hash() uint64 {
 	return hashConcrete | uint64(c.Colour.Uint8())<<8
 }
@@ -320,7 +325,7 @@ func (DeadBush) Hash() uint64 {
 }
 
 func (d Deepslate) Hash() uint64 {
-	return hashDeepslate | uint64(d.Type.Uint8())<<8
+	return hashDeepslate | uint64(d.Type.Uint8())<<8 | uint64(d.Axis)<<10
 }
 
 func (d DeepslateBricks) Hash() uint64 {

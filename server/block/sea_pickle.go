@@ -155,6 +155,11 @@ func (SeaPickle) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(item.Dye{Colour: item.ColourLime()}, 1), 0.1)
 }
 
+// CompostChance ...
+func (SeaPickle) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (SeaPickle) EncodeItem() (name string, meta int16) {
 	return "minecraft:sea_pickle", 0

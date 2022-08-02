@@ -13,6 +13,11 @@ func (Bread) Consume(_ *world.World, c Consumer) Stack {
 	return Stack{}
 }
 
+// CompostChance ...
+func (Bread) CompostChance() float64 {
+	return 0.85
+}
+
 // EncodeItem ...
 func (Bread) EncodeItem() (name string, meta int16) {
 	return "minecraft:bread", 0
