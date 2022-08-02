@@ -103,10 +103,6 @@ func (s Stack) Damage(d int) Stack {
 	durability := s.Durability()
 	info := durable.DurabilityInfo()
 	if durability-d <= 0 {
-		if info.Persistent {
-			// Persistent items can't be broken.
-			return s
-		}
 		// A durability of 0, so the item is broken.
 		return info.BrokenItem()
 	}

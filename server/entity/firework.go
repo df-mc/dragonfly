@@ -160,7 +160,7 @@ func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firewo
 	return fw
 }
 
-// Attached ...
+// Attached returns true if the firework is currently attached to the owner. This is mainly the case with gliding.
 func (f *Firework) Attached() bool {
 	return f.attached
 }

@@ -12,11 +12,10 @@ func (Elytra) Use(_ *world.World, _ User, ctx *UseContext) bool {
 }
 
 // DurabilityInfo ...
-func (Elytra) DurabilityInfo() DurabilityInfo {
+func (e Elytra) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: 433,
-		Persistent:    true,
-		BrokenItem:    simpleItem(Stack{}),
+		BrokenItem:    simpleItem(NewStack(e, 1).WithDurability(1)),
 	}
 }
 
