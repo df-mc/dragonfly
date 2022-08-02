@@ -61,11 +61,11 @@ func (EnchantingTable) EncodeBlock() (string, map[string]any) {
 
 // EncodeNBT is used to encode the block to NBT, so that the enchanting table book will be rendered properly client-side.
 // The actual rotation value doesn't need to be set in the NBT, we just need to write the default NBT for the block.
-func (e EnchantingTable) EncodeNBT() map[string]any {
+func (e EnchantingTable) EncodeNBT(cube.Pos, *world.World) map[string]any {
 	return map[string]any{"id": "EnchantTable"}
 }
 
 // DecodeNBT is used to implement world.NBTer.
-func (e EnchantingTable) DecodeNBT(map[string]any) any {
+func (e EnchantingTable) DecodeNBT(cube.Pos, *world.World, map[string]any) any {
 	return e
 }

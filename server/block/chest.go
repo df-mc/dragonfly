@@ -152,7 +152,7 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 }
 
 // DecodeNBT ...
-func (c Chest) DecodeNBT(data map[string]any) any {
+func (c Chest) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
@@ -163,7 +163,7 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 }
 
 // EncodeNBT ...
-func (c Chest) EncodeNBT() map[string]any {
+func (c Chest) EncodeNBT(cube.Pos, *world.World) map[string]any {
 	if c.inventory == nil {
 		facing, customName := c.Facing, c.CustomName
 		//noinspection GoAssignmentToReceiver

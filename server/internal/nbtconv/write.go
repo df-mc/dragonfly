@@ -12,7 +12,7 @@ import (
 // WriteItem encodes an item stack into a map that can be encoded using NBT.
 func WriteItem(s item.Stack, disk bool) map[string]any {
 	m := make(map[string]any)
-	if nbt, ok := s.Item().(world.NBTer); ok {
+	if nbt, ok := s.Item().(world.ItemNBTer); ok {
 		for k, v := range nbt.EncodeNBT() {
 			m[k] = v
 		}

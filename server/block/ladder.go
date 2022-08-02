@@ -91,7 +91,7 @@ func (l Ladder) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (l Ladder) EncodeBlock() (string, map[string]any) {
 	if l.Facing == unknownDirection {
-		return "minecraft:ladder", map[string]interface{}{"facing_direction": int32(0)}
+		return "minecraft:ladder", map[string]any{"facing_direction": int32(0)}
 	}
 	return "minecraft:ladder", map[string]any{"facing_direction": int32(l.Facing + 2)}
 }

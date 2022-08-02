@@ -594,7 +594,7 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 		Flags:             packet.BlockUpdateNetwork,
 		Layer:             uint32(layer),
 	})
-	if v, ok := b.(world.NBTer); ok {
+	if v, ok := b.(world.ItemNBTer); ok {
 		NBTData := v.EncodeNBT()
 		NBTData["x"], NBTData["y"], NBTData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 		s.writePacket(&packet.BlockActorData{

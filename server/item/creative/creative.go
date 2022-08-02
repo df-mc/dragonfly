@@ -74,7 +74,7 @@ func init() {
 		}
 
 		if len(data.NBT) > 0 {
-			if n, ok := it.(world.NBTer); ok {
+			if n, ok := it.(world.ItemNBTer); ok {
 				it = n.DecodeNBT(data.NBT).(world.Item)
 			}
 		}

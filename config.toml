@@ -12,7 +12,7 @@
   # players to the server list directly.
   ShutdownMessage = "Server closed."
   # AuthEnabled controls whether or not players must be connected to Xbox Live in order to join the server.
-  AuthEnabled = true
+  AuthEnabled = false
   # JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
   # %v is the placeholder for the username of the player. Set this to "" to disable.
   JoinMessage = "%v has joined the game"
