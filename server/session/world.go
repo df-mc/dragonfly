@@ -428,6 +428,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = tierToSoundEvent(i.Tier)
 		case item.Boots:
 			pk.SoundType = tierToSoundEvent(i.Tier)
+		case item.Elytra:
+			pk.SoundType = packet.SoundEventEquipElytra
 		default:
 			pk.SoundType = packet.SoundEventEquipGeneric
 		}
