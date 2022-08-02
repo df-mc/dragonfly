@@ -89,8 +89,8 @@ func (l Leggings) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Tier.Name() + "_leggings", 0
 }
 
-// DecodeNBT ...
-func (l Leggings) DecodeNBT(data map[string]any) any {
+// DecodeItemNBT ...
+func (l Leggings) DecodeItemNBT(data map[string]any) any {
 	if t, ok := l.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
 			t.Colour = rgbaFromInt32(v)
@@ -100,8 +100,8 @@ func (l Leggings) DecodeNBT(data map[string]any) any {
 	return l
 }
 
-// EncodeNBT ...
-func (l Leggings) EncodeNBT() map[string]any {
+// EncodeItemNBT ...
+func (l Leggings) EncodeItemNBT() map[string]any {
 	if t, ok := l.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
 		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
 	}

@@ -87,8 +87,8 @@ func (c Chestplate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Tier.Name() + "_chestplate", 0
 }
 
-// DecodeNBT ...
-func (c Chestplate) DecodeNBT(data map[string]any) any {
+// DecodeItemNBT ...
+func (c Chestplate) DecodeItemNBT(data map[string]any) any {
 	if t, ok := c.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
 			t.Colour = rgbaFromInt32(v)
@@ -98,8 +98,8 @@ func (c Chestplate) DecodeNBT(data map[string]any) any {
 	return c
 }
 
-// EncodeNBT ...
-func (c Chestplate) EncodeNBT() map[string]any {
+// EncodeItemNBT ...
+func (c Chestplate) EncodeItemNBT() map[string]any {
 	if t, ok := c.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
 		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
 	}

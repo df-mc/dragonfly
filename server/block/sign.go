@@ -148,8 +148,8 @@ func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + woodType + "standing_sign", map[string]any{"ground_sign_direction": int32(s.Attach.o)}
 }
 
-// DecodeNBT ...
-func (s Sign) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
+// DecodeBlockNBT ...
+func (s Sign) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	s.Text = nbtconv.Map[string](data, "Text")
 	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Map[int32](data, "SignTextColor"))
 	s.Glowing = nbtconv.Map[byte](data, "IgnoreLighting") == 1 && nbtconv.Map[byte](data, "TextIgnoreLegacyBugResolved") == 1
@@ -157,8 +157,8 @@ func (s Sign) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	return s
 }
 
-// EncodeNBT ...
-func (s Sign) EncodeNBT(cube.Pos, *world.World) map[string]any {
+// EncodeBlockNBT ...
+func (s Sign) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	m := map[string]any{
 		"id":             "Sign",
 		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),

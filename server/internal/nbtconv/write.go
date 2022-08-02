@@ -13,7 +13,7 @@ import (
 func WriteItem(s item.Stack, disk bool) map[string]any {
 	m := make(map[string]any)
 	if nbt, ok := s.Item().(world.ItemNBTer); ok {
-		for k, v := range nbt.EncodeNBT() {
+		for k, v := range nbt.EncodeItemNBT() {
 			m[k] = v
 		}
 	}

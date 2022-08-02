@@ -81,8 +81,8 @@ func (j Jukebox) Disc() (sound.DiscType, bool) {
 	return sound.DiscType{}, false
 }
 
-// EncodeNBT ...
-func (j Jukebox) EncodeNBT() map[string]any {
+// EncodeBlockNBT ...
+func (j Jukebox) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	m := map[string]any{"id": "Jukebox"}
 	if _, hasDisc := j.Disc(); hasDisc {
 		m["RecordItem"] = nbtconv.WriteItem(j.Item, true)
@@ -90,8 +90,8 @@ func (j Jukebox) EncodeNBT() map[string]any {
 	return m
 }
 
-// DecodeNBT ...
-func (j Jukebox) DecodeNBT(data map[string]any) any {
+// DecodeBlockNBT ...
+func (j Jukebox) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	s := nbtconv.MapItem(data, "RecordItem")
 
 	if _, ok := s.Item().(item.MusicDisc); ok {

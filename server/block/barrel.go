@@ -137,8 +137,8 @@ func (Barrel) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// DecodeNBT ...
-func (b Barrel) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
+// DecodeBlockNBT ...
+func (b Barrel) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	facing := b.Facing
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
@@ -148,8 +148,8 @@ func (b Barrel) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	return b
 }
 
-// EncodeNBT ...
-func (b Barrel) EncodeNBT(cube.Pos, *world.World) map[string]any {
+// EncodeBlockNBT ...
+func (b Barrel) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	if b.inventory == nil {
 		facing, customName := b.Facing, b.CustomName
 		//noinspection GoAssignmentToReceiver

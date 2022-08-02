@@ -85,7 +85,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
 		for pos, b := range ch.BlockEntities() {
 			if n, ok := b.(world.BlockNBTer); ok && ch.SubIndex(int16(pos.Y())) == ind {
-				d := n.EncodeNBT(pos, w)
+				d := n.EncodeBlockNBT(pos, w)
 				d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 				_ = enc.Encode(d)
 			}
@@ -172,7 +172,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	enc := nbt.NewEncoderWithEncoding(raw, nbt.NetworkLittleEndian)
 	for bp, b := range blockEntities {
 		if n, ok := b.(world.BlockNBTer); ok {
-			d := n.EncodeNBT(bp, w)
+			d := n.EncodeBlockNBT(bp, w)
 			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
 			_ = enc.Encode(d)
 		}
@@ -214,7 +214,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	enc := nbt.NewEncoderWithEncoding(chunkBuf, nbt.NetworkLittleEndian)
 	for bp, b := range blockEntities {
 		if n, ok := b.(world.BlockNBTer); ok {
-			d := n.EncodeNBT(bp, w)
+			d := n.EncodeBlockNBT(bp, w)
 			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
 			_ = enc.Encode(d)
 		}

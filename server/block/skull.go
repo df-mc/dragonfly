@@ -87,8 +87,8 @@ func (s Skull) EncodeItem() (name string, meta int16) {
 	return "minecraft:skull", int16(s.Type.Uint8())
 }
 
-// DecodeNBT ...
-func (s Skull) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
+// DecodeBlockNBT ...
+func (s Skull) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	s.Type = SkullType{skull(nbtconv.Map[byte](data, "SkullType"))}
 	s.Attach.o = cube.Orientation(nbtconv.Map[byte](data, "Rot"))
 	if s.Attach.facing >= 0 {
@@ -97,8 +97,8 @@ func (s Skull) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	return s
 }
 
-// EncodeNBT ...
-func (s Skull) EncodeNBT(cube.Pos, *world.World) map[string]any {
+// EncodeBlockNBT ...
+func (s Skull) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	return map[string]any{"id": "Skull", "SkullType": s.Type.Uint8(), "Rot": byte(s.Attach.o)}
 }
 

@@ -69,7 +69,7 @@ func (d outputItems) Stacks() ([]item.Stack, bool) {
 			}
 		}
 		if n, ok := it.(world.ItemNBTer); ok {
-			it = n.DecodeNBT(o.NBTData).(world.Item)
+			it = n.DecodeItemNBT(o.NBTData).(world.Item)
 		}
 		s = append(s, item.NewStack(it, int(o.Count)))
 	}

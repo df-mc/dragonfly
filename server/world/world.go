@@ -1310,7 +1310,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 			continue
 		}
 		if nbt, ok := b.(BlockNBTer); ok {
-			b = nbt.DecodeNBT(pos, w, data).(Block)
+			b = nbt.DecodeBlockNBT(pos, w, data).(Block)
 		}
 		c.e[pos] = b
 	}
@@ -1325,7 +1325,7 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	for pos, b := range c.e {
 		if n, ok := b.(BlockNBTer); ok {
 			// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
-			data := n.EncodeNBT(pos, w)
+			data := n.EncodeBlockNBT(pos, w)
 			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 			m = append(m, data)
 		}

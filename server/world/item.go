@@ -31,10 +31,10 @@ type CustomItem interface {
 // ItemNBTer represents an item which may decode NBT data and encode to NBT data. Typically, this is done to store
 // additional data.
 type ItemNBTer interface {
-	// DecodeNBT returns the item, depending on which of those the NBTer was, with the NBT data decoded into it.
-	DecodeNBT(data map[string]any) any
-	// EncodeNBT encodes the item into a map which can then be encoded as NBT to be written.
-	EncodeNBT() map[string]any
+	// DecodeItemNBT returns the item, depending on which of those the NBTer was, with the NBT data decoded into it.
+	DecodeItemNBT(data map[string]any) any
+	// EncodeItemNBT encodes the item into a map which can then be encoded as NBT to be written.
+	EncodeItemNBT() map[string]any
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an

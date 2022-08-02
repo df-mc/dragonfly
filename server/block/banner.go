@@ -86,8 +86,8 @@ func (b Banner) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:standing_banner", map[string]any{"ground_sign_direction": int32(b.Attach.o)}
 }
 
-// EncodeNBT ...
-func (b Banner) EncodeNBT() map[string]any {
+// EncodeBlockNBT ...
+func (b Banner) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	patterns := make([]any, 0, len(b.Patterns))
 	for _, p := range b.Patterns {
 		patterns = append(patterns, p.EncodeNBT())
@@ -100,9 +100,37 @@ func (b Banner) EncodeNBT() map[string]any {
 	}
 }
 
-// DecodeNBT ...
-func (b Banner) DecodeNBT(data map[string]any) any {
+// DecodeBlockNBT ...
+func (b Banner) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	b.Colour = invertColourID(int16(nbtconv.Map[int32](data, "Base")))
+	b.Illager = nbtconv.Map[int32](data, "Type") == 1
+	if patterns, ok := data["Patterns"].([]any); ok {
+		b.Patterns = make([]BannerPatternLayer, len(patterns))
+		for i, p := range b.Patterns {
+			b.Patterns[i] = p.DecodeNBT(patterns[i].(map[string]any)).(BannerPatternLayer)
+		}
+	}
+	return b
+}
+
+// EncodeItemNBT ...
+func (b Banner) EncodeItemNBT() map[string]any {
+	data := map[string]any{}
+	if b.Illager {
+		data["Type"] = int32(1)
+	}
+	if len(b.Patterns) > 0 {
+		patterns := make([]any, 0, len(b.Patterns))
+		for _, p := range b.Patterns {
+			patterns = append(patterns, p.EncodeNBT())
+		}
+		data["Patterns"] = patterns
+	}
+	return data
+}
+
+// DecodeItemNBT ...
+func (b Banner) DecodeItemNBT(data map[string]any) any {
 	b.Illager = nbtconv.Map[int32](data, "Type") == 1
 	if patterns, ok := data["Patterns"].([]any); ok {
 		b.Patterns = make([]BannerPatternLayer, len(patterns))

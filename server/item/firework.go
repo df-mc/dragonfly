@@ -40,8 +40,8 @@ func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3
 	return true
 }
 
-// EncodeNBT ...
-func (f Firework) EncodeNBT() map[string]any {
+// EncodeItemNBT ...
+func (f Firework) EncodeItemNBT() map[string]any {
 	explosions := make([]any, 0, len(f.Explosions))
 	for _, explosion := range f.Explosions {
 		explosions = append(explosions, explosion.EncodeNBT())
@@ -52,8 +52,8 @@ func (f Firework) EncodeNBT() map[string]any {
 	}}
 }
 
-// DecodeNBT ...
-func (f Firework) DecodeNBT(data map[string]any) any {
+// DecodeItemNBT ...
+func (f Firework) DecodeItemNBT(data map[string]any) any {
 	if fireworks, ok := data["Fireworks"].(map[string]any); ok {
 		if explosions, ok := fireworks["Explosions"].([]any); ok {
 			f.Explosions = make([]FireworkExplosion, len(explosions))

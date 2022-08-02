@@ -45,10 +45,10 @@ type TickerEntity interface {
 // registered on startup using RegisterEntity to allow loading them in a World.
 type SaveableEntity interface {
 	Entity
-	// DecodeNBT returns the (new) entity, depending on which of those the NBTer was, with the NBT data decoded into it.
-	DecodeNBT(data map[string]any) any
-	// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
-	EncodeNBT() map[string]any
+	// DecodeBlockNBT returns the (new) entity, depending on which of those the NBTer was, with the NBT data decoded into it.
+	DecodeItemNBT(data map[string]any) any
+	// EncodeBlockNBT encodes the entity into a map which can then be encoded as NBT to be written.
+	EncodeItemNBT() map[string]any
 }
 
 // entities holds a map of name => SaveableEntity to be used for looking up the entity by a string ID. It is registered

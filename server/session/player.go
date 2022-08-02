@@ -725,7 +725,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 	}
 	//noinspection SpellCheckingInspection
 	if nbter, ok := t.(world.ItemNBTer); ok && len(it.NBTData) != 0 {
-		t = nbter.DecodeNBT(it.NBTData).(world.Item)
+		t = nbter.DecodeItemNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
 	return nbtconv.ReadItem(it.NBTData, &s)

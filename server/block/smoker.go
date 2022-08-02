@@ -85,8 +85,8 @@ func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User,
 	return false
 }
 
-// EncodeNBT ...
-func (s Smoker) EncodeNBT(cube.Pos, *world.World) map[string]any {
+// EncodeBlockNBT ...
+func (s Smoker) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	if s.smelter == nil {
 		//noinspection GoAssignmentToReceiver
 		s = NewSmoker(s.Facing)
@@ -102,8 +102,8 @@ func (s Smoker) EncodeNBT(cube.Pos, *world.World) map[string]any {
 	}
 }
 
-// DecodeNBT ...
-func (s Smoker) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
+// DecodeBlockNBT ...
+func (s Smoker) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50

@@ -85,8 +85,8 @@ func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item
 	return false
 }
 
-// EncodeNBT ...
-func (b BlastFurnace) EncodeNBT(cube.Pos, *world.World) map[string]any {
+// EncodeBlockNBT ...
+func (b BlastFurnace) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	if b.smelter == nil {
 		//noinspection GoAssignmentToReceiver
 		b = NewBlastFurnace(b.Facing)
@@ -102,8 +102,8 @@ func (b BlastFurnace) EncodeNBT(cube.Pos, *world.World) map[string]any {
 	}
 }
 
-// DecodeNBT ...
-func (b BlastFurnace) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
+// DecodeBlockNBT ...
+func (b BlastFurnace) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
 	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
 	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50

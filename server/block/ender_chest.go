@@ -106,13 +106,13 @@ func (c EnderChest) close(w *world.World, pos cube.Pos) {
 	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }
 
-// EncodeNBT ...
-func (c EnderChest) EncodeNBT(cube.Pos, *world.World) map[string]any {
+// EncodeBlockNBT ...
+func (c EnderChest) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	return map[string]any{"id": "EnderChest"}
 }
 
-// DecodeNBT ...
-func (c EnderChest) DecodeNBT(cube.Pos, *world.World, map[string]any) any {
+// DecodeBlockNBT ...
+func (c EnderChest) DecodeBlockNBT(cube.Pos, *world.World, map[string]any) any {
 	return NewEnderChest()
 }
 

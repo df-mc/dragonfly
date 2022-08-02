@@ -424,7 +424,7 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 			continue
 		}
 		if s, ok := e.(world.SaveableEntity); ok {
-			if v := s.DecodeNBT(m); v != nil {
+			if v := s.DecodeItemNBT(m); v != nil {
 				a = append(a, v.(world.SaveableEntity))
 			}
 		}
@@ -441,7 +441,7 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEnt
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 	for _, e := range entities {
-		x := e.EncodeNBT()
+		x := e.EncodeItemNBT()
 		x["identifier"] = e.EncodeEntity()
 		if err := enc.Encode(x); err != nil {
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
