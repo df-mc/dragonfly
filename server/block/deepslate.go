@@ -2,7 +2,9 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Deepslate is similar to stone but is naturally found deep underground around Y0 and below, and is harder to break.
@@ -17,25 +19,47 @@ type Deepslate struct {
 }
 
 // BreakInfo ...
-func (b Deepslate) BreakInfo() BreakInfo {
+func (d Deepslate) BreakInfo() BreakInfo {
 	hardness := 3.5
-	if b.Type == NormalDeepslate() {
+	if d.Type == NormalDeepslate() {
 		hardness = 3
 	}
-	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(18)
+	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(18)
+}
+
+// SmeltInfo ...
+func (d Deepslate) SmeltInfo() item.SmeltInfo {
+	if d.Type == CobbledDeepslate() {
+		return newSmeltInfo(item.NewStack(Deepslate{}, 1), 0.1)
+	}
+	return item.SmeltInfo{}
+}
+
+// UseOnBlock ...
+func (d Deepslate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(w, pos, face, d)
+	if !used {
+		return
+	}
+	if d.Type == NormalDeepslate() {
+		d.Axis = face.Axis()
+	}
+
+	place(w, pos, d, user, ctx)
+	return placed(ctx)
 }
 
 // EncodeItem ...
-func (b Deepslate) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + b.Type.String(), 0
+func (d Deepslate) EncodeItem() (name string, meta int16) {
+	return "minecraft:" + d.Type.String(), 0
 }
 
 // EncodeBlock ...
-func (b Deepslate) EncodeBlock() (string, map[string]any) {
-	if b.Type == NormalDeepslate() {
-		return "minecraft:deepslate", map[string]any{"pillar_axis": b.Axis.String()}
+func (d Deepslate) EncodeBlock() (string, map[string]any) {
+	if d.Type == NormalDeepslate() {
+		return "minecraft:deepslate", map[string]any{"pillar_axis": d.Axis.String()}
 	}
-	return "minecraft:" + b.Type.String(), nil
+	return "minecraft:" + d.Type.String(), nil
 }
 
 // allDeepslate returns a list of all deepslate block variants.

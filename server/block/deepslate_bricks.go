@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/item"
+
 // DeepslateBricks are a brick variant of deepslate and can spawn in ancient cities.
 type DeepslateBricks struct {
 	solid
@@ -12,6 +14,14 @@ type DeepslateBricks struct {
 // BreakInfo ...
 func (d DeepslateBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(18)
+}
+
+// SmeltInfo ...
+func (d DeepslateBricks) SmeltInfo() item.SmeltInfo {
+	if d.Cracked {
+		return item.SmeltInfo{}
+	}
+	return newSmeltInfo(item.NewStack(DeepslateBricks{Cracked: true}, 1), 0.1)
 }
 
 // EncodeItem ...

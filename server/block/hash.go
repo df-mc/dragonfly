@@ -319,8 +319,8 @@ func (DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 
-func (b Deepslate) Hash() uint64 {
-	return hashDeepslate | uint64(b.Type.Uint8())<<8
+func (d Deepslate) Hash() uint64 {
+	return hashDeepslate | uint64(d.Type.Uint8())<<8
 }
 
 func (d DeepslateBricks) Hash() uint64 {

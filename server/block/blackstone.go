@@ -7,7 +7,7 @@ import (
 )
 
 // Blackstone is a naturally generating block in the nether that can be used to craft stone tools, brewing stands and
-// furnances. Gilded blackstone also has a 10% chance to drop 2-6 golden nuggets.
+// furnaces. Gilded blackstone also has a 10% chance to drop 2-6 golden nuggets.
 type Blackstone struct {
 	solid
 	bassDrum
@@ -18,7 +18,6 @@ type Blackstone struct {
 
 // BreakInfo ...
 func (b Blackstone) BreakInfo() BreakInfo {
-	hardness := 1.5
 	drops := oneOf(b)
 	if b.Type == GildedBlackstone() {
 		drops = func(item.Tool, []item.Enchantment) []item.Stack {
@@ -28,7 +27,7 @@ func (b Blackstone) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(b, 1)}
 		}
 	}
-	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
 }
 
 // EncodeItem ...
