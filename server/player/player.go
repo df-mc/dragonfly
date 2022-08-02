@@ -88,6 +88,11 @@ type Player struct {
 	lastXPPickup atomic.Value[time.Time]
 	immunity     atomic.Value[time.Time]
 
+	deathMu        sync.Mutex
+	hasDied        bool
+	deathPos       mgl64.Vec3
+	deathDimension world.Dimension
+
 	enchantSeed atomic.Int64
 
 	mc *entity.MovementComputer
@@ -850,6 +855,14 @@ func (p *Player) Dead() bool {
 	return p.Health() <= 0
 }
 
+// DeathPosition returns the last position the player was at when they died. If the player has never died, the third
+// return value will be false.
+func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
+	p.deathMu.Lock()
+	defer p.deathMu.Unlock()
+	return p.deathPos, p.deathDimension, p.hasDied
+}
+
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src damage.Source) {
 	for _, viewer := range p.viewers() {
@@ -864,10 +877,13 @@ func (p *Player) kill(src damage.Source) {
 
 	w := p.World()
 	p.dropContents()
-
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
+
+	p.deathMu.Lock()
+	defer p.deathMu.Unlock()
+	p.hasDied, p.deathPos, p.deathDimension = true, p.Position(), w.Dimension()
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {

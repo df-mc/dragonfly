@@ -1037,6 +1037,14 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 // abs ...
 func abs(a int) int {
 	if a < 0 {
