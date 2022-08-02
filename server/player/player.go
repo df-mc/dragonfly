@@ -2909,6 +2909,7 @@ func (p *Player) useContext() *item.UseContext {
 			if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
 				_ = srcInv.SetItem(src, dstIt)
 				_ = dstInv.SetItem(dst, srcIt)
+				p.PlaySound(sound.EquipItem{Item: srcIt.Item()})
 			}
 		},
 		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {

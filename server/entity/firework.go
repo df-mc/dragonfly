@@ -191,7 +191,7 @@ func (f *Firework) EncodeNBT() map[string]any {
 		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
 		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"Yaw":    yaw,
-		"Pitch":  pitch,
+		"Yaw":    float32(yaw),
+		"Pitch":  float32(pitch),
 	}
 }

@@ -14,8 +14,6 @@ type LingeringPotion struct {
 	splashable
 	transform
 
-	yaw, pitch float64
-
 	age   int
 	close bool
 
@@ -25,12 +23,9 @@ type LingeringPotion struct {
 }
 
 // NewLingeringPotion ...
-func NewLingeringPotion(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, t potion.Potion) *LingeringPotion {
+func NewLingeringPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *LingeringPotion {
 	l := &LingeringPotion{
-		yaw:   yaw,
-		pitch: pitch,
-		owner: owner,
-
+		owner:      owner,
 		splashable: splashable{t: t, m: 0.25},
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
@@ -57,13 +52,6 @@ func (l *LingeringPotion) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// Rotation ...
-func (l *LingeringPotion) Rotation() (float64, float64) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	return l.yaw, l.pitch
-}
-
 // Lingers always returns true.
 func (l *LingeringPotion) Lingers() bool {
 	return true
@@ -76,8 +64,8 @@ func (l *LingeringPotion) Tick(w *world.World, current int64) {
 		return
 	}
 	l.mu.Lock()
-	m, result := l.c.TickMovement(l, l.pos, l.vel, l.yaw, l.pitch, l.ignores)
-	l.pos, l.vel, l.yaw, l.pitch = m.pos, m.vel, m.yaw, m.pitch
+	m, result := l.c.TickMovement(l, l.pos, l.vel, 0, 0, l.ignores)
+	l.pos, l.vel = m.pos, m.vel
 	l.mu.Unlock()
 
 	l.age++
@@ -102,11 +90,12 @@ func (l *LingeringPotion) ignores(entity world.Entity) bool {
 	return !ok || entity == l || (l.age < 5 && entity == l.owner)
 }
 
-// New creates a LingeringPotion with the position, velocity, yaw, and pitch provided. It doesn't spawn the
+// New creates a LingeringPotion with the position and velocity provided. It doesn't spawn the
 // LingeringPotion, only returns it.
-func (l *LingeringPotion) New(pos, vel mgl64.Vec3, yaw, pitch float64, t potion.Potion) world.Entity {
-	lingering := NewLingeringPotion(pos, yaw, pitch, nil, t)
+func (l *LingeringPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity {
+	lingering := NewLingeringPotion(pos, nil, t)
 	lingering.vel = vel
+	lingering.owner = owner
 	return lingering
 }
 
@@ -117,32 +106,23 @@ func (l *LingeringPotion) Owner() world.Entity {
 	return l.owner
 }
 
-// Own ...
-func (l *LingeringPotion) Own(owner world.Entity) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.owner = owner
-}
-
 // DecodeNBT decodes the properties in a map to a LingeringPotion and returns a new LingeringPotion entity.
 func (l *LingeringPotion) DecodeNBT(data map[string]any) any {
 	return l.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		float64(nbtconv.Map[float32](data, "Pitch")),
 		potion.From(nbtconv.Map[int32](data, "PotionId")),
+		nil,
 	)
 }
 
 // EncodeNBT encodes the LingeringPotion entity's properties as a map and returns it.
 func (l *LingeringPotion) EncodeNBT() map[string]any {
-	yaw, pitch := l.Rotation()
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(l.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(l.Velocity()),
 		"PotionId": l.t.Uint8(),
-		"Yaw":      yaw,
-		"Pitch":    pitch,
+		"Yaw":      0.0,
+		"Pitch":    0.0,
 	}
 }

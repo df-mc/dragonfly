@@ -84,7 +84,7 @@ func (s *SplashPotion) ignores(entity world.Entity) bool {
 	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
-// New creates a SplashPotion with the position, velocity, yaw, and pitch provided. It doesn't spawn the SplashPotion,
+// New creates a SplashPotion with the position and velocity provided. It doesn't spawn the SplashPotion,
 // only returns it.
 func (s *SplashPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity {
 	splash := NewSplashPotion(pos, owner, t)

@@ -13,7 +13,7 @@ type PolishedBlackstoneBrick struct {
 
 // BreakInfo ...
 func (b PolishedBlackstoneBrick) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(6)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(30)
 }
 
 // SmeltInfo ...
