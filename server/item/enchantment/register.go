@@ -6,7 +6,7 @@ func init() {
 	item.RegisterEnchantment(0, Protection{})
 	item.RegisterEnchantment(1, FireProtection{})
 	item.RegisterEnchantment(2, FeatherFalling{})
-	// TODO: (3) Blast Protection.
+	item.RegisterEnchantment(3, BlastProtection{})
 	item.RegisterEnchantment(4, ProjectileProtection{})
 	item.RegisterEnchantment(5, Thorns{})
 	item.RegisterEnchantment(6, Respiration{})
@@ -22,10 +22,10 @@ func init() {
 	item.RegisterEnchantment(16, SilkTouch{})
 	item.RegisterEnchantment(17, Unbreaking{})
 	// TODO: (18) Fortune.
-	// TODO: (19) Power.
-	// TODO: (20) Punch.
-	// TODO: (21) Flame.
-	// TODO: (22) Infinity.
+	item.RegisterEnchantment(19, Power{})
+	item.RegisterEnchantment(20, Punch{})
+	item.RegisterEnchantment(21, Flame{})
+	item.RegisterEnchantment(22, Infinity{})
 	// TODO: (23) Luck of the Sea.
 	// TODO: (24) Lure.
 	// TODO: (25) Frost Walker.

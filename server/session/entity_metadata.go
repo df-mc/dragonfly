@@ -3,9 +3,9 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"image/color"
 	"time"
 )
 
@@ -64,11 +64,18 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if o, ok := e.(orb); ok {
 		m[dataKeyExperienceValue] = int32(o.Experience())
 	}
+	if o, ok := e.(firework); ok {
+		m[dataKeyFireworkItem] = nbtconv.WriteItem(item.NewStack(o.Firework(), 1), false)
+	}
 	if sc, ok := e.(scaled); ok {
 		m[dataKeyScale] = float32(sc.Scale())
 	}
 	if o, ok := e.(owned); ok {
 		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
+	}
+	if t, ok := e.(tnt); ok {
+		m[dataKeyFuseLength] = int32(t.Fuse().Milliseconds() / 50)
+		m.setFlag(dataKeyFlags, dataFlagIgnited)
 	}
 	if n, ok := e.(named); ok {
 		m[dataKeyNameTag] = n.NameTag()
@@ -79,12 +86,28 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sc, ok := e.(scoreTag); ok {
 		m[dataKeyScoreTag] = sc.ScoreTag()
 	}
-	if sp, ok := e.(splash); ok {
-		pot := sp.Type()
-		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
-		if len(pot.Effects()) > 0 {
-			m.setFlag(dataKeyFlags, dataFlagEnchanted)
+	if c, ok := e.(areaEffectCloud); ok {
+		radius, radiusOnUse, radiusGrowth := c.Radius()
+		colour, am := effect.ResultingColour(c.Effects())
+		m[dataKeyAreaEffectCloudDuration] = int32(c.Duration().Milliseconds() / 50)
+		m[dataKeyAreaEffectCloudRadius] = float32(radius)
+		m[dataKeyAreaEffectCloudRadiusChangeOnPickup] = float32(radiusOnUse)
+		m[dataKeyAreaEffectCloudRadiusPerTick] = float32(radiusGrowth)
+		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+		if am {
+			m[dataKeyPotionAmbient] = byte(1)
+		} else {
+			m[dataKeyPotionAmbient] = byte(0)
 		}
+	}
+	if p, ok := e.(splash); ok {
+		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+	}
+	if g, ok := e.(glint); ok && g.Glint() {
+		m.setFlag(dataKeyFlags, dataFlagEnchanted)
+	}
+	if l, ok := e.(lingers); ok && l.Lingers() {
+		m.setFlag(dataKeyFlags, dataFlagLinger)
 	}
 	if t, ok := e.(tipped); ok {
 		if tip := t.Tip().Uint8(); tip > 4 {
@@ -93,13 +116,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		colour, am := effect.ResultingColour(eff.Effects())
-		if (colour != color.RGBA{}) {
-			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
-			if am {
-				m[dataKeyPotionAmbient] = byte(1)
-			} else {
-				m[dataKeyPotionAmbient] = byte(0)
-			}
+		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+		if am {
+			m[dataKeyPotionAmbient] = byte(1)
+		} else {
+			m[dataKeyPotionAmbient] = byte(0)
 		}
 	}
 	return m
@@ -127,15 +148,24 @@ const (
 	dataKeyAir
 	dataKeyPotionColour
 	dataKeyPotionAmbient
-	dataKeyExperienceValue   = 15
-	dataKeyCustomDisplay     = 18
-	dataKeyPotionAuxValue    = 36
-	dataKeyScale             = 38
-	dataKeyMaxAir            = 42
-	dataKeyBoundingBoxWidth  = 53
-	dataKeyBoundingBoxHeight = 54
-	dataKeyAlwaysShowNameTag = 81
-	dataKeyScoreTag          = 84
+	dataKeyExperienceValue                     = 15
+	dataKeyFireworkItem                        = 16
+	dataKeyCustomDisplay                       = 18
+	dataKeyPotionAuxValue                      = 36
+	dataKeyScale                               = 38
+	dataKeyMaxAir                              = 42
+	dataKeyBoundingBoxWidth                    = 53
+	dataKeyBoundingBoxHeight                   = 54
+	dataKeyFuseLength                          = 55
+	dataKeyAreaEffectCloudRadius               = 61
+	dataKeyAreaEffectCloudParticleID           = 63
+	dataKeyAlwaysShowNameTag                   = 81
+	dataKeyScoreTag                            = 84
+	dataKeyAreaEffectCloudDuration             = 95
+	dataKeyAreaEffectCloudSpawnTime            = 96
+	dataKeyAreaEffectCloudRadiusPerTick        = 97
+	dataKeyAreaEffectCloudRadiusChangeOnPickup = 98
+	dataKeyAreaEffectCloudPickupCount          = 99
 )
 
 //noinspection GoUnusedConst
@@ -146,12 +176,14 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
+	dataFlagIgnited           = 10
 	dataFlagCritical          = 13
 	dataFlagCanShowNameTag    = 14
 	dataFlagAlwaysShowNameTag = 15
 	dataFlagNoAI              = 16
 	dataFlagCanClimb          = 19
 	dataFlagBreathing         = 35
+	dataFlagLinger            = 46
 	dataFlagHasCollision      = 47
 	dataFlagAffectedByGravity = 48
 	dataFlagEnchanted         = 51
@@ -204,6 +236,20 @@ type splash interface {
 	Type() potion.Potion
 }
 
+type glint interface {
+	Glint() bool
+}
+
+type lingers interface {
+	Lingers() bool
+}
+
+type areaEffectCloud interface {
+	effectBearer
+	Duration() time.Duration
+	Radius() (radius, radiusOnUse, radiusGrowth float64)
+}
+
 type onFire interface {
 	OnFireDuration() time.Duration
 }
@@ -228,6 +274,14 @@ type orb interface {
 	Experience() int
 }
 
+type firework interface {
+	Firework() item.Firework
+}
+
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type tnt interface {
+	Fuse() time.Duration
 }

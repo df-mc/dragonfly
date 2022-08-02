@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 //noinspection SpellCheckingInspection
@@ -20,6 +21,7 @@ func init() {
 	world.RegisterItem(BoneMeal{})
 	world.RegisterItem(Bone{})
 	world.RegisterItem(Book{})
+	world.RegisterItem(BottleOfEnchanting{})
 	world.RegisterItem(Bowl{})
 	world.RegisterItem(Bow{})
 	world.RegisterItem(Bread{})
@@ -48,6 +50,8 @@ func init() {
 	world.RegisterItem(EnderPearl{})
 	world.RegisterItem(Feather{})
 	world.RegisterItem(FermentedSpiderEye{})
+	world.RegisterItem(FireCharge{})
+	world.RegisterItem(Firework{})
 	world.RegisterItem(FlintAndSteel{})
 	world.RegisterItem(Flint{})
 	world.RegisterItem(GhastTear{})
@@ -114,13 +118,27 @@ func init() {
 	world.RegisterItem(Wheat{})
 	world.RegisterItem(WritableBook{})
 	world.RegisterItem(WrittenBook{})
-	for _, dye := range AllDyes() {
-		world.RegisterItem(dye)
+	for _, t := range ArmourTiers() {
+		world.RegisterItem(Helmet{Tier: t})
+		world.RegisterItem(Chestplate{Tier: t})
+		world.RegisterItem(Leggings{Tier: t})
+		world.RegisterItem(Boots{Tier: t})
+	}
+	for _, pattern := range BannerPatterns() {
+		world.RegisterItem(BannerPattern{Type: pattern})
+	}
+	for _, c := range Colours() {
+		world.RegisterItem(Dye{Colour: c})
+		world.RegisterItem(FireworkStar{FireworkExplosion: FireworkExplosion{Colour: c}})
+	}
+	for _, horn := range sound.GoatHorns() {
+		world.RegisterItem(GoatHorn{Type: horn})
 	}
 	for i, p := range potion.All() {
 		if i > 4 {
 			world.RegisterItem(Arrow{Tip: p})
 		}
+		world.RegisterItem(LingeringPotion{Type: p})
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}
@@ -131,10 +149,7 @@ func init() {
 		world.RegisterItem(Sword{Tier: t})
 		world.RegisterItem(Hoe{Tier: t})
 	}
-	for _, t := range ArmourTiers() {
-		world.RegisterItem(Helmet{Tier: t})
-		world.RegisterItem(Chestplate{Tier: t})
-		world.RegisterItem(Leggings{Tier: t})
-		world.RegisterItem(Boots{Tier: t})
+	for _, disc := range sound.MusicDiscs() {
+		world.RegisterItem(MusicDisc{DiscType: disc})
 	}
 }

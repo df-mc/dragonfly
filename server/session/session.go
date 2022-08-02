@@ -511,23 +511,21 @@ func (s *Session) closePlayerList() {
 	sessionMu.Unlock()
 }
 
+// actorIdentifier represents the structure of an actor identifier sent over the network.
+type actorIdentifier struct {
+	// ID is a unique namespaced identifier for the entity.
+	ID string `nbt:"id"`
+}
+
 // sendAvailableEntities sends all registered entities to the player.
 func (s *Session) sendAvailableEntities() {
-	// actorIdentifier represents the structure of an actor identifier sent over the network.
-	type actorIdentifier struct {
-		// Unique namespaced identifier for an entity.
-		ID string `nbt:"id"`
+	var identifiers []actorIdentifier
+	for _, entity := range world.Entities() {
+		identifiers = append(identifiers, actorIdentifier{ID: entity.EncodeEntity()})
 	}
-
-	entities := world.Entities()
-	var entityData []actorIdentifier
-	for _, entity := range entities {
-		id := entity.EncodeEntity()
-		entityData = append(entityData, actorIdentifier{ID: id})
-	}
-	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": entityData})
+	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
-		panic(fmt.Errorf("failed to serialize entity data: %v", err))
+		panic("should never happen")
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }

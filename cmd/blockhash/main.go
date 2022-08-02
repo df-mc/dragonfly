@@ -211,6 +211,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(boolByte(" + s + "))", 1
 	case "int":
 		return "uint64(" + s + ")", 8
+	case "Block":
+		return s + ".Hash()", 16
 	case "Attachment":
 		if _, ok := directives["facing_only"]; ok {
 			log.Println("Found directive: 'facing_only'")
@@ -222,7 +224,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(" + s + ".Uint8())", 4
 	case "CoralType":
 		return "uint64(" + s + ".Uint8())", 3
-	case "AnvilType", "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "FroglightType":
+	case "AnvilType", "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "FroglightType", "WallConnectionType", "BlackstoneType", "DeepslateType":
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "GrassType":
 		return "uint64(" + s + ".Uint8())", 1

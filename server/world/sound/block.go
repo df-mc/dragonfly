@@ -66,6 +66,9 @@ type Click struct{ sound }
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 
+// TNT is a sound played when TNT is ignited.
+type TNT struct{ sound }
+
 // FireExtinguish is a sound played when a fire is extinguished.
 type FireExtinguish struct{ sound }
 
@@ -77,6 +80,17 @@ type Note struct {
 	// Pitch is the pitch of the note.
 	Pitch int
 }
+
+// MusicDiscPlay is a sound played when a music disc has started playing in a jukebox.
+type MusicDiscPlay struct {
+	sound
+
+	// DiscType is the disc type of the music disc.
+	DiscType DiscType
+}
+
+// MusicDiscEnd is a sound played when a music disc has stopped playing in a jukebox.
+type MusicDiscEnd struct{ sound }
 
 // ItemFrameAdd is a sound played when an item is added to an item frame.
 type ItemFrameAdd struct{ sound }
