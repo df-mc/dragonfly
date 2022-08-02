@@ -28,9 +28,9 @@ func (w WritableBook) PageExists(page int) bool {
 	return page >= 0 && len(w.Pages) > page
 }
 
-// Set writes a page to the book, if the page doesn't exist it will be created. It will panic if the
+// SetPage writes a page to the book, if the page doesn't exist it will be created. It will panic if the
 // text is longer then 256 characters. It will return a new book representing this data.
-func (w WritableBook) Set(page int, text string) WritableBook {
+func (w WritableBook) SetPage(page int, text string) WritableBook {
 	if page < 0 {
 		panic("negative page number")
 	}
@@ -46,9 +46,9 @@ func (w WritableBook) Set(page int, text string) WritableBook {
 	return w
 }
 
-// Swap swaps two different pages, it will panic if the largest of the two numbers doesn't exist. It will
+// SwapPages swaps two different pages, it will panic if the largest of the two numbers doesn't exist. It will
 // return the newly updated pages.
-func (w WritableBook) Swap(page1, page2 int) WritableBook {
+func (w WritableBook) SwapPages(page1, page2 int) WritableBook {
 	if page1 < 0 || page2 < 0 {
 		panic("negative page number")
 	}
@@ -79,17 +79,15 @@ func (w WritableBook) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (w WritableBook) EncodeNBT() map[string]any {
 	if len(w.Pages) == 0 {
-		return nil
+		return map[string]any{}
 	}
-	data := map[string]any{}
-	var pages []any
+	pages := make([]any, 0, len(w.Pages))
 	for _, page := range w.Pages {
 		pages = append(pages, map[string]any{
 			"text": page,
 		})
 	}
-	data["pages"] = pages
-	return data
+	return map[string]any{"pages": pages}
 }
 
 // max ...

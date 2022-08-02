@@ -33,7 +33,7 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 	slot := int(pk.InventorySlot)
 	switch pk.ActionType {
 	case packet.BookActionReplacePage:
-		book = book.Set(page, pk.Text)
+		book = book.SetPage(page, pk.Text)
 	case packet.BookActionAddPage:
 		if !book.PageExists(page) {
 			return fmt.Errorf("may only come before a page which already exists")
@@ -54,7 +54,7 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 		if !book.PageExists(page) || !book.PageExists(int(pk.SecondaryPageNumber)) {
 			return fmt.Errorf("page numbers do not exist")
 		}
-		book = book.Swap(page, int(pk.SecondaryPageNumber))
+		book = book.SwapPages(page, int(pk.SecondaryPageNumber))
 	case packet.BookActionSign:
 		// Error does not need to be handled as it's confirmed at the beginning that this slot contains a writable book.
 		s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: item.OriginalGeneration()}, 1))
