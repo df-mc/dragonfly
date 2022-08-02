@@ -98,6 +98,7 @@ func max(a, b int) int {
 	return b
 }
 
+// EncodeItem ...
 func (w WritableBook) EncodeItem() (name string, meta int16) {
 	return "minecraft:writable_book", 0
 }
