@@ -92,7 +92,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
-	})
+	}).withBlastResistance(15)
 }
 
 // EncodeItem ...

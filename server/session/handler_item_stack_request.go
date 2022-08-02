@@ -89,6 +89,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 				switch s.c.World().Block(s.openedPos.Load()).(type) {
 				case block.SmithingTable:
 					err, processed = h.handleSmithing(a, s), true
+				case block.Stonecutter:
+					err, processed = h.handleStonecutting(a, s), true
 				case block.EnchantingTable:
 					err, processed = h.handleEnchant(a, s), true
 				}
@@ -102,6 +104,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleAutoCraft(a, s)
 		case *protocol.CraftRecipeOptionalStackRequestAction:
 			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings)
+		case *protocol.CraftLoomRecipeStackRequestAction:
+			err = h.handleLoomCraft(a, s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:

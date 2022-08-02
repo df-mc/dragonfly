@@ -294,7 +294,7 @@ func searchBookshelves(w *world.World, pos cube.Pos) (shelves int) {
 
 				if shelves >= 15 {
 					// We've found enough bookshelves.
-					return shelves
+					return 15
 				}
 			}
 		}

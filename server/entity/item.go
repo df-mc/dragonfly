@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -163,6 +164,19 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	// Create a new item entity and shrink it by the amount of items that the collector collected.
 	w.AddEntity(NewItem(it.i.Grow(-n), pos))
 
+	_ = it.Close()
+}
+
+// New creates and returns an Item with the item.Stack, position, and velocity provided. It doesn't spawn the Item
+// by itself.
+func (it *Item) New(stack item.Stack, pos, vel mgl64.Vec3) world.Entity {
+	itemEntity := NewItem(stack, pos)
+	itemEntity.vel = vel
+	return itemEntity
+}
+
+// Explode ...
+func (it *Item) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = it.Close()
 }
 

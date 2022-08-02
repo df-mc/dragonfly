@@ -15,6 +15,7 @@ import (
 // and dragon.
 type Skull struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Type is the type of the skull.
 	Type SkullType
@@ -64,12 +65,6 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 	place(w, pos, s, user, ctx)
 	return placed(ctx)
-}
-
-// CanDisplace ...
-func (Skull) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

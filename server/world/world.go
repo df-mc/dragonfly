@@ -258,7 +258,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 			}
 		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
 			l, _ := BlockByRuntimeID(before)
-			if liq := l.(Liquid); b.(LiquidDisplacer).CanDisplace(liq) && liq.LiquidDepth() == 8 {
+			if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 				c.SetBlock(x, y, z, 1, before)
 				secondLayer = l
 			}
@@ -1040,7 +1040,13 @@ func (w *World) close() {
 func (w *World) allViewers() ([]Viewer, []*Loader) {
 	w.viewersMu.Lock()
 	defer w.viewersMu.Unlock()
-	return maps.Values(w.viewers), maps.Keys(w.viewers)
+
+	viewers, loaders := make([]Viewer, 0, len(w.viewers)), make([]*Loader, 0, len(w.viewers))
+	for k, v := range w.viewers {
+		viewers = append(viewers, v)
+		loaders = append(loaders, k)
+	}
+	return viewers, loaders
 }
 
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.

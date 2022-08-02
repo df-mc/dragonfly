@@ -8,7 +8,7 @@ type ReinforcedDeepslate struct {
 
 // BreakInfo ...
 func (r ReinforcedDeepslate) BreakInfo() BreakInfo {
-	return newBreakInfo(55, alwaysHarvestable, nothingEffective, oneOf(r))
+	return newBreakInfo(55, alwaysHarvestable, nothingEffective, oneOf(r)).withBlastResistance(3600)
 }
 
 // EncodeItem ...
