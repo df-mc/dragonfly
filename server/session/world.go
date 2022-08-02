@@ -586,6 +586,46 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.MusicDiscPlay:
+		switch so.DiscType {
+		case sound.Disc13():
+			pk.SoundType = packet.SoundEventRecord13
+		case sound.DiscCat():
+			pk.SoundType = packet.SoundEventRecordCat
+		case sound.DiscBlocks():
+			pk.SoundType = packet.SoundEventRecordBlocks
+		case sound.DiscChirp():
+			pk.SoundType = packet.SoundEventRecordChirp
+		case sound.DiscFar():
+			pk.SoundType = packet.SoundEventRecordFar
+		case sound.DiscMall():
+			pk.SoundType = packet.SoundEventRecordMall
+		case sound.DiscMellohi():
+			pk.SoundType = packet.SoundEventRecordMellohi
+		case sound.DiscStal():
+			pk.SoundType = packet.SoundEventRecordStal
+		case sound.DiscStrad():
+			pk.SoundType = packet.SoundEventRecordStrad
+		case sound.DiscWard():
+			pk.SoundType = packet.SoundEventRecordWard
+		case sound.Disc11():
+			pk.SoundType = packet.SoundEventRecord11
+		case sound.DiscWait():
+			pk.SoundType = packet.SoundEventRecordWait
+		case sound.DiscOtherside():
+			pk.SoundType = packet.SoundEventRecordOtherside
+		case sound.DiscPigstep():
+			pk.SoundType = packet.SoundEventRecordPigstep
+		case sound.Disc5():
+			pk.SoundType = packet.SoundEventRecord5
+		}
+	case sound.MusicDiscEnd:
+		pk.SoundType = packet.SoundEventRecordNull
+	case sound.FireCharge:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundBlazeFireball,
+			Position:  vec64To32(pos),
+		})
 	}
 	s.writePacket(pk)
 }
@@ -760,6 +800,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 5
 	case block.Beacon:
 		containerType = 13
+	case block.Loom:
+		containerType = 24
 	case block.Stonecutter:
 		containerType = 29
 	case block.SmithingTable:
