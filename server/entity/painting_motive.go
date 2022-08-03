@@ -167,7 +167,7 @@ func PaintingMotives() []PaintingMotive {
 type paintingMotive uint8
 
 // Size returns the size of the motive in the 2D axis.
-func (p paintingMotive) Size() (int, int) {
+func (p paintingMotive) Size() (float64, float64) {
 	if p.Uint8() < 7 {
 		return 1, 1
 	} else if p.Uint8() < 12 {

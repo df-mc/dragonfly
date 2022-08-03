@@ -8,6 +8,7 @@ import (
 	"math/rand"
 )
 
+// Painting is a decorative entity that hangs on walls.
 type Painting struct {
 	transform
 
@@ -47,9 +48,8 @@ func (p *Painting) EncodeEntity() string {
 
 // BBox ...
 func (p *Painting) BBox() cube.BBox {
-	// TODO: Axis calculations
-	x, y := p.motive.Size()
-	return cube.Box(0, 0, 0, float64(x), float64(y), 0)
+	w, h := p.motive.Size()
+	return cube.Box(-(w / 2), 0, -(w / 2), w/2, h, w/2)
 }
 
 // Rotation ...
@@ -67,9 +67,9 @@ func (p *Painting) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (p *Painting) EncodeNBT() map[string]any {
 	return map[string]any{
-		"UniqueID":  -rand.Int63(),
 		"Direction": byte(sliceutil.Index(cube.Directions(), p.direction)),
-		"Motive":    p.motive.String(),
 		"Pos":       nbtconv.Vec3ToFloat32Slice(p.Position()),
+		"Motive":    p.motive.String(),
+		"UniqueID":  -rand.Int63(),
 	}
 }
