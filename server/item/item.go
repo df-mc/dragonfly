@@ -89,6 +89,11 @@ type Consumer interface {
 	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 	// if the effects' levels are equal and the new effect has a longer duration.
 	AddEffect(e effect.Effect)
+	// RemoveEffect removes any effect that might currently be active on the Consumer.
+	RemoveEffect(e effect.Type)
+	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
+	// expired when returned.
+	Effects() []effect.Effect
 }
 
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this

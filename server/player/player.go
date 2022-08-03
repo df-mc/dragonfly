@@ -1363,6 +1363,10 @@ func (p *Player) UseItem() {
 		p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 		p.addNewItem(useCtx)
 	case item.Consumable:
+		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
+			p.ReleaseItem()
+			return
+		}
 		if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 			// The item.Consumable is not always consumable, the player is not in creative mode and the
 			// food bar is filled: The item cannot be consumed.
@@ -1977,11 +1981,11 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
+	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 	for _, v := range p.viewers() {
 		v.ViewEntityTeleport(p, pos)
 	}
-	p.pos.Store(pos)
-	p.vel.Store(mgl64.Vec3{})
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
@@ -2887,6 +2891,7 @@ func (p *Player) useContext() *item.UseContext {
 			if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
 				_ = srcInv.SetItem(src, dstIt)
 				_ = dstInv.SetItem(dst, srcIt)
+				p.PlaySound(sound.EquipItem{Item: srcIt.Item()})
 			}
 		},
 		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
