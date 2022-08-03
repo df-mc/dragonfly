@@ -35,7 +35,7 @@ type CampfireItem struct {
 	// Item is a specific item being cooked on top of the campfire.
 	Item item.Stack
 	// Time is the countdown of ticks until the food item is cooked (when 0).
-	Time int
+	Time time.Duration
 }
 
 // Model ...
@@ -46,17 +46,6 @@ func (c Campfire) Model() world.BlockModel {
 // SideClosed ...
 func (c Campfire) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
-}
-
-// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself.
-func (c Campfire) Splash(pos cube.Pos, e world.Entity, t potion.Potion) {
-	if t != potion.Water() {
-		return
-	}
-	w := e.World()
-	c.Extinguished = true
-	w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-	w.SetBlock(pos, c, nil)
 }
 
 // BreakInfo ...
@@ -71,8 +60,6 @@ func (c Campfire) BreakInfo() BreakInfo {
 				drops = append(drops, item.NewStack(item.Charcoal{}, 2))
 			case SoulFire():
 				drops = append(drops, item.NewStack(SoulSoil{}, 1))
-			default:
-				panic("invalid fire type")
 			}
 		}
 		for _, v := range c.Items {
@@ -98,9 +85,24 @@ func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
 	if _, ok := w.Liquid(pos); ok {
 		return true
 	}
+
 	c.Extinguished = false
 	w.SetBlock(pos, c, nil)
 	return true
+}
+
+// Splash checks to see if the fire was splashed by a bottle and then extinguishes itself.
+func (c Campfire) Splash(pos cube.Pos, e world.Entity, t potion.Potion) {
+	if t != potion.Water() {
+		// Water is the only potion that can extinguish a campfire.
+		return
+	}
+
+	w := e.World()
+	w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+
+	c.Extinguished = true
+	w.SetBlock(pos, c, nil)
 }
 
 // Activate ...
@@ -111,9 +113,11 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 				if it.Item.Empty() {
 					c.Items[i] = CampfireItem{
 						Item: held.Grow(-held.Count() + 1),
-						Time: 600,
+						Time: time.Second * 30,
 					}
+
 					ctx.SubtractFromCount(1)
+
 					w.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
 					w.SetBlock(pos, c, nil)
 					return true
@@ -140,28 +144,31 @@ func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 
 // Tick is called to cook the items within the campfire.
 func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
-	if !c.Extinguished {
-		if rand.Float64() <= 0.016 { // Every three or so seconds.
-			w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
-		}
-		for i, it := range c.Items {
-			if !it.Item.Empty() && it.Time <= 0 {
-				if food, ok := it.Item.Item().(item.Smeltable); ok {
-					dropItem(w, food.SmeltInfo().Product, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-					c.Items[i].Item = item.Stack{}
-					w.SetBlock(pos, c, nil)
-					continue
-				}
+	if c.Extinguished {
+		// Extinguished, do nothing.
+		return
+	}
+	if rand.Float64() <= 0.016 { // Every three or so seconds.
+		w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
+	}
+
+	for i, it := range c.Items {
+		if !it.Item.Empty() && it.Time <= 0 {
+			if food, ok := it.Item.Item().(item.Smeltable); ok {
+				dropItem(w, food.SmeltInfo().Product, pos.Vec3Middle())
 			}
-			c.Items[i].Time = it.Time - 1
+
+			c.Items[i].Item = item.Stack{}
 			w.SetBlock(pos, c, nil)
+			continue
 		}
+		c.Items[i].Time = it.Time - time.Millisecond*50
+		w.SetBlock(pos, c, nil)
 	}
 }
 
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	// If the campfire is waterlogged, we need to extinguish it.
 	if _, ok := w.Liquid(pos); ok && !c.Extinguished {
 		c.Extinguished = true
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
@@ -190,15 +197,14 @@ func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 
 // EncodeNBT ...
 func (c Campfire) EncodeNBT() map[string]any {
-	m := map[string]any{}
+	m := map[string]any{"id": "Campfire"}
 	for i, v := range c.Items {
 		id := strconv.Itoa(i + 1)
 		if !v.Item.Empty() {
 			m["Item"+id] = nbtconv.WriteItem(v.Item, true)
-			m["ItemTime"+id] = uint8(v.Time)
+			m["ItemTime"+id] = uint8(v.Time.Milliseconds() / 50)
 		}
 	}
-	m["id"] = "Campfire"
 	return m
 }
 
@@ -208,7 +214,7 @@ func (c Campfire) DecodeNBT(data map[string]any) any {
 		id := strconv.Itoa(i + 1)
 		c.Items[i] = CampfireItem{
 			Item: nbtconv.MapItem(data, "Item"+id),
-			Time: int(nbtconv.Map[byte](data, "ItemTime"+id)),
+			Time: time.Duration(nbtconv.Map[byte](data, "ItemTime"+id)) * time.Millisecond * 50,
 		}
 	}
 	return c

@@ -139,17 +139,17 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			}
 		}
 
-		// Splashing Entities and Blocks
-		switch result := result.(type) {
+		switch res := result.(type) {
 		case trace.BlockResult:
-			pos := result.BlockPosition().Side(result.Face())
-			if splashable, ok := w.Block(pos).(SplashableBlock); ok {
-				if _, ok := splashable.Model().(model.Empty); ok {
-					splashable.Splash(pos, s, s.Type())
+			pos := res.BlockPosition().Side(res.Face())
+			if b, ok := w.Block(pos).(SplashableBlock); ok {
+				if _, ok := b.Model().(model.Empty); ok {
+					b.Splash(pos, s, s.Type())
 					break
 				}
 			}
-			pos = result.BlockPosition()
+
+			pos = res.BlockPosition()
 			if b, ok := w.Block(pos).(SplashableBlock); ok {
 				b.Splash(pos, s, s.Type())
 			}
