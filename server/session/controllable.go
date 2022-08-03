@@ -70,6 +70,9 @@ type Controllable interface {
 	StartFlying()
 	Flying() bool
 	StopFlying()
+	StartGliding()
+	Gliding() bool
+	StopGliding()
 	Jump()
 
 	StartBreaking(pos cube.Pos, face cube.Face)

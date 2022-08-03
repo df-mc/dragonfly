@@ -64,10 +64,11 @@ type Player struct {
 	armour                   *inventory.Armour
 	heldSlot                 *atomic.Uint32
 
-	sneaking, sprinting, swimming, flying,
+	sneaking, sprinting, swimming, gliding, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	glideTicks   atomic.Int64
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
@@ -91,6 +92,8 @@ type Player struct {
 	enchantSeed atomic.Int64
 
 	mc *entity.MovementComputer
+
+	collidedVertically, collidedHorizontally atomic.Bool
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value[cube.Pos]
@@ -136,7 +139,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
 		cooldowns:         make(map[string]time.Time),
-		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -1025,6 +1028,32 @@ func (p *Player) StopSwimming() {
 	if !p.swimming.CAS(true, false) {
 		return
 	}
+	p.updateState()
+}
+
+// StartGliding makes the player start gliding if it is not currently doing so.
+func (p *Player) StartGliding() {
+	if !p.gliding.CAS(false, true) {
+		return
+	}
+	chest := p.Armour().Chestplate()
+	if _, ok := chest.Item().(item.Elytra); !ok || chest.Durability() < 2 {
+		return
+	}
+	p.updateState()
+}
+
+// Gliding checks if the player is currently gliding.
+func (p *Player) Gliding() bool {
+	return p.gliding.Load()
+}
+
+// StopGliding makes the player stop gliding if it is currently doing so.
+func (p *Player) StopGliding() {
+	if !p.gliding.CAS(true, false) {
+		return
+	}
+	p.glideTicks.Store(0)
 	p.updateState()
 }
 
@@ -1946,6 +1975,23 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.yaw.Store(resYaw)
 	p.pitch.Store(resPitch)
 
+	p.vel.Store(deltaPos)
+	p.checkBlockCollisions(deltaPos, w)
+
+	horizontalVel := deltaPos
+	horizontalVel[1] = 0
+	if p.Gliding() {
+		if deltaPos.Y() >= -0.5 {
+			p.fallDistance.Store(1.0)
+		}
+		if p.collidedHorizontally.Load() {
+			if force := horizontalVel.Len()*10.0 - 3.0; force > 0.0 && !p.AttackImmune() {
+				w.PlaySound(p.Position(), sound.Fall{Distance: force})
+				p.Hurt(force, damage.SourceGlide{})
+			}
+		}
+	}
+
 	_, submergedBefore := w.Liquid(cube.PosFromVec3(pos.Add(mgl64.Vec3{0, p.EyeHeight()})))
 	_, submergedAfter := w.Liquid(cube.PosFromVec3(res.Add(mgl64.Vec3{0, p.EyeHeight()})))
 	if submergedBefore != submergedAfter {
@@ -1954,17 +2000,13 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.session().ViewEntityState(p)
 	}
 
-	p.checkBlockCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
-
 	p.updateFallState(deltaPos[1])
 
-	// The vertical axis isn't relevant for calculation of exhaustion points.
-	deltaPos[1] = 0
 	if p.Swimming() {
-		p.Exhaust(0.01 * deltaPos.Len())
+		p.Exhaust(0.01 * horizontalVel.Len())
 	} else if p.Sprinting() {
-		p.Exhaust(0.1 * deltaPos.Len())
+		p.Exhaust(0.1 * horizontalVel.Len())
 	}
 }
 
@@ -2215,7 +2257,17 @@ func (p *Player) Tick(w *world.World, current int64) {
 		}
 	}
 
-	p.checkBlockCollisions(w)
+	if _, ok := p.Armour().Chestplate().Item().(item.Elytra); ok && p.Gliding() {
+		if t := p.glideTicks.Inc(); t%20 == 0 {
+			d := p.damageItem(p.Armour().Chestplate(), 1)
+			p.armour.SetChestplate(d)
+			if d.Durability() < 2 {
+				p.StopGliding()
+			}
+		}
+	}
+
+	p.checkBlockCollisions(p.vel.Load(), w)
 	p.onGround.Store(p.checkOnGround(w))
 
 	p.effects.Tick(p)
@@ -2406,8 +2458,62 @@ func (p *Player) insideOfSolid(w *world.World) bool {
 }
 
 // checkCollisions checks the player's block collisions.
-func (p *Player) checkBlockCollisions(w *world.World) {
-	box := p.BBox().Translate(p.Position()).Grow(-0.0001)
+func (p *Player) checkBlockCollisions(vel mgl64.Vec3, w *world.World) {
+	entityBBox := p.BBox().Translate(p.Position())
+	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
+
+	p.checkEntityInsiders(w, entityBBox)
+
+	grown := entityBBox.Extend(vel).Grow(0.25)
+	min, max := grown.Min(), grown.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	// A prediction of one BBox per block, plus an additional 2, in case
+	blocks := make([]cube.BBox, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				pos := cube.Pos{x, y, z}
+				boxes := w.Block(pos).Model().BBox(pos, w)
+				for _, box := range boxes {
+					blocks = append(blocks, box.Translate(pos.Vec3()))
+				}
+			}
+		}
+	}
+
+	// epsilon is the epsilon used for thresholds for change used for change in position and velocity.
+	const epsilon = 0.001
+
+	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
+		// First we move the entity BBox on the Y axis.
+		for _, blockBBox := range blocks {
+			deltaY = entityBBox.YOffset(blockBBox, deltaY)
+		}
+		entityBBox = entityBBox.Translate(mgl64.Vec3{0, deltaY})
+	}
+	if !mgl64.FloatEqualThreshold(deltaX, 0, epsilon) {
+		// Then on the X axis.
+		for _, blockBBox := range blocks {
+			deltaX = entityBBox.XOffset(blockBBox, deltaX)
+		}
+		entityBBox = entityBBox.Translate(mgl64.Vec3{deltaX})
+	}
+	if !mgl64.FloatEqualThreshold(deltaZ, 0, epsilon) {
+		// And finally on the Z axis.
+		for _, blockBBox := range blocks {
+			deltaZ = entityBBox.ZOffset(blockBBox, deltaZ)
+		}
+	}
+
+	p.collidedHorizontally.Store(!mgl64.FloatEqual(deltaX, vel[0]) || !mgl64.FloatEqual(deltaZ, vel[2]))
+	p.collidedVertically.Store(!mgl64.FloatEqual(deltaY, vel[1]))
+}
+
+// checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
+func (p *Player) checkEntityInsiders(w *world.World, entityBBox cube.BBox) {
+	box := entityBBox.Grow(-0.0001)
 	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
 	for y := min[1]; y <= max[1]; y++ {
@@ -2460,7 +2566,7 @@ func (p *Player) BBox() cube.BBox {
 	s := p.Scale()
 	switch {
 	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
-	case p.Swimming():
+	case p.Gliding(), p.Swimming():
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
