@@ -1,7 +1,5 @@
 package item
 
-import "github.com/kr/pretty"
-
 // FireworkStar is an item used to determine the color, effect, and shape of firework rockets.
 type FireworkStar struct {
 	FireworkExplosion
@@ -17,9 +15,6 @@ func (f FireworkStar) EncodeItemNBT() map[string]any {
 
 // DecodeItemNBT ...
 func (f FireworkStar) DecodeItemNBT(data map[string]any) any {
-	if f.Colour == ColourBlack() {
-		pretty.Println(data)
-	}
 	f.FireworkExplosion = f.FireworkExplosion.DecodeNBT(data["FireworksItem"].(map[string]any)).(FireworkExplosion)
 	return f
 }
