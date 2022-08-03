@@ -162,8 +162,8 @@ const (
 	dataKeyExperienceValue                     = 15
 	dataKeyFireworkItem                        = 16
 	dataKeyCustomDisplay                       = 18
-	dataKeyPlayerFlags       = 26
-	dataKeyBedPosition       = 28
+	dataKeyPlayerFlags                         = 26
+	dataKeyBedPosition                         = 28
 	dataKeyPotionAuxValue                      = 36
 	dataKeyScale                               = 38
 	dataKeyMaxAir                              = 42
