@@ -20,6 +20,7 @@ import (
 type Campfire struct {
 	bass
 	sourceWaterDisplacer
+
 	// Items represents the items in the campfire that are being cooked.
 	Items [4]CampfireItem
 	// Facing represents the direction that the campfire is facing.
