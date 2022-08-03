@@ -428,6 +428,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = tierToSoundEvent(i.Tier)
 		case item.Boots:
 			pk.SoundType = tierToSoundEvent(i.Tier)
+		case item.Elytra:
+			pk.SoundType = packet.SoundEventEquipElytra
 		default:
 			pk.SoundType = packet.SoundEventEquipGeneric
 		}
@@ -539,6 +541,13 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventPlayerHurtOnFire
 	case sound.Drowning:
 		pk.SoundType = packet.SoundEventPlayerHurtDrown
+	case sound.Fall:
+		pk.EntityType = "minecraft:player"
+		if so.Distance > 4 {
+			pk.SoundType = packet.SoundEventFallBig
+			break
+		}
+		pk.SoundType = packet.SoundEventFallSmall
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
 	case sound.Door:
