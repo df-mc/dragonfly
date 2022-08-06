@@ -279,11 +279,10 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 
 // handleCreate handles the creation of a pending result through a craft.
 func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAction, s *Session) error {
-	if len(h.pendingResults) == 0 {
-		return fmt.Errorf("no pending crafting results to use")
+	res, ok := h.pendingResults[a.ResultsSlot]
+	if !ok {
+		return fmt.Errorf("invalid pending result slot: %v", a.ResultsSlot)
 	}
-
-	res := h.pendingResults[a.ResultsSlot]
 	delete(h.pendingResults, a.ResultsSlot)
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
