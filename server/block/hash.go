@@ -320,7 +320,7 @@ func (DeadBush) Hash() uint64 {
 }
 
 func (d Deepslate) Hash() uint64 {
-	return hashDeepslate | uint64(d.Type.Uint8())<<8
+	return hashDeepslate | uint64(d.Type.Uint8())<<8 | uint64(d.Axis)<<10
 }
 
 func (d DeepslateBricks) Hash() uint64 {
@@ -551,8 +551,8 @@ func (MudBricks) Hash() uint64 {
 	return hashMudBricks
 }
 
-func (MuddyMangroveRoots) Hash() uint64 {
-	return hashMuddyMangroveRoots
+func (m MuddyMangroveRoots) Hash() uint64 {
+	return hashMuddyMangroveRoots | uint64(m.Axis)<<8
 }
 
 func (NetherBrickFence) Hash() uint64 {
