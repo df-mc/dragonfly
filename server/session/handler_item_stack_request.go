@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/kr/pretty"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
@@ -18,11 +19,15 @@ import (
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
 // inventory.
 type ItemStackRequestHandler struct {
-	currentRequest  int32
+	currentRequest int32
+
 	changes         map[byte]map[byte]changeInfo
 	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
-	current         time.Time
-	ignoreDestroy   bool
+
+	pendingResults map[byte]item.Stack
+
+	current       time.Time
+	ignoreDestroy bool
 }
 
 // responseChange represents a change in a specific item stack response. It holds the timestamp of the
@@ -59,6 +64,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 
 // handleRequest resolves a single item stack request from the client.
 func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session) (err error) {
+	pretty.Println(req)
 	h.currentRequest = req.RequestID
 	defer func() {
 		if err != nil {
@@ -110,6 +116,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
 			err = h.handleMineBlock(a, s)
+		case *protocol.CreateStackRequestAction:
+			err = h.handleCreate(a, s)
 		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
@@ -267,6 +275,37 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 	i, _ := h.itemInSlot(slot, s)
 	h.setItemInSlot(slot, i, s)
 	return nil
+}
+
+// handleCreate handles the creation of a pending result through a craft.
+func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAction, s *Session) error {
+	if len(h.pendingResults) == 0 {
+		return fmt.Errorf("no pending crafting results to use")
+	}
+
+	res := h.pendingResults[a.ResultsSlot]
+	delete(h.pendingResults, a.ResultsSlot)
+
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerCraftingGrid,
+		Slot:        craftingResult,
+	}, res, s)
+	return nil
+}
+
+// defaultCreation represents the CreateStackRequestAction used for single-result crafts.
+var defaultCreation = &protocol.CreateStackRequestAction{}
+
+// createResults creates a new craft result and adds it to the list of pending craft results.
+func (h *ItemStackRequestHandler) createResults(s *Session, result ...item.Stack) error {
+	for i, r := range result {
+		h.pendingResults[byte(i)] = r
+	}
+	if len(result) > 1 {
+		// With multiple results, the client notifies the server on when to create the results.
+		return nil
+	}
+	return h.handleCreate(defaultCreation, s)
 }
 
 // verifySlots verifies a list of slots passed.
@@ -431,7 +470,9 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 		RequestID:     id,
 		ContainerInfo: info,
 	}}})
+
 	h.changes = map[byte]map[byte]changeInfo{}
+	h.pendingResults = map[byte]item.Stack{}
 }
 
 // reject rejects the item stack request sent by the client so that it is reverted client-side.
@@ -442,6 +483,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			RequestID: id,
 		}},
 	})
+
 	// Revert changes that we already made for valid actions.
 	for container, slots := range h.changes {
 		for slot, info := range slots {
@@ -449,7 +491,9 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			_ = inv.SetItem(int(slot), info.before)
 		}
 	}
+
 	h.changes = map[byte]map[byte]changeInfo{}
+	h.pendingResults = map[byte]item.Stack{}
 }
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if

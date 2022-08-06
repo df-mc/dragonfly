@@ -57,13 +57,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-
-	output := craft.Output()
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, craft.Output()...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
@@ -143,11 +137,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	for _, o := range craft.Output() {
 		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
 	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, output...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -161,12 +151,7 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	}
 	it := creative.Items()[index]
 	it = it.Grow(it.MaxCount() - 1)
-
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, it, s)
-	return nil
+	return h.createResults(s, it)
 }
 
 // craftingSize gets the crafting size based on the opened container ID.

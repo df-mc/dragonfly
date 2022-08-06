@@ -3,12 +3,14 @@ module github.com/df-mc/dragonfly
 go 1.18
 
 require (
+	github.com/andreashgk/df-commands v0.0.0-20220802183201-3bf722356695
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
+	github.com/kr/pretty v0.1.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/rogpeppe/go-internal v1.3.0
 	github.com/sandertv/gophertunnel v1.22.3
@@ -22,6 +24,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
+	github.com/kr/text v0.1.0 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.11.1 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
