@@ -16,12 +16,12 @@ func (e Egg) MaxCount() int {
 
 // Use ...
 func (e Egg) Use(w *world.World, user User, ctx *UseContext) bool {
-	snow, ok := world.EntityByName("minecraft:egg")
+	egg, ok := world.EntityByName("minecraft:egg")
 	if !ok {
 		return false
 	}
 
-	p, ok := snow.(interface {
+	p, ok := egg.(interface {
 		New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity
 	})
 	if !ok {
