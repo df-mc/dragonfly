@@ -204,7 +204,7 @@ func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inve
 	w := s.c.World()
 	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
 		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
-			for _, o := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
+			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(s.c), f.ResetExperience()) {
 				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 				w.AddEntity(o)
 			}
