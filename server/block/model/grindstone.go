@@ -12,19 +12,11 @@ type Grindstone struct {
 }
 
 // BBox ...
-func (g Grindstone) BBox(pos cube.Pos, w *world.World) []cube.BBox {
-	switch g.Axis {
-	case cube.X:
-		return []cube.BBox{cube.Box(0, 0.125, 0.125, 1, 0.825, 0.825)}
-	case cube.Y:
-		return []cube.BBox{cube.Box(0.125, 0, 0.125, 0.825, 1, 0.825)}
-	case cube.Z:
-		return []cube.BBox{cube.Box(0.125, 0.125, 0, 0.825, 0.825, 1)}
-	}
-	panic("should never happen")
+func (g Grindstone) BBox(cube.Pos, *world.World) []cube.BBox {
+	return []cube.BBox{cube.Box(0.125, 0.125, 0.125, 0.825, 0.825, 0.825).Stretch(g.Axis, 0.125)}
 }
 
 // FaceSolid always returns false.
-func (g Grindstone) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+func (g Grindstone) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return false
 }
