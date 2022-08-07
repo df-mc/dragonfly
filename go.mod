@@ -3,7 +3,6 @@ module github.com/df-mc/dragonfly
 go 1.18
 
 require (
-	github.com/andreashgk/df-commands v0.0.0-20220802183201-3bf722356695
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/atomic v1.10.0
