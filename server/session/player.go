@@ -113,6 +113,8 @@ const (
 	containerArmour               = 6
 	containerChest                = 7
 	containerBeacon               = 8
+	containerBrewingStandBottle   = 10
+	containerBrewingStandFuel     = 11
 	containerFullInventory        = 12
 	containerCraftingGrid         = 13
 	containerEnchantingTableInput = 21
@@ -167,6 +169,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerBarrel:
 		if s.containerOpened.Load() {
 			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
+				return s.openedWindow.Load(), true
+			}
+		}
+	case containerBrewingStandBottle, containerBrewingStandFuel:
+		if s.containerOpened.Load() {
+			if _, brewingStand := s.c.World().Block(s.openedPos.Load()).(block.BrewingStand); brewingStand {
 				return s.openedWindow.Load(), true
 			}
 		}

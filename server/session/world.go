@@ -869,12 +869,6 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	})
 }
 
-const (
-	containerTypeFurnace      = 2
-	containerTypeBlastFurnace = 27
-	containerTypeSmoker       = 28
-)
-
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	b.AddViewer(s, s.c.World(), pos)
@@ -887,11 +881,13 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	var containerType byte
 	switch b.(type) {
 	case block.Furnace:
-		containerType = containerTypeFurnace
+		containerType = 2
+	case block.BrewingStand:
+		containerType = 4
 	case block.BlastFurnace:
-		containerType = containerTypeBlastFurnace
+		containerType = 27
 	case block.Smoker:
-		containerType = containerTypeSmoker
+		containerType = 28
 	}
 
 	s.writePacket(&packet.ContainerOpen{

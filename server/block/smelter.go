@@ -78,10 +78,6 @@ func (s *smelter) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(s.viewers) == 0 {
-		// No viewers.
-		return
-	}
 	delete(s.viewers, v)
 }
 
