@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -107,7 +106,6 @@ func encodeStairsBlock(block world.Block) string {
 		}
 		return "stone_brick"
 	}
-	fmt.Printf("%+T", block)
 	panic("invalid block used for stairs")
 }
 

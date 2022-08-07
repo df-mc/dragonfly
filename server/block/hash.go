@@ -320,7 +320,7 @@ func (DeadBush) Hash() uint64 {
 }
 
 func (d Deepslate) Hash() uint64 {
-	return hashDeepslate | uint64(d.Type.Uint8())<<8
+	return hashDeepslate | uint64(d.Type.Uint8())<<8 | uint64(d.Axis)<<10
 }
 
 func (d DeepslateBricks) Hash() uint64 {
