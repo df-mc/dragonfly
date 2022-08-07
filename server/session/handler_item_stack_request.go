@@ -10,7 +10,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"golang.org/x/exp/slices"
 	"math"
 	"math/rand"
 	"time"
@@ -284,7 +283,7 @@ func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAct
 	}
 
 	res := h.pendingResults[slot]
-	h.pendingResults = slices.Delete(h.pendingResults, slot, slot+1)
+	h.pendingResults[slot] = item.Stack{}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerCraftingGrid,
