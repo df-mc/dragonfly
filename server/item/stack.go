@@ -248,6 +248,9 @@ func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 	for _, enchant := range enchants {
 		delete(s.enchantments, reflect.TypeOf(enchant))
 	}
+	if _, ok := s.item.(EnchantedBook); ok && len(s.enchantments) == 0 {
+		s.item = Book{}
+	}
 	return s
 }
 
