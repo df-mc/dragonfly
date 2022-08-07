@@ -337,7 +337,6 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	// The client seems to send negative stack network IDs for predictions, which we can ignore. We'll simply
 	// override this network ID later.
 	if id := item_id(i); id != clientID {
-		fmt.Printf("%v\n", i)
 		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
 	return nil
