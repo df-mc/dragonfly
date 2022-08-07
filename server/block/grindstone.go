@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -12,7 +13,6 @@ import (
 // weaponsmith's job site block.
 type Grindstone struct {
 	transparent
-	solid // TODO: Use the actual model, this is just a placeholder.
 
 	// Attach represents the attachment type of the Grindstone.
 	Attach GrindstoneAttachment
@@ -65,6 +65,17 @@ func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
 	}
+}
+
+// Model ...
+func (g Grindstone) Model() world.BlockModel {
+	var axis cube.Axis
+	if g.Attach == WallGrindstoneAttachment() {
+		axis = g.Direction.Face().Axis()
+	} else {
+		axis = cube.Y
+	}
+	return model.Grindstone{Axis: axis}
 }
 
 // EncodeBlock ...
