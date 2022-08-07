@@ -8,9 +8,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/kr/pretty"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/exp/slices"
 	"math"
 	"math/rand"
 	"time"
@@ -24,7 +24,7 @@ type ItemStackRequestHandler struct {
 	changes         map[byte]map[byte]changeInfo
 	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
 
-	pendingResults map[byte]item.Stack
+	pendingResults []item.Stack
 
 	current       time.Time
 	ignoreDestroy bool
@@ -64,7 +64,6 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 
 // handleRequest resolves a single item stack request from the client.
 func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session) (err error) {
-	pretty.Println(req)
 	h.currentRequest = req.RequestID
 	defer func() {
 		if err != nil {
@@ -279,11 +278,13 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 
 // handleCreate handles the creation of a pending result through a craft.
 func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAction, s *Session) error {
-	res, ok := h.pendingResults[a.ResultsSlot]
-	if !ok {
+	slot := int(a.ResultsSlot)
+	if len(h.pendingResults) < slot {
 		return fmt.Errorf("invalid pending result slot: %v", a.ResultsSlot)
 	}
-	delete(h.pendingResults, a.ResultsSlot)
+
+	res := h.pendingResults[slot]
+	h.pendingResults = slices.Delete(h.pendingResults, slot, slot+1)
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerCraftingGrid,
@@ -297,9 +298,7 @@ var defaultCreation = &protocol.CreateStackRequestAction{}
 
 // createResults creates a new craft result and adds it to the list of pending craft results.
 func (h *ItemStackRequestHandler) createResults(s *Session, result ...item.Stack) error {
-	for i, r := range result {
-		h.pendingResults[byte(i)] = r
-	}
+	h.pendingResults = append(h.pendingResults, result...)
 	if len(result) > 1 {
 		// With multiple results, the client notifies the server on when to create the results.
 		return nil
@@ -338,6 +337,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	// The client seems to send negative stack network IDs for predictions, which we can ignore. We'll simply
 	// override this network ID later.
 	if id := item_id(i); id != clientID {
+		fmt.Printf("%v\n", i)
 		return fmt.Errorf("stack ID mismatch: client expected %v, but server had %v", clientID, id)
 	}
 	return nil
@@ -471,7 +471,7 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 	}}})
 
 	h.changes = map[byte]map[byte]changeInfo{}
-	h.pendingResults = map[byte]item.Stack{}
+	h.pendingResults = nil
 }
 
 // reject rejects the item stack request sent by the client so that it is reverted client-side.
@@ -492,7 +492,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	}
 
 	h.changes = map[byte]map[byte]changeInfo{}
-	h.pendingResults = map[byte]item.Stack{}
+	h.pendingResults = nil
 }
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
