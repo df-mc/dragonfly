@@ -11,8 +11,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Snowball is a throwable projectile which damages entities on impact.
-type Snowball struct {
+// Egg is an item that can be used to craft food items, or as a throwable entity to spawn chicks.
+type Egg struct {
 	transform
 	age   int
 	close bool
@@ -22,9 +22,9 @@ type Snowball struct {
 	c *ProjectileComputer
 }
 
-// NewSnowball ...
-func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Snowball {
-	s := &Snowball{
+// NewEgg ...
+func NewEgg(pos mgl64.Vec3, owner world.Entity) *Egg {
+	s := &Egg{
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.03,
 			Drag:              0.01,
@@ -38,22 +38,22 @@ func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Snowball {
 }
 
 // Name ...
-func (s *Snowball) Name() string {
-	return "Snowball"
+func (s *Egg) Name() string {
+	return "Egg"
 }
 
 // EncodeEntity ...
-func (s *Snowball) EncodeEntity() string {
-	return "minecraft:snowball"
+func (s *Egg) EncodeEntity() string {
+	return "minecraft:egg"
 }
 
 // BBox ...
-func (s *Snowball) BBox() cube.BBox {
+func (s *Egg) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Tick ...
-func (s *Snowball) Tick(w *world.World, current int64) {
+func (s *Egg) Tick(w *world.World, current int64) {
 	if s.close {
 		_ = s.Close()
 		return
@@ -73,7 +73,7 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 
 	if result != nil {
 		for i := 0; i < 6; i++ {
-			w.AddParticle(result.Position(), particle.SnowballPoof{})
+			w.AddParticle(result.Position(), particle.EggSmash{})
 		}
 
 		if r, ok := result.(trace.EntityResult); ok {
@@ -84,40 +84,42 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 			}
 		}
 
+		// TODO: Spawn chicken(s) 12.5% of the time?
+
 		s.close = true
 	}
 }
 
-// ignores returns whether the snowball should ignore collision with the entity passed.
-func (s *Snowball) ignores(entity world.Entity) bool {
+// ignores returns whether the egg should ignore collision with the entity passed.
+func (s *Egg) ignores(entity world.Entity) bool {
 	_, ok := entity.(Living)
 	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
-// New creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
+// New creates a egg with the position, velocity, yaw, and pitch provided. It doesn't spawn the egg,
 // only returns it.
-func (s *Snowball) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
-	snow := NewSnowball(pos, owner)
-	snow.vel = vel
-	return snow
+func (s *Egg) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
+	egg := NewEgg(pos, owner)
+	egg.vel = vel
+	return egg
 }
 
 // Explode ...
-func (s *Snowball) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+func (s *Egg) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	s.mu.Lock()
 	s.vel = s.vel.Add(s.pos.Sub(explosionPos).Normalize().Mul(impact))
 	s.mu.Unlock()
 }
 
 // Owner ...
-func (s *Snowball) Owner() world.Entity {
+func (s *Egg) Owner() world.Entity {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.owner
 }
 
-// DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
-func (s *Snowball) DecodeNBT(data map[string]any) any {
+// DecodeNBT decodes the properties in a map to a Egg and returns a new Egg entity.
+func (s *Egg) DecodeNBT(data map[string]any) any {
 	return s.New(
 		nbtconv.MapVec3(data, "Pos"),
 		nbtconv.MapVec3(data, "Motion"),
@@ -125,8 +127,8 @@ func (s *Snowball) DecodeNBT(data map[string]any) any {
 	)
 }
 
-// EncodeNBT encodes the Snowball entity's properties as a map and returns it.
-func (s *Snowball) EncodeNBT() map[string]any {
+// EncodeNBT encodes the Egg entity's properties as a map and returns it.
+func (s *Egg) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),

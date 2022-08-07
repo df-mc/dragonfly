@@ -375,6 +375,13 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticleLegacyEvent | 15,
 			Position:  vec64To32(pos),
 		})
+	case particle.EggSmash:
+		rid, meta, _ := world.ItemRuntimeID(item.Egg{})
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 14,
+			EventData: (rid << 16) | int32(meta),
+			Position:  vec64To32(pos),
+		})
 	case particle.Splash:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesPotionSplash,
