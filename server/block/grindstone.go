@@ -69,11 +69,9 @@ func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // Model ...
 func (g Grindstone) Model() world.BlockModel {
-	var axis cube.Axis
+	axis := cube.Y
 	if g.Attach == WallGrindstoneAttachment() {
 		axis = g.Direction.Face().Axis()
-	} else {
-		axis = cube.Y
 	}
 	return model.Grindstone{Axis: axis}
 }
