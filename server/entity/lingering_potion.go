@@ -122,7 +122,5 @@ func (l *LingeringPotion) EncodeNBT() map[string]any {
 		"Pos":      nbtconv.Vec3ToFloat32Slice(l.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(l.Velocity()),
 		"PotionId": l.t.Uint8(),
-		"Yaw":      0.0,
-		"Pitch":    0.0,
 	}
 }

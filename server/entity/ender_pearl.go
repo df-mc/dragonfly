@@ -149,8 +149,5 @@ func (e *EnderPearl) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(e.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(e.Velocity()),
-		"Yaw":    0.0,
-		"Pitch":  0.0,
-		"Damage": 0.0,
 	}
 }
