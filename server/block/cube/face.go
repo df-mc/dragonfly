@@ -28,7 +28,7 @@ func (f Face) Direction() Direction {
 // and vice versa.
 func (f Face) Opposite() Face {
 	switch f {
-	default:
+	case FaceDown:
 		return FaceUp
 	case FaceUp:
 		return FaceDown
@@ -41,19 +41,21 @@ func (f Face) Opposite() Face {
 	case FaceEast:
 		return FaceWest
 	}
+	panic("invalid face")
 }
 
 // Axis returns the axis the face is facing. FaceEast and west correspond to the x-axis, north and south to the z
 // axis and up and down to the y-axis.
 func (f Face) Axis() Axis {
 	switch f {
-	default:
+	case FaceDown, FaceUp:
 		return Y
 	case FaceEast, FaceWest:
 		return X
 	case FaceNorth, FaceSouth:
 		return Z
 	}
+	panic("invalid face")
 }
 
 // RotateRight rotates the face 90 degrees to the right horizontally and returns the new face.

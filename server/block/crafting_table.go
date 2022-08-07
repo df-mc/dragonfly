@@ -19,7 +19,7 @@ func (c CraftingTable) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c CraftingTable) EncodeBlock() (name string, properties map[string]interface{}) {
+func (c CraftingTable) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:crafting_table", nil
 }
 

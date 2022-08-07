@@ -211,7 +211,7 @@ func (p *Provider) LoadPlayerSpawnPosition(id uuid.UUID) (pos cube.Pos, exists b
 }
 
 // loadPlayerData loads the data stored in a LevelDB database for a specific UUID.
-func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]interface{}, key string, exists bool, err error) {
+func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]any, key string, exists bool, err error) {
 	data, err := p.db.Get([]byte("player_"+id.String()), nil)
 	if err == leveldb.ErrNotFound {
 		return nil, "", false, nil
@@ -240,7 +240,7 @@ func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]interface
 // SavePlayerSpawnPosition saves the player spawn position passed to the levelDB database.
 func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	_, err := p.db.Get([]byte("player_"+id.String()), nil)
-	d := make(map[string]interface{})
+	d := make(map[string]any)
 	k := "player_server_" + id.String()
 
 	if errors.Is(err, leveldb.ErrNotFound) {

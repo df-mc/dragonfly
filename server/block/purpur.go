@@ -34,8 +34,8 @@ func (p Purpur) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p Purpur) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:purpur_block", map[string]interface{}{"chisel_type": "default", "pillar_axis": "y"}
+func (p Purpur) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:purpur_block", map[string]any{"chisel_type": "default", "pillar_axis": "y"}
 }
 
 // UseOnBlock ...
@@ -61,8 +61,8 @@ func (p PurpurPillar) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p PurpurPillar) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:purpur_block", map[string]interface{}{"chisel_type": "lines", "pillar_axis": p.Axis.String()}
+func (p PurpurPillar) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:purpur_block", map[string]any{"chisel_type": "lines", "pillar_axis": p.Axis.String()}
 }
 
 // allPurpurs ...

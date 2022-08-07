@@ -148,8 +148,8 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
-// DecodeNBT ...
-func (c Chest) DecodeNBT(data map[string]any) any {
+// DecodeBlockNBT ...
+func (c Chest) DecodeBlockNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
@@ -159,8 +159,8 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	return c
 }
 
-// EncodeNBT ...
-func (c Chest) EncodeNBT() map[string]any {
+// EncodeBlockNBT ...
+func (c Chest) EncodeBlockNBT(cube.Pos, *world.World) map[string]any {
 	if c.inventory == nil {
 		facing, customName := c.Facing, c.CustomName
 		//noinspection GoAssignmentToReceiver
@@ -184,12 +184,15 @@ func (Chest) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c Chest) EncodeBlock() (name string, properties map[string]any) {
+	if c.Facing == unknownDirection {
+		return "minecraft:chest", map[string]any{"facing_direction": int32(0)}
+	}
 	return "minecraft:chest", map[string]any{"facing_direction": 2 + int32(c.Facing)}
 }
 
 // allChests ...
 func allChests() (chests []world.Block) {
-	for _, direction := range cube.Directions() {
+	for _, direction := range append(cube.Directions(), unknownDirection) {
 		chests = append(chests, Chest{Facing: direction})
 	}
 	return

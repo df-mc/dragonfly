@@ -57,8 +57,8 @@ func (HayBale) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (h HayBale) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:hay_block", map[string]interface{}{"pillar_axis": h.Axis.String(), "deprecated": int32(0)}
+func (h HayBale) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:hay_block", map[string]any{"pillar_axis": h.Axis.String(), "deprecated": int32(0)}
 }
 
 // allHayBales ...

@@ -724,8 +724,8 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		}
 	}
 	//noinspection SpellCheckingInspection
-	if nbter, ok := t.(world.NBTer); ok && len(it.NBTData) != 0 {
-		t = nbter.DecodeNBT(it.NBTData).(world.Item)
+	if nbter, ok := t.(world.ItemNBTer); ok && len(it.NBTData) != 0 {
+		t = nbter.DecodeItemNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
 	return nbtconv.ReadItem(it.NBTData, &s)
@@ -742,8 +742,8 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 // stacksToRecipeStacks converts a list of item.Stacks to their protocol representation with damage stripped for recipes.
 func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
 	items := make([]protocol.ItemStack, 0, len(inputs))
-	for _, i := range inputs {
-		items = append(items, deleteDamage(stackFromItem(i)))
+	for _, it := range inputs {
+		items = append(items, deleteDamage(stackFromItem(it)))
 	}
 	return items
 }
