@@ -145,6 +145,7 @@ func init() {
 	registerAll(allFroglight())
 	registerAll(allFurnaces())
 	registerAll(allGlazedTerracotta())
+	registerAll(allGrindstones())
 	registerAll(allHayBales())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
@@ -181,11 +182,11 @@ func init() {
 	registerAll(allTallGrass())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
+	registerAll(allWalls())
 	registerAll(allWater())
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWool())
-	registerAll(allWalls())
 }
 
 func init() {
@@ -248,6 +249,7 @@ func init() {
 	world.RegisterItem(Granite{})
 	world.RegisterItem(Grass{})
 	world.RegisterItem(Gravel{})
+	world.RegisterItem(Grindstone{})
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(InvisibleBedrock{})

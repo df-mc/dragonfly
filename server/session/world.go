@@ -850,6 +850,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 13
 	case block.Loom:
 		containerType = 24
+	case block.Grindstone:
+		containerType = 26
 	case block.Stonecutter:
 		containerType = 29
 	case block.SmithingTable:

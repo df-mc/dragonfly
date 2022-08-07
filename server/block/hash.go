@@ -75,6 +75,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashGrindstone
 	hashHayBale
 	hashHoneycomb
 	hashInvisibleBedrock
@@ -320,7 +321,7 @@ func (DeadBush) Hash() uint64 {
 }
 
 func (d Deepslate) Hash() uint64 {
-	return hashDeepslate | uint64(d.Type.Uint8())<<8
+	return hashDeepslate | uint64(d.Type.Uint8())<<8 | uint64(d.Axis)<<10
 }
 
 func (d DeepslateBricks) Hash() uint64 {
@@ -453,6 +454,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (g Grindstone) Hash() uint64 {
+	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Direction)<<10
 }
 
 func (h HayBale) Hash() uint64 {
