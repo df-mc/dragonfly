@@ -88,8 +88,8 @@ func (Flower) HasLiquidDrops() bool {
 }
 
 // FlammabilityInfo ...
-func (f Flower) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(60, 100, false)
+func (Flower) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(30, 100, false)
 }
 
 // BreakInfo ...

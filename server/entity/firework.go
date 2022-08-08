@@ -25,8 +25,6 @@ type Firework struct {
 
 	c *MovementComputer
 
-	attached bool
-
 	ticks int
 	close bool
 }
@@ -80,24 +78,11 @@ func (f *Firework) Tick(w *world.World, current int64) {
 	}
 
 	f.mu.Lock()
-	if f.attached {
-		if o, ok := f.owner.(interface {
-			Velocity() mgl64.Vec3
-		}); ok {
-			vel := o.Velocity()
-			dV := DirectionVector(f.owner)
-
-			// The client will propel itself to match the firework's velocity since we set the appropriate metadata.
-			f.pos = f.owner.Position()
-			f.vel.Add(vel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(vel).Mul(0.5))))
-		}
-	} else {
-		f.vel[0] *= 1.15
-		f.vel[1] += 0.04
-		f.vel[2] *= 1.15
-	}
+	f.vel[0] *= 1.15
+	f.vel[1] += 0.04
+	f.vel[2] *= 1.15
 	m := f.c.TickMovement(f, f.pos, f.vel, f.yaw, f.pitch)
-	f.pos, f.vel = m.pos, m.vel
+	f.pos, f.vel, f.yaw, f.pitch = m.pos, m.vel, m.yaw, m.pitch
 	f.mu.Unlock()
 
 	m.Send()
@@ -153,16 +138,10 @@ func (f *Firework) Tick(w *world.World, current int64) {
 
 // New creates an firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
 // only returns it.
-func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework item.Firework, owner world.Entity) world.Entity {
+func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework, owner world.Entity) world.Entity {
 	fw := NewFirework(pos, yaw, pitch, firework)
-	fw.attached = attached
 	fw.owner = owner
 	return fw
-}
-
-// Attached returns true if the firework is currently attached to the owner. This is mainly the case with gliding.
-func (f *Firework) Attached() bool {
-	return f.attached
 }
 
 // Owner ...
@@ -191,7 +170,7 @@ func (f *Firework) EncodeNBT() map[string]any {
 		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
 		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"Yaw":    float32(yaw),
-		"Pitch":  float32(pitch),
+		"Yaw":    yaw,
+		"Pitch":  pitch,
 	}
 }

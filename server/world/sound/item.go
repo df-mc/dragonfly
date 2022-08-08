@@ -20,14 +20,6 @@ type ItemUseOn struct {
 	sound
 }
 
-// EquipItem is a sound played when the player fast equips an item by using it.
-type EquipItem struct {
-	// Item is the item that was equipped. The sound played differs depending on this field.
-	Item world.Item
-
-	sound
-}
-
 // BucketFill is a sound played when a bucket is filled using a liquid source block from the world.
 type BucketFill struct {
 	// Liquid is the liquid that the bucket is filled up with.
@@ -66,7 +58,3 @@ type GoatHorn struct {
 
 	sound
 }
-
-// FireCharge is a sound played when a player lights a block on fire with a fire charge, or when a dispenser or a
-// blaze shoots a fireball.
-type FireCharge struct{ sound }

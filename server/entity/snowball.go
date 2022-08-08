@@ -129,6 +129,9 @@ func (s *Snowball) DecodeNBT(data map[string]any) any {
 func (s *Snowball) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
+		"Yaw":    0.0,
+		"Pitch":  0.0,
 		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
+		"Damage": 0.0,
 	}
 }

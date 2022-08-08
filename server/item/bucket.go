@@ -8,34 +8,10 @@ import (
 	"time"
 )
 
-// BucketContent is the content of a bucket.
-type BucketContent struct {
-	liquid world.Liquid
-	milk   bool
-}
-
-// LiquidBucketContent returns a new BucketContent with the liquid passed in.
-func LiquidBucketContent(l world.Liquid) BucketContent {
-	return BucketContent{liquid: l}
-}
-
-// MilkBucketContent returns a new BucketContent with the milk flag set.
-func MilkBucketContent() BucketContent {
-	return BucketContent{milk: true}
-}
-
-// LiquidType returns the type of liquid the bucket contains.
-func (b BucketContent) LiquidType() string {
-	if b.liquid != nil {
-		return b.liquid.LiquidType()
-	}
-	return "milk"
-}
-
-// Bucket is a tool used to carry water, lava and fish.
+// Bucket is a tool used to carry water, lava, milk and fish.
 type Bucket struct {
 	// Content is the content that the bucket has. By default, this value resolves to an empty bucket.
-	Content BucketContent
+	Content world.Liquid
 }
 
 // MaxCount returns 16.
@@ -46,37 +22,14 @@ func (b Bucket) MaxCount() int {
 	return 1
 }
 
-// AlwaysConsumable ...
-func (b Bucket) AlwaysConsumable() bool {
-	return b.Content.milk
-}
-
-// CanConsume ...
-func (b Bucket) CanConsume() bool {
-	return b.Content.milk
-}
-
-// ConsumeDuration ...
-func (b Bucket) ConsumeDuration() time.Duration {
-	return DefaultConsumeDuration
-}
-
-// Consume ...
-func (b Bucket) Consume(_ *world.World, c Consumer) Stack {
-	for _, effect := range c.Effects() {
-		c.RemoveEffect(effect.Type())
-	}
-	return NewStack(Bucket{}, 1)
-}
-
 // Empty returns true if the bucket is empty.
 func (b Bucket) Empty() bool {
-	return b.Content.liquid == nil && !b.Content.milk
+	return b.Content == nil
 }
 
 // FuelInfo ...
 func (b Bucket) FuelInfo() FuelInfo {
-	if liq := b.Content.liquid; liq != nil && liq.LiquidType() == "lava" {
+	if b.Content.LiquidType() == "lava" {
 		return newFuelInfo(time.Second * 1000).WithResidue(NewStack(Bucket{}, 1))
 	}
 	return FuelInfo{}
@@ -84,13 +37,10 @@ func (b Bucket) FuelInfo() FuelInfo {
 
 // UseOnBlock handles the bucket filling and emptying logic.
 func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if b.Content.milk {
-		return false
-	}
 	if b.Empty() {
 		return b.fillFrom(pos, w, ctx)
 	}
-	liq := b.Content.liquid.WithDepth(8, false)
+	liq := b.Content.WithDepth(8, false)
 	if bl := w.Block(pos); canDisplace(bl, liq) || replaceableWith(bl, liq) {
 		w.SetLiquid(pos, liq)
 	} else if bl := w.Block(pos.Side(face)); canDisplace(bl, liq) || replaceableWith(bl, liq) {
@@ -99,7 +49,7 @@ func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: b.Content.liquid})
+	w.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{Liquid: b.Content})
 	ctx.NewItem = NewStack(Bucket{}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
@@ -120,7 +70,7 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 	w.SetLiquid(pos, nil)
 	w.PlaySound(pos.Vec3Centre(), sound.BucketFill{Liquid: liquid})
 
-	ctx.NewItem = NewStack(Bucket{Content: LiquidBucketContent(liquid)}, 1)
+	ctx.NewItem = NewStack(Bucket{Content: liquid}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
 	return true

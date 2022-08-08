@@ -21,7 +21,7 @@ type TallGrass struct {
 
 // FlammabilityInfo ...
 func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(60, 100, false)
+	return newFlammabilityInfo(30, 100, false)
 }
 
 // BreakInfo ...

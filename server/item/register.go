@@ -44,15 +44,12 @@ func init() {
 	world.RegisterItem(DragonBreath{})
 	world.RegisterItem(DriedKelp{})
 	world.RegisterItem(EchoShard{})
-	world.RegisterItem(Egg{})
-	world.RegisterItem(Elytra{})
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantedApple{})
 	world.RegisterItem(EnchantedBook{})
 	world.RegisterItem(EnderPearl{})
 	world.RegisterItem(Feather{})
 	world.RegisterItem(FermentedSpiderEye{})
-	world.RegisterItem(FireCharge{})
 	world.RegisterItem(Firework{})
 	world.RegisterItem(FlintAndSteel{})
 	world.RegisterItem(Flint{})
@@ -124,9 +121,6 @@ func init() {
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
 	}
-	for _, pattern := range BannerPatterns() {
-		world.RegisterItem(BannerPattern{Type: pattern})
-	}
 	for _, c := range Colours() {
 		world.RegisterItem(Dye{Colour: c})
 		world.RegisterItem(FireworkStar{FireworkExplosion: FireworkExplosion{Colour: c}})
@@ -138,7 +132,6 @@ func init() {
 		if i > 4 {
 			world.RegisterItem(Arrow{Tip: p})
 		}
-		world.RegisterItem(LingeringPotion{Type: p})
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}
@@ -148,8 +141,5 @@ func init() {
 		world.RegisterItem(Shovel{Tier: t})
 		world.RegisterItem(Sword{Tier: t})
 		world.RegisterItem(Hoe{Tier: t})
-	}
-	for _, disc := range sound.MusicDiscs() {
-		world.RegisterItem(MusicDisc{DiscType: disc})
 	}
 }

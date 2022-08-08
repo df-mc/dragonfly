@@ -9,33 +9,17 @@ func encodeWallBlock(block world.Block) (string, int16) {
 		if !block.Polished {
 			return "andesite", 4
 		}
-	case Blackstone:
-		if block.Type == NormalBlackstone() {
-			return "blackstone", 0
-		} else if block.Type == PolishedBlackstone() {
-			return "polished_blackstone", 0
-		}
+	// TODO: Blackstone
 	case Bricks:
 		return "brick", 6
+	// TODO: Cobbled Deepslate
 	case Cobblestone:
 		if block.Mossy {
 			return "mossy_cobblestone", 1
 		}
 		return "cobblestone", 0
-	case Deepslate:
-		if block.Type == CobbledDeepslate() {
-			return "cobbled_deepslate", 0
-		} else if block.Type == PolishedDeepslate() {
-			return "polished_deepslate", 0
-		}
-	case DeepslateBricks:
-		if !block.Cracked {
-			return "deepslate_brick", 0
-		}
-	case DeepslateTiles:
-		if !block.Cracked {
-			return "deepslate_tile", 0
-		}
+	// TODO: Deepslate Brick
+	// TODO: Deepslate Tile
 	case Diorite:
 		if !block.Polished {
 			return "diorite", 3
@@ -53,10 +37,6 @@ func encodeWallBlock(block world.Block) (string, int16) {
 			return "nether_brick", 9
 		} else if block.Type == RedNetherBricks() {
 			return "red_nether_brick", 13
-		}
-	case PolishedBlackstoneBrick:
-		if !block.Cracked {
-			return "polished_blackstone_brick", 0
 		}
 	case Prismarine:
 		if block.Type == NormalPrismarine() {
@@ -83,26 +63,26 @@ func encodeWallBlock(block world.Block) (string, int16) {
 func WallBlocks() []world.Block {
 	return []world.Block{
 		Andesite{},
-		Blackstone{Type: PolishedBlackstone()},
-		Blackstone{},
+		// TODO: Blackstone
 		Bricks{},
-		Cobblestone{Mossy: true},
+		// TODO: Cobbled Deepslate
 		Cobblestone{},
-		DeepslateBricks{},
-		DeepslateTiles{},
-		Deepslate{Type: CobbledDeepslate()},
-		Deepslate{Type: PolishedDeepslate()},
+		Cobblestone{Mossy: true},
+		// TODO: Deepslate Brick
+		// TODO: Deepslate Tile
 		Diorite{},
 		EndBricks{},
 		Granite{},
 		MudBricks{},
-		NetherBricks{Type: RedNetherBricks()},
 		NetherBricks{},
-		PolishedBlackstoneBrick{},
+		NetherBricks{Type: RedNetherBricks()},
+		// TODO: Polished Blackstone
+		// TODO: Polished Blackstone brick
+		// TODO: Polished Deepslate
 		Prismarine{},
-		Sandstone{Red: true},
 		Sandstone{},
-		StoneBricks{Type: MossyStoneBricks()},
+		Sandstone{Red: true},
 		StoneBricks{},
+		StoneBricks{Type: MossyStoneBricks()},
 	}
 }

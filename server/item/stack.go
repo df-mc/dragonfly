@@ -100,17 +100,12 @@ func (s Stack) Damage(d int) Stack {
 		// Not a durable item.
 		return s
 	}
-	durability := s.Durability()
 	info := durable.DurabilityInfo()
-	if durability-d <= 0 {
-		if info.Persistent {
-			// Persistent items can't be broken.
-			return s
-		}
+	if s.Durability()-d <= 0 {
 		// A durability of 0, so the item is broken.
 		return info.BrokenItem()
 	}
-	if durability-d > info.MaxDurability {
+	if s.Durability()-d > info.MaxDurability {
 		// We've passed the maximum durability, so we just need to make sure the final durability of the item
 		// will be equal to the max.
 		s.damage, d = 0, 0

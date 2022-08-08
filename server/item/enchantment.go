@@ -62,14 +62,14 @@ type Enchantable interface {
 // by instantiating an EnchantmentType struct (e.g. enchantment.Protection{})
 func RegisterEnchantment(id int, enchantment EnchantmentType) {
 	enchantmentsMap[id] = enchantment
-	enchantmentIDs[reflect.TypeOf(enchantment)] = id
+	enchantmentIds[reflect.TypeOf(enchantment)] = id
 	enchantments = append(enchantments, enchantment)
 }
 
 var (
 	enchantments    []EnchantmentType
 	enchantmentsMap = map[int]EnchantmentType{}
-	enchantmentIDs  = map[reflect.Type]int{}
+	enchantmentIds  = map[reflect.Type]int{}
 )
 
 // EnchantmentByID attempts to return an enchantment by the ID it was registered with. If found, the enchantment found
@@ -82,7 +82,7 @@ func EnchantmentByID(id int) (EnchantmentType, bool) {
 // EnchantmentID attempts to return the ID the enchantment was registered with. If found, the id is returned and
 // the bool true.
 func EnchantmentID(e EnchantmentType) (int, bool) {
-	id, ok := enchantmentIDs[reflect.TypeOf(e)]
+	id, ok := enchantmentIds[reflect.TypeOf(e)]
 	return id, ok
 }
 

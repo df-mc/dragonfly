@@ -59,7 +59,7 @@ func (builder *ComponentBuilder) applyDefaultProperties(x map[string]any) {
 	x["minecraft:icon"] = map[string]any{
 		"texture": strings.Split(builder.identifier, ":")[1],
 	}
-	x["creative_group"] = builder.category.Group()
+	x["creative_group"] = builder.category.String()
 	x["creative_category"] = int32(builder.category.Uint8())
 	if _, ok := x["max_stack_size"]; !ok {
 		x["max_stack_size"] = int32(64)

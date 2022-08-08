@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -33,9 +32,6 @@ type Arrow struct {
 	owner world.Entity
 	tip   potion.Potion
 
-	fireTicks  int64
-	punchLevel int
-
 	disallowPickup, obtainArrowOnPickup bool
 
 	c *ProjectileComputer
@@ -44,30 +40,19 @@ type Arrow struct {
 // NewArrow creates a new Arrow and returns it. It is equivalent to calling NewTippedArrow with `potion.Potion{}` as
 // tip.
 func NewArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity) *Arrow {
-	return NewTippedArrowWithDamage(pos, yaw, pitch, 2.0, owner, potion.Potion{})
+	return NewTippedArrow(pos, yaw, pitch, owner, potion.Potion{})
 }
 
-// NewArrowWithDamage creates a new Arrow with the given base damage, and returns it. It is equivalent to calling
-// NewTippedArrowWithDamage with `potion.Potion{}` as tip.
-func NewArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity) *Arrow {
-	return NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, potion.Potion{})
-}
-
-// NewTippedArrow creates a new Arrow with a potion effect added to an entity when hit.
+// NewTippedArrow creates a new Arrow with a potion effect added to an entity when hit. The Arrow's base damage may be
+// changed by calling Arrow.SetBaseDamage. It is 2.0 by default.
 func NewTippedArrow(pos mgl64.Vec3, yaw, pitch float64, owner world.Entity, tip potion.Potion) *Arrow {
-	return NewTippedArrowWithDamage(pos, yaw, pitch, 2.0, owner, tip)
-}
-
-// NewTippedArrowWithDamage creates a new Arrow with a potion effect added to an entity when hit and, and returns it.
-// It uses the given damage as the base damage.
-func NewTippedArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, tip potion.Potion) *Arrow {
 	a := &Arrow{
 		yaw:                 yaw,
 		pitch:               pitch,
-		baseDamage:          damage,
+		baseDamage:          2.0,
+		obtainArrowOnPickup: true,
 		owner:               owner,
 		tip:                 tip,
-		obtainArrowOnPickup: true,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
@@ -128,6 +113,13 @@ func (a *Arrow) BaseDamage() float64 {
 	return a.baseDamage
 }
 
+// SetBaseDamage sets the base damage the arrow will deal, before accounting for velocity.
+func (a *Arrow) SetBaseDamage(baseDamage float64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.baseDamage = baseDamage
+}
+
 // Tip returns the potion effect at the tip of the arrow, applied on impact to an entity. This also causes the arrow
 // to show effect particles until it is removed.
 func (a *Arrow) Tip() potion.Potion {
@@ -148,35 +140,6 @@ func (a *Arrow) VanishOnPickup() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.obtainArrowOnPickup = false
-}
-
-// FireProof ...
-func (a *Arrow) FireProof() bool {
-	return false
-}
-
-// OnFireDuration ...
-func (a *Arrow) OnFireDuration() time.Duration {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	return time.Duration(a.fireTicks) * time.Second / 20
-}
-
-// SetOnFire ...
-func (a *Arrow) SetOnFire(duration time.Duration) {
-	a.mu.Lock()
-	a.fireTicks = int64(duration.Seconds() * 20)
-	pos := a.pos
-	a.mu.Unlock()
-
-	for _, v := range a.World().Viewers(pos) {
-		v.ViewEntityState(a)
-	}
-}
-
-// Extinguish ...
-func (a *Arrow) Extinguish() {
-	a.SetOnFire(0)
 }
 
 // BBox ...
@@ -200,9 +163,9 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 
 	a.mu.Lock()
 	if a.collided {
-		boxes := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
+		boxs := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
 		box := a.BBox().Translate(a.pos)
-		for _, bb := range boxes {
+		for _, bb := range boxs {
 			if box.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
 				if a.ageCollided > 5 && !a.disallowPickup {
 					a.checkNearby(w)
@@ -214,7 +177,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		}
 	}
 
-	pastVel := a.vel
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.collisionPos, a.collided = cube.Pos{}, false
@@ -230,12 +192,12 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
+		a.setCritical(false)
+		w.PlaySound(m.pos, sound.ArrowHit{})
+
 		if res, ok := result.(trace.BlockResult); ok {
 			a.mu.Lock()
 			a.collisionPos, a.collided = res.BlockPosition(), true
-			if t, ok := w.Block(a.collisionPos).(block.TNT); ok && a.fireTicks > 0 {
-				t.Ignite(a.collisionPos, w)
-			}
 			a.mu.Unlock()
 
 			for _, v := range w.Viewers(m.pos) {
@@ -243,28 +205,14 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
-				living.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner})
+				living.Hurt(a.damage(), damage.SourceProjectile{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)
 				}
-				if flammable, ok := living.(Flammable); ok && a.OnFireDuration() > 0 {
-					flammable.SetOnFire(time.Second * 5)
-				}
-				if a.punchLevel > 0 {
-					horizontalVel := pastVel
-					horizontalVel[1] = 0
-					if speed := horizontalVel.Len(); speed > 0 {
-						multiplier := (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
-						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
-					}
-				}
-				a.close = true
 			}
+			a.close = true
 		}
-
-		a.setCritical(false)
-		w.PlaySound(m.pos, sound.ArrowHit{})
 	}
 }
 
@@ -276,10 +224,9 @@ func (a *Arrow) ignores(entity world.Entity) bool {
 
 // New creates and returns an Arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the Arrow
 // by itself.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity {
-	arrow := NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, tip)
+func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, tip potion.Potion) world.Entity {
+	arrow := NewTippedArrow(pos, yaw, pitch, owner, tip)
 	arrow.vel = vel
-	arrow.punchLevel = punchLevel
 	arrow.disallowPickup = disallowPickup
 	arrow.obtainArrowOnPickup = obtainArrowOnPickup
 	arrow.setCritical(critical)
@@ -302,12 +249,18 @@ func (a *Arrow) Owner() world.Entity {
 
 // DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
 func (a *Arrow) DecodeNBT(data map[string]any) any {
-	arr := NewTippedArrowWithDamage(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
-	arr.vel = nbtconv.MapVec3(data, "Motion")
-	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
-	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
-	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
-	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
+	arr := a.New(
+		nbtconv.MapVec3(data, "Pos"),
+		nbtconv.MapVec3(data, "Motion"),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
+		nil,
+		false, // Vanilla doesn't save this value, so we don't either.
+		nbtconv.Map[byte](data, "player") == 1,
+		nbtconv.Map[byte](data, "isCreative") == 1,
+		potion.From(nbtconv.Map[int32](data, "auxValue")-1),
+	).(*Arrow)
+	arr.baseDamage = float64(nbtconv.Map[float32](data, "Damage"))
 	if _, ok := data["StuckToBlockPos"]; ok {
 		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
 		arr.collided = true
@@ -318,23 +271,20 @@ func (a *Arrow) DecodeNBT(data map[string]any) any {
 // EncodeNBT encodes the Arrow entity's properties as a map and returns it.
 func (a *Arrow) EncodeNBT() map[string]any {
 	yaw, pitch := a.Rotation()
-	data := map[string]any{
-		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":          float32(yaw),
-		"Pitch":        float32(pitch),
-		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":       float32(a.BaseDamage()),
-		"Fire":         int16(a.OnFireDuration() * 20),
-		"enchantPunch": byte(a.punchLevel),
-		"auxValue":     int32(a.tip.Uint8() + 1),
-		"player":       boolByte(!a.disallowPickup),
-		"isCreative":   boolByte(!a.obtainArrowOnPickup),
+	nbt := map[string]any{
+		"Pos":        nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":        yaw,
+		"Pitch":      pitch,
+		"Motion":     nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"Damage":     a.BaseDamage(),
+		"auxValue":   int32(a.tip.Uint8() + 1),
+		"player":     boolByte(!a.disallowPickup),
+		"isCreative": boolByte(!a.obtainArrowOnPickup),
 	}
-	// TODO: Save critical flag if Minecraft ever saves it?
 	if collisionPos, ok := a.CollisionPos(); ok {
-		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
+		nbt["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
 	}
-	return data
+	return nbt
 }
 
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
@@ -361,10 +311,9 @@ func (a *Arrow) checkNearby(w *world.World) {
 	}
 }
 
-// damage returns the full damage the arrow should deal. In Bedrock, this is the initial velocity length multiplied by
-// base damage and then multiplied by 0.6. If the arrow is critical, it is also multiplied by 1.5.
-func (a *Arrow) damage(vel mgl64.Vec3) float64 {
-	base := math.Ceil(vel.Len() * a.BaseDamage())
+// damage returns the full damage the arrow should deal, accounting for the velocity.
+func (a *Arrow) damage() float64 {
+	base := math.Ceil(a.Velocity().Len() * a.BaseDamage())
 	if a.Critical() {
 		return base + float64(rand.Intn(int(base/2+1)))
 	}

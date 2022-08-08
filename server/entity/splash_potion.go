@@ -3,31 +3,47 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // SplashPotion is an item that grants effects when thrown.
 type SplashPotion struct {
-	splashable
 	transform
-
 	age   int
 	close bool
 
 	owner world.Entity
 
+	t potion.Potion
 	c *ProjectileComputer
+}
+
+// SplashableBlock is a block that can be splashed with a splash bottle.
+type SplashableBlock interface {
+	world.Block
+	Splash(pos cube.Pos, e world.Entity, t potion.Potion)
+}
+
+// SplashableEntity is an entity that can be splashed with a splash bottle.
+type SplashableEntity interface {
+	world.Entity
+	Splash(e world.Entity, t potion.Potion)
 }
 
 // NewSplashPotion ...
 func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *SplashPotion {
 	s := &SplashPotion{
 		owner: owner,
-
-		splashable: splashable{t: t, m: 0.75},
+		t:     t,
 		c: &ProjectileComputer{&MovementComputer{
 			Gravity:           0.05,
 			Drag:              0.01,
@@ -35,6 +51,7 @@ func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Splas
 		}},
 	}
 	s.transform = newTransform(s, pos)
+
 	return s
 }
 
@@ -51,6 +68,16 @@ func (s *SplashPotion) EncodeEntity() string {
 // BBox ...
 func (s *SplashPotion) BBox() cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+// Glint returns true if the splash potion should render with glint.
+func (s *SplashPotion) Glint() bool {
+	return len(s.t.Effects()) > 0
+}
+
+// Type returns the type of potion the splash potion will grant effects for when thrown.
+func (s *SplashPotion) Type() potion.Potion {
+	return s.t
 }
 
 // Tick ...
@@ -73,7 +100,68 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		s.splash(s, w, m.pos, result, s.BBox())
+		effects := s.t.Effects()
+		box := s.BBox().Translate(m.pos)
+		colour, _ := effect.ResultingColour(effects)
+		if len(effects) > 0 {
+			for _, e := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), func(entity world.Entity) bool {
+				_, living := entity.(Living)
+				return !living || entity == s
+			}) {
+				pos := e.Position()
+				if !e.BBox().Translate(pos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
+					continue
+				}
+
+				dist := pos.Sub(m.pos).Len()
+				if dist > 4 {
+					continue
+				}
+
+				f := 1 - dist/4
+				if entityResult, ok := result.(trace.EntityResult); ok && entityResult.Entity() == e {
+					f = 1
+				}
+
+				splashed := e.(Living)
+				for _, eff := range effects {
+					if p, ok := eff.Type().(effect.PotentType); ok {
+						splashed.AddEffect(effect.NewInstant(p.WithPotency(f), eff.Level()))
+						continue
+					}
+
+					dur := time.Duration(float64(eff.Duration()) * 0.75 * f)
+					if dur < time.Second {
+						continue
+					}
+					splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
+				}
+			}
+		}
+
+		switch res := result.(type) {
+		case trace.BlockResult:
+			pos := res.BlockPosition().Side(res.Face())
+			if b, ok := w.Block(pos).(SplashableBlock); ok {
+				if _, ok := b.Model().(model.Empty); ok {
+					b.Splash(pos, s, s.Type())
+					break
+				}
+			}
+
+			pos = res.BlockPosition()
+			if b, ok := w.Block(pos).(SplashableBlock); ok {
+				b.Splash(pos, s, s.Type())
+			}
+		case trace.EntityResult:
+			if e, ok := res.Entity().(SplashableEntity); ok {
+				e.Splash(s, s.Type())
+			}
+		}
+
+		w.AddParticle(m.pos, particle.Splash{Colour: colour})
+		w.PlaySound(m.pos, sound.GlassBreak{})
+
 		s.close = true
 	}
 }
@@ -84,7 +172,7 @@ func (s *SplashPotion) ignores(entity world.Entity) bool {
 	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
-// New creates a SplashPotion with the position and velocity provided. It doesn't spawn the SplashPotion,
+// New creates a SplashPotion with the position, velocity, yaw, and pitch provided. It doesn't spawn the SplashPotion,
 // only returns it.
 func (s *SplashPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity {
 	splash := NewSplashPotion(pos, owner, t)
@@ -122,6 +210,8 @@ func (s *SplashPotion) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"PotionId": int32(s.t.Uint8()),
+		"PotionId": s.t.Uint8(),
+		"Yaw":      0.0,
+		"Pitch":    0.0,
 	}
 }

@@ -15,14 +15,6 @@ type Drowning struct{ sound }
 // Burning is a sound played when an entity is on fire.
 type Burning struct{ sound }
 
-// Fall is a sound played when an entity falls and hits ground.
-type Fall struct {
-	// Distance is the distance the entity has fallen.
-	Distance float64
-
-	sound
-}
-
 // Burp is a sound played when a player finishes eating an item.
 type Burp struct{ sound }
 

@@ -145,11 +145,6 @@ func (s SeaPickle) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
 }
 
-// FlammabilityInfo ...
-func (SeaPickle) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(15, 100, true)
-}
-
 // SmeltInfo ...
 func (SeaPickle) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(item.Dye{Colour: item.ColourLime()}, 1), 0.1)

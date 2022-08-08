@@ -196,11 +196,11 @@ func (it *Item) DecodeNBT(data map[string]any) any {
 // EncodeNBT encodes the Item entity's properties as a map and returns it.
 func (it *Item) EncodeNBT() map[string]any {
 	return map[string]any{
-		"Health":      int16(5),
 		"Age":         int16(it.age),
 		"PickupDelay": int64(it.pickupDelay),
 		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Health":      int16(5),
 		"Item":        nbtconv.WriteItem(it.Item(), true),
 	}
 }

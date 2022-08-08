@@ -41,8 +41,8 @@ func (c Category) WithGroup(group string) Category {
 	return c
 }
 
-// String ...
-func (c Category) String() string {
+// Name ...
+func (c Category) Name() string {
 	switch c.category {
 	case 1:
 		return "construction"
@@ -56,10 +56,10 @@ func (c Category) String() string {
 	panic("should never happen")
 }
 
-// Group ...
-func (c Category) Group() string {
+// String ...
+func (c Category) String() string {
 	if len(c.group) > 0 {
 		return "itemGroup.name." + c.group
 	}
-	return "none"
+	return "itemGroup." + c.Name() + ".name"
 }
