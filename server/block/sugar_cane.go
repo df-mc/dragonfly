@@ -9,7 +9,7 @@ import (
 	"math/rand"
 )
 
-// SugerCane is a plant block that generates naturally near water.
+// SugarCane is a plant block that generates naturally near water.
 type SugarCane struct {
 	empty
 	transparent
