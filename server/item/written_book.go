@@ -33,9 +33,10 @@ func (w WrittenBook) Page(page int) (string, bool) {
 
 // DecodeNBT ...
 func (w WrittenBook) DecodeNBT(data map[string]any) any {
-	if pages, ok := data["pages"].([]map[string]string); ok {
+	if pages, ok := data["pages"].([]any); ok {
+		w.Pages = make([]string, len(pages))
 		for i, page := range pages {
-			w.Pages[i] = page["text"]
+			w.Pages[i] = page.(map[string]any)["text"].(string)
 		}
 	}
 	if v, ok := data["title"].(string); ok {
@@ -52,8 +53,6 @@ func (w WrittenBook) DecodeNBT(data map[string]any) any {
 			w.Generation = CopyGeneration()
 		case 2:
 			w.Generation = CopyOfCopyGeneration()
-		default:
-			panic("unknown written book generation")
 		}
 	}
 	return w
