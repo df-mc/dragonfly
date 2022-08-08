@@ -124,7 +124,5 @@ func (b *BottleOfEnchanting) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
-		"Yaw":    0.0,
-		"Pitch":  0.0,
 	}
 }
