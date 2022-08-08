@@ -42,11 +42,10 @@ func neighboursFlammable(pos cube.Pos, w *world.World) bool {
 }
 
 // Splash checks to see if the fire was splashed by a bottle and then extinguishes itself and its neighboring fires.
-func (f Fire) Splash(pos cube.Pos, e world.Entity, t potion.Potion) {
-	if t != potion.Water() {
+func (f Fire) Splash(_ world.Entity, w *world.World, pos cube.Pos, p potion.Potion) {
+	if p != potion.Water() {
 		return
 	}
-	w := e.World()
 	w.SetBlock(pos, nil, nil)
 	for _, face := range cube.HorizontalFaces() {
 		h := pos.Side(face)
