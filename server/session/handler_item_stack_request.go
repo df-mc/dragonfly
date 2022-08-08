@@ -283,6 +283,9 @@ func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAct
 	}
 
 	res := h.pendingResults[slot]
+	if res.Empty() {
+		return fmt.Errorf("tried duplicating created result: %v", slot)
+	}
 	h.pendingResults[slot] = item.Stack{}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
