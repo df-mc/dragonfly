@@ -116,14 +116,19 @@ func (b *brewer) tickBrewing(block string, pos cube.Pos, w *world.World) {
 	middleOutput, middleAffected := recipe.Perform(block, middle.Item(), ingredient.Item())
 	rightOutput, rightAffected := recipe.Perform(block, right.Item(), ingredient.Item())
 
+	// Ensure that we have enough fuel to continue.
 	if b.fuelAmount > 0 {
+		// Now make sure that we have at least one potion that is affected by the ingredient.
 		if leftAffected || middleAffected || rightAffected {
+			// Tick our duration. If we have no brew duration, set it to the default of twenty seconds.
 			if b.duration == 0 {
 				b.duration = time.Second * 20
-				b.fuelAmount--
 			}
 			b.duration -= time.Millisecond * 50
+
+			// If we have no duration, we are done.
 			if b.duration <= 0 {
+				// Create the output items.
 				if leftAffected {
 					defer b.inventory.SetItem(1, leftOutput[0])
 				}
@@ -133,15 +138,21 @@ func (b *brewer) tickBrewing(block string, pos cube.Pos, w *world.World) {
 				if rightAffected {
 					defer b.inventory.SetItem(3, rightOutput[0])
 				}
+
+				// Reduce the ingredient by one.
+				defer b.inventory.SetItem(0, ingredient.Grow(-1))
 				w.PlaySound(pos.Vec3Centre(), sound.PotionBrewed{})
 
-				defer b.inventory.SetItem(0, ingredient.Grow(-1))
+				// Decrement the fuel, and reset the duration.
+				b.fuelAmount--
 				b.duration = 0
 			}
 		} else {
+			// None of the potions are affected by the ingredient, so reset the duration.
 			b.duration = 0
 		}
 	} else {
+		// We don't have enough fuel, so reset our progress.
 		b.duration, b.fuelAmount, b.fuelTotal = 0, 0, 0
 	}
 
