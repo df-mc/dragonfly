@@ -2,6 +2,7 @@ package recipe
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Recipe is implemented by all recipe types.
@@ -58,6 +59,35 @@ func NewShaped(input []item.Stack, output item.Stack, shape Shape, block string)
 // Shape returns the shape of the recipe.
 func (r Shaped) Shape() Shape {
 	return r.shape
+}
+
+// PotionContainerChange is a recipe to convert a potion from one type to another, such as from a drinkable potion to a
+// splash potion, or from a splash potion to a lingering potion.
+type PotionContainerChange struct {
+	recipe
+}
+
+// NewPotionContainerChange creates a new potion container change recipe and returns it.
+func NewPotionContainerChange(input, ingredient, output world.Item) PotionContainerChange {
+	return PotionContainerChange{recipe: recipe{
+		input:  []item.Stack{item.NewStack(input, 1), item.NewStack(ingredient, 1)},
+		output: []item.Stack{item.NewStack(output, 1)},
+		block:  "brewing_stand",
+	}}
+}
+
+// Potion is a potion mixing recipe which may be used in the brewing stand.
+type Potion struct {
+	recipe
+}
+
+// NewPotion creates a new potion recipe and returns it.
+func NewPotion(input, ingredient, output world.Item) Potion {
+	return Potion{recipe: recipe{
+		input:  []item.Stack{item.NewStack(input, 1), item.NewStack(ingredient, 1)},
+		output: []item.Stack{item.NewStack(output, 1)},
+		block:  "brewing_stand",
+	}}
 }
 
 // recipe implements the Recipe interface. Structs in this package may embed it to gets its functionality

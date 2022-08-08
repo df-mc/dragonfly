@@ -2,6 +2,8 @@ package recipe
 
 import (
 	_ "embed"
+	"github.com/df-mc/dragonfly/server/world"
+
 	// Ensure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
 	_ "github.com/df-mc/dragonfly/server/item"
@@ -11,6 +13,8 @@ import (
 var (
 	//go:embed crafting_data.nbt
 	vanillaCraftingData []byte
+	//go:embed brewing_data.nbt
+	vanillaBrewingData []byte
 	//go:embed smithing_data.nbt
 	vanillaSmithingData []byte
 	//go:embed stonecutter_data.nbt
@@ -35,12 +39,38 @@ type shapelessRecipe struct {
 	Priority int32       `nbt:"priority"`
 }
 
+// potionContainerChangeRecipe ...
+type potionContainerChangeRecipe struct {
+	InputItem      string `nbt:"input_item"`
+	IngredientItem string `nbt:"ingredient_item"`
+	OutputItem     string `nbt:"output_item"`
+}
+
+// potionRecipe ...
+type potionRecipe struct {
+	InputPotion         string `nbt:"input_potion"`
+	InputPotionMetadata int16  `nbt:"input_potion_metadata"`
+
+	IngredientItem         string `nbt:"ingredient_item"`
+	IngredientItemMetadata int16  `nbt:"ingredient_item_metadata"`
+
+	OutputPotion         string `nbt:"output_potion"`
+	OutputPotionMetadata int16  `nbt:"output_potion_metadata"`
+}
+
 func init() {
 	var craftingRecipes struct {
 		Shaped    []shapedRecipe    `nbt:"shaped"`
 		Shapeless []shapelessRecipe `nbt:"shapeless"`
 	}
 	if err := nbt.Unmarshal(vanillaCraftingData, &craftingRecipes); err != nil {
+		panic(err)
+	}
+	var brewingRecipes struct {
+		ContainerChange []potionContainerChangeRecipe `nbt:"container_change"`
+		Regular         []potionRecipe                `nbt:"regular"`
+	}
+	if err := nbt.Unmarshal(vanillaBrewingData, &brewingRecipes); err != nil {
 		panic(err)
 	}
 
@@ -73,7 +103,7 @@ func init() {
 		input, ok := s.Input.Stacks()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
-			// This can be expected to happen - refer to the comment above.
+			// This can be expected to happen; refer to the comment above.
 			continue
 		}
 		Register(Shaped{
@@ -85,5 +115,27 @@ func init() {
 				priority: uint32(s.Priority),
 			},
 		})
+	}
+
+	for _, c := range brewingRecipes.ContainerChange {
+		input, ok := world.ItemByName(c.InputItem, 0)
+		ingredient, okTwo := world.ItemByName(c.IngredientItem, 0)
+		output, okThree := world.ItemByName(c.OutputItem, 0)
+		if !ok || !okTwo || !okThree {
+			// This can be expected to happen; refer to the comment above.
+			continue
+		}
+		Register(NewPotionContainerChange(input, ingredient, output))
+	}
+
+	for _, r := range brewingRecipes.Regular {
+		input, ok := world.ItemByName(r.InputPotion, r.InputPotionMetadata)
+		ingredient, okTwo := world.ItemByName(r.IngredientItem, r.IngredientItemMetadata)
+		output, okThree := world.ItemByName(r.OutputPotion, r.OutputPotionMetadata)
+		if !ok || !okTwo || !okThree {
+			// This can be expected to happen; refer to the comment above.
+			continue
+		}
+		Register(NewPotion(input, ingredient, output))
 	}
 }

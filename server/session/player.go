@@ -73,7 +73,13 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
-	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+	recipes, potionContainerChangeRecipes, potionRecipes := s.protocolRecipes()
+	s.writePacket(&packet.CraftingData{
+		PotionContainerChangeRecipes: potionContainerChangeRecipes,
+		PotionRecipes:                potionRecipes,
+		Recipes:                      recipes,
+		ClearRecipes:                 true,
+	})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.
@@ -106,34 +112,35 @@ const (
 )
 
 const (
-	containerAnvilInput           = 0
-	containerAnvilMaterial        = 1
-	containerSmithingInput        = 3
-	containerSmithingMaterial     = 4
-	containerArmour               = 6
-	containerChest                = 7
-	containerBeacon               = 8
-	containerBrewingStandBottle   = 10
-	containerBrewingStandFuel     = 11
-	containerFullInventory        = 12
-	containerCraftingGrid         = 13
-	containerEnchantingTableInput = 21
-	containerEnchantingTableLapis = 22
-	containerFurnaceFuel          = 23
-	containerFurnaceResult        = 25
-	containerFurnaceInput         = 24
-	containerHotbar               = 27
-	containerInventory            = 28
-	containerOffHand              = 33
-	containerLoomInput            = 40
-	containerLoomDye              = 41
-	containerLoomPattern          = 42
-	containerBlastFurnaceInput    = 44
-	containerSmokerInput          = 45
-	containerStonecutterInput     = 52
-	containerBarrel               = 57
-	containerCursor               = 58
-	containerOutput               = 59
+	containerAnvilInput             = 0
+	containerAnvilMaterial          = 1
+	containerSmithingInput          = 3
+	containerSmithingMaterial       = 4
+	containerArmour                 = 6
+	containerChest                  = 7
+	containerBeacon                 = 8
+	containerBrewingStandIngredient = 9
+	containerBrewingStandBottle     = 10
+	containerBrewingStandFuel       = 11
+	containerFullInventory          = 12
+	containerCraftingGrid           = 13
+	containerEnchantingTableInput   = 21
+	containerEnchantingTableLapis   = 22
+	containerFurnaceFuel            = 23
+	containerFurnaceResult          = 25
+	containerFurnaceInput           = 24
+	containerHotbar                 = 27
+	containerInventory              = 28
+	containerOffHand                = 33
+	containerLoomInput              = 40
+	containerLoomDye                = 41
+	containerLoomPattern            = 42
+	containerBlastFurnaceInput      = 44
+	containerSmokerInput            = 45
+	containerStonecutterInput       = 52
+	containerBarrel                 = 57
+	containerCursor                 = 58
+	containerOutput                 = 59
 )
 
 // smelter is an interface representing a block used to smelt items.
@@ -172,7 +179,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBrewingStandBottle, containerBrewingStandFuel:
+	case containerBrewingStandIngredient, containerBrewingStandBottle, containerBrewingStandFuel:
 		if s.containerOpened.Load() {
 			if _, brewingStand := s.c.World().Block(s.openedPos.Load()).(block.BrewingStand); brewingStand {
 				return s.openedWindow.Load(), true
@@ -659,8 +666,7 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 }
 
 // protocolRecipes returns all recipes as protocol recipes.
-func (s *Session) protocolRecipes() []protocol.Recipe {
-	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+func (s *Session) protocolRecipes() (recipes []protocol.Recipe, potionContainerChangeRecipes []protocol.PotionContainerChangeRecipe, potionRecipes []protocol.PotionRecipe) {
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
@@ -686,9 +692,34 @@ func (s *Session) protocolRecipes() []protocol.Recipe {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
+		case recipe.PotionContainerChange:
+			inputRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[0].Item())
+			ingredientRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[1].Item())
+			outputRuntimeID, _, _ := world.ItemRuntimeID(i.Output()[0].Item())
+
+			potionContainerChangeRecipes = append(potionContainerChangeRecipes, protocol.PotionContainerChangeRecipe{
+				InputItemID:   inputRuntimeID,
+				ReagentItemID: ingredientRuntimeID,
+				OutputItemID:  outputRuntimeID,
+			})
+		case recipe.Potion:
+			inputRuntimeID, inputMeta, _ := world.ItemRuntimeID(i.Input()[0].Item())
+			ingredientRuntimeID, ingredientMeta, _ := world.ItemRuntimeID(i.Input()[1].Item())
+			outputRuntimeID, outputMeta, _ := world.ItemRuntimeID(i.Output()[0].Item())
+
+			potionRecipes = append(potionRecipes, protocol.PotionRecipe{
+				InputPotionID:       inputRuntimeID,
+				InputPotionMetadata: int32(inputMeta),
+
+				ReagentItemID:       ingredientRuntimeID,
+				ReagentItemMetadata: int32(ingredientMeta),
+
+				OutputPotionID:       outputRuntimeID,
+				OutputPotionMetadata: int32(outputMeta),
+			})
 		}
 	}
-	return recipes
+	return recipes, potionContainerChangeRecipes, potionRecipes
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
