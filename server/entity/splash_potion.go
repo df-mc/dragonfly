@@ -153,6 +153,10 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 			if b, ok := w.Block(pos).(SplashableBlock); ok {
 				b.Splash(pos, s, s.Type())
 			}
+		case trace.EntityResult:
+			if e, ok := res.Entity().(SplashableEntity); ok {
+				e.Splash(s, s.Type())
+			}
 		}
 
 		w.AddParticle(m.pos, particle.Splash{Colour: colour})
