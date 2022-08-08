@@ -47,7 +47,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		c.Age++
 	} else if c.Age == 15 {
 		c.Age = 0
-		if supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) {
+		if c.CanGrowHere(pos.Side(cube.FaceDown), w) {
 			for y := 1; y < 3; y++ {
 				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
 					w.SetBlock(pos.Add(cube.Pos{0, y}), Cactus{Age: 0}, nil)
@@ -61,26 +61,22 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	w.SetBlock(pos, Cactus{Age: c.Age}, nil)
 }
 
-// CanGrowHere implements logic to check if cactus can live/grow here
+// CanGrowHere implements logic to check if cactus can live/grow here.
 func (c Cactus) CanGrowHere(pos cube.Pos, w *world.World) bool {
-	// check surroundings
 	for _, face := range cube.HorizontalFaces() {
 		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
 			return false
 		}
 	}
-	// placed on sand.
 	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
 		return true
 	}
 
-	// placed on one cactus
 	_, one := w.Block(pos.Side(cube.FaceDown)).(Cactus)
 	if one && supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 2}))) {
 		return true
 	}
 
-	// placed on two cactii
 	_, two := w.Block(pos.Side(cube.FaceDown)).(Cactus)
 	if one && two && supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 3}))) {
 		return true

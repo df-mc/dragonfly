@@ -14,11 +14,11 @@ type SugarCane struct {
 	empty
 	transparent
 
-	// Age is the growth state of suger cane. Values range from 0 to 15.
+	// Age is the growth state of sugar cane. Values range from 0 to 15.
 	Age int
 }
 
-// UseOnBlock handles making sure a neighbouring blocks contains water.
+// UseOnBlock ensures the placement of the block is OK.
 func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
@@ -60,25 +60,22 @@ func (c SugarCane) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	w.SetBlock(pos, SugarCane{Age: c.Age}, nil)
 }
 
-// CanGrowHere implements logic to check if sugar_cane can live/grow here
+// CanGrowHere implements logic to check if sugar cane can live/grow here.
 func (c SugarCane) CanGrowHere(pos cube.Pos, w *world.World) bool {
-	// placed on soil.
 	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
 		for _, face := range cube.HorizontalFaces() {
 			if _, ok := w.Block(pos.Side(face).Side(cube.FaceDown)).(Water); ok {
 				return true
 			}
 		}
-		return false // no water
+		return false
 	}
 
-	// placed on one SugarCane
 	_, one := w.Block(pos.Side(cube.FaceDown)).(SugarCane)
 	if one && supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 2}))) {
 		return true
 	}
 
-	// placed on two SugarCane
 	_, two := w.Block(pos.Side(cube.FaceDown)).(SugarCane)
 	if one && two && supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 3}))) {
 		return true
@@ -102,7 +99,7 @@ func (c SugarCane) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:reeds", map[string]any{"age": int32(c.Age)}
 }
 
-// allSugarCane returns all possible states of a suger cane block.
+// allSugarCane returns all possible states of a sugar cane block.
 func allSugarCane() (b []world.Block) {
 	for i := 0; i < 16; i++ {
 		b = append(b, SugarCane{Age: i})
