@@ -517,6 +517,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventBlastFurnaceUse
 	case sound.SmokerCrackle:
 		pk.SoundType = packet.SoundEventSmokerUse
+	case sound.PotionBrewed:
+		pk.SoundType = packet.SoundEventPotionBrewed
 	case sound.UseSpyglass:
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
@@ -715,6 +717,33 @@ func (s *Session) ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTim
 			WindowID: byte(s.openedWindowID.Load()),
 			Key:      packet.ContainerDataFurnaceLitDuration,
 			Value:    int32(maxFuelTime.Milliseconds() / 50),
+		})
+	}
+}
+
+// ViewBrewingUpdate updates a brewing stand for the associated session based on previous times.
+func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFuelAmount, fuelAmount, prevFuelTotal, fuelTotal int32) {
+	if prevBrewTime != brewTime {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataBrewingStandBrewTime,
+			Value:    int32(brewTime.Milliseconds() / 50),
+		})
+	}
+
+	if prevFuelAmount != fuelAmount {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataBrewingStandFuelAmount,
+			Value:    fuelAmount,
+		})
+	}
+
+	if prevFuelTotal != fuelTotal {
+		s.writePacket(&packet.ContainerSetData{
+			WindowID: byte(s.openedWindowID.Load()),
+			Key:      packet.ContainerDataBrewingStandFuelTotal,
+			Value:    fuelTotal,
 		})
 	}
 }

@@ -28,6 +28,8 @@ type Viewer interface {
 	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
 	// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
 	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
+	// ViewBrewingUpdate updates a brewing stand for the associated session based on previous times.
+	ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFuelAmount, fuelAmount, prevFuelTotal, fuelTotal int32)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
 	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]Block)
@@ -72,24 +74,25 @@ type NopViewer struct{}
 // Compile time check to make sure NopViewer implements Viewer.
 var _ Viewer = NopViewer{}
 
-func (NopViewer) ViewEntity(Entity)                                             {}
-func (NopViewer) HideEntity(Entity)                                             {}
-func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
-func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                         {}
-func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                         {}
-func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk, map[cube.Pos]Block)          {}
-func (NopViewer) ViewTime(int)                                                  {}
-func (NopViewer) ViewEntityItems(Entity)                                        {}
-func (NopViewer) ViewEntityArmour(Entity)                                       {}
-func (NopViewer) ViewEntityAction(Entity, EntityAction)                         {}
-func (NopViewer) ViewEntityState(Entity)                                        {}
-func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                             {}
-func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                   {}
-func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                          {}
-func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                         {}
-func (NopViewer) ViewEmote(Entity, uuid.UUID)                                   {}
-func (NopViewer) ViewSkin(Entity)                                               {}
-func (NopViewer) ViewWorldSpawn(cube.Pos)                                       {}
-func (NopViewer) ViewWeather(bool, bool)                                        {}
+func (NopViewer) ViewEntity(Entity)                                                          {}
+func (NopViewer) HideEntity(Entity)                                                          {}
+func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool)              {}
+func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                                      {}
+func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                                      {}
+func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk, map[cube.Pos]Block)                       {}
+func (NopViewer) ViewTime(int)                                                               {}
+func (NopViewer) ViewEntityItems(Entity)                                                     {}
+func (NopViewer) ViewEntityArmour(Entity)                                                    {}
+func (NopViewer) ViewEntityAction(Entity, EntityAction)                                      {}
+func (NopViewer) ViewEntityState(Entity)                                                     {}
+func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                                          {}
+func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                                {}
+func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                                       {}
+func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                                      {}
+func (NopViewer) ViewEmote(Entity, uuid.UUID)                                                {}
+func (NopViewer) ViewSkin(Entity)                                                            {}
+func (NopViewer) ViewWorldSpawn(cube.Pos)                                                    {}
+func (NopViewer) ViewWeather(bool, bool)                                                     {}
+func (NopViewer) ViewBrewingUpdate(time.Duration, time.Duration, int32, int32, int32, int32) {}
 func (NopViewer) ViewFurnaceUpdate(time.Duration, time.Duration, time.Duration, time.Duration, time.Duration, time.Duration) {
 }

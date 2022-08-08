@@ -44,6 +44,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	_ "unsafe"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players
@@ -404,8 +405,10 @@ func (srv *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (srv *Server) startListening() error {
-	texturePacksRequired := srv.c.Resources.Required
 	srv.makeItemComponents()
+	recipe_registerVanillaRecipes()
+
+	texturePacksRequired := srv.c.Resources.Required
 	if srv.c.Resources.AutoBuildPack {
 		if pack, ok := packbuilder.BuildResourcePack(); ok {
 			srv.resources = append(srv.resources, pack)
@@ -741,3 +744,7 @@ var (
 func init() {
 	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }
+
+//go:linkname recipe_registerVanillaRecipes github.com/df-mc/dragonfly/server/item/recipe.registerVanillaRecipes
+//noinspection ALL
+func recipe_registerVanillaRecipes()

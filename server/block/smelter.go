@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// smelter is a struct that may be embedded by blocks that can smelt blocks and items, such as blast furnaces, furnaces,
+// smelter is a struct that may be embedded by blocks that can smelt blocks and items, such as blast smelters, smelters,
 // and smokers.
 type smelter struct {
 	mu sync.Mutex
@@ -25,7 +25,7 @@ type smelter struct {
 	experience        int
 }
 
-// newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
+// newSmelter creates a new initialised smelter. The inventory is properly initialised.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
 	s.inventory = inventory.New(3, func(slot int, item item.Stack) {
@@ -39,7 +39,7 @@ func newSmelter() *smelter {
 }
 
 // Durations returns the remaining, maximum, and cook durations of the smelter.
-func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook time.Duration) {
+func (s *smelter) Durations() (remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.remainingDuration, s.maxDuration, s.cookDuration
@@ -61,19 +61,19 @@ func (s *smelter) ResetExperience() int {
 	return xp
 }
 
-// Inventory returns the inventory of the furnace.
+// Inventory returns the inventory of the smelter.
 func (s *smelter) Inventory() *inventory.Inventory {
 	return s.inventory
 }
 
-// AddViewer adds a viewer to the furnace, so that it is updated whenever the inventory of the furnace is changed.
+// AddViewer adds a viewer to the smelter, so that it is updated whenever the inventory of the smelter is changed.
 func (s *smelter) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.viewers[v] = struct{}{}
 }
 
-// RemoveViewer removes a viewer from the furnace, so that slot updates in the inventory are no longer sent to
+// RemoveViewer removes a viewer from the smelter, so that slot updates in the inventory are no longer sent to
 // it.
 func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 	s.mu.Lock()
@@ -95,7 +95,7 @@ func (s *smelter) setDurations(remaining, max, cook time.Duration) {
 	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
 }
 
-// tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
+// tickSmelting ticks the smelter, ensuring the necessary items exist in the smelter, and then processing all inputted
 // items for the necessary duration.
 func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, supported func(item.SmeltInfo) bool) bool {
 	s.mu.Lock()
@@ -173,7 +173,7 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 			s.cookDuration = 0
 		}
 	} else {
-		// We don't have any more remaining duration, so we need to reset the max duration and put out the furnace.
+		// We don't have any more remaining duration, so we need to reset the max duration and put out the smelter.
 		s.maxDuration, lit = 0, false
 	}
 

@@ -41,6 +41,11 @@ type Shaped struct {
 	shape Shape
 }
 
+// Shape returns the shape of the recipe.
+func (s Shaped) Shape() Shape {
+	return s.shape
+}
+
 // NewShaped creates a new shaped recipe and returns it. The recipe can only be crafted on the block passed in the
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
 // player's inventory. If nil is passed, the block will be autofilled as a crafting table. The inputs must always match
@@ -54,11 +59,6 @@ func NewShaped(input []item.Stack, output item.Stack, shape Shape, block string)
 			block:  block,
 		},
 	}
-}
-
-// Shape returns the shape of the recipe.
-func (r Shaped) Shape() Shape {
-	return r.shape
 }
 
 // PotionContainerChange is a recipe to convert a potion from one type to another, such as from a drinkable potion to a

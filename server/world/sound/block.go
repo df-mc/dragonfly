@@ -110,6 +110,9 @@ type BlastFurnaceCrackle struct{ sound }
 // SmokerCrackle is a sound played every one to five seconds from a smoker.
 type SmokerCrackle struct{ sound }
 
+// PotionBrewed is a sound played when a potion is brewed.
+type PotionBrewed struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

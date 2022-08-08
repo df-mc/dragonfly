@@ -33,6 +33,15 @@ func Filter[E any](s []E, c func(E) bool) []E {
 	return a
 }
 
+// Map transforms a slice of one type to another.
+func Map[E any, F any](s1 []E, iter func(E) F) []F {
+	s2 := make([]F, 0, len(s1))
+	for _, item := range s1 {
+		s2 = append(s2, iter(item))
+	}
+	return s2
+}
+
 // DeleteVal deletes the first occurrence of a value in a slice of the type E and returns a new slice without the value.
 func DeleteVal[E any](s []E, v E) []E {
 	if i := Index(s, v); i != -1 {
