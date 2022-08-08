@@ -62,7 +62,7 @@ func (w WrittenBook) DecodeNBT(data map[string]any) any {
 func (w WrittenBook) EncodeNBT() map[string]any {
 	pages := make([]any, 0, len(w.Pages))
 	for _, page := range w.Pages {
-		pages = append(pages, map[string]string{"text": page})
+		pages = append(pages, map[string]any{"text": page})
 	}
 	return map[string]any{
 		"pages":      pages,

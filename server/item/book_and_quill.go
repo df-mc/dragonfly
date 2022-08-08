@@ -51,7 +51,7 @@ func (w BookAndQuill) SwapPages(pageOne, pageTwo int) BookAndQuill {
 	if pageOne < 0 || pageTwo < 0 {
 		panic("negative page number")
 	}
-	if w.ValidPage(max(pageOne, pageTwo)) {
+	if !w.ValidPage(max(pageOne, pageTwo)) {
 		panic("invalid page number")
 	}
 	contentOne := w.Pages[pageOne]

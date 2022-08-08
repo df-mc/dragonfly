@@ -36,14 +36,23 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 	case packet.BookActionReplacePage:
 		book = book.SetPage(page, pk.Text)
 	case packet.BookActionAddPage:
-		if !book.ValidPage(page) {
-			return fmt.Errorf("may only come before a page which already exists")
-		}
 		if len(book.Pages) >= 50 {
 			return fmt.Errorf("unable to add page beyond 50")
 		}
+		if page >= len(book.Pages) && page <= len(book.Pages)+2 {
+			book = book.SetPage(page, "")
+			break
+		}
+		if !book.ValidPage(page) {
+			return fmt.Errorf("unable to insert page at %v", pk.PageNumber)
+		}
 		book = item.BookAndQuill{Pages: slices.Insert(book.Pages, page, pk.Text)}
 	case packet.BookActionDeletePage:
+		if page >= len(book.Pages) && page <= len(book.Pages)+2 {
+			if !book.ValidPage(page) {
+				break
+			}
+		}
 		if !book.ValidPage(page) {
 			return fmt.Errorf("page number %v does not exist", pk.PageNumber)
 		}
@@ -53,7 +62,7 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 			return fmt.Errorf("page number out of bounds")
 		}
 		if !book.ValidPage(page) || !book.ValidPage(int(pk.SecondaryPageNumber)) {
-			return fmt.Errorf("page number %v does not exist", pk.PageNumber)
+			break
 		}
 		book = book.SwapPages(page, int(pk.SecondaryPageNumber))
 	case packet.BookActionSign:
