@@ -30,8 +30,8 @@ func (w BookAndQuill) Page(page int) (string, bool) {
 // SetPage writes a page to the book, if the page doesn't exist it will be created. It will panic if the
 // text is longer then 256 characters. It will return a new book representing this data.
 func (w BookAndQuill) SetPage(page int, text string) BookAndQuill {
-	if page < 0 {
-		panic("negative page number")
+	if page < 0 || page >= 50 {
+		panic("invalid page number")
 	}
 	if len(text) > 256 {
 		panic("text longer then 256 bytes")
