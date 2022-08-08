@@ -61,7 +61,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	w.SetBlock(pos, Cactus{Age: c.Age}, nil)
 }
 
-// logic to check if cactus can live/grow here
+// CanGrowHere implements logic to check if cactus can live/grow here
 func (c Cactus) CanGrowHere(pos cube.Pos, w *world.World) bool {
 	// check surroundings
 	for _, face := range cube.HorizontalFaces() {

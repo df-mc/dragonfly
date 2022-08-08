@@ -9,7 +9,7 @@ import (
 	"math/rand"
 )
 
-// Suger cane is a plant block that generates naturally near water.
+// SugerCane is a plant block that generates naturally near water.
 type SugarCane struct {
 	empty
 	transparent
@@ -60,7 +60,7 @@ func (c SugarCane) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	w.SetBlock(pos, SugarCane{Age: c.Age}, nil)
 }
 
-// logic to check if sugar_cane can live/grow here
+// CanGrowHere implements logic to check if sugar_cane can live/grow here
 func (c SugarCane) CanGrowHere(pos cube.Pos, w *world.World) bool {
 	// placed on soil.
 	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
