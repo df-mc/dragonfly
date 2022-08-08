@@ -84,6 +84,17 @@ type Note struct {
 // ItemAdd is a sound played when an item is added to an item frame or campfire.
 type ItemAdd struct{ sound }
 
+// MusicDiscPlay is a sound played when a music disc has started playing in a jukebox.
+type MusicDiscPlay struct {
+	sound
+
+	// DiscType is the disc type of the music disc.
+	DiscType DiscType
+}
+
+// MusicDiscEnd is a sound played when a music disc has stopped playing in a jukebox.
+type MusicDiscEnd struct{ sound }
+
 // ItemFrameRemove is a sound played when an item is removed from an item frame.
 type ItemFrameRemove struct{ sound }
 

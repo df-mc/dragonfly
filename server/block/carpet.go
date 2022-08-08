@@ -19,7 +19,7 @@ type Carpet struct {
 
 // FlammabilityInfo ...
 func (c Carpet) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 60, true)
+	return newFlammabilityInfo(30, 20, true)
 }
 
 // SideClosed ...
