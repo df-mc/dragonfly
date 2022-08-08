@@ -93,15 +93,13 @@ func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
 }
 
 // Splash checks to see if the fire was splashed by a bottle and then extinguishes itself.
-func (c Campfire) Splash(pos cube.Pos, e world.Entity, t potion.Potion) {
-	if t != potion.Water() {
+func (c Campfire) Splash(_ world.Entity, w *world.World, pos cube.Pos, p potion.Potion) {
+	if p != potion.Water() {
 		// Water is the only potion that can extinguish a campfire.
 		return
 	}
 
-	w := e.World()
 	w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-
 	c.Extinguished = true
 	w.SetBlock(pos, c, nil)
 }
