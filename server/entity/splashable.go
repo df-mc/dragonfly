@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
@@ -16,6 +17,18 @@ import (
 type splashable struct {
 	m float64
 	t potion.Potion
+}
+
+// SplashableBlock is a block that can be splashed with a splash bottle.
+type SplashableBlock interface {
+	world.Block
+	Splash(e world.Entity, w *world.World, pos cube.Pos, p potion.Potion)
+}
+
+// SplashableEntity is an entity that can be splashed with a splash bottle.
+type SplashableEntity interface {
+	world.Entity
+	Splash(e world.Entity, w *world.World, pos mgl64.Vec3, p potion.Potion)
 }
 
 // Glint returns true if the splashable should render with glint.
@@ -67,24 +80,26 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 				splashed.AddEffect(effect.New(eff.Type().(effect.LastingType), eff.Level(), dur))
 			}
 		}
-	} else if s.t == potion.Water() {
-		switch result := res.(type) {
-		case trace.BlockResult:
-			blockPos := result.BlockPosition().Side(result.Face())
-			if w.Block(blockPos) == fire() {
-				w.SetBlock(blockPos, nil, nil)
+	}
+	switch result := res.(type) {
+	case trace.BlockResult:
+		pos := result.BlockPosition().Side(res.Face())
+		if b, ok := w.Block(pos).(SplashableBlock); ok {
+			if _, ok := b.Model().(model.Empty); ok {
+				b.Splash(e, w, pos, s.Type())
+				break
 			}
+		}
 
-			for _, f := range cube.HorizontalFaces() {
-				if h := blockPos.Side(f); w.Block(h) == fire() {
-					w.SetBlock(h, nil, nil)
-				}
-			}
-		case trace.EntityResult:
-			// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
+		pos = result.BlockPosition()
+		if b, ok := w.Block(pos).(SplashableBlock); ok {
+			b.Splash(e, w, pos, s.Type())
+		}
+	case trace.EntityResult:
+		if e, ok := result.Entity().(SplashableEntity); ok {
+			e.Splash(e, w, pos, s.Type())
 		}
 	}
-
 	w.AddParticle(pos, particle.Splash{Colour: colour})
 	w.PlaySound(pos, sound.GlassBreak{})
 }
