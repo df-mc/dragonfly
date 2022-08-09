@@ -59,7 +59,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			}
 		}
 	}
-	w.SetBlock(pos, Cactus{Age: c.Age}, nil)
+	w.SetBlock(pos, c, nil)
 }
 
 // CanGrowHere implements logic to check if cactus can live/grow here.

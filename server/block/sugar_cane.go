@@ -58,7 +58,7 @@ func (c SugarCane) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			}
 		}
 	}
-	w.SetBlock(pos, SugarCane{Age: c.Age}, nil)
+	w.SetBlock(pos, c, nil)
 }
 
 // CanGrowHere implements logic to check if sugar cane can live/grow here.
