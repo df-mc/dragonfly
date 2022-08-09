@@ -25,7 +25,7 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	if !used {
 		return false
 	}
-	if !c.CanGrowHere(pos, w) {
+	if !c.CanGrowHere(pos, w, 2) {
 		return false
 	}
 
@@ -35,9 +35,10 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // NeighbourUpdateTick ...
 func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !c.CanGrowHere(pos, w) {
+	if !c.CanGrowHere(pos, w, 2) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
+		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 
@@ -47,7 +48,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		c.Age++
 	} else if c.Age == 15 {
 		c.Age = 0
-		if c.CanGrowHere(pos.Side(cube.FaceDown), w) {
+		if c.CanGrowHere(pos.Side(cube.FaceDown), w, 0) {
 			for y := 1; y < 3; y++ {
 				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
 					w.SetBlock(pos.Add(cube.Pos{0, y}), Cactus{Age: 0}, nil)
@@ -62,27 +63,16 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // CanGrowHere implements logic to check if cactus can live/grow here.
-func (c Cactus) CanGrowHere(pos cube.Pos, w *world.World) bool {
+func (c Cactus) CanGrowHere(pos cube.Pos, w *world.World, max int) bool {
 	for _, face := range cube.HorizontalFaces() {
 		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
 			return false
 		}
 	}
-	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
-		return true
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus); ok && max > 0 {
+		return c.CanGrowHere(pos.Side(cube.FaceDown), w, max-1)
 	}
-
-	_, one := w.Block(pos.Side(cube.FaceDown)).(Cactus)
-	if one && supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 2}))) {
-		return true
-	}
-
-	_, two := w.Block(pos.Side(cube.FaceDown)).(Cactus)
-	if one && two && supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 3}))) {
-		return true
-	}
-
-	return false
+	return supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1})))
 }
 
 // EntityInside ...
