@@ -42,10 +42,11 @@ type TickerEntity interface {
 	Tick(w *World, current int64)
 }
 
-type NetworkedEntity interface {
+// NetworkEncodeableEntity is an Entity where the save ID and network ID is not the same.
+type NetworkEncodeableEntity interface {
 	Entity
-	// Returns the network type ID of the entity. This is NOT the save ID.
-	NetworkTypeID() string
+	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	NetworkEncodeEntity() string
 }
 
 // SaveableEntity is an Entity that can be saved and loaded with the World it was added to. These entities can be

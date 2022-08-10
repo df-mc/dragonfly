@@ -111,8 +111,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 	case *entity.Text:
 		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
 	}
-	if v, ok := e.(world.NetworkedEntity); ok {
-		id = v.NetworkTypeID()
+	if v, ok := e.(world.NetworkEncodeableEntity); ok {
+		id = v.NetworkEncodeEntity()
 	}
 
 	var vel mgl64.Vec3
