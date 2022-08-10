@@ -104,7 +104,7 @@ type ItemFrameRotate struct{ sound }
 // FurnaceCrackle is a sound played every one to five seconds from a furnace.
 type FurnaceCrackle struct{ sound }
 
-// CampfireCrackle is a sound played every one to five seconds from a campfire
+// CampfireCrackle is a sound played every one to five seconds from a campfire.
 type CampfireCrackle struct{ sound }
 
 // BlastFurnaceCrackle is a sound played every one to five seconds from a blast furnace.
