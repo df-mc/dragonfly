@@ -29,7 +29,7 @@ type SplashableBlock interface {
 // SplashableEntity is an entity that can be splashed with a splash bottle.
 type SplashableEntity interface {
 	world.Entity
-	// Splash is called when a type that implements splashable splashes onto a block.
+	// Splash is called when a type that implements splashable splashes onto an entity.
 	Splash(w *world.World, pos mgl64.Vec3, p potion.Potion)
 }
 
