@@ -93,6 +93,11 @@ func (c SugarCane) canGrowHere(pos cube.Pos, w *world.World, recursive bool) boo
 	return false
 }
 
+// HasLiquidDrops ...
+func (c SugarCane) HasLiquidDrops() bool {
+	return true
+}
+
 // BreakInfo ...
 func (c SugarCane) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(c))
