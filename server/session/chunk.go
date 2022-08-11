@@ -240,7 +240,8 @@ func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 	return true
 }
 
-// emptyChunkData is used to store the empty chunk data and subchunk count for each dimension.
+// emptyChunkData is used to store the empty chunk data and subchunk count for each dimension. This saves bandwidth
+// and fixes some chunk loading issues.
 type emptyChunkData struct {
 	payload       []byte
 	subChunkCount uint32
