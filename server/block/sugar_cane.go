@@ -85,8 +85,10 @@ func (c SugarCane) canGrowHere(pos cube.Pos, w *world.World, recursive bool) boo
 
 	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
 		for _, face := range cube.HorizontalFaces() {
-			if _, ok := w.Block(pos.Side(face).Side(cube.FaceDown)).(Water); ok {
-				return true
+			if liquid, ok := w.Liquid(pos.Side(face).Side(cube.FaceDown)); ok {
+				if _, ok := liquid.(Water); ok {
+					return true
+				}
 			}
 		}
 	}
