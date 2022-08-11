@@ -7,7 +7,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// BookEditHandler handles the BookEdit Packet
+// BookEditHandler handles the BookEdit packet.
 type BookEditHandler struct{}
 
 // Handle ...
