@@ -402,8 +402,22 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
 // immediately.
 func (s *Session) changeDimension(dim int32, silent bool) {
-	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	pos := vec64To32(s.c.Position().Add(entityOffset(s.c)))
+	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: pos})
 	s.writePacket(&packet.StopSound{StopAll: silent})
+
+	chunkX := int32(pos.X()) >> 4
+	chunkZ := int32(pos.Z()) >> 4
+	for x := int32(-1); x <= 1; x++ {
+		for z := int32(-1); z <= 1; z++ {
+			_ = s.conn.WritePacket(&packet.LevelChunk{
+				Position:      protocol.ChunkPos{chunkX + x, chunkZ + z},
+				SubChunkCount: 1,
+				RawPayload:    emptyChunk(dim),
+			})
+		}
+	}
+
 	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 }
 
