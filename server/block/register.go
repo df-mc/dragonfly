@@ -177,16 +177,16 @@ func init() {
 	registerAll(allStainedTerracotta())
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
-	registerAll(allSugarCane())
 	registerAll(allStonecutters())
+	registerAll(allSugarCane())
 	registerAll(allTallGrass())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
+	registerAll(allWalls())
 	registerAll(allWater())
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWool())
-	registerAll(allWalls())
 }
 
 func init() {
