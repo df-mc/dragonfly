@@ -408,13 +408,13 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 
 	chunkX := int32(pos.X()) >> 4
 	chunkZ := int32(pos.Z()) >> 4
-	chunkData := emptyChunk(dim)
+	chunk := emptyChunk(dim)
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
 			_ = s.conn.WritePacket(&packet.LevelChunk{
 				Position:      protocol.ChunkPos{chunkX + x, chunkZ + z},
-				SubChunkCount: chunkData.subChunkCount,
-				RawPayload:    chunkData.payload,
+				SubChunkCount: chunk.subChunkCount,
+				RawPayload:    chunk.payload,
 			})
 		}
 	}
