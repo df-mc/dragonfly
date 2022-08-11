@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Components returns all the components of the given custom block group. If the group; has no components, a nil map
+// Components returns all the components of the given custom block group. If the group has no components, a nil map
 // and false are returned.
 func Components(identifier string, group []world.CustomBlock) (map[string]any, error) {
 	if len(group) == 0 {
