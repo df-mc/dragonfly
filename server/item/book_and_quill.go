@@ -55,7 +55,7 @@ func (w BookAndQuill) SwapPages(pageOne, pageTwo int) BookAndQuill {
 		panic("invalid page number")
 	}
 	temp := w.Pages[pageOne]
-	w.Pages[pageOne] = w.Pages[pageTwo] 
+	w.Pages[pageOne] = w.Pages[pageTwo]
 	w.Pages[pageTwo] = temp
 	return w
 }
