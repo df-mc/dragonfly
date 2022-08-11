@@ -120,4 +120,6 @@ type data struct {
 	WorldVersion                   int32          `nbt:"WorldVersion"`
 	RespawnBlocksExplode           bool           `nbt:"respawnblocksexplode"`
 	ShowBorderEffect               bool           `nbt:"showbordereffect"`
+	PermissionsLevel               int32          `nbt:"permissionsLevel"`
+	PlayerPermissionsLevel         int32          `nbt:"playerPermissionsLevel"`
 }

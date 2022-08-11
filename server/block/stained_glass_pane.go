@@ -11,15 +11,10 @@ type StainedGlassPane struct {
 	transparent
 	thin
 	clicksAndSticks
+	sourceWaterDisplacer
 
 	// Colour specifies the colour of the block.
 	Colour item.Colour
-}
-
-// CanDisplace ...
-func (p StainedGlassPane) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

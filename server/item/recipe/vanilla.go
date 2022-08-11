@@ -1,12 +1,10 @@
 package recipe
 
 import (
+	_ "embed"
 	// Ensure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
 	_ "github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
-
-	_ "embed"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -15,6 +13,8 @@ var (
 	vanillaCraftingData []byte
 	//go:embed smithing_data.nbt
 	vanillaSmithingData []byte
+	//go:embed stonecutter_data.nbt
+	vanillaStonecutterData []byte
 )
 
 // shapedRecipe is a recipe that must be crafted in a specific shape.
@@ -49,18 +49,22 @@ func init() {
 		panic(err)
 	}
 
-	for _, s := range append(craftingRecipes.Shapeless, smithingRecipes...) {
+	var stonecutterRecipes []shapelessRecipe
+	if err := nbt.Unmarshal(vanillaStonecutterData, &stonecutterRecipes); err != nil {
+		panic(err)
+	}
+
+	for _, s := range append(craftingRecipes.Shapeless, append(smithingRecipes, stonecutterRecipes...)...) {
 		input, ok := s.Input.Stacks()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
 			continue
 		}
-		b, _ := world.BlockByName("minecraft:"+s.Block, nil)
 		Register(Shapeless{recipe{
 			input:    input,
 			output:   output,
-			block:    b,
+			block:    s.Block,
 			priority: uint32(s.Priority),
 		}})
 	}
@@ -72,13 +76,12 @@ func init() {
 			// This can be expected to happen - refer to the comment above.
 			continue
 		}
-		b, _ := world.BlockByName("minecraft:"+s.Block, nil)
 		Register(Shaped{
 			shape: Shape{int(s.Width), int(s.Height)},
 			recipe: recipe{
 				input:    input,
 				output:   output,
-				block:    b,
+				block:    s.Block,
 				priority: uint32(s.Priority),
 			},
 		})

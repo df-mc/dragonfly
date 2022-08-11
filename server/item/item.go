@@ -89,6 +89,11 @@ type Consumer interface {
 	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 	// if the effects' levels are equal and the new effect has a longer duration.
 	AddEffect(e effect.Effect)
+	// RemoveEffect removes any effect that might currently be active on the Consumer.
+	RemoveEffect(e effect.Type)
+	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
+	// expired when returned.
+	Effects() []effect.Effect
 }
 
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
@@ -160,6 +165,10 @@ type User interface {
 	// Facing returns the direction that the user is facing.
 	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
+
+	UsingItem() bool
+	ReleaseItem()
+	UseItem()
 }
 
 // Carrier represents an entity that is able to carry an item.
@@ -170,17 +179,18 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast
 // to surrounding players.
 type BeaconPayment interface {
 	PayableForBeacon() bool
+}
+
+// nopReleasable represents a releasable item that does nothing.
+type nopReleasable struct{}
+
+func (nopReleasable) Release(Releaser, time.Duration, *UseContext) {}
+func (nopReleasable) Requirements() []Stack {
+	return []Stack{}
 }
 
 // defaultFood represents a consumable item with a default consumption duration.
@@ -249,4 +259,12 @@ func rgbaFromInt32(x int32) color.RGBA {
 	binary.BigEndian.PutUint32(b, uint32(x))
 
 	return color.RGBA{A: b[0], R: b[1], G: b[2], B: b[3]}
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }

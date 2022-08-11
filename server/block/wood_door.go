@@ -15,6 +15,7 @@ import (
 type WoodDoor struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
@@ -104,7 +105,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	d.Open = !d.Open
 	w.SetBlock(pos, d, nil)
 
@@ -122,12 +123,6 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Use
 // BreakInfo ...
 func (d WoodDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
-}
-
-// CanDisplace ...
-func (d WoodDoor) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // SideClosed ...

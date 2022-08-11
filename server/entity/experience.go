@@ -34,6 +34,7 @@ func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 	e.experience += amount
 	if e.experience < 0 {
 		e.experience = 0
+		e.d = 0
 	}
 	return progressFromExperience(e.total())
 }

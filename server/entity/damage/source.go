@@ -60,6 +60,9 @@ type (
 	// SourceFall is used for damage caused by falling.
 	SourceFall struct{}
 
+	// SourceGlide is used for damage caused by gliding into a block.
+	SourceGlide struct{}
+
 	// SourceLightning is used for damage caused by being struck by lightning.
 	SourceLightning struct{}
 
@@ -81,10 +84,15 @@ type (
 		// Block is the block that caused the damage.
 		Block world.Block
 	}
+
+	// SourceExplosion is used for damage caused by an explosion.
+	SourceExplosion struct{}
 )
 
 func (SourceFall) ReducedByArmour() bool                    { return false }
 func (SourceFall) ReducedByResistance() bool                { return true }
+func (SourceGlide) ReducedByArmour() bool                   { return false }
+func (SourceGlide) ReducedByResistance() bool               { return true }
 func (SourceLightning) ReducedByArmour() bool               { return true }
 func (SourceLightning) ReducedByResistance() bool           { return true }
 func (SourceEntityAttack) ReducedByArmour() bool            { return true }
@@ -115,3 +123,5 @@ func (SourceThorns) ReducedByResistance() bool              { return true }
 func (SourceThorns) ReducedByArmour() bool                  { return false }
 func (SourceBlock) ReducedByResistance() bool               { return true }
 func (SourceBlock) ReducedByArmour() bool                   { return true }
+func (SourceExplosion) ReducedByResistance() bool           { return true }
+func (SourceExplosion) ReducedByArmour() bool               { return true }
