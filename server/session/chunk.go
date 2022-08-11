@@ -256,6 +256,7 @@ func init() {
 	if !ok {
 		panic("cannot find air runtime ID")
 	}
+
 	for dim, chunkData := range map[world.Dimension]*emptyChunkData{
 		world.Overworld: &overworldEmptyChunk,
 		world.Nether:    &netherEmptyChunk,
