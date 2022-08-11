@@ -7,7 +7,7 @@ type WrittenBook struct {
 	Title string
 	// Author is the author of the book
 	Author string
-	// Generation is the generation of the book. The copy tier of the book. 0 = original, 1 = copy of original,
+	// Generation is the copy tier of the book. 0 = original, 1 = copy of original,
 	// 2 = copy of copy.
 	Generation WrittenBookGeneration
 	// Pages represents the pages within the book.
