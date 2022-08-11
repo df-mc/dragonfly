@@ -80,10 +80,7 @@ func registerBlockState(s blockState, order bool) {
 		sort.SliceStable(blocks, func(i, j int) bool {
 			nameOne, _ := blocks[i].EncodeBlock()
 			nameTwo, _ := blocks[j].EncodeBlock()
-			if nameOne == nameTwo {
-				return false
-			}
-			return fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
+			return nameOne == nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
 		})
 
 		for id, b := range blocks {
