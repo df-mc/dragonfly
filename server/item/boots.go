@@ -49,12 +49,12 @@ func (b Boots) RepairableBy(i Stack) bool {
 
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
-	switch b.Tier.(type) {
-	case ArmourTierLeather, ArmourTierGold, ArmourTierChain:
+	switch b.Tier.Name() {
+	case "leather", "gold", "chain":
 		return 1
-	case ArmourTierIron:
+	case "iron":
 		return 2
-	case ArmourTierDiamond, ArmourTierNetherite:
+	case "diamond", "netherite":
 		return 3
 	}
 	panic("invalid boots tier")
