@@ -71,6 +71,6 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 		_ = s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: item.OriginalGeneration()}, 1))
 		return nil
 	}
-	_ = s.inv.SetItem(slot, item.NewStack(book, 1))
+	_ = s.inv.SetItem(slot, duplicateStack(it, book))
 	return nil
 }
