@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"golang.org/x/exp/slices"
 )
 
 // BookEditHandler handles the BookEdit packet.
@@ -46,14 +45,14 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 		if _, ok := book.Page(page); !ok {
 			return fmt.Errorf("unable to insert page at %v", pk.PageNumber)
 		}
-		book = item.BookAndQuill{Pages: slices.Insert(book.Pages, page, pk.Text)}
+		book = book.InsertPage(page, pk.Text)
 	case packet.BookActionDeletePage:
 		if _, ok := book.Page(page); !ok {
 			// We break here instead of returning an error because the client can be a page or two ahead in the UI then
 			// the actual pages representation server side. The client still sends the deletion indexes.
 			break
 		}
-		book = item.BookAndQuill{Pages: slices.Delete(book.Pages, page, page+1)}
+		book = book.DeletePage(page)
 	case packet.BookActionSwapPages:
 		if pk.SecondaryPageNumber >= 50 {
 			return fmt.Errorf("page number out of bounds")

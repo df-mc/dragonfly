@@ -1,5 +1,7 @@
 package item
 
+import "golang.org/x/exp/slices"
+
 // BookAndQuill is an item used to write WrittenBook(s).
 type BookAndQuill struct {
 	// Pages represents the pages within the book.
@@ -18,6 +20,33 @@ func (w BookAndQuill) Page(page int) (string, bool) {
 		return "", false
 	}
 	return w.Pages[page], true
+}
+
+// DeletePage attempts to delete a page from the book.
+func (w BookAndQuill) DeletePage(page int) BookAndQuill {
+	if page < 0 || page >= 50 {
+		panic("invalid page number")
+	}
+	if _, ok := w.Page(page); !ok {
+		panic("cannot delete nonexistent page")
+	}
+	w.Pages = slices.Delete(w.Pages, page, page+1)
+	return w
+}
+
+// InsertPage attempts to insert a page within the book
+func (w BookAndQuill) InsertPage(page int, text string) BookAndQuill {
+	if page < 0 || page >= 50 {
+		panic("invalid page number")
+	}
+	if len(text) > 256 {
+		panic("text longer then 256 bytes")
+	}
+	if page > len(w.Pages) {
+		panic("unable to insert page at invalid position")
+	}
+	w.Pages = slices.Insert(w.Pages, page, text)
+	return w
 }
 
 // SetPage writes a page to the book, if the page doesn't exist it will be created. It will panic if the
