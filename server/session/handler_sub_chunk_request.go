@@ -12,6 +12,6 @@ type SubChunkRequestHandler struct{}
 // Handle ...
 func (*SubChunkRequestHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.SubChunkRequest)
-	s.ViewSubChunks(world.SubChunkPos(pk.Position), pk.Offsets)
+	s.ViewSubChunks(world.SubChunkPos(pk.Position), pk.Dimension, pk.Offsets)
 	return nil
 }
