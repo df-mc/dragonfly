@@ -11,12 +11,10 @@ func (w BookAndQuill) MaxCount() int {
 	return 1
 }
 
-// Page returns a specific page from the book, if that page doesn't exist it returns any empty string and false.
+// Page returns a specific page from the book and true when the page exists. It will otherwise return an empty string
+// and false.
 func (w BookAndQuill) Page(page int) (string, bool) {
-	if page < 0 {
-		return "", false
-	}
-	if len(w.Pages) <= page {
+	if page < 0 || len(w.Pages) <= page {
 		return "", false
 	}
 	return w.Pages[page], true

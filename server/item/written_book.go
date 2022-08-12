@@ -19,13 +19,10 @@ func (w WrittenBook) MaxCount() int {
 	return 1
 }
 
-// Page returns a specific page from the book. If the page exists, it will return the content and true, otherwise
-// it will return an empty string and false.
+// Page returns a specific page from the book and true when the page exists. It will otherwise return an empty string
+// and false.
 func (w WrittenBook) Page(page int) (string, bool) {
-	if page < 0 {
-		panic("negative page number")
-	}
-	if len(w.Pages) <= page {
+	if page < 0 || len(w.Pages) <= page {
 		return "", false
 	}
 	return w.Pages[page], true
