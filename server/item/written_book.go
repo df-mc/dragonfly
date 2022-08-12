@@ -1,11 +1,11 @@
 package item
 
-// WrittenBook is an item created after a book and quill is signed. It appears the same as a regular book, but
+// WrittenBook is the item created after a book and quill is signed. It appears the same as a regular book, but
 // without the quill, and has an enchanted-looking glint.
 type WrittenBook struct {
-	// Title is the title of the book
+	// Title is the title of the book.
 	Title string
-	// Author is the author of the book
+	// Author is the author of the book.
 	Author string
 	// Generation is the copy tier of the book. 0 = original, 1 = copy of original,
 	// 2 = copy of copy.
