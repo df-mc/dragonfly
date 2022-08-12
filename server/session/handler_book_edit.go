@@ -43,25 +43,27 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 			book = book.SetPage(page, "")
 			break
 		}
-		if !book.ValidPage(page) {
+		if _, ok := book.Page(page); !ok {
 			return fmt.Errorf("unable to insert page at %v", pk.PageNumber)
 		}
 		book = item.BookAndQuill{Pages: slices.Insert(book.Pages, page, pk.Text)}
 	case packet.BookActionDeletePage:
-		if page >= len(book.Pages) && page <= len(book.Pages)+2 {
-			if !book.ValidPage(page) {
-				break
-			}
-		}
-		if !book.ValidPage(page) {
-			return fmt.Errorf("page number %v does not exist", pk.PageNumber)
+		// We break here instead of returning an error because the client can be a page or two ahead in the UI then
+		// the actual pages representation server side. The client still sends the deletion indexes.
+		if _, ok := book.Page(page); !ok {
+			break
 		}
 		book = item.BookAndQuill{Pages: slices.Delete(book.Pages, page, page+1)}
 	case packet.BookActionSwapPages:
 		if pk.SecondaryPageNumber >= 50 {
 			return fmt.Errorf("page number out of bounds")
 		}
-		if !book.ValidPage(page) || !book.ValidPage(int(pk.SecondaryPageNumber)) {
+		_, ok := book.Page(page)
+		_, ok2 := book.Page(int(pk.SecondaryPageNumber))
+		// We break here instead of returning an error because the client can try to swap pages that don't exist.
+		// This happens as a result of the client being a page or two ahead in the UI then the actual pages
+		// representation server side. The client still sends the swap indexes.
+		if !ok || !ok2 {
 			break
 		}
 		book = book.SwapPages(page, int(pk.SecondaryPageNumber))

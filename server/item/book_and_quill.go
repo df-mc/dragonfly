@@ -11,15 +11,10 @@ func (w BookAndQuill) MaxCount() int {
 	return 1
 }
 
-// ValidPage checks to see whether a page exists or not.
-func (w BookAndQuill) ValidPage(page int) bool {
-	return page >= 0 && len(w.Pages) > page
-}
-
-// Page returns a specific page from the book. If the page does not exist
+// Page returns a specific page from the book, if that page doesn't exist it returns any empty string and false.
 func (w BookAndQuill) Page(page int) (string, bool) {
 	if page < 0 {
-		panic("negative page number")
+		return "", false
 	}
 	if len(w.Pages) <= page {
 		return "", false
@@ -36,7 +31,7 @@ func (w BookAndQuill) SetPage(page int, text string) BookAndQuill {
 	if len(text) > 256 {
 		panic("text longer then 256 bytes")
 	}
-	if !w.ValidPage(page) {
+	if _, ok := w.Page(page); !ok {
 		pages := make([]string, page+1)
 		copy(pages, w.Pages)
 		w.Pages = pages
@@ -51,7 +46,7 @@ func (w BookAndQuill) SwapPages(pageOne, pageTwo int) BookAndQuill {
 	if pageOne < 0 || pageTwo < 0 {
 		panic("negative page number")
 	}
-	if !w.ValidPage(max(pageOne, pageTwo)) {
+	if _, ok := w.Page(max(pageOne, pageTwo)); !ok {
 		panic("invalid page number")
 	}
 	temp := w.Pages[pageOne]
