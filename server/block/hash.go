@@ -458,7 +458,7 @@ func (Gravel) Hash() uint64 {
 }
 
 func (g Grindstone) Hash() uint64 {
-	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Direction)<<10
+	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Facing)<<10
 }
 
 func (h HayBale) Hash() uint64 {
