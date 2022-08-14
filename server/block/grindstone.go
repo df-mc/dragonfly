@@ -16,8 +16,8 @@ type Grindstone struct {
 
 	// Attach represents the attachment type of the Grindstone.
 	Attach GrindstoneAttachment
-	// Direction represents the direction the Grindstone is facing.
-	Direction cube.Direction
+	// Facing represents the direction the Grindstone is facing.
+	Facing cube.Direction
 }
 
 // BreakInfo ...
@@ -40,14 +40,12 @@ func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	if !used {
 		return false
 	}
-	if face == cube.FaceUp {
-		g.Direction = user.Facing().Opposite()
-	} else if face == cube.FaceDown {
-		g.Direction = user.Facing().Opposite()
+	g.Facing = user.Facing().Opposite()
+	if face == cube.FaceDown {
 		g.Attach = HangingGrindstoneAttachment()
-	} else {
+	} else if face != cube.FaceUp {
 		g.Attach = WallGrindstoneAttachment()
-		g.Direction = face.Direction()
+		g.Facing = face.Direction()
 	}
 	place(w, pos, g, user, ctx)
 	return placed(ctx)
@@ -55,7 +53,7 @@ func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // NeighbourUpdateTick ...
 func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	supportFace := g.Direction.Face().Opposite()
+	supportFace := g.Facing.Face().Opposite()
 	if g.Attach == HangingGrindstoneAttachment() {
 		supportFace = cube.FaceUp
 	} else if g.Attach == StandingGrindstoneAttachment() {
@@ -71,7 +69,7 @@ func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 func (g Grindstone) Model() world.BlockModel {
 	axis := cube.Y
 	if g.Attach == WallGrindstoneAttachment() {
-		axis = g.Direction.Face().Axis()
+		axis = g.Facing.Face().Axis()
 	}
 	return model.Grindstone{Axis: axis}
 }
@@ -80,7 +78,7 @@ func (g Grindstone) Model() world.BlockModel {
 func (g Grindstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grindstone", map[string]any{
 		"attachment": g.Attach.String(),
-		"direction":  int32(horizontalDirection(g.Direction)),
+		"direction":  int32(horizontalDirection(g.Facing)),
 	}
 }
 
@@ -93,7 +91,7 @@ func (g Grindstone) EncodeItem() (name string, meta int16) {
 func allGrindstones() (grindstones []world.Block) {
 	for _, a := range GrindstoneAttachments() {
 		for _, d := range cube.Directions() {
-			grindstones = append(grindstones, Grindstone{Attach: a, Direction: d})
+			grindstones = append(grindstones, Grindstone{Attach: a, Facing: d})
 		}
 	}
 	return

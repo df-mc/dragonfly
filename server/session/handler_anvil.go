@@ -58,7 +58,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !material.Empty() {
 		// First check if we are trying to repair the item with a material.
 		if repairable, ok := input.Item().(item.Repairable); ok && repairable.RepairableBy(material) {
-			result, actionCost, repairCount, err = anvilRepairWithMaterial(input, material, result)
+			result, actionCost, repairCount, err = repairItemWithMaterial(input, material, result)
 			if err != nil {
 				return err
 			}
@@ -76,12 +76,12 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			// If the material is another durable item, we just need to increase the durability of the result by the
 			// material's durability at 12%.
 			if durable && !enchantedBook {
-				result, actionCost = anvilRepairWithDurable(input, material, result)
+				result, actionCost = repairItemWithDurable(input, material, result)
 			}
 
 			// Merge enchantments on the material item onto the result item.
 			var hasCompatible, hasIncompatible bool
-			result, hasCompatible, hasIncompatible, actionCost = anvilMergeEnchantments(input, material, result, actionCost, enchantedBook)
+			result, hasCompatible, hasIncompatible, actionCost = mergeEnchantments(input, material, result, actionCost, enchantedBook)
 
 			// If we don't have any compatible enchantments and the input item isn't durable, then this is an invalid
 			// scenario, and we should return an error.
@@ -180,9 +180,9 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	return nil
 }
 
-// anvilRepairWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
+// repairItemWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
 // stack, the cost, and the repaired items count.
-func anvilRepairWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
+func repairItemWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
 	// Calculate the durability delta using the maximum durability and the current durability.
 	delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
 	if delta <= 0 {
@@ -199,8 +199,8 @@ func anvilRepairWithMaterial(input item.Stack, material item.Stack, result item.
 	return result, cost, count, nil
 }
 
-// anvilRepairWithDurable is a helper function that repairs an item with another durable item stack.
-func anvilRepairWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
+// repairItemWithDurable is a helper function that repairs an item with another durable item stack.
+func repairItemWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
 	durability := input.Durability() + durable.Durability() + input.MaxDurability()*12/100
 	if durability > input.MaxDurability() {
 		durability = input.MaxDurability()
@@ -215,9 +215,9 @@ func anvilRepairWithDurable(input item.Stack, durable item.Stack, result item.St
 	return result, cost
 }
 
-// anvilMergeEnchantments merges the enchantments of the material item stack onto the result item stack and returns the result
+// mergeEnchantments merges the enchantments of the material item stack onto the result item stack and returns the result
 // item stack, booleans indicating whether the enchantments had any compatible or incompatible enchantments, and the cost.
-func anvilMergeEnchantments(input item.Stack, material item.Stack, result item.Stack, cost int, enchantedBook bool) (item.Stack, bool, bool, int) {
+func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack, cost int, enchantedBook bool) (item.Stack, bool, bool, int) {
 	var hasCompatible, hasIncompatible bool
 	for _, enchant := range material.Enchantments() {
 		// First ensure that the enchantment type is compatible with the input item.

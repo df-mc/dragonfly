@@ -44,10 +44,13 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 		return fmt.Errorf("input item(s) are not single items")
 	}
 
-	resultStack := existingItem(firstInput, secondInput)
+	resultStack := nonZeroItem(firstInput, secondInput)
 	if !firstInput.Empty() && !secondInput.Empty() {
+		// We add the enchantments to the result stack in order to calculate the gained experience. These enchantments
+		// are stripped when creating the result.
 		resultStack = firstInput.WithEnchantments(secondInput.Enchantments()...)
 
+		// Merge the durability of the two input items at 5%.
 		maxDurability := firstInput.MaxDurability()
 		firstDurability, secondDurability := firstInput.Durability(), secondInput.Durability()
 
@@ -101,9 +104,9 @@ func stripPossibleEnchantments(stack item.Stack) item.Stack {
 	return stack
 }
 
-// existingItem returns the item.Stack that exists out of two input items. The function expects at least one of the
+// nonZeroItem returns the item.Stack that exists out of two input items. The function expects at least one of the
 // items to be non-empty.
-func existingItem(first, second item.Stack) item.Stack {
+func nonZeroItem(first, second item.Stack) item.Stack {
 	if first.Empty() {
 		return second
 	}
