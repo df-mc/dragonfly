@@ -608,13 +608,12 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	if slot > 8 {
 		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	// The user swapped changed held slots so stop using item right away.
-	s.c.ReleaseItem()
-
 	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
+	// The user swapped changed held slots so stop using item right away.
+	s.c.ReleaseItem()
 
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
