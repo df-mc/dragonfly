@@ -30,6 +30,13 @@ func (s *Session) entityHidden(e world.Entity) bool {
 	return ok
 }
 
+// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
+type NetworkEncodeableEntity interface {
+	Entity
+	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	NetworkEncodeEntity() string
+}
+
 // ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
 	if s.entityRuntimeID(e) == selfEntityRuntimeID {
@@ -111,7 +118,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	case *entity.Text:
 		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
 	}
-	if v, ok := e.(world.NetworkEncodeableEntity); ok {
+	if v, ok := e.(NetworkEncodeableEntity); ok {
 		id = v.NetworkEncodeEntity()
 	}
 
