@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -16,9 +15,6 @@ type ModalFormResponseHandler struct {
 	currentID atomic.Uint32
 }
 
-// nullBytes contains the word 'null' converted to a byte slice.
-var nullBytes = []byte("null\n")
-
 // Handle ...
 func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ModalFormResponse)
@@ -28,12 +24,12 @@ func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
 	delete(h.forms, pk.FormID)
 	h.mu.Unlock()
 
-	if !ok && bytes.Equal(pk.ResponseData, nullBytes) {
-		// Sometimes the client seems to send a second response with "null" as the response, which would
-		// cause the player to be kicked by the server. This should patch that.
+	if !ok && !pk.HasResponseData {
+		// Sometimes the client seems to send a second response with no data, which would cause the player to be kicked
+		// by the server. This should patch that.
 		return nil
 	}
-	if bytes.Equal(pk.ResponseData, nullBytes) || len(pk.ResponseData) == 0 {
+	if !pk.HasResponseData || len(pk.ResponseData) == 0 {
 		// The form was cancelled: The cross in the top right corner was clicked.
 		pk.ResponseData = nil
 	}
