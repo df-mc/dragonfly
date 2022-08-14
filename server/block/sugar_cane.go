@@ -50,7 +50,7 @@ func (c SugarCane) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		if c.canGrowHere(pos.Side(cube.FaceDown), w, false) {
 			for y := 1; y < 3; y++ {
 				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
-					w.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{Age: 0}, nil)
+					w.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
 					break
 				} else if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(SugarCane); !ok {
 					break
@@ -69,7 +69,7 @@ func (c SugarCane) BoneMeal(pos cube.Pos, w *world.World) bool {
 	if c.canGrowHere(pos.Side(cube.FaceDown), w, false) {
 		for y := 1; y < 3; y++ {
 			if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
-				w.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{Age: 0}, nil)
+				w.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
 			}
 		}
 		return true
@@ -86,9 +86,8 @@ func (c SugarCane) canGrowHere(pos cube.Pos, w *world.World, recursive bool) boo
 	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
 		for _, face := range cube.HorizontalFaces() {
 			if liquid, ok := w.Liquid(pos.Side(face).Side(cube.FaceDown)); ok {
-				if _, ok := liquid.(Water); ok {
-					return true
-				}
+				_, ok := liquid.(Water)
+				return ok
 			}
 		}
 	}
