@@ -22,19 +22,18 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
+// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
+type NetworkEncodeableEntity interface {
+	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	NetworkEncodeEntity() string
+}
+
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
 	_, ok := s.hiddenEntities[e]
 	s.entityMutex.RUnlock()
 	return ok
-}
-
-// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
-type NetworkEncodeableEntity interface {
-	Entity
-	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
-	NetworkEncodeEntity() string
 }
 
 // ViewEntity ...
