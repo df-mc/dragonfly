@@ -16,6 +16,15 @@ type Flame struct {
 	Colour color.RGBA
 }
 
+// Dust is a particle shown for redstone. It can have any colour specified with the Colour field.
+// If the colour is not specified, it will default to black.
+type Dust struct {
+	particle
+
+	// Colour is the colour of the Dust particle.
+	Colour color.RGBA
+}
+
 // BlockBreak is a particle sent when a block is broken. It represents a bunch of particles that are textured
 // like the block that the particle holds.
 type BlockBreak struct {
@@ -62,6 +71,15 @@ type DragonEggTeleport struct {
 
 // Evaporate is a particle that shows up when a water block evaporates
 type Evaporate struct{ particle }
+
+// WaterDrip is a particle that shows up when there is water above a block and it looks like a dripping effect.
+type WaterDrip struct{ particle }
+
+// LavaDrip is a particle that shows up when there is lava above a block and it looks like a dripping effect.
+type LavaDrip struct{ particle }
+
+// todo: this is actually called lava but looks like combustion and i have no idea what to do for the doc
+type Combustion struct{ particle }
 
 // particle serves as a base for all particles in this package.
 type particle struct{}
