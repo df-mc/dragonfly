@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -27,8 +31,21 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.Handle(&h{p: p})
+		p.SetGameMode(world.GameModeCreative)
+	}) {
 	}
+}
+
+type h struct {
+	player.NopHandler
+
+	p *player.Player
+}
+
+func (h *h) HandleMove(ctx *event.Context, pos mgl64.Vec3, _, _ float64) {
+	h.p.SendTip(pos)
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.

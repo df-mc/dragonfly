@@ -22,6 +22,9 @@ func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		if amount := rand.Intn(3); amount != 0 {
+			dropItem(w, item.NewStack(item.Stick{}, amount), pos.Vec3Centre())
+		}
 	}
 }
 
