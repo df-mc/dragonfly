@@ -78,8 +78,8 @@ type WaterDrip struct{ particle }
 // LavaDrip is a particle that shows up when there is lava above a block and it looks like a dripping effect.
 type LavaDrip struct{ particle }
 
-// todo: this is actually called lava but looks like combustion and i have no idea what to do for the doc
-type Combustion struct{ particle }
+// Lava is a particle that shows up randomly above lava.
+type Lava struct{ particle }
 
 // particle serves as a base for all particles in this package.
 type particle struct{}
