@@ -1,10 +1,9 @@
 package world
 
 import (
-	"io"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
+	"io"
 )
 
 // Entity represents an entity in the world, typically an object that may be moved around and can be
@@ -41,8 +40,6 @@ type TickerEntity interface {
 	// Tick ticks the entity with the current World and tick passed.
 	Tick(w *World, current int64)
 }
-
-
 
 // SaveableEntity is an Entity that can be saved and loaded with the World it was added to. These entities can be
 // registered on startup using RegisterEntity to allow loading them in a World.
