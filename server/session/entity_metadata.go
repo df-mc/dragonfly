@@ -29,6 +29,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	m.setFlag(dataKeyFlags, dataFlagCanClimb)
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
 		m.setFlag(dataKeyFlags, dataFlagSneaking)
+		if b, ok := e.(blocker); ok {
+			if _, ok = b.Blocking(); ok {
+				m.setFlag(dataKeyFlagsExtended, dataFlagBlocking)
+			}
+		}
 	}
 	if sp, ok := e.(sprinter); ok && sp.Sprinting() {
 		m.setFlag(dataKeyFlags, dataFlagSprinting)
@@ -142,10 +147,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 // setFlag sets a flag with a specific index in the int64 stored in the entity metadata map to the value
 // passed. It is typically used for entity metadata flags.
 func (m entityMetadata) setFlag(key uint32, index uint8) {
+	actualIndex := index % 64
 	if v, ok := m[key]; !ok {
-		m[key] = int64(0) ^ (1 << uint64(index))
+		m[key] = int64(0) ^ (1 << uint64(actualIndex))
 	} else {
-		m[key] = v.(int64) ^ (1 << uint64(index))
+		m[key] = v.(int64) ^ (1 << uint64(actualIndex))
 	}
 }
 
@@ -174,6 +180,7 @@ const (
 	dataKeyAreaEffectCloudParticleID           = 63
 	dataKeyAlwaysShowNameTag                   = 81
 	dataKeyScoreTag                            = 84
+	dataKeyFlagsExtended                       = 92
 	dataKeyAreaEffectCloudDuration             = 95
 	dataKeyAreaEffectCloudSpawnTime            = 96
 	dataKeyAreaEffectCloudRadiusPerTick        = 97
@@ -189,19 +196,21 @@ const (
 	dataFlagSprinting
 	dataFlagUsingItem
 	dataFlagInvisible
-	dataFlagIgnited           = 10
-	dataFlagCritical          = 13
-	dataFlagCanShowNameTag    = 14
-	dataFlagAlwaysShowNameTag = 15
-	dataFlagNoAI              = 16
-	dataFlagCanClimb          = 19
-	dataFlagGliding           = 32
-	dataFlagBreathing         = 35
-	dataFlagLinger            = 46
-	dataFlagHasCollision      = 47
-	dataFlagAffectedByGravity = 48
-	dataFlagEnchanted         = 51
-	dataFlagSwimming          = 56
+	dataFlagIgnited            = 10
+	dataFlagCritical           = 13
+	dataFlagCanShowNameTag     = 14
+	dataFlagAlwaysShowNameTag  = 15
+	dataFlagNoAI               = 16
+	dataFlagCanClimb           = 19
+	dataFlagGliding            = 32
+	dataFlagBreathing          = 35
+	dataFlagLinger             = 46
+	dataFlagHasCollision       = 47
+	dataFlagAffectedByGravity  = 48
+	dataFlagEnchanted          = 51
+	dataFlagSwimming           = 56
+	dataFlagBlocking           = 71
+	dataFlagTransitionBlocking = 72
 )
 
 type sneaker interface {
@@ -218,6 +227,10 @@ type swimmer interface {
 
 type glider interface {
 	Gliding() bool
+}
+
+type blocker interface {
+	Blocking() (bool, bool)
 }
 
 type breather interface {

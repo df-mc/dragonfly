@@ -68,8 +68,10 @@ type Player struct {
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
-	glideTicks   atomic.Int64
-	fireTicks    atomic.Int64
+	blockingDelayTicks atomic.Int64
+	glideTicks         atomic.Int64
+	fireTicks          atomic.Int64
+
 	fallDistance atomic.Float64
 
 	breathing         bool
@@ -545,9 +547,56 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		return 0, true
 	}
 
+	w, pos := p.World(), p.Position()
 	totalDamage := p.FinalDamageFrom(dmg, source)
-	damageLeft := totalDamage
+	if ok, _ := p.Blocking(); ok && source.ReducedByArmour() {
+		affected := true
+		if src, ok := source.(damage.SourceEntityAttack); ok {
+			if a, ok := src.Attacker.(world.Entity); ok {
+				diff := p.Position().Sub(a.Position()).Normalize()
+				diff[1] = 0
+				if diff.Dot(entity.DirectionVector(p)) >= 0.0 {
+					affected = false
+				}
+			}
+		}
+		if affected {
+			w.PlaySound(pos, sound.ShieldBlock{})
+			p.SetBlockingDelay(time.Millisecond * 250)
 
+			if src, ok := source.(damage.SourceEntityAttack); ok {
+				if l, ok := src.Attacker.(entity.Living); ok {
+					l.KnockBack(pos, 0.5, 0.4)
+				}
+				if a, ok := src.Attacker.(*Player); ok {
+					held, _ := a.HeldItems()
+					if _, ok := held.Item().(item.Axe); ok {
+						p.SetBlockingDelay(time.Second * 5)
+					}
+				}
+			}
+			if src, ok := source.(damage.SourceProjectile); ok {
+				if p, ok := src.Projectile.(interface {
+					Velocity() mgl64.Vec3
+					SetVelocity(mgl64.Vec3)
+				}); ok {
+					p.SetVelocity(p.Velocity().Mul(-1))
+				}
+			}
+			if dmg >= 3.0 {
+				i := int(math.Ceil(totalDamage))
+				held, other := p.HeldItems()
+				if _, ok := held.Item().(item.Shield); ok {
+					p.SetHeldItems(p.damageItem(held, i), other)
+				} else {
+					p.SetHeldItems(held, p.damageItem(other, i))
+				}
+			}
+			return 0, true
+		}
+	}
+
+	damageLeft := totalDamage
 	if a := p.Absorption(); a > 0 {
 		if damageLeft > a {
 			damageLeft -= a
@@ -565,7 +614,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		var damageToAttacker int
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
-		thornsArmour := map[int]item.Stack{}
+		thornsArmour := make(map[int]item.Stack)
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {
 				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < float64(e.Level())*0.15 {
@@ -600,7 +649,6 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		}
 	}
 
-	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
@@ -968,8 +1016,8 @@ func (p *Player) StopSprinting() {
 	if !p.sprinting.CAS(true, false) {
 		return
 	}
-	p.SetSpeed(p.Speed() / 1.3)
 
+	p.SetSpeed(p.Speed() / 1.3)
 	p.updateState()
 }
 
@@ -1079,6 +1127,18 @@ func (p *Player) StopFlying() {
 	p.session().SendGameMode(p.GameMode())
 }
 
+// Blocking returns true if the player is currently blocking with a shield. The first boolean is true if the player was
+// holding a shield. The second boolean is true if the player was performing the necessary actions in order to block.
+func (p *Player) Blocking() (bool, bool) {
+	if p.BlockingDelay() > 0 || !p.sneaking.Load() || p.usingItem.Load() {
+		return false, false
+	}
+	held, other := p.HeldItems()
+	_, heldShield := held.Item().(item.Shield)
+	_, otherShield := other.Item().(item.Shield)
+	return heldShield || otherShield, true
+}
+
 // Jump makes the player jump if they are on ground. It exhausts the player by 0.05 food points, an additional 0.15
 // is exhausted if the player is sprint jumping.
 func (p *Player) Jump() {
@@ -1164,6 +1224,11 @@ func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks.Load()) * time.Second / 20
 }
 
+// BlockingDelay ...
+func (p *Player) BlockingDelay() time.Duration {
+	return time.Duration(p.blockingDelayTicks.Load()) * time.Second / 20
+}
+
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
 	ticks := int64(duration.Seconds() * 20)
@@ -1172,6 +1237,15 @@ func (p *Player) SetOnFire(duration time.Duration) {
 	}
 	p.fireTicks.Store(ticks)
 	p.updateState()
+}
+
+// SetBlockingDelay ...
+func (p *Player) SetBlockingDelay(duration time.Duration) {
+	blocking, _ := p.Blocking()
+	p.blockingDelayTicks.Store(int64(duration.Seconds() * 20))
+	if blocking {
+		p.updateState()
+	}
 }
 
 // Extinguish ...
@@ -1345,11 +1419,11 @@ func (p *Player) UseItem() {
 			return
 		}
 		p.SetHeldItems(p.subtractItem(i, 1), left)
+		w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 
 		useCtx := p.useContext()
 		useCtx.NewItem = usable.Consume(w, p)
 		p.addNewItem(useCtx)
-		w.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
 
@@ -1360,6 +1434,7 @@ func (p *Player) UseItem() {
 // the item started being used.
 func (p *Player) ReleaseItem() {
 	if !p.usingItem.CAS(true, false) || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+		p.updateState()
 		return
 	}
 	ctx := p.useContext()
@@ -2290,6 +2365,12 @@ func (p *Player) Tick(w *world.World, current int64) {
 			p.Hurt(1, damage.SourceFireTick{})
 		}
 	}
+	if p.BlockingDelay() > 0 {
+		p.blockingDelayTicks.Sub(1)
+		if p.BlockingDelay() <= 0 {
+			p.SetBlockingDelay(0)
+		}
+	}
 
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
@@ -2657,6 +2738,17 @@ func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}
+
+	duration := time.Millisecond * 300
+	if e, ok := p.Effect(effect.Haste{}); ok {
+		duration -= time.Duration(e.Level()) * time.Millisecond * 50
+	} else if e, ok = p.Effect(effect.MiningFatigue{}); ok {
+		duration += time.Duration(e.Level()*2) * time.Millisecond * 50
+	}
+	if duration > 0 {
+		p.SetBlockingDelay(duration)
+	}
+
 	for _, v := range p.viewers() {
 		v.ViewEntityAction(p, entity.SwingArmAction{})
 	}

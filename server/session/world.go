@@ -673,6 +673,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		}
 	case sound.MusicDiscEnd:
 		pk.SoundType = packet.SoundEventRecordNull
+	case sound.ShieldBlock:
+		pk.SoundType = packet.SoundEventShieldBlock
 	case sound.FireCharge:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundBlazeFireball,
