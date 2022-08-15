@@ -559,7 +559,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 	s := session.New(conn, srv.c.Players.MaximumChunkRadius, srv.log, &srv.joinMessage, &srv.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.createSkin(conn.ClientData()), s, pos, data)
 
-	s.Spawn(p, w, gm, srv.handleSessionClose)
+	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
 	srv.pwg.Add(1)
 	return s
 }
