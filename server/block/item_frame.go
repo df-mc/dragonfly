@@ -150,10 +150,14 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // NeighbourUpdateTick ...
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if (w.Block(pos.Side(i.Facing)).Model() == model.Empty{}) {
+	if _, ok := w.Block(pos.Side(i.Facing)).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: i})
+		dropItem(w, item.NewStack(i, 1), pos.Vec3Centre())
+		if !i.Item.Empty() {
+			dropItem(w, i.Item, pos.Vec3Centre())
+		}
 	}
 }
 
