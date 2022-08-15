@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand"
@@ -14,6 +15,7 @@ import (
 type SeaPickle struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// AdditionalCount is the amount of additional sea pickles clustered together.
 	AdditionalCount int
@@ -45,7 +47,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 	if s.AdditionalCount != 3 {
 		s.AdditionalCount = 3
-		w.PlaceBlock(pos, s)
+		w.SetBlock(pos, s, nil)
 	}
 
 	for x := -2; x <= 2; x++ {
@@ -63,7 +65,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 				if coral, ok := w.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 					continue
 				}
-				w.PlaceBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1})
+				w.SetBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1}, nil)
 			}
 		}
 	}
@@ -79,7 +81,7 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		}
 
 		existing.AdditionalCount++
-		w.PlaceBlock(pos, existing)
+		w.SetBlock(pos, existing, nil)
 		ctx.CountSub = 1
 		return true
 	}
@@ -105,7 +107,8 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 // NeighbourUpdateTick ...
 func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !s.canSurvive(pos, w) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		return
 	}
 
@@ -115,19 +118,13 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	}
 	if s.Dead == alive {
 		s.Dead = !alive
-		w.PlaceBlock(pos, s)
+		w.SetBlock(pos, s, nil)
 	}
 }
 
 // HasLiquidDrops ...
 func (SeaPickle) HasLiquidDrops() bool {
 	return true
-}
-
-// CanDisplace ...
-func (SeaPickle) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...
@@ -148,14 +145,24 @@ func (s SeaPickle) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
 }
 
+// FlammabilityInfo ...
+func (SeaPickle) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(15, 100, true)
+}
+
+// SmeltInfo ...
+func (SeaPickle) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(item.Dye{Colour: item.ColourLime()}, 1), 0.1)
+}
+
 // EncodeItem ...
 func (SeaPickle) EncodeItem() (name string, meta int16) {
 	return "minecraft:sea_pickle", 0
 }
 
 // EncodeBlock ...
-func (s SeaPickle) EncodeBlock() (string, map[string]interface{}) {
-	return "minecraft:sea_pickle", map[string]interface{}{"cluster_count": int32(s.AdditionalCount), "dead_bit": s.Dead}
+func (s SeaPickle) EncodeBlock() (string, map[string]any) {
+	return "minecraft:sea_pickle", map[string]any{"cluster_count": int32(s.AdditionalCount), "dead_bit": s.Dead}
 }
 
 // allSeaPickles ...

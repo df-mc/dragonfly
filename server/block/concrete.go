@@ -26,8 +26,8 @@ func (c Concrete) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Concrete) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:concrete", map[string]interface{}{"color": c.Colour.String()}
+func (c Concrete) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:concrete", map[string]any{"color": c.Colour.String()}
 }
 
 // allConcrete returns concrete blocks with all possible colours.

@@ -30,6 +30,15 @@ type GlassBreak struct{ sound }
 // them turns into a solid block.
 type Fizz struct{ sound }
 
+// AnvilLand is played when an anvil lands on the ground.
+type AnvilLand struct{ sound }
+
+// AnvilUse is played when an anvil is used.
+type AnvilUse struct{ sound }
+
+// AnvilBreak is played when an anvil is broken.
+type AnvilBreak struct{ sound }
+
 // ChestOpen is played when a chest is opened.
 type ChestOpen struct{ sound }
 
@@ -57,6 +66,9 @@ type Click struct{ sound }
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 
+// TNT is a sound played when TNT is ignited.
+type TNT struct{ sound }
+
 // FireExtinguish is a sound played when a fire is extinguished.
 type FireExtinguish struct{ sound }
 
@@ -69,6 +81,17 @@ type Note struct {
 	Pitch int
 }
 
+// MusicDiscPlay is a sound played when a music disc has started playing in a jukebox.
+type MusicDiscPlay struct {
+	sound
+
+	// DiscType is the disc type of the music disc.
+	DiscType DiscType
+}
+
+// MusicDiscEnd is a sound played when a music disc has stopped playing in a jukebox.
+type MusicDiscEnd struct{ sound }
+
 // ItemFrameAdd is a sound played when an item is added to an item frame.
 type ItemFrameAdd struct{ sound }
 
@@ -77,6 +100,15 @@ type ItemFrameRemove struct{ sound }
 
 // ItemFrameRotate is a sound played when an item frame's item is rotated.
 type ItemFrameRotate struct{ sound }
+
+// FurnaceCrackle is a sound played every one to five seconds from a furnace.
+type FurnaceCrackle struct{ sound }
+
+// BlastFurnaceCrackle is a sound played every one to five seconds from a blast furnace.
+type BlastFurnaceCrackle struct{ sound }
+
+// SmokerCrackle is a sound played every one to five seconds from a smoker.
+type SmokerCrackle struct{ sound }
 
 // sound implements the world.Sound interface.
 type sound struct{}

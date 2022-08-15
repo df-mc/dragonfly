@@ -8,7 +8,7 @@ type Bricks struct {
 
 // BreakInfo ...
 func (b Bricks) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(30)
 }
 
 // EncodeItem ...
@@ -17,6 +17,6 @@ func (Bricks) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Bricks) EncodeBlock() (string, map[string]interface{}) {
+func (Bricks) EncodeBlock() (string, map[string]any) {
 	return "minecraft:brick_block", nil
 }

@@ -17,9 +17,16 @@ type DiamondOre struct {
 func (d DiamondOre) BreakInfo() BreakInfo {
 	i := newBreakInfo(d.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d))
-	i.XPDrops = XPDropRange{3, 7}
+	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d)).withXPDropRange(3, 7)
+	if d.Type == DeepslateOre() {
+		i = i.withBlastResistance(9)
+	}
 	return i
+}
+
+// SmeltInfo ...
+func (DiamondOre) SmeltInfo() item.SmeltInfo {
+	return newOreSmeltInfo(item.NewStack(item.Diamond{}, 1), 1)
 }
 
 // EncodeItem ...
@@ -28,6 +35,6 @@ func (d DiamondOre) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d DiamondOre) EncodeBlock() (string, map[string]interface{}) {
+func (d DiamondOre) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + d.Type.Prefix() + "diamond_ore", nil
 }

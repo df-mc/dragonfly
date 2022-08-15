@@ -15,7 +15,7 @@ type Prismarine struct {
 
 // BreakInfo ...
 func (p Prismarine) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p)).withBlastResistance(30)
 }
 
 // EncodeItem ...
@@ -24,8 +24,8 @@ func (p Prismarine) EncodeItem() (id string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p Prismarine) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:prismarine", map[string]interface{}{"prismarine_block_type": p.Type.String()}
+func (p Prismarine) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:prismarine", map[string]any{"prismarine_block_type": p.Type.String()}
 }
 
 // allPrismarine returns a list of all prismarine block variants.
@@ -33,6 +33,5 @@ func allPrismarine() (c []world.Block) {
 	for _, t := range PrismarineTypes() {
 		c = append(c, Prismarine{Type: t})
 	}
-
 	return
 }

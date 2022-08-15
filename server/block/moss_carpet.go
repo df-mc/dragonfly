@@ -11,12 +11,7 @@ import (
 type MossCarpet struct {
 	carpet
 	transparent
-}
-
-// CanDisplace ...
-func (MossCarpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	sourceWaterDisplacer
 }
 
 // SideClosed ...
@@ -32,7 +27,7 @@ func (MossCarpet) HasLiquidDrops() bool {
 // NeighbourUpdateTick ...
 func (MossCarpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.BreakBlockWithoutParticles(pos)
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -61,6 +56,6 @@ func (m MossCarpet) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (m MossCarpet) EncodeBlock() (string, map[string]interface{}) {
+func (m MossCarpet) EncodeBlock() (string, map[string]any) {
 	return "minecraft:moss_carpet", nil
 }

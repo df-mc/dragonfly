@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"image/color"
 )
 
 // Boots are a defensive item that may be equipped in the boots armour slot. They come in several tiers, like
@@ -25,27 +26,53 @@ func (b Boots) MaxCount() int {
 // DurabilityInfo ...
 func (b Boots) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability: int(b.Tier.BaseDurability + b.Tier.BaseDurability/5.5),
+		MaxDurability: int(b.Tier.BaseDurability() + b.Tier.BaseDurability()/5.5),
 		BrokenItem:    simpleItem(Stack{}),
 	}
 }
 
+// SmeltInfo ...
+func (b Boots) SmeltInfo() SmeltInfo {
+	switch b.Tier.(type) {
+	case ArmourTierIron, ArmourTierChain:
+		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
+	case ArmourTierGold:
+		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	}
+	return SmeltInfo{}
+}
+
+// RepairableBy ...
+func (b Boots) RepairableBy(i Stack) bool {
+	return armourTierRepairable(b.Tier)(i)
+}
+
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
-	switch b.Tier {
-	case ArmourTierLeather, ArmourTierGold, ArmourTierChain:
+	switch b.Tier.Name() {
+	case "leather", "gold", "chain":
 		return 1
-	case ArmourTierIron:
+	case "iron":
 		return 2
-	case ArmourTierDiamond, ArmourTierNetherite:
+	case "diamond", "netherite":
 		return 3
 	}
 	panic("invalid boots tier")
 }
 
+// Toughness ...
+func (b Boots) Toughness() float64 {
+	return b.Tier.Toughness()
+}
+
 // KnockBackResistance ...
 func (b Boots) KnockBackResistance() float64 {
-	return b.Tier.KnockBackResistance
+	return b.Tier.KnockBackResistance()
+}
+
+// EnchantmentValue ...
+func (b Boots) EnchantmentValue() int {
+	return b.Tier.EnchantmentValue()
 }
 
 // Boots ...
@@ -55,5 +82,24 @@ func (b Boots) Boots() bool {
 
 // EncodeItem ...
 func (b Boots) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + b.Tier.Name + "_boots", 0
+	return "minecraft:" + b.Tier.Name() + "_boots", 0
+}
+
+// DecodeNBT ...
+func (b Boots) DecodeNBT(data map[string]any) any {
+	if t, ok := b.Tier.(ArmourTierLeather); ok {
+		if v, ok := data["customColor"].(int32); ok {
+			t.Colour = rgbaFromInt32(v)
+			b.Tier = t
+		}
+	}
+	return b
+}
+
+// EncodeNBT ...
+func (b Boots) EncodeNBT() map[string]any {
+	if t, ok := b.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
+		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+	}
+	return nil
 }

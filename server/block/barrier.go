@@ -7,14 +7,9 @@ import (
 
 // Barrier is a transparent solid block used to create invisible boundaries.
 type Barrier struct {
+	sourceWaterDisplacer
 	transparent
 	solid
-}
-
-// CanDisplace ...
-func (Barrier) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -28,6 +23,6 @@ func (Barrier) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Barrier) EncodeBlock() (string, map[string]interface{}) {
+func (Barrier) EncodeBlock() (string, map[string]any) {
 	return "minecraft:barrier", nil
 }

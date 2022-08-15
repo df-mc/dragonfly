@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -32,7 +31,7 @@ func (w Water) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-	if flammable, ok := e.(entity.Flammable); ok {
+	if flammable, ok := e.(flammableEntity); ok {
 		flammable.Extinguish()
 	}
 }
@@ -66,6 +65,11 @@ func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 // LiquidFalling returns Water.Falling.
 func (w Water) LiquidFalling() bool {
 	return w.Falling
+}
+
+// BlastResistance always returns 500.
+func (Water) BlastResistance() float64 {
+	return 500
 }
 
 // HasLiquidDrops ...
@@ -125,26 +129,26 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 	}
 	if lava, ok := wo.Block(pos.Side(cube.FaceUp)).(Lava); ok {
 		ctx := event.C()
-		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{})
-		ctx.Continue(func() {
-			wo.PlaceBlock(pos, Stone{})
-			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-		})
+		if wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Stone{}); ctx.Cancelled() {
+			return false
+		}
+		wo.SetBlock(pos, Stone{}, nil)
+		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 		return true
 	} else if lava, ok := wo.Block(*flownIntoBy).(Lava); ok {
 		ctx := event.C()
-		wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Cobblestone{})
-		ctx.Continue(func() {
-			wo.PlaceBlock(*flownIntoBy, Cobblestone{})
-			wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-		})
+		if wo.Handler().HandleLiquidHarden(ctx, pos, w, lava, Cobblestone{}); ctx.Cancelled() {
+			return false
+		}
+		wo.SetBlock(*flownIntoBy, Cobblestone{}, nil)
+		wo.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 		return true
 	}
 	return false
 }
 
 // EncodeBlock ...
-func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
+func (w Water) EncodeBlock() (name string, properties map[string]any) {
 	if w.Depth < 1 || w.Depth > 8 {
 		panic("invalid water depth, must be between 1 and 8")
 	}
@@ -153,9 +157,9 @@ func (w Water) EncodeBlock() (name string, properties map[string]interface{}) {
 		v += 8
 	}
 	if w.Still {
-		return "minecraft:water", map[string]interface{}{"liquid_depth": int32(v)}
+		return "minecraft:water", map[string]any{"liquid_depth": int32(v)}
 	}
-	return "minecraft:flowing_water", map[string]interface{}{"liquid_depth": int32(v)}
+	return "minecraft:flowing_water", map[string]any{"liquid_depth": int32(v)}
 }
 
 // allWater returns a list of all water states.

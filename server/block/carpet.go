@@ -11,6 +11,7 @@ import (
 type Carpet struct {
 	carpet
 	transparent
+	sourceWaterDisplacer
 
 	// Colour is the colour of the carpet.
 	Colour item.Colour
@@ -18,13 +19,7 @@ type Carpet struct {
 
 // FlammabilityInfo ...
 func (c Carpet) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 60, true)
-}
-
-// CanDisplace ...
-func (Carpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	return newFlammabilityInfo(30, 20, true)
 }
 
 // SideClosed ...
@@ -43,8 +38,8 @@ func (c Carpet) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c Carpet) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:carpet", map[string]interface{}{"color": c.Colour.String()}
+func (c Carpet) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:carpet", map[string]any{"color": c.Colour.String()}
 }
 
 // HasLiquidDrops ...
@@ -54,8 +49,8 @@ func (Carpet) HasLiquidDrops() bool {
 
 // NeighbourUpdateTick ...
 func (Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Block(pos.Add(cube.Pos{0, -1})).(Air); ok {
-		w.BreakBlockWithoutParticles(pos)
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		w.SetBlock(pos, nil, nil)
 	}
 }
 
@@ -66,7 +61,7 @@ func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return
 	}
 
-	if _, ok := w.Block((cube.Pos{pos.X(), pos.Y() - 1, pos.Z()})).(Air); ok {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		return
 	}
 

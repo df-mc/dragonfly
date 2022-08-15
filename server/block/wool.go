@@ -35,8 +35,8 @@ func (w Wool) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (w Wool) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:wool", map[string]interface{}{"color": w.Colour.String()}
+func (w Wool) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:wool", map[string]any{"color": w.Colour.String()}
 }
 
 // allWool returns wool blocks with all possible colours.

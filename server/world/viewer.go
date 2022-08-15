@@ -5,13 +5,12 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"time"
 )
 
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
 // entities and the changes of blocks.
 type Viewer interface {
-	// Position returns the position of the viewer.
-	Position() mgl64.Vec3
 	// ViewEntity views the entity passed. It is called for every entity that the viewer may encounter in the
 	// world, either by moving entities or by moving the viewer using a world.Loader.
 	ViewEntity(e Entity)
@@ -23,16 +22,18 @@ type Viewer interface {
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool)
 	// ViewEntityVelocity views the velocity of an entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.
-	ViewEntityVelocity(e Entity, velocity mgl64.Vec3)
+	ViewEntityVelocity(e Entity, vel mgl64.Vec3)
 	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
 	// target position.
-	ViewEntityTeleport(e Entity, position mgl64.Vec3)
+	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
+	// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
+	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
-	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockNBT map[cube.Pos]Block)
+	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]Block)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
-	ViewTime(time int)
+	ViewTime(t int)
 	// ViewEntityItems views the items currently held by an entity that is able to equip items.
 	ViewEntityItems(e Entity)
 	// ViewEntityArmour views the items currently equipped as armour by the entity.
@@ -55,7 +56,7 @@ type Viewer interface {
 	// package, and include things such as a chest opening.
 	ViewBlockAction(pos cube.Pos, a BlockAction)
 	// ViewEmote views an emote being performed by another entity.
-	ViewEmote(player Entity, emote uuid.UUID)
+	ViewEmote(e Entity, emote uuid.UUID)
 	// ViewSkin views the current skin of a player.
 	ViewSkin(e Entity)
 	// ViewWorldSpawn views the current spawn location of the world.
@@ -68,11 +69,9 @@ type Viewer interface {
 // prevent having to implement all of Viewer's methods.
 type NopViewer struct{}
 
+// Compile time check to make sure NopViewer implements Viewer.
 var _ Viewer = NopViewer{}
 
-// Position returns an empty mgl64.Vec3. We can do this because this position is only used for checking if a chunk
-// should have random block ticking, which is generally not desirable with a NopViewer anyway.
-func (NopViewer) Position() mgl64.Vec3                                          { return mgl64.Vec3{} }
 func (NopViewer) ViewEntity(Entity)                                             {}
 func (NopViewer) HideEntity(Entity)                                             {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
@@ -92,3 +91,5 @@ func (NopViewer) ViewEmote(Entity, uuid.UUID)                                   
 func (NopViewer) ViewSkin(Entity)                                               {}
 func (NopViewer) ViewWorldSpawn(cube.Pos)                                       {}
 func (NopViewer) ViewWeather(bool, bool)                                        {}
+func (NopViewer) ViewFurnaceUpdate(time.Duration, time.Duration, time.Duration, time.Duration, time.Duration, time.Duration) {
+}

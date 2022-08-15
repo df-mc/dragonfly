@@ -3,10 +3,10 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -16,6 +16,7 @@ import (
 type ItemFrame struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the direction from the frame to the block.
 	Facing cube.Face
@@ -31,21 +32,21 @@ type ItemFrame struct {
 }
 
 // Activate ...
-func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
+func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if !i.Item.Empty() {
 		// TODO: Item frames with maps can only be rotated four times.
 		i.Rotations = (i.Rotations + 1) % 8
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRotate{})
-	} else if held, other := u.HeldItems(); !held.Empty() {
+	} else if held, _ := u.HeldItems(); !held.Empty() {
 		i.Item = held.Grow(-held.Count() + 1)
 		// TODO: When maps are implemented, check the item is a map, and if so, display the large version of the frame.
-		u.SetHeldItems(held.Grow(-1), other)
+		ctx.SubtractFromCount(1)
 		w.PlaySound(pos.Vec3Centre(), sound.ItemFrameAdd{})
 	} else {
 		return true
 	}
 
-	w.SetBlock(pos, i)
+	w.SetBlock(pos, i, nil)
 	return true
 }
 
@@ -59,14 +60,12 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 		GameMode() world.GameMode
 	}); ok {
 		if rand.Float64() <= i.DropChance && !g.GameMode().CreativeInventory() {
-			it := entity.NewItem(i.Item, pos.Vec3Centre())
-			it.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-			w.AddEntity(it)
+			dropItem(w, i.Item, pos.Vec3Centre())
 		}
 	}
 	i.Item, i.Rotations = item.Stack{}, 0
 	w.PlaySound(pos.Vec3Centre(), sound.ItemFrameRemove{})
-	w.SetBlock(pos, i)
+	w.SetBlock(pos, i, nil)
 }
 
 // UseOnBlock ...
@@ -75,7 +74,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	if !used {
 		return false
 	}
-	if (w.Block(pos.Side(face.Opposite())).Model() == model.Empty{}) {
+	if _, ok := w.Block(pos.Side(face.Opposite())).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
 		return false
 	}
@@ -88,7 +87,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(i))
+	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(i))
 }
 
 // EncodeItem ...
@@ -100,12 +99,12 @@ func (i ItemFrame) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}) {
+func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 	name = "minecraft:frame"
 	if i.Glowing {
 		name = "minecraft:glow_frame"
 	}
-	return name, map[string]interface{}{
+	return name, map[string]any{
 		"facing_direction":     int32(i.Facing.Opposite()),
 		"item_frame_map_bit":   uint8(0), // TODO: When maps are added, set this to true if the item is a map.
 		"item_frame_photo_bit": uint8(0), // Only implemented in Education Edition.
@@ -113,16 +112,16 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]interface{}
 }
 
 // DecodeNBT ...
-func (i ItemFrame) DecodeNBT(data map[string]interface{}) interface{} {
-	i.DropChance = float64(nbtconv.MapFloat32(data, "ItemDropChance"))
-	i.Rotations = int(nbtconv.MapByte(data, "ItemRotation"))
+func (i ItemFrame) DecodeNBT(data map[string]any) any {
+	i.DropChance = float64(nbtconv.Map[float32](data, "ItemDropChance"))
+	i.Rotations = int(nbtconv.Map[byte](data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
 	return i
 }
 
 // EncodeNBT ...
-func (i ItemFrame) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (i ItemFrame) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"ItemDropChance": float32(i.DropChance),
 		"ItemRotation":   uint8(i.Rotations),
 		"id":             "ItemFrame",
@@ -144,12 +143,6 @@ func (i ItemFrame) Pick() item.Stack {
 	return item.NewStack(i.Item.Item(), 1)
 }
 
-// CanDisplace ...
-func (ItemFrame) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
 func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -159,7 +152,8 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if (w.Block(pos.Side(i.Facing)).Model() == model.Empty{}) {
 		// TODO: Allow exceptions for pressure plates.
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: i})
 	}
 }
 

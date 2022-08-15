@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // Wood is a block that has the log's "bark" texture on all six sides. It comes in 8 types: oak, spruce, birch, jungle,
@@ -30,6 +31,25 @@ func (w Wood) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 5, true)
 }
 
+// BreakInfo ...
+func (w Wood) BreakInfo() BreakInfo {
+	hardness := 2.0
+	if w.Wood == CrimsonWood() || w.Wood == WarpedWood() {
+		hardness = 0.3
+	}
+	return newBreakInfo(hardness, alwaysHarvestable, axeEffective, oneOf(w))
+}
+
+// SmeltInfo ...
+func (Wood) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(item.Charcoal{}, 1), 0.15)
+}
+
+// FuelInfo ...
+func (Wood) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
 // UseOnBlock ...
 func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(wo, pos, face, w)
@@ -40,11 +60,6 @@ func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.W
 
 	place(wo, pos, w, user, ctx)
 	return placed(ctx)
-}
-
-// BreakInfo ...
-func (w Wood) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
 // Strip ...
@@ -65,22 +80,30 @@ func (w Wood) EncodeItem() (name string, meta int16) {
 			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", 0
 		}
 		return "minecraft:" + w.Wood.String() + "_hyphae", 0
+	default:
+		if w.Stripped {
+			return "minecraft:stripped_" + w.Wood.String() + "_wood", 0
+		}
+		return "minecraft:" + w.Wood.String() + "_wood", 0
 	}
-	panic("invalid wood type")
 }
 
 // EncodeBlock ...
-func (w Wood) EncodeBlock() (name string, properties map[string]interface{}) {
+func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 	switch w.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:wood", map[string]interface{}{"wood_type": w.Wood.String(), "pillar_axis": w.Axis.String(), "stripped_bit": boolByte(w.Stripped)}
+		return "minecraft:wood", map[string]any{"wood_type": w.Wood.String(), "pillar_axis": w.Axis.String(), "stripped_bit": boolByte(w.Stripped)}
 	case CrimsonWood(), WarpedWood():
 		if w.Stripped {
-			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", map[string]interface{}{"pillar_axis": w.Axis.String()}
+			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
 		}
-		return "minecraft:" + w.Wood.String() + "_hyphae", map[string]interface{}{"pillar_axis": w.Axis.String()}
+		return "minecraft:" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
+	default:
+		if w.Stripped {
+			return "minecraft:stripped_" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
+		}
+		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String(), "stripped_bit": uint8(0)}
 	}
-	panic("invalid wood type")
 }
 
 // allWood returns a list of all possible wood states.

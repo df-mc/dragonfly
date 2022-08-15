@@ -17,7 +17,7 @@ func (Terracotta) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (t Terracotta) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t))
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(21)
 }
 
 // EncodeItem ...
@@ -26,6 +26,6 @@ func (Terracotta) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Terracotta) EncodeBlock() (string, map[string]interface{}) {
+func (Terracotta) EncodeBlock() (string, map[string]any) {
 	return "minecraft:hardened_clay", nil
 }

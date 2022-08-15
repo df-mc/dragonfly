@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -20,7 +21,7 @@ type TallGrass struct {
 
 // FlammabilityInfo ...
 func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 100, false)
+	return newFlammabilityInfo(60, 100, false)
 }
 
 // BreakInfo ...
@@ -40,8 +41,8 @@ func (g TallGrass) BreakInfo() BreakInfo {
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 	upper := DoubleTallGrass{Type: g.Type, UpperPart: true}
 	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-		w.SetBlock(pos, DoubleTallGrass{Type: g.Type})
-		w.SetBlock(pos.Side(cube.FaceUp), upper)
+		w.SetBlock(pos, DoubleTallGrass{Type: g.Type}, nil)
+		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
 	}
 	return false
@@ -50,7 +51,8 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 // NeighbourUpdateTick ...
 func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
 	}
 }
 
@@ -79,12 +81,12 @@ func (g TallGrass) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g TallGrass) EncodeBlock() (name string, properties map[string]interface{}) {
+func (g TallGrass) EncodeBlock() (name string, properties map[string]any) {
 	switch g.Type {
 	case NormalGrass():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "tall"}
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "tall"}
 	case Fern():
-		return "minecraft:tallgrass", map[string]interface{}{"tall_grass_type": "fern"}
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "fern"}
 	}
 	panic("should never happen")
 }

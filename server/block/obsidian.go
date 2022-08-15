@@ -30,7 +30,7 @@ func (o Obsidian) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (o Obsidian) EncodeBlock() (string, map[string]interface{}) {
+func (o Obsidian) EncodeBlock() (string, map[string]any) {
 	if o.Crying {
 		return "minecraft:crying_obsidian", nil
 	}
@@ -39,7 +39,7 @@ func (o Obsidian) EncodeBlock() (string, map[string]interface{}) {
 
 // BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
-	return newBreakInfo(50, func(t item.Tool) bool {
+	return newBreakInfo(35, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(o))
+	}, pickaxeEffective, oneOf(o)).withBlastResistance(6000)
 }

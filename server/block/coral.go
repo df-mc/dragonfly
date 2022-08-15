@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -14,6 +15,7 @@ type Coral struct {
 	empty
 	transparent
 	bassDrum
+	sourceWaterDisplacer
 
 	// Type is the type of coral of the block.
 	Type CoralType
@@ -47,12 +49,6 @@ func (c Coral) HasLiquidDrops() bool {
 	return false
 }
 
-// CanDisplace ...
-func (c Coral) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
 func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -61,7 +57,8 @@ func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // NeighbourUpdateTick ...
 func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
 		return
 	}
 	if c.Dead {
@@ -86,7 +83,7 @@ func (c Coral) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	}, w.Range())
 	if !adjacentWater {
 		c.Dead = true
-		w.PlaceBlock(pos, c)
+		w.SetBlock(pos, c, nil)
 	}
 }
 
@@ -96,8 +93,8 @@ func (c Coral) BreakInfo() BreakInfo {
 }
 
 // EncodeBlock ...
-func (c Coral) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:coral", map[string]interface{}{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
+func (c Coral) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:coral", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...

@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/item"
+
 type (
 	// Stone is a block found underground in the world or on mountains.
 	Stone struct {
@@ -27,37 +29,35 @@ type (
 	}
 )
 
-var stoneBreakInfo = newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{}))
-
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
-	breakInfo := stoneBreakInfo
 	if s.Smooth {
-		breakInfo.Hardness = 2
-		breakInfo.Drops = oneOf(s)
+		return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
 	}
-	return breakInfo
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{})).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (g Granite) BreakInfo() BreakInfo {
-	i := stoneBreakInfo
-	i.Drops = oneOf(g)
-	return i
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g)).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (d Diorite) BreakInfo() BreakInfo {
-	i := stoneBreakInfo
-	i.Drops = oneOf(d)
-	return i
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (a Andesite) BreakInfo() BreakInfo {
-	i := stoneBreakInfo
-	i.Drops = oneOf(a)
-	return i
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(30)
+}
+
+// SmeltInfo ...
+func (s Stone) SmeltInfo() item.SmeltInfo {
+	if s.Smooth {
+		return item.SmeltInfo{}
+	}
+	return newSmeltInfo(item.NewStack(Stone{Smooth: true}, 1), 0.1)
 }
 
 // EncodeItem ...
@@ -69,11 +69,11 @@ func (s Stone) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s Stone) EncodeBlock() (string, map[string]interface{}) {
+func (s Stone) EncodeBlock() (string, map[string]any) {
 	if s.Smooth {
 		return "minecraft:smooth_stone", nil
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "stone"}
+	return "minecraft:stone", map[string]any{"stone_type": "stone"}
 }
 
 // EncodeItem ...
@@ -85,11 +85,11 @@ func (a Andesite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (a Andesite) EncodeBlock() (string, map[string]interface{}) {
+func (a Andesite) EncodeBlock() (string, map[string]any) {
 	if a.Polished {
-		return "minecraft:stone", map[string]interface{}{"stone_type": "andesite_smooth"}
+		return "minecraft:stone", map[string]any{"stone_type": "andesite_smooth"}
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "andesite"}
+	return "minecraft:stone", map[string]any{"stone_type": "andesite"}
 }
 
 // EncodeItem ...
@@ -101,11 +101,11 @@ func (d Diorite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (d Diorite) EncodeBlock() (string, map[string]interface{}) {
+func (d Diorite) EncodeBlock() (string, map[string]any) {
 	if d.Polished {
-		return "minecraft:stone", map[string]interface{}{"stone_type": "diorite_smooth"}
+		return "minecraft:stone", map[string]any{"stone_type": "diorite_smooth"}
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "diorite"}
+	return "minecraft:stone", map[string]any{"stone_type": "diorite"}
 }
 
 // EncodeItem ...
@@ -117,9 +117,9 @@ func (g Granite) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (g Granite) EncodeBlock() (string, map[string]interface{}) {
+func (g Granite) EncodeBlock() (string, map[string]any) {
 	if g.Polished {
-		return "minecraft:stone", map[string]interface{}{"stone_type": "granite_smooth"}
+		return "minecraft:stone", map[string]any{"stone_type": "granite_smooth"}
 	}
-	return "minecraft:stone", map[string]interface{}{"stone_type": "granite"}
+	return "minecraft:stone", map[string]any{"stone_type": "granite"}
 }

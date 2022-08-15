@@ -35,6 +35,6 @@ func (Gravel) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (Gravel) EncodeBlock() (string, map[string]interface{}) {
+func (Gravel) EncodeBlock() (string, map[string]any) {
 	return "minecraft:gravel", nil
 }

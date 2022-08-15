@@ -25,13 +25,21 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 	}
 }
 
+// ignitable represents a block that can be lit by a fire emitter, such as flint and steel.
+type ignitable interface {
+	// Ignite is called when the block is lit by flint and steel.
+	Ignite(pos cube.Pos, w *world.World) bool
+}
+
 // UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	if w.Block(pos.Side(face)) == air() {
-		w.PlaySound(pos.Vec3(), sound.Ignite{})
-		w.PlaceBlock(pos.Side(face), fire())
-		w.ScheduleBlockUpdate(pos.Side(face), time.Duration(30+rand.Intn(10))*time.Second/20)
+	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w) {
+		return true
+	} else if s := pos.Side(face); w.Block(s) == air() {
+		w.PlaySound(s.Vec3Centre(), sound.Ignite{})
+		w.SetBlock(s, fire(), nil)
+		w.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true
 	}
 	return false
@@ -53,7 +61,7 @@ func air() world.Block {
 
 // fire returns a fire block.
 func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]interface{}{"age": int32(0)})
+	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
 	if !ok {
 		panic("could not find fire block")
 	}

@@ -11,15 +11,10 @@ type StainedGlassPane struct {
 	transparent
 	thin
 	clicksAndSticks
+	sourceWaterDisplacer
 
 	// Colour specifies the colour of the block.
 	Colour item.Colour
-}
-
-// CanDisplace ...
-func (p StainedGlassPane) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -38,8 +33,8 @@ func (p StainedGlassPane) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:stained_glass_pane", map[string]interface{}{"color": p.Colour.String()}
+func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:stained_glass_pane", map[string]any{"color": p.Colour.String()}
 }
 
 // allStainedGlassPane returns stained-glass panes with all possible colours.

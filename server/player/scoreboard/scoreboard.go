@@ -2,6 +2,7 @@ package scoreboard
 
 import (
 	"fmt"
+	"golang.org/x/exp/slices"
 	"strings"
 )
 
@@ -10,16 +11,17 @@ import (
 // Scoreboard implements the io.Writer and io.StringWriter interfaces. fmt.Fprintf and fmt.Fprint may be used
 // to write formatted text to the scoreboard.
 type Scoreboard struct {
-	name  string
-	lines []string
+	name    string
+	lines   []string
+	padding bool
 }
 
 // New returns a new scoreboard with the display name passed. Once returned, lines may be added to the
 // scoreboard to add text to it. The name is formatted according to the rules of fmt.Sprintln.
 // Changing the scoreboard after sending it to a player will not update the scoreboard of the player
 // automatically: Player.SendScoreboard() must be called again to update it.
-func New(name ...interface{}) *Scoreboard {
-	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n")}
+func New(name ...any) *Scoreboard {
+	return &Scoreboard{name: strings.TrimSuffix(fmt.Sprintln(name...), "\n"), padding: true}
 }
 
 // Name returns the display name of the scoreboard, as passed during the construction of the scoreboard.
@@ -67,7 +69,22 @@ func (board *Scoreboard) Remove(index int) {
 	board.lines = append(board.lines[:index], board.lines[index+1:]...)
 }
 
+// RemovePadding removes the padding of one space that is added to the start of every line.
+func (board *Scoreboard) RemovePadding() {
+	board.padding = false
+}
+
 // Lines returns the data of the Scoreboard as a slice of strings.
 func (board *Scoreboard) Lines() []string {
-	return board.lines
+	lines := slices.Clone(board.lines)
+	if board.padding {
+		for i, line := range lines {
+			if len(board.name)-len(line)-2 <= 0 {
+				lines[i] = " " + line + " "
+				continue
+			}
+			lines[i] = " " + line + strings.Repeat(" ", len(board.name)-len(line)-2)
+		}
+	}
+	return lines
 }

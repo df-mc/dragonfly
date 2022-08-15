@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -17,8 +18,11 @@ type Sand struct {
 
 // SoilFor ...
 func (s Sand) SoilFor(block world.Block) bool {
-	_, ok := block.(DeadBush)
-	return ok
+	switch block.(type) {
+	case Cactus, DeadBush, SugarCane:
+		return true
+	}
+	return false
 }
 
 // NeighbourUpdateTick ...
@@ -31,6 +35,11 @@ func (s Sand) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
 }
 
+// SmeltInfo ...
+func (Sand) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(Glass{}, 1), 0.1)
+}
+
 // EncodeItem ...
 func (s Sand) EncodeItem() (name string, meta int16) {
 	if s.Red {
@@ -40,9 +49,9 @@ func (s Sand) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (s Sand) EncodeBlock() (string, map[string]interface{}) {
+func (s Sand) EncodeBlock() (string, map[string]any) {
 	if s.Red {
-		return "minecraft:sand", map[string]interface{}{"sand_type": "red"}
+		return "minecraft:sand", map[string]any{"sand_type": "red"}
 	}
-	return "minecraft:sand", map[string]interface{}{"sand_type": "normal"}
+	return "minecraft:sand", map[string]any{"sand_type": "normal"}
 }

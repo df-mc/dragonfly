@@ -5,10 +5,12 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"image/color"
 	"strings"
+	"time"
 )
 
 // Sign is a non-solid block that can display text.
@@ -16,6 +18,7 @@ type Sign struct {
 	transparent
 	empty
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the sign. This field must have one of the values found in the material
 	// package.
@@ -49,6 +52,11 @@ func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// FuelInfo ...
+func (Sign) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 10)
+}
+
 // EncodeItem ...
 func (s Sign) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Wood.String() + "_sign", 0
@@ -57,12 +65,6 @@ func (s Sign) EncodeItem() (name string, meta int16) {
 // BreakInfo ...
 func (s Sign) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(s))
-}
-
-// CanDisplace ...
-func (s Sign) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
@@ -120,39 +122,41 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if s.Attach.hanging {
 		if _, ok := w.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			w.BreakBlock(pos)
+			w.SetBlock(pos, nil, nil)
+			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		}
 		return
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.BreakBlock(pos)
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 	}
 }
 
 // EncodeBlock ...
-func (s Sign) EncodeBlock() (name string, properties map[string]interface{}) {
+func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
 	if woodType == "oak_" {
 		woodType = ""
 	}
 	if s.Attach.hanging {
-		return "minecraft:" + woodType + "wall_sign", map[string]interface{}{"facing_direction": int32(s.Attach.facing + 2)}
+		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}
 	}
-	return "minecraft:" + woodType + "standing_sign", map[string]interface{}{"ground_sign_direction": int32(s.Attach.o)}
+	return "minecraft:" + woodType + "standing_sign", map[string]any{"ground_sign_direction": int32(s.Attach.o)}
 }
 
 // DecodeNBT ...
-func (s Sign) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Text = nbtconv.MapString(data, "Text")
-	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.MapInt32(data, "SignTextColor"))
-	s.Glowing = nbtconv.MapByte(data, "IgnoreLighting") == 1 && nbtconv.MapByte(data, "TextIgnoreLegacyBugResolved") == 1
+func (s Sign) DecodeNBT(data map[string]any) any {
+	s.Text = nbtconv.Map[string](data, "Text")
+	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Map[int32](data, "SignTextColor"))
+	s.Glowing = nbtconv.Map[byte](data, "IgnoreLighting") == 1 && nbtconv.Map[byte](data, "TextIgnoreLegacyBugResolved") == 1
 
 	return s
 }
 
 // EncodeNBT ...
-func (s Sign) EncodeNBT() map[string]interface{} {
-	m := map[string]interface{}{
+func (s Sign) EncodeNBT() map[string]any {
+	m := map[string]any{
 		"id":             "Sign",
 		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
 		"IgnoreLighting": boolByte(s.Glowing),

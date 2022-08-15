@@ -9,17 +9,12 @@ import (
 // NetherBrickFence is the nether brick variant of the fence block.
 type NetherBrickFence struct {
 	transparent
+	sourceWaterDisplacer
 }
 
 // BreakInfo ...
 func (n NetherBrickFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n))
-}
-
-// CanDisplace ...
-func (NetherBrickFence) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(30)
 }
 
 // SideClosed ...
@@ -38,6 +33,6 @@ func (NetherBrickFence) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (NetherBrickFence) EncodeBlock() (string, map[string]interface{}) {
+func (NetherBrickFence) EncodeBlock() (string, map[string]any) {
 	return "minecraft:nether_brick_fence", nil
 }

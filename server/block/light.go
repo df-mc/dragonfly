@@ -1,16 +1,25 @@
 package block
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
+)
 
 // Light is an invisible block that can produce any light level.
 type Light struct {
 	empty
 	replaceable
 	transparent
+	flowingWaterDisplacer
 
 	// Level is the light level that the light block produces. It is a number from 0-15, where 15 is the
 	// brightest and 0 is no light at all.
 	Level int
+}
+
+// SideClosed ...
+func (Light) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // EncodeItem ...
@@ -24,8 +33,8 @@ func (l Light) LightEmissionLevel() uint8 {
 }
 
 // EncodeBlock ...
-func (l Light) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:light_block", map[string]interface{}{"block_light_level": int32(l.Level)}
+func (l Light) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:light_block", map[string]any{"block_light_level": int32(l.Level)}
 }
 
 // allLight returns all possible light blocks.
