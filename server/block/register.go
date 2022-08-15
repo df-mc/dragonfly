@@ -178,14 +178,15 @@ func init() {
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
 	registerAll(allStonecutters())
+	registerAll(allSugarCane())
 	registerAll(allTallGrass())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
+	registerAll(allWalls())
 	registerAll(allWater())
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWool())
-	registerAll(allWalls())
 }
 
 func init() {
@@ -314,6 +315,7 @@ func init() {
 	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(SugarCane{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})

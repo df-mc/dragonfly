@@ -8,7 +8,7 @@ import (
 
 // Components returns all the components of the given custom item. If the item has no components, a nil map and false
 // are returned.
-func Components(it world.CustomItem) (map[string]any, bool) {
+func Components(it world.CustomItem) map[string]any {
 	category := it.Category()
 	identifier, _ := it.EncodeItem()
 	name := strings.Split(identifier, ":")[1]
@@ -81,10 +81,5 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 	if x, ok := it.(item.HandEquipped); ok {
 		builder.AddProperty("hand_equipped", x.HandEquipped())
 	}
-
-	// If an item has no new components or properties then it should not be considered a component-based item.
-	if builder.Empty() {
-		return nil, false
-	}
-	return builder.Construct(), true
+	return builder.Construct()
 }

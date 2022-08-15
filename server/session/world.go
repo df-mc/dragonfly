@@ -88,6 +88,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
+			Layers: []protocol.AbilityLayer{{
+				Type:      protocol.AbilityLayerTypeBase,
+				Abilities: protocol.AbilityCount - 1,
+			}},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{

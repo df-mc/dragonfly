@@ -81,8 +81,6 @@ type Session struct {
 
 	joinMessage, quitMessage *atomic.Value[string]
 
-	switchingWorld atomic.Bool
-
 	closeBackground chan struct{}
 }
 
@@ -390,11 +388,9 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 	}
 
 	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
-	if same {
-		dim = (dim + 1) % 3
-		s.switchingWorld.Store(true)
+	if !same {
+		s.changeDimension(dim, false)
 	}
-	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }
