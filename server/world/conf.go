@@ -77,6 +77,7 @@ func (conf Config) New() *World {
 		r:                rand.New(conf.RandSource),
 		advance:          s.ref.Inc() == 1,
 		conf:             conf,
+		ra:               conf.Dim.Range(),
 		set:              s,
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}

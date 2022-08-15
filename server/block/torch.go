@@ -68,6 +68,7 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
 		w.SetBlock(pos, nil, nil)
+		dropItem(w, item.NewStack(t, 1), pos.Vec3Centre())
 	}
 }
 

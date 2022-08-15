@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-// formatVersion is the format version used for the resource pack. The client does not accept all versions as
-// a format version, so it must be pre-defined.
-const formatVersion = "1.12.0"
-
 // BuildResourcePack builds a resource pack based on custom features that have been registered to the server.
 // It creates a UUID based on the hash of the directory so the client will only be prompted to download it
 // once it is changed.

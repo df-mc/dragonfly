@@ -31,7 +31,6 @@ func buildItems(dir string) (count int, lang []string) {
 		textureData[name] = map[string]string{"textures": fmt.Sprintf("textures/items/%s.png", name)}
 
 		buildItemTexture(dir, name, item.Texture())
-		buildItem(dir, identifier, name, item)
 
 		count++
 	}
@@ -55,29 +54,6 @@ func buildItemTexture(dir, name string, img image.Image) {
 		panic(err)
 	}
 	if err := texture.Close(); err != nil {
-		panic(err)
-	}
-}
-
-// buildItem creases an item JSON file for the provided item and its properties and writes it to the pack.
-func buildItem(dir, identifier, name string, item world.CustomItem) {
-	itemData, err := json.Marshal(map[string]any{
-		"format_version": formatVersion,
-		"minecraft:item": map[string]any{
-			"description": map[string]any{
-				"identifier": identifier,
-				"category":   item.Category().String(),
-			},
-			"components": map[string]any{
-				"minecraft:icon":           name,
-				"minecraft:render_offsets": "tools",
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "items", fmt.Sprintf("%s.json", name)), itemData, 0666); err != nil {
 		panic(err)
 	}
 }

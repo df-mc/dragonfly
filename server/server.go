@@ -404,12 +404,13 @@ func (srv *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new connections from players.
 func (srv *Server) startListening() error {
-	texturePacksRequired := srv.c.Resources.Required
 	srv.makeItemComponents()
+
+	texturePacksRequired := srv.c.Resources.Required
 	if srv.c.Resources.AutoBuildPack {
 		if pack, ok := packbuilder.BuildResourcePack(); ok {
-			srv.resources = append(srv.resources, pack)
 			texturePacksRequired = true
+			srv.resources = append(srv.resources, pack)
 		}
 	}
 
@@ -438,9 +439,7 @@ func (srv *Server) makeItemComponents() {
 	srv.itemComponents = make(map[string]map[string]any)
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
-		if data, ok := iteminternal.Components(it); ok {
-			srv.itemComponents[name] = data
-		}
+		srv.itemComponents[name] = iteminternal.Components(it)
 	}
 }
 
@@ -664,12 +663,10 @@ func (srv *Server) itemEntries() (entries []protocol.ItemEntry) {
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
-
-		_, componentBased := srv.itemComponents[name]
 		entries = append(entries, protocol.ItemEntry{
 			Name:           name,
+			ComponentBased: true,
 			RuntimeID:      int16(rid),
-			ComponentBased: componentBased,
 		})
 	}
 	return

@@ -28,7 +28,7 @@ func (c Chestplate) DefencePoints() float64 {
 	switch c.Tier.Name() {
 	case "leather":
 		return 3
-	case "gold", "chain":
+	case "golden", "chainmail":
 		return 5
 	case "iron":
 		return 6

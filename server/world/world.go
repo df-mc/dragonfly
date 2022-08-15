@@ -23,6 +23,7 @@ import (
 // A nil *World is safe to use but not functional.
 type World struct {
 	conf Config
+	ra   cube.Range
 	// advance is a bool that specifies if this World should advance the current tick, time and weather saved in the
 	// Settings struct held by the World.
 	advance bool
@@ -95,7 +96,7 @@ func (w *World) Range() cube.Range {
 	if w == nil {
 		return cube.Range{}
 	}
-	return w.conf.Dim.Range()
+	return w.ra
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
