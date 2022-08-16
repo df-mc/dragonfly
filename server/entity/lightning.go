@@ -81,19 +81,25 @@ func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
 
 // WithoutDamage returns the lightning entity with damage disabled, it won't damage any entities.
 func (li *Lightning) WithoutDamage() *Lightning {
+	li.mu.Lock()
 	li.damage = false
+	li.mu.Unlock()
 	return li
 }
 
 // WithoutBlockFire returns the lightning entity but won't set any blocks on fire.
 func (li *Lightning) WithoutBlockFire() *Lightning {
+	li.mu.Lock()
 	li.blockFire = false
+	li.mu.Unlock()
 	return li
 }
 
 // WithoutEntityFire returns the lightning entity but won't set any entities on fire.
 func (li *Lightning) WithoutEntityFire() *Lightning {
+	li.mu.Lock()
 	li.entityFire = false
+	li.mu.Unlock()
 	return li
 }
 
