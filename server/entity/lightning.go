@@ -49,7 +49,7 @@ func (li *Lightning) World() *world.World {
 }
 
 // BBox ...
-func (Lightning) BBox() cube.BBox {
+func (*Lightning) BBox() cube.BBox {
 	return cube.Box(0, 0, 0, 0, 0, 0)
 }
 
