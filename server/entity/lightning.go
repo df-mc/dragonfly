@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -16,14 +17,22 @@ type Lightning struct {
 
 	state    int
 	liveTime int
+
+	mu         sync.Mutex
+	damage     bool
+	blockFire  bool
+	entityFire bool
 }
 
 // NewLightning creates a lightning entity. The lightning entity will be positioned at the position passed.
 func NewLightning(pos mgl64.Vec3) *Lightning {
 	li := &Lightning{
-		pos:      pos,
-		state:    2,
-		liveTime: rand.Intn(3) + 1,
+		pos:        pos,
+		state:      2,
+		liveTime:   rand.Intn(3) + 1,
+		damage:     true,
+		blockFire:  true,
+		entityFire: true,
 	}
 	return li
 }
@@ -70,8 +79,32 @@ func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
 	return NewLightning(pos)
 }
 
+// WithoutDamage returns the lightning entity with damage disabled, it won't damage any entities.
+func (li *Lightning) WithoutDamage() *Lightning {
+	li.damage = false
+	return li
+}
+
+// WithoutBlockFire returns the lightning entity but won't set any blocks on fire.
+func (li *Lightning) WithoutBlockFire() *Lightning {
+	li.blockFire = false
+	return li
+}
+
+// WithoutEntityFire returns the lightning entity but won't set any entities on fire.
+func (li *Lightning) WithoutEntityFire() *Lightning {
+	li.entityFire = false
+	return li
+}
+
 // Tick ...
 func (li *Lightning) Tick(w *world.World, _ int64) {
+	li.mu.Lock()
+	dmg := li.damage
+	blockFire := li.blockFire
+	entityFire := li.entityFire
+	li.mu.Unlock()
+
 	f := fire().(interface {
 		Start(w *world.World, pos cube.Pos)
 	})
@@ -84,13 +117,15 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
-				l.Hurt(5, damage.SourceLightning{})
-				if f, ok := e.(Flammable); ok && f.OnFireDuration() < time.Second*8 {
+				if dmg {
+					l.Hurt(5, damage.SourceLightning{})
+				}
+				if f, ok := e.(Flammable); ok && entityFire && f.OnFireDuration() < time.Second*8 {
 					f.SetOnFire(time.Second * 8)
 				}
 			}
 		}
-		if w.Difficulty().FireSpreadIncrease() >= 10 {
+		if blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
 			f.Start(w, cube.PosFromVec3(li.pos))
 		}
 	}
@@ -102,7 +137,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 			li.liveTime--
 			li.state = 1
 
-			if w.Difficulty().FireSpreadIncrease() >= 10 {
+			if blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
 				f.Start(w, cube.PosFromVec3(li.pos))
 			}
 		}
