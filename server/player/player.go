@@ -552,12 +552,10 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if ok, _ := p.Blocking(); ok && source.ReducedByArmour() {
 		affected := true
 		if src, ok := source.(damage.SourceEntityAttack); ok {
-			if a, ok := src.Attacker.(world.Entity); ok {
-				diff := p.Position().Sub(a.Position()).Normalize()
-				diff[1] = 0
-				if diff.Dot(entity.DirectionVector(p)) >= 0.0 {
-					affected = false
-				}
+			diff := p.Position().Sub(src.Attacker.Position()).Normalize()
+			diff[1] = 0
+			if diff.Dot(entity.DirectionVector(p)) >= 0.0 {
+				affected = false
 			}
 		}
 		if affected {
