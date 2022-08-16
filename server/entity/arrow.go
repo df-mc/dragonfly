@@ -191,6 +191,11 @@ func (a *Arrow) Rotation() (float64, float64) {
 	return a.yaw, a.pitch
 }
 
+// blocker represents an entity that can block attacks with a shield.
+type blocker interface {
+	Blocking() (bool, bool)
+}
+
 // Tick ...
 func (a *Arrow) Tick(w *world.World, current int64) {
 	if a.close {
@@ -242,24 +247,30 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 				v.ViewEntityAction(a, ArrowShakeAction{Duration: time.Millisecond * 350})
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
-			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
-				living.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner})
-				living.KnockBack(m.pos, 0.45, 0.3608)
-				for _, eff := range a.tip.Effects() {
-					living.AddEffect(eff)
-				}
-				if flammable, ok := living.(Flammable); ok && a.OnFireDuration() > 0 {
-					flammable.SetOnFire(time.Second * 5)
-				}
-				if a.punchLevel > 0 {
-					horizontalVel := pastVel
-					horizontalVel[1] = 0
-					if speed := horizontalVel.Len(); speed > 0 {
-						multiplier := (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
-						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
+			if l, ok := res.Entity().(Living); ok && !l.AttackImmune() {
+				a.close = true
+				if b, ok := l.(blocker); ok {
+					if ok, _ := b.Blocking(); ok {
+						a.vel, a.close = pastVel.Mul(-0.25), false
 					}
 				}
-				a.close = true
+				if _, vulnerable := l.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner}); vulnerable {
+					l.KnockBack(m.pos, 0.45, 0.3608)
+					for _, eff := range a.tip.Effects() {
+						l.AddEffect(eff)
+					}
+					if flammable, ok := l.(Flammable); ok && a.OnFireDuration() > 0 {
+						flammable.SetOnFire(time.Second * 5)
+					}
+					if a.punchLevel > 0 {
+						horizontalVel := pastVel
+						horizontalVel[1] = 0
+						if speed := horizontalVel.Len(); speed > 0 {
+							multiplier := (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
+							l.SetVelocity(l.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
+						}
+					}
+				}
 			}
 		}
 
