@@ -23,6 +23,8 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 		dataKeyPotionColour:      int32(0),
 		dataKeyPotionAmbient:     byte(0),
 		dataKeyColour:            byte(0),
+		dataKeyFlags:             int64(0),
+		dataKeyFlagsExtended:     int64(0),
 	}
 
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
@@ -148,9 +150,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 // passed. It is typically used for entity metadata flags.
 func (m entityMetadata) setFlag(key uint32, index uint8) {
 	actualIndex := index % 64
-	if v, ok := m[key]; !ok {
-		m[key] = int64(0) ^ (1 << uint64(actualIndex))
-	} else {
+	if v, ok := m[key]; ok {
 		m[key] = v.(int64) ^ (1 << uint64(actualIndex))
 	}
 }

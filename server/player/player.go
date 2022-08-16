@@ -592,7 +592,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 					p.SetHeldItems(held, p.damageItem(other, i))
 				}
 			}
-			return 0, true
+			return 0, false
 		}
 	}
 
