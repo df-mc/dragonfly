@@ -552,7 +552,7 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	if ok, _ := p.Blocking(); ok && source.ReducedByArmour() {
 		affected := true
 		if src, ok := source.(damage.SourceEntityAttack); ok {
-			diff := p.Position().Sub(src.Attacker.Position()).Normalize()
+			diff := p.Position().Sub(src.Attacker.Position())
 			diff[1] = 0
 			if diff.Dot(entity.DirectionVector(p)) >= 0.0 {
 				affected = false
@@ -571,14 +571,6 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 					if _, ok := held.Item().(item.Axe); ok {
 						p.SetBlockingDelay(time.Second * 5)
 					}
-				}
-			}
-			if src, ok := source.(damage.SourceProjectile); ok {
-				if p, ok := src.Projectile.(interface {
-					Velocity() mgl64.Vec3
-					SetVelocity(mgl64.Vec3)
-				}); ok {
-					p.SetVelocity(p.Velocity().Mul(-1))
 				}
 			}
 			if dmg >= 3.0 {
