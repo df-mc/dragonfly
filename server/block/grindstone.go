@@ -59,9 +59,10 @@ func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	} else if g.Attach == StandingGrindstoneAttachment() {
 		supportFace = cube.FaceDown
 	}
-	if _, ok := w.Block(pos.Side(supportFace)).(Air); ok {
+	if _, ok := w.Block(pos.Side(supportFace)).Model().(model.Solid); !ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
+		dropItem(w, item.NewStack(g, 1), pos.Vec3Centre())
 	}
 }
 
