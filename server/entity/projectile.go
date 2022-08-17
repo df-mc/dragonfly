@@ -175,6 +175,9 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
 			t.Ignite(bpos, tx, nil)
 		}
+		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
+			h.ProjectileHit(bpos, tx, e, r.Face())
+		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m
