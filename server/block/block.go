@@ -74,6 +74,12 @@ type EntityInsider interface {
 	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
 }
 
+// ProjectileHitter represents a block that handles being hit by a projectile.
+type ProjectileHitter interface {
+	// ProjectileHit is called when a projectile hits the block.
+	ProjectileHit(w *world.World, e world.Entity, pos cube.Pos, face cube.Face)
+}
+
 // Frictional represents a block that may have a custom friction value, friction is used for entity drag when the
 // entity is on ground. If a block does not implement this interface, it should be assumed that its friction is 0.6.
 type Frictional interface {

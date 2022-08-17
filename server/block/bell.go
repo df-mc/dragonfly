@@ -24,7 +24,7 @@ type Bell struct {
 // Model ...
 func (b Bell) Model() world.BlockModel {
 	// TODO: Use the actual bell model.
-	return model.Empty{}
+	return model.Solid{}
 }
 
 // BreakInfo ...
@@ -105,6 +105,11 @@ func (b Bell) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _
 		}
 	}
 	return false
+}
+
+// ProjectileHit ...
+func (b Bell) ProjectileHit(w *world.World, _ world.Entity, pos cube.Pos, face cube.Face) {
+	b.Ring(pos, face, w)
 }
 
 // Ring rings the bell on the face passed.

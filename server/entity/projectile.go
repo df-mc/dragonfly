@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -32,8 +33,12 @@ func (c *ProjectileComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, y
 		})
 	}
 	if ok {
-		vel = zeroVec3
-		end = hit.Position()
+		vel, end = zeroVec3, hit.Position()
+		if r, ok := hit.(trace.BlockResult); ok {
+			if h, ok := w.Block(r.BlockPosition()).(block.ProjectileHitter); ok {
+				h.ProjectileHit(w, e, r.BlockPosition(), r.Face())
+			}
+		}
 	} else {
 		yaw, pitch = mgl64.RadToDeg(math.Atan2(vel[0], vel[2])), mgl64.RadToDeg(math.Atan2(vel[1], math.Sqrt(vel[0]*vel[0]+vel[2]*vel[2])))
 	}
