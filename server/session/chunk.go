@@ -108,7 +108,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		}
 		entries = append(entries, entry)
 	}
-	if s.conn.ClientCacheEnabled() {
+	if s.conn.ClientCacheEnabled() && len(transaction) > 0 {
 		s.blobMu.Lock()
 		s.openChunkTransactions = append(s.openChunkTransactions, transaction)
 		s.blobMu.Unlock()
@@ -224,7 +224,8 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	})
 }
 
-// trackBlob attempts to track the given blob. If the player has too many pending blobs, it returns false.
+// trackBlob attempts to track the given blob. If the player has too many pending blobs, it returns false and closes the
+// connection.
 func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 	s.blobMu.Lock()
 	defer s.blobMu.Unlock()
