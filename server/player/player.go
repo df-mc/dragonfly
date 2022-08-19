@@ -862,7 +862,10 @@ func (p *Player) Dead() bool {
 func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
 	p.deathMu.Lock()
 	defer p.deathMu.Unlock()
-	return *p.deathPos, p.deathDimension, p.deathPos != nil
+	if p.deathPos == nil {
+		return mgl64.Vec3{}, nil, false
+	}
+	return *p.deathPos, p.deathDimension, true
 }
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
