@@ -29,7 +29,7 @@ func (t *Text) EncodeEntity() string {
 	return "dragonfly:text"
 }
 
-// NetworkTypeID returns the network type ID for falling blocks.
+// NetworkEncodeEntity returns the network ID for falling blocks.
 func (*Text) NetworkEncodeEntity() string {
 	return "minecraft:falling_block"
 }
