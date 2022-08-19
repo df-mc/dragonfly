@@ -21,7 +21,7 @@ type Bed struct {
 	Facing cube.Direction
 	// Head is true if the bed is the head side.
 	Head bool
-	// User is the user that is using the bed.
+	// User is the user that is using the bed. It is only set for the Head part of the bed.
 	User item.User
 }
 
@@ -103,7 +103,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 
 	userPos := s.Position()
 	if sidePos.Vec3Middle().Sub(userPos).Len() > 4 && pos.Vec3Middle().Sub(userPos).Len() > 4 {
-		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.tooFar"))
+		s.Messaget(text.Colourf("<grey>%%tile.bed.tooFar</grey>"))
 		return true
 	}
 
@@ -119,13 +119,13 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 
 	time := w.Time() % world.TimeFull
 	if (time < world.TimeNight || time >= world.TimeSunrise) && !w.ThunderingAt(pos) {
-		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.respawnSet"))
-		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.noSleep"))
+		s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+		s.Messaget(text.Colourf("<grey>%%tile.bed.noSleep</grey>"))
 		return true
 	}
 	if headSide.User != nil {
-		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.respawnSet"))
-		s.Messaget(text.Colourf("<grey>%s</grey>", "%tile.bed.occupied"))
+		s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+		s.Messaget(text.Colourf("<grey>%%tile.bed.occupied</grey>"))
 		return true
 	}
 
@@ -134,13 +134,13 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 }
 
 // EntityLand ...
-func (b Bed) EntityLand(_ cube.Pos, _ *world.World, e world.Entity) {
+func (b Bed) EntityLand(_ cube.Pos, _ *world.World, e world.Entity, distance *float64) {
 	if s, ok := e.(sneakingEntity); ok && s.Sneaking() {
 		// If the entity is sneaking, the fall distance and velocity stay the same.
 		return
 	}
-	if f, ok := e.(fallDistanceEntity); ok {
-		f.SetFallDistance(f.FallDistance() * 0.5)
+	if _, ok := e.(fallDistanceEntity); ok {
+		*distance *= 0.5
 	}
 	if v, ok := e.(velocityEntity); ok {
 		vel := v.Velocity()

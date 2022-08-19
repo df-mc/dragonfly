@@ -275,12 +275,7 @@ func (p *Player) SendToast(title, message string) {
 
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
-	p.SetFallDistance(0)
-}
-
-// SetFallDistance sets the player's fall distance.
-func (p *Player) SetFallDistance(distance float64) {
-	p.fallDistance.Store(distance)
+	p.fallDistance.Store(0)
 }
 
 // FallDistance returns the player's fall distance.
@@ -1067,6 +1062,11 @@ func (p *Player) StopFlying() {
 // Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
 // the player will not sleep.
 func (p *Player) Sleep(pos cube.Pos) {
+	ctx, sendReminder := event.C(), true
+	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+		return
+	}
+
 	w := p.World()
 	if b, ok := w.Block(pos).(block.Bed); ok {
 		if b.User != nil {
@@ -1078,9 +1078,7 @@ func (p *Player) Sleep(pos cube.Pos) {
 	}
 
 	w.SetRequiredSleepDuration(time.Second * 5)
-
-	ctx := event.C()
-	if p.Handler().HandleSleepReminder(ctx); !ctx.Cancelled() {
+	if sendReminder {
 		w.BroadcastSleepingReminder(p)
 	}
 

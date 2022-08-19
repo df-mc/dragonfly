@@ -92,7 +92,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 	if sl, ok := e.(sleeper); ok {
 		if pos, ok := sl.Sleeping(); ok {
 			m[dataKeyBedPosition] = blockPosToProtocol(pos)
-			m.setFlag(dataKeyPlayerFlags, dataPlayerFlagSleep)
+			m.setFlag(dataKeyPlayerFlags, playerDataFlagSleep)
 		}
 	}
 	if c, ok := e.(areaEffectCloud); ok {
@@ -182,7 +182,7 @@ const (
 )
 
 const (
-	dataPlayerFlagSleep = iota + 1
+	playerDataFlagSleep = iota + 1
 )
 
 //noinspection GoUnusedConst

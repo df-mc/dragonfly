@@ -81,8 +81,6 @@ func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity, dista
 type fallDistanceEntity interface {
 	// ResetFallDistance resets the entities fall distance.
 	ResetFallDistance()
-	// SetFallDistance sets the entities fall distance.
-	SetFallDistance(float64)
 	// FallDistance returns the entities fall distance.
 	FallDistance() float64
 }
