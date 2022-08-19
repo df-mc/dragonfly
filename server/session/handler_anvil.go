@@ -58,7 +58,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !material.Empty() {
 		// First check if we are trying to repair the item with a material.
 		if repairable, ok := input.Item().(item.Repairable); ok && repairable.RepairableBy(material) {
-			result, actionCost, repairCount, err = repairWithMaterial(input, material, result)
+			result, actionCost, repairCount, err = repairItemWithMaterial(input, material, result)
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			// If the material is another durable item, we just need to increase the durability of the result by the
 			// material's durability at 12%.
 			if durable && !enchantedBook {
-				result, actionCost = repairWithDurable(input, material, result)
+				result, actionCost = repairItemWithDurable(input, material, result)
 			}
 
 			// Merge enchantments on the material item onto the result item.
@@ -176,9 +176,9 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	return h.createResults(s, result)
 }
 
-// repairWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
+// repairItemWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
 // stack, the cost, and the repaired items count.
-func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
+func repairItemWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
 	// Calculate the durability delta using the maximum durability and the current durability.
 	delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
 	if delta <= 0 {
@@ -195,8 +195,8 @@ func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack
 	return result, cost, count, nil
 }
 
-// repairWithDurable is a helper function that repairs an item with another durable item stack.
-func repairWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
+// repairItemWithDurable is a helper function that repairs an item with another durable item stack.
+func repairItemWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
 	durability := input.Durability() + durable.Durability() + input.MaxDurability()*12/100
 	if durability > input.MaxDurability() {
 		durability = input.MaxDurability()

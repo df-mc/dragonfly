@@ -89,16 +89,16 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
 			if s.containerOpened.Load() {
-				var processed bool
+				var special bool
 				switch s.c.World().Block(s.openedPos.Load()).(type) {
 				case block.SmithingTable:
-					err, processed = h.handleSmithing(a, s), true
+					err, special = h.handleSmithing(a, s), true
 				case block.Stonecutter:
-					err, processed = h.handleStonecutting(a, s), true
+					err, special = h.handleStonecutting(a, s), true
 				case block.EnchantingTable:
-					err, processed = h.handleEnchant(a, s), true
+					err, special = h.handleEnchant(a, s), true
 				}
-				if processed {
+				if special {
 					// This was a "special action" and was handled, so we can move onto the next action.
 					break
 				}
@@ -110,6 +110,8 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings)
 		case *protocol.CraftLoomRecipeStackRequestAction:
 			err = h.handleLoomCraft(a, s)
+		case *protocol.CraftGrindstoneRecipeStackRequestAction:
+			err = h.handleGrindstoneCraft(s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
@@ -208,7 +210,7 @@ func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inve
 	w := s.c.World()
 	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
 		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
-			for _, o := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
+			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(s.c), f.ResetExperience()) {
 				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 				w.AddEntity(o)
 			}

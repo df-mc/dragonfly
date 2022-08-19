@@ -106,32 +106,34 @@ const (
 )
 
 const (
-	containerAnvilInput           = 0
-	containerAnvilMaterial        = 1
-	containerSmithingInput        = 3
-	containerSmithingMaterial     = 4
-	containerArmour               = 6
-	containerChest                = 7
-	containerBeacon               = 8
-	containerFullInventory        = 12
-	containerCraftingGrid         = 13
-	containerEnchantingTableInput = 21
-	containerEnchantingTableLapis = 22
-	containerFurnaceFuel          = 23
-	containerFurnaceResult        = 25
-	containerFurnaceInput         = 24
-	containerHotbar               = 27
-	containerInventory            = 28
-	containerOffHand              = 33
-	containerLoomInput            = 40
-	containerLoomDye              = 41
-	containerLoomPattern          = 42
-	containerBlastFurnaceInput    = 44
-	containerSmokerInput          = 45
-	containerStonecutterInput     = 52
-	containerBarrel               = 57
-	containerCursor               = 58
-	containerOutput               = 59
+	containerAnvilInput            = 0
+	containerAnvilMaterial         = 1
+	containerSmithingInput         = 3
+	containerSmithingMaterial      = 4
+	containerArmour                = 6
+	containerChest                 = 7
+	containerBeacon                = 8
+	containerFullInventory         = 12
+	containerCraftingGrid          = 13
+	containerEnchantingTableInput  = 21
+	containerEnchantingTableLapis  = 22
+	containerFurnaceFuel           = 23
+	containerFurnaceResult         = 25
+	containerFurnaceInput          = 24
+	containerHotbar                = 27
+	containerInventory             = 28
+	containerOffHand               = 33
+	containerLoomInput             = 40
+	containerLoomDye               = 41
+	containerLoomPattern           = 42
+	containerBlastFurnaceInput     = 44
+	containerSmokerInput           = 45
+	containerGrindstoneFirstInput  = 49
+	containerGrindstoneSecondInput = 50
+	containerStonecutterInput      = 52
+	containerBarrel                = 57
+	containerCursor                = 58
+	containerOutput                = 59
 )
 
 // smelter is an interface representing a block used to smelt items.
@@ -197,6 +199,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case containerStonecutterInput:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
+				return s.ui, true
+			}
+		}
+	case containerGrindstoneFirstInput, containerGrindstoneSecondInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
 		}
@@ -608,12 +616,14 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	if slot > 8 {
 		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
+	if s.heldSlot.Load() == uint32(slot) {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
 	// The user swapped changed held slots so stop using item right away.
 	s.c.ReleaseItem()
+
+	s.heldSlot.Store(uint32(slot))
 
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
