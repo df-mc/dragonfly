@@ -37,7 +37,7 @@ func init() {
 // SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, SugarCane:
 		return true
 	}
 	return false

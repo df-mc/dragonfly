@@ -1,6 +1,11 @@
 package session
 
 import (
+	"image/color"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -15,11 +20,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"image/color"
-	"math/rand"
-	"strings"
-	"time"
 )
+
+// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
+type NetworkEncodeableEntity interface {
+	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	NetworkEncodeEntity() string
+}
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
@@ -88,6 +95,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
+			Layers: []protocol.AbilityLayer{{
+				Type:      protocol.AbilityLayerTypeBase,
+				Abilities: protocol.AbilityCount - 1,
+			}},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -109,7 +120,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
 	case *entity.Text:
 		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
-		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
+	}
+	if v, ok := e.(NetworkEncodeableEntity); ok {
+		id = v.NetworkEncodeEntity()
 	}
 
 	var vel mgl64.Vec3
@@ -392,6 +405,32 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 33,
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
+			Position:  vec64To32(pos),
+		})
+	case particle.EntityFlame:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 18,
+			Position:  vec64To32(pos),
+		})
+	case particle.Dust:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 32,
+			Position:  vec64To32(pos),
+			EventData: nbtconv.Int32FromRGBA(pa.Colour),
+		})
+	case particle.WaterDrip:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 27,
+			Position:  vec64To32(pos),
+		})
+	case particle.LavaDrip:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 28,
+			Position:  vec64To32(pos),
+		})
+	case particle.Lava:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 10,
 			Position:  vec64To32(pos),
 		})
 	}
@@ -858,6 +897,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		containerType = 13
 	case block.Loom:
 		containerType = 24
+	case block.Grindstone:
+		containerType = 26
 	case block.Stonecutter:
 		containerType = 29
 	case block.SmithingTable:
@@ -1059,6 +1100,14 @@ func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // abs ...

@@ -79,20 +79,17 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 		}, lapis.Grow(-cost), s)
 	}
 
+	// Reset the enchantment seed so different enchantments can be selected.
+	s.c.ResetEnchantmentSeed()
+
 	// Clear the existing input item, and apply the new item into the crafting result slot of the UI. The client will
 	// automatically move the item into the input slot.
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		ContainerID: containerEnchantingTableInput,
 		Slot:        enchantingInputSlot,
 	}, item.Stack{}, s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, input.WithEnchantments(enchants...), s)
 
-	// Reset the enchantment seed so different enchantments can be selected.
-	s.c.ResetEnchantmentSeed()
-	return nil
+	return h.createResults(s, input.WithEnchantments(enchants...))
 }
 
 // sendEnchantmentOptions sends a list of available enchantments to the client based on the client's enchantment seed

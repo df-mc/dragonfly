@@ -18,11 +18,15 @@ import (
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
 // inventory.
 type ItemStackRequestHandler struct {
-	currentRequest  int32
+	currentRequest int32
+
 	changes         map[byte]map[byte]changeInfo
 	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
-	current         time.Time
-	ignoreDestroy   bool
+
+	pendingResults []item.Stack
+
+	current       time.Time
+	ignoreDestroy bool
 }
 
 // responseChange represents a change in a specific item stack response. It holds the timestamp of the
@@ -85,16 +89,16 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s)
 		case *protocol.CraftRecipeStackRequestAction:
 			if s.containerOpened.Load() {
-				var processed bool
+				var special bool
 				switch s.c.World().Block(s.openedPos.Load()).(type) {
 				case block.SmithingTable:
-					err, processed = h.handleSmithing(a, s), true
+					err, special = h.handleSmithing(a, s), true
 				case block.Stonecutter:
-					err, processed = h.handleStonecutting(a, s), true
+					err, special = h.handleStonecutting(a, s), true
 				case block.EnchantingTable:
-					err, processed = h.handleEnchant(a, s), true
+					err, special = h.handleEnchant(a, s), true
 				}
-				if processed {
+				if special {
 					// This was a "special action" and was handled, so we can move onto the next action.
 					break
 				}
@@ -106,10 +110,14 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings)
 		case *protocol.CraftLoomRecipeStackRequestAction:
 			err = h.handleLoomCraft(a, s)
+		case *protocol.CraftGrindstoneRecipeStackRequestAction:
+			err = h.handleGrindstoneCraft(s)
 		case *protocol.CraftCreativeStackRequestAction:
 			err = h.handleCreativeCraft(a, s)
 		case *protocol.MineBlockStackRequestAction:
 			err = h.handleMineBlock(a, s)
+		case *protocol.CreateStackRequestAction:
+			err = h.handleCreate(a, s)
 		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
 		default:
@@ -202,7 +210,7 @@ func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inve
 	w := s.c.World()
 	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
 		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
-			for _, o := range entity.NewExperienceOrbs(s.c.Position(), f.ResetExperience()) {
+			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(s.c), f.ResetExperience()) {
 				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 				w.AddEntity(o)
 			}
@@ -267,6 +275,41 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 	i, _ := h.itemInSlot(slot, s)
 	h.setItemInSlot(slot, i, s)
 	return nil
+}
+
+// handleCreate handles the CreateStackRequestAction sent by the client when a recipe outputs more than one item. It
+// contains a result slot, which should map to one of the output items. From there, the server should create the relevant
+// output as usual.
+func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAction, s *Session) error {
+	slot := int(a.ResultsSlot)
+	if len(h.pendingResults) < slot {
+		return fmt.Errorf("invalid pending result slot: %v", a.ResultsSlot)
+	}
+
+	res := h.pendingResults[slot]
+	if res.Empty() {
+		return fmt.Errorf("tried duplicating created result: %v", slot)
+	}
+	h.pendingResults[slot] = item.Stack{}
+
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: containerCraftingGrid,
+		Slot:        craftingResult,
+	}, res, s)
+	return nil
+}
+
+// defaultCreation represents the CreateStackRequestAction used for single-result crafts.
+var defaultCreation = &protocol.CreateStackRequestAction{}
+
+// createResults creates a new craft result and adds it to the list of pending craft results.
+func (h *ItemStackRequestHandler) createResults(s *Session, result ...item.Stack) error {
+	h.pendingResults = append(h.pendingResults, result...)
+	if len(result) > 1 {
+		// With multiple results, the client notifies the server on when to create the results.
+		return nil
+	}
+	return h.handleCreate(defaultCreation, s)
 }
 
 // verifySlots verifies a list of slots passed.
@@ -431,7 +474,9 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 		RequestID:     id,
 		ContainerInfo: info,
 	}}})
+
 	h.changes = map[byte]map[byte]changeInfo{}
+	h.pendingResults = nil
 }
 
 // reject rejects the item stack request sent by the client so that it is reverted client-side.
@@ -442,6 +487,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			RequestID: id,
 		}},
 	})
+
 	// Revert changes that we already made for valid actions.
 	for container, slots := range h.changes {
 		for slot, info := range slots {
@@ -449,7 +495,9 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 			_ = inv.SetItem(int(slot), info.before)
 		}
 	}
+
 	h.changes = map[byte]map[byte]changeInfo{}
+	h.pendingResults = nil
 }
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if

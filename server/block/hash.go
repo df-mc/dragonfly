@@ -76,6 +76,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashGrindstone
 	hashHayBale
 	hashHoneycomb
 	hashInvisibleBedrock
@@ -152,6 +153,7 @@ const (
 	hashStone
 	hashStoneBricks
 	hashStonecutter
+	hashSugarCane
 	hashTNT
 	hashTallGrass
 	hashTerracotta
@@ -460,6 +462,10 @@ func (Gravel) Hash() uint64 {
 	return hashGravel
 }
 
+func (g Grindstone) Hash() uint64 {
+	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Facing)<<10
+}
+
 func (h HayBale) Hash() uint64 {
 	return hashHayBale | uint64(h.Axis)<<8
 }
@@ -556,8 +562,8 @@ func (MudBricks) Hash() uint64 {
 	return hashMudBricks
 }
 
-func (MuddyMangroveRoots) Hash() uint64 {
-	return hashMuddyMangroveRoots
+func (m MuddyMangroveRoots) Hash() uint64 {
+	return hashMuddyMangroveRoots | uint64(m.Axis)<<8
 }
 
 func (NetherBrickFence) Hash() uint64 {
@@ -762,6 +768,10 @@ func (s StoneBricks) Hash() uint64 {
 
 func (s Stonecutter) Hash() uint64 {
 	return hashStonecutter | uint64(s.Facing)<<8
+}
+
+func (c SugarCane) Hash() uint64 {
+	return hashSugarCane | uint64(c.Age)<<8
 }
 
 func (TNT) Hash() uint64 {

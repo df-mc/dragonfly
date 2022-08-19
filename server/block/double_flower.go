@@ -36,6 +36,7 @@ func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
 			w.SetBlock(pos, nil, nil)
 			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			dropItem(w, item.NewStack(d, 1), pos.Vec3Middle())
 		}
 		return
 	}

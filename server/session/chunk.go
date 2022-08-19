@@ -99,21 +99,19 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 			Offset:        offset,
 		}
 		if s.conn.ClientCacheEnabled() {
-			hash := xxhash.Sum64(serialisedSubChunk)
-			if !s.trackBlob(hash, serialisedSubChunk) {
-				// Failed to track blob, so just stop here.
-				return
+			if hash := xxhash.Sum64(serialisedSubChunk); s.trackBlob(hash, serialisedSubChunk) {
+				transaction[hash] = struct{}{}
+
+				entry.BlobHash = hash
+				entry.RawPayload = blockEntityBuf.Bytes()
 			}
-
-			transaction[hash] = struct{}{}
-
-			entry.BlobHash = hash
-			entry.RawPayload = blockEntityBuf.Bytes()
 		}
 		entries = append(entries, entry)
 	}
-	if s.conn.ClientCacheEnabled() {
+	if s.conn.ClientCacheEnabled() && len(transaction) > 0 {
+		s.blobMu.Lock()
 		s.openChunkTransactions = append(s.openChunkTransactions, transaction)
+		s.blobMu.Unlock()
 	}
 	s.writePacket(&packet.SubChunk{
 		Dimension:       int32(w.Dimension().EncodeDimension()),
@@ -135,10 +133,11 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 				SubChunkCount:       uint32(len(c.Sub())),
 				HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
 				BlobHashes:          []uint64{hash},
+				RawPayload:          []byte{0},
 				CacheEnabled:        true,
 			})
+			return
 		}
-		return
 	}
 
 	var (
@@ -194,7 +193,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 			Position:            protocol.ChunkPos(pos),
 			SubChunkCount:       uint32(len(c.Sub())),
 			HighestSubChunk:     uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
-			RawPayload:          chunk.EncodeBiomes(c, chunk.NetworkEncoding),
+			RawPayload:          append(chunk.EncodeBiomes(c, chunk.NetworkEncoding), 0),
 		})
 		return
 	}
@@ -225,7 +224,8 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 	})
 }
 
-// trackBlob attempts to track the given blob. If the player has too many pending blobs, it returns false.
+// trackBlob attempts to track the given blob. If the player has too many pending blobs, it returns false and closes the
+// connection.
 func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 	s.blobMu.Lock()
 	defer s.blobMu.Unlock()

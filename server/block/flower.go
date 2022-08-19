@@ -65,6 +65,7 @@ func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
+		dropItem(w, item.NewStack(f, 1), pos.Vec3Centre())
 	}
 }
 

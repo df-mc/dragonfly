@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
 	"os"
 )
 
@@ -40,12 +39,12 @@ func readConfig() (server.Config, error) {
 		if err != nil {
 			return c, fmt.Errorf("failed encoding default config: %v", err)
 		}
-		if err := ioutil.WriteFile("config.toml", data, 0644); err != nil {
+		if err := os.WriteFile("config.toml", data, 0644); err != nil {
 			return c, fmt.Errorf("failed creating config: %v", err)
 		}
 		return c, nil
 	}
-	data, err := ioutil.ReadFile("config.toml")
+	data, err := os.ReadFile("config.toml")
 	if err != nil {
 		return c, fmt.Errorf("error reading config: %v", err)
 	}

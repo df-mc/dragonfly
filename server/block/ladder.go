@@ -25,6 +25,7 @@ func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(l.Facing.Opposite().Face())).(LightDiffuser); ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
+		dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
 	}
 }
 
