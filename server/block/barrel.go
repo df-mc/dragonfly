@@ -176,6 +176,7 @@ func (b Barrel) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrel", 0
 }
 
+// allBarrels ...
 func allBarrels() (b []world.Block) {
 	for i := cube.Face(0); i < 6; i++ {
 		b = append(b, Barrel{Facing: i})

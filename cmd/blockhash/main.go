@@ -219,6 +219,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 			return "uint64(" + s + ".FaceUint8())", 3
 		}
 		return "uint64(" + s + ".Uint8())", 5
+	case "GrindstoneAttachment":
+		return "uint64(" + s + ".Uint8())", 2
 	case "WoodType", "FlowerType", "DoubleFlowerType", "Colour":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4

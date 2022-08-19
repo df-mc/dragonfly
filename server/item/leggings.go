@@ -25,16 +25,16 @@ func (l Leggings) MaxCount() int {
 
 // DefencePoints ...
 func (l Leggings) DefencePoints() float64 {
-	switch l.Tier.(type) {
-	case ArmourTierLeather:
+	switch l.Tier.Name() {
+	case "leather":
 		return 2
-	case ArmourTierGold:
+	case "golden":
 		return 3
-	case ArmourTierChain:
+	case "chainmail":
 		return 4
-	case ArmourTierIron:
+	case "iron":
 		return 5
-	case ArmourTierDiamond, ArmourTierNetherite:
+	case "diamond", "netherite":
 		return 6
 	}
 	panic("invalid leggings tier")
