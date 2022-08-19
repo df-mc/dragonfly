@@ -30,7 +30,7 @@ func (t *Text) EncodeEntity() string {
 }
 
 // NetworkTypeID returns the network type ID for falling blocks.
-func (*Text) NetworkTypeID() string {
+func (*Text) NetworkEncodeEntity() string {
 	return "minecraft:falling_block"
 }
 
