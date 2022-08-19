@@ -18,8 +18,7 @@ type Lightning struct {
 	state    int
 	liveTime int
 
-	mu         sync.Mutex
-	damage     bool
+	damage float64
 	blockFire  bool
 	entityFire bool
 }
@@ -30,10 +29,20 @@ func NewLightning(pos mgl64.Vec3) *Lightning {
 		pos:        pos,
 		state:      2,
 		liveTime:   rand.Intn(3) + 1,
-		damage:     true,
+		damage:     5,
 		blockFire:  true,
 		entityFire: true,
 	}
+	return li
+}
+
+// NewLightningWithDamage creates a lightning entity but lets you specify damage and whether blocks and
+// entities should be set on fire.
+func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire, entityFire bool) *Lightning {
+	li := NewLightning(pos)
+	li.damage = dmg
+	li.blockFire = blockFire
+	li.entityFire = entityFire
 	return li
 }
 
@@ -49,7 +58,7 @@ func (li *Lightning) World() *world.World {
 }
 
 // BBox ...
-func (*Lightning) BBox() cube.BBox {
+func (Lightning) BBox() cube.BBox {
 	return cube.Box(0, 0, 0, 0, 0, 0)
 }
 
@@ -79,38 +88,8 @@ func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
 	return NewLightning(pos)
 }
 
-// WithoutDamage returns the lightning entity with damage disabled, it won't damage any entities.
-func (li *Lightning) WithoutDamage() *Lightning {
-	li.mu.Lock()
-	li.damage = false
-	li.mu.Unlock()
-	return li
-}
-
-// WithoutBlockFire returns the lightning entity but won't set any blocks on fire.
-func (li *Lightning) WithoutBlockFire() *Lightning {
-	li.mu.Lock()
-	li.blockFire = false
-	li.mu.Unlock()
-	return li
-}
-
-// WithoutEntityFire returns the lightning entity but won't set any entities on fire.
-func (li *Lightning) WithoutEntityFire() *Lightning {
-	li.mu.Lock()
-	li.entityFire = false
-	li.mu.Unlock()
-	return li
-}
-
 // Tick ...
 func (li *Lightning) Tick(w *world.World, _ int64) {
-	li.mu.Lock()
-	dmg := li.damage
-	blockFire := li.blockFire
-	entityFire := li.entityFire
-	li.mu.Unlock()
-
 	f := fire().(interface {
 		Start(w *world.World, pos cube.Pos)
 	})
@@ -123,15 +102,15 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
-				if dmg {
-					l.Hurt(5, damage.SourceLightning{})
+				if l.damage > 0 {
+					l.Hurt(l.damage, damage.SourceLightning{})
 				}
-				if f, ok := e.(Flammable); ok && entityFire && f.OnFireDuration() < time.Second*8 {
+				if f, ok := e.(Flammable); ok && li.entityFire && f.OnFireDuration() < time.Second*8 {
 					f.SetOnFire(time.Second * 8)
 				}
 			}
 		}
-		if blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
+		if li.blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
 			f.Start(w, cube.PosFromVec3(li.pos))
 		}
 	}
@@ -143,7 +122,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 			li.liveTime--
 			li.state = 1
 
-			if blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
+			if li.blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
 				f.Start(w, cube.PosFromVec3(li.pos))
 			}
 		}
