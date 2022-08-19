@@ -29,3 +29,6 @@ type Effect struct {
 	// Colour is the colour of the particle.
 	Colour color.RGBA
 }
+
+// EntityFlame is a particle shown when an entity is set on fire.
+type EntityFlame struct{ particle }

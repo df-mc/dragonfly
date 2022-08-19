@@ -109,6 +109,7 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !s.canSurvive(pos, w) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+		dropItem(w, item.NewStack(s, s.AdditionalCount+1), pos.Vec3Centre())
 		return
 	}
 

@@ -11,7 +11,7 @@ import (
 type MuddyMangroveRoots struct {
 	solid
 
-	// Axis is the axis which the basalt faces.
+	// Axis is the axis which the muddy mangrove roots faces.
 	Axis cube.Axis
 }
 
