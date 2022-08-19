@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -102,8 +101,8 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
-				if l.damage > 0 {
-					l.Hurt(l.damage, damage.SourceLightning{})
+				if li.damage > 0 {
+					l.Hurt(li.damage, damage.SourceLightning{})
 				}
 				if f, ok := e.(Flammable); ok && li.entityFire && f.OnFireDuration() < time.Second*8 {
 					f.SetOnFire(time.Second * 8)
