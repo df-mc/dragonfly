@@ -75,6 +75,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashGrindstone
 	hashHayBale
 	hashHoneycomb
 	hashInvisibleBedrock
@@ -454,6 +455,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (g Grindstone) Hash() uint64 {
+	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Facing)<<10
 }
 
 func (h HayBale) Hash() uint64 {
