@@ -64,12 +64,14 @@ func (b Banner) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		if _, ok := w.Block(pos.Side(b.Attach.facing.Opposite().Face())).(Air); ok {
 			w.SetBlock(pos, nil, nil)
 			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+			dropItem(w, item.NewStack(b, 1), pos.Vec3Centre())
 		}
 		return
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+		dropItem(w, item.NewStack(b, 1), pos.Vec3Centre())
 	}
 }
 

@@ -129,12 +129,20 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 		}
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
-		colour, am := effect.ResultingColour(eff.Effects())
-		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
-		if am {
-			m[dataKeyPotionAmbient] = byte(1)
-		} else {
-			m[dataKeyPotionAmbient] = byte(0)
+		visibleEffects := make([]effect.Effect, 0, len(eff.Effects()))
+		for _, ef := range eff.Effects() {
+			if !ef.ParticlesHidden() {
+				visibleEffects = append(visibleEffects, ef)
+			}
+		}
+		if len(visibleEffects) > 0 {
+			colour, am := effect.ResultingColour(visibleEffects)
+			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+			if am {
+				m[dataKeyPotionAmbient] = byte(1)
+			} else {
+				m[dataKeyPotionAmbient] = byte(0)
+			}
 		}
 	}
 	return m

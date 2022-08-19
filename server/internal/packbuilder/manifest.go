@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,7 +35,7 @@ func buildManifest(dir string, headerUUID, moduleUUID uuid.UUID) {
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
 		panic(err)
 	}
 }

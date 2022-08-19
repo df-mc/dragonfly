@@ -48,9 +48,10 @@ func (Carpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (c Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		w.SetBlock(pos, nil, nil)
+		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 

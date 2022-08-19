@@ -81,8 +81,6 @@ type Session struct {
 
 	joinMessage, quitMessage *atomic.Value[string]
 
-	switchingWorld atomic.Bool
-
 	closeBackground chan struct{}
 }
 
@@ -175,7 +173,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *at
 
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
+func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
 	s.recipes = make(map[uint32]recipe.Recipe)
@@ -183,10 +181,9 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.entities[selfEntityRuntimeID] = c
 
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
-	spawn := w.Spawn()
-	s.chunkLoader.Move(spawn.Vec3Middle())
+	s.chunkLoader.Move(pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(spawn[0]), int32(spawn[1]), int32(spawn[2])},
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
@@ -390,11 +387,9 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 	}
 
 	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
-	if same {
-		dim = (dim + 1) % 3
-		s.switchingWorld.Store(true)
+	if !same {
+		s.changeDimension(dim, false)
 	}
-	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }

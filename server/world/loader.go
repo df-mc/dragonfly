@@ -74,14 +74,13 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 }
 
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
-// every chunk loaded, the function f is called.
-// The function f must not hold the chunk beyond the function scope.
-// An error is returned if one of the chunks could not be loaded.
+// every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
+// Load does nothing for n <= 0.
 func (l *Loader) Load(n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if n == 0 || l.closed || l.w == nil {
+	if l.closed || l.w == nil {
 		return
 	}
 	for i := 0; i < n; i++ {
