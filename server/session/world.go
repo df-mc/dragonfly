@@ -1,6 +1,11 @@
 package session
 
 import (
+	"image/color"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -15,11 +20,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"image/color"
-	"math/rand"
-	"strings"
-	"time"
 )
+
+// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
+type NetworkEncodeableEntity interface {
+	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	NetworkEncodeEntity() string
+}
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
@@ -113,7 +120,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
 	case *entity.Text:
 		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
-		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
+	}
+	if v, ok := e.(NetworkEncodeableEntity); ok {
+		id = v.NetworkEncodeEntity()
 	}
 
 	var vel mgl64.Vec3
