@@ -90,8 +90,7 @@ type Player struct {
 	immunity     atomic.Value[time.Time]
 
 	deathMu        sync.Mutex
-	hasDied        bool
-	deathPos       mgl64.Vec3
+	deathPos       *mgl64.Vec3
 	deathDimension world.Dimension
 
 	enchantSeed atomic.Int64
@@ -863,7 +862,7 @@ func (p *Player) Dead() bool {
 func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
 	p.deathMu.Lock()
 	defer p.deathMu.Unlock()
-	return p.deathPos, p.deathDimension, p.hasDied
+	return *p.deathPos, p.deathDimension, p.deathPos != nil
 }
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
@@ -878,7 +877,7 @@ func (p *Player) kill(src damage.Source) {
 	p.StopSneaking()
 	p.StopSprinting()
 
-	w := p.World()
+	w, pos := p.World(), p.Position()
 	p.dropContents()
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
@@ -886,7 +885,7 @@ func (p *Player) kill(src damage.Source) {
 
 	p.deathMu.Lock()
 	defer p.deathMu.Unlock()
-	p.hasDied, p.deathPos, p.deathDimension = true, p.Position(), w.Dimension()
+	p.deathPos, p.deathDimension = &pos, w.Dimension()
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
