@@ -61,6 +61,11 @@ func (n NetherWart) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (NetherWart) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (NetherWart) EncodeItem() (name string, meta int16) {
 	return "minecraft:nether_wart", 0

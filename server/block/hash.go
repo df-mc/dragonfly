@@ -34,6 +34,7 @@ const (
 	hashCoalOre
 	hashCobblestone
 	hashCocoaBean
+	hashComposter
 	hashConcrete
 	hashConcretePowder
 	hashCopperOre
@@ -291,6 +292,10 @@ func (c Cobblestone) Hash() uint64 {
 
 func (c CocoaBean) Hash() uint64 {
 	return hashCocoaBean | uint64(c.Facing)<<8 | uint64(c.Age)<<10
+}
+
+func (c Composter) Hash() uint64 {
+	return hashComposter | uint64(c.Level)<<8
 }
 
 func (c Concrete) Hash() uint64 {

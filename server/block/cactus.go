@@ -87,6 +87,11 @@ func (c Cactus) BreakInfo() BreakInfo {
 	return newBreakInfo(0.4, alwaysHarvestable, nothingEffective, oneOf(c))
 }
 
+// CompostChance ...
+func (Cactus) CompostChance() float64 {
+	return 0.5
+}
+
 // EncodeItem ...
 func (c Cactus) EncodeItem() (name string, meta int16) {
 	return "minecraft:cactus", 0

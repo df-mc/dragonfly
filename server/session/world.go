@@ -713,6 +713,14 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundBlazeFireball,
 			Position:  vec64To32(pos),
 		})
+	case sound.ComposterEmpty:
+		pk.SoundType = packet.SoundEventComposterEmpty
+	case sound.ComposterFill:
+		pk.SoundType = packet.SoundEventComposterFill
+	case sound.ComposterFillLayer:
+		pk.SoundType = packet.SoundEventComposterFillLayer
+	case sound.ComposterReady:
+		pk.SoundType = packet.SoundEventComposterReady
 	}
 	s.writePacket(pk)
 }
