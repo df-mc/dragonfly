@@ -71,11 +71,7 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 		ContainerID: containerGrindstoneSecondInput,
 		Slot:        grindstoneSecondInputSlot,
 	}, item.Stack{}, s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, stripPossibleEnchantments(resultStack), s)
-	return nil
+	return h.createResults(s, stripPossibleEnchantments(resultStack))
 }
 
 // experienceFromEnchantments returns the amount of experience that is gained from the enchantments on the given stack.
