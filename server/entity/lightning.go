@@ -18,7 +18,7 @@ type Lightning struct {
 	state    int
 	liveTime int
 
-	damage float64
+	damage     float64
 	blockFire  bool
 	entityFire bool
 }
