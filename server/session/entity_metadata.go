@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
 
@@ -105,6 +106,14 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 			m[dataKeyPotionAmbient] = byte(0)
 		}
 	}
+	if l, ok := e.(living); ok && s.c == e {
+		deathPos, deathDimension, died := l.DeathPosition()
+		if died {
+			m[dataKeyPlayerLastDeathPos] = vec64To32(deathPos)
+			m[dataKeyPlayerLastDeathDimension] = int32(deathDimension.EncodeDimension())
+		}
+		m[dataKeyPlayerHasDied] = boolByte(died)
+	}
 	if p, ok := e.(splash); ok {
 		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
 	}
@@ -179,6 +188,9 @@ const (
 	dataKeyAreaEffectCloudRadiusPerTick        = 97
 	dataKeyAreaEffectCloudRadiusChangeOnPickup = 98
 	dataKeyAreaEffectCloudPickupCount          = 99
+	dataKeyPlayerLastDeathPos                  = 128
+	dataKeyPlayerLastDeathDimension            = 129
+	dataKeyPlayerHasDied                       = 130
 )
 
 //noinspection GoUnusedConst
@@ -303,4 +315,8 @@ type gameMode interface {
 
 type tnt interface {
 	Fuse() time.Duration
+}
+
+type living interface {
+	DeathPosition() (mgl64.Vec3, world.Dimension, bool)
 }
