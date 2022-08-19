@@ -275,7 +275,9 @@ func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequ
 	return nil
 }
 
-// handleCreate handles the creation of a pending result through a craft.
+// handleCreate handles the CreateStackRequestAction sent by the client when a recipe outputs more than one item. It
+// contains a result slot, which should map to one of the output items. From there, the server should create the relevant
+// output as usual.
 func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAction, s *Session) error {
 	slot := int(a.ResultsSlot)
 	if len(h.pendingResults) < slot {
