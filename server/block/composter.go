@@ -15,12 +15,44 @@ import (
 // work station for a farming villager.
 type Composter struct {
 	bass
+	transparent
+	sourceWaterDisplacer
+
 	// Level is the level of compost inside the composter. At level 8 it can be collected in the form of bone meal.
 	Level int
 }
 
+// Model ...
+func (c Composter) Model() world.BlockModel {
+	return model.Composter{Level: c.Level}
+}
+
+// FuelInfo ...
+func (c Composter) FuelInfo() item.FuelInfo {
+	return newFuelInfo(time.Second * 15)
+}
+
+// FlammabilityInfo ...
+func (c Composter) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(5, 20, true)
+}
+
+// SideClosed ...
+func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
+}
+
+// BreakInfo ...
+func (c Composter) BreakInfo() BreakInfo {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		if c.Level == 8 {
+			dropItem(w, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
+		}
+	})
+}
+
 // Activate ...
-func (c Composter) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if c.Level >= 7 {
 		if c.Level == 8 {
 			c.Level = 0
@@ -51,7 +83,7 @@ func (c Composter) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World,
 }
 
 // ScheduledTick ...
-func (c Composter) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (c Composter) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if c.Level == 7 {
 		c.Level = 8
 		w.SetBlock(pos, c, nil)
@@ -64,35 +96,12 @@ func (c Composter) EncodeItem() (name string, meta int16) {
 	return "minecraft:composter", 0
 }
 
-// Model ...
-func (c Composter) Model() world.BlockModel {
-	return model.Composter{Level: c.Level}
-}
-
 // EncodeBlock ...
 func (c Composter) EncodeBlock() (string, map[string]any) {
 	return "minecraft:composter", map[string]any{"composter_fill_level": int32(c.Level)}
 }
 
-// BreakInfo ...
-func (c Composter) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		if c.Level == 8 {
-			dropItem(w, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
-		}
-	})
-}
-
-// FlammabilityInfo ...
-func (c Composter) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(5, 20, true)
-}
-
-// FuelInfo ...
-func (c Composter) FuelInfo() item.FuelInfo {
-	return newFuelInfo(time.Second * 15)
-}
-
+// allComposters ...
 func allComposters() (all []world.Block) {
 	for i := 0; i < 9; i++ {
 		all = append(all, Composter{Level: i})
