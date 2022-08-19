@@ -173,11 +173,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			Slot:        anvilMaterialSlot,
 		}, item.Stack{}, s)
 	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, result, s)
-	return nil
+	return h.createResults(s, result)
 }
 
 // repairItemWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item

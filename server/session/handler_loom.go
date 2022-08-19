@@ -91,9 +91,5 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		ContainerID: containerLoomDye,
 		Slot:        loomDyeSlot,
 	}, dye.Grow(-1), s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, duplicateStack(input, b), s)
-	return nil
+	return h.createResults(s, duplicateStack(input, b))
 }
