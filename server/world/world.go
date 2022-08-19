@@ -792,7 +792,7 @@ func (w *World) Entities() []Entity {
 // Sleepers returns a list of all sleeping entities currently added to the World.
 func (w *World) Sleepers() []Sleeper {
 	ent := w.Entities()
-	sleepers := make([]Sleeper, 0, len(ent))
+	sleepers := make([]Sleeper, 0, len(ent)/40)
 	for _, e := range ent {
 		if s, ok := e.(Sleeper); ok {
 			sleepers = append(sleepers, s)
