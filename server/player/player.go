@@ -532,13 +532,8 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	}
 
 	fireSource := false
-	if _, ok := source.(damage.SourceFireTick); ok {
-		fireSource = true
-	}
-	if _, ok := source.(damage.SourceLava); ok {
-		fireSource = true
-	}
-	if _, ok := source.(damage.SourceFire); ok {
+	switch source.(type) {
+	case damage.SourceFireTick, damage.SourceLava, damage.SourceFire:
 		fireSource = true
 	}
 
