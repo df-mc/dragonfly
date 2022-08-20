@@ -97,8 +97,8 @@ func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
 
 // Splash ...
 func (c Campfire) Splash(w *world.World, pos cube.Pos, p potion.Potion) {
-	if p != potion.Water() {
-		// Water is the only potion that can extinguish a campfire.
+	if p != potion.Water() || c.Extinguished {
+		// Water is the only potion that can extinguish a lit campfire.
 		return
 	}
 
