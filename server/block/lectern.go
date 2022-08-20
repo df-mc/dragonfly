@@ -54,7 +54,7 @@ func (l Lectern) BreakInfo() BreakInfo {
 
 // UseOnBlock ...
 func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, l)
+	pos, _, used = firstReplaceable(w, pos, face, l)
 	if !used {
 		return false
 	}
