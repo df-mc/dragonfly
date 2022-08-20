@@ -29,8 +29,7 @@ type Lectern struct {
 
 // Model ...
 func (Lectern) Model() world.BlockModel {
-	//TODO implement me
-	return model.Solid{}
+	return model.Lectern{}
 }
 
 // FuelInfo ...
