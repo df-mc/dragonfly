@@ -109,22 +109,27 @@ func (c Campfire) Splash(w *world.World, pos cube.Pos, p potion.Potion) {
 
 // Activate ...
 func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
-	if held, _ := u.HeldItems(); !held.Empty() {
-		if rawFood, ok := held.Item().(item.Smeltable); ok && rawFood.SmeltInfo().Food {
-			for i, it := range c.Items {
-				if it.Item.Empty() {
-					c.Items[i] = CampfireItem{
-						Item: held.Grow(-held.Count() + 1),
-						Time: time.Second * 30,
-					}
+	held, _ := u.HeldItems()
+	if held.Empty() {
+		return false
+	}
+	rawFood, ok := held.Item().(item.Smeltable)
+	if !ok || !rawFood.SmeltInfo().Food {
+		return false
+	}
 
-					ctx.SubtractFromCount(1)
-
-					w.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
-					w.SetBlock(pos, c, nil)
-					return true
-				}
+	for i, it := range c.Items {
+		if it.Item.Empty() {
+			c.Items[i] = CampfireItem{
+				Item: held.Grow(-held.Count() + 1),
+				Time: time.Second * 30,
 			}
+
+			ctx.SubtractFromCount(1)
+
+			w.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
+			w.SetBlock(pos, c, nil)
+			return true
 		}
 	}
 	return false
