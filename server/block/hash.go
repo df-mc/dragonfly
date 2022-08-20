@@ -92,6 +92,7 @@ const (
 	hashLapisOre
 	hashLava
 	hashLeaves
+	hashLectern
 	hashLight
 	hashLitPumpkin
 	hashLog
@@ -524,6 +525,10 @@ func (l Lava) Hash() uint64 {
 
 func (l Leaves) Hash() uint64 {
 	return hashLeaves | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Persistent))<<12 | uint64(boolByte(l.ShouldUpdate))<<13
+}
+
+func (l Lectern) Hash() uint64 {
+	return hashLectern | uint64(l.Facing)<<8
 }
 
 func (l Light) Hash() uint64 {

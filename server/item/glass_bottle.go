@@ -24,7 +24,7 @@ func (g GlassBottle) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *worl
 	if b, ok := bl.(bottleFiller); ok {
 		var res world.Block
 		if res, ctx.NewItem, ok = b.FillBottle(); ok {
-			ctx.CountSub = 1
+			ctx.SubtractFromCount(1)
 			if res != bl {
 				// Some blocks (think a cauldron) change when using a bottle on it.
 				w.SetBlock(pos, res, nil)

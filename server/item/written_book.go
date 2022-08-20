@@ -15,8 +15,13 @@ type WrittenBook struct {
 }
 
 // MaxCount always returns 1.
-func (w WrittenBook) MaxCount() int {
+func (WrittenBook) MaxCount() int {
 	return 1
+}
+
+// TotalPages returns the total number of pages in the book.
+func (w WrittenBook) TotalPages() int {
+	return len(w.Pages)
 }
 
 // Page returns a specific page from the book and true when the page exists. It will otherwise return an empty string
@@ -66,6 +71,6 @@ func (w WrittenBook) EncodeNBT() map[string]any {
 }
 
 // EncodeItem ...
-func (w WrittenBook) EncodeItem() (name string, meta int16) {
+func (WrittenBook) EncodeItem() (name string, meta int16) {
 	return "minecraft:written_book", 0
 }

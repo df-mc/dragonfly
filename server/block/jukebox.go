@@ -32,7 +32,7 @@ func (j Jukebox) BreakInfo() BreakInfo {
 	}
 	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, simpleDrops(d...)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
 		if _, hasDisc := j.Disc(); hasDisc {
-			w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
+			w.PlaySound(pos.Vec3Centre(), sound.MusicDiscEnd{})
 		}
 	})
 }
@@ -51,22 +51,21 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User
 
 		j.Item = item.Stack{}
 		w.SetBlock(pos, j, nil)
-		w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
+		w.PlaySound(pos.Vec3Centre(), sound.MusicDiscEnd{})
 	} else if held, _ := u.HeldItems(); !held.Empty() {
 		if m, ok := held.Item().(item.MusicDisc); ok {
 			j.Item = held
 
 			w.SetBlock(pos, j, nil)
-			w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
-			ctx.CountSub = 1
+			w.PlaySound(pos.Vec3Centre(), sound.MusicDiscEnd{})
+			ctx.SubtractFromCount(1)
 
-			w.PlaySound(pos.Vec3(), sound.MusicDiscPlay{DiscType: m.DiscType})
+			w.PlaySound(pos.Vec3Centre(), sound.MusicDiscPlay{DiscType: m.DiscType})
 			if u, ok := u.(jukeboxUser); ok {
 				u.SendJukeboxPopup(fmt.Sprintf("Now playing: %v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
 			}
 		}
 	}
-
 	return true
 }
 
@@ -77,7 +76,6 @@ func (j Jukebox) Disc() (sound.DiscType, bool) {
 			return m.DiscType, true
 		}
 	}
-
 	return sound.DiscType{}, false
 }
 
@@ -93,11 +91,9 @@ func (j Jukebox) EncodeNBT() map[string]any {
 // DecodeNBT ...
 func (j Jukebox) DecodeNBT(data map[string]any) any {
 	s := nbtconv.MapItem(data, "RecordItem")
-
 	if _, ok := s.Item().(item.MusicDisc); ok {
 		j.Item = s
 	}
-
 	return j
 }
 

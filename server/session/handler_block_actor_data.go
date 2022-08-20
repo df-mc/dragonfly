@@ -17,7 +17,10 @@ type BlockActorDataHandler struct{}
 func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.BlockActorData)
 	if id, ok := pk.NBTData["id"]; ok {
-		pos := cube.Pos{int(pk.Position.X()), int(pk.Position.Y()), int(pk.Position.Z())}
+		pos := blockPosFromProtocol(pk.Position)
+		if !s.c.CanReach(pos.Vec3Middle()) {
+			return fmt.Errorf("block at %v is not within reach", pos)
+		}
 		switch id {
 		case "Sign":
 			return b.handleSign(pk, pos, s)

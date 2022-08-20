@@ -9,16 +9,19 @@ import (
 
 // ReadItem decodes the data of an item into an item stack.
 func ReadItem(data map[string]any, s *item.Stack) item.Stack {
-	disk := s == nil
+	disk, tag := s == nil, data
 	if disk {
-		a := readItemStack(data)
+		tag = Map[map[string]any](data, "tag")
+
+		a := readItemStack(data, tag)
 		s = &a
 	}
-	readDamage(data, s, disk)
-	readAnvilCost(data, s)
-	readDisplay(data, s)
-	readEnchantments(data, s)
-	readDragonflyData(data, s)
+
+	readAnvilCost(tag, s)
+	readDamage(tag, s, disk)
+	readDisplay(tag, s)
+	readDragonflyData(tag, s)
+	readEnchantments(tag, s)
 	return *s
 }
 
@@ -31,7 +34,7 @@ func ReadBlock(m map[string]any) world.Block {
 }
 
 // readItemStack reads an item.Stack from the NBT in the map passed.
-func readItemStack(m map[string]any) item.Stack {
+func readItemStack(m, t map[string]any) item.Stack {
 	var it world.Item
 	if blockItem, ok := MapBlock(m, "Block").(world.Item); ok {
 		it = blockItem
@@ -43,7 +46,7 @@ func readItemStack(m map[string]any) item.Stack {
 		return item.Stack{}
 	}
 	if n, ok := it.(world.NBTer); ok {
-		it = n.DecodeNBT(m).(world.Item)
+		it = n.DecodeNBT(t).(world.Item)
 	}
 	return item.NewStack(it, int(Map[byte](m, "Count")))
 }

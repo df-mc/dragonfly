@@ -82,7 +82,7 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 		existing.AdditionalCount++
 		w.SetBlock(pos, existing, nil)
-		ctx.CountSub = 1
+		ctx.SubtractFromCount(1)
 		return true
 	}
 

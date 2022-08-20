@@ -78,11 +78,12 @@ func MapBlock(x map[string]any, k string) world.Block {
 // to a world.Item.
 func MapItem(x map[string]any, k string) item.Stack {
 	if m, ok := x[k].(map[string]any); ok {
-		s := readItemStack(m)
-		readDamage(m, &s, true)
-		readEnchantments(m, &s)
-		readDisplay(m, &s)
-		readDragonflyData(m, &s)
+		t := Map[map[string]any](m, "tag")
+		s := readItemStack(m, t)
+		readDamage(t, &s, true)
+		readEnchantments(t, &s)
+		readDisplay(t, &s)
+		readDragonflyData(t, &s)
 		return s
 	}
 	return item.Stack{}

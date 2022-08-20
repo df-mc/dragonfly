@@ -1440,7 +1440,7 @@ func (p *Player) UsingItem() bool {
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
 	w := p.World()
-	if _, ok := w.Block(pos).(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
+	if _, ok := w.Block(pos).(block.Air); ok || !p.CanReach(pos.Vec3Centre()) {
 		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
 		// to use the item immediately.
 		p.resendBlocks(pos, w, face)
@@ -1502,7 +1502,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 // within range of the player.
 // If the item held in the main hand of the player does nothing when used on an entity, nothing will happen.
 func (p *Player) UseItemOnEntity(e world.Entity) bool {
-	if !p.canReach(e.Position()) {
+	if !p.CanReach(e.Position()) {
 		return false
 	}
 	ctx := event.C()
@@ -1530,7 +1530,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 // have.
 // If the player cannot reach the entity at its position, the method returns immediately.
 func (p *Player) AttackEntity(e world.Entity) bool {
-	if !p.canReach(e.Position()) {
+	if !p.CanReach(e.Position()) {
 		return false
 	}
 	var (
@@ -1611,7 +1611,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
 	w := p.World()
-	if _, air := w.Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
+	if _, air := w.Block(pos).(block.Air); air || !p.CanReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
@@ -1750,7 +1750,7 @@ func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
 // of the player. A bool is returned indicating if a block was placed successfully.
 func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	w := p.World()
-	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
+	if !p.CanReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
@@ -1805,7 +1805,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		// Don't do anything if the position broken is already air.
 		return
 	}
-	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
+	if !p.CanReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
 		p.resendBlocks(pos, w)
 		return
 	}
@@ -1885,7 +1885,7 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
 // pick the block, the method returns immediately.
 func (p *Player) PickBlock(pos cube.Pos) {
-	if !p.canReach(pos.Vec3()) {
+	if !p.CanReach(pos.Vec3()) {
 		return
 	}
 
@@ -2747,9 +2747,9 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 	}
 }
 
-// canReach checks if a player can reach a position with its current range. The range depends on if the player
+// CanReach checks if a player can reach a position with its current range. The range depends on if the player
 // is either survival or creative mode.
-func (p *Player) canReach(pos mgl64.Vec3) bool {
+func (p *Player) CanReach(pos mgl64.Vec3) bool {
 	const (
 		creativeRange = 14.0
 		survivalRange = 8.0

@@ -721,6 +721,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventComposterFillLayer
 	case sound.ComposterReady:
 		pk.SoundType = packet.SoundEventComposterReady
+	case sound.LecternBookPlace:
+		pk.SoundType = packet.SoundEventLecternBookPlace
 	}
 	s.writePacket(pk)
 }
@@ -1100,6 +1102,11 @@ func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
+}
+
+// blockPosFromProtocol ...
+func blockPosFromProtocol(pos protocol.BlockPos) cube.Pos {
+	return cube.Pos{int(pos.X()), int(pos.Y()), int(pos.Z())}
 }
 
 // boolByte returns 1 if the bool passed is true, or 0 if it is false.
