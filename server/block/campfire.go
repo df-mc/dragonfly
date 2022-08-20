@@ -154,17 +154,23 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 		w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
 	}
 
+	updated := false
 	for i, it := range c.Items {
-		if !it.Item.Empty() && it.Time <= 0 {
+		if it.Item.Empty() {
+			continue
+		} else if it.Time <= 0 {
 			if food, ok := it.Item.Item().(item.Smeltable); ok {
 				dropItem(w, food.SmeltInfo().Product, pos.Vec3Middle())
 			}
 
 			c.Items[i].Item = item.Stack{}
-			w.SetBlock(pos, c, nil)
+			updated = true
 			continue
 		}
 		c.Items[i].Time = it.Time - time.Millisecond*50
+		updated = true
+	}
+	if updated {
 		w.SetBlock(pos, c, nil)
 	}
 }
