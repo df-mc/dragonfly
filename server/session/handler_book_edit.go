@@ -67,7 +67,7 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
 		}
 		book = book.SwapPages(page, int(pk.SecondaryPageNumber))
 	case packet.BookActionSign:
-		_ = s.inv.SetItem(slot, item.NewStack(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: item.OriginalGeneration()}, 1))
+		_ = s.inv.SetItem(slot, duplicateStack(it, item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: item.OriginalGeneration()}))
 		return nil
 	}
 	_ = s.inv.SetItem(slot, duplicateStack(it, book))
