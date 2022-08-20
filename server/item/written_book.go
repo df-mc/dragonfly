@@ -36,12 +36,8 @@ func (w WrittenBook) DecodeNBT(data map[string]any) any {
 			w.Pages[i] = page.(map[string]any)["text"].(string)
 		}
 	}
-	if v, ok := data["title"].(string); ok {
-		w.Title = v
-	}
-	if v, ok := data["author"].(string); ok {
-		w.Author = v
-	}
+	w.Title, _ = data["title"].(string)
+	w.Author, _ = data["author"].(string)
 	if v, ok := data["generation"].(uint8); ok {
 		switch v {
 		case 0:
