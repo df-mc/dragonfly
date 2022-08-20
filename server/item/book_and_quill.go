@@ -84,12 +84,11 @@ func (b BookAndQuill) SwapPages(pageOne, pageTwo int) BookAndQuill {
 
 // DecodeNBT ...
 func (b BookAndQuill) DecodeNBT(data map[string]any) any {
-	if pages, ok := data["pages"].([]any); ok {
-		for _, page := range pages {
-			if pageData, ok := page.(map[string]any); ok {
-				if text, ok := pageData["text"].(string); ok {
-					b.Pages = append(b.Pages, text)
-				}
+	pages, _ := data["pages"].([]any)
+	for _, page := range pages {
+		if pageData, ok := page.(map[string]any); ok {
+			if text, ok := pageData["text"].(string); ok {
+				b.Pages = append(b.Pages, text)
 			}
 		}
 	}
