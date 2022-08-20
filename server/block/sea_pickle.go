@@ -81,9 +81,8 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		}
 
 		existing.AdditionalCount++
-		w.SetBlock(pos, existing, nil)
-		ctx.CountSub = 1
-		return true
+		place(w, pos, existing, user, ctx)
+		return placed(ctx)
 	}
 
 	pos, _, used := firstReplaceable(w, pos, face, s)
