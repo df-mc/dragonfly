@@ -55,6 +55,11 @@ func (s WheatSeeds) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (WheatSeeds) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (s WheatSeeds) EncodeItem() (name string, meta int16) {
 	return "minecraft:wheat_seeds", 0

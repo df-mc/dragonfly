@@ -25,6 +25,11 @@ func (DriedKelp) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 200)
 }
 
+// CompostChance ...
+func (DriedKelp) CompostChance() float64 {
+	return 0.5
+}
+
 // EncodeItem ...
 func (DriedKelp) EncodeItem() (name string, meta int16) {
 	return "minecraft:dried_kelp_block", 0

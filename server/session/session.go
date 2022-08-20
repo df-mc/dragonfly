@@ -431,6 +431,7 @@ func (s *Session) registerHandlers() {
 		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
+		packet.IDBookEdit:              &BookEditHandler{},
 		packet.IDBossEvent:             nil,
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},

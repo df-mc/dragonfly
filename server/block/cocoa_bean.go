@@ -95,6 +95,11 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 	}).withBlastResistance(15)
 }
 
+// CompostChance ...
+func (CocoaBean) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (c CocoaBean) EncodeItem() (name string, meta int16) {
 	return "minecraft:cocoa_beans", 0
