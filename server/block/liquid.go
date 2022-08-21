@@ -47,8 +47,7 @@ func FlowVector(pos cube.Pos, w *world.World, l world.Liquid) (v mgl64.Vec3) {
 		var realDecay int
 		side, ok := w.Liquid(p)
 		if !ok {
-			sideB := w.Block(p)
-			if _, ok = sideB.(LiquidRemovable); !ok {
+			if _, ok = w.Block(p).(LiquidRemovable); !ok {
 				continue
 			}
 			side, ok = w.Liquid(p.Side(cube.FaceDown))
