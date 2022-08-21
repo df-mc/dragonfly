@@ -117,7 +117,7 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 	vel[2] *= friction
 	if l, ok := w.Liquid(blockPos); ok {
 		if flow := block.FlowVector(blockPos, w, l); flow.Len() > 0 {
-			vel = vel.Add(flow.Normalize().Mul(0.0045000000000000005))
+			vel = vel.Add(flow.Normalize().Mul(0.0045))
 		}
 	}
 	return vel
