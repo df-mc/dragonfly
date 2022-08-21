@@ -68,8 +68,9 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
-	vel = c.applyLiquidFlow(e, pos, c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel)))
+	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	dPos, vel := c.checkCollision(e, pos, vel)
+	vel = c.applyLiquidFlow(e, pos, vel)
 
 	return &Movement{v: viewers, e: e,
 		pos: pos.Add(dPos), vel: vel, dpos: dPos, dvel: vel.Sub(velBefore),
