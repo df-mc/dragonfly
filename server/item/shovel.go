@@ -49,6 +49,11 @@ func (s Shovel) MaxCount() int {
 	return 1
 }
 
+// ToolTier ...
+func (s Shovel) ToolTier() ToolTier {
+	return s.Tier
+}
+
 // AttackDamage returns the attack damage to the shovel.
 func (s Shovel) AttackDamage() float64 {
 	return s.Tier.BaseAttackDamage

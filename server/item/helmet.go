@@ -23,6 +23,11 @@ func (h Helmet) MaxCount() int {
 	return 1
 }
 
+// ArmourTier ...
+func (h Helmet) ArmourTier() ArmourTier {
+	return h.Tier
+}
+
 // DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
 	switch h.Tier.Name() {

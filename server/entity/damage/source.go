@@ -113,10 +113,13 @@ func (SourceWitherEffect) ReducedByResistance() bool        { return true }
 func (SourceWitherEffect) ReducedByArmour() bool            { return false }
 func (SourceFire) ReducedByResistance() bool                { return true }
 func (SourceFire) ReducedByArmour() bool                    { return true }
+func (SourceFire) Fire() bool                               { return true }
 func (SourceFireTick) ReducedByResistance() bool            { return true }
 func (SourceFireTick) ReducedByArmour() bool                { return false }
+func (SourceFireTick) Fire() bool                           { return true }
 func (SourceLava) ReducedByResistance() bool                { return true }
 func (SourceLava) ReducedByArmour() bool                    { return true }
+func (SourceLava) Fire() bool                               { return true }
 func (SourceProjectile) ReducedByResistance() bool          { return true }
 func (SourceProjectile) ReducedByArmour() bool              { return true }
 func (SourceThorns) ReducedByResistance() bool              { return true }

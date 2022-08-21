@@ -70,10 +70,8 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 
 // EntityLand ...
 func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64) {
-	if living, ok := e.(livingEntity); ok {
-		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
-			w.SetBlock(pos, Dirt{}, nil)
-		}
+	if _, ok := e.(fallDistanceEntity); ok && rand.Float64() < *distance-0.5 {
+		w.SetBlock(pos, Dirt{}, nil)
 	}
 }
 

@@ -1170,7 +1170,7 @@ func (p *Player) Immobile() bool {
 
 // FireProof checks if the Player is currently fireproof. True is returned if the player has a FireResistance effect or
 // if it is in creative mode.
-func (p *Player) FireProof() bool {
+func (p *Player) affectedByFire() bool {
 	if _, ok := p.Effect(effect.FireResistance{}); ok {
 		return true
 	}

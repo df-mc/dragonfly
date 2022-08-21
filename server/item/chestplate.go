@@ -23,6 +23,11 @@ func (c Chestplate) MaxCount() int {
 	return 1
 }
 
+// ArmourTier ...
+func (c Chestplate) ArmourTier() ArmourTier {
+	return c.Tier
+}
+
 // DefencePoints ...
 func (c Chestplate) DefencePoints() float64 {
 	switch c.Tier.Name() {

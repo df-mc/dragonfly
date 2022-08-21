@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity/damage"
+	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -16,9 +18,13 @@ import (
 // as zombies are able to pick up these entities so that the items are added to their inventory.
 type Item struct {
 	transform
-	age, pickupDelay int
-	i                item.Stack
 
+	age, pickupDelay int
+	fireTicks        int64
+
+	i item.Stack
+
+	h *HealthManager
 	c *MovementComputer
 }
 
@@ -31,11 +37,17 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
 
-	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
-		Gravity:           0.04,
-		DragBeforeGravity: true,
-		Drag:              0.02,
-	}}
+	it := &Item{
+		i:           i,
+		pickupDelay: 10,
+
+		h: NewHealthManager(5, 5),
+		c: &MovementComputer{
+			Gravity:           0.04,
+			Drag:              0.02,
+			DragBeforeGravity: true,
+		},
+	}
 	it.transform = newTransform(it, pos)
 	return it
 }
@@ -70,6 +82,113 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 	it.pickupDelay = ticks
 }
 
+// Health ...
+func (it *Item) Health() float64 {
+	return it.h.Health()
+}
+
+// MaxHealth ...
+func (it *Item) MaxHealth() float64 {
+	return it.h.MaxHealth()
+}
+
+// SetMaxHealth ...
+func (it *Item) SetMaxHealth(v float64) {
+	it.h.SetMaxHealth(v)
+}
+
+// Dead ...
+func (it *Item) Dead() bool {
+	return it.Health() <= 0
+}
+
+// AttackImmune ...
+func (it *Item) AttackImmune() bool {
+	return false
+}
+
+// fireSource represents a damage.Source that emits fire.
+type fireSource interface {
+	Fire() bool
+}
+
+// Hurt ...
+func (it *Item) Hurt(dmg float64, source damage.Source) (n float64, vulnerable bool) {
+	if dmg < 0 {
+		return 0, true
+	}
+	if f, ok := source.(fireSource); ok && f.Fire() && !it.affectedByFire() {
+		return 0, false
+	}
+
+	it.h.AddHealth(-dmg)
+	if it.Dead() {
+		_ = it.Close()
+	}
+	return dmg, true
+}
+
+// Heal ...
+func (it *Item) Heal(health float64, _ healing.Source) {
+	if health < 0 {
+		return
+	}
+	it.h.AddHealth(health)
+}
+
+// OnFireDuration ...
+func (it *Item) OnFireDuration() time.Duration {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+	return time.Duration(it.fireTicks) * time.Second / 20
+}
+
+// SetOnFire ...
+func (it *Item) SetOnFire(duration time.Duration) {
+	if !it.affectedByFire() {
+		return
+	}
+
+	it.mu.Lock()
+	it.fireTicks = int64(duration.Seconds() * 20)
+	it.mu.Unlock()
+	for _, v := range it.World().Viewers(it.Position()) {
+		v.ViewEntityState(it)
+	}
+}
+
+// Extinguish ...
+func (it *Item) Extinguish() {
+	it.SetOnFire(0)
+}
+
+// armourTiered represents an item.Armour that has an ArmourTier.
+type armourTiered interface {
+	item.Armour
+	ArmourTier() item.ArmourTier
+}
+
+// toolTiered represents an item.Tool that has a ToolTier.
+type toolTiered interface {
+	item.Tool
+	ToolTier() item.ToolTier
+}
+
+// affectedByFire ...
+func (it *Item) affectedByFire() bool {
+	switch i := it.Item().Item().(type) {
+	case armourTiered:
+		if _, ok := i.ArmourTier().(item.ArmourTierNetherite); ok {
+			return false
+		}
+	case toolTiered:
+		if i.ToolTier() == item.ToolTierNetherite {
+			return false
+		}
+	}
+	return true
+}
+
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(w *world.World, current int64) {
 	it.mu.Lock()
@@ -93,6 +212,9 @@ func (it *Item) Tick(w *world.World, current int64) {
 	} else if it.pickupDelay != math.MaxInt16 {
 		it.pickupDelay--
 	}
+
+	it.tickFire()
+	it.checkBlockCollisions(w)
 }
 
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
@@ -117,6 +239,57 @@ func (it *Item) checkNearby(w *world.World, pos mgl64.Vec3) {
 				}
 			}
 		}
+	}
+}
+
+// entityInsider represents a block that reacts to an entity going inside its 1x1x1 axis aligned bounding box.
+type entityInsider interface {
+	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
+	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
+}
+
+// checkCollisions checks the item's block collisions.
+func (it *Item) checkBlockCollisions(w *world.World) {
+	box := it.BBox().Translate(it.Position()).Grow(-0.0001)
+	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+
+	for y := min[1]; y <= max[1]; y++ {
+		for x := min[0]; x <= max[0]; x++ {
+			for z := min[2]; z <= max[2]; z++ {
+				blockPos := cube.Pos{x, y, z}
+				b := w.Block(blockPos)
+				if collide, ok := b.(entityInsider); ok {
+					collide.EntityInside(blockPos, w, it)
+					if _, liquid := b.(world.Liquid); liquid {
+						continue
+					}
+				}
+
+				if l, ok := w.Liquid(blockPos); ok {
+					if collide, ok := l.(entityInsider); ok {
+						collide.EntityInside(blockPos, w, it)
+					}
+				}
+			}
+		}
+	}
+}
+
+// tickFire ticks fire on the entity if it is on fire.
+func (it *Item) tickFire() {
+	if it.OnFireDuration() <= 0 {
+		return
+	}
+
+	it.mu.Lock()
+	it.fireTicks--
+	it.mu.Unlock()
+
+	if it.OnFireDuration() <= 0 {
+		it.Extinguish()
+	}
+	if it.OnFireDuration()%time.Second == 0 {
+		it.Hurt(1, damage.SourceFireTick{})
 	}
 }
 

@@ -23,6 +23,11 @@ func (b Boots) MaxCount() int {
 	return 1
 }
 
+// ArmourTier ...
+func (b Boots) ArmourTier() ArmourTier {
+	return b.Tier
+}
+
 // DurabilityInfo ...
 func (b Boots) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
