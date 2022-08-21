@@ -39,6 +39,11 @@ func (b BrewingStand) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
+// LightEmissionLevel ...
+func (b BrewingStand) LightEmissionLevel() uint8 {
+	return 1
+}
+
 // Tick is called to check if the brewing stand should update and start or stop brewing.
 func (b BrewingStand) Tick(_ int64, pos cube.Pos, w *world.World) {
 	// Get each item in the brewing stand. We don't need to validate errors here since we know the bounds of the stand.
