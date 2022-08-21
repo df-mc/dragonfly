@@ -141,8 +141,6 @@ func (c *MovementComputer) applyLiquidFlow(e world.Entity, pos, vel mgl64.Vec3) 
 	}
 
 	if flow.Len() > 0.0 {
-		flow = flow.Mul(1.0 / float64(i))
-		flow = flow.Normalize().Mul(0.014)
 		return vel.Add(flow.Mul(1.0 / float64(i)).Normalize().Mul(0.014))
 	}
 	return vel
