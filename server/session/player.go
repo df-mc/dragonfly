@@ -137,8 +137,9 @@ const (
 	containerLoomPattern            = 42
 	containerBlastFurnaceInput      = 44
 	containerSmokerInput            = 45
-	containerGrindstoneFirstInput  = 49
-	containerGrindstoneSecondInput = 50containerStonecutterInput       = 52
+	containerGrindstoneFirstInput   = 49
+	containerGrindstoneSecondInput  = 50
+	containerStonecutterInput       = 52
 	containerBarrel                 = 57
 	containerCursor                 = 58
 	containerOutput                 = 59
