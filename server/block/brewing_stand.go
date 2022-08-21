@@ -14,6 +14,7 @@ import (
 // job site block generated in village churches.
 type BrewingStand struct {
 	sourceWaterDisplacer
+	transparent
 	*brewer
 
 	// LeftSlot is true if the left slot is filled.
