@@ -185,6 +185,12 @@ type BeaconPayment interface {
 	PayableForBeacon() bool
 }
 
+// Compostable represents an item that may be used to fill up a composter.
+type Compostable interface {
+	// CompostChance returns the chance the item will produce a layer of compost in the range of 0-1.
+	CompostChance() float64
+}
+
 // nopReleasable represents a releasable item that does nothing.
 type nopReleasable struct{}
 

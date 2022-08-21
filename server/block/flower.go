@@ -65,6 +65,7 @@ func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
+		dropItem(w, item.NewStack(f, 1), pos.Vec3Centre())
 	}
 }
 
@@ -95,6 +96,11 @@ func (f Flower) FlammabilityInfo() FlammabilityInfo {
 // BreakInfo ...
 func (f Flower) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(f))
+}
+
+// CompostChance ...
+func (Flower) CompostChance() float64 {
+	return 0.65
 }
 
 // EncodeItem ...

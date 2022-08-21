@@ -36,9 +36,5 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 		ContainerID: containerStonecutterInput,
 		Slot:        stonecutterInputSlot,
 	}, input.Grow(-1), s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, output...)
 }

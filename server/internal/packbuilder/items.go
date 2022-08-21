@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image"
 	"image/png"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +31,6 @@ func buildItems(dir string) (count int, lang []string) {
 		textureData[name] = map[string]string{"textures": fmt.Sprintf("textures/items/%s.png", name)}
 
 		buildItemTexture(dir, name, item.Texture())
-		buildItem(dir, identifier, name, item)
 
 		count++
 	}
@@ -60,36 +58,13 @@ func buildItemTexture(dir, name string, img image.Image) {
 	}
 }
 
-// buildItem creases an item JSON file for the provided item and its properties and writes it to the pack.
-func buildItem(dir, identifier, name string, item world.CustomItem) {
-	itemData, err := json.Marshal(map[string]any{
-		"format_version": formatVersion,
-		"minecraft:item": map[string]any{
-			"description": map[string]any{
-				"identifier": identifier,
-				"category":   item.Category().String(),
-			},
-			"components": map[string]any{
-				"minecraft:icon":           name,
-				"minecraft:render_offsets": "tools",
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(dir, "items", fmt.Sprintf("%s.json", name)), itemData, 0666); err != nil {
-		panic(err)
-	}
-}
-
 // buildItemAtlas creates the identifier to texture mapping and writes it to the pack.
 func buildItemAtlas(dir string, atlas map[string]any) {
 	b, err := json.Marshal(atlas)
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(dir, "textures/item_texture.json"), b, 0666); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "textures/item_texture.json"), b, 0666); err != nil {
 		panic(err)
 	}
 }

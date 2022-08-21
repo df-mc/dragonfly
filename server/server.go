@@ -411,8 +411,8 @@ func (srv *Server) startListening() error {
 	texturePacksRequired := srv.c.Resources.Required
 	if srv.c.Resources.AutoBuildPack {
 		if pack, ok := packbuilder.BuildResourcePack(); ok {
-			srv.resources = append(srv.resources, pack)
 			texturePacksRequired = true
+			srv.resources = append(srv.resources, pack)
 		}
 	}
 
@@ -441,9 +441,7 @@ func (srv *Server) makeItemComponents() {
 	srv.itemComponents = make(map[string]map[string]any)
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
-		if data, ok := iteminternal.Components(it); ok {
-			srv.itemComponents[name] = data
-		}
+		srv.itemComponents[name] = iteminternal.Components(it)
 	}
 }
 
@@ -562,7 +560,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 	s := session.New(conn, srv.c.Players.MaximumChunkRadius, srv.log, &srv.joinMessage, &srv.quitMessage)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.createSkin(conn.ClientData()), s, pos, data)
 
-	s.Spawn(p, w, gm, srv.handleSessionClose)
+	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
 	srv.pwg.Add(1)
 	return s
 }
@@ -667,12 +665,10 @@ func (srv *Server) itemEntries() (entries []protocol.ItemEntry) {
 	for _, it := range world.CustomItems() {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
-
-		_, componentBased := srv.itemComponents[name]
 		entries = append(entries, protocol.ItemEntry{
 			Name:           name,
+			ComponentBased: true,
 			RuntimeID:      int16(rid),
-			ComponentBased: componentBased,
 		})
 	}
 	return

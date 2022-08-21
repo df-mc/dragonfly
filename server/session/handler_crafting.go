@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"golang.org/x/exp/slices"
+	"math"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -57,13 +58,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-
-	output := craft.Output()
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, craft.Output()...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
@@ -81,28 +76,29 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
+	repetitions := int(a.TimesCrafted)
 	input := make([]item.Stack, 0, len(craft.Input()))
 	for _, i := range craft.Input() {
-		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
+		input = append(input, i.Grow(i.Count()*(repetitions-1)))
 	}
 
-	expectancies := make([]item.Stack, 0, len(input))
+	flattenedInputs := make([]item.Stack, 0, len(input))
 	for _, i := range input {
 		if i.Empty() {
-			// We don't actually need this item - it's empty, so avoid putting it in our expectancies.
+			// We don't actually need this item - it's empty, so avoid putting it in our flattened inputs.
 			continue
 		}
 
-		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
+		if ind := slices.IndexFunc(flattenedInputs, func(st item.Stack) bool {
 			return matchingStacks(st, i)
 		}); ind >= 0 {
-			i = i.Grow(expectancies[ind].Count())
-			expectancies = slices.Delete(expectancies, ind, ind+1)
+			i = i.Grow(flattenedInputs[ind].Count())
+			flattenedInputs = slices.Delete(flattenedInputs, ind, ind+1)
 		}
-		expectancies = append(expectancies, i)
+		flattenedInputs = append(flattenedInputs, i)
 	}
 
-	for _, expected := range expectancies {
+	for _, expected := range flattenedInputs {
 		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() {
@@ -141,13 +137,18 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 	output := make([]item.Stack, 0, len(craft.Output()))
 	for _, o := range craft.Output() {
-		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
+		count, maxCount := o.Count(), o.MaxCount()
+		total := count * repetitions
+
+		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
+		for i := 0; i < stacks; i++ {
+			inc := min(total, maxCount)
+			total -= inc
+
+			output = append(output, o.Grow(inc-count))
+		}
 	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, output...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -161,12 +162,7 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	}
 	it := creative.Items()[index]
 	it = it.Grow(it.MaxCount() - 1)
-
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, it, s)
-	return nil
+	return h.createResults(s, it)
 }
 
 // craftingSize gets the crafting size based on the opened container ID.

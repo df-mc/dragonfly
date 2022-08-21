@@ -93,6 +93,11 @@ func (m MelonSeeds) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(m))
 }
 
+// CompostChance ...
+func (MelonSeeds) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (m MelonSeeds) EncodeItem() (name string, meta int16) {
 	return "minecraft:melon_seeds", 0

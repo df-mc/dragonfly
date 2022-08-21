@@ -48,6 +48,14 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 	return false
 }
 
+// CompostChance ...
+func (g TallGrass) CompostChance() float64 {
+	if g.Type == Fern() {
+		return 0.65
+	}
+	return 0.3
+}
+
 // NeighbourUpdateTick ...
 func (g TallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {

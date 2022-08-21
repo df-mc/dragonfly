@@ -53,9 +53,5 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		ContainerID: containerSmithingMaterial,
 		Slot:        smithingMaterialSlot,
 	}, material.Grow(-1), s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, duplicateStack(input, craft.Output()[0].Item()), s)
-	return nil
+	return h.createResults(s, duplicateStack(input, craft.Output()[0].Item()))
 }

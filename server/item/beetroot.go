@@ -15,6 +15,11 @@ func (b Beetroot) Consume(_ *world.World, c Consumer) Stack {
 	return Stack{}
 }
 
+// CompostChance ...
+func (Beetroot) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (b Beetroot) EncodeItem() (name string, meta int16) {
 	return "minecraft:beetroot", 0

@@ -37,7 +37,7 @@ func init() {
 // SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, SugarCane:
 		return true
 	}
 	return false
@@ -95,6 +95,11 @@ func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
+}
+
+// CompostChance ...
+func (Grass) CompostChance() float64 {
+	return 0.3
 }
 
 // EncodeItem ...

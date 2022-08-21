@@ -110,6 +110,18 @@ type BlastFurnaceCrackle struct{ sound }
 // SmokerCrackle is a sound played every one to five seconds from a smoker.
 type SmokerCrackle struct{ sound }
 
+// ComposterEmpty is a sound played when a composter has been emptied.
+type ComposterEmpty struct{ sound }
+
+// ComposterFill is a sound played when a composter has been filled, but not gone up a layer.
+type ComposterFill struct{ sound }
+
+// ComposterFillLayer is a sound played when a composter has been filled and gone up a layer.
+type ComposterFillLayer struct{ sound }
+
+// ComposterReady is a sound played when a composter has produced bone meal and is ready to be collected.
+type ComposterReady struct{ sound }
+
 // PotionBrewed is a sound played when a potion is brewed.
 type PotionBrewed struct{ sound }
 

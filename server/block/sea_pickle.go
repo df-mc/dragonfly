@@ -81,9 +81,8 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		}
 
 		existing.AdditionalCount++
-		w.SetBlock(pos, existing, nil)
-		ctx.CountSub = 1
-		return true
+		place(w, pos, existing, user, ctx)
+		return placed(ctx)
 	}
 
 	pos, _, used := firstReplaceable(w, pos, face, s)
@@ -109,6 +108,7 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !s.canSurvive(pos, w) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+		dropItem(w, item.NewStack(s, s.AdditionalCount+1), pos.Vec3Centre())
 		return
 	}
 
@@ -153,6 +153,11 @@ func (SeaPickle) FlammabilityInfo() FlammabilityInfo {
 // SmeltInfo ...
 func (SeaPickle) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(item.Dye{Colour: item.ColourLime()}, 1), 0.1)
+}
+
+// CompostChance ...
+func (SeaPickle) CompostChance() float64 {
+	return 0.65
 }
 
 // EncodeItem ...
