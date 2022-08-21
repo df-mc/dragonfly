@@ -50,7 +50,8 @@ func FlowVector(pos cube.Pos, w *world.World, l world.Liquid) (v mgl64.Vec3) {
 			if _, ok = w.Block(p).(LiquidRemovable); !ok {
 				continue
 			}
-			side, ok = w.Liquid(p.Side(cube.FaceDown))
+			pos = p.Side(cube.FaceDown)
+			side, ok = w.Liquid(pos)
 			if !ok {
 				continue
 			}
@@ -67,7 +68,7 @@ func FlowVector(pos cube.Pos, w *world.World, l world.Liquid) (v mgl64.Vec3) {
 		for _, f := range cube.HorizontalFaces() {
 			p := pos.Side(f)
 			if !canFlowInto(l, w, p, true) || !canFlowInto(l, w, p.Side(cube.FaceUp), true) {
-				v = v.Normalize().Add(mgl64.Vec3{0, -6})
+				v = v.Normalize().Sub(mgl64.Vec3{0, -6})
 			}
 		}
 	}
