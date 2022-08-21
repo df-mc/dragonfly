@@ -68,7 +68,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
-	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
+	vel = c.applyLiquidFlow(e, pos, c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel)))
 	dPos, vel := c.checkCollision(e, pos, vel)
 
 	return &Movement{v: viewers, e: e,
@@ -115,10 +115,37 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 	}
 	vel[0] *= friction
 	vel[2] *= friction
-	if l, ok := w.Liquid(blockPos); ok {
-		if flow := block.FlowVector(blockPos, w, l); flow.Len() > 0 {
-			vel = vel.Add(flow.Normalize().Mul(0.0045))
+	return vel
+}
+
+// applyLiquidFlow applies liquid flow to the entity's velocity.
+func (c *MovementComputer) applyLiquidFlow(e world.Entity, pos, vel mgl64.Vec3) mgl64.Vec3 {
+	w := e.World()
+	box := e.BBox().Grow(-0.001).Translate(pos)
+
+	min, max := box.Min(), box.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	flow, i := zeroVec3, 0
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				blockPos := cube.Pos{x, y, z}
+				if l, ok := w.Liquid(blockPos); ok {
+					flow = flow.Add(block.FlowVector(blockPos, w, l))
+					i++
+				}
+			}
 		}
+	}
+
+	if flow.Len() > 0.0 {
+		if i > 0 {
+			flow = flow.Mul(1.0 / float64(i))
+		}
+		flow = flow.Normalize().Mul(0.014)
+		return vel.Add(flow)
 	}
 	return vel
 }
