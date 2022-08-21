@@ -179,14 +179,12 @@ func (it *Item) FireProof() bool {
 	switch i := it.Item().Item().(type) {
 	case armourTiered:
 		if _, ok := i.ArmourTier().(item.ArmourTierNetherite); ok {
-			return false
+			return true
 		}
 	case toolTiered:
-		if i.ToolTier() == item.ToolTierNetherite {
-			return false
-		}
+		return i.ToolTier() == item.ToolTierNetherite
 	}
-	return true
+	return false
 }
 
 // Tick ticks the entity, performing movement.
