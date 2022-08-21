@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// smelter is a struct that may be embedded by blocks that can smelt blocks and items, such as blast smelters, smelters,
+// smelter is a struct that may be embedded by blocks that can smelt blocks and items, such as blast furnaces, furnaces,
 // and smokers.
 type smelter struct {
 	mu sync.Mutex
