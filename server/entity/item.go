@@ -227,7 +227,7 @@ func (it *Item) DecodeNBT(data map[string]any) any {
 	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
 	n.age = int(nbtconv.Map[int16](data, "Age"))
 	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
-	return nil
+	return n
 }
 
 // EncodeNBT encodes the Item entity's properties as a map and returns it.
