@@ -145,7 +145,7 @@ func (it *Item) OnFireDuration() time.Duration {
 
 // SetOnFire ...
 func (it *Item) SetOnFire(duration time.Duration) {
-	if !it.FireProof() {
+	if it.FireProof() {
 		return
 	}
 
