@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -101,9 +102,10 @@ func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {
 
 // applyHorizontalForces applies friction to the velocity based on the Drag value, reducing it on the X and Z axes.
 func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.Vec3) mgl64.Vec3 {
+	blockPos := cube.PosFromVec3(pos)
 	friction := 1 - c.Drag
 	if c.onGround {
-		if f, ok := w.Block(cube.PosFromVec3(pos).Side(cube.FaceDown)).(interface {
+		if f, ok := w.Block(blockPos.Side(cube.FaceDown)).(interface {
 			Friction() float64
 		}); ok {
 			friction *= f.Friction()
@@ -113,6 +115,9 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 	}
 	vel[0] *= friction
 	vel[2] *= friction
+	if l, ok := w.Liquid(blockPos); ok {
+		vel = vel.Add(block.FlowVector(blockPos, w, l).Normalize().Mul(0.0045000000000000005))
+	}
 	return vel
 }
 
