@@ -117,7 +117,7 @@ func (it *Item) Hurt(dmg float64, source damage.Source) (n float64, vulnerable b
 	if dmg < 0 {
 		return 0, true
 	}
-	if f, ok := source.(fireSource); ok && f.Fire() && !it.FireProof() {
+	if f, ok := source.(fireSource); ok && f.Fire() && it.FireProof() {
 		return 0, false
 	}
 
