@@ -111,6 +111,13 @@ func (b BrewingStand) DecodeNBT(data map[string]any) any {
 	return b
 }
 
+// BreakInfo ...
+func (b BrewingStand) BreakInfo() BreakInfo {
+	drops := b.Inventory().Items()
+	drops = append(drops, item.NewStack(b, 1))
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, simpleDrops(drops...))
+}
+
 // EncodeBlock ...
 func (b BrewingStand) EncodeBlock() (string, map[string]any) {
 	return "minecraft:brewing_stand", map[string]any{
