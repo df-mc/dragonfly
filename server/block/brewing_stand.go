@@ -13,6 +13,7 @@ import (
 // BrewingStand is a block used for brewing potions, splash potions, and lingering potions. It also serves as a cleric's
 // job site block generated in village churches.
 type BrewingStand struct {
+	sourceWaterDisplacer
 	*brewer
 
 	// LeftSlot is true if the left slot is filled.
@@ -31,6 +32,11 @@ func NewBrewingStand() BrewingStand {
 // Model ...
 func (b BrewingStand) Model() world.BlockModel {
 	return model.BrewingStand{}
+}
+
+// SideClosed ...
+func (b BrewingStand) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // Tick is called to check if the brewing stand should update and start or stop brewing.
@@ -52,7 +58,7 @@ func (b BrewingStand) Tick(_ int64, pos cube.Pos, w *world.World) {
 }
 
 // Activate ...
-func (b BrewingStand) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+func (b BrewingStand) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
