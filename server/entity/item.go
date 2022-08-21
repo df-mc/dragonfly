@@ -117,7 +117,7 @@ func (it *Item) Hurt(dmg float64, source damage.Source) (n float64, vulnerable b
 	if dmg < 0 {
 		return 0, true
 	}
-	if f, ok := source.(fireSource); ok && f.Fire() && !it.affectedByFire() {
+	if f, ok := source.(fireSource); ok && f.Fire() && !it.FireProof() {
 		return 0, false
 	}
 
@@ -145,7 +145,7 @@ func (it *Item) OnFireDuration() time.Duration {
 
 // SetOnFire ...
 func (it *Item) SetOnFire(duration time.Duration) {
-	if !it.affectedByFire() {
+	if !it.FireProof() {
 		return
 	}
 
@@ -174,8 +174,8 @@ type toolTiered interface {
 	ToolTier() item.ToolTier
 }
 
-// affectedByFire ...
-func (it *Item) affectedByFire() bool {
+// FireProof ...
+func (it *Item) FireProof() bool {
 	switch i := it.Item().Item().(type) {
 	case armourTiered:
 		if _, ok := i.ArmourTier().(item.ArmourTierNetherite); ok {

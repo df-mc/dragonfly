@@ -151,7 +151,7 @@ func (a *Arrow) VanishOnPickup() {
 }
 
 // FireProof ...
-func (a *Arrow) affectedByFire() bool {
+func (a *Arrow) FireProof() bool {
 	return false
 }
 
