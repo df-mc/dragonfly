@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
@@ -87,12 +86,9 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 	case trace.BlockResult:
 		pos := result.BlockPosition().Side(res.Face())
 		if b, ok := w.Block(pos).(SplashableBlock); ok {
-			if _, ok := b.Model().(model.Empty); ok {
-				b.Splash(w, pos, s.Type())
-				break
-			}
+			b.Splash(w, pos, s.Type())
+			break
 		}
-
 		pos = result.BlockPosition()
 		if b, ok := w.Block(pos).(SplashableBlock); ok {
 			b.Splash(w, pos, s.Type())
