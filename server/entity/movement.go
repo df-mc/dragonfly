@@ -133,8 +133,8 @@ func (c *MovementComputer) applyLiquidFlow(e world.Entity, pos, vel mgl64.Vec3) 
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				blockPos := cube.Pos{x, y, z}
-				if l, ok := w.Liquid(blockPos); ok {
-					flow = flow.Add(block.FlowVector(blockPos, w, l))
+				if _, ok := w.Liquid(blockPos); ok {
+					flow = flow.Add(block.FlowVector(blockPos, w))
 					i++
 				}
 			}

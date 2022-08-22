@@ -127,7 +127,7 @@ func (it *Item) insideLiquid(pos mgl64.Vec3, w *world.World) (world.Liquid, bool
 		if l.LiquidFalling() {
 			d = 1
 		}
-		return l, pos.Y() < (blockPos.Side(cube.FaceUp).Vec3().Y())-(d/9-liquidLevel)
+		return l, pos.Y() < (blockPos.Vec3().Y()+1)-(d/9-liquidLevel)
 	}
 	return nil, false
 }

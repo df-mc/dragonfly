@@ -35,34 +35,27 @@ func (s flowingWaterDisplacer) CanDisplace(b world.Liquid) bool {
 }
 
 // FlowVector returns the flow vector of the liquid at the given position.
-func FlowVector(pos cube.Pos, w *world.World, l world.Liquid) (v mgl64.Vec3) {
-	var decay int
-	if !l.LiquidFalling() {
-		decay = l.LiquidDepth()
+func FlowVector(pos cube.Pos, w *world.World) (v mgl64.Vec3) {
+	l, decay, ok := effectiveFlowDecay(pos, w)
+	if !ok {
+		return
 	}
-
 	for _, f := range cube.HorizontalFaces() {
-		p := pos.Side(f)
+		sidePos := pos.Side(f)
+		offset := sidePos.Sub(pos).Vec3Middle()
 
-		var realDecay int
-		side, ok := w.Liquid(p)
+		_, blockDecay, ok := effectiveFlowDecay(sidePos, w)
 		if !ok {
-			if _, ok = w.Block(p).(LiquidRemovable); !ok {
+			if _, ok = w.Block(sidePos).(LiquidRemovable); !ok {
 				continue
 			}
-			pos = p.Side(cube.FaceDown)
-			side, ok = w.Liquid(pos)
-			if !ok {
+			if _, blockDecay, ok = effectiveFlowDecay(sidePos.Side(cube.FaceDown), w); !ok {
 				continue
 			}
-			if side.LiquidFalling() {
-				continue
-			}
-			realDecay = side.LiquidDepth() - (decay - 8)
-		} else if !side.LiquidFalling() {
-			realDecay = side.LiquidDepth() - decay
+			v = v.Sub(offset.Mul(blockDecay - decay - 8))
+			continue
 		}
-		v = v.Sub(p.Sub(pos).Vec3().Mul(float64(realDecay)))
+		v = v.Sub(offset.Mul(blockDecay - decay))
 	}
 	if l.LiquidFalling() {
 		for _, f := range cube.HorizontalFaces() {
@@ -73,6 +66,18 @@ func FlowVector(pos cube.Pos, w *world.World, l world.Liquid) (v mgl64.Vec3) {
 		}
 	}
 	return v.Normalize()
+}
+
+// effectiveFlowDecay ...
+func effectiveFlowDecay(pos cube.Pos, w *world.World) (world.Liquid, float64, bool) {
+	l, ok := w.Liquid(pos)
+	if !ok {
+		return l, 0, false
+	}
+	if l.LiquidFalling() {
+		return l, 0, true
+	}
+	return l, float64(l.LiquidDepth()), true
 }
 
 // tickLiquid ticks the liquid block passed at a specific position in the world. Depending on the surroundings
