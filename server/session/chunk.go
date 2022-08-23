@@ -25,7 +25,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 }
 
 // ViewSubChunks ...
-func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
+func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.SubChunkOffset) {
 	w := s.c.World()
 	r := w.Range()
 
