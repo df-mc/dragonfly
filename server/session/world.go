@@ -1075,7 +1075,7 @@ func (s *Session) closeWindow() {
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.
-// noinspection GoCommentLeadingSpace
+//noinspection GoCommentLeadingSpace
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	s.entityMutex.RLock()
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
