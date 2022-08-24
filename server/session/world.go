@@ -713,6 +713,7 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundBlazeFireball,
 			Position:  vec64To32(pos),
 		})
+		return
 	case sound.ComposterEmpty:
 		pk.SoundType = packet.SoundEventComposterEmpty
 	case sound.ComposterFill:
@@ -1074,7 +1075,7 @@ func (s *Session) closeWindow() {
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.
-//noinspection GoCommentLeadingSpace
+// noinspection GoCommentLeadingSpace
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	s.entityMutex.RLock()
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
