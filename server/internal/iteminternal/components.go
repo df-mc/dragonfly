@@ -108,7 +108,7 @@ func Components(it world.CustomItem) map[string]any {
 	return builder.Construct()
 }
 
-// calculateHandPosition calculates the position of the item to be rendered to the player according to the given size.
+// calculateHandPosition calculates the scale of the item to be rendered to the player according to the given size.
 func calculateHandPosition(it world.CustomItem, size float32) (float32, float32, float32) {
 	var x, y, z float32
 	if _, ok := it.(item.HandEquipped); ok {
