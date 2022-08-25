@@ -26,9 +26,6 @@ type CustomItem interface {
 	Texture() image.Image
 	// Category is the category the item will be listed under in the creative inventory.
 	Category() category.Category
-	// ImageSize is the width/height size value of the image which will be used to correct item render scale. We assume width and height are same.
-	// Minecraft uses 16x16 for their image. If your image uses 16x16 then you could return 16.
-	ImageSize() uint8
 }
 
 // RegisterItem registers an item with the ID and meta passed. Once registered, items may be obtained from an
