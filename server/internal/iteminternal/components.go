@@ -81,13 +81,7 @@ func Components(it world.CustomItem) map[string]any {
 	if x, ok := it.(item.HandEquipped); ok {
 		builder.AddProperty("hand_equipped", x.HandEquipped())
 	}
-
-	bounds := it.Texture().Bounds()
-
-	x, y, z := calculateItemScale(it, float32(bounds.Dx()), float32(bounds.Dy()))
-
-	itemScale := []float32{x, y, z}
-
+	itemScale := calculateItemScale(it)
 	builder.AddComponent("minecraft:render_offsets", map[string]any{
 		"main_hand": map[string]any{
 			"first_person": map[string]any{
@@ -111,7 +105,9 @@ func Components(it world.CustomItem) map[string]any {
 }
 
 // calculateItemScale calculates the scale of the item to be rendered to the player according to the given size.
-func calculateItemScale(it world.CustomItem, width, height float32) (float32, float32, float32) {
+func calculateItemScale(it world.CustomItem) []float32 {
+	width := float32(it.Texture().Bounds().Dx())
+	height := float32(it.Texture().Bounds().Dy())
 	var x, y, z float32 = 0.1, 0.1, 0.1
 	if _, ok := it.(item.HandEquipped); ok {
 		x, y, z = 0.075, 0.125, 0.075
@@ -119,5 +115,5 @@ func calculateItemScale(it world.CustomItem, width, height float32) (float32, fl
 	newX := x / (width / 16)
 	newY := y / (height / 16)
 	newZ := z / (width / 16)
-	return newX, newY, newZ
+	return []float32{newX, newY, newZ}
 }
