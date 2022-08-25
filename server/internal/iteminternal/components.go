@@ -82,7 +82,7 @@ func Components(it world.CustomItem) map[string]any {
 		builder.AddProperty("hand_equipped", x.HandEquipped())
 	}
 
-	x, y, z := calculateHandPosition(it, float32(it.ImageSize()))
+	x, y, z := calculateItemScale(it, float32(it.ImageSize()))
 
 	value := []float32{x, y, z}
 
@@ -108,8 +108,8 @@ func Components(it world.CustomItem) map[string]any {
 	return builder.Construct()
 }
 
-// calculateHandPosition calculates the scale of the item to be rendered to the player according to the given size.
-func calculateHandPosition(it world.CustomItem, size float32) (float32, float32, float32) {
+// calculateItemScale calculates the scale of the item to be rendered to the player according to the given size.
+func calculateItemScale(it world.CustomItem, size float32) (float32, float32, float32) {
 	var x, y, z float32
 	if _, ok := it.(item.HandEquipped); ok {
 		x, y, z = 0.075, 0.125, 0.075
