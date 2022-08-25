@@ -81,5 +81,43 @@ func Components(it world.CustomItem) map[string]any {
 	if x, ok := it.(item.HandEquipped); ok {
 		builder.AddProperty("hand_equipped", x.HandEquipped())
 	}
+
+	x, y, z := calculateHandPosition(it, float32(it.ImageSize()))
+
+	value := []float32{x, y, z}
+
+	builder.AddComponent("minecraft:render_offsets", map[string]any{
+		"main_hand": map[string]any{
+			"first_person": map[string]any{
+				"scale": value,
+			},
+			"third_person": map[string]any{
+				"scale": value,
+			},
+		},
+		"off_hand": map[string]any{
+			"first_person": map[string]any{
+				"scale": value,
+			},
+			"third_person": map[string]any{
+				"scale": value,
+			},
+		},
+	})
+
 	return builder.Construct()
+}
+
+// calculateHandPosition calculates the position of the item to be rendered to the player according to the given size.
+func calculateHandPosition(it world.CustomItem, size float32) (float32, float32, float32) {
+	var x, y, z float32
+	if _, ok := it.(item.HandEquipped); ok {
+		x, y, z = 0.075, 0.125, 0.075
+	} else {
+		x, y, z = 0.1, 0.1, 0.1
+	}
+	newX := x / (size / 16)
+	newY := y / (size / 16)
+	newZ := z / (size / 16)
+	return newX, newY, newZ
 }
