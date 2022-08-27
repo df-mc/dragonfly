@@ -1948,11 +1948,11 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
-	p.pos.Store(pos)
-	p.vel.Store(mgl64.Vec3{})
 	for _, v := range p.viewers() {
 		v.ViewEntityTeleport(p, pos)
 	}
+	p.pos.Store(pos)
+	p.vel.Store(mgl64.Vec3{})
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
