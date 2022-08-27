@@ -241,10 +241,11 @@ func (s *Session) SendSpeed(speed float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:movement",
-			Value:   float32(speed),
-			Max:     math.MaxFloat32,
-			Min:     0,
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:movement",
+				Value: float32(speed),
+				Max:   math.MaxFloat32,
+			},
 			Default: 0.1,
 		}},
 	})
@@ -256,19 +257,27 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
 			{
-				Name:  "minecraft:player.hunger",
-				Value: float32(food),
-				Max:   20, Min: 0, Default: 20,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.hunger",
+					Value: float32(food),
+					Max:   20,
+				},
+				Default: 20,
 			},
 			{
-				Name:  "minecraft:player.saturation",
-				Value: float32(saturation),
-				Max:   20, Min: 0, Default: 20,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.saturation",
+					Value: float32(saturation),
+					Max:   20,
+				},
+				Default: 20,
 			},
 			{
-				Name:  "minecraft:player.exhaustion",
-				Value: float32(exhaustion),
-				Max:   5, Min: 0, Default: 0,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.exhaustion",
+					Value: float32(exhaustion),
+					Max:   5,
+				},
 			},
 		},
 	})
@@ -374,9 +383,11 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:health",
-			Value:   float32(math.Ceil(health.Health())),
-			Max:     float32(math.Ceil(health.MaxHealth())),
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:health",
+				Value: float32(math.Ceil(health.Health())),
+				Max:   float32(math.Ceil(health.MaxHealth())),
+			},
 			Default: 20,
 		}},
 	})
@@ -384,16 +395,18 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	max := value
+	maximum := value
 	if math.Mod(value, 2) != 0 {
-		max = value + 1
+		maximum = value + 1
 	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:  "minecraft:absorption",
-			Value: float32(math.Ceil(value)),
-			Max:   float32(math.Ceil(max)),
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:absorption",
+				Value: float32(math.Ceil(value)),
+				Max:   float32(math.Ceil(maximum)),
+			},
 		}},
 	})
 }
@@ -647,14 +660,18 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
 			{
-				Name:  "minecraft:player.level",
-				Value: float32(level),
-				Max:   float32(math.MaxInt32),
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.level",
+					Value: float32(level),
+					Max:   float32(math.MaxInt32),
+				},
 			},
 			{
-				Name:  "minecraft:player.experience",
-				Value: float32(progress),
-				Max:   1,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.experience",
+					Value: float32(progress),
+					Max:   1,
+				},
 			},
 		},
 	})
