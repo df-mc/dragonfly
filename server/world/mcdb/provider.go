@@ -414,7 +414,9 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 		}
 		id, ok := m["identifier"]
 		if !ok {
-			return nil, fmt.Errorf("entity has no ID but data (%v)", m)
+			// Entity has no ID: This happens sometimes when loading worlds from server software like PM, so the best we
+			// can do is to just skip this entity.
+			continue
 		}
 		name, _ := id.(string)
 		e, ok := world.EntityByName(name)
