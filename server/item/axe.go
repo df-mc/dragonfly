@@ -41,6 +41,11 @@ func (a Axe) MaxCount() int {
 	return 1
 }
 
+// ToolTier ...
+func (a Axe) ToolTier() ToolTier {
+	return a.Tier
+}
+
 // DurabilityInfo ...
 func (a Axe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{

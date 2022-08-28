@@ -23,6 +23,11 @@ func (l Leggings) MaxCount() int {
 	return 1
 }
 
+// ArmourTier ...
+func (l Leggings) ArmourTier() ArmourTier {
+	return l.Tier
+}
+
 // DefencePoints ...
 func (l Leggings) DefencePoints() float64 {
 	switch l.Tier.Name() {

@@ -22,6 +22,11 @@ func (s Sword) MaxCount() int {
 	return 1
 }
 
+// ToolTier ...
+func (s Sword) ToolTier() ToolTier {
+	return s.Tier
+}
+
 // ToolType returns the tool type for swords.
 func (s Sword) ToolType() ToolType {
 	return TypeSword

@@ -47,6 +47,11 @@ func (h Hoe) MaxCount() int {
 	return 1
 }
 
+// ToolTier ...
+func (h Hoe) ToolTier() ToolTier {
+	return h.Tier
+}
+
 // AttackDamage ...
 func (h Hoe) AttackDamage() float64 {
 	return h.Tier.BaseAttackDamage + 1
