@@ -1995,7 +1995,10 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.pitch.Store(resPitch)
 
 	p.vel.Store(deltaPos)
-	p.checkBlockCollisions(deltaPos, w)
+	if deltaPos.Len() <= 3 {
+		// Only check for block collisions if the player is not moving too fast to prevent potential OOMs.
+		p.checkBlockCollisions(deltaPos, w)
+	}
 
 	horizontalVel := deltaPos
 	horizontalVel[1] = 0
