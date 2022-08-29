@@ -919,6 +919,9 @@ func (p *Player) dropContents() {
 
 	p.session().EmptyUIInventory()
 	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
+		if _, ok := it.Enchantment(enchantment.Vanishing{}); ok {
+			continue
+		}
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
