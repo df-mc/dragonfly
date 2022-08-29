@@ -37,10 +37,11 @@ func (Vanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 func (Vanishing) CompatibleWithItem(i world.Item) bool {
 	_, dur := i.(item.Durable)
 	_, com := i.(item.Compass)
+	_, arm := i.(item.Armour)
 	// TODO: Recovery Compass
 	// TODO: Carrot on a Stick
 	// TODO: Warped Fungus on a Stick
-	return dur || com
+	return arm || com || dur
 }
 
 // Treasure ...
