@@ -117,7 +117,7 @@ func New(c *Config, log Logger) *Server {
 		a:              *atomic.NewValue[Allower](allower{}),
 		world:          &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
-	p, err := mcdb.New(c.World.Folder, opt.FlateCompression)
+	p, err := mcdb.New(log, c.World.Folder, opt.FlateCompression)
 	if err != nil {
 		log.Fatalf("error loading world: %v", err)
 	}

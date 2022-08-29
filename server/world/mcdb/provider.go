@@ -26,10 +26,18 @@ type Provider struct {
 	dir string
 	d   data
 	set *world.Settings
+	log Logger
 }
 
 // chunkVersion is the current version of chunks.
 const chunkVersion = 40
+
+// Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
+// messages to this Logger when appropriate.
+type Logger interface {
+	Errorf(format string, a ...any)
+	Debugf(format string, a ...any)
+}
 
 // New creates a new provider reading and writing from/to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
@@ -37,10 +45,10 @@ const chunkVersion = 40
 // A compression type may be passed which will be used for the compression of new blocks written to the database. This
 // will only influence the compression. Decompression of the database will happen based on IDs found in the compressed
 // blocks.
-func New(dir string, compression opt.Compression) (*Provider, error) {
+func New(log Logger, dir string, compression opt.Compression) (*Provider, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	p := &Provider{dir: dir}
+	p := &Provider{log: log, dir: dir}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
@@ -414,15 +422,13 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 		}
 		id, ok := m["identifier"]
 		if !ok {
-			// Entity has no ID: This happens sometimes when loading worlds from server software like PM, so the best we
-			// can do is to just skip this entity.
+			p.log.Errorf("load entities: entity had data but no identifier (%v)", m)
 			continue
 		}
 		name, _ := id.(string)
 		e, ok := world.EntityByName(name)
 		if !ok {
-			// Entity was not registered: This can only be expected sometimes, so the best we can do is to just
-			// ignore this and proceed.
+			p.log.Errorf("load entities: entity %s was not registered", name)
 			continue
 		}
 		if s, ok := e.(world.SaveableEntity); ok {
