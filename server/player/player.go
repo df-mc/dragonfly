@@ -914,19 +914,15 @@ func (p *Player) dropContents() {
 		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 		w.AddEntity(orb)
 	}
-	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
-		if _, ok := it.Enchantment(enchantment.Vanishing{}); ok {
-			continue
-		}
+	p.experience.Reset()
+	p.session().SendExperience(p.experience)
+
+	p.session().EmptyUIInventory()
+	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
 	}
-	p.inv.Clear()
-	p.armour.Clear()
-	p.offHand.Clear()
-	p.experience.Reset()
-	p.session().SendExperience(p.experience)
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
@@ -1793,7 +1789,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			// Placing blocks inside arrow entities is fine.
 			continue
 		}
-		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position())) {
+		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position()).Grow(-1e-6)) {
 			return true
 		}
 	}
