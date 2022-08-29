@@ -10,7 +10,7 @@ type Vanishing struct{}
 
 // Name ...
 func (Vanishing) Name() string {
-	return "Vanishing"
+	return "Curse of Vanishing"
 }
 
 // MaxLevel ...
