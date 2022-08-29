@@ -20,7 +20,7 @@ func (Vanishing) MaxLevel() int {
 
 // Cost ...
 func (Vanishing) Cost(int) (int, int) {
-	return 15, 65
+	return 25, 50
 }
 
 // Rarity ...
@@ -35,15 +35,12 @@ func (Vanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 
 // CompatibleWithItem ...
 func (Vanishing) CompatibleWithItem(i world.Item) bool {
-	switch i.(type) {
-	case item.Durable:
-		//case block.Skull:
-		//case block.Pumpkin:
-		//case block.LitPumpkin:
-		// note: causes import cycle
-		return true
-	}
-	return false
+	_, dur := i.(item.Durable)
+	_, com := i.(item.Compass)
+	// TODO: Recovery Compass
+	// TODO: Carrot on a Stick
+	// TODO: Warped Fungus on a Stick
+	return dur || com
 }
 
 // Treasure ...

@@ -2,13 +2,15 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"math/rand"
 )
 
 const (
@@ -46,6 +48,18 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 
 	resultStack := nonZeroItem(firstInput, secondInput)
 	if !firstInput.Empty() && !secondInput.Empty() {
+		for _, e := range firstInput.Enchantments() {
+			if _, ok := e.Type().(enchantment.Vanishing); ok {
+				return fmt.Errorf("first input item has vanishing enchantment")
+			}
+		}
+
+		for _, e := range secondInput.Enchantments() {
+			if _, ok := e.Type().(enchantment.Vanishing); ok {
+				return fmt.Errorf("second input item has vanishing enchantment")
+			}
+		}
+
 		// We add the enchantments to the result stack in order to calculate the gained experience. These enchantments
 		// are stripped when creating the result.
 		resultStack = firstInput.WithEnchantments(secondInput.Enchantments()...)

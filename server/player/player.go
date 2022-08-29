@@ -875,14 +875,14 @@ func (p *Player) kill(src damage.Source) {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
+	p.addHealth(-p.MaxHealth())
+
 	p.Handler().HandleDeath(src)
 	p.StopSneaking()
 	p.StopSprinting()
-	p.dropContents()
-
-	p.addHealth(-p.MaxHealth())
 
 	w, pos := p.World(), p.Position()
+	p.dropContents()
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
@@ -915,7 +915,7 @@ func (p *Player) dropContents() {
 		w.AddEntity(orb)
 	}
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
-		if _, ok := it.Enchantment(enchantment.Vanishing{}); ok && p.Dead() {
+		if _, ok := it.Enchantment(enchantment.Vanishing{}); ok {
 			continue
 		}
 		ent := entity.NewItem(it, pos)
