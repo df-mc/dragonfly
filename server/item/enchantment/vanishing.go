@@ -28,12 +28,12 @@ func (Vanishing) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
-// CompatibleWithEnchantment...
+// CompatibleWithEnchantment ...
 func (Vanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	return true
 }
 
-// CompatibleWithItem...
+// CompatibleWithItem ...
 func (Vanishing) CompatibleWithItem(i world.Item) bool {
 	switch i.(type) {
 	case item.Durable:
