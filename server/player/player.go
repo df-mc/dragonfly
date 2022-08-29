@@ -2,6 +2,13 @@ package player
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -30,12 +37,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
-	"math"
-	"math/rand"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -874,14 +875,14 @@ func (p *Player) kill(src damage.Source) {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
-	p.addHealth(-p.MaxHealth())
-
 	p.Handler().HandleDeath(src)
 	p.StopSneaking()
 	p.StopSprinting()
+	p.dropContents()
+
+	p.addHealth(-p.MaxHealth())
 
 	w, pos := p.World(), p.Position()
-	p.dropContents()
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
@@ -914,6 +915,9 @@ func (p *Player) dropContents() {
 		w.AddEntity(orb)
 	}
 	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
+		if _, ok := it.Enchantment(enchantment.Vanishing{}); ok && p.Dead() {
+			continue
+		}
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
