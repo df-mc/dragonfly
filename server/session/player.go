@@ -62,6 +62,26 @@ func (s *Session) closeCurrentContainer() {
 	}
 }
 
+// EmptyUIInventory attempts to move all items in the UI inventory to the player's main inventory. If the main inventory
+// is full, the items are dropped on the ground instead.
+func (s *Session) EmptyUIInventory() {
+	if s == Nop {
+		return
+	}
+	items := s.ui.Clear()
+	leftover := make([]item.Stack, 0, len(items))
+	for _, i := range items {
+		if n, err := s.inv.AddItem(i); err != nil {
+			leftover = append(leftover, i.Grow(i.Count()-n))
+		}
+	}
+	for _, i := range leftover {
+		// We can't put this back in the inventory, so the best option here is to simply get rid of the item if
+		// dropping was cancelled.
+		s.c.Drop(i)
+	}
+}
+
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
 func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	s.writePacket(&packet.Respawn{

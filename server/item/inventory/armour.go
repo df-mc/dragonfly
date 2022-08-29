@@ -112,8 +112,8 @@ func (a *Armour) Items() []item.Stack {
 }
 
 // Clear clears the armour inventory, removing all items currently present.
-func (a *Armour) Clear() {
-	a.inv.Clear()
+func (a *Armour) Clear() []item.Stack {
+	return a.inv.Clear()
 }
 
 // String converts the armour to a readable string representation.

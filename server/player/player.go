@@ -913,16 +913,15 @@ func (p *Player) dropContents() {
 		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 		w.AddEntity(orb)
 	}
-	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
+	p.experience.Reset()
+	p.session().SendExperience(p.experience)
+
+	p.session().EmptyUIInventory()
+	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
 	}
-	p.inv.Clear()
-	p.armour.Clear()
-	p.offHand.Clear()
-	p.experience.Reset()
-	p.session().SendExperience(p.experience)
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
