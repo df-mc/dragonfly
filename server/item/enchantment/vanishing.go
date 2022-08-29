@@ -35,7 +35,15 @@ func (Vanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 
 // CompatibleWithItem...
 func (Vanishing) CompatibleWithItem(i world.Item) bool {
-	return true
+	switch i.(type) {
+	case item.Durable:
+		//case block.Skull:
+		//case block.Pumpkin:
+		//case block.LitPumpkin:
+		// note: causes import cycle
+		return true
+	}
+	return false
 }
 
 // Treasure ...
