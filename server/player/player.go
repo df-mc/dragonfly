@@ -919,7 +919,7 @@ func (p *Player) dropContents() {
 
 	p.session().EmptyUIInventory()
 	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
-		if _, ok := it.Enchantment(enchantment.Vanishing{}); ok {
+		if _, ok := it.Enchantment(enchantment.CurseOfVanishing{}); ok {
 			continue
 		}
 		ent := entity.NewItem(it, pos)

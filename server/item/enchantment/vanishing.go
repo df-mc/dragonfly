@@ -5,36 +5,36 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Vanishing is an enchantment that causes the item to disappear on death.
-type Vanishing struct{}
+// CurseOfVanishing is an enchantment that causes the item to disappear on death.
+type CurseOfVanishing struct{}
 
 // Name ...
-func (Vanishing) Name() string {
+func (CurseOfVanishing) Name() string {
 	return "Curse of Vanishing"
 }
 
 // MaxLevel ...
-func (Vanishing) MaxLevel() int {
+func (CurseOfVanishing) MaxLevel() int {
 	return 1
 }
 
 // Cost ...
-func (Vanishing) Cost(int) (int, int) {
+func (CurseOfVanishing) Cost(int) (int, int) {
 	return 25, 50
 }
 
 // Rarity ...
-func (Vanishing) Rarity() item.EnchantmentRarity {
+func (CurseOfVanishing) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (Vanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+func (CurseOfVanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (Vanishing) CompatibleWithItem(i world.Item) bool {
+func (CurseOfVanishing) CompatibleWithItem(i world.Item) bool {
 	_, arm := i.(item.Armour)
 	_, com := i.(item.Compass)
 	_, dur := i.(item.Durable)
@@ -45,11 +45,11 @@ func (Vanishing) CompatibleWithItem(i world.Item) bool {
 }
 
 // Treasure ...
-func (Vanishing) Treasure() bool {
+func (CurseOfVanishing) Treasure() bool {
 	return true
 }
 
 // Curse ...
-func (Vanishing) Curse() bool {
+func (CurseOfVanishing) Curse() bool {
 	return true
 }
