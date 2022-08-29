@@ -48,3 +48,8 @@ func (Vanishing) CompatibleWithItem(i world.Item) bool {
 func (Vanishing) Treasure() bool {
 	return true
 }
+
+// Treasure ...
+func (Vanishing) Curse() bool {
+	return true
+}

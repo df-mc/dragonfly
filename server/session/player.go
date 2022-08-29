@@ -3,6 +3,11 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"net"
+	"time"
+	_ "unsafe" // Imported for compiler directives.
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -19,10 +24,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
-	"net"
-	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to

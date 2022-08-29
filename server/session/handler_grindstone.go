@@ -48,18 +48,6 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 
 	resultStack := nonZeroItem(firstInput, secondInput)
 	if !firstInput.Empty() && !secondInput.Empty() {
-		for _, e := range firstInput.Enchantments() {
-			if _, ok := e.Type().(enchantment.Vanishing); ok {
-				return fmt.Errorf("first input item has vanishing enchantment")
-			}
-		}
-
-		for _, e := range secondInput.Enchantments() {
-			if _, ok := e.Type().(enchantment.Vanishing); ok {
-				return fmt.Errorf("second input item has vanishing enchantment")
-			}
-		}
-
 		// We add the enchantments to the result stack in order to calculate the gained experience. These enchantments
 		// are stripped when creating the result.
 		resultStack = firstInput.WithEnchantments(secondInput.Enchantments()...)
@@ -92,7 +80,9 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 func experienceFromEnchantments(stack item.Stack) int {
 	var totalCost int
 	for _, enchant := range stack.Enchantments() {
-		// TODO: Don't include curses.
+		if _, ok := enchant.Type().(enchantment.Curse); ok {
+			continue
+		}
 		cost, _ := enchant.Type().Cost(enchant.Level())
 		totalCost += cost
 	}
@@ -108,7 +98,9 @@ func experienceFromEnchantments(stack item.Stack) int {
 // stripPossibleEnchantments strips all enchantments possible, excluding curses.
 func stripPossibleEnchantments(stack item.Stack) item.Stack {
 	for _, enchant := range stack.Enchantments() {
-		// TODO: Don't remove curses.
+		if _, ok := enchant.Type().(enchantment.Curse); ok {
+			continue
+		}
 		stack = stack.WithoutEnchantments(enchant.Type())
 	}
 	return stack
