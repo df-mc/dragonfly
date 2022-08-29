@@ -49,7 +49,7 @@ func (Vanishing) Treasure() bool {
 	return true
 }
 
-// Treasure ...
+// Curse ...
 func (Vanishing) Curse() bool {
 	return true
 }
