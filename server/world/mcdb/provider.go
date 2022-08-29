@@ -422,13 +422,13 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 		}
 		id, ok := m["identifier"]
 		if !ok {
-			p.log.Errorf("load entities: entity had data but no identifier (%v)", m)
+			p.log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
 			continue
 		}
 		name, _ := id.(string)
 		e, ok := world.EntityByName(name)
 		if !ok {
-			p.log.Errorf("load entities: entity %s was not registered", name)
+			p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
 			continue
 		}
 		if s, ok := e.(world.SaveableEntity); ok {
