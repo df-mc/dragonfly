@@ -530,26 +530,20 @@ func (p *Player) fall(distance float64) {
 // respawn.
 // If the damage passed is negative, Hurt will not do anything.
 // Hurt returns the final damage dealt to the Player and if the Player was vulnerable to this kind of damage.
-func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
-	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
+func (p *Player) Hurt(dmg float64, src damage.Source) (float64, bool) {
+	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
-
-	fireSource := source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}
-	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
-		return 0, false
-	}
-
 	immunity := time.Second / 2
 	ctx := event.C()
-	if p.Handler().HandleHurt(ctx, &dmg, &immunity, source); ctx.Cancelled() {
+	if p.Handler().HandleHurt(ctx, &dmg, &immunity, src); ctx.Cancelled() {
 		return 0, false
 	}
 	if dmg < 0 {
 		return 0, true
 	}
 
-	totalDamage := p.FinalDamageFrom(dmg, source)
+	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
 
 	if a := p.Absorption(); a > 0 {
@@ -564,62 +558,88 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	}
 	p.addHealth(-damageLeft)
 
-	if source.ReducedByArmour() {
+	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
 
-		var damageToAttacker int
-		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
-		thornsArmour := map[int]item.Stack{}
+		armourDamage := int(math.Max(math.Floor(dmg/4), 1))
 		for slot, it := range p.armour.Slots() {
-			if _, ok := it.Item().(item.Durable); ok {
-				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < float64(e.Level())*0.15 {
-					damageToArmour++
-					thornsArmour[slot] = it
-					if e.Level() > 10 {
-						damageToAttacker += e.Level() - 10
-					} else {
-						damageToAttacker += 1 + rand.Intn(4)
-					}
-				}
-				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
-			}
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, armourDamage))
 		}
-
-		if length := len(thornsArmour); length > 0 {
-			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
-			it := thornsArmour[slot]
-
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, 2))
-			if damageToAttacker > 0 {
-				var attacker world.Entity
-				if s, ok := source.(damage.SourceEntityAttack); ok {
-					attacker = s.Attacker
-				} else if s, ok := source.(damage.SourceProjectile); ok {
-					attacker = s.Owner
-				}
-				if l, ok := attacker.(entity.Living); ok {
-					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
-				}
-			}
-		}
+		p.applyThorns(src)
 	}
 
 	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
-	if fireSource {
+	if src.Fire() {
 		w.PlaySound(pos, sound.Burning{})
-	}
-	if _, ok := source.(damage.SourceDrowning); ok {
+	} else if _, ok := src.(damage.SourceDrowning); ok {
 		w.PlaySound(pos, sound.Drowning{})
 	}
 
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
-		p.kill(source)
+		p.kill(src)
 	}
 	return totalDamage, true
+}
+
+// applyThorns applies thorns damage to the attacking entity if the damage.Source is either damage.SourceEntityAttack or
+// damage.SourceProjectile.
+func (p *Player) applyThorns(src damage.Source) {
+	var attacker world.Entity
+	if s, ok := src.(damage.SourceEntityAttack); ok {
+		attacker = s.Attacker
+	} else if s, ok := src.(damage.SourceProjectile); ok {
+		attacker = s.Owner
+	}
+	l, ok := attacker.(entity.Living)
+	if !ok {
+		// Not attacked by a living entity.
+		return
+	}
+
+	var (
+		dmg           = 0.0
+		searchHighest = false
+		thornsItems   = make(map[int]item.Stack, 4)
+	)
+	for slot, i := range p.armour.Slots() {
+		if _, ok := i.Enchantment(enchantment.Thorns{}); !ok {
+			continue
+		}
+		thornsItems[slot] = i
+
+		thorns, _ := i.Enchantment(enchantment.Thorns{})
+		level := float64(thorns.Level())
+		if rand.Float64() > float64(level)*0.15 {
+			continue
+		}
+
+		if level > 10 && (level-10 > dmg || !searchHighest) {
+			// When we find an armour piece with thorns XI or above, the logic changes: We have to find the armour piece
+			// with the highest level of thorns and subtract 10 from its level to calculate the final damage.
+			dmg = level - 10
+			searchHighest = true
+			continue
+		}
+		// Total damage from normal thorns armour (max Thorns III) should never exceed 4.0 in total.
+		dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
+	}
+	if dmg <= 0 {
+		// No armour with thorns or no thorns activated.
+		return
+	}
+
+	// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition both have different behaviour here and
+	// neither seem to match the expected behaviour. Java Edition deals 2 damage to a random thorns item for every
+	// thorns armour item worn, while Bedrock Edition deals 1 additional damage for every thorns item and another 2 for
+	// every thorns item when it activates.
+	slot := maps.Keys(thornsItems)[rand.Intn(len(thornsItems))]
+	_ = p.armour.Inventory().SetItem(slot, p.damageItem(thornsItems[slot], 2))
+
+	l.Hurt(dmg, damage.SourceThorns{Owner: attacker})
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -2307,7 +2327,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
-			p.Hurt(1, damage.SourceFireTick{})
+			p.Hurt(1, damage.SourceFire{})
 		}
 	}
 
@@ -2704,7 +2724,7 @@ func (p *Player) EncodeEntity() string {
 // broke, a breaking sound is played.
 // If the player is not survival, the original stack is returned.
 func (p *Player) damageItem(s item.Stack, d int) item.Stack {
-	if p.GameMode().CreativeInventory() || d == 0 {
+	if p.GameMode().CreativeInventory() || d == 0 || s.MaxDurability() == -1 {
 		return s
 	}
 	ctx := event.C()

@@ -34,11 +34,8 @@ func (Protection) Rarity() item.EnchantmentRarity {
 func (Protection) Affects(src damage.Source) bool {
 	_, projectile := src.(damage.SourceProjectile)
 	_, attack := src.(damage.SourceEntityAttack)
-	_, fireTick := src.(damage.SourceFireTick)
 	_, fall := src.(damage.SourceFall)
-	_, fire := src.(damage.SourceFire)
-	_, lava := src.(damage.SourceLava)
-	return projectile || attack || fireTick || fall || fire || lava
+	return projectile || attack || fall || src.Fire()
 }
 
 // Modifier returns the base protection modifier for the enchantment.

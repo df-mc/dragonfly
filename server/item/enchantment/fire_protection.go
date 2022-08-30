@@ -32,9 +32,7 @@ func (FireProtection) Rarity() item.EnchantmentRarity {
 
 // Affects ...
 func (FireProtection) Affects(src damage.Source) bool {
-	_, fire := src.(damage.SourceFire)
-	_, fireTick := src.(damage.SourceFireTick)
-	return fire || fireTick
+	return src.Fire()
 }
 
 // Modifier returns the base protection modifier for the enchantment.
