@@ -2,13 +2,14 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"math/rand"
 )
 
 const (
@@ -74,11 +75,18 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 	return h.createResults(s, stripPossibleEnchantments(resultStack))
 }
 
+// curseEnchantment represents an enchantment that may be a curse enchantment.
+type curseEnchantment interface {
+	Curse() bool
+}
+
 // experienceFromEnchantments returns the amount of experience that is gained from the enchantments on the given stack.
 func experienceFromEnchantments(stack item.Stack) int {
 	var totalCost int
 	for _, enchant := range stack.Enchantments() {
-		// TODO: Don't include curses.
+		if _, ok := enchant.Type().(curseEnchantment); ok {
+			continue
+		}
 		cost, _ := enchant.Type().Cost(enchant.Level())
 		totalCost += cost
 	}
@@ -94,7 +102,9 @@ func experienceFromEnchantments(stack item.Stack) int {
 // stripPossibleEnchantments strips all enchantments possible, excluding curses.
 func stripPossibleEnchantments(stack item.Stack) item.Stack {
 	for _, enchant := range stack.Enchantments() {
-		// TODO: Don't remove curses.
+		if _, ok := enchant.Type().(curseEnchantment); ok {
+			continue
+		}
 		stack = stack.WithoutEnchantments(enchant.Type())
 	}
 	return stack

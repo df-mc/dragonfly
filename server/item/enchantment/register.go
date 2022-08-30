@@ -31,7 +31,7 @@ func init() {
 	// TODO: (25) Frost Walker.
 	item.RegisterEnchantment(26, Mending{})
 	// TODO: (27) Curse of Binding.
-	// TODO: (28) Curse of Vanishing.
+	item.RegisterEnchantment(28, CurseOfVanishing{})
 	// TODO: (29) Impaling.
 	// TODO: (30) Riptide.
 	// TODO: (31) Loyalty.

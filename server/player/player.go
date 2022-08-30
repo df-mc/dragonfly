@@ -2,6 +2,13 @@ package player
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -30,12 +37,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
-	"math"
-	"math/rand"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -938,6 +939,9 @@ func (p *Player) dropContents() {
 
 	p.session().EmptyUIInventory()
 	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
+		if _, ok := it.Enchantment(enchantment.CurseOfVanishing{}); ok {
+			continue
+		}
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
