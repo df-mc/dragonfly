@@ -118,12 +118,13 @@ func (SourceDrowning) ReducedByArmour() bool                { return false }
 func (SourceDrowning) Fire() bool                           { return false }
 func (SourcePoisonEffect) ReducedByResistance() bool        { return true }
 func (SourcePoisonEffect) ReducedByArmour() bool            { return false }
-func (SourceWitherEffect) Fire() bool                       { return false }
+func (SourcePoisonEffect) Fire() bool                       { return false }
 func (SourceWitherEffect) ReducedByResistance() bool        { return true }
 func (SourceWitherEffect) ReducedByArmour() bool            { return false }
-func (SourceFire) Fire() bool                               { return true }
+func (SourceWitherEffect) Fire() bool                       { return false }
 func (SourceFire) ReducedByResistance() bool                { return true }
 func (SourceFire) ReducedByArmour() bool                    { return true }
+func (SourceFire) Fire() bool                               { return true }
 func (SourceLava) ReducedByResistance() bool                { return true }
 func (SourceLava) ReducedByArmour() bool                    { return true }
 func (SourceLava) Fire() bool                               { return true }
