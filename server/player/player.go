@@ -623,10 +623,10 @@ func (p *Player) applyThorns(src damage.Source) {
 			// with the highest level of thorns and subtract 10 from its level to calculate the final damage.
 			dmg = level - 10
 			searchHighest = true
-			continue
+		} else if level <= 10 {
+			// Total damage from normal thorns armour (max Thorns III) should never exceed 4.0 in total.
+			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
 		}
-		// Total damage from normal thorns armour (max Thorns III) should never exceed 4.0 in total.
-		dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
 	}
 	if dmg <= 0 {
 		// No armour with thorns or no thorns activated.
