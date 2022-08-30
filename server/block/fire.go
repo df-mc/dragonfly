@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
@@ -38,6 +39,20 @@ func neighboursFlammable(pos cube.Pos, w *world.World) bool {
 		}
 	}
 	return false
+}
+
+// Splash ...
+func (f Fire) Splash(w *world.World, pos cube.Pos, p potion.Potion) {
+	if p != potion.Water() {
+		return
+	}
+	w.SetBlock(pos, nil, nil)
+	for _, face := range cube.HorizontalFaces() {
+		h := pos.Side(face)
+		if _, ok := w.Block(h).(Fire); ok {
+			w.SetBlock(h, nil, nil)
+		}
+	}
 }
 
 // max ...

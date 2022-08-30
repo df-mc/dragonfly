@@ -536,7 +536,12 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 		return 0, false
 	}
 
-	fireSource := source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}
+	fireSource := false
+	switch source.(type) {
+	case damage.SourceFireTick, damage.SourceLava, damage.SourceFire:
+		fireSource = true
+	}
+
 	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
 		return 0, false
 	}
@@ -570,6 +575,10 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 
 		var damageToAttacker int
 		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
+		// Campfires don't deal armour damage.
+		if s, ok := source.(damage.SourceFire); ok && s.Campfire {
+			damageToArmour = 0
+		}
 		thornsArmour := map[int]item.Stack{}
 		for slot, it := range p.armour.Slots() {
 			if _, ok := it.Item().(item.Durable); ok {

@@ -81,6 +81,9 @@ type Note struct {
 	Pitch int
 }
 
+// ItemAdd is a sound played when an item is added to an item frame or campfire.
+type ItemAdd struct{ sound }
+
 // MusicDiscPlay is a sound played when a music disc has started playing in a jukebox.
 type MusicDiscPlay struct {
 	sound
@@ -92,9 +95,6 @@ type MusicDiscPlay struct {
 // MusicDiscEnd is a sound played when a music disc has stopped playing in a jukebox.
 type MusicDiscEnd struct{ sound }
 
-// ItemFrameAdd is a sound played when an item is added to an item frame.
-type ItemFrameAdd struct{ sound }
-
 // ItemFrameRemove is a sound played when an item is removed from an item frame.
 type ItemFrameRemove struct{ sound }
 
@@ -103,6 +103,9 @@ type ItemFrameRotate struct{ sound }
 
 // FurnaceCrackle is a sound played every one to five seconds from a furnace.
 type FurnaceCrackle struct{ sound }
+
+// CampfireCrackle is a sound played every one to five seconds from a campfire.
+type CampfireCrackle struct{ sound }
 
 // BlastFurnaceCrackle is a sound played every one to five seconds from a blast furnace.
 type BlastFurnaceCrackle struct{ sound }
