@@ -8,8 +8,8 @@ import (
 type SuspiciousStew struct {
 	defaultFood
 
-	// Effect specifies the type of effect will be given to the player
-	Effect StewEffect
+	// Type specifies the type of effect will be given to the player
+	Type StewType
 }
 
 // MaxCount ...
@@ -24,12 +24,12 @@ func (SuspiciousStew) AlwaysConsumable() bool {
 
 // EncodeItem ...
 func (s SuspiciousStew) EncodeItem() (name string, meta int16) {
-	return "minecraft:suspicious_stew", int16(s.Effect.Uint8())
+	return "minecraft:suspicious_stew", int16(s.Type.Uint8())
 }
 
 // Consume ...
 func (s SuspiciousStew) Consume(_ *world.World, c Consumer) Stack {
-	for _, effect := range s.Effect.Type() {
+	for _, effect := range s.Type.Effects() {
 		c.AddEffect(effect)
 	}
 	c.Saturate(6, 7.2)

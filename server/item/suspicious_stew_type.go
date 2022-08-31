@@ -7,87 +7,87 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 )
 
-// StewEffect represents a type of suspicious stew.
-type StewEffect struct {
-	stewEffect
+// StewType represents a type of suspicious stew.
+type StewType struct {
+	stewType
 }
 
 // NightVisionStew returns suspicious stew night vision effect.
-func NightVisionStew() StewEffect {
-	return StewEffect{0}
+func NightVisionStew() StewType {
+	return StewType{0}
 
 }
 
 // JumpBoostStew returns suspicious stew jump boost effect.
-func JumpBoostStew() StewEffect {
-	return StewEffect{1}
+func JumpBoostStew() StewType {
+	return StewType{1}
 
 }
 
 // WeaknessStew returns suspicious stew weakness effect.
-func WeaknessStew() StewEffect {
-	return StewEffect{2}
+func WeaknessStew() StewType {
+	return StewType{2}
 
 }
 
 // BlindnessStew returns suspicious stew blindness effect.
 
-func BlindnessStew() StewEffect {
-	return StewEffect{3}
+func BlindnessStew() StewType {
+	return StewType{3}
 
 }
 
 // PoisonStew returns suspicious stew poison effect.
-func PoisonStew() StewEffect {
-	return StewEffect{4}
+func PoisonStew() StewType {
+	return StewType{4}
 
 }
 
 // SaturationDandelionStew returns suspicious stew saturation effect.
-func SaturationDandelionStew() StewEffect {
-	return StewEffect{5}
+func SaturationDandelionStew() StewType {
+	return StewType{5}
 
 }
 
 // SaturationOrchidStew returns suspicious stew saturation effect.
-func SaturationOrchidStew() StewEffect {
-	return StewEffect{6}
+func SaturationOrchidStew() StewType {
+	return StewType{6}
 
 }
 
 // FireResistanceStew returns suspicious stew fire resistance effect.
-func FireResistanceStew() StewEffect {
-	return StewEffect{7}
+func FireResistanceStew() StewType {
+	return StewType{7}
 
 }
 
 // RegenerationStew returns suspicious stew regeneration effect.
-func RegenerationStew() StewEffect {
-	return StewEffect{8}
+func RegenerationStew() StewType {
+	return StewType{8}
 
 }
 
 // WitherStew returns suspicious stew wither effect.
-func WitherStew() StewEffect {
-	return StewEffect{9}
+func WitherStew() StewType {
+	return StewType{9}
 
 }
 
-// StewEffects ...
-func StewEffects() []StewEffect {
-	return []StewEffect{NightVisionStew(), JumpBoostStew(), WeaknessStew(), BlindnessStew(), PoisonStew(), SaturationDandelionStew(), SaturationOrchidStew(), FireResistanceStew(), RegenerationStew(), WitherStew()}
+// StewTypes ...
+func StewTypes() []StewType {
+	return []StewType{NightVisionStew(), JumpBoostStew(), WeaknessStew(), BlindnessStew(), PoisonStew(), SaturationDandelionStew(), SaturationOrchidStew(), FireResistanceStew(), RegenerationStew(), WitherStew()}
 
 }
 
-type stewEffect uint8
+type stewType uint8
 
 // Uint8 returns the stew as a uint8.
-func (s stewEffect) Uint8() uint8 {
+func (s stewType) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Type returns suspicious stew effect types.
-func (s stewEffect) Type() []effect.Effect {
+// Effects returns suspicious stew effect types.
+func (s stewType) Effects() []effect.Effect {
 	effects := []effect.Effect{}
 
 	switch s.Uint8() {
