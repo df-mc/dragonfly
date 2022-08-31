@@ -15,7 +15,6 @@ type StewEffect struct {
 // Type returns suspicious stew effect type.
 func (s StewEffect) Type() effect.Effect {
 	return s.effect
-
 }
 
 // NightVisionStew returns suspicious stew night vision effect.
