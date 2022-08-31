@@ -1,7 +1,6 @@
 package item
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -100,7 +99,7 @@ func (s stewType) Effects() []effect.Effect {
 	case 9:
 		effects = append(effects, effect.New(effect.Wither{}, 1, time.Second*6))
 	default:
-		panic(fmt.Errorf("invalid stewEffect passed: %v", s.Uint8()))
+		panic("should never happen")
 	}
 
 	return effects
