@@ -29,7 +29,9 @@ func (s SuspiciousStew) EncodeItem() (name string, meta int16) {
 
 // Consume ...
 func (s SuspiciousStew) Consume(_ *world.World, c Consumer) Stack {
-	c.AddEffect(s.Effect.Type())
+	for _, effect := range s.Effect.Type() {
+		c.AddEffect(effect)
+	}
 	c.Saturate(6, 7.2)
 
 	return NewStack(Bowl{}, 1)
