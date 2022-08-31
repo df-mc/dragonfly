@@ -7,6 +7,8 @@ import (
 // SuspiciousStew is a food item that can give the player a status effect that depends on the flower used to craft it.
 type SuspiciousStew struct {
 	defaultFood
+
+	// Effect specifies the type of effect will be given to the player
 	Effect StewEffect
 }
 
@@ -22,7 +24,7 @@ func (SuspiciousStew) AlwaysConsumable() bool {
 
 // EncodeItem ...
 func (s SuspiciousStew) EncodeItem() (name string, meta int16) {
-	return "suspicious_stew", int16(s.Effect.Uint8())
+	return "minecraft:suspicious_stew", int16(s.Effect.Uint8())
 }
 
 // Consume ...

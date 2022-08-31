@@ -6,13 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 )
 
-type stewEffect uint8
-
-// Uint8 returns the stew as a uint8.
-func (s stewEffect) Uint8() uint8 {
-	return uint8(s)
-}
-
 // StewEffect represents a type of suspicious stew.
 type StewEffect struct {
 	effect effect.Effect
@@ -90,4 +83,11 @@ func WitherStew() StewEffect {
 func StewEffects() []StewEffect {
 	return []StewEffect{NightVisionStew(), JumpBoostStew(), WeaknessStew(), BlindnessStew(), PoisonStew(), SaturationDandelionStew(), SaturationOrchidStew(), FireResistanceStew(), RegenerationStew(), WitherStew()}
 
+}
+
+type stewEffect uint8
+
+// Uint8 returns the stew as a uint8.
+func (s stewEffect) Uint8() uint8 {
+	return uint8(s)
 }
