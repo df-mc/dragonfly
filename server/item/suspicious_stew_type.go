@@ -86,7 +86,7 @@ func (s stewEffect) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Type returns suspicious stew effect type.
+// Type returns suspicious stew effect types.
 func (s stewEffect) Type() []effect.Effect {
 	effects := []effect.Effect{}
 
