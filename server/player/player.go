@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"math"
 	"math/rand"
 	"net"
@@ -387,6 +388,20 @@ func (p *Player) SendCommandOutput(output *cmd.Output) {
 // form.
 func (p *Player) SendForm(f form.Form) {
 	p.session().SendForm(f)
+}
+
+// SendDialogue sends a dialogue to the player for the client to fill out. Once the client fills it out, the Submit
+// method of the form will be called.
+// Note that the client may also close the form instead of filling it out, which will result in the Close method to be
+// called on the dialogue if it implements dialogue.Closer.
+func (p *Player) SendDialogue(d dialogue.Dialogue) {
+	p.session().SendDialogue(d)
+}
+
+// CloseDialogue closes any dialogue that may be open to a user. Note that when this method is closed, if the dialogue
+// implements dialogue.Closer the Close method will still execute.
+func (p *Player) CloseDialogue(d dialogue.Dialogue) {
+	p.session().CloseDialogue(d)
 }
 
 // ShowCoordinates enables the vanilla coordinates for the player.

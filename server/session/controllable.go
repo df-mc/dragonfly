@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -22,6 +23,7 @@ type Controllable interface {
 	world.Entity
 	item.User
 	form.Submitter
+	dialogue.Submitter
 	cmd.Source
 	chat.Subscriber
 
