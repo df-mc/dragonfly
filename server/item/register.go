@@ -155,4 +155,7 @@ func init() {
 	for _, disc := range sound.MusicDiscs() {
 		world.RegisterItem(MusicDisc{DiscType: disc})
 	}
+	for _, stew := range StewTypes() {
+		world.RegisterItem(SuspiciousStew{Type: stew})
+	}
 }
