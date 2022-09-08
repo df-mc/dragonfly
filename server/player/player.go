@@ -2102,7 +2102,7 @@ func (p *Player) Collect(s item.Stack) int {
 		return 0
 	}
 	ctx := event.C()
-	if p.Handler().HandleItemPickup(ctx, s); ctx.Cancelled() {
+	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
 		return 0
 	}
 	n, _ := p.Inventory().AddItem(s)
