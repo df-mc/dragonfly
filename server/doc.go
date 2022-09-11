@@ -1,5 +1,5 @@
 // Package server implements a high-level implementation of a Minecraft server. Creating such a server may be done
-// using the `server.New()` function, which accepts a `*Config` and a logger implementation. Nil may be passed as config
+// using the `server.New()` function, which accepts a `*UserConfig` and a logger implementation. Nil may be passed as config
 // to use the default config.
 // After creation of the server, `Server.Start()` may be called to start and run the server. It should be followed up
 // by a loop as such:
