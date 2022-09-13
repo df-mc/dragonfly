@@ -79,7 +79,7 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage *atomic.Value[string]
+	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
 }
@@ -199,8 +199,8 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 	}
 
 	chat.Global.Subscribe(c)
-	if j := s.joinMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	if s.joinMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
 	}
 
 	s.sendInv(s.inv, protocol.WindowIDInventory)
@@ -259,8 +259,8 @@ func (s *Session) close() {
 	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
 
-	if j := s.quitMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	if s.quitMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
 	chat.Global.Unsubscribe(s.c)
 }

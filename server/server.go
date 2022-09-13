@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
-	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for maintaining correct initialisation order.
 	"github.com/df-mc/dragonfly/server/player"
@@ -56,7 +55,8 @@ type Server struct {
 
 	itemComponents map[string]map[string]any
 
-	incoming chan *session.Session
+	listeners []Listener
+	incoming  chan *session.Session
 
 	playerMutex sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they
@@ -121,17 +121,14 @@ func (srv *Server) End() *world.World {
 // connections on a different goroutine. Connections will be accepted until the
 // listener is closed using a call to Close. Once started, players may be
 // accepted using Server.Accept().
-func (srv *Server) Start() error {
+func (srv *Server) Start() {
 	if !srv.started.CAS(false, true) {
 		panic("start server: already started")
 	}
 
 	srv.conf.Log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
-	if err := srv.startListening(); err != nil {
-		return err
-	}
+	srv.startListening()
 	go srv.wait()
-	return nil
 }
 
 // MaxPlayerCount returns the maximum amount of players that are allowed to
@@ -198,11 +195,9 @@ func (srv *Server) Close() error {
 	defer srv.conf.Log.Infof("Server stopped.")
 
 	srv.conf.Log.Debugf("Disconnecting players...")
-	srv.playerMutex.RLock()
-	for _, p := range srv.p {
+	for _, p := range srv.Players() {
 		p.Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
 	}
-	srv.playerMutex.RUnlock()
 	srv.pwg.Wait()
 
 	srv.conf.Log.Debugf("Closing player provider...")
@@ -222,7 +217,7 @@ func (srv *Server) Close() error {
 	}
 
 	srv.conf.Log.Debugf("Closing listeners...")
-	for _, l := range srv.conf.Listeners {
+	for _, l := range srv.listeners {
 		if err := l.Close(); err != nil {
 			srv.conf.Log.Errorf("Error closing listener: %v", err)
 		}
@@ -289,21 +284,17 @@ func (srv *Server) running() bool {
 
 // startListening starts making the EncodeBlock listener listen, accepting new
 // connections from players.
-func (srv *Server) startListening() error {
+func (srv *Server) startListening() {
 	srv.makeItemComponents()
 
-	if !srv.conf.DisableResourceBuilding {
-		if pack, ok := packbuilder.BuildResourcePack(); ok {
-			// TODO: This won't work, needs to be moved to before resource packs
-			//  are added to the minecraft.ListenConfig.
-			srv.conf.Resources = append(srv.conf.Resources, pack)
+	for _, lf := range srv.conf.Listeners {
+		l, err := lf(srv.conf)
+		if err != nil {
+			srv.conf.Log.Fatalf("create listener: %v", err)
 		}
-	}
-
-	for _, l := range srv.conf.Listeners {
+		srv.listeners = append(srv.listeners, l)
 		srv.listen(l)
 	}
-	return nil
 }
 
 // makeItemComponents initializes the server's item components map using the

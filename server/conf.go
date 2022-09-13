@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/session"
@@ -12,7 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/google/uuid"
-	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -22,11 +22,11 @@ import (
 type Config struct {
 	Log Logger
 
+	Listeners []func(conf Config) (Listener, error)
+
 	Name string
 
 	PlayerProvider player.Provider
-
-	Listeners []Listener
 
 	Resources []*resource.Pack
 
@@ -84,6 +84,11 @@ func (conf Config) New() *Server {
 	}
 	if conf.MaxChunkRadius == 0 {
 		conf.MaxChunkRadius = 12
+	}
+	if !conf.DisableResourceBuilding {
+		if pack, ok := packbuilder.BuildResourcePack(); ok {
+			conf.Resources = append(conf.Resources, pack)
+		}
 	}
 
 	srv := &Server{
@@ -202,22 +207,7 @@ func (uc UserConfig) Config(log Logger) (Config, error) {
 			return conf, fmt.Errorf("create player provider: %w", err)
 		}
 	}
-	cfg := minecraft.ListenConfig{
-		MaximumPlayers:         conf.MaxPlayers,
-		StatusProvider:         statusProvider{name: conf.Name},
-		AuthenticationDisabled: conf.AuthDisabled,
-		ResourcePacks:          conf.Resources,
-		Biomes:                 biomes(),
-		TexturePacksRequired:   conf.ResourcesRequired,
-	}
-	var l *minecraft.Listener
-	l, err = cfg.Listen("raknet", uc.Network.Address)
-	if err != nil {
-		return conf, fmt.Errorf("create minecraft listener: %w", err)
-	}
-	conf.Listeners = []Listener{listener{l}}
-	conf.Log.Infof("Server running on %v.\n", l.Addr())
-
+	conf.Listeners = append(conf.Listeners, uc.listenerFunc)
 	return conf, nil
 }
 

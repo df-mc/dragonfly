@@ -23,9 +23,7 @@ func main() {
 
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
-	if err := srv.Start(); err != nil {
-		log.Fatalln(err)
-	}
+	srv.Start()
 
 	for srv.Accept(nil) {
 	}

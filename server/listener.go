@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"io"
@@ -15,6 +16,23 @@ type Listener interface {
 	// Disconnect disconnects a connection from the Listener with a reason.
 	Disconnect(conn session.Conn, reason string) error
 	io.Closer
+}
+
+func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
+	cfg := minecraft.ListenConfig{
+		MaximumPlayers:         conf.MaxPlayers,
+		StatusProvider:         statusProvider{name: conf.Name},
+		AuthenticationDisabled: conf.AuthDisabled,
+		ResourcePacks:          conf.Resources,
+		Biomes:                 biomes(),
+		TexturePacksRequired:   conf.ResourcesRequired,
+	}
+	l, err := cfg.Listen("raknet", uc.Network.Address)
+	if err != nil {
+		return nil, fmt.Errorf("create minecraft listener: %w", err)
+	}
+	conf.Log.Infof("Server running on %v.\n", l.Addr())
+	return listener{l}, nil
 }
 
 // listener is a Listener implementation that wraps around a minecraft.Listener so that it can be listened on by
