@@ -58,14 +58,15 @@ type Logger interface {
 	session.Logger
 	Infof(format string, v ...any)
 	Fatalf(format string, v ...any)
+	Warnf(format string, v ...any)
 }
 
 func (conf Config) New() *Server {
-	if len(conf.Listeners) == 0 {
-		panic("config: at least 1 listener expected, 0 found")
-	}
 	if conf.Log == nil {
 		conf.Log = logrus.New()
+	}
+	if len(conf.Listeners) == 0 {
+		conf.Log.Warnf("config: no listeners set, no connections will be accepted")
 	}
 	if conf.Name == "" {
 		conf.Name = "Dragonfly Server"

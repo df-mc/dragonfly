@@ -464,7 +464,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		},
 	}
 	w := conf.New()
-	logger.Infof(`Loaded world "%v".`, w.Name())
+	logger.Infof(`Opened world "%v".`, w.Name())
 	return w
 }
 
