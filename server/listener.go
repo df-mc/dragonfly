@@ -18,6 +18,8 @@ type Listener interface {
 	io.Closer
 }
 
+// listenerFunc may be used to return a *minecraft.Listener using a Config. It
+// is the standard listener used when UserConfig.Config() is called.
 func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         conf.MaxPlayers,

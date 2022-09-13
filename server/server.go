@@ -37,9 +37,9 @@ import (
 	"time"
 )
 
-// New returns a new server using the default Config. Note that no two servers
-// should be active at the same time. Doing so anyway will result in unexpected
-// behaviour.
+// New creates a Server using a default Config. The Server's worlds are created
+// and connections from the Server's listeners may be accepted by calling
+// Server.Listen() and Server.Accept() afterwards.
 func New() *Server {
 	var conf Config
 	return conf.New()
@@ -117,11 +117,11 @@ func (srv *Server) End() *world.World {
 	return srv.end
 }
 
-// Start runs the server but does not block, unlike Run, but instead accepts
-// connections on a different goroutine. Connections will be accepted until the
-// listener is closed using a call to Close. Once started, players may be
-// accepted using Server.Accept().
-func (srv *Server) Start() {
+// Listen starts running the server's listeners but does not block, unlike Run.
+// Connections will be accepted on a different goroutine until the listeners
+// are closed using a call to Close. Once started, players may be accepted
+// using Server.Accept().
+func (srv *Server) Listen() {
 	if !srv.started.CAS(false, true) {
 		panic("start server: already started")
 	}
@@ -356,7 +356,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 func (srv *Server) defaultGameData() minecraft.GameData {
 	return minecraft.GameData{
 		Yaw:            90,
-		WorldName:      srv.world.Name(),
+		WorldName:      srv.conf.Name,
 		PlayerPosition: vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.

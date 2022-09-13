@@ -23,7 +23,7 @@ func main() {
 
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
-	srv.Start()
+	srv.Listen()
 
 	for srv.Accept(nil) {
 	}
