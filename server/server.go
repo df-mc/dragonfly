@@ -47,7 +47,7 @@ type Server struct {
 
 	world, nether, end *world.World
 
-	itemComponents map[string]map[string]any
+	customItems []protocol.ItemComponentEntry
 
 	listeners []Listener
 	incoming  chan *session.Session
@@ -167,24 +167,18 @@ func (srv *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 // found, the player is returned and the bool returns holds a true value. If
 // not, the bool is false and the player is nil
 func (srv *Server) PlayerByName(name string) (*player.Player, bool) {
-	for _, p := range srv.Players() {
-		if p.Name() == name {
-			return p, true
-		}
-	}
-	return nil, false
+	return sliceutil.SearchValue(srv.Players(), func(p *player.Player) bool {
+		return p.Name() == name
+	})
 }
 
 // PlayerByXUID looks for a player on the server with the XUID passed. If found,
 // the player is returned and the bool returned is true. If no player with the
 // XUID was found, nil and false are returned.
 func (srv *Server) PlayerByXUID(xuid string) (*player.Player, bool) {
-	for _, p := range srv.Players() {
-		if p.XUID() == xuid {
-			return p, true
-		}
-	}
-	return nil, false
+	return sliceutil.SearchValue(srv.Players(), func(p *player.Player) bool {
+		return p.XUID() == xuid
+	})
 }
 
 // CloseOnProgramEnd closes the server right before the program ends, so that
@@ -303,10 +297,15 @@ func (srv *Server) startListening() {
 // registered custom items. It allows item components to be created only once
 // at startup
 func (srv *Server) makeItemComponents() {
-	srv.itemComponents = make(map[string]map[string]any)
-	for _, it := range world.CustomItems() {
+	custom := world.CustomItems()
+	srv.customItems = make([]protocol.ItemComponentEntry, len(custom))
+
+	for _, it := range custom {
 		name, _ := it.EncodeItem()
-		srv.itemComponents[name] = iteminternal.Components(it)
+		srv.customItems = append(srv.customItems, protocol.ItemComponentEntry{
+			Name: name,
+			Data: iteminternal.Components(it),
+		})
 	}
 }
 
@@ -337,15 +336,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		srv.conf.Log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
-
-	itemComponentEntries := make([]protocol.ItemComponentEntry, len(srv.itemComponents))
-	for name, entry := range srv.itemComponents {
-		itemComponentEntries = append(itemComponentEntries, protocol.ItemComponentEntry{
-			Name: name,
-			Data: entry,
-		})
-	}
-	_ = conn.WritePacket(&packet.ItemComponent{Items: itemComponentEntries})
+	_ = conn.WritePacket(&packet.ItemComponent{Items: srv.customItems})
 	if p, ok := srv.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
@@ -357,19 +348,19 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 // server.
 func (srv *Server) defaultGameData() minecraft.GameData {
 	return minecraft.GameData{
-		Yaw:            90,
-		WorldName:      srv.conf.Name,
-		PlayerPosition: vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
-		PlayerGameMode: 1,
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
-		Time:                         int64(srv.world.Time()),
-		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		Yaw:                          90,
+		PlayerGameMode:               1,
 		Difficulty:                   2,
-		Items:                        srv.itemEntries(),
-		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 		ServerAuthoritativeInventory: true,
+		WorldName:                    srv.conf.Name,
+		Items:                        srv.itemEntries(),
+		Time:                         int64(srv.world.Time()),
+		PlayerPosition:               vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
+		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 	}
 }
 
@@ -526,7 +517,9 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 
 // itemEntries loads a list of all custom item entries of the server, ready to
 // be sent in the StartGame packet.
-func (srv *Server) itemEntries() (entries []protocol.ItemEntry) {
+func (srv *Server) itemEntries() []protocol.ItemEntry {
+	entries := make([]protocol.ItemEntry, 0, len(itemRuntimeIDs))
+
 	for name, rid := range itemRuntimeIDs {
 		entries = append(entries, protocol.ItemEntry{
 			Name:      name,
@@ -542,7 +535,7 @@ func (srv *Server) itemEntries() (entries []protocol.ItemEntry) {
 			RuntimeID:      int16(rid),
 		})
 	}
-	return
+	return entries
 }
 
 // ashyBiome represents a biome that has any form of ash.
