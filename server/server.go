@@ -37,18 +37,12 @@ import (
 	"time"
 )
 
-// New creates a Server using a default Config. The Server's worlds are created
-// and connections from the Server's listeners may be accepted by calling
-// Server.Listen() and Server.Accept() afterwards.
-func New() *Server {
-	var conf Config
-	return conf.New()
-}
-
 // Server implements a Dragonfly server. It runs the main server loop and
 // handles the connections of players trying to join the server.
 type Server struct {
-	conf    Config
+	conf Config
+
+	once    sync.Once
 	started atomic.Bool
 
 	world, nether, end *world.World
@@ -58,7 +52,7 @@ type Server struct {
 	listeners []Listener
 	incoming  chan *session.Session
 
-	playerMutex sync.RWMutex
+	pmu sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
 	p map[uuid.UUID]*player.Player
@@ -73,6 +67,28 @@ type Server struct {
 // HandleFunc is a function that may be passed to Server.Accept(). It can be
 // used to prepare the session of a player before it can do anything.
 type HandleFunc func(p *player.Player)
+
+// New creates a Server using a default Config. The Server's worlds are created
+// and connections from the Server's listeners may be accepted by calling
+// Server.Listen() and Server.Accept() afterwards.
+func New() *Server {
+	var conf Config
+	return conf.New()
+}
+
+// Listen starts running the server's listeners but does not block, unlike Run.
+// Connections will be accepted on a different goroutine until the listeners
+// are closed using a call to Close. Once started, players may be accepted
+// using Server.Accept().
+func (srv *Server) Listen() {
+	if !srv.started.CAS(false, true) {
+		panic("start server: already started")
+	}
+
+	srv.conf.Log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
+	srv.startListening()
+	go srv.wait()
+}
 
 // Accept accepts an incoming player into the server. It blocks until a player
 // connects to the server. A HandleFunc may be passed which is run immediately
@@ -90,9 +106,9 @@ func (srv *Server) Accept(f HandleFunc) bool {
 		f(p)
 	}
 
-	srv.playerMutex.Lock()
+	srv.pmu.Lock()
 	srv.p[p.UUID()] = p
-	srv.playerMutex.Unlock()
+	srv.pmu.Unlock()
 
 	s.Start()
 	return true
@@ -117,20 +133,6 @@ func (srv *Server) End() *world.World {
 	return srv.end
 }
 
-// Listen starts running the server's listeners but does not block, unlike Run.
-// Connections will be accepted on a different goroutine until the listeners
-// are closed using a call to Close. Once started, players may be accepted
-// using Server.Accept().
-func (srv *Server) Listen() {
-	if !srv.started.CAS(false, true) {
-		panic("start server: already started")
-	}
-
-	srv.conf.Log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
-	srv.startListening()
-	go srv.wait()
-}
-
 // MaxPlayerCount returns the maximum amount of players that are allowed to
 // play on the server at the same time. Players trying to join when the server
 // is full will be refused to enter. If the config has a maximum player count
@@ -146,8 +148,8 @@ func (srv *Server) MaxPlayerCount() int {
 // Note that the slice returned is not updated when new players join or leave,
 // so it is only valid for as long as no new players join or players leave.
 func (srv *Server) Players() []*player.Player {
-	srv.playerMutex.RLock()
-	defer srv.playerMutex.RUnlock()
+	srv.pmu.RLock()
+	defer srv.pmu.RUnlock()
 	return maps.Values(srv.p)
 }
 
@@ -155,8 +157,8 @@ func (srv *Server) Players() []*player.Player {
 // player is returned and the bool returns holds a true value. If not, the bool
 // returned is false and the player is nil.
 func (srv *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
-	srv.playerMutex.RLock()
-	defer srv.playerMutex.RUnlock()
+	srv.pmu.RLock()
+	defer srv.pmu.RUnlock()
 	p, ok := srv.p[uuid]
 	return p, ok
 }
@@ -185,12 +187,31 @@ func (srv *Server) PlayerByXUID(xuid string) (*player.Player, bool) {
 	return nil, false
 }
 
+// CloseOnProgramEnd closes the server right before the program ends, so that
+// all data of the server are saved properly.
+func (srv *Server) CloseOnProgramEnd() {
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-c
+		if err := srv.Close(); err != nil {
+			srv.conf.Log.Errorf("close server: %v", err)
+		}
+	}()
+}
+
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (srv *Server) Close() error {
-	if !srv.running() {
+	if !srv.started.Load() {
 		panic("server not yet running")
 	}
+	srv.once.Do(srv.close)
+	return nil
+}
 
+// close stops the server, storing player and world data to disk when
+// necessary.
+func (srv *Server) close() {
 	srv.conf.Log.Infof("Server shutting down...")
 	defer srv.conf.Log.Infof("Server stopped.")
 
@@ -222,7 +243,6 @@ func (srv *Server) Close() error {
 			srv.conf.Log.Errorf("Error closing listener: %v", err)
 		}
 	}
-	return nil
 }
 
 // listen makes the Server listen for new connections from the Listener passed.
@@ -262,24 +282,6 @@ func (srv *Server) listen(l Listener) {
 			}()
 		}
 	}()
-}
-
-// CloseOnProgramEnd closes the server right before the program ends, so that
-// all data of the server are saved properly.
-func (srv *Server) CloseOnProgramEnd() {
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-c
-		if err := srv.Close(); err != nil {
-			srv.conf.Log.Errorf("close server: %v", err)
-		}
-	}()
-}
-
-// running checks if the server is currently running.
-func (srv *Server) running() bool {
-	return srv.started.Load()
 }
 
 // startListening starts making the EncodeBlock listener listen, accepting new
@@ -402,10 +404,10 @@ func (srv *Server) checkNetIsolation() {
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
 func (srv *Server) handleSessionClose(c session.Controllable) {
-	srv.playerMutex.Lock()
+	srv.pmu.Lock()
 	p, ok := srv.p[c.UUID()]
 	delete(srv.p, c.UUID())
-	srv.playerMutex.Unlock()
+	srv.pmu.Unlock()
 	if !ok {
 		// When a player disconnects immediately after a session is started, it might not be added to the players map
 		// yet. This is expected, but we need to be careful not to crash when this happens.
