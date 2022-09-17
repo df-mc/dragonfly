@@ -335,7 +335,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
+	if name != name2 || meta != meta2 || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
