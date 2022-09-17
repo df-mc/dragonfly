@@ -115,9 +115,9 @@ type Player struct {
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
-		inv: inventory.New(36, func(slot int, item item.Stack) {
+		inv: inventory.New(36, func(slot int, before, after item.Stack) {
 			if slot == int(p.heldSlot.Load()) {
-				p.broadcastItems(slot, item)
+				p.broadcastItems(slot, before, after)
 			}
 		}),
 		enderChest:        inventory.New(27, nil),
@@ -2974,14 +2974,18 @@ func (p *Player) Handler() Handler {
 }
 
 // broadcastItems broadcasts the items held to viewers.
-func (p *Player) broadcastItems(int, item.Stack) {
+func (p *Player) broadcastItems(int, item.Stack, item.Stack) {
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}
 }
 
 // broadcastArmour broadcasts the armour equipped to viewers.
-func (p *Player) broadcastArmour(int, item.Stack) {
+func (p *Player) broadcastArmour(_ int, before, after item.Stack) {
+	if before.Comparable(after) && before.Empty() == after.Empty() {
+		// Only send armour if the type of the armour changed.
+		return
+	}
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityArmour(p)
 	}

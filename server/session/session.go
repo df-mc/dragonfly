@@ -460,7 +460,7 @@ func (s *Session) registerHandlers() {
 
 // handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
 // in the future.
-func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
 	if slot == enchantingInputSlot && s.containerOpened.Load() {
 		pos := s.openedPos.Load()
 		b := s.c.World().Block(pos)
