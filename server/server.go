@@ -550,14 +550,16 @@ type sporingBiome interface {
 	Spores() (blueSpores float64, redSpores float64)
 }
 
-// biomes builds a mapping of all biome definitions of the server, ready to be
-// set in the biomes field of the server listener.
+// biomes builds a mapping of all biome definitions of the server, ready to be set in the biomes field of the server
+// listener.
 func biomes() map[string]any {
 	definitions := make(map[string]any)
 	for _, b := range world.Biomes() {
 		definition := map[string]any{
+			"name_hash":   b.String(), // This isn't actually a hash despite what the field name may suggest.
 			"temperature": float32(b.Temperature()),
 			"downfall":    float32(b.Rainfall()),
+			"rain":        b.Rainfall() > 0,
 		}
 		if a, ok := b.(ashyBiome); ok {
 			ash, whiteAsh := a.Ash()
