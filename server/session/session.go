@@ -79,7 +79,7 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage *atomic.Value[string]
+	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
 }
@@ -139,7 +139,7 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage string) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -199,8 +199,8 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 	}
 
 	chat.Global.Subscribe(c)
-	if j := s.joinMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	if s.joinMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
 	}
 
 	s.sendInv(s.inv, protocol.WindowIDInventory)
@@ -259,8 +259,8 @@ func (s *Session) close() {
 	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
 
-	if j := s.quitMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	if s.quitMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
 	chat.Global.Unsubscribe(s.c)
 }
@@ -460,7 +460,7 @@ func (s *Session) registerHandlers() {
 
 // handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
 // in the future.
-func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
 	if slot == enchantingInputSlot && s.containerOpened.Load() {
 		pos := s.openedPos.Load()
 		b := s.c.World().Block(pos)

@@ -15,7 +15,7 @@ type Armour struct {
 // NewArmour returns an armour inventory that is ready to be used. The zero value of an inventory.Armour is
 // not valid for usage.
 // The function passed is called when a slot is changed. It may be nil to not call anything.
-func NewArmour(f func(slot int, item item.Stack)) *Armour {
+func NewArmour(f func(slot int, before, after item.Stack)) *Armour {
 	inv := New(4, f)
 	inv.canAdd = canAddArmour
 	return &Armour{inv: inv}

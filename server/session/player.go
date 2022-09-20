@@ -565,7 +565,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
-	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+	s.inv = inventory.New(36, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -578,7 +578,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			s.sendItem(item, slot, protocol.WindowIDInventory)
 		}
 	})
-	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -595,7 +595,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			})
 		}
 	})
-	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+	s.enderChest = inventory.New(27, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -605,15 +605,19 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			}
 		}
 	})
-	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+	s.armour = inventory.NewArmour(func(slot int, before, after item.Stack) {
 		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			s.sendItem(after, slot, protocol.WindowIDArmour)
+		}
+		if before.Comparable(after) && before.Empty() == after.Empty() {
+			// Only send armour if the item type actually changed.
 			return
 		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
-		}
-		if !s.inTransaction.Load() {
-			s.sendItem(item, slot, protocol.WindowIDArmour)
 		}
 	})
 	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot

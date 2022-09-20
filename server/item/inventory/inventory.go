@@ -20,7 +20,7 @@ type Inventory struct {
 	h     Handler
 	slots []item.Stack
 
-	f      func(slot int, item item.Stack)
+	f      func(slot int, before, after item.Stack)
 	canAdd func(s item.Stack, slot int) bool
 }
 
@@ -32,12 +32,12 @@ var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= 
 // constructed.
 // A function may be passed which is called every time a slot is changed. The function may also be nil, if
 // nothing needs to be done.
-func New(size int, f func(slot int, item item.Stack)) *Inventory {
+func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	if size <= 0 {
 		panic("inventory size must be at least 1")
 	}
 	if f == nil {
-		f = func(slot int, item item.Stack) {}
+		f = func(slot int, before, after item.Stack) {}
 	}
 	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
@@ -323,9 +323,10 @@ func (inv *Inventory) setItem(slot int, it item.Stack) func() {
 	if it.Count() > it.MaxCount() {
 		it = it.Grow(it.MaxCount() - it.Count())
 	}
+	before := inv.slots[slot]
 	inv.slots[slot] = it
 	return func() {
-		inv.f(slot, it)
+		inv.f(slot, before, it)
 	}
 }
 
@@ -350,7 +351,7 @@ func (inv *Inventory) Close() error {
 	defer inv.mu.Unlock()
 
 	inv.check()
-	inv.f = func(int, item.Stack) {}
+	inv.f = func(int, item.Stack, item.Stack) {}
 	return nil
 }
 

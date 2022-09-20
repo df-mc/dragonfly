@@ -38,7 +38,7 @@ func NewBarrel() Barrel {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
 	return Barrel{
-		inventory: inventory.New(27, func(slot int, item item.Stack) {
+		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
