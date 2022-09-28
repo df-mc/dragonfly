@@ -24,6 +24,22 @@ func MilkBucketContent() BucketContent {
 	return BucketContent{milk: true}
 }
 
+// Liquid returns the world.Liquid that a Bucket with this BucketContent places.
+// If this BucketContent does not place a liquid block, false is returned.
+func (b BucketContent) Liquid() (world.Liquid, bool) {
+	return b.liquid, b.liquid != nil
+}
+
+// String converts the BucketContent to a string.
+func (b BucketContent) String() string {
+	if b.milk {
+		return "milk"
+	} else if b.liquid != nil {
+		return b.liquid.LiquidType()
+	}
+	return ""
+}
+
 // LiquidType returns the type of liquid the bucket contains.
 func (b BucketContent) LiquidType() string {
 	if b.liquid != nil {
@@ -129,7 +145,7 @@ func (b Bucket) fillFrom(pos cube.Pos, w *world.World, ctx *UseContext) bool {
 // EncodeItem ...
 func (b Bucket) EncodeItem() (name string, meta int16) {
 	if !b.Empty() {
-		return "minecraft:" + b.Content.LiquidType() + "_bucket", 0
+		return "minecraft:" + b.Content.String() + "_bucket", 0
 	}
 	return "minecraft:bucket", 0
 }
