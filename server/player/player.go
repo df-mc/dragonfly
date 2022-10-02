@@ -1985,9 +1985,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 		return
 	}
-	for _, v := range p.viewers() {
-		v.ViewEntityMovement(p, res, resYaw, resPitch, p.OnGround())
-	}
 
 	p.pos.Store(res)
 	p.yaw.Store(resYaw)
@@ -1995,6 +1992,14 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 
 	p.vel.Store(deltaPos)
 	p.checkBlockCollisions(deltaPos, w)
+
+	onGround := p.checkOnGround(w)
+	p.onGround.Store(onGround)
+	p.updateFallState(deltaPos[1])
+
+	for _, v := range p.viewers() {
+		v.ViewEntityMovement(p, res, resYaw, resPitch, onGround)
+	}
 
 	horizontalVel := deltaPos
 	horizontalVel[1] = 0
@@ -2017,9 +2022,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		// so send the updated metadata.
 		p.session().ViewEntityState(p)
 	}
-
-	p.onGround.Store(p.checkOnGround(w))
-	p.updateFallState(deltaPos[1])
 
 	if p.Swimming() {
 		p.Exhaust(0.01 * horizontalVel.Len())
