@@ -1,6 +1,9 @@
 package player
 
 import (
+	"net"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -11,8 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"net"
-	"time"
 )
 
 // Handler handles events that are called by a player. Implementations of Handler may be used to listen to
@@ -117,7 +118,7 @@ type Handler interface {
 	HandleItemDamage(ctx *event.Context, i item.Stack, damage int)
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
-	HandleItemPickup(ctx *event.Context, i item.Stack)
+	HandleItemPickup(ctx *event.Context, i *item.Stack)
 	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
@@ -157,7 +158,7 @@ func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack)     
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
 func (NopHandler) HandleSignEdit(*event.Context, string, string)                              {}
-func (NopHandler) HandleItemPickup(*event.Context, item.Stack)                                {}
+func (NopHandler) HandleItemPickup(*event.Context, *item.Stack)                               {}
 func (NopHandler) HandleItemUse(*event.Context)                                               {}
 func (NopHandler) HandleItemUseOnBlock(*event.Context, cube.Pos, cube.Face, mgl64.Vec3)       {}
 func (NopHandler) HandleItemUseOnEntity(*event.Context, world.Entity)                         {}
