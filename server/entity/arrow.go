@@ -242,7 +242,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 				v.ViewEntityAction(a, ArrowShakeAction{Duration: time.Millisecond * 350})
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
-			if living, ok := res.Entity().(Living); ok && !living.AttackImmune() {
+			if living, ok := res.Entity().(Living); ok {
 				living.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {

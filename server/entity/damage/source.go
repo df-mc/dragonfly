@@ -14,6 +14,9 @@ type (
 		// ReducedByResistance specifies if the Source is affected by the resistance effect. If false, damage dealt
 		// to an entity with this source will not be lowered if the entity has the resistance effect.
 		ReducedByResistance() bool
+		// Fire specifies if the Source is fire related and should be ignored when an entity has the fire resistance
+		// effect.
+		Fire() bool
 	}
 
 	// SourceEntityAttack is used for damage caused by other entities, for example when a player attacks another
@@ -50,9 +53,6 @@ type (
 
 	// SourceFire is used for damage caused by being in fire.
 	SourceFire struct{}
-
-	// SourceFireTick is used for damage caused by being on fire.
-	SourceFireTick struct{}
 
 	// SourceLava is used for damage caused by being in lava.
 	SourceLava struct{}
@@ -91,37 +91,52 @@ type (
 
 func (SourceFall) ReducedByArmour() bool                    { return false }
 func (SourceFall) ReducedByResistance() bool                { return true }
+func (SourceFall) Fire() bool                               { return false }
 func (SourceGlide) ReducedByArmour() bool                   { return false }
 func (SourceGlide) ReducedByResistance() bool               { return true }
+func (SourceGlide) Fire() bool                              { return false }
 func (SourceLightning) ReducedByArmour() bool               { return true }
 func (SourceLightning) ReducedByResistance() bool           { return true }
+func (SourceLightning) Fire() bool                          { return false }
 func (SourceEntityAttack) ReducedByArmour() bool            { return true }
 func (SourceEntityAttack) ReducedByResistance() bool        { return true }
+func (SourceEntityAttack) Fire() bool                       { return false }
 func (SourceStarvation) ReducedByArmour() bool              { return false }
 func (SourceStarvation) ReducedByResistance() bool          { return false }
+func (SourceStarvation) Fire() bool                         { return false }
 func (SourceInstantDamageEffect) ReducedByArmour() bool     { return false }
 func (SourceInstantDamageEffect) ReducedByResistance() bool { return true }
+func (SourceInstantDamageEffect) Fire() bool                { return false }
 func (SourceVoid) ReducedByResistance() bool                { return false }
 func (SourceVoid) ReducedByArmour() bool                    { return false }
+func (SourceVoid) Fire() bool                               { return false }
 func (SourceSuffocation) ReducedByResistance() bool         { return false }
 func (SourceSuffocation) ReducedByArmour() bool             { return false }
+func (SourceSuffocation) Fire() bool                        { return false }
 func (SourceDrowning) ReducedByResistance() bool            { return false }
 func (SourceDrowning) ReducedByArmour() bool                { return false }
+func (SourceDrowning) Fire() bool                           { return false }
 func (SourcePoisonEffect) ReducedByResistance() bool        { return true }
 func (SourcePoisonEffect) ReducedByArmour() bool            { return false }
+func (SourcePoisonEffect) Fire() bool                       { return false }
 func (SourceWitherEffect) ReducedByResistance() bool        { return true }
 func (SourceWitherEffect) ReducedByArmour() bool            { return false }
+func (SourceWitherEffect) Fire() bool                       { return false }
 func (SourceFire) ReducedByResistance() bool                { return true }
 func (SourceFire) ReducedByArmour() bool                    { return true }
-func (SourceFireTick) ReducedByResistance() bool            { return true }
-func (SourceFireTick) ReducedByArmour() bool                { return false }
+func (SourceFire) Fire() bool                               { return true }
 func (SourceLava) ReducedByResistance() bool                { return true }
 func (SourceLava) ReducedByArmour() bool                    { return true }
+func (SourceLava) Fire() bool                               { return true }
 func (SourceProjectile) ReducedByResistance() bool          { return true }
 func (SourceProjectile) ReducedByArmour() bool              { return true }
+func (SourceProjectile) Fire() bool                         { return false }
 func (SourceThorns) ReducedByResistance() bool              { return true }
 func (SourceThorns) ReducedByArmour() bool                  { return false }
+func (SourceThorns) Fire() bool                             { return false }
 func (SourceBlock) ReducedByResistance() bool               { return true }
 func (SourceBlock) ReducedByArmour() bool                   { return true }
+func (SourceBlock) Fire() bool                              { return false }
 func (SourceExplosion) ReducedByResistance() bool           { return true }
 func (SourceExplosion) ReducedByArmour() bool               { return true }
+func (SourceExplosion) Fire() bool                          { return false }

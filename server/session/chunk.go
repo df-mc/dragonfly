@@ -52,7 +52,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 		higher, lower := true, true
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				y, i := chunkMap.At(x, z), (uint16(x)<<4)|uint16(z)
+				y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
 				otherInd := ch.SubIndex(y)
 				if otherInd > ind {
 					subMap[i], lower = 16, false

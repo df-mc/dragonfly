@@ -118,7 +118,7 @@ type stateHash struct {
 	name, properties string
 }
 
-// HashProperties produces a hash for the block properties held by the blockState.
+// hashProperties produces a hash for the block properties held by the blockState.
 func hashProperties(properties map[string]any) string {
 	if properties == nil {
 		return ""
