@@ -1,9 +1,6 @@
 package player
 
 import (
-	"net"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -14,6 +11,8 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"net"
+	"time"
 )
 
 // Handler handles events that are called by a player. Implementations of Handler may be used to listen to
