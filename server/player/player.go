@@ -875,7 +875,7 @@ func (p *Player) Exhaust(points float64) {
 // Dead checks if the player is considered dead. True is returned if the health of the player is equal to or
 // lower than 0.
 func (p *Player) Dead() bool {
-	return p.Health() <= 0
+	return p.Health() <= mgl64.Epsilon
 }
 
 // DeathPosition returns the last position the player was at when they died. If the player has never died, the third
