@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
@@ -10,6 +12,11 @@ import (
 )
 
 func main() {
+	aa := a{}
+	to := 1
+	logrus.Infof("1 main: to:%v", to)
+	aa.HandleFoodLoss(event.C(), 20, &to)
+	logrus.Infof("2 main: to:%v", to)
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
@@ -27,6 +34,16 @@ func main() {
 	srv.Listen()
 	for srv.Accept(nil) {
 	}
+}
+
+type a struct {
+	player.NopHandler
+}
+
+func (a) HandleFoodLoss(_ *event.Context, from int, to *int) {
+	logrus.Infof("1 HandleFoodLoss: from:%v to:%v", from, *to)
+	*to = 0
+	logrus.Infof("2 HandleFoodLoss: from:%v to:%v", from, *to)
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the

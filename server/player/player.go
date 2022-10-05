@@ -860,7 +860,7 @@ func (p *Player) Exhaust(points float64) {
 		p.hunger.SetFood(before)
 
 		ctx := event.C()
-		if p.Handler().HandleFoodLoss(ctx, before, after); ctx.Cancelled() {
+		if p.Handler().HandleFoodLoss(ctx, before, &after); ctx.Cancelled() {
 			return
 		}
 		p.hunger.SetFood(after)
