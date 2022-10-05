@@ -40,6 +40,7 @@ type Controllable interface {
 
 	UseItem()
 	ReleaseItem()
+	InterruptUsingItem() bool
 	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity) bool
 	BreakBlock(pos cube.Pos)

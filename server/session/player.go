@@ -658,7 +658,7 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 		return nil
 	}
 	// The user swapped changed held slots so stop using item right away.
-	s.c.ReleaseItem()
+	s.c.InterruptUsingItem()
 
 	s.heldSlot.Store(uint32(slot))
 
@@ -892,10 +892,12 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
+// noinspection ALL
+//
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
-//noinspection ALL
 func item_id(s item.Stack) int32
 
+// noinspection ALL
+//
 //go:linkname world_add github.com/df-mc/dragonfly/server/world.add
-//noinspection ALL
 func world_add(e world.Entity, w *world.World)

@@ -1400,7 +1400,7 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	if !p.usingItem.CAS(true, false) || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+	if !p.InterruptUsingItem() || !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		return
 	}
 	ctx := p.useContext()
@@ -1409,6 +1409,11 @@ func (p *Player) ReleaseItem() {
 
 	p.handleUseContext(ctx)
 	p.updateState()
+}
+
+// InterruptUsingItem ...
+func (p *Player) InterruptUsingItem() bool {
+	return p.usingItem.CAS(true, false)
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
