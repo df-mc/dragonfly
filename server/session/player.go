@@ -893,11 +893,9 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 // functions do not need to be exported.
 
 // noinspection ALL
-//
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 func item_id(s item.Stack) int32
 
 // noinspection ALL
-//
 //go:linkname world_add github.com/df-mc/dragonfly/server/world.add
 func world_add(e world.Entity, w *world.World)
