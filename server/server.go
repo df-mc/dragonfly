@@ -448,6 +448,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		Provider:        srv.conf.WorldProvider,
 		Generator:       srv.conf.Generator(dim),
 		RandomTickSpeed: srv.conf.RandomTickSpeed,
+		ReadOnly:        srv.conf.ReadOnlyWorld,
 		PortalDestination: func(dim world.Dimension) *world.World {
 			if dim == world.Nether {
 				return *nether

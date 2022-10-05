@@ -77,6 +77,9 @@ type Config struct {
 	// chunks will always be newly generated when loaded. The world provider
 	// will be used for storing/loading the default overworld, nether and end.
 	WorldProvider world.Provider
+	// ReadOnlyWorld specifies if the standard worlds should be read only. If
+	// set to true, the WorldProvider won't be saved to at all.
+	ReadOnlyWorld bool
 	// Generator should return a function that specifies the world.Generator to
 	// use for every world.Dimension (world.Overworld, world.Nether and
 	// world.End). If left empty, Generator will be set to a flat world for each
